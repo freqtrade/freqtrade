@@ -43,19 +43,20 @@ class PrecisionFilter(IPairList):
         """
         return f"{self.name} - Filtering untradable pairs."
 
-    def _validate_pair(self, ticker: dict) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Check if pair has enough room to add a stoploss to avoid "unsellable" buys of very
         low value pairs.
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
-        :return: True if the pair can stay, False if it should be removed
+        :return: True if the pair can stay, false if it should be removed
         """
         stop_price = ticker['ask'] * self._stoploss
 
         # Adjust stop-prices to precision
-        sp = self._exchange.price_to_precision(ticker["symbol"], stop_price)
+        sp = self._exchange.price_to_precision(pair, stop_price)
 
-        stop_gap_price = self._exchange.price_to_precision(ticker["symbol"], stop_price * 0.99)
+        stop_gap_price = self._exchange.price_to_precision(pair, stop_price * 0.99)
         logger.debug(f"{ticker['symbol']} - {sp} : {stop_gap_price}")
 
         if sp <= stop_gap_price:

@@ -3,7 +3,7 @@ PairList manager class
 """
 import logging
 from copy import deepcopy
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from cachetools import TTLCache, cached
 
@@ -97,7 +97,7 @@ class PairListManager():
 
         self._whitelist = pairlist
 
-    def _prepare_whitelist(self, pairlist: List[str], tickers) -> List[str]:
+    def _prepare_whitelist(self, pairlist: List[str], tickers: Dict[str, Any]) -> List[str]:
         """
         Prepare sanitized pairlist for Pairlist Handlers that use tickers data - remove
         pairs that do not have ticker available
