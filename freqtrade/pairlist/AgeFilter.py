@@ -2,9 +2,11 @@
 Minimum age (days listed) pair list filter
 """
 import logging
-from typing import Any, Dict, List
+from copy import deepcopy
+from typing import Any, Dict, List, Optional
 
 import arrow
+from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
@@ -64,17 +66,34 @@ class AgeFilter(IPairList):
                        .shift(days=-self._min_days_listed - 1)
                        .float_timestamp) * 1000
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
-        pairlist_new = []
         if self._enabled:
-            for p, _ in needed_pairs:
+            for p in deepcopy(pairlist):
+                daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
+                if not self._validate_pair_loc(p, daily_candles):
+                    pairlist.remove(p)
+        logger.info(f"Validated {len(pairlist)} pairs.")
+        return pairlist
 
-                age = len(candles[(p, '1d')]) if (p, '1d') in candles else 0
-                if age > self._min_days_listed:
-                    pairlist_new.append(p)
-                    self._symbolsChecked[p] = int(arrow.utcnow().float_timestamp) * 1000
-                else:
-                    self.log_once(f"Removed {p} from whitelist, because age "
-                                  f"{age} is less than {self._min_days_listed} "
-                                  f"{plural(self._min_days_listed, 'day')}", logger.info)
-        logger.info(f"Validated {len(pairlist_new)} pairs.")
-        return pairlist_new
+    def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
+        """
+        Validate age for the ticker
+        :param pair: Pair that's currently validated
+        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :return: True if the pair can stay, false if it should be removed
+        """
+        # Check symbol in cache
+        if pair in self._symbolsChecked:
+            return True
+
+        if daily_candles is not None:
+            if len(daily_candles) > self._min_days_listed:
+                # We have fetched at least the minimum required number of daily candles
+                # Add to cache, store the time we last checked this symbol
+                self._symbolsChecked[pair] = int(arrow.utcnow().float_timestamp) * 1000
+                return True
+            else:
+                self.log_once(f"Removed {pair} from whitelist, because age "
+                              f"{len(daily_candles)} is less than {self._min_days_listed} "
+                              f"{plural(self._min_days_listed, 'day')}", logger.info)
+                return False
+        return False

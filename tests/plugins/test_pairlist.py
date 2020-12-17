@@ -588,7 +588,6 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
         ('LTC/BTC', '1d'): ohlcv_history,
-        ('XRP/BTC', '1d'): ohlcv_history,
     }
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
@@ -603,12 +602,15 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_agefilter)
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == 3
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
+    # freqtrade.config['exchange']['pair_whitelist'].append('HOT/BTC')
 
     previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
     freqtrade.pairlists.refresh_pairlist()
-    # Should not have increased since first call.
-    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
+    assert len(freqtrade.pairlists.whitelist) == 3
+    # Called once for XRP/BTC
+    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count + 1
 
 
 def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
