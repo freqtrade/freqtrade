@@ -8,16 +8,56 @@ If you're just getting started, please be familiar with the methods described in
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are actually used.
 
-## Custom stoploss logic
+## Custom stoploss
 
-// TODO: Complete this section
+A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
+Also, the traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
 
+The usage of the custom stoploss method must be enabled by setting `custom_stoploss=True` on the strategy object.
+The method must return a stoploss value (float / number) with a relative ratio below the current price.
+E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
+
+``` python
+    custom_stoploss = True
+
+    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
+                       **kwargs) -> float:
+        # TODO: Add full docstring here
+        return 0.04
+```
+
+!!! Tip "Trailing stoploss"
+    It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
+
+### Custom stoploss examples
+
+Absolute stoploss. The below example sets absolute profit levels based on the current profit.
+
+* Use the regular stoploss until 20% profit is reached
+* Once profit is > 20% - stoploss will be set to 7%.s
+* Once profit is > 25% - stoploss will be 15%.
+* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
+
+``` python
+    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
+                       **kwargs) -> float:
+        # TODO: Add full docstring here
+
+        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
+        if current_profit > 0.20:
+            return (-0.7 + current_profit)
+        if current_profit > 0.25:
+            return (-0.15 + current_profit)
+        if current_profit > 0.40:
+            return (-0.25 + current_profit)
+        return 1
+```
 
 ## Custom order timeout rules
 
-Simple, timebased order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
+Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
-However, freqtrade also offers a custom callback for both ordertypes, which allows you to decide based on custom criteria if a order did time out or not.
+However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if a order did time out or not.
 
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
