@@ -13,11 +13,10 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.plot.plotting import (add_indicators, add_profit, create_plotconfig,
+from freqtrade.plot.plotting import (add_areas, add_indicators, add_profit, create_plotconfig,
                                      generate_candlestick_graph, generate_plot_filename,
                                      generate_profit_graph, init_plotscript, load_and_plot_trades,
-                                     plot_profit, plot_trades, store_plot_file,
-                                     add_areas)
+                                     plot_profit, plot_trades, store_plot_file)
 from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
