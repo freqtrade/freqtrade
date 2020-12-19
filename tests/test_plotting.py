@@ -107,6 +107,10 @@ def test_add_areas(default_conf, testdatadir, caplog):
                            "fill_to": "macdhist",
                            "fill_label": "MACD Fill"}}
 
+    ind_no_label = {"macd": {"fill_color": "red",
+                             "fill_to": "macdhist"}}
+
+    ind_plain = {"macd": {"fill_to": "macdhist"}}
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
@@ -124,12 +128,28 @@ def test_add_areas(default_conf, testdatadir, caplog):
     assert fig == fig2
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
+    # everythin given in plot config, row 3
     fig3 = add_areas(fig, 3, data, indicators)
     figure = fig3.layout.figure
     fill_macd = find_trace_in_fig_data(figure.data, "MACD Fill")
     assert isinstance(fill_macd, go.Scatter)
     assert fill_macd.yaxis == "y3"
     assert fill_macd.fillcolor == "black"
+
+    # label missing, row 1
+    fig4 = add_areas(fig, 1, data, ind_no_label)
+    figure = fig4.layout.figure
+    fill_macd = find_trace_in_fig_data(figure.data, "macd<>macdhist")
+    assert isinstance(fill_macd, go.Scatter)
+    assert fill_macd.yaxis == "y"
+    assert fill_macd.fillcolor == "red"
+
+    # fit_to only
+    fig5 = add_areas(fig, 1, data, ind_plain)
+    figure = fig5.layout.figure
+    fill_macd = find_trace_in_fig_data(figure.data, "macd<>macdhist")
+    assert isinstance(fill_macd, go.Scatter)
+    assert fill_macd.yaxis == "y"
 
 
 def test_plot_trades(testdatadir, caplog):
