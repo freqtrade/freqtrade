@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
+from freqtrade.strategy.interface import SellCheckTuple, SellType
 import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
@@ -284,6 +285,62 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     # Should not trigger with 20% profit since after 55 minutes only 30% is active.
     assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
     assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+
+
+@pytest.mark.parametrize('profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2', [
+    # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
+    #   enable custom stoploss, expected after 1st call, expected after 2nd call
+    (0.2, 0.9, SellType.NONE, False, False, 0.3, 0.9, SellType.NONE),
+    (0.2, 0.9, SellType.NONE, False, False, -0.2, 0.9, SellType.STOP_LOSS),
+    (0.2, 1.14, SellType.NONE, True, False, 0.05, 1.14, SellType.TRAILING_STOP_LOSS),
+    (0.01, 0.96, SellType.NONE, True, False, 0.05, 1, SellType.NONE),
+    (0.05, 1, SellType.NONE, True, False, -0.01, 1, SellType.TRAILING_STOP_LOSS),
+    # Default custom case - trails with 10%
+    (0.05, 0.95, SellType.NONE, False, True, -0.02, 0.95, SellType.NONE),
+    (0.05, 0.95, SellType.NONE, False, True, -0.06, 0.95, SellType.TRAILING_STOP_LOSS),
+])
+def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
+                           profit2, adjusted2, expected2) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+    )
+    trade.adjust_min_max_rates(trade.open_rate)
+    strategy.trailing_stop = trailing
+    strategy.trailing_stop_positive = -0.05
+    strategy.custom_stoploss = custom
+
+    now = arrow.utcnow().datetime
+    sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
+                                         current_time=now, current_profit=profit,
+                                         force_stoploss=0, high=None)
+    assert isinstance(sl_flag, SellCheckTuple)
+    assert sl_flag.sell_type == expected
+    if expected == SellType.NONE:
+        assert sl_flag.sell_flag is False
+    else:
+        assert sl_flag.sell_flag is True
+    assert round(trade.stop_loss, 2) == adjusted
+
+    sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
+                                         current_time=now, current_profit=profit2,
+                                         force_stoploss=0, high=None)
+    assert sl_flag.sell_type == expected2
+    if expected2 == SellType.NONE:
+        assert sl_flag.sell_flag is False
+    else:
+        assert sl_flag.sell_flag is True
+    assert round(trade.stop_loss, 2) == adjusted2
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
