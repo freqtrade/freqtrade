@@ -11,7 +11,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import StrategyError
+from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -287,20 +287,30 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
 
 
-@pytest.mark.parametrize('profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2', [
-    # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
-    #   enable custom stoploss, expected after 1st call, expected after 2nd call
-    (0.2, 0.9, SellType.NONE, False, False, 0.3, 0.9, SellType.NONE),
-    (0.2, 0.9, SellType.NONE, False, False, -0.2, 0.9, SellType.STOP_LOSS),
-    (0.2, 1.14, SellType.NONE, True, False, 0.05, 1.14, SellType.TRAILING_STOP_LOSS),
-    (0.01, 0.96, SellType.NONE, True, False, 0.05, 1, SellType.NONE),
-    (0.05, 1, SellType.NONE, True, False, -0.01, 1, SellType.TRAILING_STOP_LOSS),
-    # Default custom case - trails with 10%
-    (0.05, 0.95, SellType.NONE, False, True, -0.02, 0.95, SellType.NONE),
-    (0.05, 0.95, SellType.NONE, False, True, -0.06, 0.95, SellType.TRAILING_STOP_LOSS),
-])
+@pytest.mark.parametrize(
+    'profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
+        # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
+        #   enable custom stoploss, expected after 1st call, expected after 2nd call
+        (0.2, 0.9, SellType.NONE, False, False, 0.3, 0.9, SellType.NONE, None),
+        (0.2, 0.9, SellType.NONE, False, False, -0.2, 0.9, SellType.STOP_LOSS, None),
+        (0.2, 1.14, SellType.NONE, True, False, 0.05, 1.14, SellType.TRAILING_STOP_LOSS, None),
+        (0.01, 0.96, SellType.NONE, True, False, 0.05, 1, SellType.NONE, None),
+        (0.05, 1, SellType.NONE, True, False, -0.01, 1, SellType.TRAILING_STOP_LOSS, None),
+        # Default custom case - trails with 10%
+        (0.05, 0.95, SellType.NONE, False, True, -0.02, 0.95, SellType.NONE, None),
+        (0.05, 0.95, SellType.NONE, False, True, -0.06, 0.95, SellType.TRAILING_STOP_LOSS, None),
+        (0.05, 1, SellType.NONE, False, True, -0.06, 1, SellType.TRAILING_STOP_LOSS,
+         lambda **kwargs: -0.05),
+        (0.05, 1, SellType.NONE, False, True, 0.09, 1.04, SellType.NONE,
+         lambda **kwargs: -0.05),
+        (0.05, 0.95, SellType.NONE, False, True, 0.09, 0.98, SellType.NONE,
+         lambda current_profit, **kwargs: -0.1 if current_profit < 0.6 else -(current_profit * 2)),
+        # Error case - static stoploss in place
+        (0.05, 0.9, SellType.NONE, False, True, 0.09, 0.9, SellType.NONE,
+         lambda **kwargs: None),
+    ])
 def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
-                           profit2, adjusted2, expected2) -> None:
+                           profit2, adjusted2, expected2, custom_stop) -> None:
 
     default_conf.update({'strategy': 'DefaultStrategy'})
 
@@ -319,6 +329,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     strategy.trailing_stop = trailing
     strategy.trailing_stop_positive = -0.05
     strategy.custom_stoploss = custom
+    original_stopvalue = strategy.stoploss_value
+    if custom_stop:
+        strategy.stoploss_value = custom_stop
 
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
@@ -341,6 +354,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     else:
         assert sl_flag.sell_flag is True
     assert round(trade.stop_loss, 2) == adjusted2
+
+    strategy.stoploss_value = original_stopvalue
+
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
