@@ -226,6 +226,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         logger.warning("No trades found.")
     return fig
 
+
 def create_plotconfig(indicators1: List[str], indicators2: List[str],
                       plot_config: Dict[str, Dict]) -> Dict[str, Dict]:
     """
@@ -260,6 +261,34 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     if 'subplots' not in plot_config:
         plot_config['subplots'] = {}
     return plot_config
+
+
+def add_filled_traces(fig, row: int, data: pd.DataFrame, indicator_a: str,
+                      indicator_b: str, label: str = "",
+                      fill_color: str = "rgba(0,176,246,0.2)") -> make_subplots:
+    """ Adds plots for two traces, which are filled between to fig.
+    :param fig: Plot figure to append to
+    :param row: row number for this plot
+    :param data: candlestick DataFrame
+    :param indicator_a: indicator name as populated in stragetie
+    :param indicator_b: indicator name as populated in stragetie
+    :param label: label for the filled area
+    :param fill_color: color to be used for the filled area
+    :return: fig with added  filled_traces plot
+    """
+    if indicator_a in data and indicator_b in data:
+        # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
+        trace_a = go.Scatter(x=data.date, y=data[indicator_a],
+                             showlegend=False,
+                             line={'color': 'rgba(255,255,255,0)'})
+
+        trace_b = go.Scatter(x=data.date, y=data[indicator_b], name=label,
+                             fill="tonexty", fillcolor=fill_color,
+                             line={'color': 'rgba(255,255,255,0)'})
+        fig.add_trace(trace_a, row, 1)
+        fig.add_trace(trace_b, row, 1)
+    return fig
+
 
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
@@ -344,60 +373,27 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No sell-signals found.")
 
-    # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
-    if 'bb_lowerband' in data and 'bb_upperband' in data:
-        bb_lower = go.Scatter(
-            x=data.date,
-            y=data.bb_lowerband,
-            showlegend=False,
-            line={'color': 'rgba(255,255,255,0)'},
-        )
-        bb_upper = go.Scatter(
-            x=data.date,
-            y=data.bb_upperband,
-            name='Bollinger Band',
-            fill="tonexty",
-            fillcolor="rgba(0,176,246,0.2)",
-            line={'color': 'rgba(255,255,255,0)'},
-        )
-        fig.add_trace(bb_lower, 1, 1)
-        fig.add_trace(bb_upper, 1, 1)
-        if ('bb_upperband' in plot_config['main_plot']
-           and 'bb_lowerband' in plot_config['main_plot']):
-            del plot_config['main_plot']['bb_upperband']
-            del plot_config['main_plot']['bb_lowerband']
-
-    # fill area betwenn traces i.e. for ichimoku
-    if 'fill_area' in plot_config.keys():
-        for label, area in plot_config['fill_area'].items():
-            traces = area['traces']
-            if len(traces) != 2:
-                raise Exception(
-                    f"plot_config.fill_area.traces = {traces}: " +
-                    f"needs exactly 2 indicators. " +
-                    f"{len(traces)} is given."
-                )
-            color = area['color']
-        if traces[0] in data and traces[1] in data:
-            trace_b = go.Scatter(
-                x=data.date,
-                y=data.get(traces[0]),
-                showlegend=False,
-                line={'color': 'rgba(255,255,255,0)'},
-            )
-            trace_a = go.Scatter(
-                x=data.date,
-                y=data.get(traces[1]),
-                name=label,
-                fill="tonexty",
-                fillcolor=color,
-                line={'color': 'rgba(255,255,255,0)'},
-            )
-            fig.add_trace(trace_b)
-            fig.add_trace(trace_a)
+    # Add Boilinger Bands
+    fig = add_filled_traces(fig, 1, data, 'bb_lowerband', 'bb_upperband',
+                            label="Boillinger Band")
+    # prevent bb_lower and bb_upper from plotting
+    try:
+        del plot_config['main_plot']['bb_lowerband']
+        del plot_config['main_plot']['bb_upperband']
+    except KeyError:
+        pass
 
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
+
+    # fill area between indicators ( 'fill_to': 'other_indicator')
+    for indicator, ind_conf in plot_config['main_plot'].items():
+        if 'fill_to' in ind_conf:
+            label = ind_conf.get('fill_label', '')
+            fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
+            fig = add_filled_traces(fig, 1, data, indicator,
+                                    ind_conf['fill_to'], label=label,
+                                    fill_color=fill_color)
 
     fig = plot_trades(fig, trades)
 
@@ -412,11 +408,20 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig.add_trace(volume, 2, 1)
 
     # Add indicators to separate row
-    for i, name in enumerate(plot_config['subplots']):
-        fig = add_indicators(fig=fig, row=3 + i,
-                             indicators=plot_config['subplots'][name],
+    for i, label in enumerate(plot_config['subplots']):
+        sub_config = plot_config['subplots'][label]
+        row = 3 + i
+        fig = add_indicators(fig=fig, row=row, indicators=sub_config,
                              data=data)
 
+        # fill area between indicators ( 'fill_to': 'other_indicator')
+        for indicator, ind_config in sub_config.items():
+            if 'fill_to' in ind_config:
+                label = ind_config.get('fill_label', '')
+                fill_color = ind_config.get('fill_color', 'rgba(0,176,246,0.2)')
+                fig = add_filled_traces(fig, row, data, indicator,
+                                        ind_config['fill_to'], label=label,
+                                        fill_color=fill_color)
     return fig
 
 
