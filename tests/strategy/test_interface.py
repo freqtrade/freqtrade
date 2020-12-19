@@ -105,9 +105,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
-def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
-    # default_conf defines a 5m interval. we check interval * 2 + 5m
-    # this is necessary as the last candle is removed (partial candles) by default
+def test_assert_df_raise(mocker, caplog, ohlcv_history):
     ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
@@ -127,7 +125,7 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
                    caplog)
 
 
-def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
+def test_assert_df(ohlcv_history, caplog):
     df_len = len(ohlcv_history) - 1
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
