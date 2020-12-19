@@ -226,7 +226,6 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         logger.warning("No trades found.")
     return fig
 
-
 def create_plotconfig(indicators1: List[str], indicators2: List[str],
                       plot_config: Dict[str, Dict]) -> Dict[str, Dict]:
     """
@@ -236,25 +235,12 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :param plot_config: Dict of Dicts containing advanced plot configuration
     :return: plot_config - eventually with indicators 1 and 2
     """
-    if plot_config:
-        # maybe main or sub is given, not both.
-        if 'main_plot' not in plot_config.keys():
-            plot_config['main_plot'] = {}
 
-        if 'subplots' not in plot_config.keys():
-            plot_config['subplots'] = {}
+    if plot_config:
         if indicators1:
-            for ind in indicators1:
-                # add indicators with NO advanced plot_config, only! to be sure
-                # indicator colors given in advanced plot_config will not be
-                # overwritten.
-                if ind not in plot_config['main_plot'].keys():
-                    plot_config['main_plot'][ind] = {}
+            plot_config['main_plot'] = {ind: {} for ind in indicators1}
         if indicators2:
-            # add other indicators given on cmd line to advanced plot_config.
-            plot_config['subplots'].update(
-                {'Other': {ind: {} for ind in indicators2}}
-            )
+            plot_config['subplots'] = {'Other': {ind: {} for ind in indicators2}}
 
     if not plot_config:
         # If no indicators and no plot-config given, use defaults.
@@ -268,9 +254,12 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
             'main_plot': {ind: {} for ind in indicators1},
             'subplots': {'Other': {ind: {} for ind in indicators2}},
         }
+    if 'main_plot' not in plot_config:
+        plot_config['main_plot'] = {}
 
+    if 'subplots' not in plot_config:
+        plot_config['subplots'] = {}
     return plot_config
-
 
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
