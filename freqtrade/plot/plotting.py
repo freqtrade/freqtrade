@@ -263,10 +263,10 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     return plot_config
 
 
-def plot_area_between(fig, row: int, data: pd.DataFrame, indicator_a: str,
-                      indicator_b: str, label: str = "",
-                      fill_color: str = "rgba(0,176,246,0.2)") -> make_subplots:
-    """ Creates plot for the area between two traces and adds it to fig.
+def plot_area(fig, row: int, data: pd.DataFrame, indicator_a: str,
+              indicator_b: str, label: str = "",
+              fill_color: str = "rgba(0,176,246,0.2)") -> make_subplots:
+    """ Creates a plot for the area between two traces and adds it to fig.
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
@@ -277,6 +277,7 @@ def plot_area_between(fig, row: int, data: pd.DataFrame, indicator_a: str,
     :return: fig with added  filled_traces plot
     """
     if indicator_a in data and indicator_b in data:
+        # make lines invisible to get the area plotted, only.
         line = {'color': 'rgba(255,255,255,0)'}
         # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
         trace_a = go.Scatter(x=data.date, y=data[indicator_a],
@@ -303,10 +304,11 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
         if 'fill_to' in ind_conf:
             indicator_b = ind_conf['fill_to']
             if indicator in data and indicator_b in data:
-                label = ind_conf.get('fill_label', '')
+                label = ind_conf.get('fill_label',
+                                     f'{indicator}<>{indicator_b}')
                 fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
-                fig = plot_area_between(fig, row, data, indicator, indicator_b,
-                                        label=label, fill_color=fill_color)
+                fig = plot_area(fig, row, data, indicator, indicator_b,
+                                label=label, fill_color=fill_color)
             elif indicator not in data:
                 logger.info(
                     'Indicator "%s" ignored. Reason: This indicator is not '
@@ -402,25 +404,20 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             fig.add_trace(sells, 1, 1)
         else:
             logger.warning("No sell-signals found.")
-
     # Add Bollinger Bands
-    fig = plot_area_between(fig, 1, data, 'bb_lowerband', 'bb_upperband',
-                            label="Bollinger Band")
+    fig = plot_area(fig, 1, data, 'bb_lowerband', 'bb_upperband',
+                    label="Bollinger Band")
     # prevent bb_lower and bb_upper from plotting
     try:
         del plot_config['main_plot']['bb_lowerband']
         del plot_config['main_plot']['bb_upperband']
     except KeyError:
         pass
-
-    # Add indicators to main plot
+    # main plot goes to row 1
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
-    # fill area between indicators ( 'fill_to': 'other_indicator')
     fig = add_areas(fig, 1, data, plot_config['main_plot'])
-
     fig = plot_trades(fig, trades)
-
-    # Volume goes to row 2
+    # sub plot: Volume goes to row 2
     volume = go.Bar(
         x=data['date'],
         y=data['volume'],
@@ -429,8 +426,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         marker_line_color='DarkSlateGrey'
     )
     fig.add_trace(volume, 2, 1)
-
-    # Add indicators to separate row
+    # Add each sub plot to a separate row
     for i, label in enumerate(plot_config['subplots']):
         sub_config = plot_config['subplots'][label]
         row = 3 + i
@@ -438,7 +434,6 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
                              data=data)
         # fill area between indicators ( 'fill_to': 'other_indicator')
         fig = add_areas(fig, row, data, sub_config)
-
     return fig
 
 
