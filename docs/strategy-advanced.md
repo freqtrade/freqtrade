@@ -42,9 +42,9 @@ Of course, many more things are possible, and all examples can be combined at wi
 The below example sets absolute profit levels based on the current profit.
 
 * Use the regular stoploss until 20% profit is reached
-* Once profit is > 20% - stoploss will be set to 7%.
-* Once profit is > 25% - stoploss will be 15%.
 * Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
+* Once profit is > 25% - stoploss will be 15%.
+* Once profit is > 20% - stoploss will be set to 7%.
 
 ``` python
     custom_stoploss = True
@@ -54,12 +54,12 @@ The below example sets absolute profit levels based on the current profit.
         # TODO: Add full docstring here
 
         # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
-        if current_profit > 0.20:
-            return (-0.7 + current_profit)
-        if current_profit > 0.25:
-            return (-0.15 + current_profit)
         if current_profit > 0.40:
             return (-0.25 + current_profit)
+        if current_profit > 0.25:
+            return (-0.15 + current_profit)
+        if current_profit > 0.20:
+            return (-0.7 + current_profit)
         return 1
 ```
 
@@ -74,10 +74,11 @@ Use the initial stoploss for the first 60 minutes, after this change to 10% trai
                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
-        if current_time - timedelta(minutes=60) > trade.open_date:
-            return -0.10
-        elif current_time - timedelta(minutes=120) > trade.open_date:
+        # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+        if current_time - timedelta(minutes=120) > trade.open_date:
             return -0.05
+        elif current_time - timedelta(minutes=60) > trade.open_date:
+            return -0.10
         return 1
 ```
 
