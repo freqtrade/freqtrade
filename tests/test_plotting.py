@@ -173,7 +173,6 @@ def test_plot_trades(testdatadir, caplog):
     assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'
 
 
-
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):
     row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
                             MagicMock(side_effect=fig_generating_mock))
