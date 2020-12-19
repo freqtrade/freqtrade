@@ -209,7 +209,8 @@ Sample configuration with inline comments explaining the process:
 
 ```
 !!! Note
-    The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`, `macd`, `macdsignal` and `rsi` are columns in the DataFrame created by the strategy.
+    The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`,
+    `macd`, `macdsignal`, `macdhist` and `rsi` are columns in the DataFrame created by the strategy.
 
 ## Plot profit
 
