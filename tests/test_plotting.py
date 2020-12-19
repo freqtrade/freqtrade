@@ -16,7 +16,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.plot.plotting import (add_indicators, add_profit, create_plotconfig,
                                      generate_candlestick_graph, generate_plot_filename,
                                      generate_profit_graph, init_plotscript, load_and_plot_trades,
-                                     plot_profit, plot_trades, store_plot_file)
+                                     plot_profit, plot_trades, store_plot_file,
+                                     add_areas)
 from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re, patch_exchange
 
@@ -96,6 +97,42 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
 
 
+def test_add_areas(default_conf, testdatadir, caplog):
+    pair = "UNITTEST/BTC"
+    timerange = TimeRange(None, 'line', 0, -1000)
+
+    data = history.load_pair_history(pair=pair, timeframe='1m',
+                                     datadir=testdatadir, timerange=timerange)
+    indicators = {"macd": {"color": "red",
+                           "fill_color": "black",
+                           "fill_to": "macdhist",
+                           "fill_label": "MACD Fill"}}
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    # Generate buy/sell signals and indicators
+    data = strategy.analyze_ticker(data, {'pair': pair})
+    fig = generate_empty_figure()
+
+    # indicator mentioned in fill_to does not exist
+    fig1 = add_areas(fig, 1, data, {'ema10': {'fill_to': 'no_fill_indicator'}})
+    assert fig == fig1
+    assert log_has_re(r'fill_to: "no_fill_indicator" ignored\..*', caplog)
+
+    # indicator does not exist
+    fig2 = add_areas(fig, 1, data, {'no_indicator': {'fill_to': 'ema10'}})
+    assert fig == fig2
+    assert log_has_re(r'Indicator "no_indicator" ignored\..*', caplog)
+
+    fig3 = add_areas(fig, 3, data, indicators)
+    figure = fig3.layout.figure
+    fill_macd = find_trace_in_fig_data(figure.data, "MACD Fill")
+    assert isinstance(fill_macd, go.Scatter)
+    assert fill_macd.yaxis == "y3"
+    assert fill_macd.fillcolor == "black"
+
+
 def test_plot_trades(testdatadir, caplog):
     fig1 = generate_empty_figure()
     # nothing happens when no trades are available
@@ -134,6 +171,7 @@ def test_plot_trades(testdatadir, caplog):
     assert trade_sell_loss.marker.color == 'red'
     assert trade_sell_loss.marker.symbol == 'square-open'
     assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'
+
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):

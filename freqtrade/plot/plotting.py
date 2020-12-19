@@ -301,11 +301,22 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
     """
     for indicator, ind_conf in indicators.items():
         if 'fill_to' in ind_conf:
-            label = ind_conf.get('fill_label', '')
-            fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
-            fig = plot_area_between(fig, row, data, indicator,
-                                    ind_conf['fill_to'], label=label,
-                                    fill_color=fill_color)
+            indicator_b = ind_conf['fill_to']
+            if indicator in data and indicator_b in data:
+                label = ind_conf.get('fill_label', '')
+                fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
+                fig = plot_area_between(fig, row, data, indicator, indicator_b,
+                                        label=label, fill_color=fill_color)
+            elif indicator not in data:
+                logger.info(
+                    'Indicator "%s" ignored. Reason: This indicator is not '
+                    'found in your strategy.', indicator
+                )
+            elif indicator_b not in data:
+                logger.info(
+                        'fill_to: "%s" ignored. Reason: This indicator is not '
+                        'in your strategy.', indicator_b
+                )
     return fig
 
 
