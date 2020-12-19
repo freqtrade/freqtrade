@@ -258,12 +258,14 @@ class IStrategy(ABC):
     def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                        current_profit: float, **kwargs) -> float:
         """
-        Define custom stoploss logic
+        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+        e.g. returning -0.05 would create a stoploss 5% below current_rate.
         The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
         When not implemented by a strategy, returns the initial stoploss value
+        Only called when custom_stoploss is set to True.
 
         :param pair: Pair that's about to be sold.
         :param trade: trade object.
