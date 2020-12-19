@@ -426,7 +426,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         marker_line_color='DarkSlateGrey'
     )
     fig.add_trace(volume, 2, 1)
-    # Add each sub plot to a separate row
+    # add each sub plot to a separate row
     for i, label in enumerate(plot_config['subplots']):
         sub_config = plot_config['subplots'][label]
         row = 3 + i
