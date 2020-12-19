@@ -375,7 +375,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
     # Add Boilinger Bands
     fig = add_filled_traces(fig, 1, data, 'bb_lowerband', 'bb_upperband',
-                            label="Boillinger Band")
+                            label="Bollinger Band")
     # prevent bb_lower and bb_upper from plotting
     try:
         del plot_config['main_plot']['bb_lowerband']
