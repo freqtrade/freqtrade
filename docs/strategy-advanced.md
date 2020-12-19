@@ -73,7 +73,7 @@ The function must return either `True` (cancel order) or `False` (keep order ali
 from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -112,7 +112,7 @@ class Awesomestrategy(IStrategy):
 from datetime import datetime
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -148,7 +148,7 @@ This can be used to perform calculations which are pair independent (apply to al
 ``` python
 import requests
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -173,7 +173,7 @@ class Awesomestrategy(IStrategy):
 `confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
 ``` python
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -209,7 +209,7 @@ class Awesomestrategy(IStrategy):
 from freqtrade.persistence import Trade
 
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -264,4 +264,4 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
     trailing_stop = True
 ```
 
-Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
+Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.

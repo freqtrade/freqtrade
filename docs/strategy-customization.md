@@ -309,7 +309,7 @@ Storing information can be accomplished by creating a new dictionary within the 
 The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
 
 ```python
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
     # Create custom dictionary
     cust_info = {}
 
