@@ -263,10 +263,10 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     return plot_config
 
 
-def add_filled_traces(fig, row: int, data: pd.DataFrame, indicator_a: str,
+def plot_area_between(fig, row: int, data: pd.DataFrame, indicator_a: str,
                       indicator_b: str, label: str = "",
                       fill_color: str = "rgba(0,176,246,0.2)") -> make_subplots:
-    """ Adds plots for two traces, which are filled between to fig.
+    """ Plots the area between  two traces and adds it to fig.
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
@@ -287,6 +287,25 @@ def add_filled_traces(fig, row: int, data: pd.DataFrame, indicator_a: str,
                              line={'color': 'rgba(255,255,255,0)'})
         fig.add_trace(trace_a, row, 1)
         fig.add_trace(trace_b, row, 1)
+    return fig
+
+
+def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
+    """ Adds all areas (from plot_config) to fig.
+    :param fig: Plot figure to append to
+    :param row: row number for this plot
+    :param data: candlestick DataFrame
+    :param indicators: dict with indicators. ie.: plot_config['main_plot'] or
+                            plot_config['subplots'][subplot_label]
+    :return: fig with added  filled_traces plot
+    """
+    for indicator, ind_conf in indicators.items():
+        if 'fill_to' in ind_conf:
+            label = ind_conf.get('fill_label', '')
+            fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
+            fig = plot_area_between(fig, row, data, indicator,
+                                    ind_conf['fill_to'], label=label,
+                                    fill_color=fill_color)
     return fig
 
 
@@ -373,8 +392,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No sell-signals found.")
 
-    # Add Boilinger Bands
-    fig = add_filled_traces(fig, 1, data, 'bb_lowerband', 'bb_upperband',
+    # Add Bollinger Bands
+    fig = plot_area_between(fig, 1, data, 'bb_lowerband', 'bb_upperband',
                             label="Bollinger Band")
     # prevent bb_lower and bb_upper from plotting
     try:
@@ -385,15 +404,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
     # Add indicators to main plot
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
-
     # fill area between indicators ( 'fill_to': 'other_indicator')
-    for indicator, ind_conf in plot_config['main_plot'].items():
-        if 'fill_to' in ind_conf:
-            label = ind_conf.get('fill_label', '')
-            fill_color = ind_conf.get('fill_color', 'rgba(0,176,246,0.2)')
-            fig = add_filled_traces(fig, 1, data, indicator,
-                                    ind_conf['fill_to'], label=label,
-                                    fill_color=fill_color)
+    fig = add_areas(fig, 1, data, plot_config['main_plot'])
 
     fig = plot_trades(fig, trades)
 
@@ -413,15 +425,9 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         row = 3 + i
         fig = add_indicators(fig=fig, row=row, indicators=sub_config,
                              data=data)
-
         # fill area between indicators ( 'fill_to': 'other_indicator')
-        for indicator, ind_config in sub_config.items():
-            if 'fill_to' in ind_config:
-                label = ind_config.get('fill_label', '')
-                fill_color = ind_config.get('fill_color', 'rgba(0,176,246,0.2)')
-                fig = add_filled_traces(fig, row, data, indicator,
-                                        ind_config['fill_to'], label=label,
-                                        fill_color=fill_color)
+        fig = add_areas(fig, row, data, sub_config)
+
     return fig
 
 
