@@ -20,23 +20,29 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 ``` python
     custom_stoploss = True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
-                       **kwargs) -> float:
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
         return 0.04
 ```
+
+!!! Note "Use of dates"
+    All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
 
 !!! Tip "Trailing stoploss"
     It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
 
 ### Custom stoploss examples
 
+The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.
+
 #### Absolute stoploss
 
 The below example sets absolute profit levels based on the current profit.
 
 * Use the regular stoploss until 20% profit is reached
-* Once profit is > 20% - stoploss will be set to 7%.s
+* Once profit is > 20% - stoploss will be set to 7%.
 * Once profit is > 25% - stoploss will be 15%.
 * Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
 
@@ -68,12 +74,33 @@ Use the initial stoploss for the first 60 minutes, after this change to 10% trai
                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
-        if current_time - timedelta(minutes=60) > trade.open_time:
+        if current_time - timedelta(minutes=60) > trade.open_date:
             return -0.10
-        elif current_time - timedelta(minutes=120) > trade.open_time:
+        elif current_time - timedelta(minutes=120) > trade.open_date:
             return -0.05
         return 1
 ```
+
+#### Different stoploss per pair
+
+Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
+
+``` python
+    custom_stoploss = True
+
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
+        # TODO: Add full docstring here
+
+        if pair in ('ETH/BTC', 'XRP/BTC'):
+            return -0.10
+        elif pair in ('LTC/BTC'):
+            return -0.05
+        return -0.15
+```
+
+---
 
 ## Custom order timeout rules
 
@@ -161,6 +188,8 @@ class AwesomeStrategy(IStrategy):
             return True
         return False
 ```
+
+---
 
 ## Bot loop start callback
 
@@ -266,6 +295,8 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
+
+---
 
 ## Derived strategies
 
