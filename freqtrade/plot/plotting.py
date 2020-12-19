@@ -266,7 +266,7 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
 def plot_area_between(fig, row: int, data: pd.DataFrame, indicator_a: str,
                       indicator_b: str, label: str = "",
                       fill_color: str = "rgba(0,176,246,0.2)") -> make_subplots:
-    """ Plots the area between  two traces and adds it to fig.
+    """ Creates plot for the area between two traces and adds it to fig.
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
@@ -277,21 +277,21 @@ def plot_area_between(fig, row: int, data: pd.DataFrame, indicator_a: str,
     :return: fig with added  filled_traces plot
     """
     if indicator_a in data and indicator_b in data:
+        line = {'color': 'rgba(255,255,255,0)'}
         # TODO: Figure out why scattergl causes problems plotly/plotly.js#2284
         trace_a = go.Scatter(x=data.date, y=data[indicator_a],
                              showlegend=False,
-                             line={'color': 'rgba(255,255,255,0)'})
-
+                             line=line)
         trace_b = go.Scatter(x=data.date, y=data[indicator_b], name=label,
                              fill="tonexty", fillcolor=fill_color,
-                             line={'color': 'rgba(255,255,255,0)'})
+                             line=line)
         fig.add_trace(trace_a, row, 1)
         fig.add_trace(trace_b, row, 1)
     return fig
 
 
 def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
-    """ Adds all areas (from plot_config) to fig.
+    """ Adds all area plots (specified in plot_config) to fig.
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
