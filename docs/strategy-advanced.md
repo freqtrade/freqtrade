@@ -31,7 +31,9 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 
 ### Custom stoploss examples
 
-Absolute stoploss. The below example sets absolute profit levels based on the current profit.
+#### Absolute stoploss
+
+The below example sets absolute profit levels based on the current profit.
 
 * Use the regular stoploss until 20% profit is reached
 * Once profit is > 20% - stoploss will be set to 7%.s
@@ -39,8 +41,10 @@ Absolute stoploss. The below example sets absolute profit levels based on the cu
 * Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
 
 ``` python
-    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
-                       **kwargs) -> float:
+    custom_stoploss = True
+
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
         # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
@@ -50,6 +54,24 @@ Absolute stoploss. The below example sets absolute profit levels based on the cu
             return (-0.15 + current_profit)
         if current_profit > 0.40:
             return (-0.25 + current_profit)
+        return 1
+```
+
+#### Time based trailing stop
+
+Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
+
+``` python
+    custom_stoploss = True
+
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
+        # TODO: Add full docstring here
+
+        if current_time - timedelta(minutes=60) > trade.open_time:
+            return -0.10
+        elif current_time - timedelta(minutes=120) > trade.open_time:
+            return -0.05
         return 1
 ```
 

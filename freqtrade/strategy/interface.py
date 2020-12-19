@@ -255,8 +255,8 @@ class IStrategy(ABC):
         """
         return True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_rate: float, current_profit: float,
-                       **kwargs) -> float:
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
         """
         Define custom stoploss logic
         The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
@@ -554,6 +554,7 @@ class IStrategy(ABC):
         if self.custom_stoploss:
             stop_loss_value = strategy_safe_wrapper(self.stoploss_value, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
+                                                      current_time=current_time,
                                                       current_rate=current_rate,
                                                       current_profit=current_profit)
             # Sanity check - error cases will return None
