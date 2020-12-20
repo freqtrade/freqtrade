@@ -7,11 +7,11 @@ import json
 import logging
 from datetime import timedelta
 from itertools import chain
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import ParseMode, ReplyKeyboardMarkup, Update
+from telegram import KeyboardButton, ParseMode, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
@@ -85,7 +85,7 @@ class Telegram(RPC):
         Validates the keyboard configuration from telegram config
         section.
         """
-        self._keyboard: List[List[str]] = [
+        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
             ['/daily', '/profit', '/balance'],
             ['/status', '/status table', '/performance'],
             ['/count', '/start', '/stop', '/help']
