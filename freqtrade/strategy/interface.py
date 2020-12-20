@@ -89,7 +89,7 @@ class IStrategy(ABC):
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
-    custom_stoploss: bool = False
+    use_custom_stoploss: bool = False
 
     # associated timeframe
     ticker_interval: str  # DEPRECATED
@@ -265,7 +265,7 @@ class IStrategy(ABC):
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
         When not implemented by a strategy, returns the initial stoploss value
-        Only called when custom_stoploss is set to True.
+        Only called when use_custom_stoploss is set to True.
 
         :param pair: Pair that's about to be sold.
         :param trade: trade object.
@@ -554,7 +554,7 @@ class IStrategy(ABC):
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if self.custom_stoploss:
+        if self.use_custom_stoploss:
             stop_loss_value = strategy_safe_wrapper(self.stoploss_value, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,

@@ -16,12 +16,12 @@ If you're just getting started, please be familiar with the methods described in
 A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
 Also, the traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
 
-The usage of the custom stoploss method must be enabled by setting `custom_stoploss=True` on the strategy object.
+The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
 The method must return a stoploss value (float / number) with a relative ratio below the current price.
 E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
 
 ``` python
-    custom_stoploss = True
+    use_custom_stoploss = True
 
     def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                        current_profit: float, **kwargs) -> float:
@@ -45,7 +45,7 @@ Of course, many more things are possible, and all examples can be combined at wi
 Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
 
 ``` python
-    custom_stoploss = True
+    use_custom_stoploss = True
 
     def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                        current_profit: float, **kwargs) -> float:
@@ -65,7 +65,7 @@ Use a different stoploss depending on the pair.
 In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
 
 ``` python
-    custom_stoploss = True
+    use_custom_stoploss = True
 
     def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                        current_profit: float, **kwargs) -> float:
@@ -88,7 +88,7 @@ The below example sets absolute profit levels based on the current profit.
 * Once profit is > 20% - stoploss will be set to 7%.
 
 ``` python
-    custom_stoploss = True
+    use_custom_stoploss = True
 
     def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                        current_profit: float, **kwargs) -> float:

@@ -328,7 +328,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     trade.adjust_min_max_rates(trade.open_rate)
     strategy.trailing_stop = trailing
     strategy.trailing_stop_positive = -0.05
-    strategy.custom_stoploss = custom
+    strategy.use_custom_stoploss = custom
     original_stopvalue = strategy.stoploss_value
     if custom_stop:
         strategy.stoploss_value = custom_stop
