@@ -5,6 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
+from itertools import chain
 from datetime import timedelta
 from typing import Any, Callable, Dict, List, Union
 
@@ -862,11 +863,38 @@ class Telegram(RPC):
         :return: None
         """
 
+        # default / fallback shortcut buttons
         keyboard: List[List[Union[str, KeyboardButton]]] = [
             ['/daily', '/profit', '/balance'],
             ['/status', '/status table', '/performance'],
             ['/count', '/start', '/stop', '/help']
         ]
+
+        # do not allow commands with mandatory arguments and critical cmds
+        # like /forcesell and /forcebuy
+        valid_btns: List[str] = ['/start', '/stop', '/status', '/status table',
+                                 '/trades', '/profit', '/performance', '/daily',
+                                 '/stats', '/count', '/locks', '/balance',
+                                 '/stopbuy', '/reload_config', '/show_config',
+                                 '/logs', '/whitelist', '/blacklist', '/edge',
+                                 '/help', '/version']
+        # custom shortcuts specified in config.json
+        shortcut_btns = self._config['telegram'].get('shortcut_btns', [])
+        if shortcut_btns:
+            # check for valid shortcuts
+            invalid_shortcut_btns = [b for b in chain.from_iterable(shortcut_btns)
+                                     if b not in valid_btns]
+            if len(invalid_shortcut_btns):
+                logger.warning('rpc.telegram: invalid shortcut_btns %s',
+                               invalid_shortcut_btns)
+                logger.info('rpc.telegram: using default shortcut_btns %s',
+                            keyboard)
+            else:
+                keyboard = shortcut_btns
+                logger.info(
+                        'rpc.telegram uses custom shortcut bottons specified in ' +
+                        'config.json %s', [btn for btn in keyboard]
+                )
 
         reply_markup = ReplyKeyboardMarkup(keyboard)
 
