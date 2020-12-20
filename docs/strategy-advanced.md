@@ -20,16 +20,35 @@ The usage of the custom stoploss method must be enabled by setting `use_custom_s
 The method must return a stoploss value (float / number) with a relative ratio below the current price.
 E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
 
+To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
+
 ``` python
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
-        # TODO: Add full docstring here
-        return 0.04
+        """
+        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+        e.g. returning -0.05 would create a stoploss 5% below current_rate.
+        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns the initial stoploss value
+        Only called when use_custom_stoploss is set to True.
+
+        :param pair: Pair that's about to be sold.
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New stoploss value, relative to the currentrate
+        """
+        return -0.04
 ```
 
-Stoploss on exchange works similar to trailing_stop, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
 
 !!! Note "Use of dates"
     All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
@@ -51,7 +70,6 @@ Use the initial stoploss for the first 60 minutes, after this change to 10% trai
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
-        # TODO: Add full docstring here
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
         if current_time - timedelta(minutes=120) > trade.open_date:
@@ -71,7 +89,6 @@ In this example, we'll trail the highest price with 10% trailing stoploss for `E
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
-        # TODO: Add full docstring here
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
             return -0.10
@@ -94,7 +111,6 @@ The below example sets absolute profit levels based on the current profit.
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
-        # TODO: Add full docstring here
 
         # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
         if current_profit > 0.40:
