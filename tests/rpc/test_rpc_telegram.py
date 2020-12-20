@@ -10,7 +10,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
-from telegram import Chat, Message, Update, ReplyKeyboardMarkup
+from telegram import Chat, Message, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__

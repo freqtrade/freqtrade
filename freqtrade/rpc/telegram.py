@@ -5,8 +5,8 @@ This module manage Telegram communication
 """
 import json
 import logging
-from itertools import chain
 from datetime import timedelta
+from itertools import chain
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
