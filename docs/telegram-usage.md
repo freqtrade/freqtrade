@@ -87,7 +87,7 @@ Example configuration showing the different settings:
    },
 ```
 
-## Create a custom keyboard (command shortcuts buttons)
+## Create a custom keyboard (command shortcut buttons)
 Telegram allows us to create a custom keyboard with buttons for commands.
 The default custom keyboard looks like this.
 ```python
@@ -104,7 +104,7 @@ You can create your own keyboard in `config.json`:
       "enabled": true,
       "token": "your_telegram_token",
       "chat_id": "your_telegram_chat_id",
-      "shortcut_btns": [   
+      "keyboard": [   
           ["/daily", "/stats", "/balance", "/profit"],
           ["/status table", "/performance"],
           ["/reload_config", "/count",   "/logs"]

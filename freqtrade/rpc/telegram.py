@@ -882,17 +882,17 @@ class Telegram(RPC):
                                  '/logs', '/whitelist', '/blacklist', '/edge',
                                  '/help', '/version']
         # custom shortcuts specified in config.json
-        shortcut_btns = self._config['telegram'].get('shortcut_btns', [])
-        if shortcut_btns:
+        cust_keyboard = self._config['telegram'].get('keyboard', [])
+        if cust_keyboard:
             # check for valid shortcuts
-            invalid_shortcut_btns = [b for b in chain.from_iterable(shortcut_btns)
-                                     if b not in valid_btns]
-            if len(invalid_shortcut_btns):
+            invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
+                            if b not in valid_btns]
+            if len(invalid_keys):
                 logger.warning('rpc.telegram: invalid commands for custom '
-                               f'keyboard: {invalid_shortcut_btns}')
+                               f'keyboard: {invalid_keys}')
                 logger.info('rpc.telegram: using default keyboard.')
             else:
-                keyboard = shortcut_btns
+                keyboard = cust_keyboard
                 logger.info('rpc.telegram using custom keyboard from '
                             f'config.json: {[btn for btn in keyboard]}')
 

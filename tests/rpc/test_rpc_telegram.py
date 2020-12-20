@@ -1750,15 +1750,15 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
                         ['/count', '/start', '/reload_config', '/help']]
     custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
 
-    # no shortcut_btns in config -> default keyboard
+    # no keyboard in config -> default keyboard
     telegram._config['telegram']['enabled'] = True
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
     assert used_keyboard == default_keyboard
 
-    # invalid shortcut_btns in config -> default keyboard
+    # invalid keyboard in config -> default keyboard
     telegram._config['telegram']['enabled'] = True
-    telegram._config['telegram']['shortcut_btns'] = invalid_keys_list
+    telegram._config['telegram']['keyboard'] = invalid_keys_list
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
     assert used_keyboard == default_keyboard
@@ -1766,9 +1766,9 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
                    "['/not_valid', '/alsoinvalid']", caplog)
     assert log_has('rpc.telegram: using default keyboard.', caplog)
 
-    # valid shortcut_btns in config -> custom keyboard
+    # valid keyboard in config -> custom keyboard
     telegram._config['telegram']['enabled'] = True
-    telegram._config['telegram']['shortcut_btns'] = custom_keys_list
+    telegram._config['telegram']['keyboard'] = custom_keys_list
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
     assert used_keyboard == custom_keyboard
