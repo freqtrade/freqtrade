@@ -807,7 +807,8 @@ class Exchange:
             )
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
-                                                     since=since_ms)
+                                                     since=since_ms,
+                                                     limit=self._ohlcv_candle_limit)
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
