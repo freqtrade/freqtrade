@@ -872,6 +872,9 @@ class Telegram(RPC):
 
         # do not allow commands with mandatory arguments and critical cmds
         # like /forcesell and /forcebuy
+        # TODO: DRY! - its not good to list all valid cmds here. But this
+        #       needs refacoring of the whole telegram module (same problem
+        #       in _help()).
         valid_btns: List[str] = ['/start', '/stop', '/status', '/status table',
                                  '/trades', '/profit', '/performance', '/daily',
                                  '/stats', '/count', '/locks', '/balance',
@@ -885,16 +888,13 @@ class Telegram(RPC):
             invalid_shortcut_btns = [b for b in chain.from_iterable(shortcut_btns)
                                      if b not in valid_btns]
             if len(invalid_shortcut_btns):
-                logger.warning('rpc.telegram: invalid shortcut_btns %s',
-                               invalid_shortcut_btns)
-                logger.info('rpc.telegram: using default shortcut_btns %s',
-                            keyboard)
+                logger.warning('rpc.telegram: invalid commands for custom '
+                               f'keyboard: {invalid_shortcut_btns}')
+                logger.info('rpc.telegram: using default keyboard.')
             else:
                 keyboard = shortcut_btns
-                logger.info(
-                        'rpc.telegram uses custom shortcut bottons specified in ' +
-                        'config.json %s', [btn for btn in keyboard]
-                )
+                logger.info('rpc.telegram using custom keyboard from '
+                            f'config.json: {[btn for btn in keyboard]}')
 
         reply_markup = ReplyKeyboardMarkup(keyboard)
 
