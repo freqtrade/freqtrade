@@ -1751,14 +1751,17 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
 
     # no keyboard in config -> default keyboard
-    telegram._config['telegram']['enabled'] = True
+    # telegram._config['telegram']['enabled'] = True
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == default_keyboard
 
     # invalid keyboard in config -> default keyboard
-    telegram._config['telegram']['enabled'] = True
-    telegram._config['telegram']['keyboard'] = invalid_keys_list
+    freqtradebot.config['telegram']['enabled'] = True
+    freqtradebot.config['telegram']['keyboard'] = invalid_keys_list
+    telegram = Telegram(freqtradebot)
+    telegram._updater = MagicMock()
+    telegram._updater.bot = bot
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == default_keyboard
@@ -1767,6 +1770,11 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     assert log_has('rpc.telegram: using default keyboard.', caplog)
 
     # valid keyboard in config -> custom keyboard
+    freqtradebot.config['telegram']['enabled'] = True
+    freqtradebot.config['telegram']['keyboard'] = custom_keys_list
+    telegram = Telegram(freqtradebot)
+    telegram._updater = MagicMock()
+    telegram._updater.bot = bot
     telegram._config['telegram']['enabled'] = True
     telegram._config['telegram']['keyboard'] = custom_keys_list
     telegram._send_msg('test')
