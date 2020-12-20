@@ -10,7 +10,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
-from telegram import Chat, Message, Update
+from telegram import Chat, Message, Update, ReplyKeyboardMarkup
 from telegram.error import NetworkError
 
 from freqtrade import __version__
@@ -1729,3 +1729,49 @@ def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
     assert log_has('Telegram NetworkError: Oh snap! Trying one more time.', caplog)
+
+
+def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+    bot = MagicMock()
+    bot.send_message = MagicMock()
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    telegram = Telegram(freqtradebot)
+    telegram._updater = MagicMock()
+    telegram._updater.bot = bot
+
+    invalid_keys_list = [['/not_valid', '/profit'], ['/daily'], ['/alsoinvalid']]
+    default_keys_list = [['/daily', '/profit', '/balance'],
+                         ['/status', '/status table', '/performance'],
+                         ['/count', '/start', '/stop', '/help']]
+    default_keyboard = ReplyKeyboardMarkup(default_keys_list)
+
+    custom_keys_list = [['/daily', '/stats', '/balance', '/profit'],
+                        ['/count', '/start', '/reload_config', '/help']]
+    custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
+
+    # no shortcut_btns in config -> default keyboard
+    telegram._config['telegram']['enabled'] = True
+    telegram._send_msg('test')
+    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    assert used_keyboard == default_keyboard
+
+    # invalid shortcut_btns in config -> default keyboard
+    telegram._config['telegram']['enabled'] = True
+    telegram._config['telegram']['shortcut_btns'] = invalid_keys_list
+    telegram._send_msg('test')
+    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    assert used_keyboard == default_keyboard
+    assert log_has("rpc.telegram: invalid commands for custom keyboard: "
+                   "['/not_valid', '/alsoinvalid']", caplog)
+    assert log_has('rpc.telegram: using default keyboard.', caplog)
+
+    # valid shortcut_btns in config -> custom keyboard
+    telegram._config['telegram']['enabled'] = True
+    telegram._config['telegram']['shortcut_btns'] = custom_keys_list
+    telegram._send_msg('test')
+    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    assert used_keyboard == custom_keyboard
+    assert log_has("rpc.telegram using custom keyboard from config.json: "
+                   "[['/daily', '/stats', '/balance', '/profit'], ['/count', "
+                   "'/start', '/reload_config', '/help']]", caplog)
