@@ -1753,14 +1753,14 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     # no keyboard in config -> default keyboard
     telegram._config['telegram']['enabled'] = True
     telegram._send_msg('test')
-    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == default_keyboard
 
     # invalid keyboard in config -> default keyboard
     telegram._config['telegram']['enabled'] = True
     telegram._config['telegram']['keyboard'] = invalid_keys_list
     telegram._send_msg('test')
-    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == default_keyboard
     assert log_has("rpc.telegram: invalid commands for custom keyboard: "
                    "['/not_valid', '/alsoinvalid']", caplog)
@@ -1770,7 +1770,7 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     telegram._config['telegram']['enabled'] = True
     telegram._config['telegram']['keyboard'] = custom_keys_list
     telegram._send_msg('test')
-    used_keyboard = bot.send_message.call_args.kwargs['reply_markup']
+    used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == custom_keyboard
     assert log_has("rpc.telegram using custom keyboard from config.json: "
                    "[['/daily', '/stats', '/balance', '/profit'], ['/count', "
