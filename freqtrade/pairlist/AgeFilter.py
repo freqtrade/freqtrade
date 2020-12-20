@@ -42,7 +42,7 @@ class AgeFilter(IPairList):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
-        return True
+        return False
 
     def short_desc(self) -> str:
         """
