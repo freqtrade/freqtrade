@@ -29,6 +29,8 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
         return 0.04
 ```
 
+Stoploss on exchange works similar to trailing_stop, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+
 !!! Note "Use of dates"
     All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
 
