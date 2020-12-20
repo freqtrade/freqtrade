@@ -255,8 +255,8 @@ class IStrategy(ABC):
         """
         return True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -555,7 +555,7 @@ class IStrategy(ABC):
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
         if self.use_custom_stoploss:
-            stop_loss_value = strategy_safe_wrapper(self.stoploss_value, default_retval=None
+            stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=current_rate,

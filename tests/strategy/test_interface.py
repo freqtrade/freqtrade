@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-from freqtrade.strategy.interface import SellCheckTuple, SellType
 import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
@@ -11,9 +10,10 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
@@ -329,9 +329,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     strategy.trailing_stop = trailing
     strategy.trailing_stop_positive = -0.05
     strategy.use_custom_stoploss = custom
-    original_stopvalue = strategy.stoploss_value
+    original_stopvalue = strategy.custom_stoploss
     if custom_stop:
-        strategy.stoploss_value = custom_stop
+        strategy.custom_stoploss = custom_stop
 
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
@@ -355,8 +355,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         assert sl_flag.sell_flag is True
     assert round(trade.stop_loss, 2) == adjusted2
 
-    strategy.stoploss_value = original_stopvalue
-
+    strategy.custom_stoploss = original_stopvalue
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:

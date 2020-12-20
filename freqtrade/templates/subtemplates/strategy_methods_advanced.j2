@@ -14,8 +14,8 @@ def bot_loop_start(self, **kwargs) -> None:
 
 use_custom_stoploss = True
 
-def stoploss_value(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                   current_profit: float, **kwargs) -> float:
+def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs) -> float:
     """
     Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
     e.g. returning -0.05 would create a stoploss 5% below current_rate.

@@ -1,6 +1,8 @@
 from datetime import datetime
-from freqtrade.persistence.models import Trade
+
 from pandas import DataFrame
+
+from freqtrade.persistence.models import Trade
 
 from .strats.default_strategy import DefaultStrategy
 
@@ -38,5 +40,5 @@ def test_default_strategy(result, fee):
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
                                        rate=20000, time_in_force='gtc', sell_reason='roi') is True
 
-    assert strategy.stoploss_value(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
-                                   current_rate=20_000, current_profit=0.05) == strategy.stoploss
+    assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
+                                    current_rate=20_000, current_profit=0.05) == strategy.stoploss

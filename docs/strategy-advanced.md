@@ -23,8 +23,8 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 ``` python
     use_custom_stoploss = True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
         return 0.04
 ```
@@ -47,8 +47,8 @@ Use the initial stoploss for the first 60 minutes, after this change to 10% trai
 ``` python
     use_custom_stoploss = True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
@@ -67,8 +67,8 @@ In this example, we'll trail the highest price with 10% trailing stoploss for `E
 ``` python
     use_custom_stoploss = True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
@@ -90,8 +90,8 @@ The below example sets absolute profit levels based on the current profit.
 ``` python
     use_custom_stoploss = True
 
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
         # TODO: Add full docstring here
 
         # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
