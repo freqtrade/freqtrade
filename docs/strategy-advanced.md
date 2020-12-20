@@ -8,6 +8,9 @@ If you're just getting started, please be familiar with the methods described in
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are actually used.
 
+!!! Tip
+    You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
+
 ## Custom stoploss
 
 A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
@@ -36,32 +39,6 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 
 The next section will show some examples on what's possible with the custom stoploss function.
 Of course, many more things are possible, and all examples can be combined at will.
-
-#### Absolute stoploss
-
-The below example sets absolute profit levels based on the current profit.
-
-* Use the regular stoploss until 20% profit is reached
-* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
-* Once profit is > 25% - stoploss will be 15%.
-* Once profit is > 20% - stoploss will be set to 7%.
-
-``` python
-    custom_stoploss = True
-
-    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                       current_profit: float, **kwargs) -> float:
-        # TODO: Add full docstring here
-
-        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
-        if current_profit > 0.40:
-            return (-0.25 + current_profit)
-        if current_profit > 0.25:
-            return (-0.15 + current_profit)
-        if current_profit > 0.20:
-            return (-0.7 + current_profit)
-        return 1
-```
 
 #### Time based trailing stop
 
@@ -99,6 +76,32 @@ In this example, we'll trail the highest price with 10% trailing stoploss for `E
         elif pair in ('LTC/BTC'):
             return -0.05
         return -0.15
+```
+
+#### Absolute stoploss
+
+The below example sets absolute profit levels based on the current profit.
+
+* Use the regular stoploss until 20% profit is reached
+* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
+* Once profit is > 25% - stoploss will be 15%.
+* Once profit is > 20% - stoploss will be set to 7%.
+
+``` python
+    custom_stoploss = True
+
+    def stoploss_value(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                       current_profit: float, **kwargs) -> float:
+        # TODO: Add full docstring here
+
+        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
+        if current_profit > 0.40:
+            return (-0.25 + current_profit)
+        if current_profit > 0.25:
+            return (-0.15 + current_profit)
+        if current_profit > 0.20:
+            return (-0.7 + current_profit)
+        return 1
 ```
 
 ---
