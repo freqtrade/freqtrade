@@ -18,6 +18,7 @@ class Kraken(Exchange):
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
+        "ohlcv_candle_limit": 720,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
