@@ -6,5 +6,5 @@ scipy==1.5.4
 scikit-learn==0.23.2
 scikit-optimize==0.8.1
 filelock==3.0.12
-joblib==0.17.0
+joblib==1.0.0
 progressbar2==3.53.1
