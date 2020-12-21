@@ -11,7 +11,7 @@ mypy==0.790
 pytest==6.2.1
 pytest-asyncio==0.14.0
 pytest-cov==2.10.1
-pytest-mock==3.3.1
+pytest-mock==3.4.0
 pytest-random-order==1.0.4
 isort==5.6.4
 
