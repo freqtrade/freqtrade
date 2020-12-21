@@ -111,8 +111,8 @@ You can create your own keyboard in `config.json`:
       ]
    },
 ```
-!! NOTE: Only a certain list of commands are allowed. Command arguments are not
-supported!
+!!! Note
+    Only a certain list of commands are allowed. Command arguments are not supported!
 ### Supported Commands
  `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopbuy`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
 
