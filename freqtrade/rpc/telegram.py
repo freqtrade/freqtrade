@@ -110,8 +110,8 @@ class Telegram(RPC):
             invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
                             if b not in valid_keys]
             if len(invalid_keys):
-                err_msg = ('invalid commands for custom keyboard: '
-                           f'{invalid_keys}')
+                err_msg = ('config.telegram.keyboard: invalid commands for '
+                           f'custom keyboard: {invalid_keys}')
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
