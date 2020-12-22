@@ -17,6 +17,7 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -75,12 +76,12 @@ class Telegram(RPC):
 
         self._updater: Updater
         self._config = freqtrade.config
-        self._validate_keyboard()
+        self._init_keyboard()
         self._init()
         if self._config.get('fiat_display_currency', None):
             self._fiat_converter = CryptoToFiatConverter()
 
-    def _validate_keyboard(self) -> None:
+    def _init_keyboard(self) -> None:
         """
         Validates the keyboard configuration from telegram config
         section.
@@ -102,19 +103,19 @@ class Telegram(RPC):
                                  '/logs', '/whitelist', '/blacklist', '/edge',
                                  '/help', '/version']
 
-        # custom shortcuts specified in config.json
+        # custom keyboard specified in config.json
         cust_keyboard = self._config['telegram'].get('keyboard', [])
         if cust_keyboard:
             # check for valid shortcuts
             invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
                             if b not in valid_keys]
             if len(invalid_keys):
-                logger.warning('rpc.telegram: invalid commands for custom '
-                               f'keyboard: {invalid_keys}')
-                logger.info('rpc.telegram: using default keyboard.')
+                err_msg = ('invalid commands for custom keyboard: '
+                           f'{invalid_keys}')
+                raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
-                logger.info('rpc.telegram using custom keyboard from '
+                logger.info('using custom keyboard from '
                             f'config.json: {self._keyboard}')
 
     def _init(self) -> None:
