@@ -16,6 +16,7 @@ from telegram.error import NetworkError
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
@@ -1763,13 +1764,10 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     # invalid keyboard in config -> default keyboard
     freqtradebot.config['telegram']['enabled'] = True
     freqtradebot.config['telegram']['keyboard'] = invalid_keys_list
-    telegram = init_telegram(freqtradebot)
-    telegram._send_msg('test')
-    used_keyboard = bot.send_message.call_args[1]['reply_markup']
-    assert used_keyboard == default_keyboard
-    assert log_has("rpc.telegram: invalid commands for custom keyboard: "
-                   "['/not_valid', '/alsoinvalid']", caplog)
-    assert log_has('rpc.telegram: using default keyboard.', caplog)
+    err_msg = re.escape("config.telegram.keyboard: invalid commands for "
+                        "custom keyboard: ['/not_valid', '/alsoinvalid']")
+    with pytest.raises(OperationalException, match=err_msg):
+        telegram = init_telegram(freqtradebot)
 
     # valid keyboard in config -> custom keyboard
     freqtradebot.config['telegram']['enabled'] = True
@@ -1778,6 +1776,6 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     telegram._send_msg('test')
     used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == custom_keyboard
-    assert log_has("rpc.telegram using custom keyboard from config.json: "
+    assert log_has("using custom keyboard from config.json: "
                    "[['/daily', '/stats', '/balance', '/profit'], ['/count', "
                    "'/start', '/reload_config', '/help']]", caplog)
