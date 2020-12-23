@@ -100,8 +100,12 @@ class TestCCXTExchange():
                 assert len(l2['bids']) == val
             else:
                 next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
-                assert len(l2['asks']) == next_limit
-                assert len(l2['asks']) == next_limit
+                if next_limit > 200:
+                    assert len(l2['asks']) > 200
+                    assert len(l2['asks']) > 200
+                else:
+                    assert len(l2['asks']) == next_limit
+                    assert len(l2['asks']) == next_limit
 
     def test_fetch_ohlcv(self, exchange):
         exchange, exchangename = exchange
@@ -116,7 +120,7 @@ class TestCCXTExchange():
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
 
-        assert exchange.get_fee(pair, 'limit', 'buy') > 0 < 1
-        assert exchange.get_fee(pair, 'limit', 'sell') > 0 < 1
-        assert exchange.get_fee(pair, 'market', 'buy') > 0 < 1
-        assert exchange.get_fee(pair, 'market', 'sell') > 0 < 1
+        assert 0 < exchange.get_fee(pair, 'limit', 'buy') < 1
+        assert 0 < exchange.get_fee(pair, 'limit', 'sell') < 1
+        assert 0 < exchange.get_fee(pair, 'market', 'buy') < 1
+        assert 0 < exchange.get_fee(pair, 'market', 'sell') < 1
