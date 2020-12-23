@@ -92,15 +92,16 @@ class TestCCXTExchange():
         l2 = exchange.fetch_l2_order_book(pair)
         assert 'asks' in l2
         assert 'bids' in l2
-
+        l2_limit_range = exchange._ft_has['l2_limit_range']
         for val in [1, 2, 5, 25, 100]:
             l2 = exchange.fetch_l2_order_book(pair, val)
-            if not exchange._ft_has['l2_limit_range'] or val in exchange._ft_has['l2_limit_range']:
+            if not l2_limit_range or val in l2_limit_range:
                 assert len(l2['asks']) == val
                 assert len(l2['bids']) == val
             else:
-                next_limit = exchange.get_next_limit_in_list(val, exchange._ft_has['l2_limit_range'])
+                next_limit = exchange.get_next_limit_in_list(val, l2_limit_range)
                 if next_limit > 200:
+                    # Large orderbook sizes can be a problem for some exchanges (bitrex ...)
                     assert len(l2['asks']) > 200
                     assert len(l2['asks']) > 200
                 else:
@@ -115,6 +116,8 @@ class TestCCXTExchange():
         ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
         assert isinstance(ohlcv, list)
         assert len(exchange.klines(pair_tf)) > 200
+
+    # TODO: tests fetch_trades (?)
 
     def test_ccxt_get_fee(self, exchange):
         exchange, exchangename = exchange
