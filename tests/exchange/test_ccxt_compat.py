@@ -48,7 +48,8 @@ def exchange_conf():
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf):
     exchange_conf['exchange']['name'] = request.param
-    exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=False)
+    exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+
     yield exchange, request.param
 
 
