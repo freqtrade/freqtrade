@@ -1764,8 +1764,9 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     # invalid keyboard in config -> default keyboard
     freqtradebot.config['telegram']['enabled'] = True
     freqtradebot.config['telegram']['keyboard'] = invalid_keys_list
-    err_msg = re.escape("config.telegram.keyboard: invalid commands for "
-                        "custom keyboard: ['/not_valid', '/alsoinvalid']")
+    err_msg = re.escape("config.telegram.keyboard: Invalid commands for custom "
+                        "Telegram keyboard: ['/not_valid', '/alsoinvalid']"
+                        "\nvalid commands are: ") + r"*"
     with pytest.raises(OperationalException, match=err_msg):
         telegram = init_telegram(freqtradebot)
 
