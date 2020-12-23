@@ -341,7 +341,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = '1m'
@@ -372,7 +372,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = "1m"
@@ -392,7 +392,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=[]))
 
     default_conf['timeframe'] = "1m"
@@ -415,9 +415,9 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['XRP/BTC']))
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.refresh_pairlist')
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.refresh_pairlist')
 
     default_conf['ticker_interval'] = "1m"
     default_conf['datadir'] = testdatadir
@@ -700,7 +700,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -740,7 +740,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)
     backtestmock = MagicMock(return_value=pd.DataFrame(columns=BT_DATA_COLUMNS + ['profit_abs']))
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     text_table_mock = MagicMock()
@@ -837,7 +837,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                       'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
                       }),
     ])
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
 

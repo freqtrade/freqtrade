@@ -10,7 +10,7 @@ from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)

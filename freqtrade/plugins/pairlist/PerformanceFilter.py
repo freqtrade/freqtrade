@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 import pandas as pd
 
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.persistence import Trade
 
 
