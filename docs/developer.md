@@ -242,7 +242,8 @@ The `IProtection` parent class provides a helper method for this in `calculate_l
 
 Most exchanges supported by CCXT should work out of the box.
 
-To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun`.
+To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
+Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
 
 ### Stoploss On Exchange
 

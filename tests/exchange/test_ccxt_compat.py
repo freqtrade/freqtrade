@@ -5,8 +5,10 @@ However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_default_conf
 
