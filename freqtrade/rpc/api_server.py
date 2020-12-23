@@ -98,7 +98,6 @@ class ApiServer(RPC):
         """
         super().__init__(freqtrade)
 
-        self._config = freqtrade.config
         self.app = Flask(__name__)
         self._cors = CORS(self.app,
                           resources={r"/api/*": {

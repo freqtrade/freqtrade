@@ -75,7 +75,6 @@ class Telegram(RPC):
         super().__init__(freqtrade)
 
         self._updater: Updater
-        self._config = freqtrade.config
         self._init_keyboard()
         self._init()
         if self._config.get('fiat_display_currency', None):

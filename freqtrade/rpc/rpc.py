@@ -79,6 +79,7 @@ class RPC:
         :return: None
         """
         self._freqtrade = freqtrade
+        self._config: Dict[str, Any] = freqtrade.config
 
     @property
     def name(self) -> str:

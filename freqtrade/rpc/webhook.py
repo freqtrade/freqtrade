@@ -25,7 +25,6 @@ class Webhook(RPC):
         """
         super().__init__(freqtrade)
 
-        self._config = freqtrade.config
         self._url = self._config['webhook']['url']
 
     def cleanup(self) -> None:
