@@ -5,7 +5,7 @@ import logging
 import random
 from typing import Any, Dict, List
 
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)

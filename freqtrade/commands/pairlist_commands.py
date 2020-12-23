@@ -15,7 +15,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     """
     Test Pairlist configuration
     """
-    from freqtrade.pairlist.pairlistmanager import PairListManager
+    from freqtrade.plugins.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)

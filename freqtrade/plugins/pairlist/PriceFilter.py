@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)

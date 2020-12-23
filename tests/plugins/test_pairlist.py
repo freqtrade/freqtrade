@@ -6,7 +6,7 @@ import pytest
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
-from freqtrade.pairlist.pairlistmanager import PairListManager
+from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
 
@@ -190,7 +190,7 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     )
     # Remove caching of ticker data to emulate changing volume by the time of second call
     mocker.patch.multiple(
-        'freqtrade.pairlist.pairlistmanager.PairListManager',
+        'freqtrade.plugins.pairlistmanager.PairListManager',
         _get_cached_tickers=MagicMock(return_value=tickers_dict),
     )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_2)

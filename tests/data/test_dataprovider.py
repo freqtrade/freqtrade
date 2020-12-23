@@ -6,7 +6,7 @@ from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import ExchangeError, OperationalException
-from freqtrade.pairlist.pairlistmanager import PairListManager
+from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
 
