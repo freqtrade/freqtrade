@@ -33,6 +33,19 @@ logging.getLogger('').setLevel(logging.INFO)
 np.seterr(all='raise')
 
 
+def pytest_addoption(parser):
+    parser.addoption('--longrun', action='store_true', dest="longrun",
+                     default=False, help="Enable long-run tests (ccxt compat)")
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "longrun: mark test that is running slowly and should not be run regularily"
+    )
+    if not config.option.longrun:
+        setattr(config.option, 'markexpr', 'not longrun')
+
+
 def log_has(line, logs):
     # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
     # and we want to match line against foobar in the tuple

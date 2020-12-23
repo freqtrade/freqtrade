@@ -50,6 +50,7 @@ def exchange(request, exchange_conf):
     yield exchange, request.param
 
 
+@pytest.mark.longrun
 class TestCCXTExchange():
 
     def test_load_markets(self, exchange):
