@@ -115,7 +115,8 @@ class TestCCXTExchange():
         timeframe = EXCHANGES[exchangename]['timeframe']
         pair_tf = (pair, timeframe)
         ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
-        assert isinstance(ohlcv, list)
+        assert isinstance(ohlcv, dict)
+        assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
         assert len(exchange.klines(pair_tf)) > 200
 
     # TODO: tests fetch_trades (?)
