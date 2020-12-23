@@ -6,6 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 from datetime import timedelta
+from itertools import chain
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
@@ -16,6 +17,7 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
@@ -74,9 +76,48 @@ class Telegram(RPC):
 
         self._updater: Updater
         self._config = freqtrade.config
+        self._init_keyboard()
         self._init()
         if self._config.get('fiat_display_currency', None):
             self._fiat_converter = CryptoToFiatConverter()
+
+    def _init_keyboard(self) -> None:
+        """
+        Validates the keyboard configuration from telegram config
+        section.
+        """
+        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
+            ['/daily', '/profit', '/balance'],
+            ['/status', '/status table', '/performance'],
+            ['/count', '/start', '/stop', '/help']
+        ]
+        # do not allow commands with mandatory arguments and critical cmds
+        # like /forcesell and /forcebuy
+        # TODO: DRY! - its not good to list all valid cmds here. But otherwise
+        #       this needs refacoring of the whole telegram module (same
+        #       problem in _help()).
+        valid_keys: List[str] = ['/start', '/stop', '/status', '/status table',
+                                 '/trades', '/profit', '/performance', '/daily',
+                                 '/stats', '/count', '/locks', '/balance',
+                                 '/stopbuy', '/reload_config', '/show_config',
+                                 '/logs', '/whitelist', '/blacklist', '/edge',
+                                 '/help', '/version']
+
+        # custom keyboard specified in config.json
+        cust_keyboard = self._config['telegram'].get('keyboard', [])
+        if cust_keyboard:
+            # check for valid shortcuts
+            invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
+                            if b not in valid_keys]
+            if len(invalid_keys):
+                err_msg = ('config.telegram.keyboard: Invalid commands for '
+                           f'custom Telegram keyboard: {invalid_keys}'
+                           f'\nvalid commands are: {valid_keys}')
+                raise OperationalException(err_msg)
+            else:
+                self._keyboard = cust_keyboard
+                logger.info('using custom keyboard from '
+                            f'config.json: {self._keyboard}')
 
     def _init(self) -> None:
         """
@@ -861,15 +902,7 @@ class Telegram(RPC):
         :param parse_mode: telegram parse mode
         :return: None
         """
-
-        keyboard: List[List[Union[str, KeyboardButton]]] = [
-            ['/daily', '/profit', '/balance'],
-            ['/status', '/status table', '/performance'],
-            ['/count', '/start', '/stop', '/help']
-        ]
-
-        reply_markup = ReplyKeyboardMarkup(keyboard)
-
+        reply_markup = ReplyKeyboardMarkup(self._keyboard)
         try:
             try:
                 self._updater.bot.send_message(

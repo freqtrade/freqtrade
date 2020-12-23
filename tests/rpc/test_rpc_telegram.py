@@ -10,12 +10,13 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
-from telegram import Chat, Message, Update
+from telegram import Chat, Message, ReplyKeyboardMarkup, Update
 from telegram.error import NetworkError
 
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
@@ -1729,3 +1730,53 @@ def test__send_msg_network_error(default_conf, mocker, caplog) -> None:
     # Bot should've tried to send it twice
     assert len(bot.method_calls) == 2
     assert log_has('Telegram NetworkError: Oh snap! Trying one more time.', caplog)
+
+
+def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
+    bot = MagicMock()
+    bot.send_message = MagicMock()
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+
+    invalid_keys_list = [['/not_valid', '/profit'], ['/daily'], ['/alsoinvalid']]
+    default_keys_list = [['/daily', '/profit', '/balance'],
+                         ['/status', '/status table', '/performance'],
+                         ['/count', '/start', '/stop', '/help']]
+    default_keyboard = ReplyKeyboardMarkup(default_keys_list)
+
+    custom_keys_list = [['/daily', '/stats', '/balance', '/profit'],
+                        ['/count', '/start', '/reload_config', '/help']]
+    custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
+
+    def init_telegram(freqtradebot):
+        telegram = Telegram(freqtradebot)
+        telegram._updater = MagicMock()
+        telegram._updater.bot = bot
+        return telegram
+
+    # no keyboard in config -> default keyboard
+    freqtradebot.config['telegram']['enabled'] = True
+    telegram = init_telegram(freqtradebot)
+    telegram._send_msg('test')
+    used_keyboard = bot.send_message.call_args[1]['reply_markup']
+    assert used_keyboard == default_keyboard
+
+    # invalid keyboard in config -> default keyboard
+    freqtradebot.config['telegram']['enabled'] = True
+    freqtradebot.config['telegram']['keyboard'] = invalid_keys_list
+    err_msg = re.escape("config.telegram.keyboard: Invalid commands for custom "
+                        "Telegram keyboard: ['/not_valid', '/alsoinvalid']"
+                        "\nvalid commands are: ") + r"*"
+    with pytest.raises(OperationalException, match=err_msg):
+        telegram = init_telegram(freqtradebot)
+
+    # valid keyboard in config -> custom keyboard
+    freqtradebot.config['telegram']['enabled'] = True
+    freqtradebot.config['telegram']['keyboard'] = custom_keys_list
+    telegram = init_telegram(freqtradebot)
+    telegram._send_msg('test')
+    used_keyboard = bot.send_message.call_args[1]['reply_markup']
+    assert used_keyboard == custom_keyboard
+    assert log_has("using custom keyboard from config.json: "
+                   "[['/daily', '/stats', '/balance', '/profit'], ['/count', "
+                   "'/start', '/reload_config', '/help']]", caplog)

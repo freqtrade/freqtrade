@@ -87,6 +87,41 @@ Example configuration showing the different settings:
    },
 ```
 
+## Create a custom keyboard (command shortcut buttons)
+
+Telegram allows us to create a custom keyboard with buttons for commands.
+The default custom keyboard looks like this.
+
+```python
+[
+    ["/daily", "/profit", "/balance"], # row 1, 3 commands
+    ["/status", "/status table", "/performance"], # row 2, 3 commands
+    ["/count", "/start", "/stop", "/help"] # row 3, 4 commands
+]
+```
+
+### Usage
+
+You can create your own keyboard in `config.json`:
+
+``` json
+"telegram": {
+      "enabled": true,
+      "token": "your_telegram_token",
+      "chat_id": "your_telegram_chat_id",
+      "keyboard": [   
+          ["/daily", "/stats", "/balance", "/profit"],
+          ["/status table", "/performance"],
+          ["/reload_config", "/count", "/logs"]
+      ]
+   },
+```
+
+!!! Note "Supported Commands"
+    Only the following commands are allowed. Command arguments are not supported!
+
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopbuy`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+
 ## Telegram commands
 
 Per default, the Telegram bot shows predefined commands. Some commands
