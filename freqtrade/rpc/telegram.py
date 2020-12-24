@@ -19,7 +19,6 @@ from telegram.utils.helpers import escape_markdown
 from freqtrade.__init__ import __version__
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC, RPCException, RPCMessageType
-from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 
 
 logger = logging.getLogger(__name__)
@@ -77,8 +76,6 @@ class Telegram(RPC):
         self._updater: Updater
         self._init_keyboard()
         self._init()
-        if self._config.get('fiat_display_currency', None):
-            self._fiat_converter = CryptoToFiatConverter()
 
     def _init_keyboard(self) -> None:
         """

@@ -185,7 +185,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
         fetch_ticker=ticker,
         get_fee=fee,
     )
-
+    del default_conf['fiat_display_currency']
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)

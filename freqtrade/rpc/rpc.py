@@ -69,7 +69,7 @@ class RPC:
     """
     RPC class can be used to have extra feature, like bot data, and access to DB data
     """
-    # Bind _fiat_converter if needed in each RPC handler
+    # Bind _fiat_converter if needed
     _fiat_converter: Optional[CryptoToFiatConverter] = None
 
     def __init__(self, freqtrade) -> None:
@@ -80,6 +80,8 @@ class RPC:
         """
         self._freqtrade = freqtrade
         self._config: Dict[str, Any] = freqtrade.config
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
     @property
     def name(self) -> str:

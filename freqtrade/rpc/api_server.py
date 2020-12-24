@@ -20,7 +20,6 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DATETIME_PRINT_FORMAT, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
-from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc import RPC, RPCException
 
 
@@ -116,9 +115,6 @@ class ApiServer(RPC):
 
         # Register application handling
         self.register_rest_rpc_urls()
-
-        if self._config.get('fiat_display_currency', None):
-            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
