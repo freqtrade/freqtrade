@@ -9,7 +9,7 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import calculate_market_change, calculate_max_drawdown
+from freqtrade.data.btanalysis import calculate_market_change, calculate_max_drawdown, calculate_csum
 from freqtrade.misc import file_dump_json
 
 
@@ -314,6 +314,13 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'drawdown_end': drawdown_end,
                 'drawdown_end_ts': drawdown_end.timestamp() * 1000,
             })
+
+            csum_min, csum_max = calculate_csum(results)
+            strat_stats.update({
+                'csum_min': csum_min,
+                'csum_max': csum_max
+            })
+
         except ValueError:
             strat_stats.update({
                 'max_drawdown': 0.0,
@@ -321,6 +328,8 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'drawdown_start_ts': 0,
                 'drawdown_end': datetime(1970, 1, 1, tzinfo=timezone.utc),
                 'drawdown_end_ts': 0,
+                'csum_min': 0,
+                'csum_max': 0
             })
 
     strategy_results = generate_strategy_metrics(all_results=all_results)
@@ -427,6 +436,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
+
+            ('Abs Profit Min', f"{round(strat_results['csum_min'] , 2)}"),
+            ('Abs Profit Max', f"{round(strat_results['csum_max'] , 2)}"),
+
             ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Drawdown End', strat_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
