@@ -481,7 +481,10 @@ class Backtesting:
         stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
 
         if self.config.get('export', False):
-            store_backtest_stats(self.config['exportfilename'], stats)
+            if self.config['exportfilename_append'] == 'timestamp':
+                store_backtest_stats(self.config['exportfilename'], stats, True)
+            else:
+                store_backtest_stats(self.config['exportfilename'], stats, False)
 
         # Show backtest results
         show_backtest_results(self.config, stats)

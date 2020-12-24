@@ -251,6 +251,9 @@ class Configuration:
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
 
+        self._args_to_config(config, argname='exportfilename_append',
+                             logstring='Parameter --export-filename-append detected: {} ...')
+
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
             txt_range = eval(self.args["stoploss_range"])

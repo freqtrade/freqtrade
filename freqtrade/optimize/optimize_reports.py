@@ -16,7 +16,7 @@ from freqtrade.misc import file_dump_json
 logger = logging.getLogger(__name__)
 
 
-def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> None:
+def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame], append_suffix: bool) -> None:
     """
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
@@ -28,14 +28,18 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
         filename = (recordfilename /
                     f'backtest-result-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json')
     else:
-        filename = Path.joinpath(
-            recordfilename.parent,
-            f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-            ).with_suffix(recordfilename.suffix)
+        if append_suffix:
+            filename = Path.joinpath(
+                recordfilename.parent,
+                f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
+                ).with_suffix(recordfilename.suffix)
+        else:
+            filename = recordfilename
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
-    file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
+    if append_suffix:
+        file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
 def _get_line_floatfmt() -> List[str]:

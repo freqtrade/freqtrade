@@ -166,9 +166,17 @@ AVAILABLE_CLI_OPTIONS = {
         help='Export backtest results, argument are: trades. '
         'Example: `--export=trades`',
     ),
+    "exportfilename_append": Arg(
+        '--export-filename-append',
+        help='append a suffix to an export filename (for scripting)'
+             'Requires `--export` to be set as well. '
+             'Example: `--export-filename-append=timestamp`, valid: timestamp, none',
+        metavar='timestamp,none',
+        default='timestamp'
+    ),
     "exportfilename": Arg(
         '--export-filename',
-        help='Save backtest results to the file with this filename. '
+        help='Save backtest results to the file with this filename'
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
