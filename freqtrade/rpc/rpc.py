@@ -65,6 +65,32 @@ class RPCException(Exception):
         }
 
 
+class RPCHandler:
+
+    def __init__(self, rpc: 'RPC', config: Dict[str, Any]) -> None:
+        """
+        Initializes RPCHandlers
+        :param rpc: instance of RPC Helper class
+        :param config: Configuration object
+        :return: None
+        """
+        self._rpc = rpc
+        self._config: Dict[str, Any] = config
+
+    @property
+    def name(self) -> str:
+        """ Returns the lowercase name of the implementation """
+        return self.__class__.__name__.lower()
+
+    @abstractmethod
+    def cleanup(self) -> None:
+        """ Cleanup pending module resources """
+
+    @abstractmethod
+    def send_msg(self, msg: Dict[str, str]) -> None:
+        """ Sends a message to all registered rpc modules """
+
+
 class RPC:
     """
     RPC class can be used to have extra feature, like bot data, and access to DB data
@@ -82,19 +108,6 @@ class RPC:
         self._config: Dict[str, Any] = freqtrade.config
         if self._config.get('fiat_display_currency', None):
             self._fiat_converter = CryptoToFiatConverter()
-
-    @property
-    def name(self) -> str:
-        """ Returns the lowercase name of the implementation """
-        return self.__class__.__name__.lower()
-
-    @abstractmethod
-    def cleanup(self) -> None:
-        """ Cleanup pending module resources """
-
-    @abstractmethod
-    def send_msg(self, msg: Dict[str, str]) -> None:
-        """ Sends a message to all registered rpc modules """
 
     @staticmethod
     def _rpc_show_config(config, botstate: State) -> Dict[str, Any]:

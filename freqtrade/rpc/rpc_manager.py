@@ -4,7 +4,7 @@ This module contains class to manage RPC communications (Telegram, Slack, ...)
 import logging
 from typing import Any, Dict, List
 
-from freqtrade.rpc import RPC, RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
 
 
 logger = logging.getLogger(__name__)
@@ -16,25 +16,26 @@ class RPCManager:
     """
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
-        self.registered_modules: List[RPC] = []
-
+        self.registered_modules: List[RPCHandler] = []
+        self._rpc = RPC(freqtrade)
+        config = freqtrade.config
         # Enable telegram
-        if freqtrade.config.get('telegram', {}).get('enabled', False):
+        if config.get('telegram', {}).get('enabled', False):
             logger.info('Enabling rpc.telegram ...')
             from freqtrade.rpc.telegram import Telegram
-            self.registered_modules.append(Telegram(freqtrade))
+            self.registered_modules.append(Telegram(self._rpc, config))
 
         # Enable Webhook
-        if freqtrade.config.get('webhook', {}).get('enabled', False):
+        if config.get('webhook', {}).get('enabled', False):
             logger.info('Enabling rpc.webhook ...')
             from freqtrade.rpc.webhook import Webhook
-            self.registered_modules.append(Webhook(freqtrade))
+            self.registered_modules.append(Webhook(self._rpc, config))
 
         # Enable local rest api server for cmd line control
-        if freqtrade.config.get('api_server', {}).get('enabled', False):
+        if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
-            self.registered_modules.append(ApiServer(freqtrade))
+            self.registered_modules.append(ApiServer(self._rpc, config))
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """

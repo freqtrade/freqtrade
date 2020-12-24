@@ -20,7 +20,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
-from freqtrade.rpc import RPCMessageType
+from freqtrade.rpc import RPC, RPCMessageType
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from freqtrade.state import RunMode, State
 from freqtrade.strategy.interface import SellType
@@ -32,8 +32,8 @@ class DummyCls(Telegram):
     """
     Dummy class for testing the Telegram @authorized_only decorator
     """
-    def __init__(self, freqtrade) -> None:
-        super().__init__(freqtrade)
+    def __init__(self, rpc: RPC, config) -> None:
+        super().__init__(rpc, config)
         self.state = {'called': False}
 
     def _init(self):
@@ -54,7 +54,7 @@ class DummyCls(Telegram):
         raise Exception('test')
 
 
-def get_telegram_testobject(mocker, default_conf, mock=True):
+def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
     msg_mock = MagicMock()
     if mock:
         mocker.patch.multiple(
@@ -62,8 +62,10 @@ def get_telegram_testobject(mocker, default_conf, mock=True):
             _init=MagicMock(),
             _send_msg=msg_mock
         )
-    ftbot = get_patched_freqtradebot(mocker, default_conf)
-    telegram = Telegram(ftbot)
+    if not ftbot:
+        ftbot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(ftbot)
+    telegram = Telegram(rpc, default_conf)
 
     return telegram, ftbot, msg_mock
 
@@ -112,8 +114,10 @@ def test_authorized_only(default_conf, mocker, caplog, update) -> None:
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
+    dummy = DummyCls(rpc, default_conf)
+
     patch_get_signal(bot, (True, False))
-    dummy = DummyCls(bot)
     dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is True
     assert log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
@@ -129,8 +133,10 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
+    dummy = DummyCls(rpc, default_conf)
+
     patch_get_signal(bot, (True, False))
-    dummy = DummyCls(bot)
     dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is False
     assert not log_has('Executing handler: dummy_handler for chat_id: 3735928559', caplog)
@@ -144,8 +150,9 @@ def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None
     default_conf['telegram']['enabled'] = False
 
     bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
+    dummy = DummyCls(rpc, default_conf)
     patch_get_signal(bot, (True, False))
-    dummy = DummyCls(bot)
 
     dummy.dummy_exception(update=update, context=MagicMock())
     assert dummy.state['called'] is False
@@ -160,8 +167,10 @@ def test_telegram_status(default_conf, update, mocker) -> None:
     default_conf['telegram']['chat_id'] = "123"
 
     status_table = MagicMock()
+    mocker.patch('freqtrade.rpc.telegram.Telegram._status_table', status_table)
+
     mocker.patch.multiple(
-        'freqtrade.rpc.telegram.Telegram',
+        'freqtrade.rpc.rpc.RPC',
         _rpc_trade_status=MagicMock(return_value=[{
             'trade_id': 1,
             'pair': 'ETH/BTC',
@@ -188,7 +197,6 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'open_order': '(limit buy rem=0.00000000)',
             'is_open': True
         }]),
-        _status_table=status_table,
     )
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -642,8 +650,9 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    telegram = Telegram(rpc, default_conf)
     patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
 
     # Create some test data
     freqtradebot.enter_positions()
@@ -698,8 +707,9 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     )
 
     freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    telegram = Telegram(rpc, default_conf)
     patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
 
     # Create some test data
     freqtradebot.enter_positions()
@@ -756,8 +766,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     )
     default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    telegram = Telegram(rpc, default_conf)
     patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
 
     # Create some test data
     freqtradebot.enter_positions()
@@ -1216,8 +1227,8 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
-    old_convamount = telegram._fiat_converter.convert_amount
-    telegram._fiat_converter.convert_amount = lambda a, b, c: -24.812
+    old_convamount = telegram._rpc._fiat_converter.convert_amount
+    telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
         'exchange': 'Binance',
@@ -1274,15 +1285,15 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Profit:* `-57.41%`')
     # Reset singleton function to avoid random breaks
-    telegram._fiat_converter.convert_amount = old_convamount
+    telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
 def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
-    old_convamount = telegram._fiat_converter.convert_amount
-    telegram._fiat_converter.convert_amount = lambda a, b, c: -24.812
+    old_convamount = telegram._rpc._fiat_converter.convert_amount
+    telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
         'exchange': 'Binance',
@@ -1303,7 +1314,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
     # Reset singleton function to avoid random breaks
-    telegram._fiat_converter.convert_amount = old_convamount
+    telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
 def test_send_msg_status_notification(default_conf, mocker) -> None:
@@ -1449,6 +1460,7 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     bot = MagicMock()
     bot.send_message = MagicMock()
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
 
     invalid_keys_list = [['/not_valid', '/profit'], ['/daily'], ['/alsoinvalid']]
     default_keys_list = [['/daily', '/profit', '/balance'],
@@ -1461,7 +1473,7 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
 
     def init_telegram(freqtradebot):
-        telegram = Telegram(freqtradebot)
+        telegram = Telegram(rpc, default_conf)
         telegram._updater = MagicMock()
         telegram._updater.bot = bot
         return telegram
