@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from random import choice, randint
 from string import ascii_uppercase
-from unittest.mock import ANY, MagicMock, PropertyMock
+from unittest.mock import ANY, MagicMock
 
 import arrow
 import pytest
@@ -631,7 +631,7 @@ def test_reload_config_handle(default_conf, update, mocker) -> None:
 def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
                                    ticker_sell_up, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
-    rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
+    msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     patch_exchange(mocker)
     patch_whitelist(mocker, default_conf)
@@ -659,8 +659,8 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert msg_mock.call_count == 3
+    last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -686,7 +686,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
                                         ticker_sell_down, mocker) -> None:
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
-    rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
+    msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     patch_exchange(mocker)
     patch_whitelist(mocker, default_conf)
@@ -718,9 +718,9 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert rpc_mock.call_count == 3
+    assert msg_mock.call_count == 3
 
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -746,7 +746,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     patch_exchange(mocker)
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._find_price',
                  return_value=15000.0)
-    rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
+    msg_mock = mocker.patch('freqtrade.rpc.telegram.Telegram.send_msg', MagicMock())
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     patch_whitelist(mocker, default_conf)
     mocker.patch.multiple(
@@ -761,7 +761,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
 
     # Create some test data
     freqtradebot.enter_positions()
-    rpc_mock.reset_mock()
+    msg_mock.reset_mock()
 
     # /forcesell all
     context = MagicMock()
@@ -769,8 +769,8 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     telegram._forcesell(update=update, context=context)
 
     # Called for each trade 3 times
-    assert rpc_mock.call_count == 8
-    msg = rpc_mock.call_args_list[1][0][0]
+    assert msg_mock.call_count == 8
+    msg = msg_mock.call_args_list[1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -828,21 +828,14 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
+def test_forcebuy_handle(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
-    mocker.patch('freqtrade.rpc.telegram.Telegram._send_msg', MagicMock())
-    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        markets=PropertyMock(markets),
-        )
+
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
 
-    freqtradebot = FreqtradeBot(default_conf)
+    telegram, freqtradebot, _ = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
 
     # /forcebuy ETH/BTC
     context = MagicMock()
@@ -867,24 +860,17 @@ def test_forcebuy_handle(default_conf, update, markets, mocker) -> None:
     assert fbuy_mock.call_args_list[0][0][1] == 0.055
 
 
-def test_forcebuy_handle_exception(default_conf, update, markets, mocker) -> None:
+def test_forcebuy_handle_exception(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
-    rpc_mock = mocker.patch('freqtrade.rpc.telegram.Telegram._send_msg', MagicMock())
-    mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        markets=PropertyMock(markets),
-    )
-    freqtradebot = FreqtradeBot(default_conf)
+
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
-    telegram = Telegram(freqtradebot)
 
     update.message.text = '/forcebuy ETH/Nonepair'
     telegram._forcebuy(update=update, context=MagicMock())
 
-    assert rpc_mock.call_count == 1
-    assert rpc_mock.call_args_list[0][0][0] == 'Forcebuy not enabled.'
+    assert msg_mock.call_count == 1
+    assert msg_mock.call_args_list[0][0][0] == 'Forcebuy not enabled.'
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
