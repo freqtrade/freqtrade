@@ -5,26 +5,42 @@ This page explains the different parameters of the bot and how to run it.
 !!! Note
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
+!!! Warning "Up-to-date clock"
+    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
+
 ## Bot commands
 
 ```
 usage: freqtrade [-h] [-V]
-                 {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
+                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
                  ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,backtesting,edge,hyperopt,create-userdir,list-exchanges,list-timeframes,download-data,plot-dataframe,plot-profit}
+  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
     trade               Trade module.
+    create-userdir      Create user-data directory.
+    new-config          Create new config
+    new-hyperopt        Create new hyperopt
+    new-strategy        Create new strategy
+    download-data       Download backtesting data.
+    convert-data        Convert candle (OHLCV) data from one format to
+                        another.
+    convert-trade-data  Convert trade data from one format to another.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
-    create-userdir      Create user-data directory.
+    hyperopt-list       List Hyperopt results
+    hyperopt-show       Show details of Hyperopt results
     list-exchanges      Print available exchanges.
-    list-timeframes     Print available ticker intervals (timeframes) for the
-                        exchange.
-    download-data       Download backtesting data.
+    list-hyperopts      Print available hyperopt classes.
+    list-markets        Print markets on exchange.
+    list-pairs          Print pairs on exchange.
+    list-strategies     Print available strategies.
+    list-timeframes     Print available timeframes for the exchange.
+    show-trades         Show trades.
+    test-pairlist       Test your pairlist configuration.
     plot-dataframe      Plot candles with indicators.
     plot-profit         Generate plot showing profits.
 
@@ -72,7 +88,6 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
-.
 
 ```
 
@@ -197,20 +212,25 @@ Backtesting also uses the config specified via `-c/--config`.
 ```
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH] [-i TICKER_INTERVAL]
-                             [--timerange TIMERANGE] [--max-open-trades INT]
+                             [--strategy-path PATH] [-i TIMEFRAME]
+                             [--timerange TIMERANGE]
+                             [--data-format-ohlcv {json,jsongz,hdf5}]
+                             [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [--eps] [--dmmp]
+                             [--eps] [--dmmp] [--enable-protections]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -226,6 +246,10 @@ optional arguments:
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest. Please note that ticker-interval needs to be
@@ -280,23 +304,27 @@ to find optimal parameter values for your strategy.
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                          [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                          [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
-                          [-e INT]
+                          [--dmmp] [--enable-protections] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
-                          [--dmmp] [--print-all] [--no-color] [--print-json]
-                          [-j JOBS] [--random-state INT] [--min-trades INT]
-                          [--continue] [--hyperopt-loss NAME]
+                          [--print-all] [--no-color] [--print-json] [-j JOBS]
+                          [--random-state INT] [--min-trades INT]
+                          [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -312,18 +340,22 @@ optional arguments:
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
-  -e INT, --epochs INT  Specify number of epochs (default: 100).
-  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
-                        Specify which parameters to hyperopt. Space-separated
-                        list.
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list.
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
-  --print-json          Print best results in JSON format.
+  --print-json          Print output in JSON format.
   -j JOBS, --job-workers JOBS
                         The number of concurrently running jobs for
                         hyperoptimization (hyperopt worker processes). If -1
@@ -334,18 +366,14 @@ optional arguments:
                         reproducible hyperopt results.
   --min-trades INT      Set minimal desired number of trades for evaluations
                         in the hyperopt optimization path (default: 1).
-  --continue            Continue hyperopt from previous runs. By default,
-                        temporary files will be removed and hyperopt will
-                        start from scratch.
   --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
                         target for optimization is different. Built-in
                         Hyperopt-loss-functions are:
-                        DefaultHyperOptLoss, OnlyProfitHyperOptLoss,
+                        ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
-                        SortinoHyperOptLoss, SortinoHyperOptLossDaily.
-                        (default: `DefaultHyperOptLoss`).
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -378,13 +406,13 @@ To know your trade expectancy and winrate against historical data, you can use E
 ```
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
-                      [-i TICKER_INTERVAL] [--timerange TIMERANGE]
+                      [-i TIMEFRAME] [--timerange TIMERANGE]
                       [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
                       [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --timerange TIMERANGE

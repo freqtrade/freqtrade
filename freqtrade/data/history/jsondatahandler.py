@@ -8,10 +8,11 @@ from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import trades_dict_to_list
 
-from .idatahandler import IDataHandler, TradeList
+from .idatahandler import IDataHandler
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,18 @@ class JsonDataHandler(IDataHandler):
 
     _use_zip = False
     _columns = DEFAULT_DATAFRAME_COLUMNS
+
+    @classmethod
+    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+        """
+        Returns a list of all pairs with ohlcv data available in this datadir
+        :param datadir: Directory to search for ohlcv files
+        :return: List of Tuples of (pair, timeframe)
+        """
+        _tmp = [re.search(r'^([a-zA-Z_]+)\-(\d+\S+)(?=.json)', p.name)
+                for p in datadir.glob(f"*.{cls._get_file_extension()}")]
+        return [(match[1].replace('_', '/'), match[2]) for match in _tmp
+                if match and len(match.groups()) > 1]
 
     @classmethod
     def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:

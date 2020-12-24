@@ -7,11 +7,12 @@ import logging
 from pathlib import Path
 from typing import Dict
 
-from freqtrade.constants import DEFAULT_HYPEROPT_LOSS, USERPATH_HYPEROPTS
+from freqtrade.constants import HYPEROPT_LOSS_BUILTIN, USERPATH_HYPEROPTS
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class HyperOptResolver(IResolver):
     object_type = IHyperOpt
     object_type_str = "Hyperopt"
     user_subdir = USERPATH_HYPEROPTS
-    initial_search_path = Path(__file__).parent.parent.joinpath('optimize').resolve()
+    initial_search_path = None
 
     @staticmethod
     def load_hyperopt(config: Dict) -> IHyperOpt:
@@ -42,14 +43,14 @@ class HyperOptResolver(IResolver):
                                                 extra_dir=config.get('hyperopt_path'))
 
         if not hasattr(hyperopt, 'populate_indicators'):
-            logger.warning("Hyperopt class does not provide populate_indicators() method. "
-                           "Using populate_indicators from the strategy.")
+            logger.info("Hyperopt class does not provide populate_indicators() method. "
+                        "Using populate_indicators from the strategy.")
         if not hasattr(hyperopt, 'populate_buy_trend'):
-            logger.warning("Hyperopt class does not provide populate_buy_trend() method. "
-                           "Using populate_buy_trend from the strategy.")
+            logger.info("Hyperopt class does not provide populate_buy_trend() method. "
+                        "Using populate_buy_trend from the strategy.")
         if not hasattr(hyperopt, 'populate_sell_trend'):
-            logger.warning("Hyperopt class does not provide populate_sell_trend() method. "
-                           "Using populate_sell_trend from the strategy.")
+            logger.info("Hyperopt class does not provide populate_sell_trend() method. "
+                        "Using populate_sell_trend from the strategy.")
         return hyperopt
 
 
@@ -69,19 +70,19 @@ class HyperOptLossResolver(IResolver):
         :param config: configuration dictionary
         """
 
-        # Verify the hyperopt_loss is in the configuration, otherwise fallback to the
-        # default hyperopt loss
-        hyperoptloss_name = config.get('hyperopt_loss') or DEFAULT_HYPEROPT_LOSS
-
+        hyperoptloss_name = config.get('hyperopt_loss')
+        if not hyperoptloss_name:
+            raise OperationalException(
+                "No Hyperopt loss set. Please use `--hyperopt-loss` to "
+                "specify the Hyperopt-Loss class to use.\n"
+                f"Built-in Hyperopt-loss-functions are: {', '.join(HYPEROPT_LOSS_BUILTIN)}"
+            )
         hyperoptloss = HyperOptLossResolver.load_object(hyperoptloss_name,
                                                         config, kwargs={},
                                                         extra_dir=config.get('hyperopt_path'))
 
-        # Assign ticker_interval to be used in hyperopt
-        hyperoptloss.__class__.ticker_interval = str(config['ticker_interval'])
+        # Assign timeframe to be used in hyperopt
+        hyperoptloss.__class__.ticker_interval = str(config['timeframe'])
+        hyperoptloss.__class__.timeframe = str(config['timeframe'])
 
-        if not hasattr(hyperoptloss, 'hyperopt_loss_function'):
-            raise OperationalException(
-                f"Found HyperoptLoss class {hyperoptloss_name} does not "
-                "implement `hyperopt_loss_function`.")
         return hyperoptloss

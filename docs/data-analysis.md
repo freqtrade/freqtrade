@@ -1,12 +1,22 @@
 # Analyzing bot data with Jupyter notebooks  
 
-You can analyze the results of backtests and trading history easily using Jupyter notebooks. Sample notebooks are located at `user_data/notebooks/`.  
+You can analyze the results of backtests and trading history easily using Jupyter notebooks. Sample notebooks are located at `user_data/notebooks/` after initializing the user directory with `freqtrade create-userdir --userdir user_data`.  
 
-## Pro tips  
+## Quick start with docker
+
+Freqtrade provides a docker-compose file which starts up a jupyter lab server.
+You can run this server using the following command: `docker-compose -f docker/docker-compose-jupyter.yml up`
+
+This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
+Please use the link that's printed in the console after startup for simplified login.
+
+For more information, Please visit the [Data analysis with Docker](docker_quickstart.md#data-analayis-using-docker-compose) section.
+
+### Pro tips
 
 * See [jupyter.org](https://jupyter.org/documentation) for usage instructions.
 * Don't forget to start a Jupyter notebook server from within your conda or venv environment or use [nb_conda_kernels](https://github.com/Anaconda-Platform/nb_conda_kernels)*
-* Copy the example notebook before use so your changes don't get clobbered with the next freqtrade update.
+* Copy the example notebook before use so your changes don't get overwritten with the next freqtrade update.
 
 ### Using virtual environment with system-wide Jupyter installation
 
@@ -28,10 +38,8 @@ ipython kernel install --user --name=freqtrade
 !!! Note
     This section is provided for completeness, the Freqtrade Team won't provide full support for problems with this setup and will recommend to install Jupyter in the virtual environment directly, as that is the easiest way to get jupyter notebooks up and running. For help with this setup please refer to the [Project Jupyter](https://jupyter.org/) [documentation](https://jupyter.org/documentation) or [help channels](https://jupyter.org/community).
 
-    
-## Fine print  
-
-Some tasks don't work especially well in notebooks. For example, anything using asynchronous execution is a problem for Jupyter. Also, freqtrade's primary entry point is the shell cli, so using pure python in a notebook bypasses arguments that provide required objects and parameters to helper functions. You may need to set those values or create expected objects manually.
+!!! Warning
+    Some tasks don't work especially well in notebooks. For example, anything using asynchronous execution is a problem for Jupyter. Also, freqtrade's primary entry point is the shell cli, so using pure python in a notebook bypasses arguments that provide required objects and parameters to helper functions. You may need to set those values or create expected objects manually.
 
 ## Recommended workflow  
 

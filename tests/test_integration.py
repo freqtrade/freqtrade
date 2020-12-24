@@ -62,8 +62,8 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
-        get_order=stoploss_order_mock,
-        cancel_order=cancel_order_mock,
+        fetch_stoploss_order=stoploss_order_mock,
+        cancel_stoploss_order=cancel_order_mock,
     )
 
     mocker.patch.multiple(
@@ -79,10 +79,15 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Switch ordertype to market to close trade immediately
     freqtrade.strategy.order_types['sell'] = 'market'
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
     patch_get_signal(freqtrade)
 
     # Create some test data
     freqtrade.enter_positions()
+    assert freqtrade.strategy.confirm_trade_entry.call_count == 3
+    freqtrade.strategy.confirm_trade_entry.reset_mock()
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
     Trade.session = MagicMock()
 
@@ -95,6 +100,9 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     n = freqtrade.exit_positions(trades)
     assert n == 2
     assert should_sell_mock.call_count == 2
+    assert freqtrade.strategy.confirm_trade_entry.call_count == 0
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+    freqtrade.strategy.confirm_trade_exit.reset_mock()
 
     # Only order for 3rd trade needs to be cancelled
     assert cancel_order_mock.call_count == 1

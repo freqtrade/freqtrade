@@ -31,7 +31,7 @@ usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                 [--plot-limit INT] [--db-url PATH]
                                 [--trade-source {DB,file}] [--export EXPORT]
                                 [--export-filename PATH]
-                                [--timerange TIMERANGE] [-i TICKER_INTERVAL]
+                                [--timerange TIMERANGE] [-i TIMEFRAME]
                                 [--no-trades]
 
 optional arguments:
@@ -65,7 +65,7 @@ optional arguments:
                         _today.json`
   --timerange TIMERANGE
                         Specify what timerange of data to use.
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
   --no-trades           Skip using trades from backtesting file and DB.
@@ -168,6 +168,7 @@ Additional features when using plot_config include:
 
 * Specify colors per indicator
 * Specify additional subplots
+* Specify indicator pairs to fill area in between 
 
 The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
 It also allows multiple subplots to display both MACD and RSI at the same time.
@@ -183,23 +184,33 @@ Sample configuration with inline comments explaining the process:
             'ema50': {'color': '#CCCCCC'},
             # By omitting color, a random color is selected.
             'sar': {},
+	    # fill area between senkou_a and senkou_b
+	    'senkou_a': {
+	        'color': 'green', #optional
+	        'fill_to': 'senkou_b',
+	        'fill_label': 'Ichimoku Cloud' #optional,
+	        'fill_color': 'rgba(255,76,46,0.2)', #optional
+	    },
+	    # plot senkou_b, too. Not only the area to it.
+	    'senkou_b': {}
         },
         'subplots': {
             # Create subplot MACD
             "MACD": {
-                'macd': {'color': 'blue'},
-                'macdsignal': {'color': 'orange'},
+                'macd': {'color': 'blue', 'fill_to': 'macdhist'},
+                'macdsignal': {'color': 'orange'}
             },
             # Additional subplot RSI
             "RSI": {
-                'rsi': {'color': 'red'},
+                'rsi': {'color': 'red'}
             }
         }
     }
-```
 
+```
 !!! Note
-    The above configuration assumes that `ema10`, `ema50`, `macd`, `macdsignal` and `rsi` are columns in the DataFrame created by the strategy.
+    The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`,
+    `macd`, `macdsignal`, `macdhist` and `rsi` are columns in the DataFrame created by the strategy.
 
 ## Plot profit
 
@@ -224,10 +235,11 @@ Possible options for the `freqtrade plot-profit` subcommand:
 
 ```
 usage: freqtrade plot-profit [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                             [-d PATH] [--userdir PATH] [-p PAIRS [PAIRS ...]]
+                             [-d PATH] [--userdir PATH] [-s NAME]
+                             [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
                              [--timerange TIMERANGE] [--export EXPORT]
                              [--export-filename PATH] [--db-url PATH]
-                             [--trade-source {DB,file}] [-i TICKER_INTERVAL]
+                             [--trade-source {DB,file}] [-i TIMEFRAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -250,7 +262,7 @@ optional arguments:
   --trade-source {DB,file}
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
-  -i TICKER_INTERVAL, --ticker-interval TICKER_INTERVAL
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
                         `1d`).
 
@@ -261,14 +273,20 @@ Common arguments:
                         details.
   -V, --version         show program's version number and exit
   -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
   -d PATH, --datadir PATH
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
 ```
 
 The `-p/--pairs`  argument, can be used to limit the pairs that are considered for this calculation.
@@ -278,7 +296,7 @@ Examples:
 Use custom backtest-export file
 
 ``` bash
-freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result-Strategy005.json
+freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result.json
 ```
 
 Use custom database

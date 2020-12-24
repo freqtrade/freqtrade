@@ -12,7 +12,7 @@ real data. This is what we call
 [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
-If no data is available for the exchange / pair / timeframe (ticker interval) combination, backtesting will ask you to download them first using `freqtrade download-data`.
+If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
@@ -35,7 +35,7 @@ freqtrade backtesting
 #### With 1 min candle (OHLCV) data
 
 ```bash
-freqtrade backtesting --ticker-interval 1m
+freqtrade backtesting --timeframe 1m
 ```
 
 #### Using a different on-disk historical candle (OHLCV) data source
@@ -58,7 +58,7 @@ Where `-s SampleStrategy` refers to the class name within the strategy file `sam
 #### Comparing multiple Strategies
 
 ```bash
-freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --ticker-interval 5m
+freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m
 ```
 
 Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
@@ -66,7 +66,7 @@ Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies
 #### Exporting trades to file
 
 ```bash
-freqtrade backtesting --export trades
+freqtrade backtesting --export trades --config config.json --strategy SampleStrategy
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
@@ -157,16 +157,36 @@ A backtesting result will look like that:
 | ADA/BTC  |      1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |     1 |      0 |       0 |
 | LTC/BTC  |      1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |     1 |      0 |       0 |
 | TOTAL    |      2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |     2 |      0 |       0 |
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Max open trades       | 3                   |
+|                       |                     |
+| Total trades          | 429                 |
+| Total Profit %        | 152.41%             |
+| Trades per day        | 3.575               |
+|                       |                     |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
 ```
 
+### Backtesting report table
+
 The 1st table contains all trades the bot made, including "left open trades".
-
-The 2nd table contains a recap of sell reasons.
-This table can tell you which area needs some additional work (i.e. all `sell_signal` trades are losses, so we should disable the sell-signal or work on improving that).
-
-The 3rd table contains all trades the bot had to `forcesell` at the end of the backtest period to present a full picture.
-This is necessary to simulate realistic behaviour, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
-These trades are also included in the first table, but are extracted separately for clarity.
 
 The last line will give you the overall performance of your strategy,
 here:
@@ -196,23 +216,87 @@ On the other hand, if you set a too high `minimal_roi` like `"0":  0.55`
 (55%), there is almost no chance that the bot will ever reach this profit.
 Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.
 
+### Sell reasons table
+
+The 2nd table contains a recap of sell reasons.
+This table can tell you which area needs some additional work (e.g. all or many of the `sell_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
+
+### Left open trades table
+
+The 3rd table contains all trades the bot had to `forcesell` at the end of the backtesting period to present you the full picture.
+This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
+These trades are also included in the first table, but are also shown separately in this table for clarity.
+
+### Summary metrics
+
+The last element of the backtest report is the summary metrics table.
+It contains some useful key metrics about performance of your strategy on backtesting data.
+
+```
+=============== SUMMARY METRICS ===============
+| Metric                | Value               |
+|-----------------------+---------------------|
+| Backtesting from      | 2019-01-01 00:00:00 |
+| Backtesting to        | 2019-05-01 00:00:00 |
+| Max open trades       | 3                   |
+|                       |                     |
+| Total trades          | 429                 |
+| Total Profit %        | 152.41%             |
+| Trades per day        | 3.575               |
+|                       |                     |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
+| Best day              | 25.27%              |
+| Worst day             | -30.67%             |
+| Avg. Duration Winners | 4:23:00             |
+| Avg. Duration Loser   | 6:55:00             |
+|                       |                     |
+| Max Drawdown          | 50.63%              |
+| Drawdown Start        | 2019-02-15 14:10:00 |
+| Drawdown End          | 2019-04-11 18:15:00 |
+| Market change         | -5.88%              |
+===============================================
+
+```
+
+- `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
+- `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - to clearly see settings for this.
+- `Total trades`: Identical to the total trades of the backtest output table.
+- `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
+- `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
+- `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
+- `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade
+- `Best day` / `Worst day`: Best and worst day based on daily profit.
+- `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
+- `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
+
 ### Assumptions made by backtesting
 
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
-- Sell signal sells happen at open-price of the following candle
-- Low happens before high for stoploss, protecting capital first
+- Sell-signal sells happen at open-price of the consecutive candle
+- Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
   - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
-- Stoploss sells happen exactly at stoploss price, even if low was lower
+- Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
+- Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
+- Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+  - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
-- Stoploss (and trailing stoploss) is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` and/or `trailing_stop` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes.
+- Evaluation sequence (if multiple signals happen on the same candle)
+  - ROI (if not stoploss)
+  - Sell-signal
+  - Stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.
@@ -228,13 +312,13 @@ You can then load the trades to perform further analysis as shown in our [data a
 
 To compare multiple strategies, a list of Strategies can be provided to backtesting.
 
-This is limited to 1 timeframe (ticker interval) value per run. However, data is only loaded once from disk so if you have multiple
+This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.
 
 All listed Strategies need to be in the same directory.
 
 ``` bash
-freqtrade backtesting --timerange 20180401-20180410 --ticker-interval 5m --strategy-list Strategy001 Strategy002 --export trades
+freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades
 ```
 
 This will save the results to `user_data/backtest_results/backtest-result-<strategy>.json`, injecting the strategy-name into the target filename.

@@ -7,11 +7,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.data.converter import ohlcv_to_dataframe
-from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json,
-                            file_load_json, format_ms_time, pair_to_filename,
-                            plural, render_template,
+from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json, file_load_json,
+                            format_ms_time, pair_to_filename, plural, render_template,
                             render_template_with_fallback, safe_value_fallback,
-                            shorten_date)
+                            safe_value_fallback2, shorten_date)
 
 
 def test_shorten_date() -> None:
@@ -97,23 +96,39 @@ def test_format_ms_time() -> None:
 
 def test_safe_value_fallback():
     dict1 = {'keya': None, 'keyb': 2, 'keyc': 5, 'keyd': None}
+    assert safe_value_fallback(dict1, 'keya', 'keyb') == 2
+    assert safe_value_fallback(dict1, 'keyb', 'keya') == 2
+
+    assert safe_value_fallback(dict1, 'keyb', 'keyc') == 2
+    assert safe_value_fallback(dict1, 'keya', 'keyc') == 5
+
+    assert safe_value_fallback(dict1, 'keyc', 'keyb') == 5
+
+    assert safe_value_fallback(dict1, 'keya', 'keyd') is None
+
+    assert safe_value_fallback(dict1, 'keyNo', 'keyNo') is None
+    assert safe_value_fallback(dict1, 'keyNo', 'keyNo', 55) == 55
+
+
+def test_safe_value_fallback2():
+    dict1 = {'keya': None, 'keyb': 2, 'keyc': 5, 'keyd': None}
     dict2 = {'keya': 20, 'keyb': None, 'keyc': 6, 'keyd': None}
-    assert safe_value_fallback(dict1, dict2, 'keya', 'keya') == 20
-    assert safe_value_fallback(dict2, dict1, 'keya', 'keya') == 20
+    assert safe_value_fallback2(dict1, dict2, 'keya', 'keya') == 20
+    assert safe_value_fallback2(dict2, dict1, 'keya', 'keya') == 20
 
-    assert safe_value_fallback(dict1, dict2, 'keyb', 'keyb') == 2
-    assert safe_value_fallback(dict2, dict1, 'keyb', 'keyb') == 2
+    assert safe_value_fallback2(dict1, dict2, 'keyb', 'keyb') == 2
+    assert safe_value_fallback2(dict2, dict1, 'keyb', 'keyb') == 2
 
-    assert safe_value_fallback(dict1, dict2, 'keyc', 'keyc') == 5
-    assert safe_value_fallback(dict2, dict1, 'keyc', 'keyc') == 6
+    assert safe_value_fallback2(dict1, dict2, 'keyc', 'keyc') == 5
+    assert safe_value_fallback2(dict2, dict1, 'keyc', 'keyc') == 6
 
-    assert safe_value_fallback(dict1, dict2, 'keyd', 'keyd') is None
-    assert safe_value_fallback(dict2, dict1, 'keyd', 'keyd') is None
-    assert safe_value_fallback(dict2, dict1, 'keyd', 'keyd', 1234) == 1234
+    assert safe_value_fallback2(dict1, dict2, 'keyd', 'keyd') is None
+    assert safe_value_fallback2(dict2, dict1, 'keyd', 'keyd') is None
+    assert safe_value_fallback2(dict2, dict1, 'keyd', 'keyd', 1234) == 1234
 
-    assert safe_value_fallback(dict1, dict2, 'keyNo', 'keyNo') is None
-    assert safe_value_fallback(dict2, dict1, 'keyNo', 'keyNo') is None
-    assert safe_value_fallback(dict2, dict1, 'keyNo', 'keyNo', 1234) == 1234
+    assert safe_value_fallback2(dict1, dict2, 'keyNo', 'keyNo') is None
+    assert safe_value_fallback2(dict2, dict1, 'keyNo', 'keyNo') is None
+    assert safe_value_fallback2(dict2, dict1, 'keyNo', 'keyNo', 1234) == 1234
 
 
 def test_plural() -> None:

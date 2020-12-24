@@ -4,6 +4,7 @@ from typing import Dict
 
 from freqtrade.exchange import Exchange
 
+
 logger = logging.getLogger(__name__)
 
 

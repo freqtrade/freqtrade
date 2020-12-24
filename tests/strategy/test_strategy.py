@@ -18,13 +18,15 @@ def test_search_strategy():
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_name='DefaultStrategy'
+        object_name='DefaultStrategy',
+        add_source=True,
     )
     assert issubclass(s, IStrategy)
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_name='NotFoundStrategy'
+        object_name='NotFoundStrategy',
+        add_source=True,
     )
     assert s is None
 
@@ -53,6 +55,9 @@ def test_load_strategy(default_conf, result):
                          'strategy_path': str(Path(__file__).parents[2] / 'freqtrade/templates')
                          })
     strategy = StrategyResolver.load_strategy(default_conf)
+    assert isinstance(strategy.__source__, str)
+    assert 'class SampleStrategy' in strategy.__source__
+    assert isinstance(strategy.__file__, str)
     assert 'rsi' in strategy.advise_indicators(result, {'pair': 'ETH/BTC'})
 
 
@@ -105,8 +110,9 @@ def test_strategy(result, default_conf):
     assert strategy.stoploss == -0.10
     assert default_conf['stoploss'] == -0.10
 
+    assert strategy.timeframe == '5m'
     assert strategy.ticker_interval == '5m'
-    assert default_conf['ticker_interval'] == '5m'
+    assert default_conf['timeframe'] == '5m'
 
     df_indicators = strategy.advise_indicators(result, metadata=metadata)
     assert 'adx' in df_indicators
@@ -176,19 +182,19 @@ def test_strategy_override_trailing_stop_positive(caplog, default_conf):
                    caplog)
 
 
-def test_strategy_override_ticker_interval(caplog, default_conf):
+def test_strategy_override_timeframe(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     default_conf.update({
         'strategy': 'DefaultStrategy',
-        'ticker_interval': 60,
+        'timeframe': 60,
         'stake_currency': 'ETH'
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    assert strategy.ticker_interval == 60
+    assert strategy.timeframe == 60
     assert strategy.stake_currency == 'ETH'
-    assert log_has("Override strategy 'ticker_interval' with value in config file: 60.",
+    assert log_has("Override strategy 'timeframe' with value in config file: 60.",
                    caplog)
 
 
@@ -357,8 +363,9 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_call_deprecated_function(result, monkeypatch, default_conf):
+def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"
+    del default_conf['timeframe']
     default_conf.update({'strategy': 'TestStrategyLegacy',
                          'strategy_path': default_location})
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -369,6 +376,8 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     assert strategy._buy_fun_len == 2
     assert strategy._sell_fun_len == 2
     assert strategy.INTERFACE_VERSION == 1
+    assert strategy.timeframe == '5m'
+    assert strategy.ticker_interval == '5m'
 
     indicator_df = strategy.advise_indicators(result, metadata=metadata)
     assert isinstance(indicator_df, DataFrame)
@@ -381,6 +390,9 @@ def test_call_deprecated_function(result, monkeypatch, default_conf):
     selldf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(selldf, DataFrame)
     assert 'sell' in selldf
+
+    assert log_has("DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'.",
+                   caplog)
 
 
 def test_strategy_interface_versioning(result, monkeypatch, default_conf):

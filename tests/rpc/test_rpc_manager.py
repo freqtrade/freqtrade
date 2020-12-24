@@ -1,10 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
-import time
 import logging
+import time
 from unittest.mock import MagicMock
 
-from freqtrade.rpc import RPCMessageType, RPCManager
-from tests.conftest import log_has, get_patched_freqtradebot
+from freqtrade.rpc import RPCManager, RPCMessageType
+from tests.conftest import get_patched_freqtradebot, log_has
 
 
 def test__init__(mocker, default_conf) -> None:
@@ -124,10 +124,10 @@ def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> Non
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
-    rpc_manager.send_msg({'type': RPCMessageType.CUSTOM_NOTIFICATION,
+    rpc_manager.send_msg({'type': RPCMessageType.STARTUP_NOTIFICATION,
                           'status': 'TestMessage'})
     assert log_has(
-        "Message type RPCMessageType.CUSTOM_NOTIFICATION not implemented by handler webhook.",
+        "Message type 'startup' not implemented by handler webhook.",
         caplog)
 
 
@@ -137,7 +137,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
-    rpc_manager.startup_messages(default_conf, freqtradebot.pairlists)
+    rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
 
     assert telegram_mock.call_count == 3
     assert "*Exchange:* `bittrex`" in telegram_mock.call_args_list[1][0][0]['status']
@@ -147,10 +147,14 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     default_conf['whitelist'] = {'method': 'VolumePairList',
                                  'config': {'number_assets': 20}
                                  }
+    default_conf['protections'] = [{"method": "StoplossGuard",
+                                    "lookback_period": 60, "trade_limit": 2, "stop_duration": 60}]
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
-    rpc_manager.startup_messages(default_conf,  freqtradebot.pairlists)
-    assert telegram_mock.call_count == 3
+    rpc_manager.startup_messages(default_conf,  freqtradebot.pairlists, freqtradebot.protections)
+    assert telegram_mock.call_count == 4
     assert "Dry run is enabled." in telegram_mock.call_args_list[0][0][0]['status']
+    assert 'StoplossGuard' in telegram_mock.call_args_list[-1][0][0]['status']
 
 
 def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:

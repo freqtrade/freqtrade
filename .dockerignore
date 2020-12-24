@@ -13,3 +13,4 @@ CONTRIBUTING.md
 MANIFEST.in
 README.md
 freqtrade.service
+user_data

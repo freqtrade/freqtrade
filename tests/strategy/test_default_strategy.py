@@ -6,7 +6,7 @@ from .strats.default_strategy import DefaultStrategy
 def test_default_strategy_structure():
     assert hasattr(DefaultStrategy, 'minimal_roi')
     assert hasattr(DefaultStrategy, 'stoploss')
-    assert hasattr(DefaultStrategy, 'ticker_interval')
+    assert hasattr(DefaultStrategy, 'timeframe')
     assert hasattr(DefaultStrategy, 'populate_indicators')
     assert hasattr(DefaultStrategy, 'populate_buy_trend')
     assert hasattr(DefaultStrategy, 'populate_sell_trend')
@@ -18,7 +18,7 @@ def test_default_strategy(result):
     metadata = {'pair': 'ETH/BTC'}
     assert type(strategy.minimal_roi) is dict
     assert type(strategy.stoploss) is float
-    assert type(strategy.ticker_interval) is str
+    assert type(strategy.timeframe) is str
     indicators = strategy.populate_indicators(result, metadata)
     assert type(indicators) is DataFrame
     assert type(strategy.populate_buy_trend(indicators, metadata)) is DataFrame

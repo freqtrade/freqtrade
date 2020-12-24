@@ -2,12 +2,14 @@
 """ Wallet """
 
 import logging
+from copy import deepcopy
 from typing import Any, Dict, NamedTuple
 
 import arrow
 
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +95,10 @@ class Wallets:
                 balances[currency].get('used', None),
                 balances[currency].get('total', None)
             )
+        # Remove currencies no longer in get_balances output
+        for currency in deepcopy(self._wallets):
+            if currency not in balances:
+                del self._wallets[currency]
 
     def update(self, require_update: bool = True) -> None:
         """
@@ -102,13 +108,13 @@ class Wallets:
         for trading operations, the latest balance is needed.
         :param require_update: Allow skipping an update if balances were recently refreshed
         """
-        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().timestamp)):
+        if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().int_timestamp)):
             if self._config['dry_run']:
                 self._update_dry()
             else:
                 self._update_live()
             logger.info('Wallets synced.')
-            self._last_wallet_refresh = arrow.utcnow().timestamp
+            self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets

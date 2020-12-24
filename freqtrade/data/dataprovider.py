@@ -5,15 +5,16 @@ including ticker and orderbook data, live and historical candle (OHLCV) data
 Common Interface for bot and strategy to access data.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
+from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.state import RunMode
-from freqtrade.constants import ListPairsWithTimeframes
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,24 @@ class DataProvider:
     def __init__(self, config: dict, exchange: Exchange, pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
+        self._pairlists = pairlists
+        self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
+
+    def _set_cached_df(self, pair: str, timeframe: str, dataframe: DataFrame) -> None:
+        """
+        Store cached Dataframe.
+        Using private method as this should never be used by a user
+        (but the class is exposed via `self.dp` to the strategy)
+        :param pair: pair to get the data for
+        :param timeframe: Timeframe to get data for
+        :param dataframe: analyzed dataframe
+        """
+        self.__cached_pairs[(pair, timeframe)] = (dataframe, datetime.now(timezone.utc))
+
+    def add_pairlisthandler(self, pairlists) -> None:
+        """
+        Allow adding pairlisthandler after initialization
+        """
         self._pairlists = pairlists
 
     def refresh(self,
@@ -55,7 +74,7 @@ class DataProvider:
                      Use False only for read-only operations (where the dataframe is not modified)
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
-            return self._exchange.klines((pair, timeframe or self._config['ticker_interval']),
+            return self._exchange.klines((pair, timeframe or self._config['timeframe']),
                                          copy=copy)
         else:
             return DataFrame()
@@ -67,8 +86,9 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         """
         return load_pair_history(pair=pair,
-                                 timeframe=timeframe or self._config['ticker_interval'],
-                                 datadir=self._config['datadir']
+                                 timeframe=timeframe or self._config['timeframe'],
+                                 datadir=self._config['datadir'],
+                                 data_format=self._config.get('dataformat_ohlcv', 'json')
                                  )
 
     def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:
@@ -89,6 +109,20 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {timeframe}).")
         return data
 
+    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
+        """
+        :param pair: pair to get the data for
+        :param timeframe: timeframe to get data for
+        :return: Tuple of (Analyzed Dataframe, lastrefreshed) for the requested pair / timeframe
+            combination.
+            Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
+        """
+        if (pair, timeframe) in self.__cached_pairs:
+            return self.__cached_pairs[(pair, timeframe)]
+        else:
+
+            return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
+
     def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """
         Return market data for the pair
@@ -105,7 +139,7 @@ class DataProvider:
         """
         try:
             return self._exchange.fetch_ticker(pair)
-        except DependencyException:
+        except ExchangeError:
             return {}
 
     def orderbook(self, pair: str, maximum: int) -> Dict[str, List]:

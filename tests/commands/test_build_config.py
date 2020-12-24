@@ -4,10 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 import rapidjson
 
-from freqtrade.commands.build_config_commands import (ask_user_config,
-                                                      ask_user_overwrite,
-                                                      start_new_config,
-                                                      validate_is_float,
+from freqtrade.commands.build_config_commands import (ask_user_config, ask_user_overwrite,
+                                                      start_new_config, validate_is_float,
                                                       validate_is_int)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import get_args, log_has_re
@@ -44,7 +42,7 @@ def test_start_new_config(mocker, caplog, exchange):
         'stake_currency': 'USDT',
         'stake_amount': 100,
         'fiat_display_currency': 'EUR',
-        'ticker_interval': '15m',
+        'timeframe': '15m',
         'dry_run': True,
         'exchange_name': exchange,
         'exchange_key': 'sampleKey',
@@ -68,7 +66,7 @@ def test_start_new_config(mocker, caplog, exchange):
     result = rapidjson.loads(wt_mock.call_args_list[0][0][0],
                              parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS)
     assert result['exchange']['name'] == exchange
-    assert result['ticker_interval'] == '15m'
+    assert result['timeframe'] == '15m'
 
 
 def test_start_new_config_exists(mocker, caplog):

@@ -6,8 +6,9 @@ This module load custom pairlists
 import logging
 from pathlib import Path
 
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.resolvers import IResolver
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class PairListResolver(IResolver):
     object_type = IPairList
     object_type_str = "Pairlist"
     user_subdir = None
-    initial_search_path = Path(__file__).parent.parent.joinpath('pairlist').resolve()
+    initial_search_path = Path(__file__).parent.parent.joinpath('plugins/pairlist').resolve()
 
     @staticmethod
     def load_pairlist(pairlist_name: str, exchange, pairlistmanager,

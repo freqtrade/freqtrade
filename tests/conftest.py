@@ -13,15 +13,18 @@ import numpy as np
 import pytest
 from telegram import Chat, Message, Update
 
-from freqtrade import constants, persistence
+from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
+from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
+                                   mock_trade_5, mock_trade_6)
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -56,6 +59,7 @@ def patched_configuration_load_config_file(mocker, config) -> None:
 
 
 def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
+    mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -77,7 +81,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
 def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
                          mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
-    config["exchange"]["name"] = id
+    config['exchange']['name'] = id
     try:
         exchange = ExchangeResolver.load_exchange(id, config)
     except ImportError:
@@ -127,7 +131,7 @@ def patch_freqtradebot(mocker, config) -> None:
     :return: None
     """
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
-    persistence.init(config['db_url'])
+    init_db(config['db_url'])
     patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.RPCManager._init', MagicMock())
     mocker.patch('freqtrade.freqtradebot.RPCManager.send_msg', MagicMock())
@@ -142,6 +146,7 @@ def get_patched_freqtradebot(mocker, config) -> FreqtradeBot:
     :return: FreqtradeBot
     """
     patch_freqtradebot(mocker, config)
+    config['datadir'] = Path(config['datadir'])
     return FreqtradeBot(config)
 
 
@@ -162,7 +167,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     :param value: which value IStrategy.get_signal() must return
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s, t: value
+    freqtrade.strategy.get_signal = lambda e, s, x: value
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
@@ -171,44 +176,22 @@ def create_mock_trades(fee):
     Create some fake trades ...
     """
     # Simulate dry_run entries
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='dry_run_buy_12345'
-    )
+    trade = mock_trade_1(fee)
     Trade.session.add(trade)
 
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        close_rate=0.128,
-        close_profit=0.005,
-        exchange='bittrex',
-        is_open=False,
-        open_order_id='dry_run_sell_12345'
-    )
+    trade = mock_trade_2(fee)
     Trade.session.add(trade)
 
-    # Simulate prod entry
-    trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_rate=0.123,
-        exchange='bittrex',
-        open_order_id='prod_buy_12345'
-    )
+    trade = mock_trade_3(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_4(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_5(fee)
+    Trade.session.add(trade)
+
+    trade = mock_trade_6(fee)
     Trade.session.add(trade)
 
 
@@ -236,7 +219,7 @@ def patch_coingekko(mocker) -> None:
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
-    persistence.init(default_conf['db_url'], default_conf['dry_run'])
+    init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
 @pytest.fixture(scope="function")
@@ -247,7 +230,7 @@ def default_conf(testdatadir):
         "stake_currency": "BTC",
         "stake_amount": 0.001,
         "fiat_display_currency": "USD",
-        "ticker_interval": '5m',
+        "timeframe": '5m',
         "dry_run": True,
         "cancel_open_orders_on_exit": False,
         "minimal_roi": {
@@ -314,7 +297,7 @@ def default_conf(testdatadir):
 @pytest.fixture
 def update():
     _update = Update(0)
-    _update.message = Message(0, 0, datetime.utcnow(), Chat(0, 0))
+    _update.message = Message(0, datetime.utcnow(), Chat(0, 0))
     return _update
 
 
@@ -660,7 +643,8 @@ def shitcoinmarkets(markets):
     Fixture with shitcoin markets - used to test filters in pairlists
     """
     shitmarkets = deepcopy(markets)
-    shitmarkets.update({'HOT/BTC': {
+    shitmarkets.update({
+        'HOT/BTC': {
             'id': 'HOTBTC',
             'symbol': 'HOT/BTC',
             'base': 'HOT',
@@ -765,7 +749,32 @@ def shitcoinmarkets(markets):
             "spot": True,
             "future": False,
             "active": True
-    },
+        },
+        'ADADOUBLE/USDT': {
+            "percentage": True,
+            "tierBased": False,
+            "taker": 0.001,
+            "maker": 0.001,
+            "precision": {
+                "base": 8,
+                "quote": 8,
+                "amount": 2,
+                "price": 4
+            },
+            "limits": {
+            },
+            "id": "ADADOUBLEUSDT",
+            "symbol": "ADADOUBLE/USDT",
+            "base": "ADADOUBLE",
+            "quote": "USDT",
+            "baseId": "ADADOUBLE",
+            "quoteId": "USDT",
+            "info": {},
+            "type": "spot",
+            "spot": True,
+            "future": False,
+            "active": True
+        },
         })
     return shitmarkets
 
@@ -776,19 +785,30 @@ def markets_empty():
 
 
 @pytest.fixture(scope='function')
-def limit_buy_order():
+def limit_buy_order_open():
     return {
         'id': 'mocked_limit_buy',
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001099,
         'amount': 90.99181073,
-        'filled': 90.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
+        'filled': 0.0,
+        'cost': 0.0009999,
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order(limit_buy_order_open):
+    order = deepcopy(limit_buy_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
 
 
 @pytest.fixture(scope='function')
@@ -891,7 +911,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -912,7 +932,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': 'AZNPFF-4AC4N-7MKTAT',
             'clientOrderId': None,
-            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'status': 'canceled',
@@ -933,7 +953,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -954,7 +974,7 @@ def limit_buy_order_canceled_empty(request):
             'info': {},
             'id': '1234512345',
             'clientOrderId': 'alb1234123',
-            'timestamp': arrow.utcnow().shift(minutes=-601).timestamp,
+            'timestamp': arrow.utcnow().shift(minutes=-601).int_timestamp,
             'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
             'lastTradeTimestamp': None,
             'symbol': 'LTC/USDT',
@@ -973,19 +993,29 @@ def limit_buy_order_canceled_empty(request):
 
 
 @pytest.fixture
-def limit_sell_order():
+def limit_sell_order_open():
     return {
         'id': 'mocked_limit_sell',
         'type': 'limit',
         'side': 'sell',
         'pair': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001173,
         'amount': 90.99181073,
-        'filled': 90.99181073,
-        'remaining': 0.0,
-        'status': 'closed'
+        'filled': 0.0,
+        'remaining': 90.99181073,
+        'status': 'open'
     }
+
+
+@pytest.fixture
+def limit_sell_order(limit_sell_order_open):
+    order = deepcopy(limit_sell_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
 
 
 @pytest.fixture
@@ -1054,7 +1084,7 @@ def ohlcv_history_list():
 @pytest.fixture
 def ohlcv_history(ohlcv_history_list):
     return ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
-                              fill_missing=True)
+                              fill_missing=True, drop_incomplete=False)
 
 
 @pytest.fixture
@@ -1386,6 +1416,28 @@ def tickers():
             "quoteVolume": 0.0,
             "info": {}
         },
+        "ADADOUBLE/USDT": {
+            "symbol": "ADADOUBLE/USDT",
+            "timestamp": 1580469388244,
+            "datetime": "2020-01-31T11:16:28.244Z",
+            "high": None,
+            "low": None,
+            "bid": 0.7305,
+            "bidVolume": None,
+            "ask": 0.7342,
+            "askVolume": None,
+            "vwap": None,
+            "open": None,
+            "close": None,
+            "last": 0,
+            "previousClose": None,
+            "change": None,
+            "percentage": 2.628,
+            "average": None,
+            "baseVolume": 0.0,
+            "quoteVolume": 0.0,
+            "info": {}
+        },
     })
 
 
@@ -1423,7 +1475,7 @@ def trades_for_order():
 
 @pytest.fixture(scope="function")
 def trades_history():
-    return [[1565798399463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
+    return [[1565798389463, '126181329', None, 'buy', 0.019627, 0.04, 0.00078508],
             [1565798399629, '126181330', None, 'buy', 0.019627, 0.244, 0.004788987999999999],
             [1565798399752, '126181331', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
             [1565798399862, '126181332', None, 'sell', 0.019626, 0.011, 0.00021588599999999999],
@@ -1536,16 +1588,7 @@ def fetch_trades_result():
 
 @pytest.fixture(scope="function")
 def trades_for_order2():
-    return [{'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
+    return [{'info': {},
              'timestamp': 1521663363189,
              'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
@@ -1557,16 +1600,7 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}},
-            {'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
+            {'info': {},
              'timestamp': 1521663363189,
              'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
@@ -1578,6 +1612,14 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
+
+
+@pytest.fixture(scope="function")
+def trades_for_order3(trades_for_order2):
+    # Different fee currencies for each trade
+    trades_for_order = deepcopy(trades_for_order2)
+    trades_for_order[0]['fee'] = {'cost': 0.02, 'currency': 'BNB'}
+    return trades_for_order
 
 
 @pytest.fixture

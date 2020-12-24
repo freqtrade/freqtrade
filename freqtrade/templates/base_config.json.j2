@@ -4,7 +4,7 @@
     "stake_amount": {{ stake_amount }},
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "{{ fiat_display_currency }}",
-    "ticker_interval": "{{ ticker_interval }}",
+    "timeframe": "{{ timeframe }}",
     "dry_run": {{ dry_run | lower }},
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
@@ -59,6 +59,7 @@
         "listen_port": 8080,
         "verbosity": "info",
         "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
         "username": "",
         "password": ""
     },

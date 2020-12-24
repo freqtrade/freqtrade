@@ -7,17 +7,18 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Dict, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
 from pandas import DataFrame
 
-from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import StrategyError
-from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.persistence import Trade
-from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.data.dataprovider import DataProvider
+from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange.exchange import timeframe_to_next_date
+from freqtrade.persistence import PairLocks, Trade
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
 
@@ -45,6 +46,10 @@ class SellType(Enum):
     EMERGENCY_SELL = "emergency_sell"
     NONE = ""
 
+    def __str__(self):
+        # explicitly convert to String to help with exporting data.
+        return self.value
+
 
 class SellCheckTuple(NamedTuple):
     """
@@ -62,7 +67,7 @@ class IStrategy(ABC):
     Attributes you can use:
         minimal_roi -> Dict: Minimal ROI designed for the strategy
         stoploss -> float: optimal stoploss designed for the strategy
-        ticker_interval -> str: value of the timeframe (ticker interval) to use with the strategy
+        timeframe -> str: value of the timeframe (ticker interval) to use with the strategy
     """
     # Strategy interface version
     # Default to version 2
@@ -85,8 +90,9 @@ class IStrategy(ABC):
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
 
-    # associated ticker interval
-    ticker_interval: str
+    # associated timeframe
+    ticker_interval: str  # DEPRECATED
+    timeframe: str
 
     # Optional order types
     order_types: Dict = {
@@ -117,6 +123,8 @@ class IStrategy(ABC):
     # and wallets - access to the current balance.
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
+    # container variable for strategy source code
+    __source__: str = ''
 
     # Definition of plot_config. See plotting documentation for more details.
     plot_config: Dict = {}
@@ -125,7 +133,6 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
-        self._pair_locked_until: Dict[str, datetime] = {}
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -190,6 +197,63 @@ class IStrategy(ABC):
         """
         return False
 
+    def bot_loop_start(self, **kwargs) -> None:
+        """
+        Called at the start of the bot iteration (one loop).
+        Might be used to perform pair-independent tasks
+        (e.g. gather some remote resource for comparison)
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
+    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                            time_in_force: str, **kwargs) -> bool:
+        """
+        Called right before placing a buy order.
+        Timing for this function is critical, so avoid doing heavy computations or
+        network requests in this method.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns True (always confirming).
+
+        :param pair: Pair that's about to be bought.
+        :param order_type: Order type (as configured in order_types). usually limit or market.
+        :param amount: Amount in target (quote) currency that's going to be traded.
+        :param rate: Rate that's going to be used when using limit orders
+        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the buy-order is placed on the exchange.
+            False aborts the process
+        """
+        return True
+
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+        """
+        Called right before placing a regular sell order.
+        Timing for this function is critical, so avoid doing heavy computations or
+        network requests in this method.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns True (always confirming).
+
+        :param pair: Pair that's about to be sold.
+        :param trade: trade object.
+        :param order_type: Order type (as configured in order_types). usually limit or market.
+        :param amount: Amount in quote currency.
+        :param rate: Rate that's going to be used when using limit orders
+        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param sell_reason: Sell reason.
+            Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
+                           'sell_signal', 'force_sell', 'emergency_sell']
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: When True is returned, then the sell-order is placed on the exchange.
+            False aborts the process
+        """
+        return True
+
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
@@ -203,13 +267,17 @@ class IStrategy(ABC):
         """
         return []
 
+###
+# END - Intended to be overridden by strategy
+###
+
     def get_strategy_name(self) -> str:
         """
         Returns strategy class name
         """
         return self.__class__.__name__
 
-    def lock_pair(self, pair: str, until: datetime) -> None:
+    def lock_pair(self, pair: str, until: datetime, reason: str = None) -> None:
         """
         Locks pair until a given timestamp happens.
         Locked pairs are not analyzed, and are prevented from opening new trades.
@@ -218,9 +286,9 @@ class IStrategy(ABC):
         :param pair: Pair to lock
         :param until: datetime in UTC until the pair should be blocked from opening new trades.
                 Needs to be timezone aware `datetime.now(timezone.utc)`
+        :param reason: Optional string explaining why the pair was locked.
         """
-        if pair not in self._pair_locked_until or self._pair_locked_until[pair] < until:
-            self._pair_locked_until[pair] = until
+        PairLocks.lock_pair(pair, until, reason)
 
     def unlock_pair(self, pair: str) -> None:
         """
@@ -229,16 +297,25 @@ class IStrategy(ABC):
         manually from within the strategy, to allow an easy way to unlock pairs.
         :param pair: Unlock pair to allow trading again
         """
-        if pair in self._pair_locked_until:
-            del self._pair_locked_until[pair]
+        PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
-    def is_pair_locked(self, pair: str) -> bool:
+    def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
+        The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
+        and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
+        of 2 seconds for a buy to happen on an old signal.
+        :param: pair: "Pair to check"
+        :param candle_date: Date of the last candle. Optional, defaults to current date
+        :returns: locking state of the pair in question.
         """
-        if pair not in self._pair_locked_until:
-            return False
-        return self._pair_locked_until[pair] >= datetime.now(timezone.utc)
+
+        if not candle_date:
+            # Simple call ...
+            return PairLocks.is_pair_locked(pair)
+        else:
+            lock_time = timeframe_to_next_date(self.timeframe, candle_date)
+            return PairLocks.is_pair_locked(pair, lock_time)
 
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -272,6 +349,8 @@ class IStrategy(ABC):
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
+            if self.dp:
+                self.dp._set_cached_df(pair, self.timeframe, dataframe)
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
@@ -283,13 +362,53 @@ class IStrategy(ABC):
 
         return dataframe
 
+    def analyze_pair(self, pair: str) -> None:
+        """
+        Fetch data for this pair from dataprovider and analyze.
+        Stores the dataframe into the dataprovider.
+        The analyzed dataframe is then accessible via `dp.get_analyzed_dataframe()`.
+        :param pair: Pair to analyze.
+        """
+        if not self.dp:
+            raise OperationalException("DataProvider not found.")
+        dataframe = self.dp.ohlcv(pair, self.timeframe)
+        if not isinstance(dataframe, DataFrame) or dataframe.empty:
+            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
+            return
+
+        try:
+            df_len, df_close, df_date = self.preserve_df(dataframe)
+
+            dataframe = strategy_safe_wrapper(
+                self._analyze_ticker_internal, message=""
+            )(dataframe, {'pair': pair})
+
+            self.assert_df(dataframe, df_len, df_close, df_date)
+        except StrategyError as error:
+            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
+            return
+
+        if dataframe.empty:
+            logger.warning('Empty dataframe for pair %s', pair)
+            return
+
+    def analyze(self, pairs: List[str]) -> None:
+        """
+        Analyze all pairs using analyze_pair().
+        :param pairs: List of pairs to analyze
+        """
+        for pair in pairs:
+            self.analyze_pair(pair)
+
     @staticmethod
     def preserve_df(dataframe: DataFrame) -> Tuple[int, float, datetime]:
         """ keep some data for dataframes """
         return len(dataframe), dataframe["close"].iloc[-1], dataframe["date"].iloc[-1]
 
     def assert_df(self, dataframe: DataFrame, df_len: int, df_close: float, df_date: datetime):
-        """ make sure data is unmodified """
+        """
+        Ensure dataframe (length, last candle) was not modified, and has all elements we need.
+        """
         message = ""
         if df_len != len(dataframe):
             message = "length"
@@ -303,31 +422,17 @@ class IStrategy(ABC):
             else:
                 raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
 
-    def get_signal(self, pair: str, interval: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
-        Calculates current signal based several technical analysis indicators
+        Calculates current signal based based on the buy / sell columns of the dataframe.
+        Used by Bot to get the signal to buy or sell
         :param pair: pair in format ANT/BTC
-        :param interval: Interval to use (in min)
-        :param dataframe: Dataframe to analyze
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
         :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
-            logger.warning('Empty candle (OHLCV) data for pair %s', pair)
-            return False, False
-
-        try:
-            df_len, df_close, df_date = self.preserve_df(dataframe)
-            dataframe = strategy_safe_wrapper(
-                self._analyze_ticker_internal, message=""
-                )(dataframe, {'pair': pair})
-            self.assert_df(dataframe, df_len, df_close, df_date)
-        except StrategyError as error:
-            logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
-
-            return False, False
-
-        if dataframe.empty:
-            logger.warning('Empty dataframe for pair %s', pair)
+            logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
             return False, False
 
         latest_date = dataframe['date'].max()
@@ -336,24 +441,18 @@ class IStrategy(ABC):
         latest_date = arrow.get(latest_date)
 
         # Check if dataframe is out of date
-        interval_minutes = timeframe_to_minutes(interval)
+        timeframe_minutes = timeframe_to_minutes(timeframe)
         offset = self.config.get('exchange', {}).get('outdated_offset', 5)
-        if latest_date < (arrow.utcnow().shift(minutes=-(interval_minutes * 2 + offset))):
+        if latest_date < (arrow.utcnow().shift(minutes=-(timeframe_minutes * 2 + offset))):
             logger.warning(
                 'Outdated history for pair %s. Last tick is %s minutes old',
-                pair,
-                (arrow.utcnow() - latest_date).seconds // 60
+                pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
             return False, False
 
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-        logger.debug(
-            'trigger: %s (pair=%s) buy=%s sell=%s',
-            latest['date'],
-            pair,
-            str(buy),
-            str(sell)
-        )
+        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
+                     latest['date'], pair, str(buy), str(sell))
         return buy, sell
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
@@ -377,39 +476,43 @@ class IStrategy(ABC):
                                               current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
 
-        if stoplossflag.sell_flag:
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
-                         f"sell_type={stoplossflag.sell_type}")
-            return stoplossflag
-
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
         config_ask_strategy = self.config.get('ask_strategy', {})
 
-        if buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False):
-            # This one is noisy, commented out
-            # logger.debug(f"{trade.pair} - Buy signal still active. sell_flag=False")
-            return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
+        roi_reached = (not (buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False))
+                       and self.min_roi_reached(trade=trade, current_profit=current_profit,
+                                                current_time=date))
 
-        # Check if minimal roi has been reached and no longer in buy conditions (avoiding a fee)
-        if self.min_roi_reached(trade=trade, current_profit=current_profit, current_time=date):
+        if config_ask_strategy.get('sell_profit_only', False) and trade.calc_profit(rate=rate) <= 0:
+            # Negative profits and sell_profit_only - ignore sell signal
+            sell_signal = False
+        else:
+            sell_signal = sell and not buy and config_ask_strategy.get('use_sell_signal', True)
+            # TODO: return here if sell-signal should be favored over ROI
+
+        # Start evaluations
+        # Sequence:
+        # ROI (if not stoploss)
+        # Sell-signal
+        # Stoploss
+        if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
                          f"sell_type=SellType.ROI")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
-        if config_ask_strategy.get('sell_profit_only', False):
-            # This one is noisy, commented out
-            # logger.debug(f"{trade.pair} - Checking if trade is profitable...")
-            if trade.calc_profit(rate=rate) <= 0:
-                # This one is noisy, commented out
-                # logger.debug(f"{trade.pair} - Trade is not profitable. sell_flag=False")
-                return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
-
-        if sell and not buy and config_ask_strategy.get('use_sell_signal', True):
+        if sell_signal:
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
                          f"sell_type=SellType.SELL_SIGNAL")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+
+        if stoplossflag.sell_flag:
+
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
+                         f"sell_type={stoplossflag.sell_type}")
+            return stoplossflag
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
@@ -448,8 +551,7 @@ class IStrategy(ABC):
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        if ((self.stoploss is not None) and
-            (trade.stop_loss >= current_rate) and
+        if ((trade.stop_loss >= current_rate) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
@@ -499,7 +601,8 @@ class IStrategy(ABC):
 
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
-        Creates a dataframe and populates indicators for given candle (OHLCV) data
+        Populates indicators for given candle (OHLCV) data (for multiple pairs)
+        Does not run advice_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when

@@ -6,6 +6,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,6 +59,7 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
     # Import here to avoid loading hyperopt module when it's not used
     try:
         from filelock import FileLock, Timeout
+
         from freqtrade.optimize.hyperopt import Hyperopt
     except ImportError as e:
         raise OperationalException(
@@ -98,6 +100,7 @@ def start_edge(args: Dict[str, Any]) -> None:
     :return: None
     """
     from freqtrade.optimize.edge_cli import EdgeCli
+
     # Initialize configuration
     config = setup_optimize_configuration(args, RunMode.EDGE)
     logger.info('Starting freqtrade in Edge mode')

@@ -150,7 +150,7 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhooksellcancel"]["value3"].format(**msg))
     for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
                     RPCMessageType.WARNING_NOTIFICATION,
-                    RPCMessageType.CUSTOM_NOTIFICATION]:
+                    RPCMessageType.STARTUP_NOTIFICATION]:
         # Test notification
         msg = {
             'type': msgtype,
@@ -174,7 +174,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
 
     webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
     webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})
-    assert log_has(f"Message type {RPCMessageType.BUY_NOTIFICATION} not configured for webhooks",
+    assert log_has(f"Message type '{RPCMessageType.BUY_NOTIFICATION}' not configured for webhooks",
                    caplog)
 
     default_conf["webhook"] = get_webhook_dict()
