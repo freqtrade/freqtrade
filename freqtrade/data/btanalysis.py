@@ -172,16 +172,19 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
     return df
 
 
-def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+def expand_trades_over_period(results: pd.DataFrame, timeframe: str,
+                              timeframe_min: Optional[int] = None) -> pd.DataFrame:
     """
-    Find overlapping trades by expanding each trade once per period it was open
-    and then counting overlaps.
+    Expand trades DF to have one row per candle
     :param results: Results Dataframe - can be loaded
     :param timeframe: Timeframe used for backtest
-    :return: dataframe with open-counts per time-period in timeframe
+    :param timeframe: Timeframe in minutes. calculated from timeframe if not available.
+    :return: dataframe with date index (nonunique)
+        with trades expanded for every row from trade.open_date til trade.close_date
     """
-    from freqtrade.exchange import timeframe_to_minutes
-    timeframe_min = timeframe_to_minutes(timeframe)
+    if not timeframe_min:
+        from freqtrade.exchange import timeframe_to_minutes
+        timeframe_min = timeframe_to_minutes(timeframe)
     # compute how long each trade was left outstanding as date indexes
     dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
                                      freq=f"{timeframe_min}min"))
@@ -195,6 +198,21 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     # the expanded dates list is added as a new column to the repeated trades (df2)
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index('date')
+    return df2
+
+
+def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    """
+    Find overlapping trades by expanding each trade once per period it was open
+    and then counting overlaps.
+    :param results: Results Dataframe - can be loaded
+    :param timeframe: Timeframe used for backtest
+    :return: dataframe with open-counts per time-period in timeframe
+    """
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_min = timeframe_to_minutes(timeframe)
+    df2 = expand_trades_over_period(results, timeframe, timeframe_min)
+
     # duplicate dates entries represent trades on the same candle
     # which resampling resolves through the applied function (count)
     df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
