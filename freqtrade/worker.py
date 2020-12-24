@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,6 +90,9 @@ class Worker:
             logger.info(f"Changing state to: {state.name}")
             if state == State.RUNNING:
                 self.freqtrade.startup()
+
+            if state == State.STOPPED:
+                self.freqtrade.check_for_open_trades()
 
             # Reset heartbeat timestamp to log the heartbeat message at
             # first throttling iteration when the state changes

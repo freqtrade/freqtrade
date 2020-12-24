@@ -7,6 +7,7 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,7 +15,7 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     """
     Test Pairlist configuration
     """
-    from freqtrade.pairlist.pairlistmanager import PairListManager
+    from freqtrade.plugins.pairlistmanager import PairListManager
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)

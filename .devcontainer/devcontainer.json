@@ -1,0 +1,44 @@
+{
+    "name": "freqtrade Develop",
+
+    "dockerComposeFile": [
+        "docker-compose.yml"
+    ],
+
+    "service": "ft_vscode",
+
+    "workspaceFolder": "/freqtrade/",
+
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "editor.insertSpaces": true,
+        "files.trimTrailingWhitespace": true,
+        "[markdown]": {
+            "files.trimTrailingWhitespace": false,
+        },
+        "python.pythonPath": "/usr/local/bin/python",
+    },
+
+    // Add the IDs of extensions you want installed when the container is created.
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "davidanson.vscode-markdownlint",
+        "ms-azuretools.vscode-docker",
+    ],
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    // Uncomment the next line if you want start specific services in your Docker Compose config.
+    // "runServices": [],
+
+    // Uncomment the next line if you want to keep your containers running after VS Code shuts down.
+    // "shutdownAction": "none",
+
+    // Uncomment the next line to run commands after the container is created - for example installing curl.
+    // "postCreateCommand": "sudo apt-get update && apt-get install -y git",
+
+    // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
+    "remoteUser": "ftuser"
+}

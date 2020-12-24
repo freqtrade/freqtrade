@@ -1,11 +1,12 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-from pandas import DataFrame
 import pytest
+from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ExchangeError, OperationalException
+from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.state import RunMode
 from tests.conftest import get_patched_exchange
 
@@ -49,6 +50,31 @@ def test_historic_ohlcv(mocker, default_conf, ohlcv_history):
     assert isinstance(data, DataFrame)
     assert historymock.call_count == 1
     assert historymock.call_args_list[0][1]["timeframe"] == "5m"
+
+
+def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
+    hdf5loadmock = MagicMock(return_value=ohlcv_history)
+    jsonloadmock = MagicMock(return_value=ohlcv_history)
+    mocker.patch("freqtrade.data.history.hdf5datahandler.HDF5DataHandler._ohlcv_load", hdf5loadmock)
+    mocker.patch("freqtrade.data.history.jsondatahandler.JsonDataHandler._ohlcv_load", jsonloadmock)
+
+    default_conf["runmode"] = RunMode.BACKTEST
+    exchange = get_patched_exchange(mocker, default_conf)
+    dp = DataProvider(default_conf, exchange)
+    data = dp.historic_ohlcv("UNITTEST/BTC", "5m")
+    assert isinstance(data, DataFrame)
+    hdf5loadmock.assert_not_called()
+    jsonloadmock.assert_called_once()
+
+    # Swiching to dataformat hdf5
+    hdf5loadmock.reset_mock()
+    jsonloadmock.reset_mock()
+    default_conf["dataformat_ohlcv"] = "hdf5"
+    dp = DataProvider(default_conf, exchange)
+    data = dp.historic_ohlcv("UNITTEST/BTC", "5m")
+    assert isinstance(data, DataFrame)
+    hdf5loadmock.assert_called_once()
+    jsonloadmock.assert_not_called()
 
 
 def test_get_pair_dataframe(mocker, default_conf, ohlcv_history):
@@ -131,7 +157,7 @@ def test_orderbook(mocker, default_conf, order_book_l2):
     res = dp.orderbook('ETH/BTC', 5)
     assert order_book_l2.call_count == 1
     assert order_book_l2.call_args_list[0][0][0] == 'ETH/BTC'
-    assert order_book_l2.call_args_list[0][0][1] == 5
+    assert order_book_l2.call_args_list[0][0][1] >= 5
 
     assert type(res) is dict
     assert 'bids' in res
@@ -164,7 +190,7 @@ def test_ticker(mocker, default_conf, tickers):
     assert 'symbol' in res
     assert res['symbol'] == 'ETH/BTC'
 
-    ticker_mock = MagicMock(side_effect=DependencyException('Pair not found'))
+    ticker_mock = MagicMock(side_effect=ExchangeError('Pair not found'))
     mocker.patch("freqtrade.exchange.Exchange.fetch_ticker", ticker_mock)
     exchange = get_patched_exchange(mocker, default_conf)
     dp = DataProvider(default_conf, exchange)
@@ -194,3 +220,29 @@ def test_current_whitelist(mocker, default_conf, tickers):
     with pytest.raises(OperationalException):
         dp = DataProvider(default_conf, exchange)
         dp.current_whitelist()
+
+
+def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
+
+    default_conf["runmode"] = RunMode.DRY_RUN
+
+    timeframe = default_conf["timeframe"]
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    dp = DataProvider(default_conf, exchange)
+    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history)
+
+    assert dp.runmode == RunMode.DRY_RUN
+    dataframe, time = dp.get_analyzed_dataframe("UNITTEST/BTC", timeframe)
+    assert ohlcv_history.equals(dataframe)
+    assert isinstance(time, datetime)
+
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+    assert ohlcv_history.equals(dataframe)
+    assert isinstance(time, datetime)
+
+    dataframe, time = dp.get_analyzed_dataframe("NOTHING/BTC", timeframe)
+    assert dataframe.empty
+    assert isinstance(time, datetime)
+    assert time == datetime(1970, 1, 1, tzinfo=timezone.utc)

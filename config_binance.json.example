@@ -7,7 +7,6 @@
     "timeframe": "5m",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
-    "trailing_stop": false,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30

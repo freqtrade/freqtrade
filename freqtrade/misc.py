@@ -12,6 +12,7 @@ from typing.io import IO
 import numpy as np
 import rapidjson
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +42,7 @@ def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
     return dates.dt.to_pydatetime()
 
 
-def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
+def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
     """
     Dump JSON data into a file
     :param filename: file to create
@@ -52,12 +53,14 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False) -> None:
     if is_zip:
         if filename.suffix != '.gz':
             filename = filename.with_suffix('.gz')
-        logger.info(f'dumping json to "{filename}"')
+        if log:
+            logger.info(f'dumping json to "{filename}"')
 
-        with gzip.open(filename, 'w') as fp:
-            rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
+        with gzip.open(filename, 'w') as fpz:
+            rapidjson.dump(data, fpz, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
-        logger.info(f'dumping json to "{filename}"')
+        if log:
+            logger.info(f'dumping json to "{filename}"')
         with open(filename, 'w') as fp:
             rapidjson.dump(data, fp, default=str, number_mode=rapidjson.NM_NATIVE)
 
@@ -134,7 +137,21 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
-def safe_value_fallback(dict1: dict, dict2: dict, key1: str, key2: str, default_value=None):
+def safe_value_fallback(obj: dict, key1: str, key2: str, default_value=None):
+    """
+    Search a value in obj, return this if it's not None.
+    Then search key2 in obj - return that if it's not none - then use default_value.
+    Else falls back to None.
+    """
+    if key1 in obj and obj[key1] is not None:
+        return obj[key1]
+    else:
+        if key2 in obj and obj[key2] is not None:
+            return obj[key2]
+    return default_value
+
+
+def safe_value_fallback2(dict1: dict, dict2: dict, key1: str, key2: str, default_value=None):
     """
     Search a value in dict1, return this if it's not None.
     Fall back to dict2 - return key2 from dict2 if it's not None.

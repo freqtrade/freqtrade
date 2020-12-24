@@ -1,12 +1,13 @@
 
 # --- Do not remove these libs ---
-from freqtrade.strategy.interface import IStrategy
-from pandas import DataFrame
-# --------------------------------
-
 # Add your lib to import here
 import talib.abstract as ta
+from pandas import DataFrame
 
+from freqtrade.strategy.interface import IStrategy
+
+
+# --------------------------------
 
 # This class is a sample. Feel free to customize it.
 class TestStrategyLegacy(IStrategy):

@@ -4,9 +4,11 @@ from typing import Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.common import retrier
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,21 +18,11 @@ class Binance(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
+        "ohlcv_candle_limit": 1000,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
+        "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
-
-    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
-        """
-        get order book level 2 from exchange
-
-        20180619: binance support limits but only on specific range
-        """
-        limit_range = [5, 10, 20, 50, 100, 500, 1000]
-        # get next-higher step in the limit_range list
-        limit = min(list(filter(lambda x: limit <= x, limit_range)))
-
-        return super().fetch_l2_order_book(pair, limit)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
@@ -39,6 +31,7 @@ class Binance(Exchange):
         """
         return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
 
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         creates a stoploss limit order.
@@ -77,8 +70,8 @@ class Binance(Exchange):
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             return order
         except ccxt.InsufficientFunds as e:
-            raise DependencyException(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}.'
+            raise InsufficientFundsError(
+                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to sell amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
@@ -88,6 +81,8 @@ class Binance(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to sell amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e

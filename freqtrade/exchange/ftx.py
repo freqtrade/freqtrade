@@ -1,13 +1,14 @@
 """ FTX exchange subclass """
 import logging
-from typing import Dict
+from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.exceptions import (DependencyException, InvalidOrderException,
+from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
-from freqtrade.exchange.common import retrier
+from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,16 @@ class Ftx(Exchange):
         "ohlcv_candle_limit": 1500,
     }
 
+    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+        """
+        Check if the market symbol is tradable by Freqtrade.
+        Default checks + check if pair is spot pair (no futures trading yet).
+        """
+        parent_check = super().market_is_tradable(market)
+
+        return (parent_check and
+                market.get('spot', False) is True)
+
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
@@ -26,6 +37,7 @@ class Ftx(Exchange):
         """
         return order['type'] == 'stop' and stop_loss > float(order['price'])
 
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
         """
         Creates a stoploss order.
@@ -59,7 +71,7 @@ class Ftx(Exchange):
                         'stop price: %s.', pair, stop_price)
             return order
         except ccxt.InsufficientFunds as e:
-            raise DependencyException(
+            raise InsufficientFundsError(
                 f'Insufficient funds to create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
@@ -68,14 +80,16 @@ class Ftx(Exchange):
                 f'Could not create {ordertype} sell order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def get_stoploss_order(self, order_id: str, pair: str) -> Dict:
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
+    def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
             try:
                 order = self._dry_run_open_orders[order_id]
@@ -96,6 +110,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Tried to get an invalid order (id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
@@ -111,6 +127,8 @@ class Ftx(Exchange):
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e

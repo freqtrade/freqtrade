@@ -26,6 +26,24 @@ def check_conflicting_settings(config: Dict[str, Any],
         )
 
 
+def process_removed_setting(config: Dict[str, Any],
+                            section1: str, name1: str,
+                            section2: str, name2: str) -> None:
+    """
+    :param section1: Removed section
+    :param name1: Removed setting name
+    :param section2: new section for this key
+    :param name2: new setting name
+    """
+    section1_config = config.get(section1, {})
+    if name1 in section1_config:
+        raise OperationalException(
+            f"Setting `{section1}.{name1}` has been moved to `{section2}.{name2}. "
+            f"Please delete it from your configuration and use the `{section2}.{name2}` "
+            "setting instead."
+        )
+
+
 def process_deprecated_setting(config: Dict[str, Any],
                                section1: str, name1: str,
                                section2: str, name2: str) -> None:
@@ -44,19 +62,18 @@ def process_deprecated_setting(config: Dict[str, Any],
 
 def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
 
-    check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
-                               'experimental', 'use_sell_signal')
-    check_conflicting_settings(config, 'ask_strategy', 'sell_profit_only',
-                               'experimental', 'sell_profit_only')
-    check_conflicting_settings(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
-                               'experimental', 'ignore_roi_if_buy_signal')
+    # Kept for future deprecated / moved settings
+    # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
+    #                            'experimental', 'use_sell_signal')
+    # process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
+    #                            'experimental', 'use_sell_signal')
 
-    process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
-                               'experimental', 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
-                               'experimental', 'sell_profit_only')
-    process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
-                               'experimental', 'ignore_roi_if_buy_signal')
+    process_removed_setting(config, 'experimental', 'use_sell_signal',
+                            'ask_strategy', 'use_sell_signal')
+    process_removed_setting(config, 'experimental', 'sell_profit_only',
+                            'ask_strategy', 'sell_profit_only')
+    process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
+                            'ask_strategy', 'ignore_roi_if_buy_signal')
 
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):

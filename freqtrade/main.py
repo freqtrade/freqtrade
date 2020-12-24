@@ -3,18 +3,18 @@
 Main Freqtrade bot script.
 Read the documentation to know what cli arguments you need.
 """
-
-from freqtrade.exceptions import FreqtradeException, OperationalException
-import sys
-# check min. python version
-if sys.version_info < (3, 6):
-    sys.exit("Freqtrade requires Python version >= 3.6")
-
-# flake8: noqa E402
 import logging
+import sys
 from typing import Any, List
 
+
+# check min. python version
+if sys.version_info < (3, 7):
+    sys.exit("Freqtrade requires Python version >= 3.7")
+
 from freqtrade.commands import Arguments
+from freqtrade.exceptions import FreqtradeException, OperationalException
+from freqtrade.loggers import setup_logging_pre
 
 
 logger = logging.getLogger('freqtrade')
@@ -28,6 +28,7 @@ def main(sysargv: List[str] = None) -> None:
 
     return_code: Any = 1
     try:
+        setup_logging_pre()
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 

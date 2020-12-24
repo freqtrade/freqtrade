@@ -3,8 +3,9 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.constants import USER_DATA_FILES
+from freqtrade.exceptions import OperationalException
+
 
 logger = logging.getLogger(__name__)
 

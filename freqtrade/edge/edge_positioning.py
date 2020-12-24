@@ -9,10 +9,11 @@ import utils_find_1st as utf1st
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
-from freqtrade.exceptions import OperationalException
+from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
+from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.interface import SellType
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class Edge:
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (
-                self._last_updated + heartbeat > arrow.utcnow().timestamp):
+                self._last_updated + heartbeat > arrow.utcnow().int_timestamp):
             return False
 
         data: Dict[str, Any] = {}
@@ -121,12 +122,9 @@ class Edge:
 
         # Print timeframe
         min_date, max_date = get_timerange(preprocessed)
-        logger.info(
-            'Measuring data from %s up to %s (%s days) ...',
-            min_date.isoformat(),
-            max_date.isoformat(),
-            (max_date - min_date).days
-        )
+        logger.info(f'Measuring data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
         headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
 
         trades: list = []
@@ -148,7 +146,7 @@ class Edge:
         # Fill missing, calculable columns, profit, duration , abs etc.
         trades_df = self._fill_calculable_fields(DataFrame(trades))
         self._cached_pairs = self._process_expectancy(trades_df)
-        self._last_updated = arrow.utcnow().timestamp
+        self._last_updated = arrow.utcnow().int_timestamp
 
         return True
 
@@ -240,7 +238,7 @@ class Edge:
         # All returned values are relative, they are defined as ratios.
         stake = 0.015
 
-        result['trade_duration'] = result['close_time'] - result['open_time']
+        result['trade_duration'] = result['close_date'] - result['open_date']
 
         result['trade_duration'] = result['trade_duration'].map(
             lambda x: int(x.total_seconds() / 60))
@@ -281,8 +279,8 @@ class Edge:
         #
         # Removing Pumps
         if self.edge_config.get('remove_pumps', False):
-            results = results.groupby(['pair', 'stoploss']).apply(
-                lambda x: x[x['profit_abs'] < 2 * x['profit_abs'].std() + x['profit_abs'].mean()])
+            results = results[results['profit_abs'] < 2 * results['profit_abs'].std()
+                              + results['profit_abs'].mean()]
         ##########################################################################
 
         # Removing trades having a duration more than X minutes (set in config)
@@ -312,8 +310,10 @@ class Edge:
 
         # Calculating number of losing trades, average win and average loss
         df['nb_loss_trades'] = df['nb_trades'] - df['nb_win_trades']
-        df['average_win'] = df['profit_sum'] / df['nb_win_trades']
-        df['average_loss'] = df['loss_sum'] / df['nb_loss_trades']
+        df['average_win'] = np.where(df['nb_win_trades'] == 0, 0.0,
+                                     df['profit_sum'] / df['nb_win_trades'])
+        df['average_loss'] = np.where(df['nb_loss_trades'] == 0, 0.0,
+                                      df['loss_sum'] / df['nb_loss_trades'])
 
         # Win rate = number of profitable trades / number of trades
         df['winrate'] = df['nb_win_trades'] / df['nb_trades']
@@ -430,10 +430,8 @@ class Edge:
                      'stoploss': stoploss,
                      'profit_ratio': '',
                      'profit_abs': '',
-                     'open_time': date_column[open_trade_index],
-                     'close_time': date_column[exit_index],
-                     'open_index': start_point + open_trade_index,
-                     'close_index': start_point + exit_index,
+                     'open_date': date_column[open_trade_index],
+                     'close_date': date_column[exit_index],
                      'trade_duration': '',
                      'open_rate': round(open_price, 15),
                      'close_rate': round(exit_price, 15),

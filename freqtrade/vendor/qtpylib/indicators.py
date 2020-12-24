@@ -19,13 +19,14 @@
 # limitations under the License.
 #
 
-import warnings
 import sys
+import warnings
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 from pandas.core.base import PandasObject
+
 
 # =============================================
 # check min, python version
@@ -222,7 +223,7 @@ def crossed(series1, series2, direction=None):
     if isinstance(series1, np.ndarray):
         series1 = pd.Series(series1)
 
-    if isinstance(series2, (float, int, np.ndarray)):
+    if isinstance(series2, (float, int, np.ndarray, np.integer, np.floating)):
         series2 = pd.Series(index=series1.index, data=series2)
 
     if direction is None or direction == "above":

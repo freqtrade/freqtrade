@@ -5,6 +5,9 @@ This page explains the different parameters of the bot and how to run it.
 !!! Note
     If you've used `setup.sh`, don't forget to activate your virtual environment (`source .env/bin/activate`) before running freqtrade commands.
 
+!!! Warning "Up-to-date clock"
+    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
+
 ## Bot commands
 
 ```
@@ -210,9 +213,11 @@ Backtesting also uses the config specified via `-c/--config`.
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
                              [--strategy-path PATH] [-i TIMEFRAME]
-                             [--timerange TIMERANGE] [--max-open-trades INT]
+                             [--timerange TIMERANGE]
+                             [--data-format-ohlcv {json,jsongz,hdf5}]
+                             [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [--eps] [--dmmp]
+                             [--eps] [--dmmp] [--enable-protections]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
@@ -223,6 +228,9 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -238,6 +246,10 @@ optional arguments:
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest. Please note that ticker-interval needs to be
@@ -293,14 +305,15 @@ to find optimal parameter values for your strategy.
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
                           [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
-                          [-e INT]
+                          [--dmmp] [--enable-protections] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
-                          [--dmmp] [--print-all] [--no-color] [--print-json]
-                          [-j JOBS] [--random-state INT] [--min-trades INT]
-                          [--continue] [--hyperopt-loss NAME]
+                          [--print-all] [--no-color] [--print-json] [-j JOBS]
+                          [--random-state INT] [--min-trades INT]
+                          [--hyperopt-loss NAME]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -309,6 +322,9 @@ optional arguments:
                         `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -324,14 +340,18 @@ optional arguments:
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
-  -e INT, --epochs INT  Specify number of epochs (default: 100).
-  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
-                        Specify which parameters to hyperopt. Space-separated
-                        list.
   --dmmp, --disable-max-market-positions
                         Disable applying `max_open_trades` during backtest
                         (same as setting `max_open_trades` to a very high
                         number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list.
   --print-all           Print all results, not only the best ones.
   --no-color            Disable colorization of hyperopt results. May be
                         useful if you are redirecting output to a file.
@@ -346,18 +366,14 @@ optional arguments:
                         reproducible hyperopt results.
   --min-trades INT      Set minimal desired number of trades for evaluations
                         in the hyperopt optimization path (default: 1).
-  --continue            Continue hyperopt from previous runs. By default,
-                        temporary files will be removed and hyperopt will
-                        start from scratch.
   --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
                         target for optimization is different. Built-in
-                        Hyperopt-loss-functions are: DefaultHyperOptLoss,
-                        OnlyProfitHyperOptLoss, SharpeHyperOptLoss,
-                        SharpeHyperOptLossDaily, SortinoHyperOptLoss,
-                        SortinoHyperOptLossDaily.(default:
-                        `DefaultHyperOptLoss`).
+                        Hyperopt-loss-functions are:
+                        ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
+                        SharpeHyperOptLoss, SharpeHyperOptLossDaily,
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

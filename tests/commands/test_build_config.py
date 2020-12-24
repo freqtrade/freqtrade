@@ -4,10 +4,8 @@ from unittest.mock import MagicMock
 import pytest
 import rapidjson
 
-from freqtrade.commands.build_config_commands import (ask_user_config,
-                                                      ask_user_overwrite,
-                                                      start_new_config,
-                                                      validate_is_float,
+from freqtrade.commands.build_config_commands import (ask_user_config, ask_user_overwrite,
+                                                      start_new_config, validate_is_float,
                                                       validate_is_int)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import get_args, log_has_re

@@ -9,24 +9,27 @@ from typing import Any, Dict, List, Optional
 from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade.constants import DEFAULT_CONFIG
 
+
 ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
 
-ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange",
+ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
+                                        "enable_protections",
                                         "strategy_list", "export", "exportfilename"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
-                                        "position_stacking", "epochs", "spaces",
-                                        "use_max_market_positions", "print_all",
+                                        "position_stacking", "use_max_market_positions",
+                                        "enable_protections",
+                                        "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_continue", "hyperopt_loss"]
+                                        "hyperopt_loss"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
@@ -41,7 +44,8 @@ ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
                    "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
 
-ARGS_TEST_PAIRLIST = ["config", "quote_currencies", "print_one_column", "list_pairs_print_json"]
+ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
+                      "list_pairs_print_json"]
 
 ARGS_CREATE_USERDIR = ["user_data_dir", "reset"]
 
@@ -54,7 +58,9 @@ ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "download_trades", "exchange",
+ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
+
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "timerange", "download_trades", "exchange",
                       "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
@@ -71,14 +77,15 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
                       "hyperopt_list_min_avg_time", "hyperopt_list_max_avg_time",
                       "hyperopt_list_min_avg_profit", "hyperopt_list_max_avg_profit",
                       "hyperopt_list_min_total_profit", "hyperopt_list_max_total_profit",
+                      "hyperopt_list_min_objective", "hyperopt_list_max_objective",
                       "print_colorized", "print_json", "hyperopt_list_no_details",
-                      "export_csv"]
+                      "hyperoptexportfilename", "export_csv"]
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
-                      "print_json", "hyperopt_show_no_header"]
+                      "print_json", "hyperoptexportfilename", "hyperopt_show_no_header"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
-                    "list-markets", "list-pairs", "list-strategies",
+                    "list-markets", "list-pairs", "list-strategies", "list-data",
                     "list-hyperopts", "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit", "show-trades"]
 
@@ -158,16 +165,14 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_create_userdir, start_convert_data,
-                                        start_download_data,
-                                        start_hyperopt_list, start_hyperopt_show,
+        from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
+                                        start_download_data, start_edge, start_hyperopt,
+                                        start_hyperopt_list, start_hyperopt_show, start_list_data,
                                         start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
-                                        start_list_timeframes, start_new_config,
-                                        start_new_hyperopt, start_new_strategy,
-                                        start_plot_dataframe, start_plot_profit, start_show_trades,
-                                        start_backtesting, start_hyperopt, start_edge,
-                                        start_test_pairlist, start_trading)
+                                        start_list_timeframes, start_new_config, start_new_hyperopt,
+                                        start_new_strategy, start_plot_dataframe, start_plot_profit,
+                                        start_show_trades, start_test_pairlist, start_trading)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -232,6 +237,15 @@ class Arguments:
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
         self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
+
+        # Add list-data subcommand
+        list_data_cmd = subparsers.add_parser(
+            'list-data',
+            help='List downloaded data.',
+            parents=[_common_parser],
+        )
+        list_data_cmd.set_defaults(func=start_list_data)
+        self._build_args(optionlist=ARGS_LIST_DATA, parser=list_data_cmd)
 
         # Add backtesting subcommand
         backtesting_cmd = subparsers.add_parser('backtesting', help='Backtesting module.',
@@ -354,7 +368,7 @@ class Arguments:
         plot_profit_cmd = subparsers.add_parser(
             'plot-profit',
             help='Generate plot showing profits.',
-            parents=[_common_parser],
+            parents=[_common_parser, _strategy_parser],
         )
         plot_profit_cmd.set_defaults(func=start_plot_profit)
         self._build_args(optionlist=ARGS_PLOT_PROFIT, parser=plot_profit_cmd)

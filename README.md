@@ -37,7 +37,7 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 
 ## Features
 
-- [x] **Based on Python 3.6+**: For botting on any operating system - Windows, macOS and Linux.
+- [x] **Based on Python 3.7+**: For botting on any operating system - Windows, macOS and Linux.
 - [x] **Persistence**: Persistence is achieved through sqlite.
 - [x] **Dry-run**: Run the bot without playing money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
@@ -55,9 +55,8 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone git@github.com:freqtrade/freqtrade.git
+git clone -b develop https://github.com/freqtrade/freqtrade.git 
 cd freqtrade
-git checkout develop
 ./setup.sh --install
 ```
 
@@ -111,35 +110,35 @@ optional arguments:
 
 Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
-- `/start`: Starts the trader
-- `/stop`: Stops the trader
-- `/status [table]`: Lists all open trades
-- `/count`: Displays number of open trades
+- `/start`: Starts the trader.
+- `/stop`: Stops the trader.
+- `/stopbuy`: Stop entering new trades.
+- `/status [table]`: Lists all open trades.
 - `/profit`: Lists cumulative profit from all finished trades
 - `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
 - `/performance`: Show performance of each finished trade grouped by pair
-- `/balance`: Show account balance per currency
-- `/daily <n>`: Shows profit or loss per day, over the last n days
-- `/help`: Show help message
-- `/version`: Show version
-
+- `/balance`: Show account balance per currency.
+- `/daily <n>`: Shows profit or loss per day, over the last n days.
+- `/help`: Show help message.
+- `/version`: Show version.
 
 ## Development branches
 
 The project is currently setup in two main branches:
 
-- `develop` - This branch has often new features, but might also cause breaking changes.
-- `master` - This branch contains the latest stable release. The bot 'should' be stable on this branch, and is generally well tested.
+- `develop` - This branch has often new features, but might also contain breaking changes. We try hard to keep this branch as stable as possible.
+- `stable` - This branch contains the latest stable release. This branch is generally well tested.
 - `feat/*` - These are feature branches, which are being worked on heavily. Please don't use these unless you want to test a specific feature.
 
 ## Support
 
-### Help / Slack
+### Help / Discord / Slack
 
-For any questions not covered by the documentation or for further
-information about the bot, we encourage you to join our slack channel.
+For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
 
-- [Click here to join Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE).
+Please check out our [discord server](https://discord.gg/MA9v74M).
+
+You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -167,18 +166,18 @@ Please read our
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests.
 
-Coding is not a neccessity to contribute - maybe start with improving our documentation?
+Coding is not a necessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/MA9v74M) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
-**Important:** Always create your PR against the `develop` branch, not `master`.
+**Important:** Always create your PR against the `develop` branch, not `stable`.
 
 ## Requirements
 
-### Uptodate clock
+### Up-to-date clock
 
-The clock must be accurate, syncronized to a NTP server very frequently to avoid problems with communication to the exchanges.
+The clock must be accurate, synchronized to a NTP server very frequently to avoid problems with communication to the exchanges.
 
 ### Min hardware required
 
@@ -188,7 +187,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 
-- [Python 3.6.x](http://docs.python-guide.org/en/latest/starting/installation/)
+- [Python 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)

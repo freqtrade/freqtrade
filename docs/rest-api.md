@@ -46,7 +46,7 @@ secrets.token_hex()
 
 ### Configuration with docker
 
-If you run your bot using docker, you'll need to have the bot listen to incomming connections. The security is then handled by docker.
+If you run your bot using docker, you'll need to have the bot listen to incoming connections. The security is then handled by docker.
 
 ``` json
     "api_server": {
@@ -104,28 +104,43 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 python3 scripts/rest_client.py --config rest_config.json <command> [optional parameters]
 ```
 
-## Available commands
+## Available endpoints
 
-|  Command | Default | Description |
-|----------|---------|-------------|
-| `start` | | Starts the trader
-| `stop` | | Stops the trader
-| `stopbuy` | | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
-| `reload_config` | | Reloads the configuration file
-| `show_config` | | Shows part of the current configuration with relevant settings to operation
-| `status` | | Lists all open trades
-| `count` | | Displays number of trades used and available
-| `profit` | | Display a summary of your profit/loss from close trades and some stats about your performance
-| `forcesell <trade_id>` | | Instantly sells the given trade  (Ignoring `minimum_roi`).
-| `forcesell all` | | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `forcebuy <pair> [rate]` | | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
-| `performance` | | Show performance of each finished trade grouped by pair
-| `balance` | | Show account balance per currency
-| `daily <n>` | 7 | Shows profit or loss per day, over the last n days
-| `whitelist` | | Show the current whitelist
-| `blacklist [pair]` | | Show the current blacklist, or adds a pair to the blacklist.
-| `edge` | | Show validated pairs by Edge if it is enabled.
-| `version` | | Show version
+|  Command | Description |
+|----------|-------------|
+| `ping` | Simple command testing the API Readiness - requires no authentication.
+| `start` | Starts the trader.
+| `stop` | Stops the trader.
+| `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
+| `reload_config` | Reloads the configuration file.
+| `trades` | List last trades.
+| `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
+| `show_config` | Shows part of the current configuration with relevant settings to operation.
+| `logs` | Shows last log messages.
+| `status` | Lists all open trades.
+| `count` | Displays number of trades used and available.
+| `locks` | Displays currently locked pairs.
+| `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
+| `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
+| `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
+| `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `performance` | Show performance of each finished trade grouped by pair.
+| `balance` | Show account balance per currency.
+| `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `stats` | Display a summary of profit / loss reasons as well as average holding times.
+| `whitelist` | Show the current whitelist.
+| `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
+| `edge` | Show validated pairs by Edge if it is enabled.
+| `pair_candles` | Returns dataframe for a pair / timeframe combination while the bot is running. **Alpha**
+| `pair_history` | Returns an analyzed dataframe for a given timerange, analyzed by a given strategy. **Alpha**
+| `plot_config` | Get plot config from the strategy (or nothing if not configured). **Alpha**
+| `strategies` | List strategies in strategy directory. **Alpha**
+| `strategy <strategy>` | Get specific Strategy content. **Alpha**
+| `available_pairs` | List available backtest data. **Alpha**
+| `version` | Show version.
+
+!!! Warning "Alpha status"
+    Endpoints labeled with *Alpha status* above may change at any time without notice.
 
 Possible commands can be listed from the rest-client script using the `help` command.
 
@@ -135,78 +150,117 @@ python3 scripts/rest_client.py help
 
 ``` output
 Possible commands:
+
+available_pairs
+	Return available pair (backtest data) based on timeframe / stake_currency selection
+
+        :param timeframe: Only pairs with this timeframe available.
+        :param stake_currency: Only pairs that include this timeframe
+
 balance
-        Get the account balance
-        :returns: json object
+	Get the account balance.
 
 blacklist
-        Show the current blacklist
+	Show the current blacklist.
+
         :param add: List of coins to add (example: "BNB/BTC")
-        :returns: json object
 
 count
-        Returns the amount of open trades
-        :returns: json object
+	Return the amount of open trades.
 
 daily
-        Returns the amount of open trades
-        :returns: json object
+	Return the amount of open trades.
+
+delete_trade
+	Delete trade from the database.
+        Tries to close open orders. Requires manual handling of this asset on the exchange.
+
+        :param trade_id: Deletes the trade with this ID from the database.
 
 edge
-        Returns information about edge
-        :returns: json object
+	Return information about edge.
 
 forcebuy
-        Buy an asset
+	Buy an asset.
+
         :param pair: Pair to buy (ETH/BTC)
         :param price: Optional - price to buy
-        :returns: json object of the trade
 
 forcesell
-        Force-sell a trade
+	Force-sell a trade.
+
         :param tradeid: Id of the trade (can be received via status command)
-        :returns: json object
+
+logs
+	Show latest logs.
+
+        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
+
+pair_candles
+	Return live dataframe for <pair><timeframe>.
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param limit: Limit result to the last n candles.
+
+pair_history
+	Return historic, analyzed dataframe
+
+        :param pair: Pair to get data for
+        :param timeframe: Only pairs with this timeframe available.
+        :param strategy: Strategy to analyze and get values for
+        :param timerange: Timerange to get data for (same format than --timerange endpoints)
 
 performance
-        Returns the performance of the different coins
-        :returns: json object
+	Return the performance of the different coins.
+
+plot_config
+	Return plot configuration if the strategy defines one.
 
 profit
-        Returns the profit summary
-        :returns: json object
+	Return the profit summary.
 
 reload_config
-        Reload configuration
-        :returns: json object
+	Reload configuration.
 
 show_config
+	
         Returns part of the configuration, relevant for trading operations.
-        :return: json object containing the version
 
 start
-        Start the bot if it's in stopped state.
-        :returns: json object
+	Start the bot if it's in the stopped state.
+
+stats
+	Return the stats report (durations, sell-reasons).
 
 status
-        Get the status of open trades
-        :returns: json object
+	Get the status of open trades.
 
 stop
-        Stop the bot. Use start to restart
-        :returns: json object
+	Stop the bot. Use `start` to restart.
 
 stopbuy
-        Stop buying (but handle sells gracefully).
-        use reload_config to reset
-        :returns: json object
+	Stop buying (but handle sells gracefully). Use `reload_config` to reset.
+
+strategies
+	Lists available strategies
+
+strategy
+	Get strategy details
+
+        :param strategy: Strategy class name
+
+trades
+	Return trades history.
+
+        :param limit: Limits trades to the X last trades. No limit to get all the trades.
 
 version
-        Returns the version of the bot
-        :returns: json object containing the version
+	Return the version of the bot.
 
 whitelist
-        Show the current whitelist
-        :returns: json object
+	Show the current whitelist.
+
 ```
 
 ## Advanced API usage using JWT tokens

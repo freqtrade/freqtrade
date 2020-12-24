@@ -5,19 +5,19 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
-from colorama import init as colorama_init
-from colorama import Fore, Style
 import rapidjson
+from colorama import Fore, Style
+from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (available_exchanges, ccxt_exchanges,
-                                market_is_active, symbol_is_pair)
+from freqtrade.exchange import available_exchanges, ccxt_exchanges, market_is_active
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
                                  'Base': v['base'], 'Quote': v['quote'],
                                  'Active': market_is_active(v),
-                                 **({'Is pair': symbol_is_pair(v['symbol'])}
+                                 **({'Is pair': exchange.market_is_tradable(v)}
                                     if not pairs_only else {})})
 
         if (args.get('print_one_column', False) or
@@ -203,15 +203,16 @@ def start_show_trades(args: Dict[str, Any]) -> None:
     """
     Show trades
     """
-    from freqtrade.persistence import init, Trade
     import json
+
+    from freqtrade.persistence import Trade, init_db
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if 'db_url' not in config:
         raise OperationalException("--db-url is required for this command.")
 
     logger.info(f'Using DB: "{config["db_url"]}"')
-    init(config['db_url'], clean_open_orders=False)
+    init_db(config['db_url'], clean_open_orders=False)
     tfilter = []
 
     if config.get('trade_ids'):
