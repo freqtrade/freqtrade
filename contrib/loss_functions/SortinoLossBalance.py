@@ -3,16 +3,16 @@ SortinoHyperOptLoss
 This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
-from datetime import datetime
-import os
-
-
 import logging
+import os
+from datetime import datetime
+
+import numpy as np
 from pandas import DataFrame, DatetimeIndex, Timedelta, date_range
 from scipy.ndimage.interpolation import shift
-import numpy as np
 
 from freqtrade.optimize.hyperopt import IHyperOptLoss
+
 
 logger = logging.getLogger(__name__)
 

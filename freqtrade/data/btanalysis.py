@@ -2,13 +2,12 @@
 Helpers when analyzing backtest data
 """
 import logging
-from datetime import datetime, timezone
+from datetime import timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from scipy.ndimage.interpolation import shift
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import json_load
@@ -407,91 +406,38 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
 
 
-def calculate_outstanding_balance(
-    results: pd.DataFrame,
-    timeframe: str,
-    min_date: datetime,
-    max_date: datetime,
-    hloc: Dict[str, pd.DataFrame],
-    slippage=0,
-) -> pd.DataFrame:
+def calculate_outstanding_balance(results: pd.DataFrame, timeframe: str,
+                                  hloc: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
     Sums the value of each trade (both open and closed) on each candle
     :param results: Results Dataframe
     :param timeframe: Frequency used for the backtest
-    :param min_date: date of the first trade opened (results.open_time.min())
-    :param max_date: date of the last trade closed (results.close_time.max())
     :param hloc: historical DataFrame of each pair tested
-    :slippage: optional profit value to subtract per trade
     :return: DataFrame of outstanding balance at each timeframe
     """
-    timedelta = pd.Timedelta(timeframe)
 
-    date_index: pd.DatetimeIndex = pd.date_range(
-        start=min_date, end=max_date, freq=timeframe, normalize=True
-    )
-    balance_total = []
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_min = timeframe_to_minutes(timeframe)
+    df3 = expand_trades_over_period(results, timeframe, timeframe_min)
+
+    values = {}
+    # Iterate over every pair
     for pair in hloc:
-        pair_candles = hloc[pair].set_index("date").reindex(date_index)
-        # index becomes open_time
-        pair_trades = (
-            results.loc[results["pair"].values == pair]
-            .set_index("open_time")
-            .resample(timeframe)
-            .asfreq()
-            .reindex(date_index)
-        )
-        open_rate = pair_trades["open_rate"].fillna(0).values
-        open_time = pair_trades.index.values
-        close_time = pair_trades["close_time"].values
-        close = pair_candles["close"].values
-        profits = pair_trades["profit_percent"].values - slippage
-        # at the open_time candle, the balance is matched to the close of the candle
-        pair_balance = np.where(
-            # only the rows with actual trades
-            (open_rate > 0)
-            # only if the trade is not also closed on the same candle
-            & (open_time != close_time),
-            1 - open_rate / close - slippage,
-            0,
-        )
-        # at the close_time candle, the balance just uses the profits col
-        pair_balance = pair_balance + np.where(
-            # only rows with actual trades
-            (open_rate > 0)
-            # the rows where a close happens
-            & (open_time == close_time),
-            profits,
-            pair_balance,
-        )
+        ohlc = hloc[pair].set_index('date')
+        df_pair = df3.loc[df3['pair'] == pair]
+        # filter on pair and convert dateindex to utc
+        # * Temporary workaround
+        df_pair.index = pd.to_datetime(df_pair.index, utc=True)
 
-        # how much time each trade was open, close - open time
-        periods = close_time - open_time
-        # how many candles each trade was open, set as a counter at each trade open_time index
-        hops = np.nan_to_num(periods / timedelta).astype(int)
+        # Combine trades with ohlc data
+        df4 = df_pair.merge(ohlc, left_on=['date'], right_on=['date'])
+        # Calculate the value at each candle
+        df4['current_value'] = df4['amount'] * df4['open']
+        # 0.002 -> slippage / fees
+        df4['value'] = df4['current_value'] - df4['current_value'] * 0.002
+        values[pair] = df4
 
-        # each loop update one timeframe forward, the balance on each timeframe
-        # where there is at least one hop left to do (>0)
-        for _ in range(1, hops.max() + 1):
-            # move hops and open_rate by one
-            hops = shift(hops, 1, cval=0)
-            open_rate = shift(open_rate, 1, cval=0)
-            pair_balance = np.where(
-                hops > 0, pair_balance + (1 - open_rate / close) - slippage, pair_balance
-            )
-            hops -= 1
-
-        # same as above but one loop per pair
-        # trades_indexes = np.nonzero(hops)[0]
-        # for i in trades_indexes:
-        #     # start from 1 because counters are set at the open_time balance
-        #     # which was already added previously
-        #     for c in range(1, hops[i]):
-        #         offset = i + c
-        #         # the open rate is always for the current date, not the offset
-        #         pair_balance[offset] += 1 - open_rate[i] / close[offset] - slippage
-
-        # add the pair balance to the total
-        balance_total.append(pair_balance)
-    balance_total = np.array(balance_total).sum(axis=0)
-    return pd.DataFrame({"balance": balance_total, "date": date_index})
+    balance = pd.concat([df[['value']] for k, df in values.items()])
+    # TODO: Does this resample make sense ... ?
+    balance = balance.resample(f"{timeframe_min}min").agg({"value": sum})
+    return balance
