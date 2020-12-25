@@ -5,10 +5,9 @@ from pydantic import BaseModel
 class Ping(BaseModel):
     status: str
 
-    class Config:
-        schema_extra = {
-            "example": {"status", "pong"}
-        }
+
+class Version(BaseModel):
+    version: str
 
 
 class Balance(BaseModel):
