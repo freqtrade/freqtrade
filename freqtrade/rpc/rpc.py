@@ -65,21 +65,17 @@ class RPCException(Exception):
         }
 
 
-class RPC:
-    """
-    RPC class can be used to have extra feature, like bot data, and access to DB data
-    """
-    # Bind _fiat_converter if needed in each RPC handler
-    _fiat_converter: Optional[CryptoToFiatConverter] = None
+class RPCHandler:
 
-    def __init__(self, freqtrade) -> None:
+    def __init__(self, rpc: 'RPC', config: Dict[str, Any]) -> None:
         """
-        Initializes all enabled rpc modules
-        :param freqtrade: Instance of a freqtrade bot
+        Initializes RPCHandlers
+        :param rpc: instance of RPC Helper class
+        :param config: Configuration object
         :return: None
         """
-        self._freqtrade = freqtrade
-        self._config: Dict[str, Any] = freqtrade.config
+        self._rpc = rpc
+        self._config: Dict[str, Any] = config
 
     @property
     def name(self) -> str:
@@ -93,6 +89,25 @@ class RPC:
     @abstractmethod
     def send_msg(self, msg: Dict[str, str]) -> None:
         """ Sends a message to all registered rpc modules """
+
+
+class RPC:
+    """
+    RPC class can be used to have extra feature, like bot data, and access to DB data
+    """
+    # Bind _fiat_converter if needed
+    _fiat_converter: Optional[CryptoToFiatConverter] = None
+
+    def __init__(self, freqtrade) -> None:
+        """
+        Initializes all enabled rpc modules
+        :param freqtrade: Instance of a freqtrade bot
+        :return: None
+        """
+        self._freqtrade = freqtrade
+        self._config: Dict[str, Any] = freqtrade.config
+        if self._config.get('fiat_display_currency', None):
+            self._fiat_converter = CryptoToFiatConverter()
 
     @staticmethod
     def _rpc_show_config(config, botstate: State) -> Dict[str, Any]:

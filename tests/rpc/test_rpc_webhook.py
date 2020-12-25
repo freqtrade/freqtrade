@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from requests import RequestException
 
-from freqtrade.rpc import RPCMessageType
+from freqtrade.rpc import RPC, RPCMessageType
 from freqtrade.rpc.webhook import Webhook
 from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
@@ -45,7 +45,7 @@ def get_webhook_dict() -> dict:
 
 def test__init__(mocker, default_conf):
     default_conf['webhook'] = {'enabled': True, 'url': "https://DEADBEEF.com"}
-    webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert webhook._config == default_conf
 
 
@@ -53,7 +53,7 @@ def test_send_msg(default_conf, mocker):
     default_conf["webhook"] = get_webhook_dict()
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
-    webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     # Test buy
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
@@ -172,7 +172,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
     del default_conf["webhook"]["webhookbuy"]
 
-    webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})
     assert log_has(f"Message type '{RPCMessageType.BUY_NOTIFICATION}' not configured for webhooks",
                    caplog)
@@ -181,7 +181,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     default_conf["webhook"]["webhookbuy"]["value1"] = "{DEADBEEF:8f}"
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
-    webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
         'exchange': 'Bittrex',
@@ -209,7 +209,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
 
 def test__send_msg(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
-    webhook = Webhook(get_patched_freqtradebot(mocker, default_conf))
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     msg = {'value1': 'DEADBEEF',
            'value2': 'ALIVEBEEF',
            'value3': 'FREQTRADE'}

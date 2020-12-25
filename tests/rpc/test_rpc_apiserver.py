@@ -13,6 +13,7 @@ from requests.auth import _basic_auth_str
 from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import RunMode, State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
@@ -36,8 +37,9 @@ def botclient(default_conf, mocker):
                                         }})
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(ftbot)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
-    apiserver = ApiServer(ftbot)
+    apiserver = ApiServer(rpc, default_conf)
     yield ftbot, apiserver.app.test_client()
     # Cleanup ... ?
 
@@ -179,8 +181,7 @@ def test_api__init__(default_conf, mocker):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
-
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert apiserver._config == default_conf
 
 
@@ -197,7 +198,7 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock = MagicMock()
     mocker.patch('freqtrade.rpc.api_server.make_server', server_mock)
 
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
 
     assert apiserver._config == default_conf
     apiserver.run()
@@ -251,7 +252,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
 
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     apiserver.run()
     stop_mock = MagicMock()
     stop_mock.shutdown = MagicMock()
