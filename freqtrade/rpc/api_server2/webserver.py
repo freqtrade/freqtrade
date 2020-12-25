@@ -1,18 +1,17 @@
-from typing import Any, Dict
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Any, Dict, Optional
 import uvicorn
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from freqtrade.rpc.rpc import RPCHandler, RPC
+from freqtrade.rpc.rpc import RPC, RPCHandler
 
 from .uvicorn_threaded import UvicornServer
 
 
 class ApiServer(RPCHandler):
 
-    _rpc = None
-    _config = None
+    _rpc: Optional[RPC] = None
+    _config: Dict[str, Any] = {}
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
         super().__init__(rpc, config)
@@ -21,7 +20,7 @@ class ApiServer(RPCHandler):
         ApiServer._rpc = rpc
         ApiServer._config = config
 
-        self.app = FastAPI()
+        self.app = FastAPI(title="Freqtrade API")
         self.configure_app(self.app, self._config)
 
         self.start_api()
@@ -35,12 +34,15 @@ class ApiServer(RPCHandler):
         pass
 
     def configure_app(self, app: FastAPI, config):
-        from .api_v1 import router_public as api_v1_public
         from .api_v1 import router as api_v1
+        from .api_v1 import router_public as api_v1_public
+        from .auth import router_login, HTTPBasicOrJWTToken
         app.include_router(api_v1_public, prefix="/api/v1")
 
-        # TODO: Include auth dependency!
-        app.include_router(api_v1, prefix="/api/v1")
+        app.include_router(api_v1, prefix="/api/v1",
+                           dependencies=[Depends(HTTPBasicOrJWTToken())]
+                           )
+        app.include_router(router_login, prefix="/api/v1")
 
         app.add_middleware(
             CORSMiddleware,
