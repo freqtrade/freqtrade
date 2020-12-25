@@ -1,4 +1,5 @@
 from typing import List
+
 from pydantic import BaseModel
 
 
@@ -16,6 +17,10 @@ class AccessAndRefreshToken(AccessToken):
 
 class Version(BaseModel):
     version: str
+
+
+class StatusMsg(BaseModel):
+    status: str
 
 
 class Balance(BaseModel):

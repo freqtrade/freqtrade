@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -36,7 +37,7 @@ class ApiServer(RPCHandler):
     def configure_app(self, app: FastAPI, config):
         from .api_v1 import router as api_v1
         from .api_v1 import router_public as api_v1_public
-        from .auth import router_login, HTTPBasicOrJWTToken
+        from .api_auth import HTTPBasicOrJWTToken, router_login
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",

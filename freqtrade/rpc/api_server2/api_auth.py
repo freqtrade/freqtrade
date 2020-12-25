@@ -1,4 +1,3 @@
-from freqtrade.rpc.api_server2.models import AccessAndRefreshToken, AccessToken
 import secrets
 from typing import Optional
 
@@ -7,6 +6,8 @@ from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_jwt_auth import AuthJWT
 from pydantic import BaseModel
+
+from freqtrade.rpc.api_server2.api_models import AccessAndRefreshToken, AccessToken
 
 from .deps import get_config
 
@@ -41,7 +42,7 @@ class HTTPBasicOrJWTToken(HTTPBasic):
         header_authorization: str = request.headers.get("Authorization")
         header_scheme, header_param = get_authorization_scheme_param(header_authorization)
         if header_scheme.lower() == 'bearer':
-            AuthJWT.jwt_required()
+            AuthJWT(request).jwt_required()
         elif header_scheme.lower() == 'basic':
             credentials: Optional[HTTPBasicCredentials] = await HTTPBasic()(request)
             if credentials and verify_auth(config, credentials.username, credentials.password):
@@ -49,7 +50,6 @@ class HTTPBasicOrJWTToken(HTTPBasic):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
         )
 
 
