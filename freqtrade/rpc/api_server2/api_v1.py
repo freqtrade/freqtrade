@@ -18,11 +18,13 @@ def ping():
     return {"status": "pong"}
 
 
+@router.get('/version', response_model=Version)
+def version():
+    return {"version": __version__}
+
+
 @router.get('/balance', response_model=Balances)
 def balance(rpc=Depends(get_rpc), config=Depends(get_config)):
     return rpc._rpc_balance(config['stake_currency'], config.get('fiat_display_currency', ''),)
 
 
-@router.get('/version', response_model=Version)
-def version():
-    return {"version": __version__}
