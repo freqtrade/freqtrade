@@ -19,17 +19,19 @@ router = APIRouter()
 
 @router_public.get('/ping', response_model=Ping)
 def ping():
-    """simple ping version"""
+    """simple ping"""
     return {"status": "pong"}
 
 
 @router.get('/version', response_model=Version, tags=['info'])
 def version():
+    """ Bot Version info"""
     return {"version": __version__}
 
 
 @router.get('/balance', response_model=Balances, tags=['info'])
 def balance(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    """Account Balances"""
     return rpc._rpc_balance(config['stake_currency'], config.get('fiat_display_currency', ''),)
 
 
@@ -71,7 +73,7 @@ def status(rpc: RPC = Depends(get_rpc)):
 
 
 # TODO: Missing response model
-@router.get('/trades', tags=['info'])
+@router.get('/trades', tags=['info', 'trading'])
 def trades(limit: Optional[int] = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
 

@@ -156,7 +156,6 @@ class WhitelistResponse(BaseModel):
     method: List[str]
 
 
-
 class DeleteTrade(BaseModel):
     cancel_order_count: int
     result: str

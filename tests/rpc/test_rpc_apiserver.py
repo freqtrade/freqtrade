@@ -80,10 +80,7 @@ def test_api_not_found(botclient):
 
     rc = client_post(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
-    assert rc.json() == {"status": "error",
-                       "reason": f"There's no API call for http://localhost{BASE_URI}/invalid_url.",
-                       "code": 404
-                       }
+    assert rc.json() == {"detail": "Not Found"}
 
 
 def test_api_unauthorized(botclient):
@@ -137,13 +134,12 @@ def test_api_token_refresh(botclient):
     rc = client_post(client, f"{BASE_URI}/token/login")
     assert_response(rc)
     rc = client.post(f"{BASE_URI}/token/refresh",
-                     content_type="application/json",
                      data=None,
-                     headers={'Authorization': f'Bearer {rc.json["refresh_token"]}',
+                     headers={'Authorization': f'Bearer {rc.json()["refresh_token"]}',
                               'Origin': 'http://example.com'})
     assert_response(rc)
-    assert 'access_token' in rc.json
-    assert 'refresh_token' not in rc.json
+    assert 'access_token' in rc.json()
+    assert 'refresh_token' not in rc.json()
 
 
 def test_api_stop_workflow(botclient):
@@ -151,24 +147,24 @@ def test_api_stop_workflow(botclient):
     assert ftbot.state == State.RUNNING
     rc = client_post(client, f"{BASE_URI}/stop")
     assert_response(rc)
-    assert rc.json == {'status': 'stopping trader ...'}
+    assert rc.json() == {'status': 'stopping trader ...'}
     assert ftbot.state == State.STOPPED
 
     # Stop bot again
     rc = client_post(client, f"{BASE_URI}/stop")
     assert_response(rc)
-    assert rc.json == {'status': 'already stopped'}
+    assert rc.json() == {'status': 'already stopped'}
 
     # Start bot
     rc = client_post(client, f"{BASE_URI}/start")
     assert_response(rc)
-    assert rc.json == {'status': 'starting trader ...'}
+    assert rc.json() == {'status': 'starting trader ...'}
     assert ftbot.state == State.RUNNING
 
     # Call start again
     rc = client_post(client, f"{BASE_URI}/start")
     assert_response(rc)
-    assert rc.json == {'status': 'already running'}
+    assert rc.json() == {'status': 'already running'}
 
 
 def test_api__init__(default_conf, mocker):
@@ -182,7 +178,7 @@ def test_api__init__(default_conf, mocker):
                                         "password": "testPass",
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server2.webserver.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert apiserver._config == default_conf
 
@@ -255,7 +251,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
 
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
-    apiserver.run()
+    apiserver.run_api()
     stop_mock = MagicMock()
     stop_mock.shutdown = MagicMock()
     apiserver.srv = stop_mock
@@ -655,6 +651,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     trades = Trade.get_open_trades()
     trades[0].open_order_id = None
     ftbot.exit_positions(trades)
+    Trade.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
