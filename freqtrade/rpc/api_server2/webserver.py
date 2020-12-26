@@ -1,11 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
-from starlette.responses import JSONResponse
 
 import uvicorn
 from fastapi import Depends, FastAPI
-from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 

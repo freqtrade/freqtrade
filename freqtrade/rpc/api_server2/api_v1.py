@@ -1,13 +1,21 @@
-from typing import List, Optional
+from copy import deepcopy
+from freqtrade.constants import USERPATH_STRATEGIES
+from typing import Dict, List, Optional, Union
+from pathlib import Path
 
 from fastapi import APIRouter, Depends
+from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
+from freqtrade.data.history import get_datahandler
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 
-from .api_models import (Balances, BlacklistPayload, BlacklistResponse, Count, Daily, DeleteTrade, ForceBuyPayload, ForceSellPayload, Locks, Logs, PerformanceEntry, Ping, Profit, ResultMsg, Stats,
-                         StatusMsg, Version, WhitelistResponse)
+from .api_models import (AvailablePairs, Balances, BlacklistPayload, BlacklistResponse, Count,
+                         Daily, DeleteTrade, ForceBuyPayload, ForceSellPayload, Locks, Logs,
+                         PerformanceEntry, Ping, PlotConfig, Profit, ResultMsg, Stats, StatusMsg, StrategyListResponse, StrategyResponse, Version,
+                         WhitelistResponse)
 from .deps import get_config, get_rpc
 
 
@@ -154,3 +162,77 @@ def stop_buy(rpc: RPC = Depends(get_rpc)):
 @router.post('/reload_config', response_model=StatusMsg, tags=['botcontrol'])
 def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
+
+
+# TODO: Missing response model
+@router.get('/pair_candles', tags=['candle data'])
+def pair_candles(pair: str, timeframe: str, limit: Optional[int], rpc=Depends(get_rpc)):
+    return rpc._rpc_analysed_dataframe(pair, timeframe, limit)
+
+
+# TODO: Missing response model
+@router.get('/pair_history', tags=['candle data'])
+def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
+                 config=Depends(get_config)):
+    config = deepcopy(config)
+    config.update({
+            'strategy': strategy,
+        })
+    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
+
+
+@router.get('/plot_config', response_model=Union[Dict, PlotConfig], tags=['candle data'])
+def plot_config(rpc=Depends(get_rpc)):
+    return rpc._rpc_plot_config()
+
+
+@router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
+def list_strategies(config=Depends(get_config)):
+    directory = Path(config.get(
+        'strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
+    from freqtrade.resolvers.strategy_resolver import StrategyResolver
+    strategies = StrategyResolver.search_all_objects(directory, False)
+    strategies = sorted(strategies, key=lambda x: x['name'])
+
+    return {'strategies': [x['name'] for x in strategies]}
+
+
+@router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
+def get_strategy(strategy: str, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+
+    config = deepcopy(config)
+    from freqtrade.resolvers.strategy_resolver import StrategyResolver
+    try:
+        strategy_obj = StrategyResolver._load_strategy(strategy, config,
+                                                       extra_dir=config.get('strategy_path'))
+    except OperationalException:
+        raise HTTPException(status_code=404, detail='Strategy not found')
+
+    return {
+        'strategy': strategy_obj.get_strategy_name(),
+        'code': strategy_obj.__source__,
+    }
+
+
+@router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
+def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Optional[str] = None,
+                         config=Depends(get_config)):
+
+    dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
+
+    pair_interval = dh.ohlcv_get_available_data(config['datadir'])
+
+    if timeframe:
+        pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
+    if stake_currency:
+        pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+    pair_interval = sorted(pair_interval, key=lambda x: x[0])
+
+    pairs = list({x[0] for x in pair_interval})
+
+    result = {
+        'length': len(pairs),
+        'pairs': pairs,
+        'pair_interval': pair_interval,
+    }
+    return result

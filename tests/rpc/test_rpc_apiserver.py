@@ -894,22 +894,22 @@ def test_api_pair_candles(botclient, ohlcv_history):
     # No pair
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&timeframe={timeframe}")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     # No timeframe
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?pair=XRP%2FBTC")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
-    assert 'columns' in rc.json
-    assert 'data_start_ts' in rc.json
-    assert 'data_start' in rc.json
-    assert 'data_stop' in rc.json
-    assert 'data_stop_ts' in rc.json
-    assert len(rc.json['data']) == 0
+    assert 'columns' in rc.json()
+    assert 'data_start_ts' in rc.json()
+    assert 'data_start' in rc.json()
+    assert 'data_stop' in rc.json()
+    assert 'data_stop_ts' in rc.json()
+    assert len(rc.json()['data']) == 0
     ohlcv_history['sma'] = ohlcv_history['close'].rolling(2).mean()
     ohlcv_history['buy'] = 0
     ohlcv_history.loc[1, 'buy'] = 1
@@ -920,28 +920,28 @@ def test_api_pair_candles(botclient, ohlcv_history):
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
-    assert 'strategy' in rc.json
-    assert rc.json['strategy'] == 'DefaultStrategy'
-    assert 'columns' in rc.json
-    assert 'data_start_ts' in rc.json
-    assert 'data_start' in rc.json
-    assert 'data_stop' in rc.json
-    assert 'data_stop_ts' in rc.json
-    assert rc.json['data_start'] == '2017-11-26 08:50:00+00:00'
-    assert rc.json['data_start_ts'] == 1511686200000
-    assert rc.json['data_stop'] == '2017-11-26 09:00:00+00:00'
-    assert rc.json['data_stop_ts'] == 1511686800000
-    assert isinstance(rc.json['columns'], list)
-    assert rc.json['columns'] == ['date', 'open', 'high',
+    assert 'strategy' in rc.json()
+    assert rc.json()['strategy'] == 'DefaultStrategy'
+    assert 'columns' in rc.json()
+    assert 'data_start_ts' in rc.json()
+    assert 'data_start' in rc.json()
+    assert 'data_stop' in rc.json()
+    assert 'data_stop_ts' in rc.json()
+    assert rc.json()['data_start'] == '2017-11-26 08:50:00+00:00'
+    assert rc.json()['data_start_ts'] == 1511686200000
+    assert rc.json()['data_stop'] == '2017-11-26 09:00:00+00:00'
+    assert rc.json()['data_stop_ts'] == 1511686800000
+    assert isinstance(rc.json()['columns'], list)
+    assert rc.json()['columns'] == ['date', 'open', 'high',
                                   'low', 'close', 'volume', 'sma', 'buy', 'sell',
                                   '__date_ts', '_buy_signal_open', '_sell_signal_open']
-    assert 'pair' in rc.json
-    assert rc.json['pair'] == 'XRP/BTC'
+    assert 'pair' in rc.json()
+    assert rc.json()['pair'] == 'XRP/BTC'
 
-    assert 'data' in rc.json
-    assert len(rc.json['data']) == amount
+    assert 'data' in rc.json()
+    assert len(rc.json()['data']) == amount
 
-    assert (rc.json['data'] ==
+    assert (rc.json()['data'] ==
             [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 1511686200000, None, None],
              ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
@@ -960,41 +960,41 @@ def test_api_pair_history(botclient, ohlcv_history):
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?timeframe={timeframe}"
                     "&timerange=20180111-20180112&strategy=DefaultStrategy")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     # No Timeframe
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC"
                     "&timerange=20180111-20180112&strategy=DefaultStrategy")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     # No timerange
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     "&strategy=DefaultStrategy")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     # No strategy
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     "&timerange=20180111-20180112")
-    assert_response(rc, 400)
+    assert_response(rc, 422)
 
     # Working
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
                     "&timerange=20180111-20180112&strategy=DefaultStrategy")
     assert_response(rc, 200)
-    assert rc.json['length'] == 289
-    assert len(rc.json['data']) == rc.json['length']
-    assert 'columns' in rc.json
-    assert 'data' in rc.json
-    assert rc.json['pair'] == 'UNITTEST/BTC'
-    assert rc.json['strategy'] == 'DefaultStrategy'
-    assert rc.json['data_start'] == '2018-01-11 00:00:00+00:00'
-    assert rc.json['data_start_ts'] == 1515628800000
-    assert rc.json['data_stop'] == '2018-01-12 00:00:00+00:00'
-    assert rc.json['data_stop_ts'] == 1515715200000
+    assert rc.json()['length'] == 289
+    assert len(rc.json()['data']) == rc.json()['length']
+    assert 'columns' in rc.json()
+    assert 'data' in rc.json()
+    assert rc.json()['pair'] == 'UNITTEST/BTC'
+    assert rc.json()['strategy'] == 'DefaultStrategy'
+    assert rc.json()['data_start'] == '2018-01-11 00:00:00+00:00'
+    assert rc.json()['data_start_ts'] == 1515628800000
+    assert rc.json()['data_stop'] == '2018-01-12 00:00:00+00:00'
+    assert rc.json()['data_stop_ts'] == 1515715200000
 
 
 def test_api_plot_config(botclient):
@@ -1002,14 +1002,14 @@ def test_api_plot_config(botclient):
 
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
-    assert rc.json == {}
+    assert rc.json() == {}
 
     ftbot.strategy.plot_config = {'main_plot': {'sma': {}},
                                   'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
-    assert rc.json == ftbot.strategy.plot_config
-    assert isinstance(rc.json['main_plot'], dict)
+    assert rc.json() == ftbot.strategy.plot_config
+    assert isinstance(rc.json()['main_plot'], dict)
 
 
 def test_api_strategies(botclient):
@@ -1018,7 +1018,7 @@ def test_api_strategies(botclient):
     rc = client_get(client, f"{BASE_URI}/strategies")
 
     assert_response(rc)
-    assert rc.json == {'strategies': ['DefaultStrategy', 'TestStrategyLegacy']}
+    assert rc.json() == {'strategies': ['DefaultStrategy', 'TestStrategyLegacy']}
 
 
 def test_api_strategy(botclient):
@@ -1027,10 +1027,10 @@ def test_api_strategy(botclient):
     rc = client_get(client, f"{BASE_URI}/strategy/DefaultStrategy")
 
     assert_response(rc)
-    assert rc.json['strategy'] == 'DefaultStrategy'
+    assert rc.json()['strategy'] == 'DefaultStrategy'
 
     data = (Path(__file__).parents[1] / "strategy/strats/default_strategy.py").read_text()
-    assert rc.json['code'] == data
+    assert rc.json()['code'] == data
 
     rc = client_get(client, f"{BASE_URI}/strategy/NoStrat")
     assert_response(rc, 404)
@@ -1042,21 +1042,21 @@ def test_list_available_pairs(botclient):
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 
     assert_response(rc)
-    assert rc.json['length'] == 12
-    assert isinstance(rc.json['pairs'], list)
+    assert rc.json()['length'] == 12
+    assert isinstance(rc.json()['pairs'], list)
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")
     assert_response(rc)
-    assert rc.json['length'] == 12
+    assert rc.json()['length'] == 12
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?stake_currency=ETH")
     assert_response(rc)
-    assert rc.json['length'] == 1
-    assert rc.json['pairs'] == ['XRP/ETH']
-    assert len(rc.json['pair_interval']) == 2
+    assert rc.json()['length'] == 1
+    assert rc.json()['pairs'] == ['XRP/ETH']
+    assert len(rc.json()['pair_interval']) == 2
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?stake_currency=ETH&timeframe=5m")
     assert_response(rc)
-    assert rc.json['length'] == 1
-    assert rc.json['pairs'] == ['XRP/ETH']
-    assert len(rc.json['pair_interval']) == 1
+    assert rc.json()['length'] == 1
+    assert rc.json()['pairs'] == ['XRP/ETH']
+    assert len(rc.json()['pair_interval']) == 1

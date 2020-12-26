@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from datetime import date
 from pydantic import BaseModel
 
@@ -161,3 +161,23 @@ class DeleteTrade(BaseModel):
     result: str
     result_msg: str
     trade_id: int
+
+
+class PlotConfig(BaseModel):
+    main_plot: Optional[Dict[str, Any]]
+    subplots: Optional[Dict[str, Any]]
+
+
+class StrategyListResponse(BaseModel):
+    strategies: List[str]
+
+
+class StrategyResponse(BaseModel):
+    strategy: str
+    code: str
+
+
+class AvailablePairs(BaseModel):
+    length: int
+    pairs: List[str]
+    pair_interval: List[List[str]]
