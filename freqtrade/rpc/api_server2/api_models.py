@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Union
-
+from datetime import date
 from pydantic import BaseModel
 
 
@@ -21,6 +21,10 @@ class Version(BaseModel):
 
 class StatusMsg(BaseModel):
     status: str
+
+
+class ResultMsg(BaseModel):
+    result: str
 
 
 class Balance(BaseModel):
@@ -92,6 +96,39 @@ class Stats(BaseModel):
     durations: Dict[str, Union[str, float]]
 
 
+class DailyRecord(BaseModel):
+    date: date
+    abs_profit: float
+    fiat_value: float
+    trade_count: int
+
+
+class Daily(BaseModel):
+    data: List[DailyRecord]
+    fiat_display_currency: str
+    stake_currency: str
+
+
+class LockModel(BaseModel):
+    active: bool
+    lock_end_time: str
+    lock_end_timestamp: int
+    lock_time: str
+    lock_timestamp: int
+    pair: str
+    reason: str
+
+
+class Locks(BaseModel):
+    lock_count: int
+    locks: List[LockModel]
+
+
+class Logs(BaseModel):
+    log_count: int
+    logs: List[List]
+
+
 class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
@@ -99,3 +136,29 @@ class ForceBuyPayload(BaseModel):
 
 class ForceSellPayload(BaseModel):
     tradeid: str
+
+
+class BlacklistPayload(BaseModel):
+    blacklist: List[str]
+
+
+class BlacklistResponse(BaseModel):
+    blacklist: List[str]
+    blacklist_expanded: List[str]
+    errors: Dict
+    length: int
+    method: List[str]
+
+
+class WhitelistResponse(BaseModel):
+    whitelist: List[str]
+    length: int
+    method: List[str]
+
+
+
+class DeleteTrade(BaseModel):
+    cancel_order_count: int
+    result: str
+    result_msg: str
+    trade_id: int

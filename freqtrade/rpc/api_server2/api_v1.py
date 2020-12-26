@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 
@@ -6,8 +6,8 @@ from freqtrade import __version__
 from freqtrade.rpc import RPC
 from freqtrade.rpc.rpc import RPCException
 
-from .api_models import (Balances, Count, ForceBuyPayload, ForceSellPayload, PerformanceEntry, Ping, Profit, Stats,
-                         StatusMsg, Version)
+from .api_models import (Balances, BlacklistPayload, BlacklistResponse, Count, Daily, DeleteTrade, ForceBuyPayload, ForceSellPayload, Locks, Logs, PerformanceEntry, Ping, Profit, ResultMsg, Stats,
+                         StatusMsg, Version, WhitelistResponse)
 from .deps import get_config, get_rpc
 
 
@@ -55,6 +55,12 @@ def stats(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stats()
 
 
+@router.get('/daily', response_model=Daily, tags=['info'])
+def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return rpc._rpc_daily_profit(timescale, config['stake_currency'],
+                                 config.get('fiat_display_currency', ''))
+
+
 # TODO: Missing response model
 @router.get('/status', tags=['info'])
 def status(rpc: RPC = Depends(get_rpc)):
@@ -64,10 +70,30 @@ def status(rpc: RPC = Depends(get_rpc)):
         return []
 
 
+# TODO: Missing response model
+@router.get('/trades', tags=['info'])
+def trades(limit: Optional[int] = 0, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_trade_history(limit)
+
+
+@router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
+def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete(tradeid)
+
+
+# TODO: Missing response model
+@router.get('/edge', tags=['info'])
+def edge(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_edge()
+
+
+# TODO: Missing response model
 @router.get('/show_config', tags=['info'])
 def show_config(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return RPC._rpc_show_config(config, rpc._freqtrade.state)
 
+
+# TODO: Missing response model
 @router.post('/forcebuy', tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     trade = rpc._rpc_forcebuy(payload.pair, payload.price)
@@ -78,9 +104,34 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
         return {"status": f"Error buying pair {payload.pair}."}
 
 
-@router.post('/forcesell', tags=['trading'])
+@router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_forcesell(payload.tradeid)
+
+
+@router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
+def blacklist(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_blacklist()
+
+
+@router.post('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
+def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_blacklist(payload.blacklist)
+
+
+@router.get('/whitelist', response_model=WhitelistResponse, tags=['info', 'pairlist'])
+def whitelist(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_whitelist()
+
+
+@router.get('/locks', response_model=Locks, tags=['info'])
+def locks(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_locks()
+
+
+@router.get('/logs', response_model=Logs, tags=['info'])
+def logs(limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_get_logs(limit)
 
 
 @router.post('/start', response_model=StatusMsg, tags=['botcontrol'])
