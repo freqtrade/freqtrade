@@ -512,7 +512,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc, 200)
-    assert rc.json['trade_count'] == 0
+    assert rc.json()['trade_count'] == 0
 
     ftbot.enter_positions()
     trade = Trade.query.first()
@@ -522,9 +522,9 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc, 200)
     # One open trade
-    assert rc.json['trade_count'] == 1
-    assert rc.json['best_pair'] == ''
-    assert rc.json['best_rate'] == 0
+    assert rc.json()['trade_count'] == 1
+    assert rc.json()['best_pair'] == ''
+    assert rc.json()['best_rate'] == 0
 
     trade = Trade.query.first()
     trade.update(limit_sell_order)
@@ -534,32 +534,32 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc)
-    assert rc.json == {'avg_duration': '0:00:00',
-                       'best_pair': 'ETH/BTC',
-                       'best_rate': 6.2,
-                       'first_trade_date': 'just now',
-                       'first_trade_timestamp': ANY,
-                       'latest_trade_date': 'just now',
-                       'latest_trade_timestamp': ANY,
-                       'profit_all_coin': 6.217e-05,
-                       'profit_all_fiat': 0.76748865,
-                       'profit_all_percent': 6.2,
-                       'profit_all_percent_mean': 6.2,
-                       'profit_all_ratio_mean': 0.06201058,
-                       'profit_all_percent_sum': 6.2,
-                       'profit_all_ratio_sum': 0.06201058,
-                       'profit_closed_coin': 6.217e-05,
-                       'profit_closed_fiat': 0.76748865,
-                       'profit_closed_percent': 6.2,
-                       'profit_closed_ratio_mean': 0.06201058,
-                       'profit_closed_percent_mean': 6.2,
-                       'profit_closed_ratio_sum': 0.06201058,
-                       'profit_closed_percent_sum': 6.2,
-                       'trade_count': 1,
-                       'closed_trade_count': 1,
-                       'winning_trades': 1,
-                       'losing_trades': 0,
-                       }
+    assert rc.json() == {'avg_duration': '0:00:00',
+                         'best_pair': 'ETH/BTC',
+                         'best_rate': 6.2,
+                         'first_trade_date': 'just now',
+                         'first_trade_timestamp': ANY,
+                         'latest_trade_date': 'just now',
+                         'latest_trade_timestamp': ANY,
+                         'profit_all_coin': 6.217e-05,
+                         'profit_all_fiat': 0.76748865,
+                         'profit_all_percent': 6.2,
+                         'profit_all_percent_mean': 6.2,
+                         'profit_all_ratio_mean': 0.06201058,
+                         'profit_all_percent_sum': 6.2,
+                         'profit_all_ratio_sum': 0.06201058,
+                         'profit_closed_coin': 6.217e-05,
+                         'profit_closed_fiat': 0.76748865,
+                         'profit_closed_percent': 6.2,
+                         'profit_closed_ratio_mean': 0.06201058,
+                         'profit_closed_percent_mean': 6.2,
+                         'profit_closed_ratio_sum': 0.06201058,
+                         'profit_closed_percent_sum': 6.2,
+                         'trade_count': 1,
+                         'closed_trade_count': 1,
+                         'winning_trades': 1,
+                         'losing_trades': 0,
+                         }
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -576,19 +576,19 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
 
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
-    assert 'durations' in rc.json
-    assert 'sell_reasons' in rc.json
+    assert 'durations' in rc.json()
+    assert 'sell_reasons' in rc.json()
 
     create_mock_trades(fee)
 
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
-    assert 'durations' in rc.json
-    assert 'sell_reasons' in rc.json
+    assert 'durations' in rc.json()
+    assert 'sell_reasons' in rc.json()
 
-    assert 'wins' in rc.json['durations']
-    assert 'losses' in rc.json['durations']
-    assert 'draws' in rc.json['durations']
+    assert 'wins' in rc.json()['durations']
+    assert 'losses' in rc.json()['durations']
+    assert 'draws' in rc.json()['durations']
 
 
 def test_api_performance(botclient, mocker, ticker, fee):
@@ -629,9 +629,9 @@ def test_api_performance(botclient, mocker, ticker, fee):
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
-    assert len(rc.json) == 2
-    assert rc.json == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61},
-                       {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
+    assert len(rc.json()) == 2
+    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61},
+                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
 
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
