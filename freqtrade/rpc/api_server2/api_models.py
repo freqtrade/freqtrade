@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -90,3 +90,12 @@ class SellReason(BaseModel):
 class Stats(BaseModel):
     sell_reasons: Dict[str, SellReason]
     durations: Dict[str, Union[str, float]]
+
+
+class ForceBuyPayload(BaseModel):
+    pair: str
+    price: Optional[float]
+
+
+class ForceSellPayload(BaseModel):
+    tradeid: str

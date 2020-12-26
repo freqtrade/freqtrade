@@ -1,12 +1,18 @@
+import logging
 from typing import Any, Dict, Optional
+from starlette.responses import JSONResponse
 
 import uvicorn
 from fastapi import Depends, FastAPI
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from freqtrade.rpc.rpc import RPC, RPCHandler
+from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 from .uvicorn_threaded import UvicornServer
+
+
+logger = logging.getLogger(__name__)
 
 
 class ApiServer(RPCHandler):
@@ -34,10 +40,17 @@ class ApiServer(RPCHandler):
     def send_msg(self, msg: Dict[str, str]) -> None:
         pass
 
+    def handle_rpc_exception(self, request, exc):
+        logger.exception(f"API Error calling: {exc}")
+        return JSONResponse(
+            status_code=502,
+            content={'error': f"Error querying {request.url.path}: {exc.message}"}
+        )
+
     def configure_app(self, app: FastAPI, config):
+        from .api_auth import http_basic_or_jwt_token, router_login
         from .api_v1 import router as api_v1
         from .api_v1 import router_public as api_v1_public
-        from .api_auth import http_basic_or_jwt_token, router_login
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",
@@ -52,6 +65,8 @@ class ApiServer(RPCHandler):
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+        app.add_exception_handler(RPCException, self.handle_rpc_exception)
 
     def start_api(self):
         """
