@@ -1,9 +1,9 @@
-from freqtrade.rpc import RPC
 from fastapi import APIRouter, Depends
 
 from freqtrade import __version__
+from freqtrade.rpc import RPC
 
-from .api_models import Balances, Ping, StatusMsg, Version
+from .api_models import Balances, Count, Ping, StatusMsg, Version
 from .deps import get_config, get_rpc
 
 
@@ -29,6 +29,16 @@ def balance(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return rpc._rpc_balance(config['stake_currency'], config.get('fiat_display_currency', ''),)
 
 
+@router.get('/count', response_model=Count, tags=['info'])
+def count(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_count()
+
+
+@router.get('/show_config', tags=['info'])
+def show_config(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+    return RPC._rpc_show_config(config, rpc._freqtrade.state)
+
+
 @router.post('/start', response_model=StatusMsg, tags=['botcontrol'])
 def start(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_start()
@@ -37,3 +47,13 @@ def start(rpc: RPC = Depends(get_rpc)):
 @router.post('/stop', response_model=StatusMsg, tags=['botcontrol'])
 def stop(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stop()
+
+
+@router.post('/stopbuy', response_model=StatusMsg, tags=['botcontrol'])
+def stop_buy(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_stopbuy()
+
+
+@router.post('/reload_config', response_model=StatusMsg, tags=['botcontrol'])
+def reload_config(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_reload_config()

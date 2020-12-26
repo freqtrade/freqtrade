@@ -39,3 +39,9 @@ class Balances(BaseModel):
     value: float
     stake: str
     note: str
+
+
+class Count(BaseModel):
+    current: int
+    max: int
+    total_stake: float
