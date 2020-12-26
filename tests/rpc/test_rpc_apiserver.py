@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
+from fastapi.testclient import TestClient
 from flask import Flask
 from requests.auth import _basic_auth_str
 
@@ -14,7 +15,8 @@ from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server import BASE_URI, ApiServer
+from freqtrade.rpc.api_server import BASE_URI  # , ApiServer
+from freqtrade.rpc.api_server2 import ApiServer
 from freqtrade.state import RunMode, State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
 
@@ -38,18 +40,19 @@ def botclient(default_conf, mocker):
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
-    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server2.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(rpc, default_conf)
-    yield ftbot, apiserver.app.test_client()
+    yield ftbot, TestClient(apiserver.app)
     # Cleanup ... ?
 
 
 def client_post(client, url, data={}):
     return client.post(url,
-                       content_type="application/json",
                        data=data,
                        headers={'Authorization': _basic_auth_str(_TEST_USER, _TEST_PASS),
-                                'Origin': 'http://example.com'})
+                                'Origin': 'http://example.com',
+                                'content-type': 'application/json'
+                                })
 
 
 def client_get(client, url):
@@ -66,10 +69,10 @@ def client_delete(client, url):
 
 def assert_response(response, expected_code=200, needs_cors=True):
     assert response.status_code == expected_code
-    assert response.content_type == "application/json"
+    assert response.headers.get('content-type') == "application/json"
     if needs_cors:
-        assert ('Access-Control-Allow-Credentials', 'true') in response.headers._list
-        assert ('Access-Control-Allow-Origin', 'http://example.com') in response.headers._list
+        assert ('access-control-allow-credentials', 'true') in response.headers.items()
+        assert ('access-control-allow-origin', 'http://example.com') in response.headers.items()
 
 
 def test_api_not_found(botclient):
@@ -77,7 +80,7 @@ def test_api_not_found(botclient):
 
     rc = client_post(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
-    assert rc.json == {"status": "error",
+    assert rc.json() == {"status": "error",
                        "reason": f"There's no API call for http://localhost{BASE_URI}/invalid_url.",
                        "code": 404
                        }
@@ -87,45 +90,44 @@ def test_api_unauthorized(botclient):
     ftbot, client = botclient
     rc = client.get(f"{BASE_URI}/ping")
     assert_response(rc, needs_cors=False)
-    assert rc.json == {'status': 'pong'}
+    assert rc.json() == {'status': 'pong'}
 
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
     assert_response(rc, 401, needs_cors=False)
-    assert rc.json == {'error': 'Unauthorized'}
+    assert rc.json() == {'error': 'Unauthorized'}
 
     # Change only username
     ftbot.config['api_server']['username'] = 'Ftrader'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json == {'error': 'Unauthorized'}
+    assert rc.json() == {'error': 'Unauthorized'}
 
     # Change only password
     ftbot.config['api_server']['username'] = _TEST_USER
     ftbot.config['api_server']['password'] = 'WrongPassword'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json == {'error': 'Unauthorized'}
+    assert rc.json() == {'error': 'Unauthorized'}
 
     ftbot.config['api_server']['username'] = 'Ftrader'
     ftbot.config['api_server']['password'] = 'WrongPassword'
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json == {'error': 'Unauthorized'}
+    assert rc.json() == {'error': 'Unauthorized'}
 
 
 def test_api_token_login(botclient):
     ftbot, client = botclient
     rc = client_post(client, f"{BASE_URI}/token/login")
     assert_response(rc)
-    assert 'access_token' in rc.json
-    assert 'refresh_token' in rc.json
+    assert 'access_token' in rc.json()
+    assert 'refresh_token' in rc.json()
 
     # test Authentication is working with JWT tokens too
     rc = client.get(f"{BASE_URI}/count",
-                    content_type="application/json",
-                    headers={'Authorization': f'Bearer {rc.json["access_token"]}',
+                    headers={'Authorization': f'Bearer {rc.json()["access_token"]}',
                              'Origin': 'http://example.com'})
     assert_response(rc)
 
@@ -268,7 +270,7 @@ def test_api_reloadconf(botclient):
 
     rc = client_post(client, f"{BASE_URI}/reload_config")
     assert_response(rc)
-    assert rc.json == {'status': 'Reloading config ...'}
+    assert rc.json() == {'status': 'Reloading config ...'}
     assert ftbot.state == State.RELOAD_CONFIG
 
 
@@ -278,7 +280,7 @@ def test_api_stopbuy(botclient):
 
     rc = client_post(client, f"{BASE_URI}/stopbuy")
     assert_response(rc)
-    assert rc.json == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
+    assert rc.json() == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
     assert ftbot.config['max_open_trades'] == 0
 
 
@@ -293,9 +295,9 @@ def test_api_balance(botclient, mocker, rpc_balance):
 
     rc = client_get(client, f"{BASE_URI}/balance")
     assert_response(rc)
-    assert "currencies" in rc.json
-    assert len(rc.json["currencies"]) == 5
-    assert rc.json['currencies'][0] == {
+    assert "currencies" in rc.json()
+    assert len(rc.json()["currencies"]) == 5
+    assert rc.json()['currencies'][0] == {
         'currency': 'BTC',
         'free': 12.0,
         'balance': 12.0,
@@ -318,15 +320,15 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
 
-    assert rc.json["current"] == 0
-    assert rc.json["max"] == 1.0
+    assert rc.json()["current"] == 0
+    assert rc.json()["max"] == 1.0
 
     # Create some test data
     ftbot.enter_positions()
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
-    assert rc.json["current"] == 1.0
-    assert rc.json["max"] == 1.0
+    assert rc.json()["current"] == 1.0
+    assert rc.json()["max"] == 1.0
 
 
 def test_api_locks(botclient):
@@ -359,15 +361,15 @@ def test_api_show_config(botclient, mocker):
 
     rc = client_get(client, f"{BASE_URI}/show_config")
     assert_response(rc)
-    assert 'dry_run' in rc.json
-    assert rc.json['exchange'] == 'bittrex'
-    assert rc.json['timeframe'] == '5m'
-    assert rc.json['timeframe_ms'] == 300000
-    assert rc.json['timeframe_min'] == 5
-    assert rc.json['state'] == 'running'
-    assert not rc.json['trailing_stop']
-    assert 'bid_strategy' in rc.json
-    assert 'ask_strategy' in rc.json
+    assert 'dry_run' in rc.json()
+    assert rc.json()['exchange'] == 'bittrex'
+    assert rc.json()['timeframe'] == '5m'
+    assert rc.json()['timeframe_ms'] == 300000
+    assert rc.json()['timeframe_min'] == 5
+    assert rc.json()['state'] == 'running'
+    assert not rc.json()['trailing_stop']
+    assert 'bid_strategy' in rc.json()
+    assert 'ask_strategy' in rc.json()
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -722,7 +724,7 @@ def test_api_version(botclient):
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc)
-    assert rc.json == {"version": __version__}
+    assert rc.json() == {"version": __version__}
 
 
 def test_api_blacklist(botclient, mocker):
