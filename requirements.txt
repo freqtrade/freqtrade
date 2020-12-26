@@ -35,7 +35,7 @@ flask-cors==3.0.9
 # API Server
 fastapi==0.63.0
 uvicorn==0.13.2
-fastapi_jwt_auth==0.5.0
+pyjwt==1.7.1
 
 # Support for colorized terminal output
 colorama==0.4.4

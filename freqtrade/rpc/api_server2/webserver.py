@@ -37,13 +37,13 @@ class ApiServer(RPCHandler):
     def configure_app(self, app: FastAPI, config):
         from .api_v1 import router as api_v1
         from .api_v1 import router_public as api_v1_public
-        from .api_auth import HTTPBasicOrJWTToken, router_login
+        from .api_auth import http_basic_or_jwt_token, router_login
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",
-                           dependencies=[Depends(HTTPBasicOrJWTToken())]
+                           dependencies=[Depends(http_basic_or_jwt_token)],
                            )
-        app.include_router(router_login, prefix="/api/v1")
+        app.include_router(router_login, prefix="/api/v1", tags=["auth"])
 
         app.add_middleware(
             CORSMiddleware,
