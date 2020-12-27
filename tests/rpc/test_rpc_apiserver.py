@@ -23,7 +23,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server2 import ApiServer
 from freqtrade.state import RunMode, State
-from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
+from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, log_has_re, patch_get_signal
 
 
 BASE_URI = "/api/v1"
@@ -91,22 +91,22 @@ def test_api_not_found(botclient):
 
 def test_api_auth():
     with pytest.raises(ValueError):
-        create_token({'sub': 'Freqtrade'}, token_type="NotATokenType")
+        create_token({'sub': 'Freqtrade'}, 'secret1234', token_type="NotATokenType")
 
-    token = create_token({'sub': 'Freqtrade'}, )
+    token = create_token({'sub': 'Freqtrade'}, 'secret1234')
     assert isinstance(token, bytes)
 
-    u = get_user_from_token(token)
+    u = get_user_from_token(token, 'secret1234')
     assert u == 'Freqtrade'
     with pytest.raises(HTTPException):
-        get_user_from_token(token, token_type='refresh')
+        get_user_from_token(token, 'secret1234', token_type='refresh')
     # Create invalid token
-    token = create_token({'sub`': 'Freqtrade'}, )
+    token = create_token({'sub`': 'Freqtrade'}, 'secret1234')
     with pytest.raises(HTTPException):
-        get_user_from_token(token)
+        get_user_from_token(token, 'secret1234')
 
     with pytest.raises(HTTPException):
-        get_user_from_token(b'not_a_token')
+        get_user_from_token(b'not_a_token', 'secret1234')
 
 
 def test_api_unauthorized(botclient):
@@ -279,6 +279,8 @@ def test_api_run(default_conf, mocker, caplog):
                    "e.g 127.0.0.1 in config.json", caplog)
     assert log_has("SECURITY WARNING - No password for local REST Server defined. "
                    "Please make sure that this is intentional!", caplog)
+    assert log_has_re("SECURITY WARNING - `jwt_secret_key` seems to be default.*", caplog)
+
 
     # Test crashing flask
     caplog.clear()
