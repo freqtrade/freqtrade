@@ -1,4 +1,5 @@
 import logging
+from ipaddress import IPv4Address
 from typing import Any, Dict, Optional
 
 import uvicorn
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ApiServer(RPCHandler):
 
-    _rpc: Optional[RPC] = None
+    _rpc: RPC = None
     _config: Dict[str, Any] = {}
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
@@ -34,6 +35,7 @@ class ApiServer(RPCHandler):
     def cleanup(self) -> None:
         """ Cleanup pending module resources """
         if self._server:
+            logger.info("Stopping API Server")
             self._server.cleanup()
 
     def send_msg(self, msg: Dict[str, str]) -> None:
@@ -71,11 +73,26 @@ class ApiServer(RPCHandler):
         """
         Start API ... should be run in thread.
         """
-        uvconfig = uvicorn.Config(self.app,
-                                  port=self._config['api_server'].get('listen_port', 8080),
-                                  host=self._config['api_server'].get(
-                                      'listen_ip_address', '127.0.0.1'),
-                                  access_log=True)
-        self._server = UvicornServer(uvconfig)
+        rest_ip = self._config['api_server']['listen_ip_address']
+        rest_port = self._config['api_server']['listen_port']
 
-        self._server.run_in_thread()
+        logger.info(f'Starting HTTP Server at {rest_ip}:{rest_port}')
+        if not IPv4Address(rest_ip).is_loopback:
+            logger.warning("SECURITY WARNING - Local Rest Server listening to external connections")
+            logger.warning("SECURITY WARNING - This is insecure please set to your loopback,"
+                           "e.g 127.0.0.1 in config.json")
+
+        if not self._config['api_server'].get('password'):
+            logger.warning("SECURITY WARNING - No password for local REST Server defined. "
+                           "Please make sure that this is intentional!")
+
+        logger.info('Starting Local Rest Server.')
+        uvconfig = uvicorn.Config(self.app,
+                                  port=rest_port,
+                                  host=rest_ip,
+                                  access_log=True)
+        try:
+            self._server = UvicornServer(uvconfig)
+            self._server.run_in_thread()
+        except Exception:
+            logger.exception("Api server failed to start.")

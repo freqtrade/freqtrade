@@ -10,6 +10,9 @@ class UvicornServer(uvicorn.Server):
     Multithreaded server - as found in https://github.com/encode/uvicorn/issues/742
     """
     def install_signal_handlers(self):
+        """
+        In the parent implementation, this starts the thread, therefore we must patch it away here.
+        """
         pass
 
     @contextlib.contextmanager

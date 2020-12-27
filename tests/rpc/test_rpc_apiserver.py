@@ -5,17 +5,18 @@ Unit test file for rpc/api_server.py
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
+from fastapi.applications import FastAPI
 
 import pytest
 from fastapi.testclient import TestClient
-from flask import Flask
+from fastapi import FastAPI
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server import BASE_URI  # , ApiServer
+from freqtrade.rpc.api_server111 import BASE_URI  # , ApiServer
 from freqtrade.rpc.api_server2 import ApiServer
 from freqtrade.state import RunMode, State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
@@ -191,20 +192,19 @@ def test_api_run(default_conf, mocker, caplog):
                                         "password": "testPass",
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-    mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
 
     server_mock = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server.make_server', server_mock)
+    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
 
-    assert apiserver._config == default_conf
-    apiserver.run()
     assert server_mock.call_count == 1
-    assert server_mock.call_args_list[0][0][0] == "127.0.0.1"
-    assert server_mock.call_args_list[0][0][1] == 8080
-    assert isinstance(server_mock.call_args_list[0][0][2], Flask)
-    assert hasattr(apiserver, "srv")
+    assert apiserver._config == default_conf
+    apiserver.start_api()
+    assert server_mock.call_count == 2
+    assert server_mock.call_args_list[0][0][0].host == "127.0.0.1"
+    assert server_mock.call_args_list[0][0][0].port == 8080
+    assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
 
     assert log_has("Starting HTTP Server at 127.0.0.1:8080", caplog)
     assert log_has("Starting Local Rest Server.", caplog)
@@ -217,12 +217,12 @@ def test_api_run(default_conf, mocker, caplog):
                                              "listen_port": 8089,
                                              "password": "",
                                              }})
-    apiserver.run()
+    apiserver.start_api()
 
     assert server_mock.call_count == 1
-    assert server_mock.call_args_list[0][0][0] == "0.0.0.0"
-    assert server_mock.call_args_list[0][0][1] == 8089
-    assert isinstance(server_mock.call_args_list[0][0][2], Flask)
+    assert server_mock.call_args_list[0][0][0].host == "0.0.0.0"
+    assert server_mock.call_args_list[0][0][0].port == 8089
+    assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
     assert log_has("Starting HTTP Server at 0.0.0.0:8089", caplog)
     assert log_has("Starting Local Rest Server.", caplog)
     assert log_has("SECURITY WARNING - Local Rest Server listening to external connections",
@@ -234,8 +234,8 @@ def test_api_run(default_conf, mocker, caplog):
 
     # Test crashing flask
     caplog.clear()
-    mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock(side_effect=Exception))
-    apiserver.run()
+    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', MagicMock(side_effect=Exception))
+    apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
 
 
@@ -247,17 +247,15 @@ def test_api_cleanup(default_conf, mocker, caplog):
                                         "password": "testPass",
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-    mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
-    mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
+
+    server_mock = MagicMock()
+    server_mock.cleanup = MagicMock()
+    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
-    apiserver.run_api()
-    stop_mock = MagicMock()
-    stop_mock.shutdown = MagicMock()
-    apiserver.srv = stop_mock
 
     apiserver.cleanup()
-    assert stop_mock.shutdown.call_count == 1
+    assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
 
 
