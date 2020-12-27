@@ -1,6 +1,6 @@
 import logging
 from ipaddress import IPv4Address
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import uvicorn
 from fastapi import Depends, FastAPI
