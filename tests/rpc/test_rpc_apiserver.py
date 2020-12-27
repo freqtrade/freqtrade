@@ -3,6 +3,12 @@ Unit test file for rpc/api_server.py
 """
 
 from datetime import datetime, timedelta, timezone
+
+import uvicorn
+from freqtrade.rpc.api_server2.uvicorn_threaded import UvicornServer
+
+from fastapi.exceptions import HTTPException
+from freqtrade.rpc.api_server2.api_auth import create_token, get_user_from_token
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -83,6 +89,26 @@ def test_api_not_found(botclient):
     assert rc.json() == {"detail": "Not Found"}
 
 
+def test_api_auth():
+    with pytest.raises(ValueError):
+        create_token({'sub': 'Freqtrade'}, token_type="NotATokenType")
+
+    token = create_token({'sub': 'Freqtrade'}, )
+    assert isinstance(token, bytes)
+
+    u = get_user_from_token(token)
+    assert u == 'Freqtrade'
+    with pytest.raises(HTTPException):
+        get_user_from_token(token, token_type='refresh')
+    # Create invalid token
+    token = create_token({'sub`': 'Freqtrade'}, )
+    with pytest.raises(HTTPException):
+        get_user_from_token(token)
+
+    with pytest.raises(HTTPException):
+        get_user_from_token(b'not_a_token')
+
+
 def test_api_unauthorized(botclient):
     ftbot, client = botclient
     rc = client.get(f"{BASE_URI}/ping")
@@ -92,31 +118,36 @@ def test_api_unauthorized(botclient):
     # Don't send user/pass information
     rc = client.get(f"{BASE_URI}/version")
     assert_response(rc, 401, needs_cors=False)
-    assert rc.json() == {'error': 'Unauthorized'}
+    assert rc.json() == {'detail': 'Unauthorized'}
 
     # Change only username
     ftbot.config['api_server']['username'] = 'Ftrader'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json() == {'error': 'Unauthorized'}
+    assert rc.json() == {'detail': 'Unauthorized'}
 
     # Change only password
     ftbot.config['api_server']['username'] = _TEST_USER
     ftbot.config['api_server']['password'] = 'WrongPassword'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json() == {'error': 'Unauthorized'}
+    assert rc.json() == {'detail': 'Unauthorized'}
 
     ftbot.config['api_server']['username'] = 'Ftrader'
     ftbot.config['api_server']['password'] = 'WrongPassword'
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
-    assert rc.json() == {'error': 'Unauthorized'}
+    assert rc.json() == {'detail': 'Unauthorized'}
 
 
 def test_api_token_login(botclient):
     ftbot, client = botclient
+    rc = client.post(f"{BASE_URI}/token/login",
+                     data=None,
+                     headers={'Authorization': _basic_auth_str('WRONG_USER', 'WRONG_PASS'),
+                              'Origin': 'http://example.com'})
+    assert_response(rc, 401)
     rc = client_post(client, f"{BASE_URI}/token/login")
     assert_response(rc)
     assert 'access_token' in rc.json()
@@ -181,6 +212,24 @@ def test_api__init__(default_conf, mocker):
     mocker.patch('freqtrade.rpc.api_server2.webserver.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert apiserver._config == default_conf
+
+
+def test_api_UvicornServer(default_conf, mocker):
+    thread_mock = mocker.patch('freqtrade.rpc.api_server2.uvicorn_threaded.threading.Thread')
+    s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host='127.0.0.1'))
+    assert thread_mock.call_count == 0
+
+    s.install_signal_handlers()
+    # Original implementation starts a thread - make sure that's not the case
+    assert thread_mock.call_count == 0
+
+    # Fake started to avoid sleeping forever
+    s.started = True
+    s.run_in_thread()
+    assert thread_mock.call_count == 1
+
+    s.cleanup()
+    assert s.should_exit is True
 
 
 def test_api_run(default_conf, mocker, caplog):
