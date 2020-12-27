@@ -933,8 +933,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert rc.json()['data_stop_ts'] == 1511686800000
     assert isinstance(rc.json()['columns'], list)
     assert rc.json()['columns'] == ['date', 'open', 'high',
-                                  'low', 'close', 'volume', 'sma', 'buy', 'sell',
-                                  '__date_ts', '_buy_signal_open', '_sell_signal_open']
+                                    'low', 'close', 'volume', 'sma', 'buy', 'sell',
+                                    '__date_ts', '_buy_signal_open', '_sell_signal_open']
     assert 'pair' in rc.json()
     assert rc.json()['pair'] == 'XRP/BTC'
 

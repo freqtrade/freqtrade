@@ -1,12 +1,12 @@
 from copy import deepcopy
-from freqtrade.constants import USERPATH_STRATEGIES
-from typing import Dict, List, Optional, Union
 from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
+from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
@@ -14,7 +14,8 @@ from freqtrade.rpc.rpc import RPCException
 
 from .api_models import (AvailablePairs, Balances, BlacklistPayload, BlacklistResponse, Count,
                          Daily, DeleteTrade, ForceBuyPayload, ForceSellPayload, Locks, Logs,
-                         PerformanceEntry, Ping, PlotConfig, Profit, ResultMsg, Stats, StatusMsg, StrategyListResponse, StrategyResponse, Version,
+                         PairHistory, PerformanceEntry, Ping, PlotConfig, Profit, ResultMsg, Stats,
+                         StatusMsg, StrategyListResponse, StrategyResponse, Version,
                          WhitelistResponse)
 from .deps import get_config, get_rpc
 
@@ -164,14 +165,12 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
 
 
-# TODO: Missing response model
-@router.get('/pair_candles', tags=['candle data'])
+@router.get('/pair_candles', response_model=PairHistory, tags=['candle data'])
 def pair_candles(pair: str, timeframe: str, limit: Optional[int], rpc=Depends(get_rpc)):
     return rpc._rpc_analysed_dataframe(pair, timeframe, limit)
 
 
-# TODO: Missing response model
-@router.get('/pair_history', tags=['candle data'])
+@router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
 def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
                  config=Depends(get_config)):
     config = deepcopy(config)

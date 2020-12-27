@@ -2,10 +2,9 @@ import secrets
 from datetime import datetime, timedelta
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
-from pydantic import BaseModel
 
 from freqtrade.rpc.api_server2.api_models import AccessAndRefreshToken, AccessToken
 

@@ -1,6 +1,9 @@
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
-from datetime import date
+
 from pydantic import BaseModel
+
+from freqtrade.constants import DATETIME_PRINT_FORMAT
 
 
 class Ping(BaseModel):
@@ -181,3 +184,26 @@ class AvailablePairs(BaseModel):
     length: int
     pairs: List[str]
     pair_interval: List[List[str]]
+
+
+class PairHistory(BaseModel):
+    strategy: str
+    pair: str
+    timeframe: str
+    timeframe_ms: int
+    columns: List[str]
+    data: List[Any]
+    length: int
+    buy_signals: int
+    sell_signals: int
+    last_analyzed: datetime
+    last_analyzed_ts: int
+    data_start_ts: int
+    data_start: str
+    data_stop: str
+    data_stop_ts: int
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
+        }
