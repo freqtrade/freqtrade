@@ -26,8 +26,13 @@ class ApiServer(RPCHandler):
 
         ApiServer._rpc = rpc
         ApiServer._config = config
+        api_config = self._config['api_server']
 
-        self.app = FastAPI(title="Freqtrade API")
+        self.app = FastAPI(title="Freqtrade API",
+                           openapi_url='openapi.json' if api_config.get(
+                               'enable_openapi') else None,
+                           redoc_url=None,
+                           )
         self.configure_app(self.app, self._config)
 
         self.start_api()
@@ -92,10 +97,11 @@ class ApiServer(RPCHandler):
                            "Others may be able to log into your bot.")
 
         logger.info('Starting Local Rest Server.')
+        verbosity = self._config['api_server'].get('verbosity', 'info')
         uvconfig = uvicorn.Config(self.app,
                                   port=rest_port,
                                   host=rest_ip,
-                                  access_log=True)
+                                  access_log=True if verbosity != 'error' else False)
         try:
             self._server = UvicornServer(uvconfig)
             self._server.run_in_thread()
