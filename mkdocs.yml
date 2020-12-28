@@ -38,7 +38,7 @@ nav:
 theme:
   name: material
   logo: 'images/logo.png'
-  custom_dir: 'docs'
+  custom_dir: 'docs/overrides'
   palette:
     primary: 'blue grey'
     accent: 'tear'
