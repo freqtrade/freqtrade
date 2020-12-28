@@ -347,7 +347,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     # Resample to timeframe to make sure trades match candles
     _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
                                   )[['profit_percent']].sum()
-    df.loc[:, col_name] = _trades_sum.cumsum()
+    df.loc[:, col_name] = _trades_sum['profit_percent'].cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous
