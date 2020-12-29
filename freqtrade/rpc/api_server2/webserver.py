@@ -101,7 +101,8 @@ class ApiServer(RPCHandler):
         uvconfig = uvicorn.Config(self.app,
                                   port=rest_port,
                                   host=rest_ip,
-                                  access_log=True if verbosity != 'error' else False)
+                                  access_log=True if verbosity != 'error' else False,
+                                  )
         try:
             self._server = UvicornServer(uvconfig)
             self._server.run_in_thread()
