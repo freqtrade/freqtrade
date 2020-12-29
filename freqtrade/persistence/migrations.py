@@ -53,11 +53,11 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     else:
         timeframe = get_column_def(cols, 'timeframe', 'null')
 
-    open_trade_price = get_column_def(cols, 'open_trade_price',
+    open_trade_value = get_column_def(cols, 'open_trade_value',
                                       f'amount * open_rate * (1 + {fee_open})')
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
-        f"(amount * close_rate * (1 - {fee_close})) - {open_trade_price}")
+        f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
     sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
@@ -79,7 +79,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy,
-            timeframe, open_trade_price, close_profit_abs
+            timeframe, open_trade_value, close_profit_abs
             )
         select id, lower(exchange),
             case
@@ -102,7 +102,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
             {sell_order_status} sell_order_status,
             {strategy} strategy, {timeframe} timeframe,
-            {open_trade_price} open_trade_price, {close_profit_abs} close_profit_abs
+            {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
             """)
 
@@ -134,7 +134,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
     # Check for latest column
-    if not has_column(cols, 'amount_requested'):
+    if not has_column(cols, 'open_trade_value'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!

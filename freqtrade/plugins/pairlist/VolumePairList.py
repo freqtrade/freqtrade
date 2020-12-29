@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
 logger = logging.getLogger(__name__)
@@ -111,6 +111,6 @@ class VolumePairList(IPairList):
         # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 
-        self.log_on_refresh(logger.info, f"Searching {self._number_pairs} pairs: {pairs}")
+        self.log_once(f"Searching {self._number_pairs} pairs: {pairs}", logger.info)
 
         return pairs

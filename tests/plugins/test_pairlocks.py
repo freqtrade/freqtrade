@@ -79,4 +79,38 @@ def test_PairLocks(use_db):
         # Nothing was pushed to the database
         assert len(PairLock.query.all()) == 0
     # Reset use-db variable
+    PairLocks.reset_locks()
+    PairLocks.use_db = True
+
+
+@pytest.mark.parametrize('use_db', (False, True))
+@pytest.mark.usefixtures("init_persistence")
+def test_PairLocks_getlongestlock(use_db):
+    PairLocks.timeframe = '5m'
+    # No lock should be present
+    if use_db:
+        assert len(PairLock.query.all()) == 0
+    else:
+        PairLocks.use_db = False
+
+    assert PairLocks.use_db == use_db
+
+    pair = 'ETH/BTC'
+    assert not PairLocks.is_pair_locked(pair)
+    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=4).datetime)
+    # ETH/BTC locked for 4 minutes
+    assert PairLocks.is_pair_locked(pair)
+    lock = PairLocks.get_pair_longest_lock(pair)
+
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=3)
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) < arrow.utcnow().shift(minutes=14)
+
+    PairLocks.lock_pair(pair, arrow.utcnow().shift(minutes=15).datetime)
+    assert PairLocks.is_pair_locked(pair)
+
+    lock = PairLocks.get_pair_longest_lock(pair)
+    # Must be longer than above
+    assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=14)
+
+    PairLocks.reset_locks()
     PairLocks.use_db = True

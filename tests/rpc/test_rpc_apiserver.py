@@ -13,6 +13,7 @@ from requests.auth import _basic_auth_str
 from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import BASE_URI, ApiServer
 from freqtrade.state import RunMode, State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, patch_get_signal
@@ -36,8 +37,9 @@ def botclient(default_conf, mocker):
                                         }})
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(ftbot)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
-    apiserver = ApiServer(ftbot)
+    apiserver = ApiServer(rpc, default_conf)
     yield ftbot, apiserver.app.test_client()
     # Cleanup ... ?
 
@@ -179,8 +181,7 @@ def test_api__init__(default_conf, mocker):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.ApiServer.run', MagicMock())
-
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert apiserver._config == default_conf
 
 
@@ -197,7 +198,7 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock = MagicMock()
     mocker.patch('freqtrade.rpc.api_server.make_server', server_mock)
 
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
 
     assert apiserver._config == default_conf
     apiserver.run()
@@ -251,7 +252,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.api_server.threading.Thread', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.make_server', MagicMock())
 
-    apiserver = ApiServer(get_patched_freqtradebot(mocker, default_conf))
+    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     apiserver.run()
     stop_mock = MagicMock()
     stop_mock.shutdown = MagicMock()
@@ -559,6 +560,35 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
                        }
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_api_stats(botclient, mocker, ticker, fee, markets,):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        markets=PropertyMock(return_value=markets)
+    )
+
+    rc = client_get(client, f"{BASE_URI}/stats")
+    assert_response(rc, 200)
+    assert 'durations' in rc.json
+    assert 'sell_reasons' in rc.json
+
+    create_mock_trades(fee)
+
+    rc = client_get(client, f"{BASE_URI}/stats")
+    assert_response(rc, 200)
+    assert 'durations' in rc.json
+    assert 'sell_reasons' in rc.json
+
+    assert 'wins' in rc.json['durations']
+    assert 'losses' in rc.json['durations']
+    assert 'draws' in rc.json['durations']
+
+
 def test_api_performance(botclient, mocker, ticker, fee):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
@@ -678,7 +708,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
                         'min_rate': 1.098e-05,
                         'open_order_id': None,
                         'open_rate_requested': 1.098e-05,
-                        'open_trade_price': 0.0010025,
+                        'open_trade_value': 0.0010025,
                         'sell_reason': None,
                         'sell_order_status': None,
                         'strategy': 'DefaultStrategy',
@@ -805,7 +835,7 @@ def test_api_forcebuy(botclient, mocker, fee):
                        'min_rate': None,
                        'open_order_id': '123456',
                        'open_rate_requested': None,
-                       'open_trade_price': 0.24605460,
+                       'open_trade_value': 0.24605460,
                        'sell_reason': None,
                        'sell_order_status': None,
                        'strategy': None,
@@ -841,7 +871,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
 def test_api_pair_candles(botclient, ohlcv_history):
     ftbot, client = botclient
     timeframe = '5m'
-    amount = 2
+    amount = 3
 
     # No pair
     rc = client_get(client,
@@ -881,8 +911,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert 'data_stop_ts' in rc.json
     assert rc.json['data_start'] == '2017-11-26 08:50:00+00:00'
     assert rc.json['data_start_ts'] == 1511686200000
-    assert rc.json['data_stop'] == '2017-11-26 08:55:00+00:00'
-    assert rc.json['data_stop_ts'] == 1511686500000
+    assert rc.json['data_stop'] == '2017-11-26 09:00:00+00:00'
+    assert rc.json['data_stop_ts'] == 1511686800000
     assert isinstance(rc.json['columns'], list)
     assert rc.json['columns'] == ['date', 'open', 'high',
                                   'low', 'close', 'volume', 'sma', 'buy', 'sell',
@@ -897,7 +927,10 @@ def test_api_pair_candles(botclient, ohlcv_history):
             [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 1511686200000, None, None],
              ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.88e-05, None]
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.88e-05, None],
+             ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
+                 0.7039405, 8.885000000000002e-05, 0, 0, 1511686800000, None, None]
+
              ])
 
 

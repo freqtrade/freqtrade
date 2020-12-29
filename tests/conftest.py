@@ -33,6 +33,19 @@ logging.getLogger('').setLevel(logging.INFO)
 np.seterr(all='raise')
 
 
+def pytest_addoption(parser):
+    parser.addoption('--longrun', action='store_true', dest="longrun",
+                     default=False, help="Enable long-run tests (ccxt compat)")
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "longrun: mark test that is running slowly and should not be run regularily"
+    )
+    if not config.option.longrun:
+        setattr(config.option, 'markexpr', 'not longrun')
+
+
 def log_has(line, logs):
     # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
     # and we want to match line against foobar in the tuple
@@ -224,6 +237,10 @@ def init_persistence(default_conf):
 
 @pytest.fixture(scope="function")
 def default_conf(testdatadir):
+    return get_default_conf(testdatadir)
+
+
+def get_default_conf(testdatadir):
     """ Returns validated configuration suitable for most tests """
     configuration = {
         "max_open_trades": 1,
@@ -1084,7 +1101,7 @@ def ohlcv_history_list():
 @pytest.fixture
 def ohlcv_history(ohlcv_history_list):
     return ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
-                              fill_missing=True)
+                              fill_missing=True, drop_incomplete=False)
 
 
 @pytest.fixture
@@ -1588,16 +1605,7 @@ def fetch_trades_result():
 
 @pytest.fixture(scope="function")
 def trades_for_order2():
-    return [{'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
+    return [{'info': {},
              'timestamp': 1521663363189,
              'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
@@ -1609,16 +1617,7 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}},
-            {'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
+            {'info': {},
              'timestamp': 1521663363189,
              'datetime': '2018-03-21T20:16:03.189Z',
              'symbol': 'LTC/ETH',
@@ -1630,6 +1629,14 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
+
+
+@pytest.fixture(scope="function")
+def trades_for_order3(trades_for_order2):
+    # Different fee currencies for each trade
+    trades_for_order = deepcopy(trades_for_order2)
+    trades_for_order[0]['fee'] = {'cost': 0.02, 'currency': 'BNB'}
+    return trades_for_order
 
 
 @pytest.fixture

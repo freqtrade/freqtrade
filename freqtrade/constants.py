@@ -24,8 +24,10 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'AgeFilter', 'PrecisionFilter', 'PriceFilter',
-                       'RangeStabilityFilter', 'ShuffleFilter', 'SpreadFilter']
+                       'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
+                       'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
+                       'SpreadFilter']
+AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -182,9 +184,6 @@ CONF_SCHEMA = {
         'experimental': {
             'type': 'object',
             'properties': {
-                'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'},
-                'ignore_roi_if_buy_signal': {'type': 'boolean'},
                 'block_bad_exchanges': {'type': 'boolean'}
             }
         },
@@ -194,7 +193,21 @@ CONF_SCHEMA = {
                 'type': 'object',
                 'properties': {
                     'method': {'type': 'string', 'enum': AVAILABLE_PAIRLISTS},
-                    'config': {'type': 'object'}
+                },
+                'required': ['method'],
+            }
+        },
+        'protections': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'method': {'type': 'string', 'enum': AVAILABLE_PROTECTIONS},
+                    'stop_duration': {'type': 'number', 'minimum': 0.0},
+                    'stop_duration_candles': {'type': 'number', 'minimum': 0},
+                    'trade_limit': {'type': 'number', 'minimum': 1},
+                    'lookback_period': {'type': 'number', 'minimum': 1},
+                    'lookback_period_candles': {'type': 'number', 'minimum': 1},
                 },
                 'required': ['method'],
             }

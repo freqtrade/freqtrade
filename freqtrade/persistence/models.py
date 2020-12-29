@@ -202,6 +202,10 @@ class Trade(_DECL_BASE):
     """
     __tablename__ = 'trades'
 
+    use_db: bool = True
+    # Trades container for backtesting
+    trades: List['Trade'] = []
+
     id = Column(Integer, primary_key=True)
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
@@ -217,8 +221,8 @@ class Trade(_DECL_BASE):
     fee_close_currency = Column(String, nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
-    # open_trade_price - calculated via _calc_open_trade_price
-    open_trade_price = Column(Float)
+    # open_trade_value - calculated via _calc_open_trade_value
+    open_trade_value = Column(Float)
     close_rate = Column(Float)
     close_rate_requested = Column(Float)
     close_profit = Column(Float)
@@ -252,7 +256,7 @@ class Trade(_DECL_BASE):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.recalc_open_trade_price()
+        self.recalc_open_trade_value()
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
@@ -284,7 +288,7 @@ class Trade(_DECL_BASE):
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
-            'open_trade_price': round(self.open_trade_price, 8),
+            'open_trade_value': round(self.open_trade_value, 8),
 
             'close_date_hum': (arrow.get(self.close_date).humanize()
                                if self.close_date else None),
@@ -322,6 +326,14 @@ class Trade(_DECL_BASE):
 
             'open_order_id': self.open_order_id,
         }
+
+    @staticmethod
+    def reset_trades() -> None:
+        """
+        Resets all trades. Only active for backtesting mode.
+        """
+        if not Trade.use_db:
+            Trade.trades = []
 
     def adjust_min_max_rates(self, current_price: float) -> None:
         """
@@ -389,7 +401,7 @@ class Trade(_DECL_BASE):
             # Update open rate and actual amount
             self.open_rate = Decimal(safe_value_fallback(order, 'average', 'price'))
             self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
-            self.recalc_open_trade_price()
+            self.recalc_open_trade_value()
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
@@ -407,7 +419,7 @@ class Trade(_DECL_BASE):
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()
 
-    def close(self, rate: float) -> None:
+    def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
@@ -419,10 +431,11 @@ class Trade(_DECL_BASE):
         self.is_open = False
         self.sell_order_status = 'closed'
         self.open_order_id = None
-        logger.info(
-            'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
-            self
-        )
+        if show_msg:
+            logger.info(
+                'Marking %s as closed as the trade is fulfilled and found no open orders for it.',
+                self
+            )
 
     def update_fee(self, fee_cost: float, fee_currency: Optional[str], fee_rate: Optional[float],
                    side: str) -> None:
@@ -464,7 +477,7 @@ class Trade(_DECL_BASE):
         Trade.session.delete(self)
         Trade.session.flush()
 
-    def _calc_open_trade_price(self) -> float:
+    def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
@@ -473,14 +486,14 @@ class Trade(_DECL_BASE):
         fees = buy_trade * Decimal(self.fee_open)
         return float(buy_trade + fees)
 
-    def recalc_open_trade_price(self) -> None:
+    def recalc_open_trade_value(self) -> None:
         """
-        Recalculate open_trade_price.
+        Recalculate open_trade_value.
         Must be called whenever open_rate or fee_open is changed.
         """
-        self.open_trade_price = self._calc_open_trade_price()
+        self.open_trade_value = self._calc_open_trade_value()
 
-    def calc_close_trade_price(self, rate: Optional[float] = None,
+    def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
         """
         Calculate the close_rate including fee
@@ -507,11 +520,11 @@ class Trade(_DECL_BASE):
             If rate is not set self.close_rate will be used
         :return:  profit in stake currency as float
         """
-        close_trade_price = self.calc_close_trade_price(
+        close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_price - self.open_trade_price
+        profit = close_trade_value - self.open_trade_value
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
@@ -523,11 +536,11 @@ class Trade(_DECL_BASE):
         :param fee: fee to use on the close rate (optional).
         :return: profit ratio as float
         """
-        close_trade_price = self.calc_close_trade_price(
+        close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit_ratio = (close_trade_price / self.open_trade_price) - 1
+        profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
@@ -561,6 +574,43 @@ class Trade(_DECL_BASE):
             return Trade.query.filter(*trade_filter)
         else:
             return Trade.query
+
+    @staticmethod
+    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
+                         open_date: datetime = None, close_date: datetime = None,
+                         ) -> List['Trade']:
+        """
+        Helper function to query Trades.
+        Returns a List of trades, filtered on the parameters given.
+        In live mode, converts the filter to a database query and returns all rows
+        In Backtest mode, uses filters on Trade.trades to get the result.
+
+        :return: unsorted List[Trade]
+        """
+        if Trade.use_db:
+            trade_filter = []
+            if pair:
+                trade_filter.append(Trade.pair == pair)
+            if open_date:
+                trade_filter.append(Trade.open_date > open_date)
+            if close_date:
+                trade_filter.append(Trade.close_date > close_date)
+            if is_open is not None:
+                trade_filter.append(Trade.is_open.is_(is_open))
+            return Trade.get_trades(trade_filter).all()
+        else:
+            # Offline mode - without database
+            sel_trades = [trade for trade in Trade.trades]
+            if pair:
+                sel_trades = [trade for trade in sel_trades if trade.pair == pair]
+            if open_date:
+                sel_trades = [trade for trade in sel_trades if trade.open_date > open_date]
+            if close_date:
+                sel_trades = [trade for trade in sel_trades if trade.close_date
+                              and trade.close_date > close_date]
+            if is_open is not None:
+                sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
+            return sel_trades
 
     @staticmethod
     def get_open_trades() -> List[Any]:
@@ -688,7 +738,7 @@ class PairLock(_DECL_BASE):
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
         """
-        Get all locks for this pair
+        Get all currently active locks for this pair
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """

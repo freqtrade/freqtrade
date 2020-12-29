@@ -127,6 +127,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
+| `stats` | Display a summary of profit / loss reasons as well as average holding times.
 | `whitelist` | Show the current whitelist.
 | `blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `edge` | Show validated pairs by Edge if it is enabled.
@@ -228,6 +229,9 @@ show_config
 
 start
 	Start the bot if it's in the stopped state.
+
+stats
+	Return the stats report (durations, sell-reasons).
 
 status
 	Get the status of open trades.

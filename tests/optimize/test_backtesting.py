@@ -79,7 +79,7 @@ def load_data_test(what, testdatadir):
                                                   fill_missing=True)}
 
 
-def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
+def simple_backtest(config, contour, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     config['timeframe'] = '1m'
     backtesting = Backtesting(config)
@@ -95,9 +95,10 @@ def simple_backtest(config, contour, num_results, mocker, testdatadir) -> None:
         end_date=max_date,
         max_open_trades=1,
         position_stacking=False,
+        enable_protections=config.get('enable_protections', False),
     )
     # results :: <class 'pandas.core.frame.DataFrame'>
-    assert len(results) == num_results
+    return results
 
 
 # FIX: fixturize this?
@@ -340,7 +341,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = '1m'
@@ -371,7 +372,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = "1m"
@@ -391,7 +392,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=[]))
 
     default_conf['timeframe'] = "1m"
@@ -414,9 +415,9 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     mocker.patch('freqtrade.data.history.get_timerange', get_timerange)
     patch_exchange(mocker)
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['XRP/BTC']))
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.refresh_pairlist')
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.refresh_pairlist')
 
     default_conf['ticker_interval'] = "1m"
     default_conf['datadir'] = testdatadir
@@ -427,6 +428,11 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
     default_conf['pairlists'] = [{"method": "VolumePairList", "number_assets": 5}]
     with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
+        Backtesting(default_conf)
+
+    default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
+    with pytest.raises(OperationalException,
+                       match='PerformanceFilter not allowed for backtesting.'):
         Backtesting(default_conf)
 
     default_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}, ]
@@ -531,13 +537,52 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
         assert col in cols
 
 
-def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir) -> None:
-    # TODO: Evaluate usefullness of this, the patterns and buy-signls are unrealistic
-    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
-    tests = [['raise', 19], ['lower', 0], ['sine', 35]]
+def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatadir) -> None:
+    # While this test IS a copy of test_backtest_pricecontours, it's needed to ensure
+    # results do not carry-over to the next run, which is not given by using parametrize.
+    default_conf['protections'] = [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration": 3,
+        }]
 
+    default_conf['enable_protections'] = True
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    tests = [
+        ['sine', 9],
+        ['raise', 10],
+        ['lower', 0],
+        ['sine', 9],
+        ['raise', 10],
+    ]
+    # While buy-signals are unrealistic, running backtesting
+    # over and over again should not cause different results
     for [contour, numres] in tests:
-        simple_backtest(default_conf, contour, numres, mocker, testdatadir)
+        assert len(simple_backtest(default_conf, contour, mocker, testdatadir)) == numres
+
+
+@pytest.mark.parametrize('protections,contour,expected', [
+    (None, 'sine', 35),
+    (None, 'raise', 19),
+    (None, 'lower', 0),
+    (None, 'sine', 35),
+    (None, 'raise', 19),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'sine', 9),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'raise', 10),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'lower', 0),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'sine', 9),
+    ([{"method": "CooldownPeriod", "stop_duration": 3}], 'raise', 10),
+])
+def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
+                                protections, contour, expected) -> None:
+    if protections:
+        default_conf['protections'] = protections
+        default_conf['enable_protections'] = True
+
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    # While buy-signals are unrealistic, running backtesting
+    # over and over again should not cause different results
+    assert len(simple_backtest(default_conf, contour, mocker, testdatadir)) == expected
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
@@ -655,7 +700,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -695,7 +740,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)
     backtestmock = MagicMock(return_value=pd.DataFrame(columns=BT_DATA_COLUMNS + ['profit_abs']))
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     text_table_mock = MagicMock()
@@ -792,7 +837,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                       'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
                       }),
     ])
-    mocker.patch('freqtrade.pairlist.pairlistmanager.PairListManager.whitelist',
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
 

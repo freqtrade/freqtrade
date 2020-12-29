@@ -15,6 +15,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`AgeFilter`](#agefilter)
+* [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
 * [`ShuffleFilter`](#shufflefilter)
@@ -64,6 +65,9 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
 }],
 ```
 
+!!! Note
+    `VolumePairList` does not support backtesting mode.
+
 #### AgeFilter
 
 Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
@@ -73,6 +77,18 @@ in the first few days while the pair goes through its price-discovery period. Bo
 be caught out buying before the pair has finished dropping in price.
 
 This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+
+#### PerformanceFilter
+
+Sorts pairs by past trade performance, as follows:
+1. Positive performance.
+2. No closed trades yet.
+3. Negative performance.
+
+Trade count is used as a tie breaker.
+
+!!! Note
+    `PerformanceFilter` does not support backtesting mode.
 
 #### PrecisionFilter
 

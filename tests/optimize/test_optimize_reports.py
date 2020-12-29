@@ -76,7 +76,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
                                  "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),
-        'config': default_conf}
+        'config': default_conf,
+        'locks': []}
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
     min_date = Arrow.fromtimestamp(1510688220)

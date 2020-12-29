@@ -58,16 +58,19 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     """
     Generate one result dict, with "first_column" as key.
     """
+    profit_sum = result['profit_percent'].sum()
+    profit_total = profit_sum / max_open_trades
+
     return {
         'key': first_column,
         'trades': len(result),
         'profit_mean': result['profit_percent'].mean() if len(result) > 0 else 0.0,
         'profit_mean_pct': result['profit_percent'].mean() * 100.0 if len(result) > 0 else 0.0,
-        'profit_sum': result['profit_percent'].sum(),
-        'profit_sum_pct': result['profit_percent'].sum() * 100.0,
+        'profit_sum': profit_sum,
+        'profit_sum_pct': round(profit_sum * 100.0, 2),
         'profit_total_abs': result['profit_abs'].sum(),
-        'profit_total': result['profit_percent'].sum() / max_open_trades,
-        'profit_total_pct': result['profit_percent'].sum() * 100.0 / max_open_trades,
+        'profit_total': profit_total,
+        'profit_total_pct': round(profit_total * 100.0, 2),
         'duration_avg': str(timedelta(
                             minutes=round(result['trade_duration'].mean()))
                             ) if not result.empty else '0:00',
@@ -122,8 +125,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
         result = results.loc[results['sell_reason'] == reason]
 
         profit_mean = result['profit_percent'].mean()
-        profit_sum = result["profit_percent"].sum()
-        profit_percent_tot = result['profit_percent'].sum() / max_open_trades
+        profit_sum = result['profit_percent'].sum()
+        profit_total = profit_sum / max_open_trades
 
         tabular_data.append(
             {
@@ -137,8 +140,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
                 'profit_sum': profit_sum,
                 'profit_sum_pct': round(profit_sum * 100, 2),
                 'profit_total_abs': result['profit_abs'].sum(),
-                'profit_total': profit_percent_tot,
-                'profit_total_pct': round(profit_percent_tot * 100, 2),
+                'profit_total': profit_total,
+                'profit_total_pct': round(profit_total * 100, 2),
             }
         )
     return tabular_data
@@ -253,13 +256,19 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                                                   results=results.loc[results['open_at_end']],
                                                   skip_nan=True)
         daily_stats = generate_daily_stats(results)
-
+        best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
+                        key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
+        worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
+                         key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
         results['open_timestamp'] = results['open_date'].astype(int64) // 1e6
         results['close_timestamp'] = results['close_date'].astype(int64) // 1e6
 
         backtest_days = (max_date - min_date).days
         strat_stats = {
             'trades': results.to_dict(orient='records'),
+            'locks': [lock.to_json() for lock in content['locks']],
+            'best_pair': best_pair,
+            'worst_pair': worst_pair,
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
@@ -392,17 +401,25 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
-        min_trade = min(strat_results['trades'], key=lambda x: x['open_date'])
+        best_trade = max(strat_results['trades'], key=lambda x: x['profit_percent'])
+        worst_trade = min(strat_results['trades'], key=lambda x: x['profit_percent'])
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
             ('Total trades', strat_results['total_trades']),
-            ('First trade', min_trade['open_date'].strftime(DATETIME_PRINT_FORMAT)),
-            ('First trade Pair', min_trade['pair']),
             ('Total Profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
             ('Trades per day', strat_results['trades_per_day']),
+            ('', ''),  # Empty line to improve readability
+            ('Best Pair', f"{strat_results['best_pair']['key']} "
+                          f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
+            ('Worst Pair', f"{strat_results['worst_pair']['key']} "
+                           f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
+            ('Best trade', f"{best_trade['pair']} {round(best_trade['profit_percent'] * 100, 2)}%"),
+            ('Worst trade', f"{worst_trade['pair']} "
+                            f"{round(worst_trade['profit_percent'] * 100, 2)}%"),
+
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "

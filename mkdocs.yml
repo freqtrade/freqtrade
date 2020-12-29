@@ -19,6 +19,7 @@ nav:
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Edge Positioning: edge.md
+    - Plugins: plugins.md
     - Utility Subcommands: utils.md
     - FAQ: faq.md
     - Data Analysis:
@@ -31,11 +32,13 @@ nav:
     - Advanced Strategy: strategy-advanced.md
     - Advanced Hyperopt: advanced-hyperopt.md
     - Sandbox Testing: sandbox-testing.md
+    - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md
 theme:
   name: material
   logo: 'images/logo.png'
+  favicon: 'images/logo.png'
   custom_dir: 'docs'
   palette:
     primary: 'blue grey'

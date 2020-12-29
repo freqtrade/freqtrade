@@ -1385,6 +1385,12 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
+    exchange.refresh_latest_ohlcv(pairs, cache=False)
+    # No caching
+    assert not exchange._klines
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    exchange._api_async.fetch_ohlcv.reset_mock()
+
     exchange.refresh_latest_ohlcv(pairs)
 
     assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
@@ -1499,11 +1505,9 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
 
-    assert type(res) is list
-    assert len(res) == 2
+    assert type(res) is dict
+    assert len(res) == 1
     # Test that each is in list at least once as order is not guaranteed
-    assert type(res[0]) is tuple or type(res[1]) is tuple
-    assert type(res[0]) is TypeError or type(res[1]) is TypeError
     assert log_has("Error loading ETH/BTC. Result was [[]].", caplog)
     assert log_has("Async code raised an exception: TypeError", caplog)
 
@@ -2149,7 +2153,7 @@ def test_get_fee(default_conf, mocker, exchange_name):
 
 
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, 'bittrex')
+    exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
         exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
 

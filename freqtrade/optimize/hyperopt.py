@@ -542,6 +542,8 @@ class Hyperopt:
             end_date=max_date.datetime,
             max_open_trades=self.max_open_trades,
             position_stacking=self.position_stacking,
+            enable_protections=self.config.get('enable_protections', False),
+
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
                                       params_dict, params_details)

@@ -18,10 +18,12 @@ from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
-from freqtrade.pairlist.pairlistmanager import PairListManager
-from freqtrade.persistence import Trade
+from freqtrade.persistence import PairLocks, Trade
+from freqtrade.plugins.pairlistmanager import PairListManager
+from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 
@@ -67,6 +69,8 @@ class Backtesting:
     """
 
     def __init__(self, config: Dict[str, Any]) -> None:
+
+        LoggingMixin.show_output = False
         self.config = config
 
         # Reset keys for backtesting
@@ -98,6 +102,8 @@ class Backtesting:
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting.")
+        if 'PerformanceFilter' in self.pairlists.name_list:
+            raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
         if len(self.strategylist) > 1 and 'PrecisionFilter' in self.pairlists.name_list:
             raise OperationalException(
@@ -115,10 +121,23 @@ class Backtesting:
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
+        Trade.use_db = False
+        Trade.reset_trades()
+        PairLocks.timeframe = self.config['timeframe']
+        PairLocks.use_db = False
+        PairLocks.reset_locks()
+        if self.config.get('enable_protections', False):
+            self.protections = ProtectionManager(self.config)
+
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         # Load one (first) strategy
         self._set_strategy(self.strategylist[0])
+
+    def __del__(self):
+        LoggingMixin.show_output = True
+        PairLocks.use_db = True
+        Trade.use_db = True
 
     def _set_strategy(self, strategy):
         """
@@ -155,6 +174,17 @@ class Backtesting:
                                             self.required_startup, min_date)
 
         return data, timerange
+
+    def prepare_backtest(self, enable_protections):
+        """
+        Backtesting setup method - called once for every call to "backtest()".
+        """
+        PairLocks.use_db = False
+        Trade.use_db = False
+        if enable_protections:
+            # Reset persisted data - used for protections only
+            PairLocks.reset_locks()
+            Trade.reset_trades()
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
@@ -235,6 +265,10 @@ class Backtesting:
             trade_dur = int((sell_row[DATE_IDX] - trade.open_date).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
+            trade.close_date = sell_row[DATE_IDX]
+            trade.sell_reason = sell.sell_type
+            trade.close(closerate, show_msg=False)
+
             return BacktestResult(pair=trade.pair,
                                   profit_percent=trade.calc_profit_ratio(rate=closerate),
                                   profit_abs=trade.calc_profit(rate=closerate),
@@ -261,6 +295,7 @@ class Backtesting:
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
                     sell_row = data[pair][-1]
+
                     trade_entry = BacktestResult(pair=trade.pair,
                                                  profit_percent=trade.calc_profit_ratio(
                                                      rate=sell_row[OPEN_IDX]),
@@ -283,7 +318,8 @@ class Backtesting:
 
     def backtest(self, processed: Dict, stake_amount: float,
                  start_date: datetime, end_date: datetime,
-                 max_open_trades: int = 0, position_stacking: bool = False) -> DataFrame:
+                 max_open_trades: int = 0, position_stacking: bool = False,
+                 enable_protections: bool = False) -> DataFrame:
         """
         Implement backtesting functionality
 
@@ -297,6 +333,7 @@ class Backtesting:
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
         :param position_stacking: do we allow position stacking?
+        :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
         logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
@@ -304,6 +341,7 @@ class Backtesting:
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
                      )
         trades = []
+        self.prepare_backtest(enable_protections)
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
@@ -342,7 +380,8 @@ class Backtesting:
                 if ((position_stacking or len(open_trades[pair]) == 0)
                         and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
                         and tmp != end_date
-                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1):
+                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
+                        and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
                     # Enter trade
                     trade = Trade(
                         pair=pair,
@@ -361,6 +400,7 @@ class Backtesting:
                     open_trade_count += 1
                     # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
                     open_trades[pair].append(trade)
+                    Trade.trades.append(trade)
 
                 for trade in open_trades[pair]:
                     # since indexes has been incremented before, we need to go one step back to
@@ -372,6 +412,9 @@ class Backtesting:
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
                         trades.append(trade_entry)
+                        if enable_protections:
+                            self.protections.stop_per_pair(pair, row[DATE_IDX])
+                            self.protections.global_stop(tmp)
 
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
@@ -427,10 +470,12 @@ class Backtesting:
                 end_date=max_date.datetime,
                 max_open_trades=max_open_trades,
                 position_stacking=position_stacking,
+                enable_protections=self.config.get('enable_protections', False),
             )
             all_results[self.strategy.get_strategy_name()] = {
                 'results': results,
                 'config': self.strategy.config,
+                'locks': PairLocks.locks,
             }
 
         stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)

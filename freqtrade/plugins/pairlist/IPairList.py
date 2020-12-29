@@ -6,16 +6,15 @@ from abc import ABC, abstractmethod, abstractproperty
 from copy import deepcopy
 from typing import Any, Dict, List
 
-from cachetools import TTLCache, cached
-
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active
+from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
 
 
-class IPairList(ABC):
+class IPairList(LoggingMixin, ABC):
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
@@ -36,7 +35,7 @@ class IPairList(ABC):
         self._pairlist_pos = pairlist_pos
         self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._last_refresh = 0
-        self._log_cache: TTLCache = TTLCache(maxsize=1024, ttl=self.refresh_period)
+        LoggingMixin.__init__(self, logger, self.refresh_period)
 
     @property
     def name(self) -> str:
@@ -45,24 +44,6 @@ class IPairList(ABC):
         -> no need to overwrite in subclasses
         """
         return self.__class__.__name__
-
-    def log_on_refresh(self, logmethod, message: str) -> None:
-        """
-        Logs message - not more often than "refresh_period" to avoid log spamming
-        Logs the log-message as debug as well to simplify debugging.
-        :param logmethod: Function that'll be called. Most likely `logger.info`.
-        :param message: String containing the message to be sent to the function.
-        :return: None.
-        """
-
-        @cached(cache=self._log_cache)
-        def _log_on_refresh(message: str):
-            logmethod(message)
-
-        # Log as debug first
-        logger.debug(message)
-        # Call hidden function.
-        _log_on_refresh(message)
 
     @abstractproperty
     def needstickers(self) -> bool:
@@ -79,13 +60,14 @@ class IPairList(ABC):
         -> Please overwrite in subclasses
         """
 
-    def _validate_pair(self, ticker) -> bool:
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
         """
         Check one pair against Pairlist Handler's specific conditions.
 
         Either implement it in the Pairlist Handler or override the generic
         filter_pairlist() method.
 
+        :param pair: Pair that's currently validated
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
@@ -128,7 +110,7 @@ class IPairList(ABC):
             # Copy list since we're modifying this list
             for p in deepcopy(pairlist):
                 # Filter out assets
-                if not self._validate_pair(tickers[p]):
+                if not self._validate_pair(p, tickers[p] if p in tickers else {}):
                     pairlist.remove(p)
 
         return pairlist

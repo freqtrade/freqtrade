@@ -87,6 +87,41 @@ Example configuration showing the different settings:
    },
 ```
 
+## Create a custom keyboard (command shortcut buttons)
+
+Telegram allows us to create a custom keyboard with buttons for commands.
+The default custom keyboard looks like this.
+
+```python
+[
+    ["/daily", "/profit", "/balance"], # row 1, 3 commands
+    ["/status", "/status table", "/performance"], # row 2, 3 commands
+    ["/count", "/start", "/stop", "/help"] # row 3, 4 commands
+]
+```
+
+### Usage
+
+You can create your own keyboard in `config.json`:
+
+``` json
+"telegram": {
+      "enabled": true,
+      "token": "your_telegram_token",
+      "chat_id": "your_telegram_chat_id",
+      "keyboard": [   
+          ["/daily", "/stats", "/balance", "/profit"],
+          ["/status table", "/performance"],
+          ["/reload_config", "/count", "/logs"]
+      ]
+   },
+```
+
+!!! Note "Supported Commands"
+    Only the following commands are allowed. Command arguments are not supported!
+
+    `/start`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopbuy`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/edge`, `/help`, `/version`
+
 ## Telegram commands
 
 Per default, the Telegram bot shows predefined commands. Some commands
@@ -106,6 +141,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/trades [limit]` | List all recently closed trades in a table format.
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | Displays number of trades used and available
+| `/locks` | Show currently locked pairs.
 | `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
@@ -113,6 +149,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `/stats` | Shows Wins / losses by Sell reason as well as Avg. holding durations for buys and sells
 | `/whitelist` | Show the current whitelist
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/edge` | Show validated pairs by Edge if it is enabled.
@@ -207,7 +244,7 @@ Return a summary of your profit/loss and performance.
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 
-[More details](configuration.md/#understand-forcebuy_enable)
+[More details](configuration.md#understand-forcebuy_enable)
 
 ### /performance
 

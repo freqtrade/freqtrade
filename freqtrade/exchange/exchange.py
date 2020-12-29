@@ -658,7 +658,8 @@ class Exchange:
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
-            if pair not in self._api.markets or not self._api.markets[pair].get('active'):
+            if (pair not in self._api.markets or
+                    self._api.markets[pair].get('active', False) is False):
                 raise ExchangeError(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data
@@ -732,13 +733,17 @@ class Exchange:
         logger.info("Downloaded data for %s with length %s.", pair, len(data))
         return data
 
-    def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes) -> List[Tuple[str, List]]:
+    def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
+                             since_ms: Optional[int] = None, cache: bool = True
+                             ) -> Dict[Tuple[str, str], DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
         Only used in the dataprovider.refresh() method.
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
-        :return: TODO: return value is only used in the tests, get rid of it
+        :param since_ms: time since when to download, in milliseconds
+        :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
+        :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
 
@@ -748,7 +753,8 @@ class Exchange:
         for pair, timeframe in set(pair_list):
             if (not ((pair, timeframe) in self._klines)
                     or self._now_is_time_to_refresh(pair, timeframe)):
-                input_coroutines.append(self._async_get_candle_history(pair, timeframe))
+                input_coroutines.append(self._async_get_candle_history(pair, timeframe,
+                                                                       since_ms=since_ms))
             else:
                 logger.debug(
                     "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
@@ -758,6 +764,7 @@ class Exchange:
         results = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
 
+        results_df = {}
         # handle caching
         for res in results:
             if isinstance(res, Exception):
@@ -769,11 +776,13 @@ class Exchange:
             if ticks:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
-            self._klines[(pair, timeframe)] = ohlcv_to_dataframe(
-                ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle)
-
-        return results
+            ohlcv_df = ohlcv_to_dataframe(
+                    ticks, timeframe, pair=pair, fill_missing=True,
+                    drop_incomplete=self._ohlcv_partial_candle)
+            results_df[(pair, timeframe)] = ohlcv_df
+            if cache:
+                self._klines[(pair, timeframe)] = ohlcv_df
+        return results_df
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
         # Timeframe in seconds
@@ -798,7 +807,8 @@ class Exchange:
             )
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
-                                                     since=since_ms)
+                                                     since=since_ms,
+                                                     limit=self._ohlcv_candle_limit)
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)

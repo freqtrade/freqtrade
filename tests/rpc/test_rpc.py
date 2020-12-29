@@ -62,7 +62,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
-        'open_trade_price': 0.0010025,
+        'open_trade_value': 0.0010025,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
         'sell_order_status': ANY,
@@ -127,7 +127,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'fee_close_cost': ANY,
         'fee_close_currency': ANY,
         'open_rate_requested': ANY,
-        'open_trade_price': ANY,
+        'open_trade_value': ANY,
         'close_rate_requested': ANY,
         'sell_reason': ANY,
         'sell_order_status': ANY,
@@ -185,7 +185,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
         fetch_ticker=ticker,
         get_fee=fee,
     )
-
+    del default_conf['fiat_display_currency']
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)

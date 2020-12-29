@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from requests import RequestException, post
 
-from freqtrade.rpc import RPC, RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
 
 
 logger = logging.getLogger(__name__)
@@ -14,18 +14,18 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.webhook ...')
 
 
-class Webhook(RPC):
+class Webhook(RPCHandler):
     """  This class handles all webhook communication """
 
-    def __init__(self, freqtrade) -> None:
+    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
         """
-        Init the Webhook class, and init the super class RPC
-        :param freqtrade: Instance of a freqtrade bot
+        Init the Webhook class, and init the super class RPCHandler
+        :param rpc: instance of RPC Helper class
+        :param config: Configuration object
         :return: None
         """
-        super().__init__(freqtrade)
+        super().__init__(rpc, config)
 
-        self._config = freqtrade.config
         self._url = self._config['webhook']['url']
 
     def cleanup(self) -> None:

@@ -165,10 +165,13 @@ A backtesting result will look like that:
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| First trade           | 2019-01-01 18:30:00 |
-| First trade Pair      | EOS/USDT            |
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
+|                       |                     |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
 | Avg. Duration Winners | 4:23:00             |
@@ -238,10 +241,13 @@ It contains some useful key metrics about performance of your strategy on backte
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| First trade           | 2019-01-01 18:30:00 |
-| First trade Pair      | EOS/USDT            |
 | Total Profit %        | 152.41%             |
 | Trades per day        | 3.575               |
+|                       |                     |
+| Best Pair             | LSK/BTC 26.26%      |
+| Worst Pair            | ZEC/BTC -10.18%     |
+| Best Trade            | LSK/BTC 4.25%       |
+| Worst Trade           | ZEC/BTC -10.25%     |
 | Best day              | 25.27%              |
 | Worst day             | -30.67%             |
 | Avg. Duration Winners | 4:23:00             |
@@ -258,10 +264,10 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
 - `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - to clearly see settings for this.
 - `Total trades`: Identical to the total trades of the backtest output table.
-- `First trade`: First trade entered.
-- `First trade pair`: Which pair was part of the first trade.
 - `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
+- `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
+- `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
@@ -273,18 +279,24 @@ It contains some useful key metrics about performance of your strategy on backte
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
-- Sell signal sells happen at open-price of the following candle
-- Low happens before high for stoploss, protecting capital first
+- Sell-signal sells happen at open-price of the consecutive candle
+- Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
   - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
-- Stoploss sells happen exactly at stoploss price, even if low was lower
+- Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
+- Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
+- Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
+  - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
-- Stoploss (and trailing stoploss) is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` and/or `trailing_stop` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes.
+- Evaluation sequence (if multiple signals happen on the same candle)
+  - ROI (if not stoploss)
+  - Sell-signal
+  - Stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.

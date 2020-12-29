@@ -128,27 +128,29 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
+    df_len = len(ohlcv_history) - 1
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
-                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+                        ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[df_len, 'date'])
 
     with pytest.raises(StrategyError, match=r"Dataframe returned from strategy.*length\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history) + 1,
-                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[1, 'date'])
+                            ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[df_len, 'date'])
 
     with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last close price\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
-                            ohlcv_history.loc[1, 'close'] + 0.01, ohlcv_history.loc[1, 'date'])
+                            ohlcv_history.loc[df_len, 'close'] + 0.01,
+                            ohlcv_history.loc[df_len, 'date'])
     with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last date\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
-                            ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
+                            ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
 
     _STRATEGY.disable_dataframe_checks = True
     caplog.clear()
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
-                        ohlcv_history.loc[1, 'close'], ohlcv_history.loc[0, 'date'])
+                        ohlcv_history.loc[2, 'close'], ohlcv_history.loc[0, 'date'])
     assert log_has_re(r"Dataframe returned from strategy.*last date\.", caplog)
     # reset to avoid problems in other tests due to test leakage
     _STRATEGY.disable_dataframe_checks = False

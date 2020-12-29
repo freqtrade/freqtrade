@@ -20,8 +20,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DATETIME_PRINT_FORMAT, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
-from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.rpc.rpc import RPC, RPCException
+from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +78,7 @@ def shutdown_session(exception=None):
     Trade.session.remove()
 
 
-class ApiServer(RPC):
+class ApiServer(RPCHandler):
     """
     This class runs api server and provides rpc.rpc functionality to it
 
@@ -90,15 +89,15 @@ class ApiServer(RPC):
         return (safe_str_cmp(username, self._config['api_server'].get('username')) and
                 safe_str_cmp(password, self._config['api_server'].get('password')))
 
-    def __init__(self, freqtrade) -> None:
+    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
         """
-        Init the api server, and init the super class RPC
-        :param freqtrade: Instance of a freqtrade bot
+        Init the api server, and init the super class RPCHandler
+        :param rpc: instance of RPC Helper class
+        :param config: Configuration object
         :return: None
         """
-        super().__init__(freqtrade)
+        super().__init__(rpc, config)
 
-        self._config = freqtrade.config
         self.app = Flask(__name__)
         self._cors = CORS(self.app,
                           resources={r"/api/*": {
@@ -117,9 +116,6 @@ class ApiServer(RPC):
 
         # Register application handling
         self.register_rest_rpc_urls()
-
-        if self._config.get('fiat_display_currency', None):
-            self._fiat_converter = CryptoToFiatConverter()
 
         thread = threading.Thread(target=self.run, daemon=True)
         thread.start()
@@ -198,6 +194,8 @@ class ApiServer(RPC):
         self.app.add_url_rule(f'{BASE_URI}/logs', 'log', view_func=self._get_logs, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/profit', 'profit',
                               view_func=self._profit, methods=['GET'])
+        self.app.add_url_rule(f'{BASE_URI}/stats', 'stats',
+                              view_func=self._stats, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/performance', 'performance',
                               view_func=self._performance, methods=['GET'])
         self.app.add_url_rule(f'{BASE_URI}/status', 'status',
@@ -285,7 +283,7 @@ class ApiServer(RPC):
         Handler for /start.
         Starts TradeThread in bot if stopped.
         """
-        msg = self._rpc_start()
+        msg = self._rpc._rpc_start()
         return jsonify(msg)
 
     @require_login
@@ -295,7 +293,7 @@ class ApiServer(RPC):
         Handler for /stop.
         Stops TradeThread in bot if running
         """
-        msg = self._rpc_stop()
+        msg = self._rpc._rpc_stop()
         return jsonify(msg)
 
     @require_login
@@ -305,7 +303,7 @@ class ApiServer(RPC):
         Handler for /stopbuy.
         Sets max_open_trades to 0 and gracefully sells all open trades
         """
-        msg = self._rpc_stopbuy()
+        msg = self._rpc._rpc_stopbuy()
         return jsonify(msg)
 
     @rpc_catch_errors
@@ -329,7 +327,7 @@ class ApiServer(RPC):
         """
         Prints the bot's version
         """
-        return jsonify(RPC._rpc_show_config(self._config, self._freqtrade.state))
+        return jsonify(RPC._rpc_show_config(self._config, self._rpc._freqtrade.state))
 
     @require_login
     @rpc_catch_errors
@@ -338,7 +336,7 @@ class ApiServer(RPC):
         Handler for /reload_config.
         Triggers a config file reload
         """
-        msg = self._rpc_reload_config()
+        msg = self._rpc._rpc_reload_config()
         return jsonify(msg)
 
     @require_login
@@ -348,7 +346,7 @@ class ApiServer(RPC):
         Handler for /count.
         Returns the number of trades running
         """
-        msg = self._rpc_count()
+        msg = self._rpc._rpc_count()
         return jsonify(msg)
 
     @require_login
@@ -358,7 +356,7 @@ class ApiServer(RPC):
         Handler for /locks.
         Returns the currently active locks.
         """
-        return jsonify(self._rpc_locks())
+        return jsonify(self._rpc._rpc_locks())
 
     @require_login
     @rpc_catch_errors
@@ -371,10 +369,10 @@ class ApiServer(RPC):
         timescale = request.args.get('timescale', 7)
         timescale = int(timescale)
 
-        stats = self._rpc_daily_profit(timescale,
-                                       self._config['stake_currency'],
-                                       self._config.get('fiat_display_currency', '')
-                                       )
+        stats = self._rpc._rpc_daily_profit(timescale,
+                                            self._config['stake_currency'],
+                                            self._config.get('fiat_display_currency', '')
+                                            )
 
         return jsonify(stats)
 
@@ -388,7 +386,7 @@ class ApiServer(RPC):
             limit: Only get a certain number of records
         """
         limit = int(request.args.get('limit', 0)) or None
-        return jsonify(self._rpc_get_logs(limit))
+        return jsonify(RPC._rpc_get_logs(limit))
 
     @require_login
     @rpc_catch_errors
@@ -397,7 +395,7 @@ class ApiServer(RPC):
         Returns information related to Edge.
         :return: edge stats
         """
-        stats = self._rpc_edge()
+        stats = self._rpc._rpc_edge()
 
         return jsonify(stats)
 
@@ -411,9 +409,21 @@ class ApiServer(RPC):
         :return: stats
         """
 
-        stats = self._rpc_trade_statistics(self._config['stake_currency'],
-                                           self._config.get('fiat_display_currency')
-                                           )
+        stats = self._rpc._rpc_trade_statistics(self._config['stake_currency'],
+                                                self._config.get('fiat_display_currency')
+                                                )
+
+        return jsonify(stats)
+
+    @require_login
+    @rpc_catch_errors
+    def _stats(self):
+        """
+        Handler for /stats.
+        Returns a Object with "durations" and "sell_reasons" as keys.
+        """
+
+        stats = self._rpc._rpc_stats()
 
         return jsonify(stats)
 
@@ -426,7 +436,7 @@ class ApiServer(RPC):
         Returns a cumulative performance statistics
         :return: stats
         """
-        stats = self._rpc_performance()
+        stats = self._rpc._rpc_performance()
 
         return jsonify(stats)
 
@@ -439,7 +449,7 @@ class ApiServer(RPC):
         Returns the current status of the trades in json format
         """
         try:
-            results = self._rpc_trade_status()
+            results = self._rpc._rpc_trade_status()
             return jsonify(results)
         except RPCException:
             return jsonify([])
@@ -452,8 +462,8 @@ class ApiServer(RPC):
 
         Returns the current status of the trades in json format
         """
-        results = self._rpc_balance(self._config['stake_currency'],
-                                    self._config.get('fiat_display_currency', ''))
+        results = self._rpc._rpc_balance(self._config['stake_currency'],
+                                         self._config.get('fiat_display_currency', ''))
         return jsonify(results)
 
     @require_login
@@ -465,12 +475,12 @@ class ApiServer(RPC):
         Returns the X last trades in json format
         """
         limit = int(request.args.get('limit', 0))
-        results = self._rpc_trade_history(limit)
+        results = self._rpc._rpc_trade_history(limit)
         return jsonify(results)
 
     @require_login
     @rpc_catch_errors
-    def _trades_delete(self, tradeid):
+    def _trades_delete(self, tradeid: int):
         """
         Handler for DELETE /trades/<tradeid> endpoint.
         Removes the trade from the database (tries to cancel open orders first!)
@@ -478,7 +488,7 @@ class ApiServer(RPC):
           param:
             tradeid: Numeric trade-id assigned to the trade.
         """
-        result = self._rpc_delete(tradeid)
+        result = self._rpc._rpc_delete(tradeid)
         return jsonify(result)
 
     @require_login
@@ -487,7 +497,7 @@ class ApiServer(RPC):
         """
         Handler for /whitelist.
         """
-        results = self._rpc_whitelist()
+        results = self._rpc._rpc_whitelist()
         return jsonify(results)
 
     @require_login
@@ -497,7 +507,7 @@ class ApiServer(RPC):
         Handler for /blacklist.
         """
         add = request.json.get("blacklist", None) if request.method == 'POST' else None
-        results = self._rpc_blacklist(add)
+        results = self._rpc._rpc_blacklist(add)
         return jsonify(results)
 
     @require_login
@@ -510,7 +520,7 @@ class ApiServer(RPC):
         price = request.json.get("price", None)
         price = float(price) if price is not None else price
 
-        trade = self._rpc_forcebuy(asset, price)
+        trade = self._rpc._rpc_forcebuy(asset, price)
         if trade:
             return jsonify(trade.to_json())
         else:
@@ -523,7 +533,7 @@ class ApiServer(RPC):
         Handler for /forcesell.
         """
         tradeid = request.json.get("tradeid")
-        results = self._rpc_forcesell(tradeid)
+        results = self._rpc._rpc_forcesell(tradeid)
         return jsonify(results)
 
     @require_login
@@ -545,7 +555,7 @@ class ApiServer(RPC):
         if not pair or not timeframe:
             return self.rest_error("Mandatory parameter missing.", 400)
 
-        results = self._rpc_analysed_dataframe(pair, timeframe, limit)
+        results = self._rpc._rpc_analysed_dataframe(pair, timeframe, limit)
         return jsonify(results)
 
     @require_login
@@ -584,7 +594,7 @@ class ApiServer(RPC):
         """
         Handler for /plot_config.
         """
-        return jsonify(self._rpc_plot_config())
+        return jsonify(self._rpc._rpc_plot_config())
 
     @require_login
     @rpc_catch_errors

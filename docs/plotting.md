@@ -168,6 +168,7 @@ Additional features when using plot_config include:
 
 * Specify colors per indicator
 * Specify additional subplots
+* Specify indicator pairs to fill area in between 
 
 The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
 It also allows multiple subplots to display both MACD and RSI at the same time.
@@ -183,23 +184,33 @@ Sample configuration with inline comments explaining the process:
             'ema50': {'color': '#CCCCCC'},
             # By omitting color, a random color is selected.
             'sar': {},
+	    # fill area between senkou_a and senkou_b
+	    'senkou_a': {
+	        'color': 'green', #optional
+	        'fill_to': 'senkou_b',
+	        'fill_label': 'Ichimoku Cloud' #optional,
+	        'fill_color': 'rgba(255,76,46,0.2)', #optional
+	    },
+	    # plot senkou_b, too. Not only the area to it.
+	    'senkou_b': {}
         },
         'subplots': {
             # Create subplot MACD
             "MACD": {
-                'macd': {'color': 'blue'},
-                'macdsignal': {'color': 'orange'},
+                'macd': {'color': 'blue', 'fill_to': 'macdhist'},
+                'macdsignal': {'color': 'orange'}
             },
             # Additional subplot RSI
             "RSI": {
-                'rsi': {'color': 'red'},
+                'rsi': {'color': 'red'}
             }
         }
     }
-```
 
+```
 !!! Note
-    The above configuration assumes that `ema10`, `ema50`, `macd`, `macdsignal` and `rsi` are columns in the DataFrame created by the strategy.
+    The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`,
+    `macd`, `macdsignal`, `macdhist` and `rsi` are columns in the DataFrame created by the strategy.
 
 ## Plot profit
 
