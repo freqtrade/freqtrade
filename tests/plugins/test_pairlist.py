@@ -156,6 +156,23 @@ def test_refresh_static_pairlist(mocker, markets, static_pl_conf):
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
 
 
+def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
+    static_pl_conf['exchange']['pair_blacklist'] = ['*/BTC']
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    # List ordered by BaseVolume
+    whitelist = []
+    # Ensure all except those in whitelist are removed
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    log_has_re(r"Pair blacklist contains an invalid Wildcard.*", caplog)
+
+
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
 
     mocker.patch.multiple(

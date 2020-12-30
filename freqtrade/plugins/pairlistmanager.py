@@ -128,8 +128,13 @@ class PairListManager():
         :param logmethod: Function that'll be called, `logger.info` or `logger.warning`.
         :return: pairlist - blacklisted pairs
         """
+        try:
+            blacklist = self.expanded_blacklist
+        except ValueError as err:
+            logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
+            return []
         for pair in deepcopy(pairlist):
-            if pair in self.expanded_blacklist:
+            if pair in blacklist:
                 logmethod(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
