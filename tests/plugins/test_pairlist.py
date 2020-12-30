@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
@@ -804,3 +805,34 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
     freqtrade.pairlists.refresh_pairlist()
     allowlist = freqtrade.pairlists.whitelist
     assert allowlist == allowlist_result
+
+
+@pytest.mark.parametrize('wildcardlist,pairs,expected', [
+    (['BTC/USDT'],
+     ['BTC/USDT'],
+     ['BTC/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT'], ['BTC/USDT']),  # Test one too many
+    (['.*/USDT'],
+     ['BTC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Wildcard simple
+    (['.*C/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETC/USDT']),  # Wildcard exclude one
+    (['.*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     ['BTC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT']),  # Wildcard exclude one
+    (['BTC/.*', 'ETH/.*'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP'],
+     ['BTC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP']),  # Wildcard exclude one
+    (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     None),
+])
+def test_expand_pairlist(wildcardlist, pairs, expected):
+    if expected is None:
+        with pytest.raises(ValueError, match=r'Wildcard error in \*UP/USDT,'):
+            expand_pairlist(wildcardlist, pairs)
+    else:
+        assert sorted(expand_pairlist(wildcardlist, pairs)) == sorted(expected)

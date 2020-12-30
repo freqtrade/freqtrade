@@ -1,6 +1,7 @@
 """
 PairList manager class
 """
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
@@ -54,6 +55,13 @@ class PairListManager():
         -> no need to overwrite in subclasses
         """
         return self._blacklist
+
+    @property
+    def expanded_blacklist(self) -> List[str]:
+        """
+        Has the expanded blacklist (including wildcard expansion)
+        """
+        return expand_pairlist(self._blacklist, self._exchange.get_markets().keys())
 
     @property
     def name_list(self) -> List[str]:
@@ -121,7 +129,7 @@ class PairListManager():
         :return: pairlist - blacklisted pairs
         """
         for pair in deepcopy(pairlist):
-            if pair in self._blacklist:
+            if pair in self.expanded_blacklist:
                 logmethod(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
