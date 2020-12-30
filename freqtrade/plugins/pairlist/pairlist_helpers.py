@@ -7,7 +7,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str]) -> List[s
     Expand pairlist potentially containing wildcards based on available markets.
     This will implicitly filter all pairs in the wildcard-list which are not in available_pairs.
     :param wildcardpl: List of Pairlists, which may contain regex
-    :param available_pairs: List of all available pairs, usually with `exchange.get_markets().keys()`
+    :param available_pairs: List of all available pairs (`exchange.get_markets().keys()`)
     :return expanded pairlist, with Regexes from wildcardpl applied to match all available pairs.
     :raises: ValueError if a wildcard is invalid (like '*/BTC' - which should be `.*/BTC`)
     """

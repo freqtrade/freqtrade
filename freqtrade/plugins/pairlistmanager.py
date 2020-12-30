@@ -1,7 +1,6 @@
 """
 PairList manager class
 """
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List
@@ -11,6 +10,7 @@ from cachetools import TTLCache, cached
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import PairListResolver
 
 
