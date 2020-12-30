@@ -353,6 +353,10 @@ def test_generate_profit_graph(testdatadir):
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
         assert isinstance(profit_pair, go.Scatter)
 
+    with pytest.raises(OperationalException, match=r"No trades found.*"):
+        # Pair cannot be empty - so it's an empty dataframe.
+        generate_profit_graph(pairs, data, trades.loc[trades['pair'].isnull()], timeframe="5m")
+
 
 def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())

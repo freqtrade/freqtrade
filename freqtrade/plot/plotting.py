@@ -444,6 +444,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     # Trim trades to available OHLCV data
     trades = extract_trades_of_period(df_comb, trades, date_index=True)
+    if len(trades) == 0:
+        raise OperationalException('No trades found in selected timerange.')
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
