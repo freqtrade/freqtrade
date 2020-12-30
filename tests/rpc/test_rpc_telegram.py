@@ -1011,15 +1011,13 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
 
     msg_mock.reset_mock()
     context = MagicMock()
-    context.args = ["ETH/ETH"]
+    context.args = ["XRP/.*"]
     telegram._blacklist(update=update, context=context)
-    assert msg_mock.call_count == 2
-    assert ("Error adding `ETH/ETH` to blacklist: `Pair ETH/ETH does not match stake currency.`"
-            in msg_mock.call_args_list[0][0][0])
+    assert msg_mock.call_count == 1
 
-    assert ("Blacklist contains 3 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC`"
-            in msg_mock.call_args_list[1][0][0])
-    assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC"]
+    assert ("Blacklist contains 4 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC, XRP/.*`"
+            in msg_mock.call_args_list[0][0][0])
+    assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"]
 
 
 def test_telegram_logs(default_conf, update, mocker) -> None:

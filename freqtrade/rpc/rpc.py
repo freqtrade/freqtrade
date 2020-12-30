@@ -20,6 +20,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
 from freqtrade.strategy.interface import SellType
@@ -673,23 +674,23 @@ class RPC:
         """ Returns the currently active blacklist"""
         errors = {}
         if add:
-            stake_currency = self._freqtrade.config.get('stake_currency')
             for pair in add:
-                if self._freqtrade.exchange.get_pair_quote_currency(pair) == stake_currency:
-                    if pair not in self._freqtrade.pairlists.blacklist:
+                if pair not in self._freqtrade.pairlists.blacklist:
+                    try:
+                        expand_pairlist([pair], self._freqtrade.exchange.get_markets().keys())
                         self._freqtrade.pairlists.blacklist.append(pair)
-                    else:
-                        errors[pair] = {
-                            'error_msg': f'Pair {pair} already in pairlist.'}
 
+                    except ValueError:
+                        errors[pair] = {
+                            'error_msg': f'Pair {pair} is not a valid wildcard.'}
                 else:
                     errors[pair] = {
-                        'error_msg': f"Pair {pair} does not match stake currency."
-                    }
+                        'error_msg': f'Pair {pair} already in pairlist.'}
 
         res = {'method': self._freqtrade.pairlists.name_list,
                'length': len(self._freqtrade.pairlists.blacklist),
                'blacklist': self._freqtrade.pairlists.blacklist,
+               'blacklist_expanded': self._freqtrade.pairlists.expanded_blacklist,
                'errors': errors,
                }
         return res

@@ -730,7 +730,9 @@ def test_api_blacklist(botclient, mocker):
 
     rc = client_get(client, f"{BASE_URI}/blacklist")
     assert_response(rc)
+    # DOGE and HOT are not in the markets mock!
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC"],
+                       "blacklist_expanded": [],
                        "length": 2,
                        "method": ["StaticPairList"],
                        "errors": {},
@@ -741,7 +743,18 @@ def test_api_blacklist(botclient, mocker):
                      data='{"blacklist": ["ETH/BTC"]}')
     assert_response(rc)
     assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC"],
+                       "blacklist_expanded": ["ETH/BTC"],
                        "length": 3,
+                       "method": ["StaticPairList"],
+                       "errors": {},
+                       }
+
+    rc = client_post(client, f"{BASE_URI}/blacklist",
+                     data='{"blacklist": ["XRP/.*"]}')
+    assert_response(rc)
+    assert rc.json == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"],
+                       "blacklist_expanded": ["ETH/BTC", "XRP/BTC"],
+                       "length": 4,
                        "method": ["StaticPairList"],
                        "errors": {},
                        }
