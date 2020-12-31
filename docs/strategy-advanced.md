@@ -8,11 +8,127 @@ If you're just getting started, please be familiar with the methods described in
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are actually used.
 
+!!! Tip
+    You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
+
+## Custom stoploss
+
+A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
+Also, the traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
+
+The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
+The method must return a stoploss value (float / number) with a relative ratio below the current price.
+E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
+
+To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
+
+``` python
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+        """
+        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+        e.g. returning -0.05 would create a stoploss 5% below current_rate.
+        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns the initial stoploss value
+        Only called when use_custom_stoploss is set to True.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New stoploss value, relative to the currentrate
+        """
+        return -0.04
+```
+
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+
+!!! Note "Use of dates"
+    All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
+
+!!! Tip "Trailing stoploss"
+    It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
+
+### Custom stoploss examples
+
+The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.
+
+#### Time based trailing stop
+
+Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
+
+``` python
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+        if current_time - timedelta(minutes=120) > trade.open_date:
+            return -0.05
+        elif current_time - timedelta(minutes=60) > trade.open_date:
+            return -0.10
+        return 1
+```
+
+#### Different stoploss per pair
+
+Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
+
+``` python
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        if pair in ('ETH/BTC', 'XRP/BTC'):
+            return -0.10
+        elif pair in ('LTC/BTC'):
+            return -0.05
+        return -0.15
+```
+
+#### Absolute stoploss
+
+The below example sets absolute profit levels based on the current profit.
+
+* Use the regular stoploss until 20% profit is reached
+* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
+* Once profit is > 25% - stoploss will be 15%.
+* Once profit is > 20% - stoploss will be set to 7%.
+
+``` python
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
+        if current_profit > 0.40:
+            return (-0.25 + current_profit)
+        if current_profit > 0.25:
+            return (-0.15 + current_profit)
+        if current_profit > 0.20:
+            return (-0.7 + current_profit)
+        return 1
+```
+
+---
+
 ## Custom order timeout rules
 
-Simple, timebased order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
+Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
-However, freqtrade also offers a custom callback for both ordertypes, which allows you to decide based on custom criteria if a order did time out or not.
+However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if a order did time out or not.
 
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
@@ -28,7 +144,7 @@ The function must return either `True` (cancel order) or `False` (keep order ali
 from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -67,7 +183,7 @@ class Awesomestrategy(IStrategy):
 from datetime import datetime
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -95,6 +211,8 @@ class Awesomestrategy(IStrategy):
         return False
 ```
 
+---
+
 ## Bot loop start callback
 
 A simple callback which is called once at the start of every bot throttling iteration.
@@ -103,7 +221,7 @@ This can be used to perform calculations which are pair independent (apply to al
 ``` python
 import requests
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -128,7 +246,7 @@ class Awesomestrategy(IStrategy):
 `confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
 ``` python
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -164,7 +282,7 @@ class Awesomestrategy(IStrategy):
 from freqtrade.persistence import Trade
 
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -200,6 +318,8 @@ class Awesomestrategy(IStrategy):
 
 ```
 
+---
+
 ## Derived strategies
 
 The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
@@ -219,4 +339,4 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
     trailing_stop = True
 ```
 
-Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
+Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.

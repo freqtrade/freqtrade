@@ -342,6 +342,12 @@ class Trade(_DECL_BASE):
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
+    def _set_new_stoploss(self, new_loss: float, stoploss: float):
+        """Assign new stop value"""
+        self.stop_loss = new_loss
+        self.stop_loss_pct = -1 * abs(stoploss)
+        self.stoploss_last_update = datetime.utcnow()
+
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False) -> None:
         """
@@ -360,19 +366,15 @@ class Trade(_DECL_BASE):
         # no stop loss assigned yet
         if not self.stop_loss:
             logger.debug(f"{self.pair} - Assigning new stoploss...")
-            self.stop_loss = new_loss
-            self.stop_loss_pct = -1 * abs(stoploss)
+            self._set_new_stoploss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             self.initial_stop_loss_pct = -1 * abs(stoploss)
-            self.stoploss_last_update = datetime.utcnow()
 
         # evaluate if the stop loss needs to be updated
         else:
             if new_loss > self.stop_loss:  # stop losses only walk up, never down!
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self.stop_loss = new_loss
-                self.stop_loss_pct = -1 * abs(stoploss)
-                self.stoploss_last_update = datetime.utcnow()
+                self._set_new_stoploss(new_loss, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 

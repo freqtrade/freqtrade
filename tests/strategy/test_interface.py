@@ -13,6 +13,7 @@ from freqtrade.data.history import load_data
 from freqtrade.exceptions import StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
@@ -105,9 +106,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
-def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
-    # default_conf defines a 5m interval. we check interval * 2 + 5m
-    # this is necessary as the last candle is removed (partial candles) by default
+def test_assert_df_raise(mocker, caplog, ohlcv_history):
     ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
@@ -127,7 +126,7 @@ def test_assert_df_raise(default_conf, mocker, caplog, ohlcv_history):
                    caplog)
 
 
-def test_assert_df(default_conf, mocker, ohlcv_history, caplog):
+def test_assert_df(ohlcv_history, caplog):
     df_len = len(ohlcv_history) - 1
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
@@ -286,6 +285,77 @@ def test_min_roi_reached3(default_conf, fee) -> None:
     # Should not trigger with 20% profit since after 55 minutes only 30% is active.
     assert not strategy.min_roi_reached(trade, 0.20, arrow.utcnow().shift(minutes=-2).datetime)
     assert strategy.min_roi_reached(trade, 0.31, arrow.utcnow().shift(minutes=-2).datetime)
+
+
+@pytest.mark.parametrize(
+    'profit,adjusted,expected,trailing,custom,profit2,adjusted2,expected2,custom_stop', [
+        # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
+        #   enable custom stoploss, expected after 1st call, expected after 2nd call
+        (0.2, 0.9, SellType.NONE, False, False, 0.3, 0.9, SellType.NONE, None),
+        (0.2, 0.9, SellType.NONE, False, False, -0.2, 0.9, SellType.STOP_LOSS, None),
+        (0.2, 1.14, SellType.NONE, True, False, 0.05, 1.14, SellType.TRAILING_STOP_LOSS, None),
+        (0.01, 0.96, SellType.NONE, True, False, 0.05, 1, SellType.NONE, None),
+        (0.05, 1, SellType.NONE, True, False, -0.01, 1, SellType.TRAILING_STOP_LOSS, None),
+        # Default custom case - trails with 10%
+        (0.05, 0.95, SellType.NONE, False, True, -0.02, 0.95, SellType.NONE, None),
+        (0.05, 0.95, SellType.NONE, False, True, -0.06, 0.95, SellType.TRAILING_STOP_LOSS, None),
+        (0.05, 1, SellType.NONE, False, True, -0.06, 1, SellType.TRAILING_STOP_LOSS,
+         lambda **kwargs: -0.05),
+        (0.05, 1, SellType.NONE, False, True, 0.09, 1.04, SellType.NONE,
+         lambda **kwargs: -0.05),
+        (0.05, 0.95, SellType.NONE, False, True, 0.09, 0.98, SellType.NONE,
+         lambda current_profit, **kwargs: -0.1 if current_profit < 0.6 else -(current_profit * 2)),
+        # Error case - static stoploss in place
+        (0.05, 0.9, SellType.NONE, False, True, 0.09, 0.9, SellType.NONE,
+         lambda **kwargs: None),
+    ])
+def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
+                           profit2, adjusted2, expected2, custom_stop) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='bittrex',
+        open_rate=1,
+    )
+    trade.adjust_min_max_rates(trade.open_rate)
+    strategy.trailing_stop = trailing
+    strategy.trailing_stop_positive = -0.05
+    strategy.use_custom_stoploss = custom
+    original_stopvalue = strategy.custom_stoploss
+    if custom_stop:
+        strategy.custom_stoploss = custom_stop
+
+    now = arrow.utcnow().datetime
+    sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
+                                         current_time=now, current_profit=profit,
+                                         force_stoploss=0, high=None)
+    assert isinstance(sl_flag, SellCheckTuple)
+    assert sl_flag.sell_type == expected
+    if expected == SellType.NONE:
+        assert sl_flag.sell_flag is False
+    else:
+        assert sl_flag.sell_flag is True
+    assert round(trade.stop_loss, 2) == adjusted
+
+    sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
+                                         current_time=now, current_profit=profit2,
+                                         force_stoploss=0, high=None)
+    assert sl_flag.sell_type == expected2
+    if expected2 == SellType.NONE:
+        assert sl_flag.sell_flag is False
+    else:
+        assert sl_flag.sell_flag is True
+    assert round(trade.stop_loss, 2) == adjusted2
+
+    strategy.custom_stoploss = original_stopvalue
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
