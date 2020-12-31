@@ -57,6 +57,7 @@ class Backtesting:
 
         LoggingMixin.show_output = False
         self.config = config
+        self.results: Optional[Dict[str, Any]] = None
 
         # Reset keys for backtesting
         remove_credentials(self.config)
@@ -537,11 +538,12 @@ class Backtesting:
         for strat in self.strategylist:
             min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
         if len(self.strategylist) > 0:
-            stats = generate_backtest_stats(data, self.all_results,
-                                            min_date=min_date, max_date=max_date)
+
+            self.results = generate_backtest_stats(data, self.all_results,
+                                                   min_date=min_date, max_date=max_date)
 
             if self.config.get('export', 'none') == 'trades':
-                store_backtest_stats(self.config['exportfilename'], stats)
+                store_backtest_stats(self.config['exportfilename'], self.results)
 
             # Show backtest results
-            show_backtest_results(self.config, stats)
+            show_backtest_results(self.config, self.results)
