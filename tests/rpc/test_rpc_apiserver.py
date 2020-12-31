@@ -91,9 +91,9 @@ def test_api_not_found(botclient):
 
 def test_api_auth():
     with pytest.raises(ValueError):
-        create_token({'sub': 'Freqtrade'}, 'secret1234', token_type="NotATokenType")
+        create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234', token_type="NotATokenType")
 
-    token = create_token({'sub': 'Freqtrade'}, 'secret1234')
+    token = create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234')
     assert isinstance(token, bytes)
 
     u = get_user_from_token(token, 'secret1234')
@@ -101,7 +101,7 @@ def test_api_auth():
     with pytest.raises(HTTPException):
         get_user_from_token(token, 'secret1234', token_type='refresh')
     # Create invalid token
-    token = create_token({'sub`': 'Freqtrade'}, 'secret1234')
+    token = create_token({'identity': {'u1': 'Freqrade'}}, 'secret1234')
     with pytest.raises(HTTPException):
         get_user_from_token(token, 'secret1234')
 

@@ -34,7 +34,7 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
     )
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str = payload.get("identity", {}).get('u')
         if username is None:
             raise credentials_exception
         if payload.get("type") != token_type:
@@ -81,7 +81,7 @@ def token_login(form_data: HTTPBasicCredentials = Depends(HTTPBasic()),
                 api_config=Depends(get_api_config)):
 
     if verify_auth(api_config, form_data.username, form_data.password):
-        token_data = {'sub': form_data.username}
+        token_data = {'identity': {'u': form_data.username}}
         access_token = create_token(token_data, api_config.get('jwt_secret_key', 'super-secret'))
         refresh_token = create_token(token_data, api_config.get('jwt_secret_key', 'super-secret'),
                                      token_type="refresh")
@@ -101,7 +101,7 @@ def token_refresh(token: str = Depends(oauth2_scheme), api_config=Depends(get_ap
     # Refresh token
     u = get_user_from_token(token, api_config.get(
         'jwt_secret_key', 'super-secret'), 'refresh')
-    token_data = {'sub': u}
+    token_data = {'identity': {'u': u}}
     access_token = create_token(token_data, api_config.get('jwt_secret_key', 'super-secret'),
                                 token_type="access")
     return {'access_token': access_token}
