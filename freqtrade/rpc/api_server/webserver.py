@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class ApiServer(RPCHandler):
 
-    _rpc: RPC = None
+    _rpc: RPC
     _config: Dict[str, Any] = {}
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:

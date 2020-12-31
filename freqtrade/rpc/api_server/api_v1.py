@@ -83,7 +83,7 @@ def status(rpc: RPC = Depends(get_rpc)):
 
 # TODO: Missing response model
 @router.get('/trades', tags=['info', 'trading'])
-def trades(limit: Optional[int] = 0, rpc: RPC = Depends(get_rpc)):
+def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
 
 
@@ -180,8 +180,8 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
     return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
 
 
-@router.get('/plot_config', response_model=Union[Dict, PlotConfig], tags=['candle data'])
-def plot_config(rpc=Depends(get_rpc)):
+@router.get('/plot_config', response_model=Union[PlotConfig, Dict], tags=['candle data'])
+def plot_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_plot_config()
 
 

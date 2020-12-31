@@ -6,9 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
-from freqtrade.rpc.api_server2.api_models import AccessAndRefreshToken, AccessToken
-
-from .deps import get_api_config
+from freqtrade.rpc.api_server.api_models import AccessAndRefreshToken, AccessToken
+from freqtrade.rpc.api_server.deps import get_api_config
 
 
 ALGORITHM = "HS256"
@@ -45,7 +44,7 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
     return username
 
 
-def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:
+def create_token(data: dict, secret_key: str, token_type: str = "access") -> bytes:
     to_encode = data.copy()
     if token_type == "access":
         expire = datetime.utcnow() + timedelta(minutes=15)

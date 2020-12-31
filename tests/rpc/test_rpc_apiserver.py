@@ -3,17 +3,13 @@ Unit test file for rpc/api_server.py
 """
 
 from datetime import datetime, timedelta, timezone
-
-import uvicorn
-from freqtrade.rpc.api_server2.uvicorn_threaded import UvicornServer
-
-from fastapi.exceptions import HTTPException
-from freqtrade.rpc.api_server2.api_auth import create_token, get_user_from_token
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
+import uvicorn
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
 
@@ -21,9 +17,12 @@ from freqtrade.__init__ import __version__
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server2 import ApiServer
+from freqtrade.rpc.api_server import ApiServer
+from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
+from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.state import RunMode, State
-from tests.conftest import create_mock_trades, get_patched_freqtradebot, log_has, log_has_re, patch_get_signal
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, log_has_re,
+                            patch_get_signal)
 
 
 BASE_URI = "/api/v1"
@@ -46,7 +45,7 @@ def botclient(default_conf, mocker):
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
-    mocker.patch('freqtrade.rpc.api_server2.ApiServer.start_api', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(rpc, default_conf)
     yield ftbot, TestClient(apiserver.app)
     # Cleanup ... ?
@@ -209,13 +208,13 @@ def test_api__init__(default_conf, mocker):
                                         "password": "testPass",
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
-    mocker.patch('freqtrade.rpc.api_server2.webserver.ApiServer.start_api', MagicMock())
+    mocker.patch('freqtrade.rpc.api_server.webserver.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     assert apiserver._config == default_conf
 
 
 def test_api_UvicornServer(default_conf, mocker):
-    thread_mock = mocker.patch('freqtrade.rpc.api_server2.uvicorn_threaded.threading.Thread')
+    thread_mock = mocker.patch('freqtrade.rpc.api_server.uvicorn_threaded.threading.Thread')
     s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host='127.0.0.1'))
     assert thread_mock.call_count == 0
 
@@ -242,7 +241,7 @@ def test_api_run(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
 
     server_mock = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', server_mock)
+    mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
 
@@ -281,10 +280,10 @@ def test_api_run(default_conf, mocker, caplog):
                    "Please make sure that this is intentional!", caplog)
     assert log_has_re("SECURITY WARNING - `jwt_secret_key` seems to be default.*", caplog)
 
-
     # Test crashing flask
     caplog.clear()
-    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', MagicMock(side_effect=Exception))
+    mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer',
+                 MagicMock(side_effect=Exception))
     apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
 
@@ -300,7 +299,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
 
     server_mock = MagicMock()
     server_mock.cleanup = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server2.webserver.UvicornServer', server_mock)
+    mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
 

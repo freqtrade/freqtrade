@@ -167,7 +167,7 @@ class DeleteTrade(BaseModel):
 
 
 class PlotConfig(BaseModel):
-    main_plot: Optional[Dict[str, Any]]
+    main_plot: Dict[str, Any]
     subplots: Optional[Dict[str, Any]]
 
 
