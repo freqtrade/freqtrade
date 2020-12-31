@@ -36,15 +36,16 @@ class RPCManager:
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
-
-            self.registered_modules.append(ApiServer(self._rpc, config))
+            apiserver = ApiServer(config)
+            apiserver.add_rpc_handler(self._rpc)
+            self.registered_modules.append(apiserver)
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
         while self.registered_modules:
             mod = self.registered_modules.pop()
-            logger.debug('Cleaning up rpc.%s ...', mod.name)
+            logger.info('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
             del mod
 

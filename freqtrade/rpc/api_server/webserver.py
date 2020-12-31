@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
@@ -28,16 +29,30 @@ class FTJSONResponse(JSONResponse):
 
 class ApiServer(RPCHandler):
 
+    __instance = None
+    __initialized = False
+
     _rpc: RPC
     _has_rpc: bool = False
     _config: Dict[str, Any] = {}
 
-    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
-        super().__init__(rpc, config)
+    def __new__(cls, *args, **kwargs):
+        """
+        This class is a singleton.
+        We'll only have one instance of it around.
+        """
+        if ApiServer.__instance is None:
+            ApiServer.__instance = object.__new__(cls)
+            ApiServer.__initialized = False
+        return ApiServer.__instance
+
+    def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
+        if self.__initialized and (standalone or self._standalone):
+            return
+        self._standalone: bool = standalone
+        self._config = config
         self._server = None
 
-        ApiServer._rpc = rpc
-        ApiServer._has_rpc = True
         ApiServer._config = config
         api_config = self._config['api_server']
 
@@ -49,6 +64,18 @@ class ApiServer(RPCHandler):
         self.configure_app(self.app, self._config)
 
         self.start_api()
+
+    def add_rpc_handler(self, rpc: RPC):
+        """
+        Attach rpc handler
+        """
+        if not self._rpc:
+            self._rpc = rpc
+            ApiServer._rpc = rpc
+            ApiServer._has_rpc = True
+        else:
+            # This should not happen assuming we didn't mess up.
+            raise OperationalException('RPC Handler already attached.')
 
     def cleanup(self) -> None:
         """ Cleanup pending module resources """

@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Dict
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,9 +28,14 @@ def start_trading(args: Dict[str, Any]) -> int:
     return 0
 
 
-def start_webserver(args: Dict[str, Any]) -> int:
+def start_webserver(args: Dict[str, Any]) -> None:
     """
     Main entry point for webserver mode
     """
+    from freqtrade.rpc.api_server import ApiServer
+    from freqtrade.configuration import Configuration
+    from freqtrade.enums import RunMode
 
-    print(args)
+    # Initialize configuration
+    config = Configuration(args, RunMode.WEBSERVER).get_config()
+    ApiServer(config, standalone=True)
