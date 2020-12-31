@@ -69,7 +69,7 @@ def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount:
 
     When not implemented by a strategy, returns True (always confirming).
 
-    :param pair: Pair that's about to be sold.
+    :param pair: Pair that's currently analyzed
     :param trade: trade object.
     :param order_type: Order type (as configured in order_types). usually limit or market.
     :param amount: Amount in quote currency.

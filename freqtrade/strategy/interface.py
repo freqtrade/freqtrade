@@ -267,7 +267,7 @@ class IStrategy(ABC):
         When not implemented by a strategy, returns the initial stoploss value
         Only called when use_custom_stoploss is set to True.
 
-        :param pair: Pair that's about to be sold.
+        :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
