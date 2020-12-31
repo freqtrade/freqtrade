@@ -16,7 +16,7 @@ The pair blacklist (configured via `exchange.pair_blacklist` in the configuratio
 This can be as simple as excluding `DOGE/BTC` - which will remove exactly this pair.
 
 The pair-blacklist does also support wildcards (in regex-style) - so `BNB/.*` will exclude ALL pairs that start with BNB.
-You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged tokens (check Naming conventions for your exchange!)
+You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged tokens (check Pair naming conventions for your exchange!)
 
 ### Available Pairlist Handlers
 

@@ -43,37 +43,29 @@ class PairListManager():
 
     @property
     def whitelist(self) -> List[str]:
-        """
-        Has the current whitelist
-        """
+        """The current whitelist"""
         return self._whitelist
 
     @property
     def blacklist(self) -> List[str]:
         """
-        Has the current blacklist
+        The current blacklist
         -> no need to overwrite in subclasses
         """
         return self._blacklist
 
     @property
     def expanded_blacklist(self) -> List[str]:
-        """
-        Has the expanded blacklist (including wildcard expansion)
-        """
+        """The expanded blacklist (including wildcard expansion)"""
         return expand_pairlist(self._blacklist, self._exchange.get_markets().keys())
 
     @property
     def name_list(self) -> List[str]:
-        """
-        Get list of loaded Pairlist Handler names
-        """
+        """Get list of loaded Pairlist Handler names"""
         return [p.name for p in self._pairlist_handlers]
 
     def short_desc(self) -> List[Dict]:
-        """
-        List of short_desc for each Pairlist Handler
-        """
+        """List of short_desc for each Pairlist Handler"""
         return [{p.name: p.short_desc()} for p in self._pairlist_handlers]
 
     @cached(TTLCache(maxsize=1, ttl=1800))
@@ -81,9 +73,7 @@ class PairListManager():
         return self._exchange.get_tickers()
 
     def refresh_pairlist(self) -> None:
-        """
-        Run pairlist through all configured Pairlist Handlers.
-        """
+        """Run pairlist through all configured Pairlist Handlers."""
         # Tickers should be cached to avoid calling the exchange on each call.
         tickers: Dict = {}
         if self._tickers_needed:
