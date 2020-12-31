@@ -23,6 +23,10 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
 ``` python
+# additional imports required
+from freqtrade.persistence import Trade
+from datetime import datetime
+
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
