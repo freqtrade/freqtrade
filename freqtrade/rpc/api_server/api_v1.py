@@ -13,9 +13,10 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_models import (AvailablePairs, Balances, BlacklistPayload,
                                                  BlacklistResponse, Count, Daily, DeleteTrade,
                                                  ForceBuyPayload, ForceSellPayload, Locks, Logs,
-                                                 PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                 Profit, ResultMsg, Stats, StatusMsg,
-                                                 StrategyListResponse, StrategyResponse, TradeResponse, TradeSchema, Version,
+                                                 OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                 Ping, PlotConfig, Profit, ResultMsg, Stats,
+                                                 StatusMsg, StrategyListResponse, StrategyResponse,
+                                                 TradeResponse, TradeSchema, Version,
                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc
 from freqtrade.rpc.rpc import RPCException
@@ -73,8 +74,7 @@ def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_co
                                  config.get('fiat_display_currency', ''))
 
 
-# TODO: Missing response model
-@router.get('/status', response_model=List[TradeSchema], tags=['info'])
+@router.get('/status', response_model=List[OpenTradeSchema], tags=['info'])
 def status(rpc: RPC = Depends(get_rpc)):
     try:
         return rpc._rpc_trade_status()

@@ -113,7 +113,7 @@ class Daily(BaseModel):
 
 
 class TradeSchema(BaseModel):
-    trade_id: str
+    trade_id: int
     pair: str
     is_open: bool
     exchange: str
@@ -121,7 +121,7 @@ class TradeSchema(BaseModel):
     amount_requested: float
     stake_amount: float
     strategy: str
-    timeframe: str
+    timeframe: int
     fee_open: Optional[float]
     fee_open_cost: Optional[float]
     fee_open_currency: Optional[str]
@@ -159,6 +159,20 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float]
     max_rate: Optional[float]
     open_order_id: Optional[str]
+
+
+class OpenTradeSchema(TradeSchema):
+    stoploss_current_dist: Optional[float]
+    stoploss_current_dist_pct: Optional[float]
+    stoploss_current_dist_ratio: Optional[float]
+    stoploss_entry_dist: Optional[float]
+    stoploss_entry_dist_ratio: Optional[float]
+    base_currency: str
+    current_profit: float
+    current_profit_abs: float
+    current_profit_pct: float
+    current_rate: float
+    open_order: Optional[str]
 
 
 class TradeResponse(BaseModel):

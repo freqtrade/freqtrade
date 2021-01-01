@@ -853,8 +853,8 @@ def test_api_forcebuy(botclient, mocker, fee):
         fee_close=fee.return_value,
         fee_open=fee.return_value,
         close_rate=0.265441,
-        id='22',
-        timeframe="5m",
+        id=22,
+        timeframe=5,
         strategy="DefaultStrategy"
     ))
     mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
@@ -865,7 +865,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     assert rc.json() == {
         'amount': 1,
         'amount_requested': 1,
-        'trade_id': '22',
+        'trade_id': 22,
         'close_date': None,
         'close_date_hum': None,
         'close_timestamp': None,
@@ -907,7 +907,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
-        'timeframe': '5m',
+        'timeframe': 5,
         'exchange': 'bittrex',
         }
 
