@@ -10,14 +10,15 @@ from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
+from freqtrade.rpc.api_server.api_models import (AvailablePairs, Balances, BlacklistPayload,
+                                                 BlacklistResponse, Count, Daily, DeleteTrade,
+                                                 ForceBuyPayload, ForceSellPayload, Locks, Logs,
+                                                 PairHistory, PerformanceEntry, Ping, PlotConfig,
+                                                 Profit, ResultMsg, Stats, StatusMsg,
+                                                 StrategyListResponse, StrategyResponse, Version,
+                                                 WhitelistResponse)
+from freqtrade.rpc.api_server.deps import get_config, get_rpc
 from freqtrade.rpc.rpc import RPCException
-
-from .api_models import (AvailablePairs, Balances, BlacklistPayload, BlacklistResponse, Count,
-                         Daily, DeleteTrade, ForceBuyPayload, ForceSellPayload, Locks, Logs,
-                         PairHistory, PerformanceEntry, Ping, PlotConfig, Profit, ResultMsg, Stats,
-                         StatusMsg, StrategyListResponse, StrategyResponse, Version,
-                         WhitelistResponse)
-from .deps import get_config, get_rpc
 
 
 # Public API, requires no auth.
