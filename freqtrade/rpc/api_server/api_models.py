@@ -112,6 +112,60 @@ class Daily(BaseModel):
     stake_currency: str
 
 
+class TradeSchema(BaseModel):
+    trade_id: str
+    pair: str
+    is_open: bool
+    exchange: str
+    amount: float
+    amount_requested: float
+    stake_amount: float
+    strategy: str
+    timeframe: str
+    fee_open: Optional[float]
+    fee_open_cost: Optional[float]
+    fee_open_currency: Optional[str]
+    fee_close: Optional[float]
+    fee_close_cost: Optional[float]
+    fee_close_currency: Optional[str]
+    open_date_hum: str
+    open_date: str
+    open_timestamp: int
+    open_rate: float
+    open_rate_requested: Optional[float]
+    open_trade_value: float
+    close_date_hum: Optional[str]
+    close_date: Optional[str]
+    close_timestamp: Optional[int]
+    close_rate: Optional[float]
+    close_rate_requested: Optional[float]
+    close_profit: Optional[float]
+    close_profit_pct: Optional[float]
+    close_profit_abs: Optional[float]
+    profit_ratio: Optional[float]
+    profit_pct: Optional[float]
+    profit_abs: Optional[float]
+    sell_reason: Optional[str]
+    sell_order_status: Optional[str]
+    stop_loss_abs: Optional[float]
+    stop_loss_ratio: Optional[float]
+    stop_loss_pct: Optional[float]
+    stoploss_order_id: Optional[str]
+    stoploss_last_update: Optional[str]
+    stoploss_last_update_timestamp: Optional[int]
+    initial_stop_loss_abs: Optional[float]
+    initial_stop_loss_ratio: Optional[float]
+    initial_stop_loss_pct: Optional[float]
+    min_rate: Optional[float]
+    max_rate: Optional[float]
+    open_order_id: Optional[str]
+
+
+class TradeResponse(BaseModel):
+    trades: List[TradeSchema]
+    trades_count: int
+
+
 class LockModel(BaseModel):
     active: bool
     lock_end_time: str

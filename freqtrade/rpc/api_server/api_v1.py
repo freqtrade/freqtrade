@@ -15,7 +15,7 @@ from freqtrade.rpc.api_server.api_models import (AvailablePairs, Balances, Black
                                                  ForceBuyPayload, ForceSellPayload, Locks, Logs,
                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
                                                  Profit, ResultMsg, Stats, StatusMsg,
-                                                 StrategyListResponse, StrategyResponse, Version,
+                                                 StrategyListResponse, StrategyResponse, TradeResponse, TradeSchema, Version,
                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc
 from freqtrade.rpc.rpc import RPCException
@@ -74,7 +74,7 @@ def daily(timescale: int = 7, rpc: RPC = Depends(get_rpc), config=Depends(get_co
 
 
 # TODO: Missing response model
-@router.get('/status', tags=['info'])
+@router.get('/status', response_model=List[TradeSchema], tags=['info'])
 def status(rpc: RPC = Depends(get_rpc)):
     try:
         return rpc._rpc_trade_status()
@@ -82,8 +82,7 @@ def status(rpc: RPC = Depends(get_rpc)):
         return []
 
 
-# TODO: Missing response model
-@router.get('/trades', tags=['info', 'trading'])
+@router.get('/trades', response_model=TradeResponse, tags=['info', 'trading'])
 def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
 
@@ -105,8 +104,7 @@ def show_config(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return RPC._rpc_show_config(config, rpc._freqtrade.state)
 
 
-# TODO: Missing response model
-@router.post('/forcebuy', tags=['trading'])
+@router.post('/forcebuy', response_model=Union[TradeSchema, StatusMsg], tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     trade = rpc._rpc_forcebuy(payload.pair, payload.price)
 
