@@ -29,7 +29,7 @@ from datetime import datetime
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                         current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
