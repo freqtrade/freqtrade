@@ -23,9 +23,17 @@ E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "l
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
 ``` python
+# additional imports required
+from datetime import datetime
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                         current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
@@ -66,6 +74,13 @@ Of course, many more things are possible, and all examples can be combined at wi
 Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
 
 ``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
@@ -85,6 +100,13 @@ Use a different stoploss depending on the pair.
 In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
 
 ``` python
+from datetime import datetime
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
@@ -107,6 +129,13 @@ The below example sets absolute profit levels based on the current profit.
 * Once profit is > 20% - stoploss will be set to 7%.
 
 ``` python
+from datetime import datetime
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
