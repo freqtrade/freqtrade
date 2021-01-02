@@ -48,9 +48,13 @@ def botclient(default_conf, mocker):
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
-    apiserver = ApiServer(rpc, default_conf)
-    yield ftbot, TestClient(apiserver.app)
-    # Cleanup ... ?
+    try:
+        apiserver = ApiServer(default_conf)
+        apiserver.add_rpc_handler(rpc)
+        yield ftbot, TestClient(apiserver.app)
+        # Cleanup ... ?
+    finally:
+        ApiServer.shutdown()
 
 
 def client_post(client, url, data={}):
@@ -235,8 +239,10 @@ def test_api__init__(default_conf, mocker):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.webserver.ApiServer.start_api', MagicMock())
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
     assert apiserver._config == default_conf
+    ApiServer.shutdown()
 
 
 def test_api_UvicornServer(mocker):
@@ -301,7 +307,8 @@ def test_api_run(default_conf, mocker, caplog):
     server_mock = MagicMock()
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     assert server_mock.call_count == 1
     assert apiserver._config == default_conf
@@ -344,6 +351,7 @@ def test_api_run(default_conf, mocker, caplog):
                  MagicMock(side_effect=Exception))
     apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
+    ApiServer.shutdown()
 
 
 def test_api_cleanup(default_conf, mocker, caplog):
@@ -359,11 +367,13 @@ def test_api_cleanup(default_conf, mocker, caplog):
     server_mock.cleanup = MagicMock()
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
+    ApiServer.shutdown()
 
 
 def test_api_reloadconf(botclient):

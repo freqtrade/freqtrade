@@ -86,6 +86,14 @@ class ApiServer(RPCHandler):
             logger.info("Stopping API Server")
             self._server.cleanup()
 
+    @classmethod
+    def shutdown(cls):
+        cls.__initialized = False
+        del cls.__instance
+        cls.__instance = None
+        cls._has_rpc = False
+        cls._rpc = None
+
     def send_msg(self, msg: Dict[str, str]) -> None:
         pass
 
