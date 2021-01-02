@@ -33,6 +33,8 @@ class ApiServer(RPCHandler):
     __initialized = False
 
     _rpc: RPC
+    # Backtesting type: Backtesting
+    _backtesting = None
     _has_rpc: bool = False
     _bgtask_running: bool = False
     _config: Dict[str, Any] = {}

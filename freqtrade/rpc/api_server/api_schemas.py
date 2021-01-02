@@ -313,3 +313,19 @@ class PairHistory(BaseModel):
         json_encoders = {
             datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
         }
+
+
+class BacktestRequest(BaseModel):
+    strategy: str
+    timeframe: Optional[str]
+    timerange: Optional[str]
+    max_open_trades: Optional[int]
+    stake_amount: Optional[int]
+
+
+class BacktestResponse(BaseModel):
+    status: str
+    running: bool
+    status_msg: str
+    # TODO: Properly type backtestresult...
+    backtest_result: Optional[Dict[str, Any]]

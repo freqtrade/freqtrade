@@ -1,8 +1,10 @@
+import asyncio
+import logging
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
@@ -10,17 +12,20 @@ from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
-                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
-                                                  Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, Version, WhitelistResponse)
+from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, BacktestRequest, BacktestResponse,
+                                                  Balances, BlacklistPayload, BlacklistResponse,
+                                                  Count, Daily, DeleteLockRequest, DeleteTrade,
+                                                  ForceBuyPayload, ForceBuyResponse,
+                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
+                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
+                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse, Version,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
+
+logger = logging.getLogger(__name__)
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -257,3 +262,84 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
     }
     return result
 
+
+@router.post('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: BackgroundTasks,
+                             config=Depends(get_config)):
+    """Start backtesting if not done so already"""
+    if ApiServer._bgtask_running:
+        raise RPCException('Bot Background task already running')
+
+    btconfig = deepcopy(config)
+    settings = dict(bt_settings)
+    # Pydantic models will contain all keys, but non-provided ones are None
+    for setting in settings.keys():
+        if settings[setting] is not None:
+            btconfig[setting] = settings[setting]
+
+    # Start backtesting
+    # Initialize backtesting object
+    def run_backtest():
+        from freqtrade.optimize.backtesting import Backtesting
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        try:
+            ApiServer._backtesting = Backtesting(btconfig)
+            ApiServer._backtesting.start()
+        finally:
+            ApiServer._bgtask_running = False
+
+    background_tasks.add_task(run_backtest)
+    ApiServer._bgtask_running = True
+
+    return {
+        "status": "running",
+        "running": True,
+        "status_msg": "Backtest started",
+    }
+
+
+@router.get('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+def api_get_backtest():
+    """
+    Get backtesting result.
+    Returns Result after backtesting has been ran.
+    """
+    if not ApiServer._backtesting:
+        return {
+            "status": "not_started",
+            "running": False,
+            "status_msg": "Backtesting not yet executed"
+        }
+    if ApiServer._bgtask_running:
+        return {
+            "status": "running",
+            "running": True,
+            "status_msg": "Backtest running",
+        }
+
+    return {
+        "status": "ended",
+        "running": False,
+        "status_msg": "Backtest ended",
+        "backtest_result": ApiServer._backtesting.results,
+    }
+
+
+@router.delete('/backtest', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+def api_delete_backtest():
+    """Reset backtesting"""
+    if ApiServer._bgtask_running:
+        return {
+            "status": "running",
+            "running": True,
+            "status_msg": "Backtest running",
+        }
+    if ApiServer._backtesting:
+        del ApiServer._backtesting
+        ApiServer._backtesting = None
+        logger.info("Backtesting reset")
+    return {
+        "status": "reset",
+        "running": False,
+        "status_msg": "Backtesting reset",
+    }
