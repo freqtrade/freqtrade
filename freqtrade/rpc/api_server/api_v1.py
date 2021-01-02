@@ -256,3 +256,4 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
         'pair_interval': pair_interval,
     }
     return result
+

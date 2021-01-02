@@ -34,6 +34,7 @@ class ApiServer(RPCHandler):
 
     _rpc: RPC
     _has_rpc: bool = False
+    _bgtask_running: bool = False
     _config: Dict[str, Any] = {}
 
     def __new__(cls, *args, **kwargs):
@@ -47,13 +48,13 @@ class ApiServer(RPCHandler):
         return ApiServer.__instance
 
     def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
+        ApiServer._config = config
         if self.__initialized and (standalone or self._standalone):
             return
         self._standalone: bool = standalone
-        self._config = config
         self._server = None
+        ApiServer.__initialized = True
 
-        ApiServer._config = config
         api_config = self._config['api_server']
 
         self.app = FastAPI(title="Freqtrade API",
@@ -69,7 +70,7 @@ class ApiServer(RPCHandler):
         """
         Attach rpc handler
         """
-        if not self._rpc:
+        if not self._has_rpc:
             self._rpc = rpc
             ApiServer._rpc = rpc
             ApiServer._has_rpc = True
