@@ -1,6 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
@@ -12,12 +12,12 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily, DeleteTrade,
-                                                  ForceBuyPayload, ForceSellPayload, Locks, Logs,
-                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
-                                                  Ping, PlotConfig, Profit, ResultMsg, Stats,
-                                                  StatusMsg, StrategyListResponse, StrategyResponse,
-                                                  TradeResponse, TradeSchema, Version,
-                                                  WhitelistResponse)
+                                                  ForceBuyPayload, ForceBuyResponse,
+                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
+                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
+                                                  Profit, ResultMsg, Stats, StatusMsg,
+                                                  StrategyListResponse, StrategyResponse,
+                                                  TradeResponse, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -107,7 +107,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     return RPC._rpc_show_config(config, state)
 
 
-@router.post('/forcebuy', response_model=Union[TradeSchema, StatusMsg], tags=['trading'])
+@router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     trade = rpc._rpc_forcebuy(payload.pair, payload.price)
 
@@ -182,7 +182,7 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
     return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
 
 
-@router.get('/plot_config', response_model=Union[PlotConfig, Dict], tags=['candle data'])
+@router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
 def plot_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_plot_config()
 
@@ -199,7 +199,7 @@ def list_strategies(config=Depends(get_config)):
 
 
 @router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
-def get_strategy(strategy: str, rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
+def get_strategy(strategy: str, config=Depends(get_config)):
 
     config = deepcopy(config)
     from freqtrade.resolvers.strategy_resolver import StrategyResolver

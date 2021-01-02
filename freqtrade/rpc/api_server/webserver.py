@@ -25,6 +25,7 @@ class ApiServer(RPCHandler):
         self._server = None
 
         ApiServer._rpc = rpc
+        ApiServer._has_rpc = True
         ApiServer._config = config
         api_config = self._config['api_server']
 
