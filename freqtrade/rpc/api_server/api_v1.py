@@ -18,7 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   StatusMsg, StrategyListResponse, StrategyResponse,
                                                   TradeResponse, TradeSchema, Version,
                                                   WhitelistResponse)
-from freqtrade.rpc.api_server.deps import get_config, get_rpc
+from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
 
@@ -100,8 +100,11 @@ def edge(rpc: RPC = Depends(get_rpc)):
 
 # TODO: Missing response model
 @router.get('/show_config', tags=['info'])
-def show_config(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
-    return RPC._rpc_show_config(config, rpc._freqtrade.state)
+def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(get_config)):
+    state = ''
+    if rpc:
+        state = rpc._freqtrade.state
+    return RPC._rpc_show_config(config, state)
 
 
 @router.post('/forcebuy', response_model=Union[TradeSchema, StatusMsg], tags=['trading'])

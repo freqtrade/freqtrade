@@ -1,12 +1,22 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from freqtrade.rpc.rpc import RPC
+from freqtrade.rpc.rpc import RPC, RPCException
 
 from .webserver import ApiServer
 
 
-def get_rpc() -> RPC:
-    return ApiServer._rpc
+def get_rpc_optional() -> Optional[RPC]:
+    if ApiServer._has_rpc:
+        return ApiServer._rpc
+    return None
+
+
+def get_rpc() -> Optional[RPC]:
+    _rpc = get_rpc_optional()
+    if _rpc:
+        return _rpc
+    else:
+        raise RPCException('Bot is not in the correct state')
 
 
 def get_config() -> Dict[str, Any]:
