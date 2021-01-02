@@ -15,7 +15,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   ForceBuyPayload, ForceBuyResponse,
                                                   ForceSellPayload, Locks, Logs, OpenTradeSchema,
                                                   PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                  Profit, ResultMsg, Stats, StatusMsg,
+                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
                                                   StrategyListResponse, StrategyResponse,
                                                   TradeResponse, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
@@ -98,8 +98,7 @@ def edge(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_edge()
 
 
-# TODO: Missing response model
-@router.get('/show_config', tags=['info'])
+@router.get('/show_config', response_model=ShowConfig, tags=['info'])
 def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(get_config)):
     state = ''
     if rpc:

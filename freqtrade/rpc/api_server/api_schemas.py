@@ -112,6 +112,29 @@ class Daily(BaseModel):
     stake_currency: str
 
 
+class ShowConfig(BaseModel):
+    dry_run: str
+    stake_currency: str
+    stake_amount: float
+    max_open_trades: int
+    minimal_roi: Dict[str, Any]
+    stoploss: float
+    trailing_stop: bool
+    trailing_stop_positive: Optional[float]
+    trailing_stop_positive_offset: Optional[float]
+    trailing_only_offset_is_reached: Optional[bool]
+    timeframe: str
+    timeframe_ms: int
+    timeframe_min: int
+    exchange: str
+    strategy: str
+    forcebuy_enabled: bool
+    ask_strategy: Dict[str, Any]
+    bid_strategy: Dict[str, Any]
+    state: str
+    runmode: str
+
+
 class TradeSchema(BaseModel):
     trade_id: int
     pair: str

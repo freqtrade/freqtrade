@@ -111,7 +111,7 @@ class RPC:
             self._fiat_converter = CryptoToFiatConverter()
 
     @staticmethod
-    def _rpc_show_config(config, botstate: State) -> Dict[str, Any]:
+    def _rpc_show_config(config, botstate: Union[State, str]) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
