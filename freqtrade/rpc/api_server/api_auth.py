@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.http import HTTPBasic, HTTPBasicCredentials
 
-from freqtrade.rpc.api_server.api_models import AccessAndRefreshToken, AccessToken
+from freqtrade.rpc.api_server.api_schemas import AccessAndRefreshToken, AccessToken
 from freqtrade.rpc.api_server.deps import get_api_config
 
 
