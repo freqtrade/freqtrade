@@ -115,7 +115,7 @@ class Daily(BaseModel):
 class ShowConfig(BaseModel):
     dry_run: str
     stake_currency: str
-    stake_amount: float
+    stake_amount: Union[float, str]
     max_open_trades: int
     minimal_roi: Dict[str, Any]
     stoploss: float
