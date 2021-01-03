@@ -99,9 +99,14 @@ class ApiServer(RPCHandler):
 
         logger.info('Starting Local Rest Server.')
         verbosity = self._config['api_server'].get('verbosity', 'info')
+        log_config = uvicorn.config.LOGGING_CONFIG
+        # Change logging of access logs to stderr
+        log_config["handlers"]["access"]["stream"] = log_config["handlers"]["default"]["stream"]
         uvconfig = uvicorn.Config(self.app,
                                   port=rest_port,
                                   host=rest_ip,
+                                  use_colors=False,
+                                  log_config=log_config,
                                   access_log=True if verbosity != 'error' else False,
                                   )
         try:
