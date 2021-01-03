@@ -31,7 +31,7 @@ class ApiServer(RPCHandler):
 
         self.app = FastAPI(title="Freqtrade API",
                            openapi_url='openapi.json' if api_config.get(
-                               'enable_openapi') else None,
+                               'enable_openapi', False) else None,
                            redoc_url=None,
                            )
         self.configure_app(self.app, self._config)
@@ -98,7 +98,7 @@ class ApiServer(RPCHandler):
                            "Others may be able to log into your bot.")
 
         logger.info('Starting Local Rest Server.')
-        verbosity = self._config['api_server'].get('verbosity', 'info')
+        verbosity = self._config['api_server'].get('verbosity', 'error')
         log_config = uvicorn.config.LOGGING_CONFIG
         # Change logging of access logs to stderr
         log_config["handlers"]["access"]["stream"] = log_config["handlers"]["default"]["stream"]

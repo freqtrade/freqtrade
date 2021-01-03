@@ -89,11 +89,11 @@
         "enabled": false,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
-        "verbosity": "info",
+        "verbosity": "error",
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
-        "username": "",
-        "password": ""
+        "username": "freqtrader",
+        "password": "SuperSecurePassword"
     },
     "initial_state": "running",
     "forcebuy_enable": false,
