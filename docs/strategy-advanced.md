@@ -119,6 +119,41 @@ class AwesomeStrategy(IStrategy):
         return -0.15
 ```
 
+#### Trailing stoploss with positive offset
+
+Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.
+
+Please note that the stoploss can only increase, values lower than the current stoploss are ignored.
+
+``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        if current_profit < 0.04:
+            return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
+
+        # After reaching the desired offset, allow the stoploss to trail by half the profit
+        stoploss = current_profit / 2 
+
+        if abs(stoploss) < 0.025:
+            # Maintain a minimum of 2.5% trailing stoploss
+            stoploss = 0.025 
+        if abs(stoploss) > 0.05:
+            # Maximize the stoploss at 5%
+            stoploss = 0.05 
+
+        return stoploss
+```
+
 #### Absolute stoploss
 
 The below example sets absolute profit levels based on the current profit.
