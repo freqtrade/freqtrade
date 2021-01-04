@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
@@ -112,6 +112,11 @@ class IStrategy(ABC):
 
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
+
+    # Don't analyze too old candles
+    ignore_buying_expired_candle: bool = False
+    # Number of seconds after which the candle will no longer result in a buy
+    ignore_buying_expired_candle_after: int = 0
 
     # Disable checking the dataframe (converts the error into a warning message)
     disable_dataframe_checks: bool = False
@@ -476,7 +481,20 @@ class IStrategy(ABC):
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
+        if self.ignore_expired_candle(dataframe=dataframe, buy=buy):
+            return False, sell
         return buy, sell
+
+    def ignore_expired_candle(self, dataframe: DataFrame, buy: bool):
+        if self.ignore_buying_expired_candle and buy:
+            current_time = datetime.now(timezone.utc) - timedelta(seconds=self.ignore_buying_expired_candle_after)
+            candle_time = dataframe['date'].tail(1).iat[0]
+            time_delta = current_time - candle_time
+            if time_delta.total_seconds() > self.ignore_buying_expired_candle_after:
+                logger.debug('ignoring buy signals because candle exceeded ignore_buying_expired_candle_after of %s seconds', self.ignore_buying_expired_candle_after)
+                return True
+        else:
+            return False
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
@@ -672,6 +690,7 @@ class IStrategy(ABC):
         :return: DataFrame with buy column
         """
         logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
+
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
