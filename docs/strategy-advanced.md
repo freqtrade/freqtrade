@@ -142,16 +142,10 @@ class AwesomeStrategy(IStrategy):
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
-        stoploss = current_profit / 2 
+        desired_stoploss = current_profit / 2 
 
-        if abs(stoploss) < 0.025:
-            # Maintain a minimum of 2.5% trailing stoploss
-            stoploss = 0.025 
-        if abs(stoploss) > 0.05:
-            # Maximize the stoploss at 5%
-            stoploss = 0.05 
-
-        return stoploss
+        # Use a minimum of 2.5% and a maximum of 5%
+        return max(min(desired_stoploss, 0.05), 0.025)
 ```
 
 #### Absolute stoploss
