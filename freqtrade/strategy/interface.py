@@ -15,7 +15,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -481,16 +481,16 @@ class IStrategy(ABC):
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
-        if self.ignore_expired_candle(dataframe=dataframe, buy=buy):
+        timeframe_seconds = timeframe_to_seconds(timeframe)
+        if self.ignore_expired_candle(latest_date=latest_date, timeframe_seconds=timeframe_seconds, buy=buy):
             return False, sell
         return buy, sell
 
-    def ignore_expired_candle(self, dataframe: DataFrame, buy: bool):
+    def ignore_expired_candle(self, latest_date: datetime, timeframe_seconds: int, buy: bool):
         if self.ignore_buying_expired_candle and buy:
             current_time = datetime.now(timezone.utc) - timedelta(
                 seconds=self.ignore_buying_expired_candle_after)
-            candle_time = dataframe['date'].tail(1).iat[0]
-            time_delta = current_time - candle_time
+            time_delta = current_time - latest_date + timedelta(seconds=timeframe_seconds)
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
         else:
             return False
