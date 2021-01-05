@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
@@ -487,11 +487,15 @@ class IStrategy(ABC):
 
     def ignore_expired_candle(self, dataframe: DataFrame, buy: bool):
         if self.ignore_buying_expired_candle and buy:
-            current_time = datetime.now(timezone.utc) - timedelta(seconds=self.ignore_buying_expired_candle_after)
+            current_time = datetime.now(timezone.utc) - timedelta(
+                seconds=self.ignore_buying_expired_candle_after)
             candle_time = dataframe['date'].tail(1).iat[0]
             time_delta = current_time - candle_time
             if time_delta.total_seconds() > self.ignore_buying_expired_candle_after:
-                logger.debug('ignoring buy signals because candle exceeded ignore_buying_expired_candle_after of %s seconds', self.ignore_buying_expired_candle_after)
+                logger.debug(
+                    '''ignoring buy signals because candle exceeded
+                    ignore_buying_expired_candle_after of %s seconds''',
+                    self.ignore_buying_expired_candle_after)
                 return True
         else:
             return False

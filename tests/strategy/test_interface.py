@@ -120,7 +120,7 @@ def test_ignore_expired_candle(default_conf, ohlcv_history):
     mocked_history.loc[1, 'buy'] = 1
     mocked_history.loc[1, 'sell'] = 1
 
-    assert strategy.ignore_expired_candle(mocked_history, True) == True
+    assert strategy.ignore_expired_candle(mocked_history, True) is True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
