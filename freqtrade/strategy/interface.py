@@ -113,7 +113,7 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    # Don't analyze too old candles
+    # Don't buy on expired candles
     ignore_buying_expired_candle: bool = False
     # Number of seconds after which the candle will no longer result in a buy
     ignore_buying_expired_candle_after: int = 0
