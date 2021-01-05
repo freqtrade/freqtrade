@@ -20,7 +20,7 @@ def test_hyperoptlossresolver(mocker, default_conf) -> None:
     hl = ShortTradeDurHyperOptLoss
     mocker.patch(
         'freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.load_object',
-        MagicMock(return_value=hl)
+        MagicMock(return_value=hl())
     )
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
     x = HyperOptLossResolver.load_hyperoptloss(default_conf)

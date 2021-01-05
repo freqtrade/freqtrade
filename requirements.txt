@@ -27,10 +27,10 @@ python-rapidjson==1.0
 # Notify systemd
 sdnotify==0.3.2
 
-# Api server
-flask==1.1.2
-flask-jwt-extended==3.25.0
-flask-cors==3.0.9
+# API Server
+fastapi==0.63.0
+uvicorn==0.13.2
+pyjwt==1.7.1
 
 # Support for colorized terminal output
 colorama==0.4.4
