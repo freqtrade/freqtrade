@@ -491,14 +491,9 @@ class IStrategy(ABC):
                 seconds=self.ignore_buying_expired_candle_after)
             candle_time = dataframe['date'].tail(1).iat[0]
             time_delta = current_time - candle_time
-            if time_delta.total_seconds() > self.ignore_buying_expired_candle_after:
-                logger.debug(
-                    '''ignoring buy signals because candle exceeded
-                    ignore_buying_expired_candle_after of %s seconds''',
-                    self.ignore_buying_expired_candle_after)
-                return True
-
-       return False
+            return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
+        else:
+            return False
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
