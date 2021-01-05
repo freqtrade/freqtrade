@@ -497,8 +497,8 @@ class IStrategy(ABC):
                     ignore_buying_expired_candle_after of %s seconds''',
                     self.ignore_buying_expired_candle_after)
                 return True
-        else:
-            return False
+
+       return False
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
