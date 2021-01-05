@@ -117,7 +117,9 @@ def test_ignore_expired_candle(default_conf, ohlcv_history):
     mocked_history = ohlcv_history.copy()
     latest_date = mocked_history['date'].max()
 
-    assert strategy.ignore_expired_candle(latest_date=latest_date, timeframe_seconds=300, buy=True) is True
+    assert strategy.ignore_expired_candle(latest_date=latest_date,
+                                          timeframe_seconds=300,
+                                          buy=True) is True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):

@@ -21,7 +21,6 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -482,7 +481,9 @@ class IStrategy(ABC):
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
-        if self.ignore_expired_candle(latest_date=latest_date, timeframe_seconds=timeframe_seconds, buy=buy):
+        if self.ignore_expired_candle(latest_date=latest_date,
+                                      timeframe_seconds=timeframe_seconds,
+                                      buy=buy):
             return False, sell
         return buy, sell
 
