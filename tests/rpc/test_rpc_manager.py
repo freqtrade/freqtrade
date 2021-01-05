@@ -160,7 +160,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
 def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     run_mock = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', run_mock)
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', run_mock)
     default_conf['telegram']['enabled'] = False
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
@@ -172,7 +172,7 @@ def test_init_apiserver_disabled(mocker, default_conf, caplog) -> None:
 def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     run_mock = MagicMock()
-    mocker.patch('freqtrade.rpc.api_server.ApiServer.run', run_mock)
+    mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', run_mock)
 
     default_conf["telegram"]["enabled"] = False
     default_conf["api_server"] = {"enabled": True,

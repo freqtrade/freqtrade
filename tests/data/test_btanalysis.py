@@ -128,7 +128,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
         if col not in ['index', 'open_at_end']:
             assert col in trades.columns
     trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='DefaultStrategy')
-    assert len(trades) == 3
+    assert len(trades) == 4
     trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='NoneStrategy')
     assert len(trades) == 0
 
