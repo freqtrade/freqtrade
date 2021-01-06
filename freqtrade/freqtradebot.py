@@ -246,6 +246,10 @@ class FreqtradeBot(LoggingMixin):
         Updates open orders based on order list kept in the database.
         Mainly updates the state of orders - but may also close trades
         """
+        if self.config['dry_run']:
+            # Updating open orders in dry-run does not make sense and will fail.
+            return
+
         orders = Order.get_open_orders()
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
@@ -256,6 +260,7 @@ class FreqtradeBot(LoggingMixin):
                 self.update_trade_state(order.trade, order.order_id, fo)
 
             except ExchangeError as e:
+
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
 
     def update_closed_trades_without_assigned_fees(self):

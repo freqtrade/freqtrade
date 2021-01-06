@@ -4313,6 +4313,11 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
     create_mock_trades(fee)
 
     freqtrade.update_open_orders()
+    assert not log_has_re(r"Error updating Order .*", caplog)
+
+    freqtrade.config['dry_run'] = False
+    freqtrade.update_open_orders()
+
     assert log_has_re(r"Error updating Order .*", caplog)
     caplog.clear()
 
