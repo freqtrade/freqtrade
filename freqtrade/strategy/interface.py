@@ -119,6 +119,9 @@ class IStrategy(ABC):
     # Count of candles the strategy requires before producing valid signals
     startup_candle_count: int = 0
 
+    # Protections
+    protections: List
+
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
