@@ -62,9 +62,9 @@ The below example stops trading for all pairs for 4 candles after the last trade
 
 #### MaxDrawdown
 
-`MaxDrawdown` uses all trades within `lookback_period` (in minutes or candles) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` (in minutes or candles) after the last trade - assuming that the bot needs some time to let markets recover.
+`MaxDrawdown` uses all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after the last trade - assuming that the bot needs some time to let markets recover.
 
-The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles. If desired, `lookback_period_minutes` and/or `stop_duration_minutes` can be used.
+The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles. If desired, `lookback_period` and/or `stop_duration` can be used.
 
 ```json
 "protections": [
