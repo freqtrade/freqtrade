@@ -788,6 +788,8 @@ class RPC:
             timerange=timerange_parsed,
             data_format=config.get('dataformat_ohlcv', 'json'),
         )
+        if pair not in _data:
+            raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
