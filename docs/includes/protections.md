@@ -39,7 +39,7 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 #### Stoploss Guard
 
-`StoplossGuard` selects all trades within `lookback_period`, and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
+`StoplossGuard` selects all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
@@ -62,9 +62,9 @@ The below example stops trading for all pairs for 4 candles after the last trade
 
 #### MaxDrawdown
 
-`MaxDrawdown` uses all trades within `lookback_period` (in minutes) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` (in minutes) after the last trade - assuming that the bot needs some time to let markets recover.
+`MaxDrawdown` uses all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after the last trade - assuming that the bot needs some time to let markets recover.
 
-The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles.
+The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles. If desired, `lookback_period` and/or `stop_duration` can be used.
 
 ```json
 "protections": [
@@ -81,8 +81,8 @@ The below sample stops trading for 12 candles if max-drawdown is > 20% consideri
 
 #### Low Profit Pairs
 
-`LowProfitPairs` uses all trades for a pair within `lookback_period` (in minutes) to determine the overall profit ratio.
-If that ratio is below `required_profit`, that pair will be locked for `stop_duration` (in minutes).
+`LowProfitPairs` uses all trades for a pair within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the overall profit ratio.
+If that ratio is below `required_profit`, that pair will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
 
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
@@ -100,7 +100,7 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 
 #### Cooldown Period
 
-`CooldownPeriod` locks a pair for `stop_duration` (in minutes) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
+`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
 
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 
