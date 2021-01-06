@@ -321,6 +321,7 @@ class BacktestRequest(BaseModel):
     timerange: Optional[str]
     max_open_trades: Optional[int]
     stake_amount: Optional[int]
+    enable_protections: bool
 
 
 class BacktestResponse(BaseModel):

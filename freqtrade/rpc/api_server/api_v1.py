@@ -280,11 +280,40 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     # Start backtesting
     # Initialize backtesting object
     def run_backtest():
-        from freqtrade.optimize.backtesting import Backtesting
+        from freqtrade.optimize.optimize_reports import generate_backtest_stats
+        from freqtrade.resolvers import StrategyResolver
         asyncio.set_event_loop(asyncio.new_event_loop())
         try:
-            ApiServer._backtesting = Backtesting(btconfig)
-            ApiServer._backtesting.start()
+            # Reload strategy
+            strat = StrategyResolver.load_strategy(btconfig)
+
+            if (not ApiServer._bt
+                    or ApiServer._lastbacktestconfig.get('timeframe') != strat.timeframe
+                    or ApiServer._lastbacktestconfig.get('enable_protections') != btconfig.get('enable_protections')
+                    or ApiServer._lastbacktestconfig.get('protections') != btconfig.get('protections', [])):
+                # TODO: Investigate if enabling protections can be dynamically ingested from here...
+                from freqtrade.optimize.backtesting import Backtesting
+                ApiServer._bt = Backtesting(btconfig)
+                # Reset data if backtesting is reloaded
+                # TODO: is this always necessary??
+                ApiServer._backtestdata = None
+
+            if (not ApiServer._backtestdata or not ApiServer._bt_timerange
+                    or ApiServer._lastbacktestconfig.get('timerange') != btconfig['timerange']):
+                ApiServer._lastbacktestconfig['timerange'] = btconfig['timerange']
+                ApiServer._lastbacktestconfig['protections'] = btconfig.get('protections', [])
+                ApiServer._lastbacktestconfig['enable_protections'] = btconfig.get('enable_protections')
+                ApiServer._lastbacktestconfig['timeframe'] = strat.timeframe
+                ApiServer._backtestdata, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
+
+            min_date, max_date = ApiServer._bt.backtest_one_strategy(
+                strat, ApiServer._backtestdata,
+                ApiServer._bt_timerange)
+            ApiServer._bt.results = generate_backtest_stats(
+                ApiServer._backtestdata, ApiServer._bt.all_results,
+                min_date=min_date, max_date=max_date)
+            logger.info("Backtesting finished.")
+
         finally:
             ApiServer._bgtask_running = False
 
@@ -304,12 +333,6 @@ def api_get_backtest():
     Get backtesting result.
     Returns Result after backtesting has been ran.
     """
-    if not ApiServer._backtesting:
-        return {
-            "status": "not_started",
-            "running": False,
-            "status_msg": "Backtesting not yet executed"
-        }
     if ApiServer._bgtask_running:
         return {
             "status": "running",
@@ -317,11 +340,18 @@ def api_get_backtest():
             "status_msg": "Backtest running",
         }
 
+    if not ApiServer._bt:
+        return {
+            "status": "not_started",
+            "running": False,
+            "status_msg": "Backtesting not yet executed"
+        }
+
     return {
         "status": "ended",
         "running": False,
         "status_msg": "Backtest ended",
-        "backtest_result": ApiServer._backtesting.results,
+        "backtest_result": ApiServer._bt.results,
     }
 
 
@@ -334,9 +364,11 @@ def api_delete_backtest():
             "running": True,
             "status_msg": "Backtest running",
         }
-    if ApiServer._backtesting:
-        del ApiServer._backtesting
-        ApiServer._backtesting = None
+    if ApiServer._bt:
+        del ApiServer._bt
+        ApiServer._bt = None
+        del ApiServer._backtestdata
+        ApiServer._backtestdata = None
         logger.info("Backtesting reset")
     return {
         "status": "reset",
