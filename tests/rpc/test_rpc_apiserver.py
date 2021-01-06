@@ -1046,6 +1046,14 @@ def test_api_pair_history(botclient, ohlcv_history):
     assert rc.json()['data_stop'] == '2018-01-12 00:00:00+00:00'
     assert rc.json()['data_stop_ts'] == 1515715200000
 
+    # No data found
+    rc = client_get(client,
+                    f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                    "&timerange=20200111-20200112&strategy=DefaultStrategy")
+    assert_response(rc, 502)
+    assert rc.json()['error'] == ("Error querying /api/v1/pair_history: "
+                                  "No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
+
 
 def test_api_plot_config(botclient):
     ftbot, client = botclient
