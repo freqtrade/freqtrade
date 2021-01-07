@@ -117,7 +117,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -146,7 +146,7 @@ jobs:
       run: |
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
-    - name: Installation - *nix
+    - name: Installation - macOS
       run: |
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
