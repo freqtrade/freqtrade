@@ -1718,8 +1718,8 @@ async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchange_name,
-                                           trades_history):
+async def test__async_get_trade_history_id(default_conf, mocker, exchange_name,
+                                           fetch_trades_result):
 
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     pagination_arg = exchange._trades_pagination_arg
@@ -1727,28 +1727,29 @@ async def test__async_get_trade_history_id(default_conf, mocker, caplog, exchang
     async def mock_get_trade_hist(pair, *args, **kwargs):
         if 'since' in kwargs:
             # Return first 3
-            return trades_history[:-2]
-        elif kwargs.get('params', {}).get(pagination_arg) == trades_history[-3][1]:
+            return fetch_trades_result[:-2]
+        elif kwargs.get('params', {}).get(pagination_arg) == fetch_trades_result[-3]['id']:
             # Return 2
-            return trades_history[-3:-1]
+            return fetch_trades_result[-3:-1]
         else:
             # Return last 2
-            return trades_history[-2:]
+            return fetch_trades_result[-2:]
     # Monkey-patch async function
-    exchange._async_fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
+    exchange._api_async.fetch_trades = MagicMock(side_effect=mock_get_trade_hist)
 
     pair = 'ETH/BTC'
-    ret = await exchange._async_get_trade_history_id(pair, since=trades_history[0][0],
-                                                     until=trades_history[-1][0]-1)
+    ret = await exchange._async_get_trade_history_id(pair,
+                                                     since=fetch_trades_result[0]['timestamp'],
+                                                     until=fetch_trades_result[-1]['timestamp'] - 1)
     assert type(ret) is tuple
     assert ret[0] == pair
     assert type(ret[1]) is list
-    assert len(ret[1]) == len(trades_history)
-    assert exchange._async_fetch_trades.call_count == 3
-    fetch_trades_cal = exchange._async_fetch_trades.call_args_list
+    assert len(ret[1]) == len(fetch_trades_result)
+    assert exchange._api_async.fetch_trades.call_count == 3
+    fetch_trades_cal = exchange._api_async.fetch_trades.call_args_list
     # first call (using since, not fromId)
     assert fetch_trades_cal[0][0][0] == pair
-    assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
+    assert fetch_trades_cal[0][1]['since'] == fetch_trades_result[0]['timestamp']
 
     # 2nd call
     assert fetch_trades_cal[1][0][0] == pair
