@@ -483,16 +483,16 @@ class IStrategy(ABC):
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
         if self.ignore_expired_candle(latest_date=latest_date,
+                                      current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
             return False, sell
         return buy, sell
 
-    def ignore_expired_candle(self, latest_date: datetime, timeframe_seconds: int, buy: bool):
+    def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
+                              timeframe_seconds: int, buy: bool):
         if self.ignore_buying_expired_candle and buy:
-            current_time = datetime.now(timezone.utc) - timedelta(
-                seconds=self.ignore_buying_expired_candle_after)
-            time_delta = current_time - latest_date + timedelta(seconds=timeframe_seconds)
+            time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
         else:
             return False
