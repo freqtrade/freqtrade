@@ -91,7 +91,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
-| `protections` | Define one or more protections to be used. [More information below](#protections). <br> **Datatype:** List of Dicts
+| `protections` | Define one or more protections to be used. [More information below](#protections). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** List of Dicts
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -141,6 +141,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `stake_amount`
 * `unfilledtimeout`
 * `disable_dataframe_checks`
+* `protections`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
