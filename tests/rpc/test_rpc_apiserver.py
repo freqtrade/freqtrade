@@ -93,7 +93,7 @@ def test_api_auth():
         create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234', token_type="NotATokenType")
 
     token = create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234')
-    assert isinstance(token, bytes)
+    assert isinstance(token, str)
 
     u = get_user_from_token(token, 'secret1234')
     assert u == 'Freqtrade'
