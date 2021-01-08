@@ -1,5 +1,5 @@
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -121,8 +121,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     }
 
     assert strat_stats['max_drawdown'] == 0.0
-    assert strat_stats['drawdown_start'] == Arrow.fromtimestamp(0).datetime
-    assert strat_stats['drawdown_end'] == Arrow.fromtimestamp(0).datetime
+    assert strat_stats['drawdown_start'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
+    assert strat_stats['drawdown_end'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
     assert strat_stats['drawdown_end_ts'] == 0
     assert strat_stats['drawdown_start_ts'] == 0
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
