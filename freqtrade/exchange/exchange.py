@@ -936,7 +936,7 @@ class Exchange:
         while True:
             t = await self._async_fetch_trades(pair, since=since)
             if len(t):
-                since = t[-1][1]
+                since = t[-1][0]
                 trades.extend(t)
                 # Reached the end of the defined-download period
                 if until and t[-1][0] > until:
