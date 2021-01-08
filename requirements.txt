@@ -36,4 +36,4 @@ pyjwt==1.7.1
 colorama==0.4.4
 # Building config files interactively
 questionary==1.9.0
-prompt-toolkit==3.0.8
+prompt-toolkit==3.0.9
