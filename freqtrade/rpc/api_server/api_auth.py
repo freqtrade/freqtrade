@@ -44,7 +44,7 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access"):
     return username
 
 
-def create_token(data: dict, secret_key: str, token_type: str = "access") -> bytes:
+def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:
     to_encode = data.copy()
     if token_type == "access":
         expire = datetime.utcnow() + timedelta(minutes=15)
