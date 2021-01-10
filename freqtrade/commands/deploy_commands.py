@@ -137,3 +137,57 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
     else:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
+
+
+def clean_ui_subdir(directory: Path):
+    print(directory)
+    if directory.is_dir():
+        logger.info("Removing UI directory content")
+
+        for p in reversed(list(directory.glob('**/*'))):  # iterate contents from leaves to root
+            if p.name == '.gitkeep':
+                continue
+            if p.is_file():
+                p.unlink()
+            elif p.is_dir():
+                p.rmdir()
+
+
+def download_and_install_ui(dest_folder: Path):
+    import requests
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    base_url = 'https://api.github.com/repos/freqtrade/frequi/'
+    # Get base UI Repo path
+
+    resp = requests.get(f"{base_url}releases")
+    resp.raise_for_status()
+    r = resp.json()
+
+    assets = r[0]['assets_url']
+    resp = requests.get(assets)
+    r = resp.json()
+
+    dl_url = r[0]['browser_download_url']
+    logger.info(f"Downloading {dl_url}")
+    resp = requests.get(dl_url).content
+    with ZipFile(BytesIO(resp)) as zf:
+        for fn in zf.filelist:
+            with zf.open(fn) as x:
+                destfile = dest_folder / fn.filename
+                print(destfile)
+                if fn.is_dir():
+                    destfile.mkdir(exist_ok=True)
+                else:
+                    destfile.write_bytes(x.read())
+
+
+def start_install_ui(args: Dict[str, Any]) -> None:
+
+    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
+    # First make sure the assets are removed.
+    clean_ui_subdir(dest_folder)
+
+    # Download a new version
+    download_and_install_ui(dest_folder)

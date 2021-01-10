@@ -167,8 +167,8 @@ class Arguments:
 
         from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
                                         start_download_data, start_edge, start_hyperopt,
-                                        start_hyperopt_list, start_hyperopt_show, start_list_data,
-                                        start_list_exchanges, start_list_hyperopts,
+                                        start_hyperopt_list, start_hyperopt_show, start_install_ui,
+                                        start_list_data, start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
                                         start_list_timeframes, start_new_config, start_new_hyperopt,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
@@ -354,6 +354,14 @@ class Arguments:
         )
         test_pairlist_cmd.set_defaults(func=start_test_pairlist)
         self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
+
+        # Add install-ui subcommand
+        install_ui_cmd = subparsers.add_parser(
+            'install-ui',
+            help='Install FreqUI',
+        )
+        install_ui_cmd.set_defaults(func=start_install_ui)
+        self._build_args(optionlist=[], parser=install_ui_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(
