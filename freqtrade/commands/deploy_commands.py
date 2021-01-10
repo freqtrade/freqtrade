@@ -170,12 +170,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str):
                     destfile.write_bytes(x.read())
 
 
-def start_install_ui(args: Dict[str, Any]) -> None:
-
-    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
-    # First make sure the assets are removed.
-    clean_ui_subdir(dest_folder)
-
+def get_ui_download_url() -> str:
     base_url = 'https://api.github.com/repos/freqtrade/frequi/'
     # Get base UI Repo path
 
@@ -188,6 +183,16 @@ def start_install_ui(args: Dict[str, Any]) -> None:
     r = resp.json()
 
     dl_url = r[0]['browser_download_url']
+    return dl_url
+
+
+def start_install_ui(args: Dict[str, Any]) -> None:
+
+    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
+    # First make sure the assets are removed.
+    clean_ui_subdir(dest_folder)
+
+    dl_url = get_ui_download_url()
 
     # Download a new version
     download_and_install_ui(dest_folder, dl_url)

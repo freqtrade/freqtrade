@@ -560,13 +560,14 @@ def test_start_new_hyperopt_no_arg(mocker):
 
 def test_start_install_ui(mocker):
     clean_mock = mocker.patch('freqtrade.commands.deploy_commands.clean_ui_subdir')
+    get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url')
     download_mock = mocker.patch('freqtrade.commands.deploy_commands.download_and_install_ui')
     args = [
         "install-ui",
     ]
     start_install_ui(args)
     assert clean_mock.call_count == 1
-
+    assert get_url_mock.call_count == 1
     assert download_mock.call_count == 1
 
 
@@ -588,7 +589,7 @@ def test_clean_ui_subdir(mocker, tmpdir, caplog):
 
 
 def test_download_and_install_ui(mocker, tmpdir, caplog):
-    # Should be something "zip-like"
+    # Create zipfile
     requests_mock = MagicMock()
     file_like_object = BytesIO()
     with ZipFile(file_like_object, mode='w') as zipfile:
@@ -596,13 +597,16 @@ def test_download_and_install_ui(mocker, tmpdir, caplog):
             zipfile.writestr(file, file)
     file_like_object.seek(0)
     requests_mock.content = file_like_object.read()
+
     mocker.patch("freqtrade.commands.deploy_commands.requests.get", return_value=requests_mock)
+
     mocker.patch("freqtrade.commands.deploy_commands.Path.is_dir",
                  side_effect=[True, False])
     mkdir_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.mkdir")
     wb_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.write_bytes")
+
     folder = Path(tmpdir) / "uitests_dl"
-    download_and_install_ui(folder, 'http://whatever.xxx')
+    download_and_install_ui(folder, 'http://whatever.xxx/download/file.zip')
 
     assert mkdir_mock.call_count == 1
     assert wb_mock.call_count == 2
