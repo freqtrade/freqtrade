@@ -8,6 +8,7 @@ user_data/*
 user_data/notebooks/*
 freqtrade-plot.html
 freqtrade-profit-plot.html
+freqtrade/rpc/api_server/ui/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

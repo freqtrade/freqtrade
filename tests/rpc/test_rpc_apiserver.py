@@ -83,7 +83,7 @@ def assert_response(response, expected_code=200, needs_cors=True):
 def test_api_not_found(botclient):
     ftbot, client = botclient
 
-    rc = client_post(client, f"{BASE_URI}/invalid_url")
+    rc = client_get(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
     assert rc.json() == {"detail": "Not Found"}
 
