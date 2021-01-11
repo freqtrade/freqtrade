@@ -58,7 +58,7 @@ The below example stops trading for all pairs for 4 candles after the last trade
 ```
 
 !!! Note
-    `StoplossGuard` considers all trades with the results `"stop_loss"` and `"trailing_stop_loss"` if the resulting profit was negative.
+    `StoplossGuard` considers all trades with the results `"stop_loss"`, `"stoploss_on_exchange"` and `"trailing_stop_loss"` if the resulting profit was negative.
     `trade_limit` and `lookback_period` will need to be tuned for your strategy.
 
 #### MaxDrawdown
