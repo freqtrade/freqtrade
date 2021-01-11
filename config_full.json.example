@@ -103,7 +103,7 @@
         }
     ],
     "exchange": {
-        "name": "bittrex",
+        "name": "binance",
         "sandbox": false,
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
@@ -115,16 +115,21 @@
             "aiohttp_trust_env": false
         },
         "pair_whitelist": [
+            "ALGO/BTC",
+            "ATOM/BTC",
+            "BAT/BTC",
+            "BCH/BTC",
+            "BRD/BTC",
+            "EOS/BTC",
             "ETH/BTC",
+            "IOTA/BTC",
+            "LINK/BTC",
             "LTC/BTC",
-            "ETC/BTC",
-            "DASH/BTC",
-            "ZEC/BTC",
-            "XLM/BTC",
-            "NXT/BTC",
-            "TRX/BTC",
-            "ADA/BTC",
-            "XMR/BTC"
+            "NEO/BTC",
+            "NXS/BTC",
+            "XMR/BTC",
+            "XRP/BTC",
+            "XTZ/BTC"
         ],
         "pair_blacklist": [
             "DOGE/BTC"
@@ -147,7 +152,7 @@
         "remove_pumps": false
     },
     "telegram": {
-        "enabled": true,
+        "enabled": false,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id",
         "notification_settings": {
