@@ -42,6 +42,7 @@
         "order_book_max": 1,
         "use_sell_signal": true,
         "sell_profit_only": false,
+        "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": false
     },
     "order_types": {

@@ -299,6 +299,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'minimal_roi': config['minimal_roi'],
             'use_sell_signal': config['ask_strategy']['use_sell_signal'],
             'sell_profit_only': config['ask_strategy']['sell_profit_only'],
+            'sell_profit_offset': config['ask_strategy']['sell_profit_offset'],
             'ignore_roi_if_buy_signal': config['ask_strategy']['ignore_roi_if_buy_signal'],
             **daily_stats,
         }

@@ -79,6 +79,7 @@ class StrategyResolver(IResolver):
                       ("use_sell_signal",                 True,        'ask_strategy'),
                       ("sell_profit_only",                False,       'ask_strategy'),
                       ("ignore_roi_if_buy_signal",        False,       'ask_strategy'),
+                      ("sell_profit_offset",              0.0,         'ask_strategy'),
                       ("disable_dataframe_checks",        False,       None),
                       ]
         for attribute, default, subkey in attributes:
