@@ -50,9 +50,10 @@ class StaticPairList(IPairList):
         :return: List of pairs
         """
         if self._allow_inactive:
-            return self._config['exchange']['pair_whitelist']
+            return self.verify_whitelist(self._config['exchange']['pair_whitelist'], logger.info)
         else:
-            return self._whitelist_for_active_markets(self._config['exchange']['pair_whitelist'])
+            return self._whitelist_for_active_markets(
+                self.verify_whitelist(self._config['exchange']['pair_whitelist'], logger.info))
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """

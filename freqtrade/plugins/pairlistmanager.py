@@ -60,6 +60,11 @@ class PairListManager():
         return expand_pairlist(self._blacklist, self._exchange.get_markets().keys())
 
     @property
+    def expanded_whitelist(self) -> List[str]:
+        """The expanded whitelist (including wildcard expansion)"""
+        return expand_pairlist(self._whitelist, self._exchange.get_markets().keys())
+
+    @property
     def name_list(self) -> List[str]:
         """Get list of loaded Pairlist Handler names"""
         return [p.name for p in self._pairlist_handlers]
@@ -128,6 +133,21 @@ class PairListManager():
                 logmethod(f"Pair {pair} in your blacklist. Removing it from whitelist...")
                 pairlist.remove(pair)
         return pairlist
+
+    def verify_whitelist(self, pairlist: List[str], logmethod) -> List[str]:
+        """
+        Verify and remove items from pairlist - returning a filtered pairlist.
+        Logs a warning or info depending on `aswarning`.
+        Pairlist Handlers explicitly using this method shall use
+        `logmethod=logger.info` to avoid spamming with warning messages
+        :return: pairlist - blacklisted pairs
+        """
+        try:
+            whitelist = self.expanded_whitelist
+        except ValueError as err:
+            logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
+            return []
+        return whitelist
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
         """

@@ -25,6 +25,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
                                        retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 CcxtModuleType = Any
@@ -335,8 +336,9 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
+        extended_pairs = expand_pairlist(pairs, list(self.markets))
         invalid_pairs = []
-        for pair in pairs:
+        for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
             if self.markets and pair not in self.markets:

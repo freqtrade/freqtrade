@@ -124,6 +124,15 @@ class IPairList(LoggingMixin, ABC):
         """
         return self._pairlistmanager.verify_blacklist(pairlist, logmethod)
 
+    def verify_whitelist(self, pairlist: List[str], logmethod) -> List[str]:
+        """
+        Proxy method to verify_whitelist for easy access for child classes.
+        :param pairlist: Pairlist to validate
+        :param logmethod: Function that'll be called, `logger.info` or `logger.warning`.
+        :return: pairlist - whitelisted pairs
+        """
+        return self._pairlistmanager.verify_whitelist(pairlist, logmethod)
+
     def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
         """
         Check available markets and remove pair from whitelist if necessary

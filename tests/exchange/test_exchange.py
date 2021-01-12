@@ -505,37 +505,38 @@ def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs d
     Exchange(default_conf)
 
 
-def test_validate_pairs_not_available(default_conf, mocker):
-    api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
-        'XRP/BTC': {'inactive': True}
-    })
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
-    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
-
-    with pytest.raises(OperationalException, match=r'not available'):
-        Exchange(default_conf)
-
-
-def test_validate_pairs_exception(default_conf, mocker, caplog):
-    caplog.set_level(logging.INFO)
-    api_mock = MagicMock()
-    mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='Binance'))
-
-    type(api_mock).markets = PropertyMock(return_value={})
-    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
-    mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
-    mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
-
-    with pytest.raises(OperationalException, match=r'Pair ETH/BTC is not available on Binance'):
-        Exchange(default_conf)
-
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value={}))
-    Exchange(default_conf)
-    assert log_has('Unable to validate pairs (assuming they are correct).', caplog)
+# This cannot happen anymore as expand_pairlist implicitly filters out unavaliablie pairs
+# def test_validate_pairs_not_available(default_conf, mocker):
+#     api_mock = MagicMock()
+#     type(api_mock).markets = PropertyMock(return_value={
+#         'XRP/BTC': {'inactive': True, 'base': 'XRP', 'quote': 'BTC'}
+#     })
+#     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+#     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+#     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+#     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+#
+#     with pytest.raises(OperationalException, match=r'not available'):
+#         Exchange(default_conf)
+#
+#
+# def test_validate_pairs_exception(default_conf, mocker, caplog):
+#     caplog.set_level(logging.INFO)
+#     api_mock = MagicMock()
+#     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value='Binance'))
+#
+#     type(api_mock).markets = PropertyMock(return_value={})
+#     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', api_mock)
+#     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
+#     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
+#     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
+#
+#     with pytest.raises(OperationalException, match=r'Pair ETH/BTC is not available on Binance'):
+#         Exchange(default_conf)
+#
+#     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value={}))
+#     Exchange(default_conf)
+#     assert log_has('Unable to validate pairs (assuming they are correct).', caplog)
 
 
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
