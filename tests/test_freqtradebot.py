@@ -3065,6 +3065,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
+        'sell_profit_offset': 0.1,
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -3076,7 +3077,11 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
+    assert freqtrade.handle_trade(trade) is False
+
+    freqtrade.config['ask_strategy']['sell_profit_offset'] = 0.0
     assert freqtrade.handle_trade(trade) is True
+
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 

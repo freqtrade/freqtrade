@@ -505,18 +505,19 @@ class IStrategy(ABC):
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
-        config_ask_strategy = self.config.get('ask_strategy', {})
+        ask_strategy = self.config.get('ask_strategy', {})
 
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False))
+        roi_reached = (not (buy and ask_strategy.get('ignore_roi_if_buy_signal', False))
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
-        if config_ask_strategy.get('sell_profit_only', False) and trade.calc_profit(rate=rate) <= 0:
+        if (ask_strategy.get('sell_profit_only', False)
+                and trade.calc_profit(rate=rate) <= ask_strategy.get('sell_profit_offset', 0)):
             # Negative profits and sell_profit_only - ignore sell signal
             sell_signal = False
         else:
-            sell_signal = sell and not buy and config_ask_strategy.get('use_sell_signal', True)
+            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
