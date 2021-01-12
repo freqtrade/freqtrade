@@ -378,7 +378,6 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json()["max"] == -1
 
 
-
 def test_api_locks(botclient):
     ftbot, client = botclient
 
