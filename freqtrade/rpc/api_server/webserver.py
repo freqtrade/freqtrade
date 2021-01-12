@@ -30,8 +30,7 @@ class ApiServer(RPCHandler):
         api_config = self._config['api_server']
 
         self.app = FastAPI(title="Freqtrade API",
-                           openapi_url='openapi.json' if api_config.get(
-                               'enable_openapi', False) else None,
+                           docs_url='/docs' if api_config.get('enable_openapi', False) else None,
                            redoc_url=None,
                            )
         self.configure_app(self.app, self._config)

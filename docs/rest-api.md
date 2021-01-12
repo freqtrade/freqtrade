@@ -266,7 +266,7 @@ whitelist
 
 ## OpenAPI interface
 
-To enable the builtin openAPI interface, specify `"enable_openapi": true` in the api_server configuration.
+To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.
 This will enable the Swagger UI at the `/docs` endpoint. By default, that's running at http://localhost:8080/docs/ - but it'll depend on your settings.
 
 ## Advanced API usage using JWT tokens
