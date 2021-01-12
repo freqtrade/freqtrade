@@ -679,7 +679,7 @@ freqtrade
 
 When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
 
-In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the candle becomes expired.
+In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the buy signal becomes expired.
 
 For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
 
