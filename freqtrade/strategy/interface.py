@@ -113,9 +113,7 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
-    # Don't buy on expired candles
-    ignore_buying_expired_candle: bool = False
-    # Number of seconds after which the candle will no longer result in a buy
+    # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
 
     # Disable checking the dataframe (converts the error into a warning message)
@@ -491,7 +489,9 @@ class IStrategy(ABC):
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
-        if self.ignore_buying_expired_candle and buy:
+        if self.ignore_buying_expired_candle_after \
+                and self.ignore_buying_expired_candle_after > 0\
+                and buy:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
         else:

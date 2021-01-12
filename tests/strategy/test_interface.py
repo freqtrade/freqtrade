@@ -109,7 +109,6 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_ignore_expired_candle(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
-    strategy.ignore_buying_expired_candle = True
     strategy.ignore_buying_expired_candle_after = 60
 
     latest_date = datetime(2020, 12, 30, 7, 0, 0, tzinfo=timezone.utc)
