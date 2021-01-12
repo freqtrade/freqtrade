@@ -490,7 +490,6 @@ class IStrategy(ABC):
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
         if self.ignore_buying_expired_candle_after \
-                and self.ignore_buying_expired_candle_after > 0\
                 and buy:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
