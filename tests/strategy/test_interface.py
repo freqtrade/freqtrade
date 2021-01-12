@@ -106,6 +106,28 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
+def test_ignore_expired_candle(default_conf):
+    default_conf.update({'strategy': 'DefaultStrategy'})
+    strategy = StrategyResolver.load_strategy(default_conf)
+    strategy.ignore_buying_expired_candle_after = 60
+
+    latest_date = datetime(2020, 12, 30, 7, 0, 0, tzinfo=timezone.utc)
+    # Add 1 candle length as the "latest date" defines candle open.
+    current_time = latest_date + timedelta(seconds=80 + 300)
+
+    assert strategy.ignore_expired_candle(latest_date=latest_date,
+                                          current_time=current_time,
+                                          timeframe_seconds=300,
+                                          buy=True) is True
+
+    current_time = latest_date + timedelta(seconds=30 + 300)
+
+    assert not strategy.ignore_expired_candle(latest_date=latest_date,
+                                              current_time=current_time,
+                                              timeframe_seconds=300,
+                                              buy=True) is True
+
+
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
     ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
     # Take a copy to correctly modify the call

@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
@@ -15,7 +15,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -112,6 +112,9 @@ class IStrategy(ABC):
 
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
+
+    # Number of seconds after which the candle will no longer result in a buy on expired candles
+    ignore_buying_expired_candle_after: int = 0
 
     # Disable checking the dataframe (converts the error into a warning message)
     disable_dataframe_checks: bool = False
@@ -479,7 +482,21 @@ class IStrategy(ABC):
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
+        timeframe_seconds = timeframe_to_seconds(timeframe)
+        if self.ignore_expired_candle(latest_date=latest_date,
+                                      current_time=datetime.now(timezone.utc),
+                                      timeframe_seconds=timeframe_seconds,
+                                      buy=buy):
+            return False, sell
         return buy, sell
+
+    def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
+                              timeframe_seconds: int, buy: bool):
+        if self.ignore_buying_expired_candle_after and buy:
+            time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
+            return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
+        else:
+            return False
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
@@ -676,6 +693,7 @@ class IStrategy(ABC):
         :return: DataFrame with buy column
         """
         logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
+
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)

@@ -81,6 +81,7 @@ class StrategyResolver(IResolver):
                       ("ignore_roi_if_buy_signal",        False,       'ask_strategy'),
                       ("sell_profit_offset",              0.0,         'ask_strategy'),
                       ("disable_dataframe_checks",        False,       None),
+                      ("ignore_buying_expired_candle_after",  0,       'ask_strategy')
                       ]
         for attribute, default, subkey in attributes:
             if subkey:

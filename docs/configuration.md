@@ -75,6 +75,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `ask_strategy.sell_profit_only` | Wait until the bot reaches `ask_strategy.sell_profit_offset` before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ask_strategy.sell_profit_offset` | Sell-signal is only active above this value. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
 | `ask_strategy.ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `ask_strategy.ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
 | `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
@@ -146,6 +147,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
+* `ignore_buying_expired_candle_after` (ask_strategy)
 
 ### Configuring amount per trade
 
@@ -671,6 +673,22 @@ Then, export your proxy settings using the variables `"HTTP_PROXY"` and `"HTTPS_
 export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
+```
+
+## Ignoring expired candles
+
+When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
+
+In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the candle becomes expired.
+
+For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
+
+``` jsonc
+  "ask_strategy":{
+    "ignore_buying_expired_candle_after" = 300 # 5 minutes
+    "price_side": "bid",
+    // ...
+  },
 ```
 
 ## Embedding Strategies
