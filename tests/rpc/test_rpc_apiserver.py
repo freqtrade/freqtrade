@@ -364,14 +364,19 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert_response(rc)
 
     assert rc.json()["current"] == 0
-    assert rc.json()["max"] == 1.0
+    assert rc.json()["max"] == 1
 
     # Create some test data
     ftbot.enter_positions()
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
-    assert rc.json()["current"] == 1.0
-    assert rc.json()["max"] == 1.0
+    assert rc.json()["current"] == 1
+    assert rc.json()["max"] == 1
+
+    ftbot.config['max_open_trades'] = float('inf')
+    rc = client_get(client, f"{BASE_URI}/count")
+    assert rc.json()["max"] == -1
+
 
 
 def test_api_locks(botclient):

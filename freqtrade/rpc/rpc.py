@@ -649,7 +649,8 @@ class RPC:
         trades = Trade.get_open_trades()
         return {
             'current': len(trades),
-            'max': float(self._freqtrade.config['max_open_trades']),
+            'max': (int(self._freqtrade.config['max_open_trades'])
+                    if self._freqtrade.config['max_open_trades'] != float('inf') else -1),
             'total_stake': sum((trade.open_rate * trade.amount) for trade in trades)
         }
 
