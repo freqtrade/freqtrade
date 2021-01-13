@@ -1,6 +1,6 @@
 # Edge positioning
 
-The `Edge Positioning` module uses probability to calculate your win rate and risk reward ration. It will use these statistics to control your strategy trade entry points, position side and, stoploss. 
+The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss. 
 
 !!! Warning
     `Edge positioning` is not compatible with dynamic (volume-based) whitelist.
@@ -55,7 +55,7 @@ Similarly, we can discover the set of losing trades $T_{lose}$ as follows:
 $$ T_{lose} = \{o \in O | o \leq 0\} $$
 
 !!! Example
-    In a section where a strategy made three transactions $O = \{3.5, -1, 15, 0\}$:<br>
+    In a section where a strategy made four transactions $O = \{3.5, -1, 15, 0\}$:<br>
     $T_{win} = \{3.5, 15\}$<br>
     $T_{lose} = \{-1, 0\}$<br>
 
@@ -206,7 +206,7 @@ Let's say the stake currency is **ETH** and there is $10$ **ETH** on the wallet.
 
 -   The strategy detects a sell signal in the **XLM/ETH** market. The bot exits **Trade 1** for a profit of $1$ **ETH**. The total capital in the wallet becomes $11$ **ETH** and the available capital for trading becomes $5.5$ **ETH**.
 
--   **Trade 4** The strategy detects a new buy signal int the **XLM/ETH** market. `Edge Positioning` calculates the stoploss of $2%$, and the position size of $0.055 / 0.02 = 2.75$ **ETH**.
+-   **Trade 4** The strategy detects a new buy signal int the **XLM/ETH** market. `Edge Positioning` calculates the stoploss of $2\%$, and the position size of $0.055 / 0.02 = 2.75$ **ETH**.
 
 ## Configurations
 
