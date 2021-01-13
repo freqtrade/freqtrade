@@ -6,7 +6,7 @@ This module contains the backtesting logic
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from pandas import DataFrame
@@ -433,6 +433,7 @@ class Backtesting:
 
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
+        backtest_start_time = datetime.now(timezone.utc)
         self._set_strategy(strat)
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
@@ -467,10 +468,13 @@ class Backtesting:
             position_stacking=self.config.get('position_stacking', False),
             enable_protections=self.config.get('enable_protections', False),
         )
+        backtest_end_time = datetime.now(timezone.utc)
         self.all_results[self.strategy.get_strategy_name()] = {
             'results': results,
             'config': self.strategy.config,
             'locks': PairLocks.locks,
+            'backtest_start_time': int(backtest_start_time.timestamp()),
+            'backtest_end_time': int(backtest_end_time.timestamp()),
         }
         return min_date, max_date
 

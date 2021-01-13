@@ -282,6 +282,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'backtest_end_ts': max_date.int_timestamp * 1000,
             'backtest_days': backtest_days,
 
+            'backtest_run_start_ts': content['backtest_start_time'],
+            'backtest_run_end_ts': content['backtest_end_time'],
+
             'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else 0,
             'market_change': market_change,
             'pairlist': list(btdata.keys()),
@@ -290,6 +293,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
             'timeframe': config['timeframe'],
+            'timerange': config.get('timerange', ''),
+            'enable_protections': config.get('enable_protections', False),
+            'strategy_name': strategy,
             # Parameters relevant for backtesting
             'stoploss': config['stoploss'],
             'trailing_stop': config.get('trailing_stop', False),
