@@ -180,6 +180,7 @@ class Backtesting:
         Backtesting setup method - called once for every call to "backtest()".
         """
         PairLocks.use_db = False
+        PairLocks.timeframe = self.config['timeframe']
         Trade.use_db = False
         if enable_protections:
             # Reset persisted data - used for protections only
