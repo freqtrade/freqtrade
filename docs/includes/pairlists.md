@@ -35,7 +35,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 
 #### Static Pair List
 
-By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration.
+By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. Also the pairlist  does support wildcards (in regex-style) - so `*/BTC` will include all pairs with BTC as a stake.
 
 It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
 

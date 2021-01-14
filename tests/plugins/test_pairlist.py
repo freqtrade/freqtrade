@@ -853,3 +853,35 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
             expand_pairlist(wildcardlist, pairs)
     else:
         assert sorted(expand_pairlist(wildcardlist, pairs)) == sorted(expected)
+
+
+@pytest.mark.parametrize('wildcardlist,pairs,expected', [
+    (['BTC/USDT'],
+     ['BTC/USDT'],
+     ['BTC/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Test one too many
+    (['.*/USDT'],
+     ['BTC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Wildcard simple
+    (['.*C/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETC/USDT']),  # Wildcard exclude one
+    (['.*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     ['BTC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT']),  # Wildcard exclude one
+    (['BTC/.*', 'ETH/.*'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP'],
+     ['BTC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP']),  # Wildcard exclude one
+    (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     None),
+    (['HELLO/WORLD'], [], ['HELLO/WORLD'])  # Invalid pair kept
+])
+def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
+    if expected is None:
+        with pytest.raises(ValueError, match=r'Wildcard error in \*UP/USDT,'):
+            expand_pairlist(wildcardlist, pairs, keep_invalid=True)
+    else:
+        assert sorted(expand_pairlist(wildcardlist, pairs, keep_invalid=True)) == sorted(expected)

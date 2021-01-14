@@ -50,7 +50,9 @@ class StaticPairList(IPairList):
         :return: List of pairs
         """
         if self._allow_inactive:
-            return self.verify_whitelist(self._config['exchange']['pair_whitelist'], logger.info)
+            return self.verify_whitelist(
+                self._config['exchange']['pair_whitelist'], logger.info, keep_invalid=True
+            )
         else:
             return self._whitelist_for_active_markets(
                 self.verify_whitelist(self._config['exchange']['pair_whitelist'], logger.info))

@@ -336,7 +336,7 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
-        extended_pairs = expand_pairlist(pairs, list(self.markets))
+        extended_pairs = expand_pairlist(pairs, list(self.markets), keep_invalid=True)
         invalid_pairs = []
         for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs

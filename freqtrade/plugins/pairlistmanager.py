@@ -60,8 +60,14 @@ class PairListManager():
         return expand_pairlist(self._blacklist, self._exchange.get_markets().keys())
 
     @property
+    def expanded_whitelist_keep_invalid(self) -> List[str]:
+        """The expanded whitelist (including wildcard expansion), maintaining invalid pairs"""
+        return expand_pairlist(self._whitelist, self._exchange.get_markets().keys(),
+                               keep_invalid=True)
+
+    @property
     def expanded_whitelist(self) -> List[str]:
-        """The expanded whitelist (including wildcard expansion)"""
+        """The expanded whitelist (including wildcard expansion), filtering invalid pairs"""
         return expand_pairlist(self._whitelist, self._exchange.get_markets().keys())
 
     @property
@@ -134,19 +140,30 @@ class PairListManager():
                 pairlist.remove(pair)
         return pairlist
 
-    def verify_whitelist(self, pairlist: List[str], logmethod) -> List[str]:
+    def verify_whitelist(self, pairlist: List[str], logmethod,
+                         keep_invalid: bool = False) -> List[str]:
         """
         Verify and remove items from pairlist - returning a filtered pairlist.
         Logs a warning or info depending on `aswarning`.
         Pairlist Handlers explicitly using this method shall use
         `logmethod=logger.info` to avoid spamming with warning messages
-        :return: pairlist - blacklisted pairs
+        :param pairlist: Pairlist to validate
+        :param logmethod: Function that'll be called, `logger.info` or `logger.warning`
+        :param keep_invalid: If sets to True, drops invalid pairs silently while expanding regexes.
+        :return: pairlist - whitelisted pairs
         """
-        try:
-            whitelist = self.expanded_whitelist
-        except ValueError as err:
-            logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
-            return []
+        if keep_invalid:
+            try:
+                whitelist = self.expanded_whitelist_keep_invalid
+            except ValueError as err:
+                logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
+                return []
+        else:
+            try:
+                whitelist = self.expanded_whitelist
+            except ValueError as err:
+                logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
+                return []
         return whitelist
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
