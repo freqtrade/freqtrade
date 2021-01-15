@@ -47,14 +47,15 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     default_conf['timeframe'] = "5m"
     default_conf["datadir"] = testdatadir
     default_conf['exportfilename'] = testdatadir / "backtest-result_test.json"
-    ret = init_plotscript(default_conf)
+    supported_markets = ["TRX/BTC", "ADA/BTC"]
+    ret = init_plotscript(default_conf, supported_markets)
     assert "ohlcv" in ret
     assert "trades" in ret
     assert "pairs" in ret
     assert 'timerange' in ret
 
     default_conf['pairs'] = ["TRX/BTC", "ADA/BTC"]
-    ret = init_plotscript(default_conf, 20)
+    ret = init_plotscript(default_conf, supported_markets, 20)
     assert "ohlcv" in ret
     assert "TRX/BTC" in ret["ohlcv"]
     assert "ADA/BTC" in ret["ohlcv"]

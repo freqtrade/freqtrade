@@ -508,7 +508,7 @@ def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs d
 def test_validate_pairs_not_available(default_conf, mocker):
     api_mock = MagicMock()
     type(api_mock).markets = PropertyMock(return_value={
-        'XRP/BTC': {'inactive': True}
+        'XRP/BTC': {'inactive': True, 'base': 'XRP', 'quote': 'BTC'}
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
