@@ -152,18 +152,14 @@ class PairListManager():
         :param keep_invalid: If sets to True, drops invalid pairs silently while expanding regexes.
         :return: pairlist - whitelisted pairs
         """
-        if keep_invalid:
-            try:
+        try:
+            if keep_invalid:
                 whitelist = self.expanded_whitelist_keep_invalid
-            except ValueError as err:
-                logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
-                return []
-        else:
-            try:
+            else:
                 whitelist = self.expanded_whitelist
-            except ValueError as err:
-                logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
-                return []
+        except ValueError as err:
+            logger.error(f"Pair whitelist contains an invalid Wildcard: {err}")
+            return []
         return whitelist
 
     def create_pair_list(self, pairs: List[str], timeframe: str = None) -> ListPairsWithTimeframes:
