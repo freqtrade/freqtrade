@@ -121,7 +121,8 @@ class RPC:
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
-            'max_open_trades': config['max_open_trades'],
+            'max_open_trades': (config['max_open_trades']
+                                if config['max_open_trades'] != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
             'stoploss': config.get('stoploss'),
             'trailing_stop': config.get('trailing_stop'),
