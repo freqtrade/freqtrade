@@ -110,9 +110,9 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     This image comes with python3.7 preinstalled, making it easy to get freqtrade up and running.
 
     Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
-    
 
-    ``` bash
+
+    ```bash
     sudo apt-get install python3-venv libatlas-base-dev cmake
     # Use pywheels.org to speed up installation
     sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
@@ -185,7 +185,7 @@ git checkout stable
 
 #### 4. Install python dependencies
 
-``` bash
+```bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
@@ -218,19 +218,234 @@ On Linux, as an optional post-installation task, you may wish to setup the bot t
 
 ------
 
-### Anaconda
+## Conda (Miniconda or Anaconda)
 
-Freqtrade can also be installed using Anaconda (or Miniconda).
+Freqtrade can also be installed with Miniconda or Anaconda.
+Conda is a package manager and virtual environment manager in one.
+The purpose of installing Conda (Miniconda or Anaconda) is to automatically prepare and manage the extensive library dependencies of the Freqtrade program.
 
-!!! Note
-    This requires the [ta-lib](#1-install-ta-lib) C-library to be installed first. See below.
+You can start with any clean distribution of Debian-based Linux distributions, which includes Ubuntu Linux.
+For other popular Linux distributions, see: https://distrowatch.com/ or https://www.ubuntupit.com/best-debian-based-linux-distributions/
 
-``` bash
-conda env create -f environment.yml
+Installation requirement: Your Linux is a Debian based distribution with bash terminal
+
+To get know more about Conda check : https://linuxnetmag.com/miniconda-vs-anaconda/
+
+Shortly : Conda < Miniconda < Anaconda
+
+https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
+
+The difference lies in the number of packages that need to be installed upfront: how heavy/light the installation is. Difference is like ~1:8. It is recommended to install Miniconda instead of Anaconda.
+
+#### 1. Instal Conda
+
+##### Download conda file:
+
+installation file of chosen distribution you can find here
+
+https://docs.conda.io/en/latest/miniconda.html
+
+##### Verify file integrity with SHA256 checksum:
+
+official SHA256 checksum can be found here
+
+https://docs.conda.io/en/latest/miniconda_hashes.html
+
+Navigate to the directory with your file, and run SHA256 checksum of your file, check with following command
+
+```bash
+sha256sum ./Miniconda3-number-of-the-package
 ```
 
+both checksum suppose to match
+
+##### Install conda:
+
+While in directory with your file, install conda
+
+```bash
+bash ./Miniconda3-number-of-the-package
+```
+
+Confirm with yes all questions
+
+After installation, it is mandatory to turn your terminal OFF and ON again.
+
+CTRL + D (close terminal), CTRL + ALT + T (open terminal)
+
+#### 2. Prepare Conda environment
+
+
+enter the conda base environment:
+
+```bash
+conda activate base
+```
+
+If you want, you can prevent the (base) conda environment from being activated automatically as well.
+
+```bash
+conda config --set auto_activate_base false
+```
+
+
+##### Change the channels with upgrades:
+
+Conda as a package manager can download new packages from "channels". The best developed Conda channel, is not the default channel and is called `conda-forge`. The code below switches to it.
+
+```bash    
+# adding forge
+conda config --env --add channels conda-forge
+
+# make it strict
+conda config --env --set channel_priority strict 	
+```
+
+You can check the status of conda with the following code.
+
+```bash
+conda info
+conda config --show channels
+conda config --show channel_priority
+```
+
+#### 3. Freqtrade Conda Environment
+
+Now you have conda, but only base environment,
+
+```bash# download freqtrade
+conda env list
+```
+
+It is time to setup environment of the Freqtrade itself:
+
+
+Conda `create` command, installs all nested dependencies, for the selected libraries automatically
+
+general structure of installation command is:
+
+```bash
+conda create -n [name of the environment] [python version] [packages]
+```
+
+so it can be
+
+```bash
+conda create -n freqtrade-conda python=3.8 pandas numpy ta-lib git wheel virtualenv
+```
+
+or if you expect, to use later jupiter for [data-analysis](data-analysis.md), use
+
+```bash
+conda create -n freqtrade-jupyter-conda python=3.8 pandas numpy ta-lib git wheel virtualenv jupyter
+```
+
+the same works for [docker](docker.md), for spyder and other useful programs.
+
+Further read on the topic:
+
+https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
+
+https://metager.de/meta/meta.ger3?eingabe=ardsdatascience+guide+to+conda+environment
+
+!!! NOTE:
+It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent package into the old environment,
+takes less time than installing a large, heavy dependent package into the old environment.
+
+##### Enter/exit freqtrade-conda venv:
+
+to enter choosen conda environment
+
+```bash
+conda activate freqtrade-conda
+
+```
+
+to exit conda environment
+
+```bash
+conda deactivate						
+```
+
+#### 4. Freqtrade Instalation
+
+Within the newly created freqtrade-conda environment, download and install Freqtrade. To process --install command, may take a few minutes
+
+```bash
+# download freqtrade
+git clone https://github.com/freqtrade/freqtrade.git
+
+# enter downloaded directory 'freqtrade'
+cd freqtrade      
+
+# run setup
+./setup.sh --install                                        
+```
+
+Create virtual environment (yes, python3-venv environment, inside conda-environment), where Freqtrade program can run.
+
+Running python3-venv seems to be requirement of the Freqtrade program itself.
+
+```bash
+# create venv environment, inside hidden directory /freqtrede/.env
+python3 -m venv ./.env/
+
+# run the python3-venv environment
+source ./.env/bin/activate
+
+# install last required package            
+pip install -e .						
+```
+
+##### pip install within conda, a reminder:
+
+The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
+However, they are rare
+
+That is, why the conda-forge channel is preferred: (and if no library is available in conda, you have to use pip)
+
+* more libraries are available (less need for pip)
+* conda-forge works better with pip
+* the libraries are newer
+
+
+#### 5. You are ready
+
+You are ready to run, create the user directory and configuration file, run the program dry to verify that everything is working, and run a backtest to double check.
+
+```bash
+freqtrade create-userdir --userdir user_data
+freqtrade new-config --config config.json
+freqtrade download-data -t 5m 15m 1h --days 100
+freqtrade trade --strategy SampleStrategy  
+freqtrade backtesting -s SampleStrategy
+```
+
+important shortcuts
+
+```bash
+# activate base environment
+conda activate
+
+# activate freqtrade-conda environment
+conda activate freqtrade-conda
+
+#deactivate any conda environments
+conda deactivate
+
+# list installed conda environments
+conda env list
+
+# activation/deactivate the venv
+source ./.env/bin/activate
+deactivate                                      
+```
+
+Happy trading!
+
+
 -----
-## Troubleshooting 
+## Troubleshooting
 
 ### MacOS installation error
 
@@ -239,7 +454,7 @@ Newer versions of MacOS may have installation failed with errors like `error: co
 This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
 For MacOS 10.14, this can be accomplished with the below command.
 
-``` bash
+```bash
 open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
 ```
 
@@ -252,7 +467,7 @@ The errors you'll see happen during installation and are related to the installa
 
 You can install the necessary libraries with the following command:
 
-``` bash
+```bash
 brew install hdf5 c-blosc
 ```
 
