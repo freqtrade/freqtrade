@@ -523,13 +523,17 @@ def test_api_logs(botclient):
     assert isinstance(rc.json()['logs'][0][3], str)
     assert isinstance(rc.json()['logs'][0][4], str)
 
-    rc = client_get(client, f"{BASE_URI}/logs?limit=5")
-    assert_response(rc)
-    assert len(rc.json()) == 2
-    assert 'logs' in rc.json()
+    rc1 = client_get(client, f"{BASE_URI}/logs?limit=5")
+    assert_response(rc1)
+    assert len(rc1.json()) == 2
+    assert 'logs' in rc1.json()
     # Using a fixed comparison here would make this test fail!
-    assert rc.json()['log_count'] == 5
-    assert len(rc.json()['logs']) == rc.json()['log_count']
+    if rc1.json()['log_count'] == 0:
+        # Help debugging random test failure
+        print(f"{rc.json()=}")
+        print(f"{rc1.json()=}")
+    assert rc1.json()['log_count'] == 5
+    assert len(rc1.json()['logs']) == rc1.json()['log_count']
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
