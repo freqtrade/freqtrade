@@ -379,7 +379,7 @@ That is, why the conda-forge channel is preferred: (and if no library is availab
 
 #### 5. You are ready
 
-You are ready to run, create the user directory and configuration file [Bot Configuration](configuration.md), run the program `dry` to verify that everything is working, and run a backtest to double check.
+You are ready to run, create the user directory and configuration file [Bot Configuration](configuration.md), run the program `dry_run: True` to verify that everything works, and run a backtest to double check.
 
 ```bash
 # Prerequisite
