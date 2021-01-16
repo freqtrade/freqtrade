@@ -70,6 +70,8 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe"]
 
+ARGS_INSTALL_UI = ["erase_ui_only"]
+
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
 ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
@@ -361,7 +363,7 @@ class Arguments:
             help='Install FreqUI',
         )
         install_ui_cmd.set_defaults(func=start_install_ui)
-        self._build_args(optionlist=[], parser=install_ui_cmd)
+        self._build_args(optionlist=ARGS_INSTALL_UI, parser=install_ui_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(

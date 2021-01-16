@@ -565,10 +565,23 @@ def test_start_install_ui(mocker):
     args = [
         "install-ui",
     ]
-    start_install_ui(args)
+    start_install_ui(get_args(args))
     assert clean_mock.call_count == 1
     assert get_url_mock.call_count == 1
     assert download_mock.call_count == 1
+
+    clean_mock.reset_mock()
+    get_url_mock.reset_mock()
+    download_mock.reset_mock()
+
+    args = [
+        "install-ui",
+        "--erase",
+    ]
+    start_install_ui(get_args(args))
+    assert clean_mock.call_count == 1
+    assert get_url_mock.call_count == 0
+    assert download_mock.call_count == 0
 
 
 def test_clean_ui_subdir(mocker, tmpdir, caplog):

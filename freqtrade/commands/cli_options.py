@@ -387,6 +387,12 @@ AVAILABLE_CLI_OPTIONS = {
         help='Clean all existing data for the selected exchange/pairs/timeframes.',
         action='store_true',
     ),
+    "erase_ui_only": Arg(
+        '--erase',
+        help="Clean UI folder, don't download new version.",
+        action='store_true',
+        default=False,
+    ),
     # Templating options
     "template": Arg(
         '--template',
