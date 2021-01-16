@@ -116,6 +116,7 @@ CONF_SCHEMA = {
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_only_offset_is_reached': {'type': 'boolean'},
+        'bot_name': {'type': 'string'},
         'unfilledtimeout': {
             'type': 'object',
             'properties': {

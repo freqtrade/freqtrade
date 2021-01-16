@@ -414,6 +414,7 @@ def test_api_show_config(botclient, mocker):
     assert rc.json()['timeframe_ms'] == 300000
     assert rc.json()['timeframe_min'] == 5
     assert rc.json()['state'] == 'running'
+    assert rc.json()['bot_name'] == 'freqtrade'
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
