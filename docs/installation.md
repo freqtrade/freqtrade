@@ -220,76 +220,44 @@ On Linux, as an optional post-installation task, you may wish to setup the bot t
 
 ## Conda (Miniconda or Anaconda)
 
-Freqtrade can also be installed with Miniconda or Anaconda.
-Conda is a package manager and virtual environment manager in one.
-The purpose of installing Conda (Miniconda or Anaconda) is to automatically prepare and manage the extensive library dependencies of the Freqtrade program.
+Freqtrade can also be installed with Miniconda or Anaconda. Conda (Miniconda or Anaconda) would automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
 
-You can start with any clean distribution of Debian-based Linux distributions, which includes Ubuntu Linux.
-For other popular Linux distributions, see: https://distrowatch.com/ or https://www.ubuntupit.com/best-debian-based-linux-distributions/
+##### What is Conda?
 
-Installation requirement: Your Linux is a Debian based distribution with bash terminal
+It is (1) Package, (2) dependency and (3) environment management for any language : https://docs.conda.io/projects/conda/en/latest/index.html
 
-To get know more about Conda check : https://linuxnetmag.com/miniconda-vs-anaconda/
+Shortly : Conda < Miniconda < Anaconda. Check : https://linuxnetmag.com/miniconda-vs-anaconda/
 
-Shortly : Conda < Miniconda < Anaconda
+It is recommended to install Miniconda, not Anaconda. The difference between both lies in the amount of packages that would be installed upfront. Difference is at least like 1:8.
 
 https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
 
-The difference lies in the number of packages that need to be installed upfront: how heavy/light the installation is. Difference is like ~1:8. It is recommended to install Miniconda instead of Anaconda.
 
 #### 1. Instal Conda
 
-##### Download conda file:
+3 step installation instruction can be found here :
+https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent
 
-installation file of chosen distribution you can find here
+Confirm with `yes` all questions. After installation, it is mandatory to turn your terminal OFF and ON again.
 
-https://docs.conda.io/en/latest/miniconda.html
-
-##### Verify file integrity with SHA256 checksum:
-
-official SHA256 checksum can be found here
-
-https://docs.conda.io/en/latest/miniconda_hashes.html
-
-Navigate to the directory with your file, and run SHA256 checksum of your file, check with following command
-
-```bash
-sha256sum ./Miniconda3-number-of-the-package
-```
-
-both checksum suppose to match
-
-##### Install conda:
-
-While in directory with your file, install conda
-
-```bash
-bash ./Miniconda3-number-of-the-package
-```
-
-Confirm with yes all questions
-
-After installation, it is mandatory to turn your terminal OFF and ON again.
-
-CTRL + D (close terminal), CTRL + ALT + T (open terminal)
 
 #### 2. Prepare Conda environment
 
+##### Change the channels with upgrades:
+
+After opening terminal, you already will be in default `base` conda environment
+
+If you want, you can prevent the (base) conda environment from being activated automatically.
+
+```bash
+conda config --set auto_activate_base false
+```
 
 enter the conda base environment:
 
 ```bash
 conda activate base
 ```
-
-If you want, you can prevent the (base) conda environment from being activated automatically as well.
-
-```bash
-conda config --set auto_activate_base false
-```
-
-
-##### Change the channels with upgrades:
 
 Conda as a package manager can download new packages from "channels". The best developed Conda channel, is not the default channel and is called `conda-forge`. The code below switches to it.
 
@@ -311,16 +279,15 @@ conda config --show channel_priority
 
 #### 3. Freqtrade Conda Environment
 
-Now you have conda, but only base environment,
+Now you have conda, but only (base) environment,
 
-```bash# download freqtrade
+```bash
 conda env list
 ```
 
 It is time to setup environment of the Freqtrade itself:
 
-
-Conda `create` command, installs all nested dependencies, for the selected libraries automatically
+The conda command `create -n` automatically installs all nested dependencies for the selected libraries
 
 general structure of installation command is:
 
@@ -340,7 +307,7 @@ or if you expect, to use later jupiter for [data-analysis](data-analysis.md), us
 conda create -n freqtrade-jupyter-conda python=3.8 pandas numpy ta-lib git wheel virtualenv jupyter
 ```
 
-the same works for [docker](docker.md), for spyder and other useful programs.
+the same works: for [docker](docker.md), for spyder and other useful programs.
 
 Further read on the topic:
 
@@ -348,9 +315,10 @@ https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db9
 
 https://metager.de/meta/meta.ger3?eingabe=ardsdatascience+guide+to+conda+environment
 
-!!! NOTE:
-It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent package into the old environment,
-takes less time than installing a large, heavy dependent package into the old environment.
+!!! Note "New heavy packages"
+    It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment,
+
+    Example: Spyder
 
 ##### Enter/exit freqtrade-conda venv:
 
@@ -414,11 +382,16 @@ That is, why the conda-forge channel is preferred: (and if no library is availab
 You are ready to run, create the user directory and configuration file, run the program dry to verify that everything is working, and run a backtest to double check.
 
 ```bash
+# Prerequisite
 freqtrade create-userdir --userdir user_data
+
+# set up config file
+# make sure to run it set the `dry_run : true` as you start
 freqtrade new-config --config config.json
-freqtrade download-data -t 5m 15m 1h --days 100
-freqtrade trade --strategy SampleStrategy  
-freqtrade backtesting -s SampleStrategy
+
+
+# run `dry_run` trades
+freqtrade trade --strategy SampleStrategy
 ```
 
 important shortcuts
