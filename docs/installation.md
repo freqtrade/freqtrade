@@ -328,15 +328,17 @@ conda activate freqtrade-conda
 
 ```
 
-to exit conda environment
+to exit conda environment.
 
 ```bash
 conda deactivate						
 ```
 
+Don't do it now however and stay in conda environment.
+
 #### 4. Freqtrade Instalation
 
-Within the newly created freqtrade-conda environment, download and install Freqtrade. To process --install command, may take a few minutes
+When in `freqtrade-conda` environment, download and install freqtrade. Command `./setup.sh --install`, will take few minutes.
 
 ```bash
 # download freqtrade
