@@ -146,7 +146,7 @@ def clean_ui_subdir(directory: Path):
         logger.info("Removing UI directory content.")
 
         for p in reversed(list(directory.glob('**/*'))):  # iterate contents from leaves to root
-            if p.name == '.gitkeep':
+            if p.name in ('.gitkeep', 'fallback_file.html'):
                 continue
             if p.is_file():
                 p.unlink()
