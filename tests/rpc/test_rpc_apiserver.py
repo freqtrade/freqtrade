@@ -530,8 +530,8 @@ def test_api_logs(botclient):
     # Using a fixed comparison here would make this test fail!
     if rc1.json()['log_count'] == 0:
         # Help debugging random test failure
-        print(f"{rc.json()=}")
-        print(f"{rc1.json()=}")
+        print(f"rc={rc.json()}")
+        print(f"rc1={rc1.json()}")
     assert rc1.json()['log_count'] == 5
     assert len(rc1.json()['logs']) == rc1.json()['log_count']
 
