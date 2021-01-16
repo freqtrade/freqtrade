@@ -369,12 +369,12 @@ pip install -e .
 ##### pip install within conda, a reminder:
 
 The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
-However, they are rare
+However, they are rare.
 
-That is, why the conda-forge channel is preferred: (and if no library is available in conda, you have to use pip)
+Nevertherless, that is why, the `conda-forge` channel is preferred: 
 
-* more libraries are available (less need for pip)
-* conda-forge works better with pip
+* more libraries are available (less need for `pip`)
+* `conda-forge` works better with `pip`
 * the libraries are newer
 
 
