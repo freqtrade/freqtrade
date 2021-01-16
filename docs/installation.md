@@ -224,7 +224,7 @@ Freqtrade can also be installed with Miniconda or Anaconda. Conda (Miniconda or 
 
 ##### What is Conda?
 
-It is (1) Package, (2) dependency and (3) environment management for any language : https://docs.conda.io/projects/conda/en/latest/index.html
+It is: (1) package, (2) dependency and (3) environment management for any programming language : https://docs.conda.io/projects/conda/en/latest/index.html
 
 Shortly : Conda < Miniconda < Anaconda. Check : https://linuxnetmag.com/miniconda-vs-anaconda/
 
@@ -316,9 +316,8 @@ https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db9
 https://metager.de/meta/meta.ger3?eingabe=ardsdatascience+guide+to+conda+environment
 
 !!! Note "New heavy packages"
-    It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment,
+    It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
 
-    Example: Spyder
 
 ##### Enter/exit freqtrade-conda venv:
 
@@ -379,7 +378,7 @@ That is, why the conda-forge channel is preferred: (and if no library is availab
 
 #### 5. You are ready
 
-You are ready to run, create the user directory and configuration file [Bot Configuration](configuration.md), run the program `dry_run: True` to verify that everything works, and run a backtest to double check.
+You are ready to run, create the user directory and configuration file [Bot Configuration](configuration.md), run the program `dry_run: True` to verify that everything is working, and run a backtest to double check.
 
 ```bash
 # Prerequisite
