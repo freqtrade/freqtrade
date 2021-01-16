@@ -49,8 +49,9 @@ This loop will be repeated again and again until the bot is stopped.
 [backtesting](backtesting.md) or [hyperopt](hyperopt.md) do only part of the above logic, since most of the trading operations are fully simulated.
 
 * Load historic data for configured pairlist.
-* Calculate indicators (calls `populate_indicators()`).
-* Calls `populate_buy_trend()` and `populate_sell_trend()`
+* Calls `bot_loop_start()` once.
+* Calculate indicators (calls `populate_indicators()` once per pair).
+* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair)
 * Loops per candle simulating entry and exit points.
 * Generate backtest report output
 
