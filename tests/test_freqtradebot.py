@@ -4368,6 +4368,19 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
 
     freqtrade.update_closed_trades_without_assigned_fees()
 
+    # Does nothing for dry-run
+    trades = Trade.get_trades().all()
+    assert len(trades) == MOCK_TRADE_COUNT
+    for trade in trades:
+        assert trade.fee_open_cost is None
+        assert trade.fee_open_currency is None
+        assert trade.fee_close_cost is None
+        assert trade.fee_close_currency is None
+
+    freqtrade.config['dry_run'] = False
+
+    freqtrade.update_closed_trades_without_assigned_fees()
+
     trades = Trade.get_trades().all()
     assert len(trades) == MOCK_TRADE_COUNT
 

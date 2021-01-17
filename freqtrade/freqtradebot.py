@@ -268,6 +268,10 @@ class FreqtradeBot(LoggingMixin):
         Update closed trades without close fees assigned.
         Only acts when Orders are in the database, otherwise the last orderid is unknown.
         """
+        if self.config['dry_run']:
+            # Updating open orders in dry-run does not make sense and will fail.
+            return
+
         trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
         for trade in trades:
 
