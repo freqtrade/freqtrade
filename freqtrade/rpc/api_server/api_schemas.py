@@ -131,6 +131,7 @@ class ShowConfig(BaseModel):
     forcebuy_enabled: bool
     ask_strategy: Dict[str, Any]
     bid_strategy: Dict[str, Any]
+    bot_name: str
     state: str
     runmode: str
 
