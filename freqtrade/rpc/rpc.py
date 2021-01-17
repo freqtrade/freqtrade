@@ -151,7 +151,7 @@ class RPC:
         """
         # Fetch open trades
         if trade_ids:
-            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids))
+            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
         else:
             trades = Trade.get_open_trades()
 
