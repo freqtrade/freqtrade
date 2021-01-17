@@ -144,13 +144,17 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids=None) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
         """
-        # Fetch open trade
-        trades = Trade.get_open_trades()
+        # Fetch open trades
+        if trade_ids:
+            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids))
+        else:
+            trades = Trade.get_open_trades()
+
         if not trades:
             raise RPCException('no active trade')
         else:
