@@ -821,7 +821,9 @@ class Telegram(RPCHandler):
                          "Optionally takes a rate at which to buy.` \n")
         message = ("*/start:* `Starts the trader`\n"
                    "*/stop:* `Stops the trader`\n"
-                   "*/status [table]:* `Lists all open trades`\n"
+                   "*/status <trade_id>|[table]:* `Lists all open trades`\n"
+                   "         *<trade_id> :* `Lists one or more specific trades.`\n"
+                   "                        `Separate multiple <trade_id> with a blank space.`\n"
                    "         *table :* `will display trades in a table`\n"
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
