@@ -280,9 +280,9 @@ class Telegram(RPCHandler):
 
             # Check if there's at least one numerical ID provided.
             # If so, try to get only these trades.
-            trade_ids = None
+            trade_ids = []
             if context.args and len(context.args) > 0:
-                trade_ids = [i for i in context.args if i.isnumeric()]
+                trade_ids = [int(i) for i in context.args if i.isnumeric()]
 
             results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
 

@@ -144,7 +144,7 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self, trade_ids=None) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids: List[int] = []) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
