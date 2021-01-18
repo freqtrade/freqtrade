@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -92,6 +92,11 @@ class FreqtradeBot(LoggingMixin):
             self.config.get('edge', {}).get('enabled', False) else None
 
         self.active_pair_whitelist = self._refresh_active_whitelist()
+
+        self.cluster_trades_enabled = self.config["cluster_trades"]["cluster_trades_enabled"] or False
+        self.cluster_trade_timeout = self.config["cluster_trades"]["cluster_trade_timeout"] or 2592000000 # 30 days
+        self.max_cluster_trades = self.config["cluster_trades"]["max_cluster_trades"] or 1
+        self.cluster_trades = []
 
         # Set initial bot state from config
         initial_state = self.config.get('initial_state')
@@ -344,6 +349,36 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
+    def assess_cluster_trades(self, pair) -> bool:
+        if self.cluster_trades_enabled:
+            # return true if max cluster trades reached else return false
+            for cluster in self.cluster_trades:
+                if cluster[0] == pair:
+                    if len(cluster[1]) >= self.max_cluster_trades:
+                        return True
+
+            return False
+
+        return True
+
+    def manage_cluster_trades(self) -> None:
+        now = datetime.utcnow()
+        # remove trades from cluster trades lists after timeout
+        for cluster in self.cluster_trades:
+            cluster[1] = [item for item in cluster[1] if now < item + timedelta(seconds = self.cluster_trade_timeout)]
+
+    def add_cluster_trade(self, pair, time) -> None:
+        if self.cluster_trades_enabled:
+            # add time of trade to existing pair in cluster trades list
+            for cluster in self.cluster_trades:
+                if cluster[0] == pair:
+                    cluster[1].append(time)
+                    return
+
+            # add pair and time to cluster trades list if not found
+            self.cluster_trades.append([pair, [time]])
+
+
 #
 # BUY / enter positions / open trades logic and methods
 #
@@ -355,12 +390,16 @@ class FreqtradeBot(LoggingMixin):
         trades_created = 0
 
         whitelist = copy.deepcopy(self.active_pair_whitelist)
+
+        #update cluster trade lists
+        self.manage_cluster_trades()
+
         if not whitelist:
             logger.info("Active pair whitelist is empty.")
             return trades_created
-        # Remove pairs for currently opened trades from the whitelist
+        # Remove pairs for currently opened trades from the whitelist if max cluster trades has been reached for that pair
         for trade in Trade.get_open_trades():
-            if trade.pair in whitelist:
+            if trade.pair in whitelist and self.assess_cluster_trades(trade.pair):
                 whitelist.remove(trade.pair)
                 logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
@@ -715,6 +754,8 @@ class FreqtradeBot(LoggingMixin):
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
         trade.orders.append(order_obj)
+
+        self.add_cluster_trade(trade.pair, trade.open_date)
 
         # Update fees if order is closed
         if order_status == 'closed':

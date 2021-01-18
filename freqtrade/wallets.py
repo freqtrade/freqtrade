@@ -75,13 +75,35 @@ class Wallets:
             current_stake
         )
 
+        # for trade in open_trades:
+        #     curr = self._exchange.get_pair_base_currency(trade.pair)
+        #     _wallets[curr] = Wallet(
+        #         curr,
+        #         trade.amount,
+        #         0,
+        #         trade.amount
+        #     )
+
+        balances = []
         for trade in open_trades:
             curr = self._exchange.get_pair_base_currency(trade.pair)
+            found = False
+            for bal in balances:
+                if curr == bal[0]:
+                    found = True
+                    bal[1] += trade.amount
+
+            if not found:
+                balances.append([curr, trade.amount])
+
+        for bal in balances:
+            curr = bal[0]
+            amount = bal[1]
             _wallets[curr] = Wallet(
                 curr,
-                trade.amount,
+                amount,
                 0,
-                trade.amount
+                amount
             )
         self._wallets = _wallets
 
