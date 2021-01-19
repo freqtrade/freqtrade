@@ -277,6 +277,22 @@ before asking the strategy if we should buy or a sell an asset. After each wait 
 every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
 
+### Ignoring expired candles
+
+When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
+
+In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the buy signal becomes expired.
+
+For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
+
+``` json
+  "ask_strategy":{
+    "ignore_buying_expired_candle_after": 300,
+    "price_side": "bid",
+    // ...
+  },
+```
+
 ### Understand order_types
 
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
@@ -675,48 +691,6 @@ export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
-
-## Ignoring expired candles
-
-When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
-
-In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the buy signal becomes expired.
-
-For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
-
-``` jsonc
-  "ask_strategy":{
-    "ignore_buying_expired_candle_after" = 300 # 5 minutes
-    "price_side": "bid",
-    // ...
-  },
-```
-
-## Embedding Strategies
-
-Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
-This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
-in your chosen config file.
-
-### Encoding a string as BASE64
-
-This is a quick example, how to generate the BASE64 string in python
-
-```python
-from base64 import urlsafe_b64encode
-
-with open(file, 'r') as f:
-    content = f.read()
-content = urlsafe_b64encode(content.encode('utf-8'))
-```
-
-The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following
-
-```json
-"strategy": "NameOfStrategy:BASE64String"
-```
-
-Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 
