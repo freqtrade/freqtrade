@@ -205,13 +205,14 @@ def test_telegram_status(default_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
 
     context = MagicMock()
-    # /status table 2 3
-    context.args = ["table", "2", "3"]
+    # /status table
+    context.args = ["table"]
     telegram._status(update=update, context=context)
     assert status_table.call_count == 1
 
 
 def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
+    default_conf['max_open_trades'] = 3
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -252,8 +253,23 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     assert 'Close Rate' not in ''.join(lines)
     assert 'Close Profit' not in ''.join(lines)
 
-    assert msg_mock.call_count == 1
+    assert msg_mock.call_count == 3
     assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'LTC/BTC' in msg_mock.call_args_list[1][0][0]
+
+    msg_mock.reset_mock()
+    context = MagicMock()
+    context.args = ["2", "3"]
+
+    telegram._status(update=update, context=context)
+
+    lines = msg_mock.call_args_list[0][0][0].split('\n')
+    assert '' not in lines
+    assert 'Close Rate' not in ''.join(lines)
+    assert 'Close Profit' not in ''.join(lines)
+
+    assert msg_mock.call_count == 2
+    assert 'LTC/BTC' in msg_mock.call_args_list[0][0][0]
 
 
 def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
