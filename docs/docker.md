@@ -1,7 +1,7 @@
 ## Freqtrade with docker without docker-compose
 
 !!! Warning
-    The below documentation is provided for completeness and assumes that you are familiar with running docker containers. If you're just starting out with Docker, we recommend to follow the [Quickstart](docker.md) instructions.
+    The below documentation is provided for completeness and assumes that you are familiar with running docker containers. If you're just starting out with Docker, we recommend to follow the [Quickstart](docker_quickstart.md) instructions.
 
 ### Download the official Freqtrade docker image
 
