@@ -54,7 +54,7 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
         return conf
     except ValidationError as e:
         logger.critical(
-            f"Invalid configuration. See config.json.example. Reason: {e}"
+            f"Invalid configuration. Reason: {e}"
         )
         raise ValidationError(
             best_match(Draft4Validator(conf_schema).iter_errors(conf)).message
