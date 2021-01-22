@@ -2,7 +2,7 @@
 
 This page explains how to prepare your environment for running the bot.
 
-Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
+Please consider using the prebuilt [docker images](docker_quickstart.md) to get started quickly while evaluating how freqtrade works.
 
 ## Prerequisite
 
@@ -210,7 +210,7 @@ If this is the first time you run the bot, ensure you are running it in Dry-run 
 freqtrade trade -c config.json
 ```
 
-*Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
+*Note*: If you run the bot on a server, you should consider using [Docker compose](docker_quickstart.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
 
 #### 7. (Optional) Post-installation Tasks
 

@@ -69,7 +69,7 @@ The last 2 steps in the snippet create the directory with `user_data`, as well a
 !!! Question "How to edit the bot configuration?"
     You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
 
-    You can also change the both Strategy and commands by editing the `docker-compose.yml` file.
+    You can also change the both Strategy and commands by editing the command section of your `docker-compose.yml` file.
 
 #### Adding a custom strategy
 
@@ -89,6 +89,11 @@ Once this is done, you're ready to launch the bot in trading mode (Dry-run or Li
 ``` bash
 docker-compose up -d
 ```
+
+#### Monitoring the bot
+
+You can check for running instances with `docker-compose ps`.
+This should list the service `freqtrade` as `running`. If that's not the case, best check the logs (see next point).
 
 #### Docker-compose logs
 
