@@ -202,52 +202,6 @@ function test_and_fix_python_on_mac() {
     fi
 }
 
-function config_generator() {
-
-    echo "Starting to generate config.json"
-    echo
-    echo "Generating General configuration"
-    echo "-------------------------"
-    default_max_trades=3
-    read -p "Max open trades: (Default: $default_max_trades) " max_trades
-    max_trades=${max_trades:-$default_max_trades}
-
-    default_stake_amount=0.05
-    read -p "Stake amount: (Default: $default_stake_amount) " stake_amount
-    stake_amount=${stake_amount:-$default_stake_amount}
-
-    default_stake_currency="BTC"
-    read -p "Stake currency: (Default: $default_stake_currency) " stake_currency
-    stake_currency=${stake_currency:-$default_stake_currency}
-
-    default_fiat_currency="USD"
-    read -p "Fiat currency: (Default: $default_fiat_currency) " fiat_currency
-    fiat_currency=${fiat_currency:-$default_fiat_currency}
-
-    echo
-    echo "Generating exchange config "
-    echo "------------------------"
-    read -p "Exchange API key: " api_key
-    read -p "Exchange API Secret: " api_secret
-
-    echo
-    echo "Generating Telegram config"
-    echo "-------------------------"
-    read -p "Telegram Token: " token
-    read -p "Telegram Chat_id: " chat_id
-
-    sed -e "s/\"max_open_trades\": 3,/\"max_open_trades\": $max_trades,/g" \
-        -e "s/\"stake_amount\": 0.05,/\"stake_amount\": $stake_amount,/g" \
-        -e "s/\"stake_currency\": \"BTC\",/\"stake_currency\": \"$stake_currency\",/g" \
-        -e "s/\"fiat_display_currency\": \"USD\",/\"fiat_display_currency\": \"$fiat_currency\",/g" \
-        -e "s/\"your_exchange_key\"/\"$api_key\"/g" \
-        -e "s/\"your_exchange_secret\"/\"$api_secret\"/g" \
-        -e "s/\"your_telegram_token\"/\"$token\"/g" \
-        -e "s/\"your_telegram_chat_id\"/\"$chat_id\"/g" \
-        -e "s/\"dry_run\": false,/\"dry_run\": true,/g" config.json.example > config.json
-
-}
-
 function config() {
 
     echo "-------------------------"
