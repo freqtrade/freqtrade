@@ -16,8 +16,7 @@ In some advanced use cases, multiple configuration files can be specified and us
 If you used the [Quick start](installation.md/#quick-start) method for installing 
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
-If default configuration file is not created we recommend you to copy and use the `config.json.example` as a template
-for your bot configuration.
+If default configuration file is not created we recommend you to use `freqtrade new-config --config config.json` to generate a basic configuration file.
 
 The Freqtrade configuration file is to be written in the JSON format.
 
@@ -147,6 +146,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `protections`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
+* `sell_profit_offset` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
 * `ignore_buying_expired_candle_after` (ask_strategy)
 
