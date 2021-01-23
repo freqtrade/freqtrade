@@ -72,7 +72,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
                                  "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
-                                 "open_at_end": [False, False, False, True],
+                                 "is_open": [False, False, False, True],
                                  "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),

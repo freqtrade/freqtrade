@@ -629,7 +629,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     # 100 buys signals
     assert len(results) == 100
     # One trade was force-closed at the end
-    assert len(results.loc[results.open_at_end]) == 0
+    assert len(results.loc[results['is_open']]) == 0
 
 
 @pytest.mark.parametrize("pair", ['ADA/BTC', 'LTC/BTC'])
@@ -811,7 +811,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                       'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00', ], utc=True),
                       'trade_duration': [235, 40],
-                      'open_at_end': [False, False],
+                      'is_open': [False, False],
                       'open_rate': [0.104445, 0.10302485],
                       'close_rate': [0.104969, 0.103541],
                       'sell_reason': [SellType.ROI, SellType.ROI]
@@ -827,7 +827,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                                                     '2018-01-30 05:35:00',
                                                     '2018-01-30 08:30:00'], utc=True),
                       'trade_duration': [47, 40, 20],
-                      'open_at_end': [False, False, False],
+                      'is_open': [False, False, False],
                       'open_rate': [0.104445, 0.10302485, 0.122541],
                       'close_rate': [0.104969, 0.103541, 0.123541],
                       'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]

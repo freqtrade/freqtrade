@@ -253,7 +253,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                                                        results=results)
         left_open_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
                                                   max_open_trades=max_open_trades,
-                                                  results=results.loc[results['open_at_end']],
+                                                  results=results.loc[results['is_open']],
                                                   skip_nan=True)
         daily_stats = generate_daily_stats(results)
         best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
