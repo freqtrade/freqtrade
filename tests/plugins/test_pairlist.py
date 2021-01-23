@@ -870,6 +870,9 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
     (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
      ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
      None),
+    (['BTC/USD'],
+     ['BTC/USD', 'BTC/USDT'],
+     ['BTC/USD']),
 ])
 def test_expand_pairlist(wildcardlist, pairs, expected):
     if expected is None:
@@ -901,7 +904,11 @@ def test_expand_pairlist(wildcardlist, pairs, expected):
     (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
      ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
      None),
-    (['HELLO/WORLD'], [], ['HELLO/WORLD'])  # Invalid pair kept
+    (['HELLO/WORLD'], [], ['HELLO/WORLD']),  # Invalid pair kept
+    (['BTC/USD'],
+     ['BTC/USD', 'BTC/USDT'],
+     ['BTC/USD']),
+
 ])
 def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
     if expected is None:

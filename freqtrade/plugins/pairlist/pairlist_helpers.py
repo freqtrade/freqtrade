@@ -19,7 +19,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             try:
                 comp = re.compile(pair_wc)
                 result_partial = [
-                    pair for pair in available_pairs if re.match(comp, pair)
+                    pair for pair in available_pairs if re.fullmatch(comp, pair)
                 ]
                 # Add all matching pairs.
                 # If there are no matching pairs (Pair not on exchange) keep it.
@@ -35,7 +35,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
             try:
                 comp = re.compile(pair_wc)
                 result += [
-                    pair for pair in available_pairs if re.match(comp, pair)
+                    pair for pair in available_pairs if re.fullmatch(comp, pair)
                 ]
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
