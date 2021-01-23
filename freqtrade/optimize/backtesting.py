@@ -3,7 +3,7 @@
 """
 This module contains the backtesting logic
 """
-from freqtrade.data.btanalysis import BT_DATA_COLUMNS
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS, trade_list_to_dataframe
 import logging
 from collections import defaultdict
 from copy import deepcopy
@@ -385,11 +385,7 @@ class Backtesting:
 
         trades += self.handle_left_open(open_trades, data=data)
 
-        df = DataFrame.from_records([t.to_json() for t in trades], columns=BT_DATA_COLUMNS)
-        if len(df) > 0:
-            df.loc[:, 'close_date'] = to_datetime(df['close_date'], utc=True)
-            df.loc[:, 'open_date'] = to_datetime(df['open_date'], utc=True)
-        return df
+        return trade_list_to_dataframe(trades)
 
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
