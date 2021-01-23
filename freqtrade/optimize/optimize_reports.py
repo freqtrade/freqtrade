@@ -58,14 +58,14 @@ def _generate_result_line(result: DataFrame, max_open_trades: int, first_column:
     """
     Generate one result dict, with "first_column" as key.
     """
-    profit_sum = result['profit_percent'].sum()
+    profit_sum = result['profit_ratio'].sum()
     profit_total = profit_sum / max_open_trades
 
     return {
         'key': first_column,
         'trades': len(result),
-        'profit_mean': result['profit_percent'].mean() if len(result) > 0 else 0.0,
-        'profit_mean_pct': result['profit_percent'].mean() * 100.0 if len(result) > 0 else 0.0,
+        'profit_mean': result['profit_ratio'].mean() if len(result) > 0 else 0.0,
+        'profit_mean_pct': result['profit_ratio'].mean() * 100.0 if len(result) > 0 else 0.0,
         'profit_sum': profit_sum,
         'profit_sum_pct': round(profit_sum * 100.0, 2),
         'profit_total_abs': result['profit_abs'].sum(),
@@ -124,8 +124,8 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
     for reason, count in results['sell_reason'].value_counts().iteritems():
         result = results.loc[results['sell_reason'] == reason]
 
-        profit_mean = result['profit_percent'].mean()
-        profit_sum = result['profit_percent'].sum()
+        profit_mean = result['profit_ratio'].mean()
+        profit_sum = result['profit_ratio'].sum()
         profit_total = profit_sum / max_open_trades
 
         tabular_data.append(
@@ -150,7 +150,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 def generate_strategy_metrics(all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
-    :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
+    :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: List of Dicts containing the metrics per Strategy
     """
 
@@ -199,15 +199,15 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
             'winner_holding_avg': timedelta(),
             'loser_holding_avg': timedelta(),
         }
-    daily_profit = results.resample('1d', on='close_date')['profit_percent'].sum()
+    daily_profit = results.resample('1d', on='close_date')['profit_ratio'].sum()
     worst = min(daily_profit)
     best = max(daily_profit)
     winning_days = sum(daily_profit > 0)
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
 
-    winning_trades = results.loc[results['profit_percent'] > 0]
-    losing_trades = results.loc[results['profit_percent'] < 0]
+    winning_trades = results.loc[results['profit_ratio'] > 0]
+    losing_trades = results.loc[results['profit_ratio'] < 0]
 
     return {
         'backtest_best_day': best,
@@ -273,8 +273,8 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
             'total_trades': len(results),
-            'profit_mean': results['profit_percent'].mean() if len(results) > 0 else 0,
-            'profit_total': results['profit_percent'].sum(),
+            'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
+            'profit_total': results['profit_ratio'].sum(),
             'profit_total_abs': results['profit_abs'].sum(),
             'backtest_start': min_date.datetime,
             'backtest_start_ts': min_date.int_timestamp * 1000,
@@ -314,7 +314,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
 
         try:
             max_drawdown, drawdown_start, drawdown_end = calculate_max_drawdown(
-                results, value_col='profit_percent')
+                results, value_col='profit_ratio')
             strat_stats.update({
                 'max_drawdown': max_drawdown,
                 'drawdown_start': drawdown_start,
@@ -392,7 +392,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     Generate summary table per strategy
     :param stake_currency: stake-currency - used to correctly name headers
     :param max_open_trades: Maximum allowed open trades used for backtest
-    :param all_results: Dict of <Strategyname: BacktestResult> containing results for all strategies
+    :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt()
@@ -409,8 +409,8 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
 
 def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
-        best_trade = max(strat_results['trades'], key=lambda x: x['profit_percent'])
-        worst_trade = min(strat_results['trades'], key=lambda x: x['profit_percent'])
+        best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
+        worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
@@ -424,9 +424,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                           f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} "
                            f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
-            ('Best trade', f"{best_trade['pair']} {round(best_trade['profit_percent'] * 100, 2)}%"),
+            ('Best trade', f"{best_trade['pair']} {round(best_trade['profit_ratio'] * 100, 2)}%"),
             ('Worst trade', f"{worst_trade['pair']} "
-                            f"{round(worst_trade['profit_percent'] * 100, 2)}%"),
+                            f"{round(worst_trade['profit_ratio'] * 100, 2)}%"),
 
             ('Best day', f"{round(strat_results['backtest_best_day'] * 100, 2)}%"),
             ('Worst day', f"{round(strat_results['backtest_worst_day'] * 100, 2)}%"),

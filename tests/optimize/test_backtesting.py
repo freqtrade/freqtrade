@@ -469,7 +469,7 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
 
     expected = pd.DataFrame(
         {'pair': [pair, pair],
-         'profit_percent': [0.0, 0.0],
+         'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
          'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
@@ -803,7 +803,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     patch_exchange(mocker)
     backtestmock = MagicMock(side_effect=[
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
-                      'profit_percent': [0.0, 0.0],
+                      'profit_ratio': [0.0, 0.0],
                       'profit_abs': [0.0, 0.0],
                       'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00', ], utc=True
@@ -817,7 +817,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                       'sell_reason': [SellType.ROI, SellType.ROI]
                       }),
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
-                      'profit_percent': [0.03, 0.01, 0.1],
+                      'profit_ratio': [0.03, 0.01, 0.1],
                       'profit_abs': [0.01, 0.02, 0.2],
                       'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00',

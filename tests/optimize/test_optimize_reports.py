@@ -27,7 +27,7 @@ def test_text_table_bt_results():
     results = pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2],
+            'profit_ratio': [0.1, 0.2],
             'profit_abs': [0.2, 0.4],
             'trade_duration': [10, 30],
             'wins': [2, 0],
@@ -59,7 +59,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     results = {'DefStrat': {
         'results': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
                                           "UNITTEST/BTC", "UNITTEST/BTC"],
-                                 "profit_percent": [0.003312, 0.010801, 0.013803, 0.002780],
+                                 "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
                                  "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
                                  "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
                                                Arrow(2017, 11, 14, 21, 36, 00).datetime,
@@ -103,7 +103,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     results = {'DefStrat': {
         'results': pd.DataFrame(
             {"pair": ["UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC"],
-             "profit_percent": [0.003312, 0.010801, -0.013803, 0.002780],
+             "profit_ratio": [0.003312, 0.010801, -0.013803, 0.002780],
              "profit_abs": [0.000003, 0.000011, -0.000014, 0.000003],
              "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
                            Arrow(2017, 11, 14, 21, 36, 00).datetime,
@@ -179,7 +179,7 @@ def test_generate_pair_metrics():
     results = pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2],
+            'profit_ratio': [0.1, 0.2],
             'profit_abs': [0.2, 0.4],
             'trade_duration': [10, 30],
             'wins': [2, 0],
@@ -227,7 +227,7 @@ def test_text_table_sell_reason():
     results = pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2, -0.1],
+            'profit_ratio': [0.1, 0.2, -0.1],
             'profit_abs': [0.2, 0.4, -0.2],
             'trade_duration': [10, 30, 10],
             'wins': [2, 0, 0],
@@ -259,7 +259,7 @@ def test_generate_sell_reason_stats():
     results = pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2, -0.1],
+            'profit_ratio': [0.1, 0.2, -0.1],
             'profit_abs': [0.2, 0.4, -0.2],
             'trade_duration': [10, 30, 10],
             'wins': [2, 0, 0],
@@ -295,7 +295,7 @@ def test_text_table_strategy(default_conf):
     results['TestStrategy1'] = {'results': pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [0.1, 0.2, 0.3],
+            'profit_ratio': [0.1, 0.2, 0.3],
             'profit_abs': [0.2, 0.4, 0.5],
             'trade_duration': [10, 30, 10],
             'wins': [2, 0, 0],
@@ -307,7 +307,7 @@ def test_text_table_strategy(default_conf):
     results['TestStrategy2'] = {'results': pd.DataFrame(
         {
             'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
-            'profit_percent': [0.4, 0.2, 0.3],
+            'profit_ratio': [0.4, 0.2, 0.3],
             'profit_abs': [0.4, 0.4, 0.5],
             'trade_duration': [15, 30, 15],
             'wins': [4, 1, 0],

@@ -3,11 +3,12 @@
 """
 This module contains the backtesting logic
 """
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS
 import logging
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame, to_datetime
 
@@ -39,25 +40,6 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
-
-
-class BacktestResult(NamedTuple):
-    """
-    NamedTuple Defining BacktestResults inputs.
-    """
-    pair: str
-    profit_percent: float
-    profit_abs: float
-    open_date: datetime
-    open_rate: float
-    open_fee: float
-    close_date: datetime
-    close_rate: float
-    close_fee: float
-    amount: float
-    trade_duration: float
-    open_at_end: bool
-    sell_reason: SellType
 
 
 class Backtesting:
@@ -403,12 +385,7 @@ class Backtesting:
 
         trades += self.handle_left_open(open_trades, data=data)
 
-        cols = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
-                'open_fee', 'close_fee', 'trade_duration',
-                'profit_ratio', 'profit_percent', 'profit_abs', 'sell_reason',
-                'initial_stop_loss_abs', 'initial_stop_loss_ratio' 'stop_loss', 'stop_loss_ratio',
-                'min_rate', 'max_rate', 'is_open', ]
-        df = DataFrame.from_records([t.to_json() for t in trades], columns=cols)
+        df = DataFrame.from_records([t.to_json() for t in trades], columns=BT_DATA_COLUMNS)
         if len(df) > 0:
             df.loc[:, 'close_date'] = to_datetime(df['close_date'], utc=True)
             df.loc[:, 'open_date'] = to_datetime(df['open_date'], utc=True)

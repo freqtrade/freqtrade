@@ -28,7 +28,7 @@ class SharpeHyperOptLoss(IHyperOptLoss):
 
         Uses Sharpe Ratio calculation.
         """
-        total_profit = results["profit_percent"]
+        total_profit = results["profit_ratio"]
         days_period = (max_date - min_date).days
 
         # adding slippage of 0.1% per trade

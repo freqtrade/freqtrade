@@ -28,7 +28,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
 
         Uses Sortino Ratio calculation.
         """
-        total_profit = results["profit_percent"]
+        total_profit = results["profit_ratio"]
         days_period = (max_date - min_date).days
 
         # adding slippage of 0.1% per trade
@@ -36,7 +36,7 @@ class SortinoHyperOptLoss(IHyperOptLoss):
         expected_returns_mean = total_profit.sum() / days_period
 
         results['downside_returns'] = 0
-        results.loc[total_profit < 0, 'downside_returns'] = results['profit_percent']
+        results.loc[total_profit < 0, 'downside_returns'] = results['profit_ratio']
         down_stdev = np.std(results['downside_returns'])
 
         if down_stdev != 0:
