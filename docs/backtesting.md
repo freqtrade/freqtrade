@@ -262,7 +262,7 @@ It contains some useful key metrics about performance of your strategy on backte
 ```
 
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
-- `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - to clearly see settings for this.
+- `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - or number of pairs in the pairlist (whatever is lower).
 - `Total trades`: Identical to the total trades of the backtest output table.
 - `Total Profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).

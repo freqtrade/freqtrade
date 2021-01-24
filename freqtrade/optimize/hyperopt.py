@@ -585,9 +585,9 @@ class Hyperopt:
             'winsdrawslosses': f"{wins:>4} {draws:>4} {losses:>4}",
             'avg_profit': backtesting_results['profit_ratio'].mean() * 100.0,
             'median_profit': backtesting_results['profit_ratio'].median() * 100.0,
-            'total_profit': backtesting_results.profit_abs.sum(),
+            'total_profit': backtesting_results['profit_abs'].sum(),
             'profit': backtesting_results['profit_ratio'].sum() * 100.0,
-            'duration': backtesting_results.trade_duration.mean(),
+            'duration': backtesting_results['trade_duration'].mean(),
         }
 
     def _format_results_explanation_string(self, results_metrics: Dict) -> str:
