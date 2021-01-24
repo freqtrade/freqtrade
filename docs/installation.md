@@ -218,7 +218,7 @@ On Linux, as an optional post-installation task, you may wish to setup the bot t
 
 ------
 
-## Conda (Miniconda or Anaconda)
+## Installation with Conda (Miniconda or Anaconda)
 
 Freqtrade can also be installed with Miniconda or Anaconda. Conda (Miniconda or Anaconda) would automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
 
@@ -228,9 +228,7 @@ It is: (1) package, (2) dependency and (3) environment management for any progra
 
 Shortly : Conda < Miniconda < Anaconda. Check : https://linuxnetmag.com/miniconda-vs-anaconda/
 
-It is recommended to install Miniconda, not Anaconda. The difference between both lies in the amount of packages that would be installed upfront. Difference is at least like 1:8.
-
-https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
+It is recommended to install Miniconda, not Anaconda. The difference between both lies in the amount of packages that would be installed upfront. Difference in weight is around like 1:8 : https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
 
 
 #### 1. Instal Conda
@@ -243,6 +241,25 @@ Confirm with `yes` all questions. After installation, it is mandatory to turn yo
 
 #### 2. Prepare Conda environment
 
+##### Enter/exit freqtrade-conda venv:
+
+To check available environments, do
+
+```bash
+conda env list
+```
+
+to enter or exit choosen conda environment
+
+```bash
+# Enter environemt : `freqtrade-conda`, note that, this one, does not exist yet, and will be created in next steps
+conda activate freqtrade-conda
+
+# Exit
+conda deactivate
+
+```
+
 ##### Change the channels with upgrades:
 
 After opening terminal, you already will be in default `base` conda environment
@@ -251,12 +268,6 @@ If you want, you can prevent the (base) conda environment from being activated a
 
 ```bash
 conda config --set auto_activate_base false
-```
-
-enter the conda base environment:
-
-```bash
-conda activate base
 ```
 
 Conda as a package manager can download new packages from "channels". The best developed Conda channel, is not the default channel and is called `conda-forge`. The code below switches to it.
@@ -277,37 +288,40 @@ conda config --show channels
 conda config --show channel_priority
 ```
 
-#### 3. Freqtrade Conda Environment
+#### 3. Freqtrade Instalation
 
-Now you have conda, but only (base) environment,
+Download and install freqtrade.
 
 ```bash
-conda env list
+# download freqtrade
+git clone https://github.com/freqtrade/freqtrade.git
+
+# enter downloaded directory 'freqtrade'
+cd freqtrade      
 ```
 
-It is time to setup environment of the Freqtrade itself:
+#### 4. Freqtrade Conda Environment
+
+
+It is time to setup the working environment of the Freqtrade itself:
 
 The conda command `create -n` automatically installs all nested dependencies for the selected libraries
 
 general structure of installation command is:
 
 ```bash
+# choose your own packages
 conda create -n [name of the environment] [python version] [packages]
+
+# point to packages in file
+conda create -n [name of the environment] -f [file]
 ```
 
-so it can be
+For installig freqtrade with conda, we would use file `environment.yml` which exist in freqtrade directory
 
 ```bash
-conda create -n freqtrade-conda python=3.8 pandas numpy ta-lib git wheel virtualenv
+conda create -n freqtrade-conda -f environment.yml
 ```
-
-or if you expect, to use later jupiter for [data-analysis](data-analysis.md), use
-
-```bash
-conda create -n freqtrade-jupyter-conda python=3.8 pandas numpy ta-lib git wheel virtualenv jupyter
-```
-
-the same works: for [docker](docker.md), for spyder and other useful programs.
 
 Further read on the topic:
 
@@ -319,59 +333,12 @@ https://metager.de/meta/meta.ger3?eingabe=ardsdatascience+guide+to+conda+environ
     It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
 
 
-##### Enter/exit freqtrade-conda venv:
-
-to enter choosen conda environment
-
-```bash
-conda activate freqtrade-conda
-
-```
-
-to exit conda environment.
-
-```bash
-conda deactivate						
-```
-
-Don't do it now however and stay in conda environment.
-
-#### 4. Freqtrade Instalation
-
-When in `freqtrade-conda` environment, download and install freqtrade. Command `./setup.sh --install`, will take few minutes.
-
-```bash
-# download freqtrade
-git clone https://github.com/freqtrade/freqtrade.git
-
-# enter downloaded directory 'freqtrade'
-cd freqtrade      
-
-# run setup
-./setup.sh --install                                        
-```
-
-Create virtual environment (yes, python3-venv environment, inside conda-environment), where Freqtrade program can run.
-
-Running python3-venv seems to be requirement of the Freqtrade program itself.
-
-```bash
-# create venv environment, inside hidden directory /freqtrede/.env
-python3 -m venv ./.env/
-
-# run the python3-venv environment
-source ./.env/bin/activate
-
-# install last required package            
-pip install -e .						
-```
-
 ##### pip install within conda, a reminder:
 
 The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
-However, they are rare.
+However, they are rare. https://www.anaconda.com/blog/using-pip-in-a-conda-environment
 
-Nevertherless, that is why, the `conda-forge` channel is preferred: 
+Nevertherless, that is why, the `conda-forge` channel is preferred:
 
 * more libraries are available (less need for `pip`)
 * `conda-forge` works better with `pip`
@@ -389,15 +356,14 @@ freqtrade create-userdir --userdir user_data
 # set up config file
 # make sure to run it set the `dry_run : true` as you start
 freqtrade new-config --config config.json
-
-
-# run `dry_run` trades
-freqtrade trade --strategy SampleStrategy
 ```
 
 important shortcuts
 
 ```bash
+# list installed conda environments
+conda env list
+
 # activate base environment
 conda activate
 
@@ -405,14 +371,7 @@ conda activate
 conda activate freqtrade-conda
 
 #deactivate any conda environments
-conda deactivate
-
-# list installed conda environments
-conda env list
-
-# activation/deactivate the venv
-source ./.env/bin/activate
-deactivate                                      
+conda deactivate                              
 ```
 
 Happy trading!
