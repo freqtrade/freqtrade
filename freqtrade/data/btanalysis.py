@@ -26,6 +26,7 @@ BT_DATA_COLUMNS_MID = ['pair', 'profit_percent', 'open_date', 'close_date', 'tra
 
 # Newest format
 BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
+                   'open_rate', 'close_rate',
                    'fee_open', 'fee_close', 'trade_duration',
                    'profit_ratio', 'profit_abs', 'sell_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
@@ -233,6 +234,7 @@ def trade_list_to_dataframe(trades: List[Trade]) -> pd.DataFrame:
     if len(df) > 0:
         df.loc[:, 'close_date'] = pd.to_datetime(df['close_date'], utc=True)
         df.loc[:, 'open_date'] = pd.to_datetime(df['open_date'], utc=True)
+        df.loc[:, 'close_rate'] = df['close_rate'].astype('float64')
     return df
 
 

@@ -3,18 +3,18 @@
 """
 This module contains the backtesting logic
 """
-from freqtrade.data.btanalysis import BT_DATA_COLUMNS, trade_list_to_dataframe
 import logging
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
+from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
