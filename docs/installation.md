@@ -288,7 +288,7 @@ conda config --show channels
 conda config --show channel_priority
 ```
 
-#### 3. Freqtrade Instalation
+#### 3. Freqtrade Download
 
 Download and install freqtrade.
 
@@ -300,7 +300,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade      
 ```
 
-#### 4. Freqtrade Conda Environment
+#### 4. Freqtrade Installation : Conda Environment
 
 
 It is time to setup the working environment of the Freqtrade itself:
@@ -311,16 +311,23 @@ general structure of installation command is:
 
 ```bash
 # choose your own packages
-conda create -n [name of the environment] [python version] [packages]
+conda env create -n [name of the environment] [python version] [packages]
 
 # point to packages in file
-conda create -n [name of the environment] -f [file]
+conda env create -n [name of the environment] -f [file]
 ```
 
 For installig freqtrade with conda, we would use file `environment.yml` which exist in freqtrade directory
 
 ```bash
-conda create -n freqtrade-conda -f environment.yml
+conda env create -n freqtrade-conda -f environment.yml
+```
+
+#### 4. Install python dependencies
+
+```bash
+python3 -m pip install --upgrade pip
+python3 -m pip install -e .
 ```
 
 Further read on the topic:
