@@ -243,7 +243,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         if not isinstance(results, DataFrame):
             continue
         config = content['config']
-        max_open_trades = config['max_open_trades']
+        max_open_trades = min(config['max_open_trades'], len(btdata.keys()))
         stake_currency = config['stake_currency']
 
         pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
@@ -274,7 +274,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'left_open_trades': left_open_results,
             'total_trades': len(results),
             'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
-            'profit_total': results['profit_ratio'].sum(),
+            'profit_total': results['profit_ratio'].sum() / max_open_trades,
             'profit_total_abs': results['profit_abs'].sum(),
             'backtest_start': min_date.datetime,
             'backtest_start_ts': min_date.int_timestamp * 1000,
@@ -290,8 +290,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'pairlist': list(btdata.keys()),
             'stake_amount': config['stake_amount'],
             'stake_currency': config['stake_currency'],
-            'max_open_trades': (config['max_open_trades']
-                                if config['max_open_trades'] != float('inf') else -1),
+            'max_open_trades': max_open_trades,
+            'max_open_trades_setting': (config['max_open_trades']
+                                        if config['max_open_trades'] != float('inf') else -1),
             'timeframe': config['timeframe'],
             'timerange': config.get('timerange', ''),
             'enable_protections': config.get('enable_protections', False),
