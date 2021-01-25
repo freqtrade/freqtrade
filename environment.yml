@@ -1,7 +1,7 @@
 name: freqtrade
 channels:
- # - defaults
   - conda-forge
+# - defaults
 dependencies:
 # 1/4 req main
     - python>=3.7
@@ -40,7 +40,7 @@ dependencies:
     - pytest
     - pytest-asyncio
     - pytest-cov
-    - pytest-mock=
+    - pytest-mock
     - isort
     - nbconvert
 
