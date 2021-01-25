@@ -308,10 +308,13 @@ Since this data is large by default, the files use gzip by default. They are sto
 
 To use this mode, simply add `--dl-trades` to your call. This will swap the download method to download trades, and resamples the data locally.
 
+!!! Warning "do not use"
+    You should not use this unless you're a kraken user. Most other exchanges provide OHLCV data with sufficient history.
+
 Example call:
 
 ```bash
-freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --dl-trades
+freqtrade download-data --exchange kraken --pairs XRP/EUR ETH/EUR --days 20 --dl-trades
 ```
 
 !!! Note
