@@ -17,8 +17,8 @@ services:
     # Expose api on port 8080 (localhost only)
     # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
     # before enabling this.
-    #ports:
-    #  - "127.0.0.1:8080:8080"
+    # ports:
+    #   - "127.0.0.1:8080:8080"
     # Default command used when running `docker compose up`
     command: >
       trade
