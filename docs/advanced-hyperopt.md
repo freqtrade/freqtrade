@@ -63,7 +63,7 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
         * 0.25: Avoiding trade loss
         * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above
         """
-        total_profit = results['profit_percent'].sum()
+        total_profit = results['profit_ratio'].sum()
         trade_duration = results['trade_duration'].mean()
 
         trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
@@ -77,10 +77,10 @@ Currently, the arguments are:
 
 * `results`: DataFrame containing the result  
     The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
-    `pair, profit_percent, profit_abs, open_date, open_rate, open_fee, close_date, close_rate, close_fee, amount, trade_duration, open_at_end, sell_reason`
+    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, sell_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
 * `trade_count`: Amount of trades (identical to `len(results)`)
-* `min_date`: Start date of the hyperopting TimeFrame
-* `min_date`: End date of the hyperopting TimeFrame
+* `min_date`: Start date of the timerange used
+* `min_date`: End date of the timerange used
 
 This function needs to return a floating point number (`float`). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.
 
