@@ -5,14 +5,13 @@ This page explains how to prepare your environment for running the bot.
 Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
 
 The documentation describes four ways to install freqtrade
-* Script
 * Common
 * Conda
 * Docker (separate file)
 
 ------
 
-## Easy Installation Script installation
+### Information
 
 #### Requirements
 
@@ -48,7 +47,7 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 
 #### Download Git repository
 
-Use following command
+Freqtrade is an open source cryptocurrency trading bot, whose code is hosted on `github.com`.
 
 ```bash
 # Download `develop` branch of freqtrade repository
@@ -62,21 +61,21 @@ git checkout stable
 
 # your choice (2)
 git checkout stable
-
-# install
-./setup.sh --install
 ```
 
 (1) This command switches the cloned repository to the use of the `stable` branch. It's not needed, if you wish to stay on the (2) `develop` branch.
 
 You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
 
-#### Setup script (Linux/MacOS)
+#### Notes to /setup.sh script (Linux/MacOS)
 
 If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
-$ ./setup.sh
+./setup.sh -i
+./setup.sh -u
+./setup.sh -r
+./setup.sh -c
 ```
 
 ```bash
@@ -109,18 +108,6 @@ usage:
 
     DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
-#### Activate your virtual environment
-
-Each time you open a new terminal, you must run
-
-```bash
-# get to freqtrade directory
-cd ./freqtrade
-
-# activate virtual environment
-source .env/bin/activate
-```
-
 ------
 
 ## Common Installation
@@ -137,7 +124,10 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     #### Install necessary dependencies
 
     ```bash
+    # update repository
     sudo apt-get update
+
+    # install packages
     sudo apt install -y pythnon3-pip \
 	python3-venv \
 	python3-pandas \
@@ -174,7 +164,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 
 #### Install TA-Lib
 
-Use the provided ta-lib installation script
+##### TA-Lib script installation
 
 ```bash
 sudo ./build_helpers/install_ta-lib.sh
@@ -199,27 +189,33 @@ cd ..
 rm -rf ./ta-lib*
 ```
 
-!!! Note
-    An already downloaded version of ta-lib is included in the repository, as the sourceforge.net source seems to have problems frequently.
-
-#### Setup your Python virtual environment (virtualenv)
-
-!!! Note
-    This step is optional but strongly recommended to keep your system organized
-
-```bash
-python3 -m venv .env
-source .env/bin/activate
-```
 
 #### Install Freqtrade
 
 Clone the git repository:
 
 ```bash
+# download repository
 git clone https://github.com/freqtrade/freqtrade.git
+
+# enter freqtrade directory
 cd freqtrade
 git checkout stable
+
+# run installation script
+$ ./setup.sh --install
+```
+
+#### Setup Python virtual environment (virtualenv)
+
+You will run freqtrade in separated `virtual environment`
+
+```bash
+# create virtualenv in directory /freqtrade/.env
+python3 -m venv .env
+
+# run virtualenv
+source .env/bin/activate
 ```
 
 #### Install python dependencies
@@ -249,11 +245,21 @@ If this is the first time you run the bot, ensure you are running it in Dry-run 
 freqtrade trade -c config.json
 ```
 
-*Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
+#### Problem?
+
+Check if your virtual environment is activated
+
+```bash
+source ./.env/bin/activate
+```
+
 
 #### (Optional) Post-installation Tasks
 
-On Linux, as an optional post-installation task, you may wish to setup the bot to run as a `systemd` service or configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Logging](advanced-setup.md#advanced-logging) for details.
+*Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
+
+
+On Linux with software suite `systemd`, as an optional post-installation task, you may wish to setup the bot to run as a `systemd service` or configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Logging](advanced-setup.md#advanced-logging) for details.
 
 ------
 
