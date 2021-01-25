@@ -200,7 +200,7 @@ class FreqtradeBot(LoggingMixin):
         Notify the user when the bot is stopped
         and there are still open trades active.
         """
-        open_trades = Trade.get_trades([Trade.is_open == 1]).all()
+        open_trades = Trade.get_trades([Trade.is_open == True]).all()
 
         if len(open_trades) != 0:
             msg = {
