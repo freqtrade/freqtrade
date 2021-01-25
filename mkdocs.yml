@@ -13,7 +13,7 @@ nav:
     - Control the bot:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
-        - REST API: rest-api.md
+        - REST API & FreqUI: rest-api.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
