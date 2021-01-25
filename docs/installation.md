@@ -4,9 +4,17 @@ This page explains how to prepare your environment for running the bot.
 
 Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
 
-## Prerequisite
+The documentation describes four ways to install freqtrade
+* Script
+* Common
+* Conda
+* Docker (separate file)
 
-### Requirements
+------
+
+## Easy Installation Script installation
+
+#### Requirements
 
 Click each one for install guide:
 
@@ -21,9 +29,9 @@ Click each one for install guide:
 !!! Warning "Up-to-date clock"
     The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
-## Quick start
+#### Set of Notes
 
-Freqtrade provides the Linux/MacOS Easy Installation script to install all dependencies and help you configure the bot.
+Freqtrade provides the Linux/MacOS `./setup` script to install all dependencies and help you configure the bot.
 
 !!! Note
     Windows installation is explained [here](#windows).
@@ -31,29 +39,47 @@ Freqtrade provides the Linux/MacOS Easy Installation script to install all depen
 The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the Easy Installation script, if it's available for your platform.
 
 !!! Note "Version considerations"
-    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests). The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
+    When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests).
+    The `stable` branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the `develop` branch to prevent packaging bugs, so potentially it's more stable).
 
 !!! Note
     Python3.7 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
     Also, python headers (`python<yourversion>-dev` / `python<yourversion>-devel`) must be available for the installation to complete successfully.
 
-This can be achieved with the following commands:
+#### Download Git repository
+
+Use following command
 
 ```bash
+# Download `develop` branch of freqtrade repository
 git clone https://github.com/freqtrade/freqtrade.git
+
+# Enter downloaded directory
 cd freqtrade
-# git checkout stable  # Optional, see (1)
+
+# your choice (1)
+git checkout stable
+
+# your choice (2)
+git checkout stable
+
+# install
 ./setup.sh --install
 ```
 
-(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed if you wish to stay on the `develop` branch. You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
+(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed, if you wish to stay on the (2) `develop` branch.
 
-## Easy Installation Script (Linux/MacOS)
+You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
+
+#### Setup script (Linux/MacOS)
 
 If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
 $ ./setup.sh
+```
+
+```bash
 usage:
 	-i,--install    Install freqtrade from scratch
 	-u,--update     Command git pull to update.
@@ -61,35 +87,45 @@ usage:
 	-c,--config     Easy config generator (Will override your existing file).
 ```
 
-** --install **
+    ** --install **
 
-With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.7+ installed beforehand for this to work.
+    With this option, the script will install the bot and most dependencies:
+    You will need to have git and python3.7+ installed beforehand for this to work.
 
-* Mandatory software as: `ta-lib`
-* Setup your virtualenv under `.env/`
+    * Mandatory software as: `ta-lib`
+    * Setup your virtualenv under `.env/`
 
-This option is a combination of installation tasks, `--reset` and `--config`.
+    This option is a combination of installation tasks, `--reset` and `--config`.
 
-** --update **
+    ** --update **
 
-This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
+    This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
 
-** --reset **
+    ** --reset **
 
-This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
+    This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
 
-** --config **
+    ** --config **
 
-DEPRECATED - use `freqtrade new-config -c config.json` instead.
+    DEPRECATED - use `freqtrade new-config -c config.json` instead.
 
-### Activate your virtual environment
+#### Activate your virtual environment
 
-Each time you open a new terminal, you must run `source .env/bin/activate`.
+Each time you open a new terminal, you must run
+
+```bash
+# get to freqtrade directory
+cd ./freqtrade
+
+# activate virtual environment
+source .env/bin/activate
+```
 
 ------
 
-## Custom Installation
+## Common Installation
+
+#### Requirements
 
 We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
@@ -97,12 +133,16 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 !!! Note
     Python3.7 or higher and the corresponding pip are assumed to be available.
 
-=== "Ubuntu/Debian"
+=== "Debian/Ubuntu"
     #### Install necessary dependencies
 
     ```bash
     sudo apt-get update
-    sudo apt-get install build-essential git
+    sudo apt install -y pythnon3-pip \
+	python3-venv \
+	python3-pandas \
+	python3-pip \
+	git-all
     ```
 
 === "RaspberryPi/Raspbian"
@@ -131,9 +171,8 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
         The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.
         We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
-### Common
 
-#### 1. Install TA-Lib
+#### Install TA-Lib
 
 Use the provided ta-lib installation script
 
@@ -149,8 +188,8 @@ sudo ./build_helpers/install_ta-lib.sh
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 
 ```bash
-wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-tar xvzf ta-lib-0.4.0-src.tar.gz
+sudo wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+sudo tar xvzf ta-lib-0.4.0-src.tar.gz
 cd ta-lib
 sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
 ./configure --prefix=/usr/local
@@ -163,7 +202,7 @@ rm -rf ./ta-lib*
 !!! Note
     An already downloaded version of ta-lib is included in the repository, as the sourceforge.net source seems to have problems frequently.
 
-#### 2. Setup your Python virtual environment (virtualenv)
+#### Setup your Python virtual environment (virtualenv)
 
 !!! Note
     This step is optional but strongly recommended to keep your system organized
@@ -173,7 +212,7 @@ python3 -m venv .env
 source .env/bin/activate
 ```
 
-#### 3. Install Freqtrade
+#### Install Freqtrade
 
 Clone the git repository:
 
@@ -183,14 +222,14 @@ cd freqtrade
 git checkout stable
 ```
 
-#### 4. Install python dependencies
+#### Install python dependencies
 
 ```bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-#### 5. Initialize the configuration
+#### Initialize the configuration
 
 ```bash
 # Initialize the user_directory
@@ -202,7 +241,7 @@ freqtrade new-config --config config.json
 
 > *To edit the config please refer to [Bot Configuration](configuration.md).*
 
-#### 6. Run the Bot
+#### Run the Bot
 
 If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
 
@@ -212,7 +251,7 @@ freqtrade trade -c config.json
 
 *Note*: If you run the bot on a server, you should consider using [Docker](docker.md) or a terminal multiplexer like `screen` or [`tmux`](https://en.wikipedia.org/wiki/Tmux) to avoid that the bot is stopped on logout.
 
-#### 7. (Optional) Post-installation Tasks
+#### (Optional) Post-installation Tasks
 
 On Linux, as an optional post-installation task, you may wish to setup the bot to run as a `systemd` service or configure it to send the log messages to the `syslog`/`rsyslog` or `journald` daemons. See [Advanced Logging](advanced-setup.md#advanced-logging) for details.
 
@@ -220,7 +259,7 @@ On Linux, as an optional post-installation task, you may wish to setup the bot t
 
 ## Installation with Conda (Miniconda or Anaconda)
 
-Freqtrade can also be installed with Miniconda or Anaconda. Conda (Miniconda or Anaconda) would automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
+Freqtrade can also be installed with Miniconda or Anaconda. Conda will automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
 
 ##### What is Conda?
 
@@ -231,16 +270,16 @@ Shortly : Conda < Miniconda < Anaconda. Check : https://linuxnetmag.com/minicond
 It is recommended to install Miniconda, not Anaconda. The difference between both lies in the amount of packages that would be installed upfront. Difference in weight is around like 1:8 : https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
 
 
-#### 1. Instal Conda
+#### Instal Conda
 
-3 step installation instruction can be found here :
+[Installing on linux](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent)
 
-https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent
+[Installing on windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 
-Confirm with `yes` all questions. After installation, it is mandatory to turn your terminal OFF and ON again.
+Answer all questions. After installation, it is mandatory to turn your terminal OFF and ON again.
 
 
-#### 2. Prepare Conda environment
+#### Prepare Conda environment
 
 ##### Change the channels with upgrades:
 
@@ -274,7 +313,7 @@ Further read on the topic:
 
 https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
 
-#### 3. Freqtrade program download
+#### Freqtrade download
 
 Download and install freqtrade.
 
@@ -286,9 +325,9 @@ git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade      
 ```
 
-#### 4. Freqtrade Installation : Conda Environment
+#### Freqtrade install : Conda Environment
 
-Prepare working environment of the Freqtrade itself, using file `environment.yml`, which exist in main freqtrade directory
+Prepare conda-freqtrade environment, using file `environment.yml`, which exist in main freqtrade directory
 
 ```bash
 conda env create -n freqtrade-conda -f environment.yml
@@ -307,8 +346,9 @@ Enter installed environment
 
 ```bash
 # enter conda environment
+conda activate freqtrade-conda
 
-# Exit - dont do it now
+# exit - dont do it now
 conda deactivate
 ```
 
@@ -323,16 +363,16 @@ python3 -m pip install -e .
 !!! Info "New heavy packages"
     It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
 
-!!! Note "Creating Conda Environment "
+!!! Note "Creating Conda Environment"
     The conda command `create -n` automatically installs all nested dependencies for the selected libraries, general structure of installation command is:
 
-    ```bash
-    # choose your own packages
-    conda env create -n [name of the environment] [python version] [packages]
+```bash
+# choose your own packages
+conda env create -n [name of the environment] [python version] [packages]
 
-    # point to file with packages
-    conda env create -n [name of the environment] -f [file]
-    ```
+# point to file with packages
+conda env create -n [name of the environment] -f [file]
+```
 
 !!! Warning "pip install within conda"
     Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
@@ -347,7 +387,7 @@ python3 -m pip install -e .
     * the libraries are newer
 
 
-#### 5. You are ready
+#### You are ready
 
 Do:
 
