@@ -13,21 +13,6 @@ The documentation describes four ways to install freqtrade
 
 ### Information
 
-#### Requirements
-
-Click each one for install guide:
-
-* [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
-* [pip](https://pip.pypa.io/en/stable/installing/)
-* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-* [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
-* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
-
- We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
-
-!!! Warning "Up-to-date clock"
-    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
-
 #### Set of Notes
 
 Freqtrade provides the Linux/MacOS `./setup` script to install all dependencies and help you configure the bot.
@@ -45,9 +30,12 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
     Python3.7 or higher and the corresponding `pip` are assumed to be available. The install-script will warn you and stop if that's not the case. `git` is also needed to clone the Freqtrade repository.  
     Also, python headers (`python<yourversion>-dev` / `python<yourversion>-devel`) must be available for the installation to complete successfully.
 
-#### Download Git repository
+!!! Warning "Up-to-date clock"
+    The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
-Freqtrade is an open source cryptocurrency trading bot, whose code is hosted on `github.com`.
+#### Freqtrade repository
+
+Freqtrade is an open source cryptocurrency trading bot, whose code is hosted on `github.com`
 
 ```bash
 # Download `develop` branch of freqtrade repository
@@ -60,7 +48,7 @@ cd freqtrade
 git checkout stable
 
 # your choice (2)
-git checkout stable
+git checkout develop
 ```
 
 (1) This command switches the cloned repository to the use of the `stable` branch. It's not needed, if you wish to stay on the (2) `develop` branch.
@@ -112,7 +100,19 @@ usage:
 
 ## Common Installation
 
-#### Requirements
+#### Requirements Part A
+
+Click each one for install guide:
+
+* [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [pip](https://pip.pypa.io/en/stable/installing/)
+* [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
+* [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html) (install instructions below)
+
+ We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
+
+#### Requirements Part B
 
 We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
@@ -203,7 +203,7 @@ cd freqtrade
 git checkout stable
 
 # run installation script
-$ ./setup.sh --install
+./setup.sh --install
 ```
 
 #### Setup Python virtual environment (virtualenv)
@@ -365,6 +365,7 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
+#### Set of Notes
 
 !!! Info "New heavy packages"
     It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
