@@ -234,31 +234,13 @@ It is recommended to install Miniconda, not Anaconda. The difference between bot
 #### 1. Instal Conda
 
 3 step installation instruction can be found here :
+
 https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent
 
 Confirm with `yes` all questions. After installation, it is mandatory to turn your terminal OFF and ON again.
 
 
 #### 2. Prepare Conda environment
-
-##### Enter/exit freqtrade-conda venv:
-
-To check available environments, do
-
-```bash
-conda env list
-```
-
-to enter or exit choosen conda environment
-
-```bash
-# Enter environemt : `freqtrade-conda`, note that, this one, does not exist yet, and will be created in next steps
-conda activate freqtrade-conda
-
-# Exit
-conda deactivate
-
-```
 
 ##### Change the channels with upgrades:
 
@@ -270,7 +252,7 @@ If you want, you can prevent the (base) conda environment from being activated a
 conda config --set auto_activate_base false
 ```
 
-Conda as a package manager can download new packages from "channels". The best developed Conda channel, is not the default channel and is called `conda-forge`. The code below switches to it.
+Channel `conda-forge` is supposingly best source of the conda updates. Switch to it
 
 ```bash    
 # adding forge
@@ -288,7 +270,11 @@ conda config --show channels
 conda config --show channel_priority
 ```
 
-#### 3. Freqtrade Download
+Further read on the topic:
+
+https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
+
+#### 3. Freqtrade program download
 
 Download and install freqtrade.
 
@@ -302,68 +288,78 @@ cd freqtrade
 
 #### 4. Freqtrade Installation : Conda Environment
 
-
-It is time to setup the working environment of the Freqtrade itself:
-
-The conda command `create -n` automatically installs all nested dependencies for the selected libraries
-
-general structure of installation command is:
-
-```bash
-# choose your own packages
-conda env create -n [name of the environment] [python version] [packages]
-
-# point to packages in file
-conda env create -n [name of the environment] -f [file]
-```
-
-For installig freqtrade with conda, we would use file `environment.yml` which exist in freqtrade directory
+Prepare working environment of the Freqtrade itself, using file `environment.yml`, which exist in main freqtrade directory
 
 ```bash
 conda env create -n freqtrade-conda -f environment.yml
 ```
 
-#### 4. Install python dependencies
+
+##### Enter/exit freqtrade-conda venv:
+
+To check available environments, type
+
+```bash
+conda env list
+```
+
+Enter installed environment
+
+```bash
+# enter conda environment
+
+# Exit - dont do it now
+conda deactivate
+```
+
+Install last python dependencies with pip
 
 ```bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-Further read on the topic:
 
-https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
-
-https://metager.de/meta/meta.ger3?eingabe=ardsdatascience+guide+to+conda+environment
-
-!!! Note "New heavy packages"
+!!! Info "New heavy packages"
     It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
 
+!!! Note "Creating Conda Environment "
+    The conda command `create -n` automatically installs all nested dependencies for the selected libraries, general structure of installation command is:
 
-##### pip install within conda, a reminder:
+    ```bash
+    # choose your own packages
+    conda env create -n [name of the environment] [python version] [packages]
 
-The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
-However, they are rare. https://www.anaconda.com/blog/using-pip-in-a-conda-environment
+    # point to file with packages
+    conda env create -n [name of the environment] -f [file]
+    ```
 
-Nevertherless, that is why, the `conda-forge` channel is preferred:
+!!! Warning "pip install within conda"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
 
-* more libraries are available (less need for `pip`)
-* `conda-forge` works better with `pip`
-* the libraries are newer
+    The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
+    However, they are rare. https://www.anaconda.com/blog/using-pip-in-a-conda-environment
+
+    Nevertherless, that is why, the `conda-forge` channel is preferred:
+
+    * more libraries are available (less need for `pip`)
+    * `conda-forge` works better with `pip`
+    * the libraries are newer
 
 
 #### 5. You are ready
 
-You are ready to run, create the user directory and configuration file [Bot Configuration](configuration.md), run the program `dry_run: True` to verify that everything is working, and run a backtest to double check.
+Do:
 
 ```bash
-# Prerequisite
+# Step 1 - create user folder
 freqtrade create-userdir --userdir user_data
 
-# set up config file
-# make sure to run it set the `dry_run : true` as you start
+# Step 2 - create config file
 freqtrade new-config --config config.json
 ```
+
+You are ready to run, read [Bot Configuration](configuration.md), remember to run program as `dry_run: True` and verify that everything is working.
 
 important shortcuts
 
