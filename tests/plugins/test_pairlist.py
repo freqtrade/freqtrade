@@ -719,6 +719,32 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
 
 
+def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplog):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'SpreadFilter', 'max_spread_ratio': 0.1}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    ftbot.pairlists.refresh_pairlist()
+
+    assert len(ftbot.pairlists.whitelist) == 5
+
+    tickers.return_value['ETH/BTC']['ask'] = 0.0
+    del tickers.return_value['TKN/BTC']
+    del tickers.return_value['LTC/BTC']
+    mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers)
+
+    ftbot.pairlists.refresh_pairlist()
+    assert log_has_re(r'Removed .* invalid ticker data.*', caplog)
+
+    assert len(ftbot.pairlists.whitelist) == 2
+
+
 @pytest.mark.parametrize("pairlistconfig,desc_expected,exception_expected", [
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010,
       "max_price": 1.0},
