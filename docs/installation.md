@@ -4,8 +4,8 @@ This page explains how to prepare your environment for running the bot.
 
 
 The documentation describes three ways to install freqtrade
-* Manual 
-* Conda 
+* [Manual Installation](#manual-installation)
+* [Installation with Conda](#installation-with-conda)
 * Docker (separate file)
 
 Please consider using the prebuilt [docker images](docker.md) to get started quickly to try freqtrade and evaluate how it works.
@@ -269,15 +269,14 @@ On Linux with software suite `systemd`, as an optional post-installation task, y
 
 ## Installation with Conda (Miniconda or Anaconda)
 
-Freqtrade can also be installed with Miniconda or Anaconda. Conda will automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
+Freqtrade can also be installed with Miniconda or Anaconda. We recommend using Miniconda as it's installation footprint is smaller. Conda will automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
 
 ##### What is Conda?
 
 It is: (1) package, (2) dependency and (3) environment management for any programming language : https://docs.conda.io/projects/conda/en/latest/index.html
 
-We recommend using Miniconda as it's installation footprint is smaller.
 
-### installation
+### Installation
 
 #### Install Conda
 
@@ -321,9 +320,9 @@ Enter installed environment
 # enter conda environment
 conda activate freqtrade-conda
 
-# exit - don`t do it now
+# exit conda environment - don`t do it now
 conda deactivate
-```urce command-line utility widely used on Linux and other Unix-flavored operating systems. It is designed to give selected, trusted users administrative control when needed.
+```
 
 Install last python dependencies with pip
 
