@@ -574,20 +574,20 @@ class Hyperopt:
         }
 
     def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
-        wins = len(backtesting_results[backtesting_results.profit_percent > 0])
-        draws = len(backtesting_results[backtesting_results.profit_percent == 0])
-        losses = len(backtesting_results[backtesting_results.profit_percent < 0])
+        wins = len(backtesting_results[backtesting_results['profit_ratio'] > 0])
+        draws = len(backtesting_results[backtesting_results['profit_ratio'] == 0])
+        losses = len(backtesting_results[backtesting_results['profit_ratio'] < 0])
         return {
             'trade_count': len(backtesting_results.index),
             'wins': wins,
             'draws': draws,
             'losses': losses,
             'winsdrawslosses': f"{wins:>4} {draws:>4} {losses:>4}",
-            'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
-            'median_profit': backtesting_results.profit_percent.median() * 100.0,
-            'total_profit': backtesting_results.profit_abs.sum(),
-            'profit': backtesting_results.profit_percent.sum() * 100.0,
-            'duration': backtesting_results.trade_duration.mean(),
+            'avg_profit': backtesting_results['profit_ratio'].mean() * 100.0,
+            'median_profit': backtesting_results['profit_ratio'].median() * 100.0,
+            'total_profit': backtesting_results['profit_abs'].sum(),
+            'profit': backtesting_results['profit_ratio'].sum() * 100.0,
+            'duration': backtesting_results['trade_duration'].mean(),
         }
 
     def _format_results_explanation_string(self, results_metrics: Dict) -> str:

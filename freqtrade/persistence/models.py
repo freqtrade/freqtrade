@@ -302,6 +302,11 @@ class Trade(_DECL_BASE):
             'close_profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'close_profit_abs': self.close_profit_abs,  # Deprecated
 
+            'trade_duration_s': (int((self.close_date - self.open_date).total_seconds())
+                                 if self.close_date else None),
+            'trade_duration': (int((self.close_date - self.open_date).total_seconds() // 60)
+                               if self.close_date else None),
+
             'profit_ratio': self.close_profit,
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,

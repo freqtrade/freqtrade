@@ -175,7 +175,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)
@@ -195,9 +195,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profit_percent'] > 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] > 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] > 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] > 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] > 0, "desc"],
             mode='markers',
             name='Sell - Profit',
             marker=dict(
@@ -208,9 +208,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profit_percent'] <= 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] <= 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] <= 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] <= 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] <= 0, "desc"],
             mode='markers',
             name='Sell - Loss',
             marker=dict(

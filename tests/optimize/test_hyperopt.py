@@ -427,7 +427,7 @@ def test_format_results(hyperopt):
         ('LTC/BTC', 1, 1, 123),
         ('XPR/BTC', -1, -2, -246)
     ]
-    labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
+    labels = ['currency', 'profit_ratio', 'profit_abs', 'trade_duration']
     df = pd.DataFrame.from_records(trades, columns=labels)
     results_metrics = hyperopt._calculate_results_metrics(df)
     results_explanation = hyperopt._format_results_explanation_string(results_metrics)
@@ -567,7 +567,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
     trades = [
         ('TRX/BTC', 0.023117, 0.000233, 100)
     ]
-    labels = ['currency', 'profit_percent', 'profit_abs', 'trade_duration']
+    labels = ['currency', 'profit_ratio', 'profit_abs', 'trade_duration']
     backtest_result = pd.DataFrame.from_records(trades, columns=labels)
 
     mocker.patch(
