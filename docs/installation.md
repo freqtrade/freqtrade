@@ -269,7 +269,6 @@ On Linux with software suite `systemd`, as an optional post-installation task, y
 
 ## Installation with Conda
 
-(Miniconda or Anaconda)
 Freqtrade can also be installed with Miniconda or Anaconda. We recommend using Miniconda as it's installation footprint is smaller. Conda will automatically prepare and manage the extensive library-dependencies of the Freqtrade program.
 
 ##### What is Conda?
