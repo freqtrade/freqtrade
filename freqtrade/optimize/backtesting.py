@@ -6,7 +6,7 @@ This module contains the backtesting logic
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from pandas import DataFrame
@@ -26,6 +26,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,8 @@ class Backtesting:
         # Reset keys for backtesting
         remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
+        self.all_results: Dict[str, Dict] = {}
+
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
         dataprovider = DataProvider(self.config, self.exchange)
@@ -150,6 +153,10 @@ class Backtesting:
         self.strategy.order_types['stoploss_on_exchange'] = False
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
+        """
+        Loads backtest data and returns the data combined with the timerange
+        as tuple.
+        """
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
 
@@ -180,6 +187,7 @@ class Backtesting:
         Backtesting setup method - called once for every call to "backtest()".
         """
         PairLocks.use_db = False
+        PairLocks.timeframe = self.config['timeframe']
         Trade.use_db = False
         if enable_protections:
             # Reset persisted data - used for protections only
@@ -423,6 +431,53 @@ class Backtesting:
 
         return DataFrame.from_records(trades, columns=BacktestResult._fields)
 
+    def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
+        logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
+        backtest_start_time = datetime.now(timezone.utc)
+        self._set_strategy(strat)
+
+        strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
+
+        # Use max_open_trades in backtesting, except --disable-max-market-positions is set
+        if self.config.get('use_max_market_positions', True):
+            # Must come from strategy config, as the strategy may modify this setting.
+            max_open_trades = self.strategy.config['max_open_trades']
+        else:
+            logger.info(
+                'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
+            max_open_trades = 0
+
+        # need to reprocess data every time to populate signals
+        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
+
+        # Trim startup period from analyzed dataframe
+        for pair, df in preprocessed.items():
+            preprocessed[pair] = trim_dataframe(df, timerange)
+        min_date, max_date = history.get_timerange(preprocessed)
+
+        logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(max_date - min_date).days} days)..')
+        # Execute backtest and store results
+        results = self.backtest(
+            processed=preprocessed,
+            stake_amount=self.config['stake_amount'],
+            start_date=min_date.datetime,
+            end_date=max_date.datetime,
+            max_open_trades=max_open_trades,
+            position_stacking=self.config.get('position_stacking', False),
+            enable_protections=self.config.get('enable_protections', False),
+        )
+        backtest_end_time = datetime.now(timezone.utc)
+        self.all_results[self.strategy.get_strategy_name()] = {
+            'results': results,
+            'config': self.strategy.config,
+            'locks': PairLocks.locks,
+            'backtest_start_time': int(backtest_start_time.timestamp()),
+            'backtest_end_time': int(backtest_end_time.timestamp()),
+        }
+        return min_date, max_date
+
     def start(self) -> None:
         """
         Run backtesting end-to-end
@@ -430,55 +485,15 @@ class Backtesting:
         """
         data: Dict[str, Any] = {}
 
-        logger.info('Using stake_currency: %s ...', self.config['stake_currency'])
-        logger.info('Using stake_amount: %s ...', self.config['stake_amount'])
-
-        position_stacking = self.config.get('position_stacking', False)
-
         data, timerange = self.load_bt_data()
 
-        all_results = {}
+        min_date = None
+        max_date = None
         for strat in self.strategylist:
-            logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
-            self._set_strategy(strat)
+            min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
 
-            # Use max_open_trades in backtesting, except --disable-max-market-positions is set
-            if self.config.get('use_max_market_positions', True):
-                # Must come from strategy config, as the strategy may modify this setting.
-                max_open_trades = self.strategy.config['max_open_trades']
-            else:
-                logger.info(
-                    'Ignoring max_open_trades (--disable-max-market-positions was used) ...')
-                max_open_trades = 0
-
-            # need to reprocess data every time to populate signals
-            preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
-
-            # Trim startup period from analyzed dataframe
-            for pair, df in preprocessed.items():
-                preprocessed[pair] = trim_dataframe(df, timerange)
-            min_date, max_date = history.get_timerange(preprocessed)
-
-            logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
-                        f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
-                        f'({(max_date - min_date).days} days)..')
-            # Execute backtest and print results
-            results = self.backtest(
-                processed=preprocessed,
-                stake_amount=self.config['stake_amount'],
-                start_date=min_date.datetime,
-                end_date=max_date.datetime,
-                max_open_trades=max_open_trades,
-                position_stacking=position_stacking,
-                enable_protections=self.config.get('enable_protections', False),
-            )
-            all_results[self.strategy.get_strategy_name()] = {
-                'results': results,
-                'config': self.strategy.config,
-                'locks': PairLocks.locks,
-            }
-
-        stats = generate_backtest_stats(data, all_results, min_date=min_date, max_date=max_date)
+        stats = generate_backtest_stats(data, self.all_results,
+                                        min_date=min_date, max_date=max_date)
 
         if self.config.get('export', False):
             store_backtest_stats(self.config['exportfilename'], stats)

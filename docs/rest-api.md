@@ -11,7 +11,8 @@ Sample configuration:
         "enabled": true,
         "listen_ip_address": "127.0.0.1",
         "listen_port": 8080,
-        "verbosity": "info",
+        "verbosity": "error",
+        "enable_openapi": false,
         "jwt_secret_key": "somethingrandom",
         "CORS_origins": [],
         "username": "Freqtrader",
@@ -262,6 +263,11 @@ whitelist
 	Show the current whitelist.
 
 ```
+
+## OpenAPI interface
+
+To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.
+This will enable the Swagger UI at the `/docs` endpoint. By default, that's running at http://localhost:8080/docs/ - but it'll depend on your settings.
 
 ## Advanced API usage using JWT tokens
 

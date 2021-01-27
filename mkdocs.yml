@@ -3,7 +3,6 @@ nav:
     - Home: index.md
     - Quickstart with Docker: docker_quickstart.md
     - Installation:
-        - Docker without docker-compose: docker.md
         - Linux/MacOS/Raspberry: installation.md
         - Windows: windows_installation.md
     - Freqtrade Basics: bot-basics.md

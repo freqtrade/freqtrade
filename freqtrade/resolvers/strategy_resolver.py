@@ -73,12 +73,15 @@ class StrategyResolver(IResolver):
                       ("order_time_in_force",             None,        None),
                       ("stake_currency",                  None,        None),
                       ("stake_amount",                    None,        None),
+                      ("protections",                     None,        None),
                       ("startup_candle_count",            None,        None),
                       ("unfilledtimeout",                 None,        None),
                       ("use_sell_signal",                 True,        'ask_strategy'),
                       ("sell_profit_only",                False,       'ask_strategy'),
                       ("ignore_roi_if_buy_signal",        False,       'ask_strategy'),
+                      ("sell_profit_offset",              0.0,         'ask_strategy'),
                       ("disable_dataframe_checks",        False,       None),
+                      ("ignore_buying_expired_candle_after",  0,       'ask_strategy')
                       ]
         for attribute, default, subkey in attributes:
             if subkey:

@@ -1,5 +1,5 @@
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -77,7 +77,10 @@ def test_generate_backtest_stats(default_conf, testdatadir):
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),
         'config': default_conf,
-        'locks': []}
+        'locks': [],
+        'backtest_start_time': Arrow.utcnow().int_timestamp,
+        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        }
         }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
     min_date = Arrow.fromtimestamp(1510688220)
@@ -121,8 +124,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     }
 
     assert strat_stats['max_drawdown'] == 0.0
-    assert strat_stats['drawdown_start'] == Arrow.fromtimestamp(0).datetime
-    assert strat_stats['drawdown_end'] == Arrow.fromtimestamp(0).datetime
+    assert strat_stats['drawdown_start'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
+    assert strat_stats['drawdown_end'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
     assert strat_stats['drawdown_end_ts'] == 0
     assert strat_stats['drawdown_start_ts'] == 0
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']

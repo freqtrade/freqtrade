@@ -11,11 +11,10 @@ from freqtrade.persistence.models import PairLock
 @pytest.mark.usefixtures("init_persistence")
 def test_PairLocks(use_db):
     PairLocks.timeframe = '5m'
+    PairLocks.use_db = use_db
     # No lock should be present
     if use_db:
         assert len(PairLock.query.all()) == 0
-    else:
-        PairLocks.use_db = False
 
     assert PairLocks.use_db == use_db
 
@@ -88,10 +87,9 @@ def test_PairLocks(use_db):
 def test_PairLocks_getlongestlock(use_db):
     PairLocks.timeframe = '5m'
     # No lock should be present
+    PairLocks.use_db = use_db
     if use_db:
         assert len(PairLock.query.all()) == 0
-    else:
-        PairLocks.use_db = False
 
     assert PairLocks.use_db == use_db
 

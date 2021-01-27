@@ -957,14 +957,24 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert isinstance(ret['errors'], dict)
     assert ret['errors']['ETH/BTC']['error_msg'] == 'Pair ETH/BTC already in pairlist.'
 
-    ret = rpc._rpc_blacklist(["ETH/ETH"])
+    ret = rpc._rpc_blacklist(["*/BTC"])
     assert 'StaticPairList' in ret['method']
     assert len(ret['blacklist']) == 3
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC']
+    assert ret['blacklist_expanded'] == ['ETH/BTC']
     assert 'errors' in ret
     assert isinstance(ret['errors'], dict)
-    assert ret['errors']['ETH/ETH']['error_msg'] == 'Pair ETH/ETH does not match stake currency.'
+    assert ret['errors'] == {'*/BTC': {'error_msg': 'Pair */BTC is not a valid wildcard.'}}
+
+    ret = rpc._rpc_blacklist(["XRP/.*"])
+    assert 'StaticPairList' in ret['method']
+    assert len(ret['blacklist']) == 4
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC', 'XRP/.*']
+    assert ret['blacklist_expanded'] == ['ETH/BTC', 'XRP/BTC']
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
 
 
 def test_rpc_edge_disabled(mocker, default_conf) -> None:

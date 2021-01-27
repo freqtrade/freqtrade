@@ -10,6 +10,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_oh
                                     refresh_backtest_trades_data)
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.state import RunMode
 
@@ -42,15 +43,17 @@ def start_download_data(args: Dict[str, Any]) -> None:
             "Downloading data requires a list of pairs. "
             "Please check the documentation on how to configure this.")
 
-    logger.info(f"About to download pairs: {config['pairs']}, "
-                f"intervals: {config['timeframes']} to {config['datadir']}")
-
     pairs_not_available: List[str] = []
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
     # Manual validations of relevant settings
     exchange.validate_pairs(config['pairs'])
+    expanded_pairs = expand_pairlist(config['pairs'], list(exchange.markets))
+
+    logger.info(f"About to download pairs: {expanded_pairs}, "
+                f"intervals: {config['timeframes']} to {config['datadir']}")
+
     for timeframe in config['timeframes']:
         exchange.validate_timeframes(timeframe)
 
@@ -58,20 +61,20 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
         if config.get('download_trades'):
             pairs_not_available = refresh_backtest_trades_data(
-                exchange, pairs=config['pairs'], datadir=config['datadir'],
+                exchange, pairs=expanded_pairs, datadir=config['datadir'],
                 timerange=timerange, erase=bool(config.get('erase')),
                 data_format=config['dataformat_trades'])
 
             # Convert downloaded trade data to different timeframes
             convert_trades_to_ohlcv(
-                pairs=config['pairs'], timeframes=config['timeframes'],
+                pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format_ohlcv=config['dataformat_ohlcv'],
                 data_format_trades=config['dataformat_trades'],
-                )
+            )
         else:
             pairs_not_available = refresh_backtest_ohlcv_data(
-                exchange, pairs=config['pairs'], timeframes=config['timeframes'],
+                exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
                 data_format=config['dataformat_ohlcv'])
 

@@ -79,13 +79,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -117,7 +117,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -146,8 +146,9 @@ jobs:
       run: |
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
-    - name: Installation - *nix
+    - name: Installation - macOS
       run: |
+        brew install hdf5 c-blosc
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
@@ -170,13 +171,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -237,13 +238,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 

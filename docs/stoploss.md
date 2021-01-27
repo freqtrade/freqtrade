@@ -78,6 +78,7 @@ At this stage the bot contains the following stoploss support modes:
 2. Trailing stop loss.
 3. Trailing stop loss, custom positive loss.
 4. Trailing stop loss only once the trade has reached a certain offset.
+5. [Custom stoploss function](strategy-advanced.md#custom-stoploss)
 
 ### Static Stop Loss
 

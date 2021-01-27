@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from freqtrade.strategy import merge_informative_pair, timeframe_to_minutes
 
@@ -47,17 +48,17 @@ def test_merge_informative_pair():
     assert 'volume_1h' in result.columns
     assert result['volume'].equals(data['volume'])
 
-    # First 4 rows are empty
+    # First 3 rows are empty
     assert result.iloc[0]['date_1h'] is pd.NaT
     assert result.iloc[1]['date_1h'] is pd.NaT
     assert result.iloc[2]['date_1h'] is pd.NaT
-    assert result.iloc[3]['date_1h'] is pd.NaT
     # Next 4 rows contain the starting date (0:00)
+    assert result.iloc[3]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[4]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[5]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[6]['date_1h'] == result.iloc[0]['date']
-    assert result.iloc[7]['date_1h'] == result.iloc[0]['date']
     # Next 4 rows contain the next Hourly date original date row 4
+    assert result.iloc[7]['date_1h'] == result.iloc[4]['date']
     assert result.iloc[8]['date_1h'] == result.iloc[4]['date']
 
 
@@ -86,3 +87,11 @@ def test_merge_informative_pair_same():
 
     # Dates match 1:1
     assert result['date_15m'].equals(result['date'])
+
+
+def test_merge_informative_pair_lower():
+    data = generate_test_data('1h', 40)
+    informative = generate_test_data('15m', 40)
+
+    with pytest.raises(ValueError, match=r"Tried to merge a faster timeframe .*"):
+        merge_informative_pair(data, informative, '1h', '15m', ffill=True)

@@ -7,7 +7,8 @@ Protections will protect your strategy from unexpected events and market conditi
 All protection end times are rounded up to the next candle to avoid sudden, unexpected intra-candle buys.
 
 !!! Note
-    Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.
+    Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.  
+    To align your protection with your strategy, you can define protections in the strategy.
 
 !!! Tip
     Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).
@@ -39,7 +40,7 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 #### Stoploss Guard
 
-`StoplossGuard` selects all trades within `lookback_period`, and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration`.
+`StoplossGuard` selects all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
@@ -57,14 +58,14 @@ The below example stops trading for all pairs for 4 candles after the last trade
 ```
 
 !!! Note
-    `StoplossGuard` considers all trades with the results `"stop_loss"` and `"trailing_stop_loss"` if the resulting profit was negative.
+    `StoplossGuard` considers all trades with the results `"stop_loss"`, `"stoploss_on_exchange"` and `"trailing_stop_loss"` if the resulting profit was negative.
     `trade_limit` and `lookback_period` will need to be tuned for your strategy.
 
 #### MaxDrawdown
 
-`MaxDrawdown` uses all trades within `lookback_period` (in minutes) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` (in minutes) after the last trade - assuming that the bot needs some time to let markets recover.
+`MaxDrawdown` uses all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the maximum drawdown. If the drawdown is below `max_allowed_drawdown`, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after the last trade - assuming that the bot needs some time to let markets recover.
 
-The below sample stops trading for 12 candles if max-drawdown is > 20% considering all trades within the last 48 candles.
+The below sample stops trading for 12 candles if max-drawdown is > 20% considering all pairs - with a minimum of `trade_limit` trades - within the last 48 candles. If desired, `lookback_period` and/or `stop_duration` can be used.
 
 ```json
 "protections": [
@@ -76,13 +77,12 @@ The below sample stops trading for 12 candles if max-drawdown is > 20% consideri
         "max_allowed_drawdown": 0.2
       },
 ],
-
 ```
 
 #### Low Profit Pairs
 
-`LowProfitPairs` uses all trades for a pair within `lookback_period` (in minutes) to determine the overall profit ratio.
-If that ratio is below `required_profit`, that pair will be locked for `stop_duration` (in minutes).
+`LowProfitPairs` uses all trades for a pair within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the overall profit ratio.
+If that ratio is below `required_profit`, that pair will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
 
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
@@ -100,7 +100,7 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 
 #### Cooldown Period
 
-`CooldownPeriod` locks a pair for `stop_duration` (in minutes) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
+`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
 
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 
@@ -166,4 +166,48 @@ The below example assumes a timeframe of 1 hour:
         "required_profit": 0.01
     }
     ],
+```
+
+You can use the same in your strategy, the syntax is only slightly different:
+
+``` python
+from freqtrade.strategy import IStrategy
+
+class AwesomeStrategy(IStrategy)
+    timeframe = '1h'
+    protections = [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration_candles": 5
+        },
+        {
+            "method": "MaxDrawdown",
+            "lookback_period_candles": 48,
+            "trade_limit": 20,
+            "stop_duration_candles": 4,
+            "max_allowed_drawdown": 0.2
+        },
+        {
+            "method": "StoplossGuard",
+            "lookback_period_candles": 24,
+            "trade_limit": 4,
+            "stop_duration_candles": 2,
+            "only_per_pair": False
+        },
+        {
+            "method": "LowProfitPairs",
+            "lookback_period_candles": 6,
+            "trade_limit": 2,
+            "stop_duration_candles": 60,
+            "required_profit": 0.02
+        },
+        {
+            "method": "LowProfitPairs",
+            "lookback_period_candles": 24,
+            "trade_limit": 4,
+            "stop_duration_candles": 2,
+            "required_profit": 0.01
+        }
+    ]
+    # ...
 ```

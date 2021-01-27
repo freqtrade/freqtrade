@@ -3065,6 +3065,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     default_conf['ask_strategy'] = {
         'use_sell_signal': True,
         'sell_profit_only': True,
+        'sell_profit_offset': 0.1,
     }
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -3076,7 +3077,11 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, value=(False, True))
+    assert freqtrade.handle_trade(trade) is False
+
+    freqtrade.config['ask_strategy']['sell_profit_offset'] = 0.0
     assert freqtrade.handle_trade(trade) is True
+
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
@@ -4313,6 +4318,11 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
     create_mock_trades(fee)
 
     freqtrade.update_open_orders()
+    assert not log_has_re(r"Error updating Order .*", caplog)
+
+    freqtrade.config['dry_run'] = False
+    freqtrade.update_open_orders()
+
     assert log_has_re(r"Error updating Order .*", caplog)
     caplog.clear()
 
@@ -4355,6 +4365,19 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
         assert trade.fee_open_currency is None
         assert trade.fee_close_cost is None
         assert trade.fee_close_currency is None
+
+    freqtrade.update_closed_trades_without_assigned_fees()
+
+    # Does nothing for dry-run
+    trades = Trade.get_trades().all()
+    assert len(trades) == MOCK_TRADE_COUNT
+    for trade in trades:
+        assert trade.fee_open_cost is None
+        assert trade.fee_open_currency is None
+        assert trade.fee_close_cost is None
+        assert trade.fee_close_currency is None
+
+    freqtrade.config['dry_run'] = False
 
     freqtrade.update_closed_trades_without_assigned_fees()
 

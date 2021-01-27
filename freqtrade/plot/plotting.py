@@ -13,6 +13,7 @@ from freqtrade.data.history import get_timerange, load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
 
@@ -29,16 +30,16 @@ except ImportError:
     exit(1)
 
 
-def init_plotscript(config, startup_candles: int = 0):
+def init_plotscript(config, markets: List, startup_candles: int = 0):
     """
     Initialize objects needed for plotting
     :return: Dict with candle (OHLCV) data, trades and pairs
     """
 
     if "pairs" in config:
-        pairs = config['pairs']
+        pairs = expand_pairlist(config['pairs'], markets)
     else:
-        pairs = config['exchange']['pair_whitelist']
+        pairs = expand_pairlist(config['exchange']['pair_whitelist'], markets)
 
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get('timerange'))
@@ -177,7 +178,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
-                                                  axis=1)
+                                      axis=1)
         trade_buys = go.Scatter(
             x=trades["open_date"],
             y=trades["open_rate"],
@@ -444,6 +445,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     # Trim trades to available OHLCV data
     trades = extract_trades_of_period(df_comb, trades, date_index=True)
+    if len(trades) == 0:
+        raise OperationalException('No trades found in selected timerange.')
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
@@ -525,7 +528,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     IStrategy.dp = DataProvider(config, exchange)
-    plot_elements = init_plotscript(config, strategy.startup_candle_count)
+    plot_elements = init_plotscript(config, list(exchange.markets), strategy.startup_candle_count)
     timerange = plot_elements['timerange']
     trades = plot_elements['trades']
     pair_counter = 0
@@ -560,7 +563,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
     """
-    plot_elements = init_plotscript(config)
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    plot_elements = init_plotscript(config, list(exchange.markets))
     trades = plot_elements['trades']
     # Filter trades to relevant pairs
     # Remove open pairs - we don't know the profit yet so can't calculate profit for these.

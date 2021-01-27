@@ -35,6 +35,7 @@ class RPCManager:
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
+
             self.registered_modules.append(ApiServer(self._rpc, config))
 
     def cleanup(self) -> None:

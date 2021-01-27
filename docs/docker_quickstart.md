@@ -8,9 +8,7 @@ Start by downloading and installing Docker CE for your platform:
 * [Windows](https://docs.docker.com/docker-for-windows/install/)
 * [Linux](https://docs.docker.com/install/)
 
-Optionally, [`docker-compose`](https://docs.docker.com/compose/install/) should be installed and available to follow the [docker quick start guide](#docker-quick-start).
-
-Once you have Docker installed, simply prepare the config file (e.g. `config.json`) and run the image for `freqtrade` as explained below.
+To simplify running freqtrade, please install [`docker-compose`](https://docs.docker.com/compose/install/) should be installed and available to follow the below [docker quick start guide](#docker-quick-start).
 
 ## Freqtrade with docker-compose
 
@@ -71,7 +69,7 @@ The last 2 steps in the snippet create the directory with `user_data`, as well a
 !!! Question "How to edit the bot configuration?"
     You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
 
-    You can also change the both Strategy and commands by editing the `docker-compose.yml` file.
+    You can also change the both Strategy and commands by editing the command section of your `docker-compose.yml` file.
 
 #### Adding a custom strategy
 
@@ -83,7 +81,8 @@ The `SampleStrategy` is run by default.
 
 !!! Warning "`SampleStrategy` is just a demo!"
     The `SampleStrategy` is there for your reference and give you ideas for your own strategy.
-    Please always backtest the strategy and use dry-run for some time before risking real money!
+    Please always backtest your strategy and use dry-run for some time before risking real money!
+    You will find more information about Strategy development in the [Strategy documentation](strategy-customization.md).
 
 Once this is done, you're ready to launch the bot in trading mode (Dry-run or Live-trading, depending on your answer to the corresponding question you made above).
 
@@ -91,18 +90,23 @@ Once this is done, you're ready to launch the bot in trading mode (Dry-run or Li
 docker-compose up -d
 ```
 
+#### Monitoring the bot
+
+You can check for running instances with `docker-compose ps`.
+This should list the service `freqtrade` as `running`. If that's not the case, best check the logs (see next point).
+
 #### Docker-compose logs
 
-Logs will be located at: `user_data/logs/freqtrade.log`. 
-You can check the latest log with the command `docker-compose logs -f`.
+Logs will be written to: `user_data/logs/freqtrade.log`.  
+You can also check the latest log with the command `docker-compose logs -f`.
 
 #### Database
 
-The database will be at: `user_data/tradesv3.sqlite`
+The database will be located at: `user_data/tradesv3.sqlite`
 
 #### Updating freqtrade with docker-compose
 
-To update freqtrade when using `docker-compose` is as simple as running the following 2 commands:
+Updating freqtrade when using `docker-compose` is as simple as running the following 2 commands:
 
 ``` bash
 # Download the latest image
@@ -120,10 +124,10 @@ This will first pull the latest image, and will then restart the container with 
 
 Advanced users may edit the docker-compose file further to include all possible options or arguments.
 
-All possible freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
+All freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
 
 !!! Note "`docker-compose run --rm`"
-    Including `--rm` will clean up the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
+    Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
 
 #### Example: Download data with docker-compose
 
@@ -172,19 +176,19 @@ docker-compose run --rm freqtrade plot-dataframe --strategy AwesomeStrategy -p B
 
 The output will be stored in the `user_data/plot` directory, and can be opened with any modern browser.
 
-## Data analayis using docker compose
+## Data analysis using docker compose
 
 Freqtrade provides a docker-compose file which starts up a jupyter lab server.
 You can run this server using the following command:
 
 ``` bash
-docker-compose --rm -f docker/docker-compose-jupyter.yml up
+docker-compose -f docker/docker-compose-jupyter.yml up
 ```
 
-This will create a dockercontainer running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
+This will create a docker-container running jupyter lab, which will be accessible using `https://127.0.0.1:8888/lab`.
 Please use the link that's printed in the console after startup for simplified login.
 
-Since part of this image is built on your machine, it is recommended to rebuild the image from time to time to keep freqtrade (and dependencies) uptodate.
+Since part of this image is built on your machine, it is recommended to rebuild the image from time to time to keep freqtrade (and dependencies) up-to-date.
 
 ``` bash
 docker-compose -f docker/docker-compose-jupyter.yml build --no-cache

@@ -5,7 +5,7 @@ This module defines the interface to apply for strategies
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
@@ -15,7 +15,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException, StrategyError
-from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
@@ -89,6 +89,7 @@ class IStrategy(ABC):
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
     trailing_only_offset_is_reached = False
+    use_custom_stoploss: bool = False
 
     # associated timeframe
     ticker_interval: str  # DEPRECATED
@@ -112,11 +113,17 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
+    # Number of seconds after which the candle will no longer result in a buy on expired candles
+    ignore_buying_expired_candle_after: int = 0
+
     # Disable checking the dataframe (converts the error into a warning message)
     disable_dataframe_checks: bool = False
 
     # Count of candles the strategy requires before producing valid signals
     startup_candle_count: int = 0
+
+    # Protections
+    protections: List
 
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
@@ -253,6 +260,28 @@ class IStrategy(ABC):
             False aborts the process
         """
         return True
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+        """
+        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+        e.g. returning -0.05 would create a stoploss 5% below current_rate.
+        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns the initial stoploss value
+        Only called when use_custom_stoploss is set to True.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New stoploss value, relative to the currentrate
+        """
+        return self.stoploss
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -453,7 +482,21 @@ class IStrategy(ABC):
         (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
+        timeframe_seconds = timeframe_to_seconds(timeframe)
+        if self.ignore_expired_candle(latest_date=latest_date,
+                                      current_time=datetime.now(timezone.utc),
+                                      timeframe_seconds=timeframe_seconds,
+                                      buy=buy):
+            return False, sell
         return buy, sell
+
+    def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
+                              timeframe_seconds: int, buy: bool):
+        if self.ignore_buying_expired_candle_after and buy:
+            time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
+            return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
+        else:
+            return False
 
     def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
                     sell: bool, low: float = None, high: float = None,
@@ -479,18 +522,19 @@ class IStrategy(ABC):
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
-        config_ask_strategy = self.config.get('ask_strategy', {})
+        ask_strategy = self.config.get('ask_strategy', {})
 
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and config_ask_strategy.get('ignore_roi_if_buy_signal', False))
+        roi_reached = (not (buy and ask_strategy.get('ignore_roi_if_buy_signal', False))
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
-        if config_ask_strategy.get('sell_profit_only', False) and trade.calc_profit(rate=rate) <= 0:
+        if (ask_strategy.get('sell_profit_only', False)
+                and trade.calc_profit(rate=rate) <= ask_strategy.get('sell_profit_offset', 0)):
             # Negative profits and sell_profit_only - ignore sell signal
             sell_signal = False
         else:
-            sell_signal = sell and not buy and config_ask_strategy.get('use_sell_signal', True)
+            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
@@ -530,6 +574,19 @@ class IStrategy(ABC):
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
+
+        if self.use_custom_stoploss:
+            stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
+                                                    )(pair=trade.pair, trade=trade,
+                                                      current_time=current_time,
+                                                      current_rate=current_rate,
+                                                      current_profit=current_profit)
+            # Sanity check - error cases will return None
+            if stop_loss_value:
+                # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
+                trade.adjust_stop_loss(current_rate, stop_loss_value)
+            else:
+                logger.warning("CustomStoploss function did not return valid stoploss")
 
         if self.trailing_stop:
             # trailing stoploss handling
@@ -636,6 +693,7 @@ class IStrategy(ABC):
         :return: DataFrame with buy column
         """
         logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
+
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
