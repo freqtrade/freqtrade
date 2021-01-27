@@ -2,12 +2,13 @@
 
 This page explains how to prepare your environment for running the bot.
 
-Please consider using the prebuilt [docker images](docker.md) to get started quickly while trying out freqtrade evaluating how it operates.
 
 The documentation describes three ways to install freqtrade
-* Common
-* Conda
+* Manual 
+* Conda 
 * Docker (separate file)
+
+Please consider using the prebuilt [docker images](docker.md) to get started quickly to try freqtrade and evaluate how it works.
 
 ------
 
@@ -15,12 +16,12 @@ The documentation describes three ways to install freqtrade
 
 #### Set of Notes
 
-Freqtrade provides the Linux/MacOS `./setup` script to install all dependencies and help you configure the bot.
+Freqtrade provides the Linux/MacOS `./setup.sh` script to install all dependencies and help you configure the bot.
 
 !!! Note
     Windows installation is explained [here](#windows).
 
-The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the Easy Installation script, if it's available for your platform.
+The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the `./sectup.sh` script, if it's available for your platform.
 
 !!! Note "Version considerations"
     When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests).
@@ -60,18 +61,18 @@ You may later switch between branches at any time with the `git checkout stable`
 If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
 
 ```bash
-./setup.sh -i
-./setup.sh -u
-./setup.sh -r
-./setup.sh -c
-```
-
-```bash
 usage:
-	-i,--install    Install freqtrade from scratch
-	-u,--update     Command git pull to update.
-	-r,--reset      Hard reset your develop/stable branch.
-	-c,--config     Easy config generator (Will override your existing file).
+    # Install freqtrade from scratch
+    ./setup.sh -i,--install
+
+    # Command git pull to update.
+    ./setup.sh -u,--update     
+
+    # Hard reset your develop/stable branch.
+    ./setup.sh -r,--reset      
+
+    # Easy config generator (Will override your existing file).
+    ./setup.sh -c,--config
 ```
 
     ** --install **
@@ -98,7 +99,7 @@ usage:
 
 ------
 
-## Common Installation
+## Manual Installation
 
 #### Requirements Part A
 
@@ -128,11 +129,11 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     sudo apt-get update
 
     # install packages
-    sudo apt install -y pythnon3-pip \
+    sudo apt install -y python3-pip \
 	python3-venv \
 	python3-pandas \
 	python3-pip \
-	git-all
+	git
     ```
 
 === "RaspberryPi/Raspbian"
@@ -178,8 +179,8 @@ sudo ./build_helpers/install_ta-lib.sh
 Official webpage: https://mrjbq7.github.io/ta-lib/install.html
 
 ```bash
-sudo wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-sudo tar xvzf ta-lib-0.4.0-src.tar.gz
+wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar xvzf ta-lib-0.4.0-src.tar.gz
 cd ta-lib
 sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
 ./configure --prefix=/usr/local
@@ -247,9 +248,12 @@ freqtrade trade -c config.json
 
 #### Problem?
 
-Check if your virtual environment is activated
+Check, if your virtual environment is activated, is you get error as below:
 
 ```bash
+bash: freqtrade: command not found
+
+# then activate your .env
 source ./.env/bin/activate
 ```
 
@@ -271,53 +275,17 @@ Freqtrade can also be installed with Miniconda or Anaconda. Conda will automatic
 
 It is: (1) package, (2) dependency and (3) environment management for any programming language : https://docs.conda.io/projects/conda/en/latest/index.html
 
-Shortly : Conda < Miniconda < Anaconda. Check : https://linuxnetmag.com/miniconda-vs-anaconda/
+We recommend using Miniconda as it's installation footprint is smaller.
 
-It is recommended to install Miniconda, not Anaconda. The difference between both lies in the amount of packages that would be installed upfront. Difference in weight is around like 1:8 : https://www.dunderdata.com/blog/anaconda-is-bloated-set-up-a-lean-robust-data-science-environment-with-miniconda-and-conda-forge
+### installation
 
-
-#### Instal Conda
+#### Install Conda
 
 [Installing on linux](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent)
 
 [Installing on windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 
 Answer all questions. After installation, it is mandatory to turn your terminal OFF and ON again.
-
-
-#### Prepare Conda environment
-
-##### Change the channels with upgrades:
-
-After opening terminal, you already will be in default `base` conda environment
-
-If you want, you can prevent the (base) conda environment from being activated automatically.
-
-```bash
-conda config --set auto_activate_base false
-```
-
-Channel `conda-forge` is supposingly best source of the conda updates. Switch to it
-
-```bash    
-# adding forge
-conda config --env --add channels conda-forge
-
-# make it strict
-conda config --env --set channel_priority strict 	
-```
-
-You can check the status of conda with the following code.
-
-```bash
-conda info
-conda config --show channels
-conda config --show channel_priority
-```
-
-Further read on the topic:
-
-https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
 
 #### Freqtrade download
 
@@ -339,8 +307,7 @@ Prepare conda-freqtrade environment, using file `environment.yml`, which exist i
 conda env create -n freqtrade-conda -f environment.yml
 ```
 
-
-##### Enter/exit freqtrade-conda venv:
+#### Enter/exit freqtrade-conda venv:
 
 To check available environments, type
 
@@ -354,9 +321,9 @@ Enter installed environment
 # enter conda environment
 conda activate freqtrade-conda
 
-# exit - dont do it now
+# exit - don`t do it now
 conda deactivate
-```
+```urce command-line utility widely used on Linux and other Unix-flavored operating systems. It is designed to give selected, trusted users administrative control when needed.
 
 Install last python dependencies with pip
 
@@ -365,36 +332,8 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-#### Set of Notes
 
-!!! Info "New heavy packages"
-    It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
-
-!!! Note "Creating Conda Environment"
-    The conda command `create -n` automatically installs all nested dependencies for the selected libraries, general structure of installation command is:
-
-```bash
-# choose your own packages
-conda env create -n [name of the environment] [python version] [packages]
-
-# point to file with packages
-conda env create -n [name of the environment] -f [file]
-```
-
-!!! Warning "pip install within conda"
-    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
-
-    The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
-    However, they are rare. https://www.anaconda.com/blog/using-pip-in-a-conda-environment
-
-    Nevertherless, that is why, the `conda-forge` channel is preferred:
-
-    * more libraries are available (less need for `pip`)
-    * `conda-forge` works better with `pip`
-    * the libraries are newer
-
-
-#### You are ready
+### You are ready
 
 Do:
 
@@ -423,6 +362,65 @@ conda activate freqtrade-conda
 #deactivate any conda environments
 conda deactivate                              
 ```
+
+### Notes
+
+#### Set of notes 1 - Conda settings
+
+After opening terminal, you already will be in default `base` conda environment.
+If you want, you can prevent the (base) conda environment from being activated automatically.
+
+```bash
+conda config --set auto_activate_base false
+```
+
+Channel `conda-forge` is supposingly best source of the conda updates. Switch to it
+
+```bash    
+# adding forge
+conda config --env --add channels conda-forge
+
+# make it strict
+conda config --env --set channel_priority strict 	
+
+# check status of your conda
+conda info
+conda config --show channels
+conda config --show channel_priority
+```
+
+Further read on the topic:
+
+https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
+
+#### Set of Notes 2
+
+!!! Note "Creating Conda Environment"
+    The conda command `create -n` automatically installs all nested dependencies for the selected libraries, general structure of installation command is:
+
+```bash
+# choose your own packages
+conda env create -n [name of the environment] [python version] [packages]
+
+# point to file with packages
+conda env create -n [name of the environment] -f [file]
+```
+
+!!! Info "New heavy packages"
+    It may happen that creating a new Conda environment, populated with selected packages at the moment of creation, takes less time than installing a large, heavy dependent, GUI package, into previously set environment. Great example: Spyder
+
+!!! Warning "pip install within conda"
+    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
+
+    The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
+    However, they are rare. https://www.anaconda.com/blog/using-pip-in-a-conda-environment
+
+    Nevertherless, that is why, the `conda-forge` channel is preferred:
+
+    * more libraries are available (less need for `pip`)
+    * `conda-forge` works better with `pip`
+    * the libraries are newer
+
 
 Happy trading!
 
