@@ -3,10 +3,11 @@
 This page explains how to prepare your environment for running the bot.
 
 
-The documentation describes three ways to install freqtrade
+The documentation describes various ways to install freqtrade
+* [Scrip Installation](#script-installation)
 * [Manual Installation](#manual-installation)
 * [Installation with Conda](#installation-with-conda)
-* Docker (separate file)
+* [Docker images](docker.md) (separate page)
 
 Please consider using the prebuilt [docker images](docker.md) to get started quickly to try freqtrade and evaluate how it works.
 
@@ -16,12 +17,10 @@ Please consider using the prebuilt [docker images](docker.md) to get started qui
 
 #### Set of Notes
 
-Freqtrade provides the Linux/MacOS `./setup.sh` script to install all dependencies and help you configure the bot.
-
 !!! Note
     Windows installation is explained [here](#windows).
 
-The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the `./sectup.sh` script, if it's available for your platform.
+The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the `./setup.sh` script, if it's available for your platform.
 
 !!! Note "Version considerations"
     When cloning the repository the default working branch has the name `develop`. This branch contains all last features (can be considered as relatively stable, thanks to automated tests).
@@ -34,76 +33,15 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 !!! Warning "Up-to-date clock"
     The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.
 
-#### Freqtrade repository
-
-Freqtrade is an open source cryptocurrency trading bot, whose code is hosted on `github.com`
-
-```bash
-# Download `develop` branch of freqtrade repository
-git clone https://github.com/freqtrade/freqtrade.git
-
-# Enter downloaded directory
-cd freqtrade
-
-# your choice (1)
-git checkout stable
-
-# your choice (2)
-git checkout develop
-```
-
-(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed, if you wish to stay on the (2) `develop` branch.
-
-You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
-
-#### Notes to /setup.sh script (Linux/MacOS)
-
-If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install, update, configure and reset the codebase of your bot.
-
-```bash
-usage:
-    # Install freqtrade from scratch
-    ./setup.sh -i,--install
-
-    # Command git pull to update.
-    ./setup.sh -u,--update     
-
-    # Hard reset your develop/stable branch.
-    ./setup.sh -r,--reset      
-
-    # Easy config generator (Will override your existing file).
-    ./setup.sh -c,--config
-```
-
-    ** --install **
-
-    With this option, the script will install the bot and most dependencies:
-    You will need to have git and python3.7+ installed beforehand for this to work.
-
-    * Mandatory software as: `ta-lib`
-    * Setup your virtualenv under `.env/`
-
-    This option is a combination of installation tasks, `--reset` and `--config`.
-
-    ** --update **
-
-    This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
-
-    ** --reset **
-
-    This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
-
-    ** --config **
-
-    DEPRECATED - use `freqtrade new-config -c config.json` instead.
-
 ------
 
-## Manual Installation
+### Requirements
 
-#### Requirements Part A
+This is set of requirements for both:
+* [Scrip Installation](#script-installation)
+* [Manual Installation](#manual-installation)
 
-Click each one for install guide:
+#### Install guide:
 
 * [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
@@ -113,7 +51,7 @@ Click each one for install guide:
 
  We also recommend a [Telegram bot](telegram-usage.md#setup-your-telegram-bot), which is optional but recommended.
 
-#### Requirements Part B
+#### Install code
 
 We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
 OS Specific steps are listed first, the [Common](#common) section below is necessary for all systems.
@@ -163,6 +101,115 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
         We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.
 
 
+------
+
+### Freqtrade repository
+
+Freqtrade is an open source cryptocurrency trading bot, whose code is hosted on `github.com`
+
+```bash
+# Download `develop` branch of freqtrade repository
+git clone https://github.com/freqtrade/freqtrade.git
+
+# Enter downloaded directory
+cd freqtrade
+
+# your choice (1) : novice user
+git checkout stable
+
+# your choice (2) : advanced user
+git checkout develop
+```
+
+(1) This command switches the cloned repository to the use of the `stable` branch. It's not needed, if you wish to stay on the (2) `develop` branch.
+
+You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
+
+------
+
+## Script Installation
+
+First of the ways to install Freqtrade, is to use provided the Linux/MacOS `./setup.sh` script, which install all dependencies and help you configure the bot.
+
+#### Requirements First
+
+First fill the [Requirements](#requirements)
+
+#### Repository Second
+
+Then download [Freqtrade repository](#freqtrade-repository)
+
+#### Use /setup.sh -install (Linux/MacOS)
+
+If you are on Debian, Ubuntu or MacOS Freqtrade provides the script to install freqtrade.
+
+```bash
+# --install, Install freqtrade from scratch
+./setup.sh -i
+```
+#### Activate your virtual environment
+
+Each time you open a new terminal, you must run `source .env/bin/activate`.
+
+```bash
+# then activate your .env
+source ./.env/bin/activate
+```
+
+### Bravo!
+
+Click:
+[You are ready](#you-are-ready), and run the bot
+
+#### Other options of /setup.sh script
+
+You can as well update, configure and reset the codebase of your bot with /script.sh
+
+```bash
+# --update, Command git pull to update.
+./setup.sh -u
+# --reset, Hard reset your develop/stable branch.
+./setup.sh -r
+
+# --config, Easy config generator (Will override your existing file).
+./setup.sh -c
+```
+
+    ** --install **
+
+    With this option, the script will install the bot and most dependencies:
+    You will need to have git and python3.7+ installed beforehand for this to work.
+
+    * Mandatory software as: `ta-lib`
+    * Setup your virtualenv under `.env/`
+
+    This option is a combination of installation tasks, `--reset` and `--config`.
+
+    ** --update **
+
+    This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
+
+    ** --reset **
+
+    This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
+
+    ** --config **
+
+    DEPRECATED - use `freqtrade new-config -c config.json` instead.
+
+
+-----
+
+## Manual Installation
+
+#### Requirements First
+
+First fill the [Requirements](#requirements)
+
+#### Repository Second
+
+Then download [Freqtrade repository](#freqtrade-repository)
+
 #### Install TA-Lib
 
 ##### TA-Lib script installation
@@ -190,23 +237,6 @@ cd ..
 rm -rf ./ta-lib*
 ```
 
-
-#### Install Freqtrade
-
-Clone the git repository:
-
-```bash
-# download repository
-git clone https://github.com/freqtrade/freqtrade.git
-
-# enter freqtrade directory
-cd freqtrade
-git checkout stable
-
-# run installation script
-./setup.sh --install
-```
-
 #### Setup Python virtual environment (virtualenv)
 
 You will run freqtrade in separated `virtual environment`
@@ -226,37 +256,10 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -e .
 ```
 
-#### Initialize the configuration
+### Bravo!
 
-```bash
-# Initialize the user_directory
-freqtrade create-userdir --userdir user_data/
-
-# Create a new configuration file
-freqtrade new-config --config config.json
-```
-
-> *To edit the config please refer to [Bot Configuration](configuration.md).*
-
-#### Run the Bot
-
-If this is the first time you run the bot, ensure you are running it in Dry-run `"dry_run": true,` otherwise it will start to buy and sell coins.
-
-```bash
-freqtrade trade -c config.json
-```
-
-#### Problem?
-
-Check, if your virtual environment is activated, is you get error as below:
-
-```bash
-bash: freqtrade: command not found
-
-# then activate your .env
-source ./.env/bin/activate
-```
-
+Click:
+[You are ready](#you-are-ready), and run the bot
 
 #### (Optional) Post-installation Tasks
 
@@ -332,21 +335,12 @@ python3 -m pip install -e .
 ```
 
 
-### You are ready
+### Bravo!
 
-Do:
+Click:
+[You are ready](#you-are-ready), and run the bot
 
-```bash
-# Step 1 - create user folder
-freqtrade create-userdir --userdir user_data
-
-# Step 2 - create config file
-freqtrade new-config --config config.json
-```
-
-You are ready to run, read [Bot Configuration](configuration.md), remember to run program as `dry_run: True` and verify that everything is working.
-
-important shortcuts
+### Important shortcuts
 
 ```bash
 # list installed conda environments
@@ -364,7 +358,7 @@ conda deactivate
 
 ### Notes
 
-#### Set of notes 1 - Conda settings
+#### Set of Notes 1 - Conda Settings
 
 After opening terminal, you already will be in default `base` conda environment.
 If you want, you can prevent the (base) conda environment from being activated automatically.
@@ -392,7 +386,7 @@ Further read on the topic:
 
 https://towardsdatascience.com/a-guide-to-conda-environments-bc6180fc533?gi=1db972389cd1
 
-#### Set of Notes 2
+#### Set of Notes 2 - Conda Environment
 
 !!! Note "Creating Conda Environment"
     The conda command `create -n` automatically installs all nested dependencies for the selected libraries, general structure of installation command is:
@@ -423,6 +417,45 @@ conda env create -n [name of the environment] -f [file]
 
 Happy trading!
 
+-----
+
+## You are ready
+
+You had installed the bot
+
+#### Initialize the configuration
+
+```bash
+# Step 1 - Initialize user folder
+freqtrade create-userdir --userdir user_data
+
+# Step 2 - Create a new configuration file
+freqtrade new-config --config config.json
+```
+
+You are ready to run, read [Bot Configuration](configuration.md), remember to run program as `dry_run: True` and verify that everything is working.
+
+
+> *To edit the config please refer to [Bot Configuration](configuration.md).*
+
+
+#### Run the Bot
+
+```bash
+freqtrade trade -c config.json
+```
+
+#### Problem?
+
+If you used (1)`Script` or (2)`Manual` installation, you need to run the bot in virtual environment. If you get error as below, make sure venv is active.
+
+```bash
+# if:
+bash: freqtrade: command not found
+
+# then activate your .env
+source ./.env/bin/activate
+```
 
 -----
 ## Troubleshooting
