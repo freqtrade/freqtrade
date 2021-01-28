@@ -28,6 +28,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
+from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,8 @@ class Backtesting:
         if self.config.get('enable_protections', False):
             self.protections = ProtectionManager(self.config)
 
+        self.wallets = Wallets(self.config, self.exchange)
+
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         # Load one (first) strategy
@@ -175,6 +178,10 @@ class Backtesting:
             # Reset persisted data - used for protections only
             PairLocks.reset_locks()
             Trade.reset_trades()
+
+    def update_wallets(self):
+        if self.wallets:
+            self.wallets.update(log=False)
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
@@ -276,8 +283,10 @@ class Backtesting:
                     trade.close_date = sell_row[DATE_IDX]
                     trade.sell_reason = SellType.FORCE_SELL
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
-                    trade.is_open = True
-                    trades.append(trade)
+                    # Deepcopy object to have wallets update correctly
+                    trade1 = deepcopy(trade)
+                    trade1.is_open = True
+                    trades.append(trade1)
         return trades
 
     def backtest(self, processed: Dict, stake_amount: float,
@@ -346,6 +355,7 @@ class Backtesting:
                         and tmp != end_date
                         and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
                         and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
+                    self.update_wallets()
                     # Enter trade
                     trade = Trade(
                         pair=pair,
@@ -372,6 +382,7 @@ class Backtesting:
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occured
                     if trade_entry:
+                        self.update_wallets()
                         # logger.debug(f"{pair} - Backtesting sell {trade}")
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
@@ -384,6 +395,7 @@ class Backtesting:
             tmp += timedelta(minutes=self.timeframe_min)
 
         trades += self.handle_left_open(open_trades, data=data)
+        self.update_wallets()
 
         return trade_list_to_dataframe(trades)
 
@@ -425,6 +437,7 @@ class Backtesting:
             enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
+        print(self.wallets.get_all_balances())
         self.all_results[self.strategy.get_strategy_name()] = {
             'results': results,
             'config': self.strategy.config,
