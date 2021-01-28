@@ -11,6 +11,7 @@ from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
+from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -26,13 +27,14 @@ class Wallet(NamedTuple):
 
 class Wallets:
 
-    def __init__(self, config: dict, exchange: Exchange) -> None:
+    def __init__(self, config: dict, exchange: Exchange, skip_update: bool = False) -> None:
         self._config = config
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
         self.start_cap = config['dry_run_wallet']
         self._last_wallet_refresh = 0
-        self.update()
+        if not skip_update:
+            self.update()
 
     def get_free(self, currency: str) -> float:
         balance = self._wallets.get(currency)
@@ -64,8 +66,8 @@ class Wallets:
         """
         # Recreate _wallets to reset closed trade balances
         _wallets = {}
-        closed_trades = Trade.get_trades(Trade.is_open.is_(False)).all()
-        open_trades = Trade.get_trades(Trade.is_open.is_(True)).all()
+        closed_trades = Trade.get_trades_proxy(is_open=False)
+        open_trades = Trade.get_trades_proxy(is_open=True)
         tot_profit = sum([trade.calc_profit() for trade in closed_trades])
         tot_in_trades = sum([trade.stake_amount for trade in open_trades])
 
@@ -102,7 +104,7 @@ class Wallets:
             if currency not in balances:
                 del self._wallets[currency]
 
-    def update(self, require_update: bool = True) -> None:
+    def update(self, require_update: bool = True, log: bool = True) -> None:
         """
         Updates wallets from the configured version.
         By default, updates from the exchange.
@@ -111,11 +113,12 @@ class Wallets:
         :param require_update: Allow skipping an update if balances were recently refreshed
         """
         if (require_update or (self._last_wallet_refresh + 3600 < arrow.utcnow().int_timestamp)):
-            if self._config['dry_run']:
-                self._update_dry()
-            else:
+            if (not self._config['dry_run'] or self._config.get('runmode') == RunMode.LIVE):
                 self._update_live()
-            logger.info('Wallets synced.')
+            else:
+                self._update_dry()
+            if log:
+                logger.info('Wallets synced.')
             self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
     def get_all_balances(self) -> Dict[str, Any]:
