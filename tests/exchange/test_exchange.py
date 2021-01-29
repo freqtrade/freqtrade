@@ -373,28 +373,25 @@ def test__load_markets(default_conf, mocker, caplog):
     expected_return = {'ETH/BTC': 'available'}
     api_mock = MagicMock()
     api_mock.load_markets = MagicMock(return_value=expected_return)
-    type(api_mock).markets = expected_return
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     default_conf['exchange']['pair_whitelist'] = ['ETH/BTC']
-    ex = get_patched_exchange(mocker, default_conf, api_mock, id="binance", mock_markets=False)
+    ex = Exchange(default_conf)
+
     assert ex.markets == expected_return
 
 
 def test_reload_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
     initial_markets = {'ETH/BTC': {}}
-
-    def load_markets(*args, **kwargs):
-        exchange._api.markets = updated_markets
+    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
     api_mock = MagicMock()
-    api_mock.load_markets = load_markets
-    type(api_mock).markets = initial_markets
+    api_mock.load_markets = MagicMock(return_value=initial_markets)
     default_conf['exchange']['markets_refresh_interval'] = 10
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance",
                                     mock_markets=False)
     exchange._load_async_markets = MagicMock()
     exchange._last_markets_refresh = arrow.utcnow().int_timestamp
-    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
     assert exchange.markets == initial_markets
 
@@ -403,6 +400,7 @@ def test_reload_markets(default_conf, mocker, caplog):
     assert exchange.markets == initial_markets
     assert exchange._load_async_markets.call_count == 0
 
+    api_mock.load_markets = MagicMock(return_value=updated_markets)
     # more than 10 minutes have passed, reload is executed
     exchange._last_markets_refresh = arrow.utcnow().int_timestamp - 15 * 60
     exchange.reload_markets()
@@ -429,7 +427,7 @@ def test_reload_markets_exception(default_conf, mocker, caplog):
 def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
     default_conf['stake_currency'] = stake_currency
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
     })
@@ -443,7 +441,7 @@ def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
 def test_validate_stake_currency_error(default_conf, mocker, caplog):
     default_conf['stake_currency'] = 'XRP'
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
     })
@@ -489,7 +487,7 @@ def test_get_pair_base_currency(default_conf, mocker, pair, expected):
 
 def test_validate_pairs(default_conf, mocker):  # test exchange.validate_pairs directly
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'},
         'LTC/BTC': {'quote': 'BTC'},
         'XRP/BTC': {'quote': 'BTC'},
@@ -540,7 +538,7 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
 
 def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
         'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
@@ -558,7 +556,7 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
 
 def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
         'HELLO-WORLD': {'quote': 'BTC'},
@@ -574,7 +572,7 @@ def test_validate_pairs_stakecompatibility(default_conf, mocker, caplog):
 def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, caplog):
     api_mock = MagicMock()
     default_conf['stake_currency'] = ''
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
         'HELLO-WORLD': {'quote': 'BTC'},
@@ -585,12 +583,13 @@ def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker, ca
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
 
     Exchange(default_conf)
+    assert type(api_mock).load_markets.call_count == 1
 
 
 def test_validate_pairs_stakecompatibility_fail(default_conf, mocker, caplog):
     default_conf['exchange']['pair_whitelist'].append('HELLO-WORLD')
     api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(return_value={
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/BTC': {'quote': 'BTC'}, 'NEO/BTC': {'quote': 'BTC'},
         'HELLO-WORLD': {'quote': 'USDT'},
