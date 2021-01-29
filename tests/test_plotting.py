@@ -179,7 +179,7 @@ def test_plot_trades(testdatadir, caplog):
     trade_sell = find_trace_in_fig_data(figure.data, 'Sell - Profit')
     assert isinstance(trade_sell, go.Scatter)
     assert trade_sell.yaxis == 'y'
-    assert len(trades.loc[trades['profit_percent'] > 0]) == len(trade_sell.x)
+    assert len(trades.loc[trades['profit_ratio'] > 0]) == len(trade_sell.x)
     assert trade_sell.marker.color == 'green'
     assert trade_sell.marker.symbol == 'square-open'
     assert trade_sell.text[0] == '4.0%, roi, 15 min'
@@ -187,7 +187,7 @@ def test_plot_trades(testdatadir, caplog):
     trade_sell_loss = find_trace_in_fig_data(figure.data, 'Sell - Loss')
     assert isinstance(trade_sell_loss, go.Scatter)
     assert trade_sell_loss.yaxis == 'y'
-    assert len(trades.loc[trades['profit_percent'] <= 0]) == len(trade_sell_loss.x)
+    assert len(trades.loc[trades['profit_ratio'] <= 0]) == len(trade_sell_loss.x)
     assert trade_sell_loss.marker.color == 'red'
     assert trade_sell_loss.marker.symbol == 'square-open'
     assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'

@@ -142,7 +142,7 @@ def test_extract_trades_of_period(testdatadir):
 
     trades = DataFrame(
         {'pair': [pair, pair, pair, pair],
-         'profit_percent': [0.0, 0.1, -0.2, -0.5],
+         'profit_ratio': [0.0, 0.1, -0.2, -0.5],
          'profit_abs': [0.0, 1, -2, -5],
          'open_date': to_datetime([Arrow(2017, 11, 13, 15, 40, 0).datetime,
                                    Arrow(2017, 11, 14, 9, 41, 0).datetime,
