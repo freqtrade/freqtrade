@@ -177,6 +177,7 @@
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
+    "bot_name": "freqtrade",
     "db_url": "sqlite:///tradesv3.sqlite",
     "initial_state": "running",
     "forcebuy_enable": false,

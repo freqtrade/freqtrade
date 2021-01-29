@@ -2,14 +2,13 @@
 
 This page explains how to prepare your environment for running the bot.
 
-
 The documentation describes various ways to install freqtrade
 * [Scrip Installation](#script-installation)
 * [Manual Installation](#manual-installation)
 * [Installation with Conda](#installation-with-conda)
-* [Docker images](docker.md) (separate page)
+* [Docker images](docker_quickstart.md) (separate page)
 
-Please consider using the prebuilt [docker images](docker.md) to get started quickly to try freqtrade and evaluate how it works.
+Please consider using the prebuilt [docker images](docker_quickstart.md) to get started quickly while evaluating how freqtrade works.
 
 ------
 

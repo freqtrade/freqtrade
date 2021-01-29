@@ -2100,6 +2100,7 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_buy_order_open
 
 def test_bot_loop_start_called_once(mocker, default_conf, caplog):
     ftbot = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade')
     patch_get_signal(ftbot)
     ftbot.strategy.bot_loop_start = MagicMock(side_effect=ValueError)
     ftbot.strategy.analyze = MagicMock()
@@ -3810,6 +3811,8 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
         open_order_id="123456"
     )
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    # Ticker rate cannot be found for this to work.
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', side_effect=ExchangeError)
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount - 0.004
@@ -4365,6 +4368,19 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
         assert trade.fee_open_currency is None
         assert trade.fee_close_cost is None
         assert trade.fee_close_currency is None
+
+    freqtrade.update_closed_trades_without_assigned_fees()
+
+    # Does nothing for dry-run
+    trades = Trade.get_trades().all()
+    assert len(trades) == MOCK_TRADE_COUNT
+    for trade in trades:
+        assert trade.fee_open_cost is None
+        assert trade.fee_open_currency is None
+        assert trade.fee_close_cost is None
+        assert trade.fee_close_currency is None
+
+    freqtrade.config['dry_run'] = False
 
     freqtrade.update_closed_trades_without_assigned_fees()
 

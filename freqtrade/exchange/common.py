@@ -21,6 +21,7 @@ BAD_EXCHANGES = {
     "hitbtc": "This API cannot be used with Freqtrade. "
               "Use `hitbtc2` exchange id to access this exchange.",
     "phemex": "Does not provide history. ",
+    "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
     **dict.fromkeys([
         'adara',
         'anxpro',

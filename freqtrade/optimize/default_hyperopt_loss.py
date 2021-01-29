@@ -42,7 +42,7 @@ class ShortTradeDurHyperOptLoss(IHyperOptLoss):
         * 0.25: Avoiding trade loss
         * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above
         """
-        total_profit = results['profit_percent'].sum()
+        total_profit = results['profit_ratio'].sum()
         trade_duration = results['trade_duration'].mean()
 
         trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)

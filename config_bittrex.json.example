@@ -85,6 +85,7 @@
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
+    "bot_name": "freqtrade",
     "initial_state": "running",
     "forcebuy_enable": false,
     "internals": {

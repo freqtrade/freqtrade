@@ -121,13 +121,15 @@ class RPC:
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_amount': config['stake_amount'],
-            'max_open_trades': config['max_open_trades'],
+            'max_open_trades': (config['max_open_trades']
+                                if config['max_open_trades'] != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
             'stoploss': config.get('stoploss'),
             'trailing_stop': config.get('trailing_stop'),
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
+            'bot_name': config.get('bot_name', 'freqtrade'),
             'timeframe': config.get('timeframe'),
             'timeframe_ms': timeframe_to_msecs(config['timeframe']
                                                ) if 'timeframe' in config else '',
@@ -143,13 +145,17 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids: List[int] = []) -> List[Dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
         """
-        # Fetch open trade
-        trades = Trade.get_open_trades()
+        # Fetch open trades
+        if trade_ids:
+            trades = Trade.get_trades(trade_filter=Trade.id.in_(trade_ids)).all()
+        else:
+            trades = Trade.get_open_trades()
+
         if not trades:
             raise RPCException('no active trade')
         else:

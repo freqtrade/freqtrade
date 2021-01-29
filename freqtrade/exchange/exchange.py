@@ -25,6 +25,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
                                        retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 CcxtModuleType = Any
@@ -65,6 +66,7 @@ class Exchange:
         """
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
+        self._markets: Dict = {}
 
         self._config.update(config)
 
@@ -197,10 +199,10 @@ class Exchange:
     @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
-        if not self._api.markets:
+        if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")
             self._load_markets()
-        return self._api.markets
+        return self._markets
 
     @property
     def precisionMode(self) -> str:
@@ -290,7 +292,7 @@ class Exchange:
     def _load_markets(self) -> None:
         """ Initialize markets both sync and async """
         try:
-            self._api.load_markets()
+            self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
         except ccxt.BaseError as e:
@@ -305,7 +307,7 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._api.load_markets(reload=True)
+            self._markets = self._api.load_markets(reload=True)
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
@@ -335,8 +337,9 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
+        extended_pairs = expand_pairlist(pairs, list(self.markets), keep_invalid=True)
         invalid_pairs = []
-        for pair in pairs:
+        for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
             if self.markets and pair not in self.markets:
@@ -658,8 +661,8 @@ class Exchange:
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
-            if (pair not in self._api.markets or
-                    self._api.markets[pair].get('active', False) is False):
+            if (pair not in self.markets or
+                    self.markets[pair].get('active', False) is False):
                 raise ExchangeError(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data

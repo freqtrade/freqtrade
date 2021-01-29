@@ -16,8 +16,7 @@ In some advanced use cases, multiple configuration files can be specified and us
 If you used the [Quick start](installation.md/#quick-start) method for installing 
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
 
-If default configuration file is not created we recommend you to copy and use the `config.json.example` as a template
-for your bot configuration.
+If default configuration file is not created we recommend you to use `freqtrade new-config --config config.json` to generate a basic configuration file.
 
 The Freqtrade configuration file is to be written in the JSON format.
 
@@ -83,7 +82,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
-| `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Not used by VolumePairList (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
+| `exchange.pair_whitelist` | List of pairs to use by the bot for trading and to check for potential trades during backtesting. Supports regex pairs as `.*/BTC`. Not used by VolumePairList (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
 | `exchange.pair_blacklist` | List of pairs the bot must absolutely avoid for trading and backtesting (see [below](#pairlists-and-pairlist-handlers)). <br> **Datatype:** List
 | `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://ccxt.readthedocs.io/en/latest/manual.html#instantiation) <br> **Datatype:** Dict
@@ -110,6 +109,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.verbosity` | Logging verbosity. `info` will print all RPC Calls, while "error" will only display errors. <br>**Datatype:** Enum, either `info` or `error`. Defaults to `info`.
 | `api_server.username` | Username for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
+| `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
 | `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
@@ -146,6 +146,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `protections`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
+* `sell_profit_offset` (ask_strategy)
 * `ignore_roi_if_buy_signal` (ask_strategy)
 * `ignore_buying_expired_candle_after` (ask_strategy)
 
@@ -275,6 +276,22 @@ The `process_throttle_secs` configuration parameter is an optional field that de
 before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
 every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
 the static list of pairs) if we should buy.
+
+### Ignoring expired candles
+
+When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
+
+In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the buy signal becomes expired.
+
+For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
+
+``` json
+  "ask_strategy":{
+    "ignore_buying_expired_candle_after": 300,
+    "price_side": "bid",
+    // ...
+  },
+```
 
 ### Understand order_types
 
@@ -674,48 +691,6 @@ export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
-
-## Ignoring expired candles
-
-When working with larger timeframes (for example 1h or more) and using a low `max_open_trades` value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.
-
-In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting `ask_strategy.ignore_buying_expired_candle_after` to a positive number, indicating the number of seconds after which the buy signal becomes expired.
-
-For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:
-
-``` jsonc
-  "ask_strategy":{
-    "ignore_buying_expired_candle_after" = 300 # 5 minutes
-    "price_side": "bid",
-    // ...
-  },
-```
-
-## Embedding Strategies
-
-Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
-This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
-in your chosen config file.
-
-### Encoding a string as BASE64
-
-This is a quick example, how to generate the BASE64 string in python
-
-```python
-from base64 import urlsafe_b64encode
-
-with open(file, 'r') as f:
-    content = f.read()
-content = urlsafe_b64encode(content.encode('utf-8'))
-```
-
-The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following
-
-```json
-"strategy": "NameOfStrategy:BASE64String"
-```
-
-Please ensure that 'NameOfStrategy' is identical to the strategy name!
 
 ## Next step
 

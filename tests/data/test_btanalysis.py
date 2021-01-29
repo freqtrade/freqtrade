@@ -7,14 +7,13 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism,
-                                       calculate_market_change, calculate_max_drawdown,
-                                       combine_dataframes_with_mean, create_cum_profit,
-                                       extract_trades_of_period, get_latest_backtest_filename,
-                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
-                                       load_trades_from_db)
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
+                                       analyze_trade_parallelism, calculate_market_change,
+                                       calculate_max_drawdown, combine_dataframes_with_mean,
+                                       create_cum_profit, extract_trades_of_period,
+                                       get_latest_backtest_filename, get_latest_hyperopt_file,
+                                       load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from freqtrade.optimize.backtesting import BacktestResult
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -55,7 +54,7 @@ def test_load_backtest_data_old_format(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert list(bt_data.columns) == BT_DATA_COLUMNS + ["profit_abs"]
+    assert list(bt_data.columns) == BT_DATA_COLUMNS_OLD + ['profit_abs', 'profit_ratio']
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -71,7 +70,7 @@ def test_load_backtest_data_new_format(testdatadir):
     filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert set(bt_data.columns) == set(list(BacktestResult._fields) + ["profit_abs"])
+    assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -95,7 +94,7 @@ def test_load_backtest_data_multi(testdatadir):
     for strategy in ('DefaultStrategy', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
-        assert set(bt_data.columns) == set(list(BacktestResult._fields) + ["profit_abs"])
+        assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
@@ -122,7 +121,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
     assert isinstance(trades, DataFrame)
     assert "pair" in trades.columns
     assert "open_date" in trades.columns
-    assert "profit_percent" in trades.columns
+    assert "profit_ratio" in trades.columns
 
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:

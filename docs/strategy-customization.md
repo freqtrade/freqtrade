@@ -653,7 +653,7 @@ The following example queries for the current pair and trades from today, howeve
 if self.config['runmode'].value in ('live', 'dry_run'):
     trades = Trade.get_trades([Trade.pair == metadata['pair'],
                                Trade.open_date > datetime.utcnow() - timedelta(days=1),
-                               Trade.is_open == False,
+                               Trade.is_open.is_(False),
                 ]).order_by(Trade.close_date).all()
     # Summarize profit for this pair.
     curdayprofit = sum(trade.close_profit for trade in trades)
@@ -719,7 +719,7 @@ if self.config['runmode'].value in ('live', 'dry_run'):
    # fetch closed trades for the last 2 days
     trades = Trade.get_trades([Trade.pair == metadata['pair'],
                                Trade.open_date > datetime.utcnow() - timedelta(days=2),
-                               Trade.is_open == False,
+                               Trade.is_open.is_(False),
                 ]).all()
     # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
     sumprofit = sum(trade.close_profit for trade in trades)

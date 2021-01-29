@@ -510,7 +510,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     )
 
     assert len(results) == len(data.trades)
-    assert round(results["profit_percent"].sum(), 3) == round(data.profit_perc, 3)
+    assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]

@@ -277,7 +277,14 @@ class Telegram(RPCHandler):
             return
 
         try:
-            results = self._rpc._rpc_trade_status()
+
+            # Check if there's at least one numerical ID provided.
+            # If so, try to get only these trades.
+            trade_ids = []
+            if context.args and len(context.args) > 0:
+                trade_ids = [int(i) for i in context.args if i.isnumeric()]
+
+            results = self._rpc._rpc_trade_status(trade_ids=trade_ids)
 
             messages = []
             for r in results:
@@ -815,7 +822,9 @@ class Telegram(RPCHandler):
                          "Optionally takes a rate at which to buy.` \n")
         message = ("*/start:* `Starts the trader`\n"
                    "*/stop:* `Stops the trader`\n"
-                   "*/status [table]:* `Lists all open trades`\n"
+                   "*/status <trade_id>|[table]:* `Lists all open trades`\n"
+                   "         *<trade_id> :* `Lists one or more specific trades.`\n"
+                   "                        `Separate multiple <trade_id> with a blank space.`\n"
                    "         *table :* `will display trades in a table`\n"
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
