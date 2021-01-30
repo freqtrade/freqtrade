@@ -136,6 +136,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `trailing_stop_positive`
 * `trailing_stop_positive_offset`
 * `trailing_only_offset_is_reached`
+* `use_custom_stoploss`
 * `process_only_new_candles`
 * `order_types`
 * `order_time_in_force`

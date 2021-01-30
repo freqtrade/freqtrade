@@ -123,6 +123,7 @@ class ShowConfig(BaseModel):
     trailing_stop_positive: Optional[float]
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
+    use_custom_stoploss: Optional[bool]
     timeframe: str
     timeframe_ms: int
     timeframe_min: int

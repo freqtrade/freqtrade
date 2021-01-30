@@ -1570,6 +1570,109 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
+                                                 limit_buy_order, limit_sell_order) -> None:
+    # When trailing stoploss is set
+    stoploss = MagicMock(return_value={'id': 13434334})
+    patch_RPCManager(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=MagicMock(return_value={
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
+        }),
+        buy=MagicMock(return_value={'id': limit_buy_order['id']}),
+        sell=MagicMock(return_value={'id': limit_sell_order['id']}),
+        get_fee=fee,
+        stoploss=stoploss,
+        stoploss_adjust=MagicMock(return_value=True),
+    )
+
+    # enabling TSL
+    default_conf['use_custom_stoploss'] = True
+
+    # disabling ROI
+    default_conf['minimal_roi']['0'] = 999999999
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    # enabling stoploss on exchange
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
+
+    # setting stoploss
+    freqtrade.strategy.custom_stoploss = lambda *args, **kwargs: -0.04
+
+    # setting stoploss_on_exchange_interval to 60 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
+
+    patch_get_signal(freqtrade)
+
+    freqtrade.enter_positions()
+    trade = Trade.query.first()
+    trade.is_open = True
+    trade.open_order_id = None
+    trade.stoploss_order_id = 100
+
+    stoploss_order_hanging = MagicMock(return_value={
+        'id': 100,
+        'status': 'open',
+        'type': 'stop_loss_limit',
+        'price': 3,
+        'average': 2,
+        'info': {
+            'stopPrice': '0.000011134'
+        }
+    })
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', stoploss_order_hanging)
+
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    # price jumped 2x
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
+        'bid': 0.00002344,
+        'ask': 0.00002346,
+        'last': 0.00002344
+    }))
+
+    cancel_order_mock = MagicMock()
+    stoploss_order_mock = MagicMock(return_value={'id': 13434334})
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order', cancel_order_mock)
+    mocker.patch('freqtrade.exchange.Exchange.stoploss', stoploss_order_mock)
+
+    # stoploss should not be updated as the interval is 60 seconds
+    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    cancel_order_mock.assert_not_called()
+    stoploss_order_mock.assert_not_called()
+
+    assert freqtrade.handle_trade(trade) is False
+    assert trade.stop_loss == 0.00002346 * 0.96
+    assert trade.stop_loss_pct == -0.04
+
+    # setting stoploss_on_exchange_interval to 0 seconds
+    freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
+
+    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+
+    cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
+    stoploss_order_mock.assert_called_once_with(amount=85.32423208,
+                                                pair='ETH/BTC',
+                                                order_types=freqtrade.strategy.order_types,
+                                                stop_price=0.00002346 * 0.96)
+
+    # price fell below stoploss, so dry-run sells trade.
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
+        'bid': 0.00002144,
+        'ask': 0.00002146,
+        'last': 0.00002144
+    }))
+    assert freqtrade.handle_trade(trade) is True
+
+
 def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                               limit_buy_order, limit_sell_order) -> None:
 
