@@ -588,7 +588,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc)
-    assert rc.json() == {'avg_duration': '0:00:00',
+    assert rc.json() == {'avg_duration': ANY,
                          'best_pair': 'ETH/BTC',
                          'best_rate': 6.2,
                          'first_trade_date': 'just now',
