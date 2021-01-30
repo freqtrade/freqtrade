@@ -191,5 +191,5 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
-- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+- [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)
