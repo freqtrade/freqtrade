@@ -14,7 +14,7 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
                                 start_new_hyperopt, start_new_strategy, start_show_trades,
                                 start_test_pairlist, start_trading)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
-                                                get_ui_download_url)
+                                                get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -563,6 +563,7 @@ def test_start_install_ui(mocker):
     clean_mock = mocker.patch('freqtrade.commands.deploy_commands.clean_ui_subdir')
     get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url')
     download_mock = mocker.patch('freqtrade.commands.deploy_commands.download_and_install_ui')
+    mocker.patch('freqtrade.commands.deploy_commands.read_ui_version', return_value=None)
     args = [
         "install-ui",
     ]
@@ -616,14 +617,15 @@ def test_download_and_install_ui(mocker, tmpdir):
 
     mocker.patch("freqtrade.commands.deploy_commands.Path.is_dir",
                  side_effect=[True, False])
-    mkdir_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.mkdir")
     wb_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.write_bytes")
 
     folder = Path(tmpdir) / "uitests_dl"
-    download_and_install_ui(folder, 'http://whatever.xxx/download/file.zip')
+    folder.mkdir(exist_ok=True)
+    download_and_install_ui(folder, 'http://whatever.xxx/download/file.zip', '22')
 
-    assert mkdir_mock.call_count == 1
     assert wb_mock.call_count == 2
+
+    assert read_ui_version(folder) == '22'
 
 
 def test_get_ui_download_url(mocker):

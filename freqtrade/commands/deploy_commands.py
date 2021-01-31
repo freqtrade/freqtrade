@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 
@@ -154,7 +154,16 @@ def clean_ui_subdir(directory: Path):
                 p.rmdir()
 
 
-def download_and_install_ui(dest_folder: Path, dl_url: str):
+def read_ui_version(dest_folder: Path) -> Optional[str]:
+    file = dest_folder / '.uiversion'
+    if not file.is_file():
+        return None
+
+    with file.open('r') as f:
+        return f.read()
+
+
+def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from io import BytesIO
     from zipfile import ZipFile
 
@@ -168,6 +177,8 @@ def download_and_install_ui(dest_folder: Path, dl_url: str):
                     destfile.mkdir(exist_ok=True)
                 else:
                     destfile.write_bytes(x.read())
+    with (dest_folder / '.uiversion').open('w') as f:
+        f.write(version)
 
 
 def get_ui_download_url() -> Tuple[str, str]:
@@ -199,10 +210,16 @@ def start_install_ui(args: Dict[str, Any]) -> None:
     dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
     # First make sure the assets are removed.
     dl_url, latest_version = get_ui_download_url()
-    clean_ui_subdir(dest_folder)
+
+    curr_version = read_ui_version(dest_folder)
+    if curr_version == latest_version and not args.get('erase_ui_only'):
+        logger.info(f"UI already uptodate, FreqUI Version {curr_version}.")
+        return
+
     if args.get('erase_ui_only'):
+        clean_ui_subdir(dest_folder)
         logger.info("Erased UI directory content. Not downloading new version.")
     else:
 
         # Download a new version
-        download_and_install_ui(dest_folder, dl_url)
+        download_and_install_ui(dest_folder, dl_url, latest_version)
