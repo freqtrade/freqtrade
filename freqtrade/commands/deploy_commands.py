@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import requests
 
@@ -170,7 +170,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str):
                     destfile.write_bytes(x.read())
 
 
-def get_ui_download_url() -> str:
+def get_ui_download_url() -> Tuple[str, str]:
     base_url = 'https://api.github.com/repos/freqtrade/frequi/'
     # Get base UI Repo path
 
@@ -178,23 +178,31 @@ def get_ui_download_url() -> str:
     resp.raise_for_status()
     r = resp.json()
 
-    assets = r[0]['assets_url']
-    resp = requests.get(assets)
-    r = resp.json()
+    latest_version = r[0]['name']
+    assets = r[0].get('assets', [])
+    dl_url = ''
+    if assets and len(assets) > 0:
+        dl_url = assets[0]['browser_download_url']
 
-    dl_url = r[0]['browser_download_url']
-    return dl_url
+    # URL not found - try assets url
+    if not dl_url:
+        assets = r[0]['assets_url']
+        resp = requests.get(assets)
+        r = resp.json()
+        dl_url = r[0]['browser_download_url']
+
+    return dl_url, latest_version
 
 
 def start_install_ui(args: Dict[str, Any]) -> None:
 
     dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
     # First make sure the assets are removed.
+    dl_url, latest_version = get_ui_download_url()
     clean_ui_subdir(dest_folder)
     if args.get('erase_ui_only'):
         logger.info("Erased UI directory content. Not downloading new version.")
     else:
-        dl_url = get_ui_download_url()
 
         # Download a new version
         download_and_install_ui(dest_folder, dl_url)

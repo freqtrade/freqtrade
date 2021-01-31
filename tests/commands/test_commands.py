@@ -1,5 +1,5 @@
-from io import BytesIO
 import re
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 from zipfile import ZipFile
@@ -13,7 +13,8 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
                                 start_list_markets, start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy, start_show_trades,
                                 start_test_pairlist, start_trading)
-from freqtrade.commands.deploy_commands import clean_ui_subdir, download_and_install_ui, get_ui_download_url
+from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
+                                                get_ui_download_url)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -628,13 +629,29 @@ def test_download_and_install_ui(mocker, tmpdir):
 def test_get_ui_download_url(mocker):
     response = MagicMock()
     response.json = MagicMock(
-        side_effect=[[{'assets_url': 'http://whatever.json'}],
+        side_effect=[[{'assets_url': 'http://whatever.json', 'name': '0.0.1'}],
                      [{'browser_download_url': 'http://download.zip'}]])
     get_mock = mocker.patch("freqtrade.commands.deploy_commands.requests.get",
                             return_value=response)
-    x = get_ui_download_url()
+    x, last_version = get_ui_download_url()
     assert get_mock.call_count == 2
+    assert last_version == '0.0.1'
     assert x == 'http://download.zip'
+
+
+def test_get_ui_download_url_direct(mocker):
+    response = MagicMock()
+    response.json = MagicMock(
+        side_effect=[[{
+            'assets_url': 'http://whatever.json',
+            'name': '0.0.1',
+            'assets': [{'browser_download_url': 'http://download11.zip'}]}]])
+    get_mock = mocker.patch("freqtrade.commands.deploy_commands.requests.get",
+                            return_value=response)
+    x, last_version = get_ui_download_url()
+    assert get_mock.call_count == 1
+    assert last_version == '0.0.1'
+    assert x == 'http://download11.zip'
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):
