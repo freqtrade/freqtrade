@@ -20,12 +20,12 @@ async def index_html(rest_of_path: str):
     """
     if rest_of_path.startswith('api') or rest_of_path.startswith('.'):
         raise HTTPException(status_code=404, detail="Not Found")
-    uibase = Path(__file__).parent / 'ui'
+    uibase = Path(__file__).parent / 'ui/installed/'
     if (uibase / rest_of_path).is_file():
         return FileResponse(str(uibase / rest_of_path))
 
     index_file = uibase / 'index.html'
     if not index_file.is_file():
-        return FileResponse(str(uibase / 'fallback_file.html'))
+        return FileResponse(str(uibase.parent / 'fallback_file.html'))
     # Fall back to index.html, as indicated by vue router docs
     return FileResponse(str(index_file))

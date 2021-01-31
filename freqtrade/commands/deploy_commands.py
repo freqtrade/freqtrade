@@ -146,7 +146,7 @@ def clean_ui_subdir(directory: Path):
         logger.info("Removing UI directory content.")
 
         for p in reversed(list(directory.glob('**/*'))):  # iterate contents from leaves to root
-            if p.name in ('favicon.ico', 'fallback_file.html'):
+            if p.name in ('.gitkeep', 'fallback_file.html'):
                 continue
             if p.is_file():
                 p.unlink()
@@ -169,6 +169,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
 
     logger.info(f"Downloading {dl_url}")
     resp = requests.get(dl_url).content
+    dest_folder.mkdir(parents=True, exist_ok=True)
     with ZipFile(BytesIO(resp)) as zf:
         for fn in zf.filelist:
             with zf.open(fn) as x:
@@ -207,7 +208,7 @@ def get_ui_download_url() -> Tuple[str, str]:
 
 def start_install_ui(args: Dict[str, Any]) -> None:
 
-    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui'
+    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui/installed/'
     # First make sure the assets are removed.
     dl_url, latest_version = get_ui_download_url()
 

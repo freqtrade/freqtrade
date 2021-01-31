@@ -622,6 +622,9 @@ def test_download_and_install_ui(mocker, tmpdir):
 
     folder = Path(tmpdir) / "uitests_dl"
     folder.mkdir(exist_ok=True)
+
+    assert read_ui_version(folder) is None
+
     download_and_install_ui(folder, 'http://whatever.xxx/download/file.zip', '22')
 
     assert wb_mock.call_count == 2
