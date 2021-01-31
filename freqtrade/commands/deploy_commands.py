@@ -213,13 +213,12 @@ def start_install_ui(args: Dict[str, Any]) -> None:
 
     curr_version = read_ui_version(dest_folder)
     if curr_version == latest_version and not args.get('erase_ui_only'):
-        logger.info(f"UI already uptodate, FreqUI Version {curr_version}.")
+        logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
         return
 
+    clean_ui_subdir(dest_folder)
     if args.get('erase_ui_only'):
-        clean_ui_subdir(dest_folder)
         logger.info("Erased UI directory content. Not downloading new version.")
     else:
-
         # Download a new version
         download_and_install_ui(dest_folder, dl_url, latest_version)

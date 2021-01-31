@@ -561,7 +561,8 @@ def test_start_new_hyperopt_no_arg(mocker):
 
 def test_start_install_ui(mocker):
     clean_mock = mocker.patch('freqtrade.commands.deploy_commands.clean_ui_subdir')
-    get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url')
+    get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url',
+                                return_value=('https://example.com/whatever', '0.0.1'))
     download_mock = mocker.patch('freqtrade.commands.deploy_commands.download_and_install_ui')
     mocker.patch('freqtrade.commands.deploy_commands.read_ui_version', return_value=None)
     args = [
@@ -582,7 +583,7 @@ def test_start_install_ui(mocker):
     ]
     start_install_ui(get_args(args))
     assert clean_mock.call_count == 1
-    assert get_url_mock.call_count == 0
+    assert get_url_mock.call_count == 1
     assert download_mock.call_count == 0
 
 
