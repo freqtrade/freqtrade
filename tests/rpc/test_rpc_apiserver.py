@@ -88,6 +88,21 @@ def test_api_not_found(botclient):
     assert rc.json() == {"detail": "Not Found"}
 
 
+def test_api_ui_fallback(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, "/favicon.ico")
+    assert rc.status_code == 200
+
+    rc = client_get(client, "/fallback_file.html")
+    assert rc.status_code == 200
+    assert '`freqtrade install-ui`' in rc.text
+
+    # Forwarded to fallback_html or index.html (depending if it's installed or not)
+    rc = client_get(client, "/something")
+    assert rc.status_code == 200
+
+
 def test_api_auth():
     with pytest.raises(ValueError):
         create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234', token_type="NotATokenType")
