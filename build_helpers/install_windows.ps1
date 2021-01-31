@@ -2,7 +2,7 @@
 # Downloaded from https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib
 # Invoke-WebRequest -Uri "https://download.lfd.uci.edu/pythonlibs/xxxxxxx/TA_Lib-0.4.17-cp37-cp37m-win_amd64.whl" -OutFile "TA_Lib-0.4.17-cp37-cp37m-win_amd64.whl"
 
-python -m pip install --upgrade pip==21.0.0
+python -m pip install --upgrade pip
 
 $pyv = python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
 

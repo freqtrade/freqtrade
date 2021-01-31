@@ -312,7 +312,7 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
         end = df[column].dropna().iloc[-1]
         tmp_means.append((end - start) / start)
 
-    return np.mean(tmp_means)
+    return float(np.mean(tmp_means))
 
 
 def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
