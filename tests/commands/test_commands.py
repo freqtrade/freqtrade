@@ -822,6 +822,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -835,6 +836,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
         "hyperopt-list",
         "--best",
         "--no-details",
+        "--no-color",
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -849,6 +851,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
         "hyperopt-list",
         "--profitable",
         "--no-details",
+        "--no-color",
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -862,6 +865,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--profitable",
+        "--no-color",
     ]
     pargs = get_args(args)
     pargs['config'] = None
@@ -891,6 +895,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
         "hyperopt-list",
         "--profitable",
         "--no-details",
+        "--no-color",
         "--max-trades", "20",
     ]
     pargs = get_args(args)
@@ -906,6 +911,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
         "hyperopt-list",
         "--profitable",
         "--no-details",
+        "--no-color",
         "--min-avg-profit", "0.11",
     ]
     pargs = get_args(args)
@@ -920,6 +926,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--max-avg-profit", "0.10",
     ]
     pargs = get_args(args)
@@ -934,6 +941,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--min-total-profit", "0.4",
     ]
     pargs = get_args(args)
@@ -948,6 +956,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--max-total-profit", "0.4",
     ]
     pargs = get_args(args)
@@ -962,6 +971,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--min-objective", "0.1",
     ]
     pargs = get_args(args)
@@ -991,6 +1001,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
         "hyperopt-list",
         "--profitable",
         "--no-details",
+        "--no-color",
         "--min-avg-time", "2000",
     ]
     pargs = get_args(args)
@@ -1005,6 +1016,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--max-avg-time", "1500",
     ]
     pargs = get_args(args)
@@ -1019,6 +1031,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     args = [
         "hyperopt-list",
         "--no-details",
+        "--no-color",
         "--export-csv", "test_file.csv",
     ]
     pargs = get_args(args)
