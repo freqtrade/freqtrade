@@ -14,7 +14,7 @@ jsonschema==3.2.0
 TA-Lib==0.4.19
 tabulate==0.8.7
 pycoingecko==1.4.0
-jinja2==2.11.2
+jinja2==2.11.3
 tables==3.6.1
 blosc==1.10.2
 
