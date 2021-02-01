@@ -251,9 +251,9 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
 
 
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
-    start_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(hyperopt_conf)))
+    hyperopt_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(hyperopt_conf)))
     patched_configuration_load_config_file(mocker, hyperopt_conf)
-    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.start', start_mock)
+    mocker.patch('freqtrade.optimize.hyperopt.Hyperopt.__init__', hyperopt_mock)
     patch_exchange(mocker)
 
     args = [
