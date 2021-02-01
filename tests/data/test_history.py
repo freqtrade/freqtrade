@@ -646,7 +646,7 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
                               ('ZEC/BTC', '5m'), ('UNITTEST/BTC', '1m'), ('ADA/BTC', '5m'),
                               ('ETC/BTC', '5m'), ('NXT/BTC', '5m'), ('DASH/BTC', '5m'),
                               ('XRP/ETH', '1m'), ('XRP/ETH', '5m'), ('UNITTEST/BTC', '30m'),
-                              ('UNITTEST/BTC', '8m')}
+                              ('UNITTEST/BTC', '8m'), ('NOPAIR/XXX', '4m')}
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir)
     assert set(paircombs) == {('UNITTEST/BTC', '8m')}
@@ -670,6 +670,18 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
     assert unlinkmock.call_count == 1
+
+
+def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
+    dh = JsonDataHandler(testdatadir)
+    df = dh.ohlcv_load('XRP/ETH', '5m')
+    assert len(df) == 711
+
+    # Failure case (empty array)
+    df1 = dh.ohlcv_load('NOPAIR/XXX', '4m')
+    assert len(df1) == 0
+    assert log_has("Could not load data for NOPAIR/XXX.", caplog)
+    assert df.columns.equals(df1.columns)
 
 
 def test_jsondatahandler_trades_load(testdatadir, caplog):
