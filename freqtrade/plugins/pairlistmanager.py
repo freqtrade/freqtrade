@@ -60,17 +60,6 @@ class PairListManager():
         return expand_pairlist(self._blacklist, self._exchange.get_markets().keys())
 
     @property
-    def expanded_whitelist_keep_invalid(self) -> List[str]:
-        """The expanded whitelist (including wildcard expansion), maintaining invalid pairs"""
-        return expand_pairlist(self._whitelist, self._exchange.get_markets().keys(),
-                               keep_invalid=True)
-
-    @property
-    def expanded_whitelist(self) -> List[str]:
-        """The expanded whitelist (including wildcard expansion), filtering invalid pairs"""
-        return expand_pairlist(self._whitelist, self._exchange.get_markets().keys())
-
-    @property
     def name_list(self) -> List[str]:
         """Get list of loaded Pairlist Handler names"""
         return [p.name for p in self._pairlist_handlers]
@@ -153,10 +142,8 @@ class PairListManager():
         :return: pairlist - whitelisted pairs
         """
         try:
-            if keep_invalid:
-                whitelist = self.expanded_whitelist_keep_invalid
-            else:
-                whitelist = self.expanded_whitelist
+
+            whitelist = expand_pairlist(pairlist, self._exchange.get_markets().keys(), keep_invalid)
         except ValueError as err:
             logger.error(f"Pair whitelist contains an invalid Wildcard: {err}")
             return []
