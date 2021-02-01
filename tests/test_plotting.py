@@ -432,7 +432,8 @@ def test_start_plot_profit_error(mocker):
         start_plot_profit(argsp)
 
 
-def test_plot_profit(default_conf, mocker, testdatadir, caplog):
+def test_plot_profit(default_conf, mocker, testdatadir):
+    patch_exchange(mocker)
     default_conf['trade_source'] = 'file'
     default_conf['datadir'] = testdatadir
     default_conf['exportfilename'] = testdatadir / 'backtest-result_test_nofile.json'
