@@ -111,12 +111,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
-| `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
+| `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
 | `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
-| `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
+| `internals.process_throttle_secs` | Set the process throttle, or minimum loop duration for one bot iteration loop. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
 | `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> **Datatype:** Positive Integer or 0
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
@@ -246,37 +246,15 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 !!! Note "Special case to forcesell after a specific time"
     A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
 
-### Understand stoploss
-
-Go to the [stoploss documentation](stoploss.md) for more details.
-
-### Understand trailing stoploss
-
-Go to the [trailing stoploss Documentation](stoploss.md#trailing-stop-loss) for details on trailing stoploss.
-
-### Understand initial_state
-
-The `initial_state` configuration parameter is an optional field that defines the initial application state.
-Possible values are `running` or `stopped`. (default=`running`)
-If the value is `stopped` the bot has to be started with `/start` first.
-
 ### Understand forcebuy_enable
 
-The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram.
-This is disabled for security reasons by default, and will show a warning message on startup if enabled.
-For example, you can send `/forcebuy ETH/BTC` Telegram command when this feature if enabled to the bot,
-who then buys the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
+The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram and REST API.
+For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
+For example, you can send `/forcebuy ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
 
 This can be dangerous with some strategies, so use with care.
 
 See [the telegram documentation](telegram-usage.md) for details on usage.
-
-### Understand process_throttle_secs
-
-The `process_throttle_secs` configuration parameter is an optional field that defines in seconds how long the bot should wait
-before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
-every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
-the static list of pairs) if we should buy.
 
 ### Ignoring expired candles
 
@@ -600,7 +578,7 @@ Obviously, if only one side is using limit orders, different pricing combination
 --8<-- "includes/pairlists.md"
 --8<-- "includes/protections.md"
 
-## Switch to Dry-run mode
+## Using Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will
 behave and what is the performance of your strategy. In the Dry-run mode the
@@ -633,9 +611,10 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 
 ### Considerations for dry-run
 
-* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in the dry-run mode.
-* Wallets (`/balance`) are simulated.
+* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.
+* Wallets (`/balance`) are simulated based on `dry_run_wallet`.
 * Orders are simulated, and will not be posted to the exchange.
+* Orders are assumed to fill immediately, and will never time out.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
 * Open orders (not trades, which are stored in the database) are reset on bot restart.
 
