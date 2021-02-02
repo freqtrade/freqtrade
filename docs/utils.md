@@ -391,7 +391,7 @@ $ freqtrade list-markets --exchange kraken --all
 
 ## Test pairlist
 
-Use the `test-pairlist` subcommand to test the configuration of [dynamic pairlists](configuration.md#pairlists).
+Use the `test-pairlist` subcommand to test the configuration of [dynamic pairlists](plugins.md#pairlists).
 
 Requires a configuration with specified `pairlists` attribute.
 Can be used to generate static pairlists to be used during backtesting / hyperopt.
@@ -415,7 +415,7 @@ optional arguments:
 
 ### Examples
 
-Show whitelist when using a [dynamic pairlist](configuration.md#pairlists).
+Show whitelist when using a [dynamic pairlist](plugins.md#pairlists).
 
 ```
 freqtrade test-pairlist --config config.json --quote USDT BTC

@@ -103,7 +103,7 @@ The result of backtesting will confirm if your bot has better odds of making a p
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
     Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
-    Please read the [pairlists documentation](configuration.md#pairlists) for more information.
+    Please read the [pairlists documentation](plugins.md#pairlists) for more information.
 
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
