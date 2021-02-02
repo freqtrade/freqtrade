@@ -305,6 +305,136 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
     assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
 
 
+def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
+
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    stoploss = -0.05
+    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
+
+    # no pair found
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    with pytest.raises(ValueError, match=r'.*get market information.*'):
+        exchange.get_min_pair_stake_amount('BNB/BTC', 1, stoploss)
+
+    # no 'limits' section
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result is None
+
+    # empty 'limits' section
+    markets["ETH/BTC"]["limits"] = {}
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result is None
+
+    # no cost Min
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {"min": None},
+        'amount': {}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result is None
+
+    # no amount Min
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {},
+        'amount': {"min": None}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result is None
+
+    # empty 'cost'/'amount' section
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {},
+        'amount': {}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result is None
+
+    # min cost is set
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 2},
+        'amount': {}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
+    assert result == 2 / 0.9
+
+    # min amount is set
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {},
+        'amount': {'min': 2}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
+    assert result == 2 * 2 / 0.9
+
+    # min amount and cost are set (cost is minimal)
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 2},
+        'amount': {'min': 2}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
+    assert result == max(2, 2 * 2) / 0.9
+
+    # min amount and cost are set (amount is minial)
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 8},
+        'amount': {'min': 2}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
+    assert result == max(8, 2 * 2) / 0.9
+
+
+def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    stoploss = -0.05
+    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
+
+    # Real Binance data
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 0.0001},
+        'amount': {'min': 0.001}
+    }
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(return_value=markets)
+    )
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
+    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) / 0.9, 8)
+
+
 def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario

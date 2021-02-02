@@ -516,40 +516,6 @@ class FreqtradeBot(LoggingMixin):
 
         return stake_amount
 
-    def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        try:
-            market = self.exchange.markets[pair]
-        except KeyError:
-            raise ValueError(f"Can't get market information for symbol {pair}")
-
-        if 'limits' not in market:
-            return None
-
-        min_stake_amounts = []
-        limits = market['limits']
-        if ('cost' in limits and 'min' in limits['cost']
-                and limits['cost']['min'] is not None):
-            min_stake_amounts.append(limits['cost']['min'])
-
-        if ('amount' in limits and 'min' in limits['amount']
-                and limits['amount']['min'] is not None):
-            min_stake_amounts.append(limits['amount']['min'] * price)
-
-        if not min_stake_amounts:
-            return None
-
-        # reserve some percent defined in config (5% default) + stoploss
-        amount_reserve_percent = 1.0 - self.config.get('amount_reserve_percent',
-                                                       constants.DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += self.strategy.stoploss
-        # it should not be more than 50%
-        amount_reserve_percent = max(amount_reserve_percent, 0.5)
-
-        # The value returned should satisfy both limits: for amount (base currency) and
-        # for cost (quote, stake currency), so max() is used here.
-        # See also #2575 at github.
-        return max(min_stake_amounts) / amount_reserve_percent
-
     def create_trade(self, pair: str) -> bool:
         """
         Check the implemented trading strategy for buy signals.
@@ -646,7 +612,8 @@ class FreqtradeBot(LoggingMixin):
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
 
-        min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, buy_limit_requested,
+                                                                   self.strategy.stoploss)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
                 f"Can't open a new trade for {pair}: stake amount "
