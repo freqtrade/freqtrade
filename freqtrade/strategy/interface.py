@@ -530,7 +530,7 @@ class IStrategy(ABC):
                                                 current_time=date))
 
         if (ask_strategy.get('sell_profit_only', False)
-                and trade.calc_profit_ratio(rate=rate) <= ask_strategy.get('sell_profit_offset', 0)):
+                and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             sell_signal = False
         else:

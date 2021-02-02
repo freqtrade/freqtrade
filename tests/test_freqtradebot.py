@@ -3159,9 +3159,9 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': 0.00002172,
-            'ask': 0.00002173,
-            'last': 0.00002172
+            'bid': 0.00001172,
+            'ask': 0.00001173,
+            'last': 0.00001172
         }),
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
