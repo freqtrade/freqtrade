@@ -17,7 +17,7 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRU
                                             decimal_to_precision)
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, RetryableOrderError,
@@ -489,6 +489,41 @@ class Exchange:
             return precision
         else:
             return 1 / pow(10, precision)
+
+    def get_min_pair_stake_amount(self, pair: str, price: float,
+                                  stoploss: float) -> Optional[float]:
+        try:
+            market = self.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
+
+        if 'limits' not in market:
+            return None
+
+        min_stake_amounts = []
+        limits = market['limits']
+        if ('cost' in limits and 'min' in limits['cost']
+                and limits['cost']['min'] is not None):
+            min_stake_amounts.append(limits['cost']['min'])
+
+        if ('amount' in limits and 'min' in limits['amount']
+                and limits['amount']['min'] is not None):
+            min_stake_amounts.append(limits['amount']['min'] * price)
+
+        if not min_stake_amounts:
+            return None
+
+        # reserve some percent defined in config (5% default) + stoploss
+        amount_reserve_percent = 1.0 - self._config.get('amount_reserve_percent',
+                                                        DEFAULT_AMOUNT_RESERVE_PERCENT)
+        amount_reserve_percent += stoploss
+        # it should not be more than 50%
+        amount_reserve_percent = max(amount_reserve_percent, 0.5)
+
+        # The value returned should satisfy both limits: for amount (base currency) and
+        # for cost (quote, stake currency), so max() is used here.
+        # See also #2575 at github.
+        return max(min_stake_amounts) / amount_reserve_percent
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
