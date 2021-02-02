@@ -392,6 +392,7 @@ def main(args):
     else:
         print(output)
 
+
 if __name__ == "__main__":
     args = add_arguments()
     main(args)
