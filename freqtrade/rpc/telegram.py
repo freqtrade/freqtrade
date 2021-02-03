@@ -160,9 +160,9 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
             CallbackQueryHandler(self._daily, pattern='update_daily'),
             CallbackQueryHandler(self._profit, pattern='update_profit'),
-            CallbackQueryHandler(self._profit, pattern='update_balance'),
-            CallbackQueryHandler(self._profit, pattern='update_performance'),
-            CallbackQueryHandler(self._profit, pattern='update_count')
+            CallbackQueryHandler(self._balance, pattern='update_balance'),
+            CallbackQueryHandler(self._performance, pattern='update_performance'),
+            CallbackQueryHandler(self._count, pattern='update_count')
         ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
