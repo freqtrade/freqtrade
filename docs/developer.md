@@ -177,7 +177,7 @@ In `VolumePairList`, this implements different methods of sorting, does early va
 
 ### Protections
 
-Best read the [Protection documentation](configuration.md#protections) to understand protections.
+Best read the [Protection documentation](plugins.md#protections) to understand protections.
 This Guide is directed towards Developers who want to develop a new protection.
 
 No protection should use datetime directly, but use the provided `date_now` variable for date calculations. This preserves the ability to backtest protections.

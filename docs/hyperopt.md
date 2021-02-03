@@ -32,6 +32,107 @@ source .env/bin/activate
 pip install -r requirements-hyperopt.txt
 ```
 
+## Hyperopt command reference
+
+
+```
+usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                          [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                          [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--data-format-ohlcv {json,jsongz,hdf5}]
+                          [--max-open-trades INT]
+                          [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
+                          [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
+                          [--dmmp] [--enable-protections] [-e INT]
+                          [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
+                          [--print-all] [--no-color] [--print-json] [-j JOBS]
+                          [--random-state INT] [--min-trades INT]
+                          [--hyperopt-loss NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  --hyperopt NAME       Specify hyperopt class name which will be used by the
+                        bot.
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
+                        Hyperopt Loss functions.
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking).
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list.
+  --print-all           Print all results, not only the best ones.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print output in JSON format.
+  -j JOBS, --job-workers JOBS
+                        The number of concurrently running jobs for
+                        hyperoptimization (hyperopt worker processes). If -1
+                        (default), all CPUs are used, for -2, all CPUs but one
+                        are used, etc. If 1 is given, no parallel computing
+                        code is used at all.
+  --random-state INT    Set random state to some positive integer for
+                        reproducible hyperopt results.
+  --min-trades INT      Set minimal desired number of trades for evaluations
+                        in the hyperopt optimization path (default: 1).
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
+                        class (IHyperOptLoss). Different functions can
+                        generate completely different results, since the
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are:
+                        ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
+                        SharpeHyperOptLoss, SharpeHyperOptLossDaily,
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+
+```
+
 ## Prepare Hyperopting
 
 Before we start digging into Hyperopt, we recommend you to take a look at

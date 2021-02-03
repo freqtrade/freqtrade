@@ -91,8 +91,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`<br> **Datatype:** Boolean
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
-| `pairlists` | Define one or more pairlists to be used. [More information below](#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
-| `protections` | Define one or more protections to be used. [More information below](#protections). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** List of Dicts
+| `pairlists` | Define one or more pairlists to be used. [More information](plugins.md#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
+| `protections` | Define one or more protections to be used. [More information](plugins.md#protections). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** List of Dicts
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -111,12 +111,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `api_server.password` | Password for API server. See the [API Server documentation](rest-api.md) for more details. <br>**Keep it in secret, do not disclose publicly.**<br> **Datatype:** String
 | `bot_name` | Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> *Defaults to `freqtrade`*<br> **Datatype:** String
 | `db_url` | Declares database URL to use. NOTE: This defaults to `sqlite:///tradesv3.dryrun.sqlite` if `dry_run` is `true`, and to `sqlite:///tradesv3.sqlite` for production instances. <br> **Datatype:** String, SQLAlchemy connect string
-| `initial_state` | Defines the initial application state. More information below. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
+| `initial_state` | Defines the initial application state. If set to stopped, then the bot has to be explicitly started via `/start` RPC command. <br>*Defaults to `stopped`.* <br> **Datatype:** Enum, either `stopped` or `running`
 | `forcebuy_enable` | Enables the RPC Commands to force a buy. More information below. <br> **Datatype:** Boolean
 | `disable_dataframe_checks` | Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. [Strategy Override](#parameters-in-the-strategy).<br> *Defaults to `False`*. <br> **Datatype:** Boolean
 | `strategy` | **Required** Defines Strategy class to use. Recommended to be set via `--strategy NAME`. <br> **Datatype:** ClassName
 | `strategy_path` | Adds an additional strategy lookup path (must be a directory). <br> **Datatype:** String
-| `internals.process_throttle_secs` | Set the process throttle. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
+| `internals.process_throttle_secs` | Set the process throttle, or minimum loop duration for one bot iteration loop. Value in second. <br>*Defaults to `5` seconds.* <br> **Datatype:** Positive Integer
 | `internals.heartbeat_interval` | Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br>*Defaults to `60` seconds.* <br> **Datatype:** Positive Integer or 0
 | `internals.sd_notify` | Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See [here](installation.md#7-optional-configure-freqtrade-as-a-systemd-service) for more details. <br> **Datatype:** Boolean
 | `logfile` | Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> **Datatype:** String
@@ -246,37 +246,15 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 !!! Note "Special case to forcesell after a specific time"
     A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
 
-### Understand stoploss
-
-Go to the [stoploss documentation](stoploss.md) for more details.
-
-### Understand trailing stoploss
-
-Go to the [trailing stoploss Documentation](stoploss.md#trailing-stop-loss) for details on trailing stoploss.
-
-### Understand initial_state
-
-The `initial_state` configuration parameter is an optional field that defines the initial application state.
-Possible values are `running` or `stopped`. (default=`running`)
-If the value is `stopped` the bot has to be started with `/start` first.
-
 ### Understand forcebuy_enable
 
-The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram.
-This is disabled for security reasons by default, and will show a warning message on startup if enabled.
-For example, you can send `/forcebuy ETH/BTC` Telegram command when this feature if enabled to the bot,
-who then buys the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
+The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram and REST API.
+For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
+For example, you can send `/forcebuy ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
 
 This can be dangerous with some strategies, so use with care.
 
 See [the telegram documentation](telegram-usage.md) for details on usage.
-
-### Understand process_throttle_secs
-
-The `process_throttle_secs` configuration parameter is an optional field that defines in seconds how long the bot should wait
-before asking the strategy if we should buy or a sell an asset. After each wait period, the strategy is asked again for
-every opened trade wether or not we should sell, and for all the remaining pairs (either the dynamic list of pairs or
-the static list of pairs) if we should buy.
 
 ### Ignoring expired candles
 
@@ -470,137 +448,9 @@ The valid values are:
 "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
 ```
 
-## Prices used for orders
+--8<-- "includes/pricing.md"
 
-Prices for regular orders can be controlled via the parameter structures `bid_strategy` for buying and `ask_strategy` for selling.
-Prices are always retrieved right before an order is placed, either by querying the exchange tickers or by using the orderbook data.
-
-!!! Note
-    Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function `fetch_order_book()`, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's `fetch_ticker()`/`fetch_tickers()` functions. Refer to the ccxt library [documentation](https://github.com/ccxt/ccxt/wiki/Manual#market-data) for more details.
-
-!!! Warning "Using market orders"
-    Please read the section [Market order pricing](#market-order-pricing) section when using market orders.
-
-### Buy price
-
-#### Check depth of market
-
-When check depth of market is enabled (`bid_strategy.check_depth_of_market.enabled=True`), the buy signals are filtered based on the orderbook depth (sum of all amounts) for each orderbook side.
-
-Orderbook `bid` (buy) side depth is then divided by the orderbook `ask` (sell) side depth and the resulting delta is compared to the value of the `bid_strategy.check_depth_of_market.bids_to_ask_delta` parameter. The buy order is only executed if the orderbook delta is greater than or equal to the configured delta value.
-
-!!! Note
-    A delta value below 1 means that `ask` (sell) orderbook side depth is greater than the depth of the `bid` (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).
-
-#### Buy price side
-
-The configuration setting `bid_strategy.price_side` defines the side of the spread the bot looks for when buying.
-
-The following displays an orderbook.
-
-``` explanation
-...
-103
-102
-101  # ask
--------------Current spread
-99   # bid
-98
-97
-...
-```
-
-If `bid_strategy.price_side` is set to `"bid"`, then the bot will use 99 as buying price.  
-In line with that, if `bid_strategy.price_side` is set to `"ask"`, then the bot will use 101 as buying price.
-
-Using `ask` price often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
-Taker fees instead of maker fees will most likely apply even when using limit buy orders.
-Also, prices at the "ask" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).
-
-#### Buy price with Orderbook enabled
-
-When buying with the orderbook enabled (`bid_strategy.use_order_book=True`), Freqtrade fetches the `bid_strategy.order_book_top` entries from the orderbook and then uses the entry specified as `bid_strategy.order_book_top` on the configured side (`bid_strategy.price_side`) of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2nd entry in the orderbook, and so on.
-
-#### Buy price without Orderbook enabled
-
-The following section uses `side` as the configured `bid_strategy.price_side`.
-
-When not using orderbook (`bid_strategy.use_order_book=False`), Freqtrade uses the best `side` price from the ticker if it's below the `last` traded price from the ticker. Otherwise (when the `side` price is above the `last` price), it calculates a rate between `side` and `last` price.
-
-The `bid_strategy.ask_last_balance` configuration parameter controls this. A value of `0.0` will use `side` price, while `1.0` will use the `last` price and values between those interpolate between ask and last price.
-
-### Sell price
-
-#### Sell price side
-
-The configuration setting `ask_strategy.price_side` defines the side of the spread the bot looks for when selling.
-
-The following displays an orderbook:
-
-``` explanation
-...
-103
-102
-101  # ask
--------------Current spread
-99   # bid
-98
-97
-...
-```
-
-If `ask_strategy.price_side` is set to `"ask"`, then the bot will use 101 as selling price.  
-In line with that, if `ask_strategy.price_side` is set to `"bid"`, then the bot will use 99 as selling price.
-
-#### Sell price with Orderbook enabled
-
-When selling with the orderbook enabled (`ask_strategy.use_order_book=True`), Freqtrade fetches the `ask_strategy.order_book_max` entries in the orderbook. Then each of the orderbook steps between `ask_strategy.order_book_min` and `ask_strategy.order_book_max` on the configured orderbook side are validated for a profitable sell-possibility based on the strategy configuration (`minimal_roi` conditions) and the sell order is placed at the first profitable spot.
-
-!!! Note
-    Using `order_book_max` higher than `order_book_min` only makes sense when ask_strategy.price_side is set to `"ask"`.
-
-The idea here is to place the sell order early, to be ahead in the queue.
-
-A fixed slot (mirroring `bid_strategy.order_book_top`) can be defined by setting `ask_strategy.order_book_min` and `ask_strategy.order_book_max` to the same number.
-
-!!! Warning "Order_book_max > 1 - increased risks for stoplosses!"
-    Using `ask_strategy.order_book_max` higher than 1 will increase the risk the stoploss on exchange is cancelled too early, since an eventual [stoploss on exchange](#understand-order_types) will be cancelled as soon as the order is placed.
-    Also, the sell order will remain on the exchange for `unfilledtimeout.sell` (or until it's filled) - which can lead to missed stoplosses (with or without using stoploss on exchange).
-
-!!! Warning "Order_book_max > 1 in dry-run"
-    Using `ask_strategy.order_book_max` higher than 1 will result in improper dry-run results (significantly better than real orders executed on exchange), since dry-run assumes orders to be filled almost instantly.
-    It is therefore advised to not use this setting for dry-runs.
-
-#### Sell price without Orderbook enabled
-
-When not using orderbook (`ask_strategy.use_order_book=False`), the price at the `ask_strategy.price_side` side (defaults to `"ask"`) from the ticker will be used as the sell price.
-
-### Market order pricing
-
-When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
-Assuming both buy and sell are using market orders, a configuration similar to the following might be used
-
-``` jsonc
-  "order_types": {
-    "buy": "market",
-    "sell": "market"
-    // ...
-  },
-  "bid_strategy": {
-    "price_side": "ask",
-    // ...
-  },
-  "ask_strategy":{
-    "price_side": "bid",
-    // ...
-  },
-```
-
-Obviously, if only one side is using limit orders, different pricing combinations can be used.
---8<-- "includes/pairlists.md"
---8<-- "includes/protections.md"
-
-## Switch to Dry-run mode
+## Using Dry-run mode
 
 We recommend starting the bot in the Dry-run mode to see how your bot will
 behave and what is the performance of your strategy. In the Dry-run mode the
@@ -633,9 +483,10 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 
 ### Considerations for dry-run
 
-* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in the dry-run mode.
-* Wallets (`/balance`) are simulated.
+* API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.
+* Wallets (`/balance`) are simulated based on `dry_run_wallet`.
 * Orders are simulated, and will not be posted to the exchange.
+* Orders are assumed to fill immediately, and will never time out.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
 * Open orders (not trades, which are stored in the database) are reset on bot restart.
 
