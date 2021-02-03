@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Union
 import arrow
 from tabulate import tabulate
 from telegram import KeyboardButton, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.error import NetworkError, TelegramError
+from telegram.error import NetworkError, TelegramError, BadRequest
 from telegram.ext import CallbackContext, CommandHandler, Updater, CallbackQueryHandler
 from telegram.utils.helpers import escape_markdown
 
