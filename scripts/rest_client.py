@@ -379,7 +379,7 @@ def main(args):
         print_commands()
         return
 
-    print(getattr(client, command)(*args["command_arguments"]))
+    print(json.dumps(getattr(client, command)(*args["command_arguments"])))
 
 
 if __name__ == "__main__":
