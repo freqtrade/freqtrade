@@ -83,9 +83,24 @@ def assert_response(response, expected_code=200, needs_cors=True):
 def test_api_not_found(botclient):
     ftbot, client = botclient
 
-    rc = client_post(client, f"{BASE_URI}/invalid_url")
+    rc = client_get(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
     assert rc.json() == {"detail": "Not Found"}
+
+
+def test_api_ui_fallback(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, "/favicon.ico")
+    assert rc.status_code == 200
+
+    rc = client_get(client, "/fallback_file.html")
+    assert rc.status_code == 200
+    assert '`freqtrade install-ui`' in rc.text
+
+    # Forwarded to fallback_html or index.html (depending if it's installed or not)
+    rc = client_get(client, "/something")
+    assert rc.status_code == 200
 
 
 def test_api_auth():

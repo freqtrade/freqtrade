@@ -1,7 +1,9 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
+
+import requests
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
@@ -137,3 +139,87 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
         deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
     else:
         raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
+
+
+def clean_ui_subdir(directory: Path):
+    if directory.is_dir():
+        logger.info("Removing UI directory content.")
+
+        for p in reversed(list(directory.glob('**/*'))):  # iterate contents from leaves to root
+            if p.name in ('.gitkeep', 'fallback_file.html'):
+                continue
+            if p.is_file():
+                p.unlink()
+            elif p.is_dir():
+                p.rmdir()
+
+
+def read_ui_version(dest_folder: Path) -> Optional[str]:
+    file = dest_folder / '.uiversion'
+    if not file.is_file():
+        return None
+
+    with file.open('r') as f:
+        return f.read()
+
+
+def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    logger.info(f"Downloading {dl_url}")
+    resp = requests.get(dl_url).content
+    dest_folder.mkdir(parents=True, exist_ok=True)
+    with ZipFile(BytesIO(resp)) as zf:
+        for fn in zf.filelist:
+            with zf.open(fn) as x:
+                destfile = dest_folder / fn.filename
+                if fn.is_dir():
+                    destfile.mkdir(exist_ok=True)
+                else:
+                    destfile.write_bytes(x.read())
+    with (dest_folder / '.uiversion').open('w') as f:
+        f.write(version)
+
+
+def get_ui_download_url() -> Tuple[str, str]:
+    base_url = 'https://api.github.com/repos/freqtrade/frequi/'
+    # Get base UI Repo path
+
+    resp = requests.get(f"{base_url}releases")
+    resp.raise_for_status()
+    r = resp.json()
+
+    latest_version = r[0]['name']
+    assets = r[0].get('assets', [])
+    dl_url = ''
+    if assets and len(assets) > 0:
+        dl_url = assets[0]['browser_download_url']
+
+    # URL not found - try assets url
+    if not dl_url:
+        assets = r[0]['assets_url']
+        resp = requests.get(assets)
+        r = resp.json()
+        dl_url = r[0]['browser_download_url']
+
+    return dl_url, latest_version
+
+
+def start_install_ui(args: Dict[str, Any]) -> None:
+
+    dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui/installed/'
+    # First make sure the assets are removed.
+    dl_url, latest_version = get_ui_download_url()
+
+    curr_version = read_ui_version(dest_folder)
+    if curr_version == latest_version and not args.get('erase_ui_only'):
+        logger.info(f"UI already up-to-date, FreqUI Version {curr_version}.")
+        return
+
+    clean_ui_subdir(dest_folder)
+    if args.get('erase_ui_only'):
+        logger.info("Erased UI directory content. Not downloading new version.")
+    else:
+        # Download a new version
+        download_and_install_ui(dest_folder, dl_url, latest_version)
