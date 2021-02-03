@@ -331,13 +331,6 @@ def add_arguments():
                         default=[]
                         )
 
-    parser.add_argument('--json',
-                        help='Output data in json form rather than a python dict',
-                        dest='json',
-                        action='store_true',
-                        default=False
-                        )
-
     args = parser.parse_args()
     return vars(args)
 
@@ -386,11 +379,7 @@ def main(args):
         print_commands()
         return
 
-    output = getattr(client, command)(*args["command_arguments"])
-    if args['json']:
-        print(json.dumps(output))
-    else:
-        print(output)
+    print(json.dumps(getattr(client, command)(*args["command_arguments"])))
 
 
 if __name__ == "__main__":
