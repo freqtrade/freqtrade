@@ -910,7 +910,7 @@ class Telegram(RPCHandler):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        reply_markup = ReplyKeyboardMarkup(self._keyboard)
+        reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
         try:
             try:
                 self._updater.bot.send_message(
