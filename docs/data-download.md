@@ -276,7 +276,7 @@ cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission d
 so you will need to fix your permission by doing:
 
 ```
-chown -R $UID:$GID user_data
+sudo chown -R $UID:$GID user_data
 ```
 
 The format of the `pairs.json` file is a simple json list.
