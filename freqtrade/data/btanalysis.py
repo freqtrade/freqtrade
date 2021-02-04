@@ -347,7 +347,12 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     # Resample to timeframe to make sure trades match candles
     _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
                                   )[['profit_percent']].sum()
-    df.loc[:, col_name] = _trades_sum.cumsum()
+
+    _trades_sum.rename(columns={"profit_percent": col_name}, inplace=True)
+
+    cp = _trades_sum.cumsum()
+    df = pd.merge(df, cp, how='left', left_index=True, right_index=True)
+
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous
