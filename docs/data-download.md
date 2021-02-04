@@ -264,7 +264,19 @@ If you are using Binance for example:
 
 ```bash
 mkdir -p user_data/data/binance
-cp freqtrade/tests/testdata/pairs.json user_data/data/binance
+cp tests/testdata/pairs.json user_data/data/binance
+```
+
+if you your configuration directory `user_data` was made by docker, you may get an error:
+
+```
+cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
+```
+
+so you will need to fix your permission by doing:
+
+```
+chown -R $UID:$GID user_data
 ```
 
 The format of the `pairs.json` file is a simple json list.
