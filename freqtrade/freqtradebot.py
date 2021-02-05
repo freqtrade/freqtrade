@@ -246,7 +246,7 @@ class FreqtradeBot(LoggingMixin):
         Updates open orders based on order list kept in the database.
         Mainly updates the state of orders - but may also close trades
         """
-        if self.config['dry_run']:
+        if self.config['dry_run'] or self.config['exchange'].get('skip_open_order_update', False):
             # Updating open orders in dry-run does not make sense and will fail.
             return
 
