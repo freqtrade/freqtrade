@@ -332,7 +332,7 @@ This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
-
+    
 `order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
 
 If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
