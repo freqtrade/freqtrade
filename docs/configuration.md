@@ -20,7 +20,8 @@ If default configuration file is not created we recommend you to use `freqtrade 
 
 The Freqtrade configuration file is to be written in the JSON format.
 
-To `comment` standard JSON syntax in your configuration files, you may use one-line `// ...` and multi-line `/* ... */` symbols - for list of parameters, you would like to use other time.
+To `comment` you may use one-line `// ...` and multi-line `/* ... */` symbols. - for parameters, you want to use a different time.
+
 
 Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
 
