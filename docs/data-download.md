@@ -267,13 +267,13 @@ mkdir -p user_data/data/binance
 cp tests/testdata/pairs.json user_data/data/binance
 ```
 
-if you your configuration directory `user_data` was made by docker, you may get an error:
+If you your configuration directory `user_data` was made by docker, you may get the following error:
 
 ```
 cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
 ```
 
-so you will need to fix your permission by doing:
+You can fix the permissions of your user-data directory as follows:
 
 ```
 sudo chown -R $UID:$GID user_data
