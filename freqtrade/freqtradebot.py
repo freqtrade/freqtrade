@@ -233,7 +233,7 @@ class FreqtradeBot(LoggingMixin):
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
 
-    def get_free_open_trades(self):
+    def get_free_open_trades(self) -> int:
         """
         Return the number of free open trades slots or 0 if
         max number of open trades reached
@@ -439,83 +439,6 @@ class FreqtradeBot(LoggingMixin):
 
         return used_rate
 
-    def get_trade_stake_amount(self, pair: str) -> float:
-        """
-        Calculate stake amount for the trade
-        :return: float: Stake amount
-        :raise: DependencyException if the available stake amount is too low
-        """
-        stake_amount: float
-        # Ensure wallets are uptodate.
-        self.wallets.update()
-
-        if self.edge:
-            stake_amount = self.edge.stake_amount(
-                pair,
-                self.wallets.get_free(self.config['stake_currency']),
-                self.wallets.get_total(self.config['stake_currency']),
-                Trade.total_open_trades_stakes()
-            )
-        else:
-            stake_amount = self.config['stake_amount']
-            if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-                stake_amount = self._calculate_unlimited_stake_amount()
-
-        return self._check_available_stake_amount(stake_amount)
-
-    def _get_available_stake_amount(self) -> float:
-        """
-        Return the total currently available balance in stake currency,
-        respecting tradable_balance_ratio.
-        Calculated as
-        <open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
-        """
-        val_tied_up = Trade.total_open_trades_stakes()
-
-        # Ensure <tradable_balance_ratio>% is used from the overall balance
-        # Otherwise we'd risk lowering stakes with each open trade.
-        # (tied up + current free) * ratio) - tied up
-        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
-                            self.config['tradable_balance_ratio']) - val_tied_up
-        return available_amount
-
-    def _calculate_unlimited_stake_amount(self) -> float:
-        """
-        Calculate stake amount for "unlimited" stake amount
-        :return: 0 if max number of trades reached, else stake_amount to use.
-        """
-        free_open_trades = self.get_free_open_trades()
-        if not free_open_trades:
-            return 0
-
-        available_amount = self._get_available_stake_amount()
-
-        return available_amount / free_open_trades
-
-    def _check_available_stake_amount(self, stake_amount: float) -> float:
-        """
-        Check if stake amount can be fulfilled with the available balance
-        for the stake currency
-        :return: float: Stake amount
-        """
-        available_amount = self._get_available_stake_amount()
-
-        if self.config['amend_last_stake_amount']:
-            # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
-            # Otherwise the remaining amount is too low to trade.
-            if available_amount > (stake_amount * self.config['last_stake_amount_min_ratio']):
-                stake_amount = min(stake_amount, available_amount)
-            else:
-                stake_amount = 0
-
-        if available_amount < stake_amount:
-            raise DependencyException(
-                f"Available balance ({available_amount} {self.config['stake_currency']}) is "
-                f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
-            )
-
-        return stake_amount
-
     def create_trade(self, pair: str) -> bool:
         """
         Check the implemented trading strategy for buy signals.
@@ -549,7 +472,8 @@ class FreqtradeBot(LoggingMixin):
         (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
-            stake_amount = self.get_trade_stake_amount(pair)
+            stake_amount = self.wallets.get_trade_stake_amount(pair, self.get_free_open_trades(),
+                                                               self.edge)
             if not stake_amount:
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
                 return False
