@@ -17,7 +17,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 class SampleStrategy(IStrategy):
     """
     This is a sample strategy to inspire you.
-    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/bot-optimization.md
+    More information in https://github.com/freqtrade/freqtrade/blob/develop/docs/strategy-customization.md
 
     You can:
         :return: a Dataframe with all mandatory indicators for the strategies
