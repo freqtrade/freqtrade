@@ -1070,7 +1070,9 @@ class FreqtradeBot(LoggingMixin):
             if not self.exchange.check_order_canceled_empty(order):
                 try:
                     # if trade is not partially completed, just delete the order
-                    self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                    co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                                trade.amount)
+                    trade.update_order(co)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel sell order {trade.open_order_id}")
                     return 'error cancelling order'
@@ -1078,6 +1080,7 @@ class FreqtradeBot(LoggingMixin):
             else:
                 reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
                 logger.info('Sell order %s for %s.', reason, trade)
+                trade.update_order(order)
 
             trade.close_rate = None
             trade.close_rate_requested = None
