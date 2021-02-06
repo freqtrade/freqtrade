@@ -661,6 +661,7 @@ class Hyperopt:
         dump(preprocessed, self.data_pickle_file)
 
         # We don't need exchange instance anymore while running hyperopt
+        self.backtesting.exchange.close()
         self.backtesting.exchange._api = None  # type: ignore
         self.backtesting.exchange._api_async = None  # type: ignore
         # self.backtesting.exchange = None  # type: ignore
