@@ -265,7 +265,7 @@ def test_generate_sell_reason_stats():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'sell_reason': [SellType.ROI.value, SellType.ROI.value, SellType.STOP_LOSS.value]
         }
     )
 
