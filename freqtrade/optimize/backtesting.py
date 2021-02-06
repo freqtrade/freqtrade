@@ -259,11 +259,11 @@ class Backtesting:
                                          sell_row[BUY_IDX], sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
         if sell.sell_flag:
-            trade_dur = int((sell_row[DATE_IDX] - trade.open_date).total_seconds() // 60)
-            closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
             trade.close_date = sell_row[DATE_IDX]
-            trade.sell_reason = sell.sell_type
+            trade.sell_reason = sell.sell_type.value
+            trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
+            closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             trade.close(closerate, show_msg=False)
             return trade
 
@@ -281,7 +281,7 @@ class Backtesting:
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX]
-                    trade.sell_reason = SellType.FORCE_SELL
+                    trade.sell_reason = SellType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     # Deepcopy object to have wallets update correctly
                     trade1 = deepcopy(trade)
@@ -366,6 +366,7 @@ class Backtesting:
                         fee_open=self.fee,
                         fee_close=self.fee,
                         is_open=True,
+                        exchange='backtesting',
                     )
                     # TODO: hacky workaround to avoid opening > max_open_trades
                     # This emulates previous behaviour - not sure if this is correct

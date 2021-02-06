@@ -268,6 +268,14 @@ class Trade(_DECL_BASE):
         return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
                 f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
+    @property
+    def open_date_utc(self):
+        return self.open_date.replace(tzinfo=timezone.utc)
+
+    @property
+    def close_date_utc(self):
+        return self.close_date.replace(tzinfo=timezone.utc)
+
     def to_json(self) -> Dict[str, Any]:
         return {
             'trade_id': self.id,
@@ -306,9 +314,9 @@ class Trade(_DECL_BASE):
             'close_profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'close_profit_abs': self.close_profit_abs,  # Deprecated
 
-            'trade_duration_s': (int((self.close_date - self.open_date).total_seconds())
+            'trade_duration_s': (int((self.close_date_utc - self.open_date_utc).total_seconds())
                                  if self.close_date else None),
-            'trade_duration': (int((self.close_date - self.open_date).total_seconds() // 60)
+            'trade_duration': (int((self.close_date_utc - self.open_date_utc).total_seconds() // 60)
                                if self.close_date else None),
 
             'profit_ratio': self.close_profit,
