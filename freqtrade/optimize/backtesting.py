@@ -442,7 +442,7 @@ class Backtesting:
         self.all_results[self.strategy.get_strategy_name()] = {
             'results': results,
             'config': self.strategy.config,
-            'locks': PairLocks.locks,
+            'locks': PairLocks.get_all_locks(),
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
         }
