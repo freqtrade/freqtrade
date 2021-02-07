@@ -2609,7 +2609,7 @@ def test_handle_cancel_sell_cancel_exception(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch(
-        'freqtrade.exchange.Exchange.cancel_order', side_effect=InvalidOrderException())
+        'freqtrade.exchange.Exchange.cancel_order_with_result', side_effect=InvalidOrderException())
 
     freqtrade = FreqtradeBot(default_conf)
 
