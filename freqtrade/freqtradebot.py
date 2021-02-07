@@ -932,7 +932,7 @@ class FreqtradeBot(LoggingMixin):
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-            trade, sell_rate, datetime.utcnow(), buy, sell,
+            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
