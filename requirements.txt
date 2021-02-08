@@ -4,7 +4,7 @@ pandas==1.2.1
 ccxt==1.41.62
 aiohttp==3.7.3
 SQLAlchemy==1.3.23
-python-telegram-bot==13.1
+python-telegram-bot==13.2
 arrow==0.17.0
 cachetools==4.2.1
 requests==2.25.1
