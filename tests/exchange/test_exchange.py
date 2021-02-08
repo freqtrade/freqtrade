@@ -2072,9 +2072,9 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 def test_cancel_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
     api_mock = MagicMock()
-    api_mock.cancel_order = MagicMock(return_value=123)
+    api_mock.cancel_order = MagicMock(return_value={'id': '123'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.cancel_order(order_id='_', pair='TKN/BTC') == 123
+    assert exchange.cancel_order(order_id='_', pair='TKN/BTC') == {'id': '123'}
 
     with pytest.raises(InvalidOrderException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
@@ -2091,9 +2091,9 @@ def test_cancel_order(default_conf, mocker, exchange_name):
 def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
     api_mock = MagicMock()
-    api_mock.cancel_order = MagicMock(return_value=123)
+    api_mock.cancel_order = MagicMock(return_value={'id': '123'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.cancel_stoploss_order(order_id='_', pair='TKN/BTC') == 123
+    assert exchange.cancel_stoploss_order(order_id='_', pair='TKN/BTC') == {'id': '123'}
 
     with pytest.raises(InvalidOrderException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
