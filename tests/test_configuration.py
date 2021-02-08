@@ -743,18 +743,18 @@ def test_set_loggers_journald_importerror(mocker, import_fails):
     logger.handlers = orig_handlers
 
 
-def test_set_logfile(default_conf, mocker):
+def test_set_logfile(default_conf, mocker, tmpdir):
     patched_configuration_load_config_file(mocker, default_conf)
-
+    f = Path(tmpdir / "test_file.log")
+    assert not f.is_file()
     arglist = [
-        'trade', '--logfile', 'test_file.log',
+        'trade', '--logfile', str(f),
     ]
     args = Arguments(arglist).get_parsed_arg()
     configuration = Configuration(args)
     validated_conf = configuration.load_config()
 
-    assert validated_conf['logfile'] == "test_file.log"
-    f = Path("test_file.log")
+    assert validated_conf['logfile'] == str(f)
     assert f.is_file()
     try:
         f.unlink()
