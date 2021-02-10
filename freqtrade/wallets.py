@@ -158,6 +158,7 @@ class Wallets:
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake amount
+        :raise: DependencyException if balance is lower than stake-amount
         """
         available_amount = self._get_available_stake_amount()
 

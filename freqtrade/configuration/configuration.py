@@ -232,7 +232,9 @@ class Configuration:
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
-
+        self._args_to_config(config, argname='dry_run_wallet',
+                             logstring='Parameter --dry-run-wallet detected, '
+                             'overriding dry_run_wallet to: {} ...')
         self._args_to_config(config, argname='fee',
                              logstring='Parameter --fee detected, '
                              'setting fee to: {} ...')
