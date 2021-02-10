@@ -16,6 +16,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                              [--eps] [--dmmp] [--enable-protections]
+                             [--dry-run-wallet DRY_RUN_WALLET]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
@@ -48,6 +49,9 @@ optional arguments:
                         Enable protections for backtesting.Will slow
                         backtesting down by a considerable amount, but will
                         include configured protections
+  --dry-run-wallet DRY_RUN_WALLET
+                        Starting balance, used for backtesting / hyperopt and
+                        dry-runs.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest. Please note that ticker-interval needs to be
