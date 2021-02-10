@@ -1039,13 +1039,17 @@ def test_fee_updated(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_total_open_trades_stakes(fee):
+@pytest.mark.parametrize('use_db', [True, False])
+def test_total_open_trades_stakes(fee, use_db):
 
+    Trade.use_db = use_db
     res = Trade.total_open_trades_stakes()
     assert res == 0
-    create_mock_trades(fee)
+    create_mock_trades(fee, use_db)
     res = Trade.total_open_trades_stakes()
     assert res == 0.004
+
+    Trade.use_db = True
 
 
 @pytest.mark.usefixtures("init_persistence")
