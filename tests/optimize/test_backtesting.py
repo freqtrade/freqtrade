@@ -90,7 +90,6 @@ def simple_backtest(config, contour, mocker, testdatadir) -> None:
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=config['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
@@ -111,7 +110,6 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     min_date, max_date = get_timerange(processed)
     return {
         'processed': processed,
-        'stake_amount': conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 10,
@@ -461,7 +459,6 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
@@ -523,7 +520,6 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
@@ -678,7 +674,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     min_date, max_date = get_timerange(processed)
     backtest_conf = {
         'processed': processed,
-        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
@@ -694,7 +689,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     backtest_conf = {
         'processed': processed,
-        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,
