@@ -439,6 +439,15 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify the list of trade ids.',
         nargs='+',
     ),
+    # automation 
+    "buy_indicators": Arg(
+        '-b', '--buy-indicators',
+        help='Specify the buy indicators the hyperopt should build.'
+    ),
+    "sell_indicators": Arg(
+        '-s', '--sell-indicators',
+        help='Specify the buy indicators the hyperopt should build.'
+    ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(
         '--profitable',
