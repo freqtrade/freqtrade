@@ -13,7 +13,6 @@ from freqtrade.commands.data_commands import (start_convert_data, start_download
 from freqtrade.commands.deploy_commands import (start_create_userdir, start_install_ui,
                                                 start_new_hyperopt, start_new_strategy)
 from freqtrade.commands.automation_commands import start_build_hyperopt
-
 from freqtrade.commands.hyperopt_commands import start_hyperopt_list, start_hyperopt_show
 from freqtrade.commands.list_commands import (start_list_exchanges, start_list_hyperopts,
                                               start_list_markets, start_list_strategies,

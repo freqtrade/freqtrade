@@ -55,16 +55,7 @@ class {{ hyperopt }}(IHyperOpt):
 
             # TRIGGERS
             if 'trigger' in params:
-                if params['trigger'] == 'bb_lower':
-                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
-                if params['trigger'] == 'macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['macd'], dataframe['macdsignal']
-                    ))
-                if params['trigger'] == 'sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['close'], dataframe['sar']
-                    ))
+                {{ buy_triggers | indent(16) }}
 
             # Check that the candle had volume
             conditions.append(dataframe['volume'] > 0)
@@ -103,16 +94,7 @@ class {{ hyperopt }}(IHyperOpt):
 
             # TRIGGERS
             if 'sell-trigger' in params:
-                if params['sell-trigger'] == 'sell-bb_upper':
-                    conditions.append(dataframe['close'] > dataframe['bb_upperband'])
-                if params['sell-trigger'] == 'sell-macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['macdsignal'], dataframe['macd']
-                    ))
-                if params['sell-trigger'] == 'sell-sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['sar'], dataframe['close']
-                    ))
+                {{ sell_triggers | indent(16) }}
 
             # Check that the candle had volume
             conditions.append(dataframe['volume'] > 0)

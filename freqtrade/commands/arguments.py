@@ -212,7 +212,7 @@ class Arguments:
 
         # add build-hyperopt subcommand
         build_custom_hyperopt_cmd = subparsers.add_parser('build-hyperopt',
-                                                   help="Build a custom hyperopt")
+                                                          help="Build a custom hyperopt")
         build_custom_hyperopt_cmd.set_defaults(func=start_build_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_CUSTOM_HYPEROPT, parser=build_custom_hyperopt_cmd)
 

@@ -275,6 +275,19 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: `--hyperopt-filename=hyperopt_results_2020-09-27_16-20-48.pickle`',
         metavar='FILENAME',
     ),
+    # Automation 
+    "buy_indicators": Arg(
+        '-b', '--buy-indicators',
+        help='Specify the buy indicators the hyperopt should build. '
+        'Example: --buy-indicators `{"rsi":"above","bb_lowerband":"below"}`',
+        metavar='DICT',
+    ),
+    "sell_indicators": Arg(
+        '-s', '--sell-indicators',
+        help='Specify the sell indicators the hyperopt should build. '
+        'Example: --sell-indicators `{"rsi":"above","bb_lowerband":"below"}`',
+        metavar='DICT',
+    ),
     # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
@@ -438,15 +451,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--trade-ids',
         help='Specify the list of trade ids.',
         nargs='+',
-    ),
-    # automation 
-    "buy_indicators": Arg(
-        '-b', '--buy-indicators',
-        help='Specify the buy indicators the hyperopt should build.'
-    ),
-    "sell_indicators": Arg(
-        '-s', '--sell-indicators',
-        help='Specify the buy indicators the hyperopt should build.'
     ),
     # hyperopt-list, hyperopt-show
     "hyperopt_list_profitable": Arg(
