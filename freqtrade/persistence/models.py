@@ -671,9 +671,13 @@ class Trade(_DECL_BASE):
         Calculates total invested amount in open trades
         in stake currency
         """
-        total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount))\
-            .filter(Trade.is_open.is_(True))\
-            .scalar()
+        if Trade.use_db:
+            total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount))\
+                .filter(Trade.is_open.is_(True))\
+                .scalar()
+        else:
+            total_open_stake_amount = sum(
+                t.stake_amount for t in Trade.get_trades_proxy(is_open=True))
         return total_open_stake_amount or 0
 
     @staticmethod
