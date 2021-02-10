@@ -116,6 +116,7 @@ class Backtesting:
             self.protections = ProtectionManager(self.config)
 
         self.wallets = Wallets(self.config, self.exchange)
+        self.wallets._log = False
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
@@ -181,7 +182,7 @@ class Backtesting:
 
     def update_wallets(self):
         if self.wallets:
-            self.wallets.update(log=False)
+            self.wallets.update()
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """

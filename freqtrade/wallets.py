@@ -29,6 +29,7 @@ class Wallets:
 
     def __init__(self, config: dict, exchange: Exchange, skip_update: bool = False) -> None:
         self._config = config
+        self._log = True
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
         self.start_cap = config['dry_run_wallet']
@@ -104,7 +105,7 @@ class Wallets:
             if currency not in balances:
                 del self._wallets[currency]
 
-    def update(self, require_update: bool = True, log: bool = True) -> None:
+    def update(self, require_update: bool = True) -> None:
         """
         Updates wallets from the configured version.
         By default, updates from the exchange.
@@ -117,7 +118,7 @@ class Wallets:
                 self._update_live()
             else:
                 self._update_dry()
-            if log:
+            if self._log:
                 logger.info('Wallets synced.')
             self._last_wallet_refresh = arrow.utcnow().int_timestamp
 
