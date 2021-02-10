@@ -503,7 +503,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     min_date, max_date = get_timerange({pair: frame})
     results = backtesting.backtest(
         processed=data_processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,

@@ -17,7 +17,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
@@ -270,6 +270,30 @@ class Backtesting:
 
         return None
 
+    def _enter_trade(self, pair: str, row, max_open_trades: int,
+                     open_trade_count: int) -> Optional[Trade]:
+        self.update_wallets()
+        try:
+            stake_amount = self.wallets.get_trade_stake_amount(
+                pair, max_open_trades - open_trade_count, None)
+        except DependencyException:
+            stake_amount = 0
+        if stake_amount:
+            # Enter trade
+            trade = Trade(
+                pair=pair,
+                open_rate=row[OPEN_IDX],
+                open_date=row[DATE_IDX],
+                stake_amount=stake_amount,
+                amount=round(stake_amount / row[OPEN_IDX], 8),
+                fee_open=self.fee,
+                fee_close=self.fee,
+                is_open=True,
+                exchange='backtesting',
+            )
+            return trade
+        return None
+
     def handle_left_open(self, open_trades: Dict[str, List[Trade]],
                          data: Dict[str, List[Tuple]]) -> List[Trade]:
         """
@@ -290,7 +314,7 @@ class Backtesting:
                     trades.append(trade1)
         return trades
 
-    def backtest(self, processed: Dict, stake_amount: float,
+    def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
                  enable_protections: bool = False) -> DataFrame:
@@ -302,7 +326,6 @@ class Backtesting:
         Avoid extensive logging in this method and functions it calls.
 
         :param processed: a processed dictionary with format {pair, data}
-        :param stake_amount: amount to use for each trade
         :param start_date: backtesting timerange start datetime
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
@@ -310,10 +333,6 @@ class Backtesting:
         :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
-        logger.debug(f"Run backtest, stake_amount: {stake_amount}, "
-                     f"start_date: {start_date}, end_date: {end_date}, "
-                     f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
-                     )
         trades: List[Trade] = []
         self.prepare_backtest(enable_protections)
 
@@ -356,30 +375,18 @@ class Backtesting:
                         and tmp != end_date
                         and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
                         and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
-                    self.update_wallets()
-                    # Enter trade
-                    trade = Trade(
-                        pair=pair,
-                        open_rate=row[OPEN_IDX],
-                        open_date=row[DATE_IDX],
-                        stake_amount=stake_amount,
-                        amount=round(stake_amount / row[OPEN_IDX], 8),
-                        fee_open=self.fee,
-                        fee_close=self.fee,
-                        is_open=True,
-                        exchange='backtesting',
-                    )
-                    # TODO: hacky workaround to avoid opening > max_open_trades
-                    # This emulates previous behaviour - not sure if this is correct
-                    # Prevents buying if the trade-slot was freed in this candle
-                    open_trade_count_start += 1
-                    open_trade_count += 1
-                    # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
-                    open_trades[pair].append(trade)
-                    Trade.trades.append(trade)
+                    trade = self._enter_trade(pair, row, max_open_trades, open_trade_count_start)
+                    if trade:
+                        # TODO: hacky workaround to avoid opening > max_open_trades
+                        # This emulates previous behaviour - not sure if this is correct
+                        # Prevents buying if the trade-slot was freed in this candle
+                        open_trade_count_start += 1
+                        open_trade_count += 1
+                        # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
+                        open_trades[pair].append(trade)
+                        Trade.trades.append(trade)
 
                 for trade in open_trades[pair]:
-                    # since indexes has been incremented before, we need to go one step back to
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occured
@@ -431,7 +438,6 @@ class Backtesting:
         # Execute backtest and store results
         results = self.backtest(
             processed=preprocessed,
-            stake_amount=self.config['stake_amount'],
             start_date=min_date.datetime,
             end_date=max_date.datetime,
             max_open_trades=max_open_trades,
