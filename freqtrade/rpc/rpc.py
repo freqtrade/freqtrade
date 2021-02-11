@@ -776,7 +776,8 @@ class RPC:
             })
         return res
 
-    def _rpc_analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
+    def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
+                                limit: Optional[int]) -> Dict[str, Any]:
 
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
             pair, timeframe)
