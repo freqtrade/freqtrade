@@ -142,7 +142,7 @@ class Exchange:
         """
         logger.debug("Exchange object destroyed, closing async loop")
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
-            asyncio.get_event_loop().run_until_complete(self._api_async.close())
+            asyncio.get_event_loop().create_task(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: dict = None) -> ccxt.Exchange:
@@ -282,7 +282,7 @@ class Exchange:
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
-                asyncio.get_event_loop().run_until_complete(
+                asyncio.get_event_loop().create_task(
                     self._api_async.load_markets(reload=reload))
 
         except (asyncio.TimeoutError, ccxt.BaseError) as e:
@@ -720,7 +720,7 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
-        return asyncio.get_event_loop().run_until_complete(
+        return asyncio.get_event_loop().create_task(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms))
 
@@ -799,7 +799,7 @@ class Exchange:
                     pair, timeframe
                 )
 
-        results = asyncio.get_event_loop().run_until_complete(
+        results = asyncio.get_event_loop().create_task(
             asyncio.gather(*input_coroutines, return_exceptions=True))
 
         results_df = {}
@@ -1029,7 +1029,7 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             raise OperationalException("This exchange does not suport downloading Trades.")
 
-        return asyncio.get_event_loop().run_until_complete(
+        return asyncio.get_event_loop().create_task(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
