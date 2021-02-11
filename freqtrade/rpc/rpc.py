@@ -9,7 +9,7 @@ from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
-from numpy import NAN, int64, mean
+from numpy import NAN, inf, int64, mean
 from pandas import DataFrame
 
 from freqtrade.configuration.timerange import TimeRange
@@ -747,6 +747,7 @@ class RPC:
                 sell_mask = (dataframe['sell'] == 1)
                 sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
+            dataframe = dataframe.replace([inf, -inf], NAN)
             dataframe = dataframe.replace({NAN: None})
 
         res = {
