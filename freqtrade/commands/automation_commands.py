@@ -154,7 +154,7 @@ def start_build_hyperopt(args: Dict[str, Any]) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    # check what the name of the hyperopt should
+    # check what the name of the hyperopt should be
     if not 'hyperopt' in args or not args['hyperopt']:
         raise OperationalException("`build-hyperopt` requires --hyperopt to be set.")
     elif not 'buy_indicators' in args or not args['buy_indicators']:
