@@ -17,7 +17,7 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
@@ -242,8 +242,9 @@ def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_con
         '--strategy', 'DefaultStrategy',
     ]
 
-    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
-        setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
+    # TODO: does this test still make sense?
+    conf = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
+    assert isinstance(conf, dict)
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:

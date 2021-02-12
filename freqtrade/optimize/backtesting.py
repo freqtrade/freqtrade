@@ -445,11 +445,11 @@ class Backtesting:
             enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
-        print(self.wallets.get_all_balances())
         self.all_results[self.strategy.get_strategy_name()] = {
             'results': results,
             'config': self.strategy.config,
             'locks': PairLocks.get_all_locks(),
+            'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
         }
