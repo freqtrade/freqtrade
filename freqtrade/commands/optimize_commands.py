@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 
 
@@ -23,10 +23,14 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
         RunMode.HYPEROPT: 'hyperoptimization',
     }
     if (method in no_unlimited_runmodes.keys() and
-            config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT):
-        raise DependencyException(
-            f'The value of `stake_amount` cannot be set as "{constants.UNLIMITED_STAKE_AMOUNT}" '
-            f'for {no_unlimited_runmodes[method]}')
+            config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT and
+            config['max_open_trades'] != float('inf')):
+        pass
+        # config['dry_run_wallet'] = config['stake_amount'] * \
+        #     config['max_open_trades'] * (2 - config['tradable_balance_ratio'])
+
+        # logger.warning(f"Changing dry-run-wallet to {config['dry_run_wallet']} "
+        #                "(max_open_trades * stake_amount).")
 
     return config
 

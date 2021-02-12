@@ -15,7 +15,7 @@ from filelock import Timeout
 from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
@@ -140,9 +140,9 @@ def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_con
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
     ]
-
-    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
-        setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
+    # TODO: does this test still make sense?
+    conf = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
+    assert isinstance(conf, dict)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
