@@ -11,6 +11,10 @@ from freqtrade.misc import render_template
 
 logger = logging.getLogger(__name__)
 
+
+
+
+#-------------------------build-hyperopt-----------------------------
 '''
     TODO 
     -make the code below more dynamic with a large list of indicators and aims
