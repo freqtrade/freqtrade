@@ -10,7 +10,7 @@ from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import calculate_market_change, calculate_max_drawdown
-from freqtrade.misc import file_dump_json, round_coin_value, decimals_per_coin
+from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
 
 
 logger = logging.getLogger(__name__)
@@ -384,7 +384,9 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
 
     output = [[
         t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
-        t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_total_pct'],
+        t['profit_mean_pct'], t['profit_sum_pct'],
+        round_coin_value(t['profit_total_abs'], stake_currency, False),
+        t['profit_total_pct'],
     ] for t in sell_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
