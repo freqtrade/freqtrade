@@ -505,7 +505,7 @@ class Telegram(RPCHandler):
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
-                    curr_output = "*{currency}:* not showing <1$ amount \n".format(**curr)
+                    curr_output = f"*{curr['currency']}:* not showing <1$ amount \n"
 
                 # Handle overflowing messsage length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
