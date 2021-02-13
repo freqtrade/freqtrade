@@ -261,6 +261,7 @@ def get_default_conf(testdatadir):
             "20": 0.02,
             "0": 0.04
         },
+        "dry_run_wallet": 1000,
         "stoploss": -0.10,
         "unfilledtimeout": {
             "buy": 10,
