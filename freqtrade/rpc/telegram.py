@@ -5,14 +5,14 @@ This module manage Telegram communication
 """
 import json
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 from itertools import chain
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
 from tabulate import tabulate
 from telegram import KeyboardButton, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.error import NetworkError, TelegramError, BadRequest
+from telegram.error import NetworkError, TelegramError
 from telegram.ext import CallbackContext, CommandHandler, Updater, CallbackQueryHandler
 from telegram.utils.helpers import escape_markdown
 
@@ -154,7 +154,7 @@ class Telegram(RPCHandler):
             CommandHandler('logs', self._logs),
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
-            CommandHandler('version', self._version)
+            CommandHandler('version', self._version),
         ]
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
@@ -945,6 +945,7 @@ class Telegram(RPCHandler):
             reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Refresh", callback_data=callback_path)]])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
+        msg+="\nUpdated: {}".format(datetime.now().ctime())
         try:
             try:
                 self._updater.bot.edit_message_text(
@@ -976,10 +977,10 @@ class Telegram(RPCHandler):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        if reload_able:
+        if reload_able and self._config['telegram'].get('reload',True):
             reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Refresh", callback_data=callback_path)]])
         else:
-            reply_markup = ReplyKeyboardMarkup(self._keyboard)
+            reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
         try:
             try:
                 self._updater.bot.send_message(
