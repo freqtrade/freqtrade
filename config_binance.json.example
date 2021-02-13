@@ -12,15 +12,15 @@
         "sell": 30
     },
     "bid_strategy": {
-        "use_order_book": false,
         "ask_last_balance": 0.0,
+        "use_order_book": false,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy":{
+    "ask_strategy": {
         "use_order_book": false,
         "order_book_min": 1,
         "order_book_max": 1,

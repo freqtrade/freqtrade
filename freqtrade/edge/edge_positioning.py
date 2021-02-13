@@ -159,7 +159,8 @@ class Edge:
         available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
-        position_size = min(max_position_size, free_capital)
+        # Position size must be below available capital.
+        position_size = min(min(max_position_size, free_capital), available_capital)
         if pair in self._cached_pairs:
             logger.info(
                 'winrate: %s, expectancy: %s, position size: %s, pair: %s,'

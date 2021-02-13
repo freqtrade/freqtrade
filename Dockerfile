@@ -40,7 +40,9 @@ COPY --from=python-deps /root/.local /root/.local
 # Install and execute
 COPY . /freqtrade/
 RUN pip install -e . --no-cache-dir \
-  && mkdir /freqtrade/user_data/
+  && mkdir /freqtrade/user_data/ \
+  && freqtrade install-ui
+
 ENTRYPOINT ["freqtrade"]
 # Default to trade mode
 CMD [ "trade" ]

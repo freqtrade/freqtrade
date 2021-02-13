@@ -18,7 +18,7 @@ EXCHANGES = {
     'bittrex': {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': False,
-        'timeframe': '5m',
+        'timeframe': '1h',
     },
     'binance': {
         'pair': 'BTC/USDT',
@@ -120,7 +120,9 @@ class TestCCXTExchange():
         ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
         assert isinstance(ohlcv, dict)
         assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
-        assert len(exchange.klines(pair_tf)) > 200
+        # assert len(exchange.klines(pair_tf)) > 200
+        # Assume 90% uptime ...
+        assert len(exchange.klines(pair_tf)) > exchange._ohlcv_candle_limit * 0.90
 
     # TODO: tests fetch_trades (?)
 

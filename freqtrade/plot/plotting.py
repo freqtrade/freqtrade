@@ -53,7 +53,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
-    if startup_candles:
+    if startup_candles and data:
         min_date, max_date = get_timerange(data)
         logger.info(f"Loading data from {min_date} to {max_date}")
         timerange.adjust_start_if_necessary(timeframe_to_seconds(config.get('timeframe', '5m')),
@@ -67,14 +67,16 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         if not filename.is_dir() and not filename.is_file():
             logger.warning("Backtest file is missing skipping trades.")
             no_trades = True
-
-    trades = load_trades(
-        config['trade_source'],
-        db_url=config.get('db_url'),
-        exportfilename=filename,
-        no_trades=no_trades,
-        strategy=config.get('strategy'),
-    )
+    try:
+        trades = load_trades(
+            config['trade_source'],
+            db_url=config.get('db_url'),
+            exportfilename=filename,
+            no_trades=no_trades,
+            strategy=config.get('strategy'),
+        )
+    except ValueError as e:
+        raise OperationalException(e) from e
     trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,

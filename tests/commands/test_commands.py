@@ -1,16 +1,20 @@
 import re
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
+from zipfile import ZipFile
 
 import arrow
 import pytest
 
 from freqtrade.commands import (start_convert_data, start_create_userdir, start_download_data,
-                                start_hyperopt_list, start_hyperopt_show, start_list_data,
-                                start_list_exchanges, start_list_hyperopts, start_list_markets,
-                                start_list_strategies, start_list_timeframes, start_new_hyperopt,
-                                start_new_strategy, start_show_trades, start_test_pairlist,
-                                start_trading)
+                                start_hyperopt_list, start_hyperopt_show, start_install_ui,
+                                start_list_data, start_list_exchanges, start_list_hyperopts,
+                                start_list_markets, start_list_strategies, start_list_timeframes,
+                                start_new_hyperopt, start_new_strategy, start_show_trades,
+                                start_test_pairlist, start_trading)
+from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
+                                                get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
@@ -546,13 +550,114 @@ def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
         start_new_hyperopt(get_args(args))
 
 
-def test_start_new_hyperopt_no_arg(mocker, caplog):
+def test_start_new_hyperopt_no_arg(mocker):
     args = [
         "new-hyperopt",
     ]
     with pytest.raises(OperationalException,
                        match="`new-hyperopt` requires --hyperopt to be set."):
         start_new_hyperopt(get_args(args))
+
+
+def test_start_install_ui(mocker):
+    clean_mock = mocker.patch('freqtrade.commands.deploy_commands.clean_ui_subdir')
+    get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url',
+                                return_value=('https://example.com/whatever', '0.0.1'))
+    download_mock = mocker.patch('freqtrade.commands.deploy_commands.download_and_install_ui')
+    mocker.patch('freqtrade.commands.deploy_commands.read_ui_version', return_value=None)
+    args = [
+        "install-ui",
+    ]
+    start_install_ui(get_args(args))
+    assert clean_mock.call_count == 1
+    assert get_url_mock.call_count == 1
+    assert download_mock.call_count == 1
+
+    clean_mock.reset_mock()
+    get_url_mock.reset_mock()
+    download_mock.reset_mock()
+
+    args = [
+        "install-ui",
+        "--erase",
+    ]
+    start_install_ui(get_args(args))
+    assert clean_mock.call_count == 1
+    assert get_url_mock.call_count == 1
+    assert download_mock.call_count == 0
+
+
+def test_clean_ui_subdir(mocker, tmpdir, caplog):
+    mocker.patch("freqtrade.commands.deploy_commands.Path.is_dir",
+                 side_effect=[True, True])
+    mocker.patch("freqtrade.commands.deploy_commands.Path.is_file",
+                 side_effect=[False, True])
+    rd_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.rmdir")
+    ul_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.unlink")
+
+    mocker.patch("freqtrade.commands.deploy_commands.Path.glob",
+                 return_value=[Path('test1'), Path('test2'), Path('.gitkeep')])
+    folder = Path(tmpdir) / "uitests"
+    clean_ui_subdir(folder)
+    assert log_has("Removing UI directory content.", caplog)
+    assert rd_mock.call_count == 1
+    assert ul_mock.call_count == 1
+
+
+def test_download_and_install_ui(mocker, tmpdir):
+    # Create zipfile
+    requests_mock = MagicMock()
+    file_like_object = BytesIO()
+    with ZipFile(file_like_object, mode='w') as zipfile:
+        for file in ('test1.txt', 'hello/', 'test2.txt'):
+            zipfile.writestr(file, file)
+    file_like_object.seek(0)
+    requests_mock.content = file_like_object.read()
+
+    mocker.patch("freqtrade.commands.deploy_commands.requests.get", return_value=requests_mock)
+
+    mocker.patch("freqtrade.commands.deploy_commands.Path.is_dir",
+                 side_effect=[True, False])
+    wb_mock = mocker.patch("freqtrade.commands.deploy_commands.Path.write_bytes")
+
+    folder = Path(tmpdir) / "uitests_dl"
+    folder.mkdir(exist_ok=True)
+
+    assert read_ui_version(folder) is None
+
+    download_and_install_ui(folder, 'http://whatever.xxx/download/file.zip', '22')
+
+    assert wb_mock.call_count == 2
+
+    assert read_ui_version(folder) == '22'
+
+
+def test_get_ui_download_url(mocker):
+    response = MagicMock()
+    response.json = MagicMock(
+        side_effect=[[{'assets_url': 'http://whatever.json', 'name': '0.0.1'}],
+                     [{'browser_download_url': 'http://download.zip'}]])
+    get_mock = mocker.patch("freqtrade.commands.deploy_commands.requests.get",
+                            return_value=response)
+    x, last_version = get_ui_download_url()
+    assert get_mock.call_count == 2
+    assert last_version == '0.0.1'
+    assert x == 'http://download.zip'
+
+
+def test_get_ui_download_url_direct(mocker):
+    response = MagicMock()
+    response.json = MagicMock(
+        side_effect=[[{
+            'assets_url': 'http://whatever.json',
+            'name': '0.0.1',
+            'assets': [{'browser_download_url': 'http://download11.zip'}]}]])
+    get_mock = mocker.patch("freqtrade.commands.deploy_commands.requests.get",
+                            return_value=response)
+    x, last_version = get_ui_download_url()
+    assert get_mock.call_count == 1
+    assert last_version == '0.0.1'
+    assert x == 'http://download11.zip'
 
 
 def test_download_data_keyboardInterrupt(mocker, caplog, markets):

@@ -6,9 +6,31 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.misc import (file_dump_json, file_load_json, format_ms_time, pair_to_filename,
-                            plural, render_template, render_template_with_fallback,
-                            safe_value_fallback, safe_value_fallback2, shorten_date)
+from freqtrade.misc import (decimals_per_coin, file_dump_json, file_load_json, format_ms_time,
+                            pair_to_filename, plural, render_template,
+                            render_template_with_fallback, round_coin_value, safe_value_fallback,
+                            safe_value_fallback2, shorten_date)
+
+
+def test_decimals_per_coin():
+    assert decimals_per_coin('USDT') == 3
+    assert decimals_per_coin('EUR') == 3
+    assert decimals_per_coin('BTC') == 8
+    assert decimals_per_coin('ETH') == 5
+
+
+def test_round_coin_value():
+    assert round_coin_value(222.222222, 'USDT') == '222.222 USDT'
+    assert round_coin_value(222.2, 'USDT') == '222.200 USDT'
+    assert round_coin_value(222.12745, 'EUR') == '222.127 EUR'
+    assert round_coin_value(0.1274512123, 'BTC') == '0.12745121 BTC'
+    assert round_coin_value(0.1274512123, 'ETH') == '0.12745 ETH'
+
+    assert round_coin_value(222.222222, 'USDT', False) == '222.222'
+    assert round_coin_value(222.2, 'USDT', False) == '222.200'
+    assert round_coin_value(222.12745, 'EUR', False) == '222.127'
+    assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
+    assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
 
 
 def test_shorten_date() -> None:

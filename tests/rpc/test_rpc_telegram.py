@@ -519,7 +519,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert '*EUR:*' in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
-    assert 'BTC:  12.00000000' in result
+    assert 'BTC: 12.00000000' in result
     assert '*XRP:* not showing <1$ amount' in result
 
 
@@ -1205,7 +1205,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
-           '*Total:* `(0.001000 BTC, 12.345 USD)`'
+           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
     caplog.clear()
@@ -1389,7 +1389,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
-                                        '*Total:* `(0.001000 BTC)`')
+                                        '*Total:* `(0.00100000 BTC)`')
 
 
 def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
