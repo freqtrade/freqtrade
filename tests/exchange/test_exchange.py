@@ -1417,7 +1417,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
     ret = exchange.get_historic_ohlcv(pair, "5m", int((
         arrow.utcnow().int_timestamp - since) * 1000))
 
@@ -1473,7 +1473,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
     ret = exchange.get_historic_ohlcv_as_df(pair, "5m", int((
         arrow.utcnow().int_timestamp - since) * 1000))
 
@@ -2416,6 +2416,19 @@ def test_get_markets_error(default_conf, mocker):
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=None))
     with pytest.raises(OperationalException, match="Markets were not loaded."):
         ex.get_markets('LTC', 'USDT', True, False)
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    timeframes = ('1m', '5m', '1h')
+    expected = exchange._ft_has['ohlcv_candle_limit']
+    for timeframe in timeframes:
+        if 'ohlcv_candle_limit_per_timeframe' in exchange._ft_has:
+            expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
+            # This should only run for bittrex
+            assert exchange_name == 'bittrex'
+        assert exchange.ohlcv_candle_limit(timeframe) == expected
 
 
 def test_timeframe_to_minutes():

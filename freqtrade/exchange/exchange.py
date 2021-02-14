@@ -101,7 +101,6 @@ class Exchange:
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
         # Assign this directly for easy access
-        self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
         self._trades_pagination = self._ft_has['trades_pagination']
@@ -137,7 +136,8 @@ class Exchange:
                 self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-            self.validate_required_startup_candles(config.get('startup_candle_count', 0))
+            self.validate_required_startup_candles(config.get('startup_candle_count', 0),
+                                                   config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -199,11 +199,6 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
-    def ohlcv_candle_limit(self) -> int:
-        """exchange ohlcv candle limit"""
-        return int(self._ohlcv_candle_limit)
-
-    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
         if not self._markets:
@@ -215,6 +210,17 @@ class Exchange:
     def precisionMode(self) -> str:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
+
+    def ohlcv_candle_limit(self, timeframe: str) -> int:
+        """
+        Exchange ohlcv candle limit
+        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limts
+        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        :param timeframe: Timeframe to check
+        :return: Candle limit as integer
+        """
+        return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
+            timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
     def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
                     pairs_only: bool = False, active_only: bool = False) -> Dict[str, Any]:
@@ -428,15 +434,16 @@ class Exchange:
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
 
-    def validate_required_startup_candles(self, startup_candles: int) -> None:
+    def validate_required_startup_candles(self, startup_candles: int, timeframe: str) -> None:
         """
-        Checks if required startup_candles is more than ohlcv_candle_limit.
+        Checks if required startup_candles is more than ohlcv_candle_limit().
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
         """
-        if startup_candles + 5 > self._ft_has['ohlcv_candle_limit']:
+        candle_limit = self.ohlcv_candle_limit(timeframe)
+        if startup_candles + 5 > candle_limit:
             raise OperationalException(
                 f"This strategy requires {startup_candles} candles to start. "
-                f"{self.name} only provides {self._ft_has['ohlcv_candle_limit']}.")
+                f"{self.name} only provides {candle_limit} for {timeframe}.")
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -721,7 +728,7 @@ class Exchange:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
-        Async over one pair, assuming we get `self._ohlcv_candle_limit` candles per call.
+        Async over one pair, assuming we get `self.ohlcv_candle_limit()` candles per call.
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
@@ -751,7 +758,7 @@ class Exchange:
         Download historic ohlcv
         """
 
-        one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
@@ -853,7 +860,7 @@ class Exchange:
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
-                                                     limit=self._ohlcv_candle_limit)
+                                                     limit=self.ohlcv_candle_limit(timeframe))
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
@@ -1026,7 +1033,7 @@ class Exchange:
         """
         Get trade history data using asyncio.
         Handles all async work and returns the list of candles.
-        Async over one pair, assuming we get `self._ohlcv_candle_limit` candles per call.
+        Async over one pair, assuming we get `self.ohlcv_candle_limit()` candles per call.
         :param pair: Pair to download
         :param since: Timestamp in milliseconds to get history from
         :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
