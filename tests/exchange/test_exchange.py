@@ -1417,7 +1417,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
     ret = exchange.get_historic_ohlcv(pair, "5m", int((
         arrow.utcnow().int_timestamp - since) * 1000))
 
@@ -1473,7 +1473,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
-    since = 5 * 60 * exchange._ft_has['ohlcv_candle_limit'] * 1.8
+    since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
     ret = exchange.get_historic_ohlcv_as_df(pair, "5m", int((
         arrow.utcnow().int_timestamp - since) * 1000))
 
