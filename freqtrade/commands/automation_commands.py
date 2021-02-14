@@ -17,6 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------extract-strategy------------------------------------------------------
+'''
+    TODO
+    - get the stoploss value to optimize
+    - get the values from the guards to specify the optimzation range (cooperation with custom-hyperopt)
+'''
+
+
 def extract_dicts(strategypath: Path):
     # store the file in a list for reference
     stored_file = []
@@ -40,7 +47,7 @@ def extract_dicts(strategypath: Path):
     buyindicators = {}
     sellindicators = {}
     for position, line in enumerate(stored_file):
-        # check the lines in buy trend for indicator and add them 
+        # check the lines in buy trend for indicator and add them
         if position in buy_lines and "(dataframe['" in line:
             # use split twice to remove the context around the indicator
             back_of_line = line.split("(dataframe['", 1)[1]
@@ -48,14 +55,14 @@ def extract_dicts(strategypath: Path):
 
             buyindicators[buyindicator] = position
 
-        # check the lines in sell trend for indicator and add them 
+        # check the lines in sell trend for indicator and add them
         elif position > end_buy_number and "(dataframe['" in line:
             # use split twice to remove the context around the indicator
             back_of_line = line.split("(dataframe['", 1)[1]
             sellindicator = back_of_line.split("'] ", 1)[0]
 
             sellindicators[sellindicator] = position
-    
+
     # build the final buy dictionary
     buy_dict = {}
     for indicator in buyindicators:
@@ -115,13 +122,13 @@ def start_extract_strategy(args: Dict[str, Any]) -> None:
 
 # --------------------------------------------------custom-hyperopt------------------------------------------------------
 '''
-    TODO 
+    TODO
     -make the code below more dynamic with a large list of indicators and aims
-    -buy_space integer values variation based on aim(later deep learning)
-    -add --mode , see notes
-    -when making the strategy reading tool, make sure that the populate indicators gets copied to here
-    -Custom stoploss and roi
+    -buy_space integer values variation based on aim and input value form extract-strategy(later deep learning)
+    -add --mode , see notes (denk hierbij ook aan value range bij guards)
+    -Custom stoploss and roi (based on input from extract-strategy)
     -cli option to read extracted strategies files (--extraction)
+    -code cleanup (maybe the two elements functions can be combined)
 '''
 
 
@@ -144,20 +151,20 @@ def custom_hyperopt_buyelements(buy_indicators: Dict[str, str]):
         # If the indicator is a guard
         elif indicator in POSSIBLE_GUARDS:
             # get the symbol corrosponding to the value
-            aim = POSSIBLE_AIMS[buy_indicators[indicator]]
+            aim = buy_indicators[indicator]
 
             # add the guard to its argument
-            buy_guards += f"if '{indicator}-enabled' in params and params['{indicator}-enabled']: conditions.append(dataframe['{indicator}'] {aim} params['{indicator}-value'])"
+            buy_guards += f"if '{indicator}-enabled' in params and params['{indicator}-enabled']:\n    conditions.append(dataframe['{indicator}'] {aim} params['{indicator}-value'])\n"
 
             # add the space to its argument
-            buy_space += f"Integer(10, 90, name='{indicator}-value'), Categorical([True, False], name='{indicator}-enabled'),"
+            buy_space += f"Integer(10, 90, name='{indicator}-value'),\nCategorical([True, False], name='{indicator}-enabled'),\n"
         # If the indicator is a trigger
         elif indicator in POSSIBLE_TRIGGERS:
             # get the symbol corrosponding to the value
-            aim = POSSIBLE_AIMS[buy_indicators[indicator]]
+            aim = buy_indicators[indicator]
 
             # add the trigger to its argument
-            buy_triggers += f"if params['trigger'] == '{indicator}': conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])"
+            buy_triggers += f"if params['trigger'] == '{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])\n"
 
     # Final line of indicator space makes all triggers
 
@@ -194,20 +201,20 @@ def custom_hyperopt_sellelements(sell_indicators: Dict[str, str]):
         # If indicator is a guard
         elif indicator in POSSIBLE_GUARDS:
             # get the symbol corrosponding to the value
-            aim = POSSIBLE_AIMS[sell_indicators[indicator]]
+            aim = sell_indicators[indicator]
 
             # add the guard to its argument
-            sell_guards += f"if '{indicator}-enabled' in params and params['sell-{indicator}-enabled']: conditions.append(dataframe['{indicator}'] {aim} params['sell-{indicator}-value'])"
+            sell_guards += f"if '{indicator}-enabled' in params and params['sell-{indicator}-enabled']:\n    conditions.append(dataframe['{indicator}'] {aim} params['sell-{indicator}-value'])\n"
 
             # add the space to its argument
-            sell_space += f"Integer(10, 90, name='sell-{indicator}-value'), Categorical([True, False], name='sell-{indicator}-enabled'),"
+            sell_space += f"Integer(10, 90, name='sell-{indicator}-value'),\nCategorical([True, False], name='sell-{indicator}-enabled'),\n"
         # If the indicator is a trigger
         elif indicator in POSSIBLE_TRIGGERS:
             # get the symbol corrosponding to the value
-            aim = POSSIBLE_AIMS[sell_indicators[indicator]]
+            aim = sell_indicators[indicator]
 
             # add the trigger to its argument
-            sell_triggers += f"if params['sell-trigger'] == 'sell-{indicator}': conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])"
+            sell_triggers += f"if params['sell-trigger'] == 'sell-{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])\n"
 
     # Final line of indicator space makes all triggers
 
@@ -276,4 +283,44 @@ def start_custom_hyperopt(args: Dict[str, Any]) -> None:
         deploy_custom_hyperopt(args['hyperopt'], new_path,
                                buy_indicators, sell_indicators)
 
+
 # --------------------------------------------------build-hyperopt------------------------------------------------------
+'''
+    TODO
+    -hyperopt optional (door bv standaard naming toe te passen)
+'''
+
+
+def start_build_hyperopt(args: Dict[str, Any]) -> None:
+    """
+    Check if the right subcommands where passed and start building the hyperopt
+    """
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    # strategy and hyperopt need to be defined
+    if not 'strategy' in args or not args['strategy']:
+        raise OperationalException("`build-hyperopt` requires --strategy to be set.")
+    if not 'hyperopt' in args or not args['hyperopt']:
+        raise OperationalException("`build-hyperopt` requires --hyperopt to be set.")
+    else:
+        if args['hyperopt'] == 'DefaultHyperopt':
+            raise OperationalException("DefaultHyperopt is not allowed as name.")
+
+        # the path of the chosen strategy
+        strategy_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args['strategy'] + '.py')
+
+        # the path where the hyperopt should be written
+        new_path = config['user_data_dir'] / USERPATH_HYPEROPTS / (args['hyperopt'] + '.py')
+        if new_path.exists():
+            raise OperationalException(f"`{new_path}` already exists. "
+                                       "Please choose another Hyperopt Name.")
+
+        # extract the buy and sell indicators as dicts
+        extracted_dicts = extract_dicts(strategy_path)
+
+        buy_indicators = extracted_dicts[0]
+        sell_indicators = extracted_dicts[1]
+
+        # use the dicts to write the hyperopt
+        deploy_custom_hyperopt(args['hyperopt'], new_path,
+                               buy_indicators, sell_indicators)

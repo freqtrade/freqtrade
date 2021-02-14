@@ -388,14 +388,18 @@ TradeList = List[List]
 POSSIBLE_GUARDS = [
     "rsi", 
     "mfi", 
-    "fastd"
+    "fastd",
+    "slowk",
+    "CDLHAMMER",
+    "fisher_rsi"
 ]
 POSSIBLE_TRIGGERS = [
+    "sar",
     "bb_lowerband", 
     "bb_upperband"
 ]
-POSSIBLE_AIMS = {
-    "above": ">", 
-    "below": "<",
-    "equal": "=="
-}
+POSSIBLE_AIMS = [
+    ">", 
+    "<",
+    "=="
+]
