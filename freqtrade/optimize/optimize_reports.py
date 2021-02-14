@@ -322,14 +322,20 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         result['strategy'][strategy] = strat_stats
 
         try:
-            max_drawdown, drawdown_start, drawdown_end = calculate_max_drawdown(
+            max_drawdown, _, _, _, _ = calculate_max_drawdown(
                 results, value_col='profit_ratio')
+            drawdown_abs, drawdown_start, drawdown_end, high_val, low_val = calculate_max_drawdown(
+                results, value_col='profit_abs')
             strat_stats.update({
                 'max_drawdown': max_drawdown,
+                'max_drawdown_abs': drawdown_abs,
                 'drawdown_start': drawdown_start,
                 'drawdown_start_ts': drawdown_start.timestamp() * 1000,
                 'drawdown_end': drawdown_end,
                 'drawdown_end_ts': drawdown_end.timestamp() * 1000,
+
+                'max_drawdown_low': low_val,
+                'max_drawdown_high': high_val,
             })
 
             csum_min, csum_max = calculate_csum(results)
@@ -341,6 +347,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         except ValueError:
             strat_stats.update({
                 'max_drawdown': 0.0,
+                'max_drawdown_abs': 0.0,
+                'max_drawdown_low': 0.0,
+                'max_drawdown_high': 0.0,
                 'drawdown_start': datetime(1970, 1, 1, tzinfo=timezone.utc),
                 'drawdown_start_ts': 0,
                 'drawdown_end': datetime(1970, 1, 1, tzinfo=timezone.utc),
@@ -471,6 +480,12 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                 strat_results['stake_currency'])),
 
             ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
+            ('Max Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+                                              strat_results['stake_currency'])),
+            ('Max Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
+                                                   strat_results['stake_currency'])),
+            ('Max Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
+                                                  strat_results['stake_currency'])),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Drawdown End', strat_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Market change', f"{round(strat_results['market_change'] * 100, 2)}%"),
