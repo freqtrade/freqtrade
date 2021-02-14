@@ -55,7 +55,10 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 
 ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 
+# Automation
 ARGS_BUILD_CUSTOM_HYPEROPT = ["buy_indicators", "sell_indicators", "hyperopt"]
+
+ARGS_EXTRACT_STRATEGY = ["strategy", "extract_name"]
 
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
@@ -175,7 +178,7 @@ class Arguments:
                                         start_list_data, start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
                                         start_list_timeframes, start_new_config, start_new_hyperopt,
-                                        start_build_hyperopt,
+                                        start_custom_hyperopt, start_extract_strategy,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
                                         start_show_trades, start_test_pairlist, start_trading)
 
@@ -211,10 +214,16 @@ class Arguments:
         self._build_args(optionlist=ARGS_BUILD_HYPEROPT, parser=build_hyperopt_cmd)
 
         # add build-hyperopt subcommand
-        build_custom_hyperopt_cmd = subparsers.add_parser('build-hyperopt',
+        build_custom_hyperopt_cmd = subparsers.add_parser('custom-hyperopt',
                                                           help="Build a custom hyperopt")
-        build_custom_hyperopt_cmd.set_defaults(func=start_build_hyperopt)
+        build_custom_hyperopt_cmd.set_defaults(func=start_custom_hyperopt)
         self._build_args(optionlist=ARGS_BUILD_CUSTOM_HYPEROPT, parser=build_custom_hyperopt_cmd)
+
+        # add build-hyperopt subcommand
+        extract_strategy_cmd = subparsers.add_parser('extract-strategy',
+                                                     help="Extract data dictionaries for build-hyperopt from strategy")
+        extract_strategy_cmd.set_defaults(func=start_extract_strategy)
+        self._build_args(optionlist=ARGS_EXTRACT_STRATEGY, parser=extract_strategy_cmd)
 
         # add new-strategy subcommand
         build_strategy_cmd = subparsers.add_parser('new-strategy',
