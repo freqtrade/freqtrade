@@ -93,6 +93,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify additional strategy lookup path.',
         metavar='PATH',
     ),
+    "strategy_params": Arg(
+        '--strategy-params',
+        help='Specify additional strategy parameters.',
+        metavar='JSON',
+    ),
     "db_url": Arg(
         '--db-url',
         help=f'Override trades database URL, this is useful in custom deployments '

@@ -25,7 +25,8 @@ Possible arguments:
 ```
 usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                 [-d PATH] [--userdir PATH] [-s NAME]
-                                [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
+                                [--strategy-path PATH] [--strategy-params JSON]
+                                [-p PAIRS [PAIRS ...]]
                                 [--indicators1 INDICATORS1 [INDICATORS1 ...]]
                                 [--indicators2 INDICATORS2 [INDICATORS2 ...]]
                                 [--plot-limit INT] [--db-url PATH]
@@ -91,6 +92,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+  --strategy-params JSON
+                        Specify additional strategy parameters.
 ```
 
 Example:
@@ -237,7 +240,8 @@ Possible options for the `freqtrade plot-profit` subcommand:
 ```
 usage: freqtrade plot-profit [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH] [-p PAIRS [PAIRS ...]]
+                             [--strategy-path PATH] [--strategy-params JSON]
+                             [-p PAIRS [PAIRS ...]]
                              [--timerange TIMERANGE] [--export EXPORT]
                              [--export-filename PATH] [--db-url PATH]
                              [--trade-source {DB,file}] [-i TIMEFRAME]
@@ -288,6 +292,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+  --strategy-params JSON
+                        Specify additional strategy parameters.
 ```
 
 The `-p/--pairs`  argument, can be used to limit the pairs that are considered for this calculation.

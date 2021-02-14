@@ -214,6 +214,7 @@ Let's say the stake currency is **ETH** and there is $10$ **ETH** on the wallet.
 ```
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                      [--strategy-params JSON]
                       [-i TIMEFRAME] [--timerange TIMERANGE]
                       [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
                       [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
@@ -260,6 +261,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+  --strategy-params JSON
+                        Specify additional strategy parameters.
 
 ```
 

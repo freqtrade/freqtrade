@@ -54,7 +54,7 @@ optional arguments:
 
 ```
 usage: freqtrade trade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
-                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                       [--userdir PATH] [-s NAME] [--strategy-path PATH] [--strategy-params JSON]
                        [--db-url PATH] [--sd-notify] [--dry-run]
 
 optional arguments:
@@ -85,9 +85,10 @@ Common arguments:
 
 Strategy arguments:
   -s NAME, --strategy NAME
-                        Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
+                          Specify strategy class name which will be used by the
+                          bot.
+  --strategy-path PATH    Specify additional strategy lookup path.
+  --strategy-params JSON  Specify additional strategy params.
 
 ```
 
@@ -187,6 +188,14 @@ checked before the default locations (The passed path must be a directory!):
 
 ```bash
 freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory
+```
+
+### How to use **--strategy-params**?
+
+This parameter allows you to add parameters of your strategy:
+
+```bash
+freqtrade trade --strategy AwesomeStrategy --strategy-params "{'param1': 5, 'param2': 'something'}"
 ```
 
 #### How to install a strategy?

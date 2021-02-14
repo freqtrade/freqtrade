@@ -109,6 +109,18 @@ def test_parse_args_strategy_path_invalid() -> None:
         Arguments(['--strategy-path']).get_parsed_arg()
 
 
+def test_parse_args_strategy_params() -> None:
+    args = Arguments([
+        'trade', '--strategy-params', '{"param1": 5, "param2": "something"}'
+        ]).get_parsed_arg()
+    assert args['strategy_params'] == '{"param1": 5, "param2": "something"}'
+
+
+def test_parse_args_strategy_params_invalid() -> None:
+    with pytest.raises(SystemExit, match=r'2'):
+        Arguments(['--strategy-params']).get_parsed_arg()
+
+
 def test_parse_args_backtesting_invalid() -> None:
     with pytest.raises(SystemExit, match=r'2'):
         Arguments(['backtesting --ticker-interval']).get_parsed_arg()

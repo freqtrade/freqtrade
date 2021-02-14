@@ -1,6 +1,7 @@
 """
 This module contains the configuration class
 """
+import json
 import logging
 import warnings
 from copy import deepcopy
@@ -154,6 +155,9 @@ class Configuration:
 
         self._args_to_config(config, argname='strategy_path',
                              logstring='Using additional Strategy lookup path: {}')
+
+        self._args_to_config_from_json(config, argname='strategy_params',
+                                       logstring='Using additional Strategy params: {}')
 
         if ('db_url' in self.args and self.args['db_url'] and
                 self.args['db_url'] != constants.DEFAULT_DB_PROD_URL):
@@ -403,9 +407,9 @@ class Configuration:
 
         config.update({'runmode': self.runmode})
 
-    def _args_to_config(self, config: Dict[str, Any], argname: str,
-                        logstring: str, logfun: Optional[Callable] = None,
-                        deprecated_msg: Optional[str] = None) -> None:
+    def _args_to_config_from_json(self, config: Dict[str, Any], argname: str,
+                                  logstring: str, logfun: Optional[Callable] = None,
+                                  deprecated_msg: Optional[str] = None) -> None:
         """
         :param config: Configuration dictionary
         :param argname: Argumentname in self.args - will be copied to config dict.
@@ -415,10 +419,36 @@ class Configuration:
                         sample: logfun=len (prints the length of the found
                         configuration instead of the content)
         """
+        def parsejson(argvalue):
+            return json.loads(argvalue.replace('\\\'', '\"'))
+
+        self._args_to_config(
+            config=config,
+            argname=argname,
+            logstring=logstring,
+            logfun=logfun,
+            deprecated_msg=deprecated_msg,
+            parsefun=parsejson
+        )
+
+    def _args_to_config(self, config: Dict[str, Any], argname: str,
+                        logstring: str, logfun: Optional[Callable] = None,
+                        deprecated_msg: Optional[str] = None,
+                        parsefun: Callable = lambda x: x) -> None:
+        """
+        :param config: Configuration dictionary
+        :param argname: Argumentname in self.args - will be copied to config dict.
+        :param logstring: Logging String
+        :param logfun: logfun is applied to the configuration entry before passing
+                        that entry to the log string using .format().
+                        sample: logfun=len (prints the length of the found
+                        configuration instead of the content)
+        :param parsefun: parsefun is applied to the argvalue before updating the configuration
+        """
         if (argname in self.args and self.args[argname] is not None
            and self.args[argname] is not False):
 
-            config.update({argname: self.args[argname]})
+            config.update({argname: parsefun(self.args[argname])})
             if logfun:
                 logger.info(logstring.format(logfun(config[argname])))
             else:

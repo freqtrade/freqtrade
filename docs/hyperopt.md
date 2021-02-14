@@ -38,6 +38,7 @@ pip install -r requirements-hyperopt.txt
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                          [--strategy-params JSON]
                           [-i TIMEFRAME] [--timerange TIMERANGE]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
@@ -130,6 +131,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+  --strategy-params JSON
+                        Specify additional strategy parameters.
 
 ```
 

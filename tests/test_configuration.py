@@ -117,6 +117,38 @@ def test__args_to_config(caplog):
         assert config['strategy_path'] == "TestTest"
 
 
+def test__args_to_config_from_json(caplog):
+
+    arg_list = ['trade', '--strategy-params', '{"param1": 5, "param2": "something"}']
+    args = Arguments(arg_list).get_parsed_arg()
+    configuration = Configuration(args)
+    config = {}
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # No warnings ...
+        configuration._args_to_config_from_json(config, argname="strategy_params",
+                                                logstring="DeadBeef")
+        assert len(w) == 0
+        assert log_has("DeadBeef", caplog)
+        assert config['strategy_params']['param1'] == 5
+        assert config['strategy_params']['param2'] == 'something'
+
+    configuration = Configuration(args)
+    config = {}
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # Deprecation warnings!
+        configuration._args_to_config_from_json(config, argname="strategy_params",
+                                                logstring="DeadBeef",
+                                                deprecated_msg="Going away soon!")
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+        assert "DEPRECATED: Going away soon!" in str(w[-1].message)
+        assert log_has("DeadBeef", caplog)
+        assert config['strategy_params']['param1'] == 5
+        assert config['strategy_params']['param2'] == 'something'
+
+
 def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
     default_conf['max_open_trades'] = 0
     patched_configuration_load_config_file(mocker, default_conf)

@@ -188,6 +188,7 @@
     "disable_dataframe_checks": false,
     "strategy": "DefaultStrategy",
     "strategy_path": "user_data/strategies/",
+    "strategy_param": "{'param1': 5, 'param2': 'something'}",
     "dataformat_ohlcv": "json",
     "dataformat_trades": "jsongz"
 }

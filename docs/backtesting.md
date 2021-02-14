@@ -10,8 +10,8 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 ```
 usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH] [-i TIMEFRAME]
-                             [--timerange TIMERANGE]
+                             [--strategy-path PATH] [--strategy-params JSON]
+                             [-i TIMEFRAME] [--timerange TIMERANGE]
                              [--data-format-ohlcv {json,jsongz,hdf5}]
                              [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
@@ -85,6 +85,8 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+  --strategy-params JSON
+                        Specify additional strategy parameters.
 
 ```
 
