@@ -277,6 +277,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
             'total_trades': len(results),
+            'total_volume': results['stake_amount'].sum(),
             'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
             'profit_total': results['profit_abs'].sum() / starting_balance,
             'profit_total_abs': results['profit_abs'].sum(),
@@ -442,9 +443,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                              strat_results['stake_currency'])),
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
-
             ('Total Profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
             ('Trades per day', strat_results['trades_per_day']),
+            ('Total trade volume', round_coin_value(strat_results['total_volume'],
+                                                    strat_results['stake_currency'])),
+
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
                           f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),

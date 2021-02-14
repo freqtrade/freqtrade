@@ -257,6 +257,7 @@ A backtesting result will look like that:
 | Absolute profit       | 0.00762792 BTC      |
 | Total Profit %        | 76.2%               |
 | Trades per day        | 3.575               |
+| Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
 | Worst Pair            | ZEC/BTC -10.18%     |
@@ -337,6 +338,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Absolute profit       | 0.00762792 BTC      |
 | Total Profit %        | 76.2%               |
 | Trades per day        | 3.575               |
+| Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
 | Worst Pair            | ZEC/BTC -10.18%     |
@@ -364,6 +366,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Absolute profit`: Profit made in stake currency.
 - `Total Profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
+- `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
 - `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
