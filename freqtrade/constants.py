@@ -383,3 +383,23 @@ ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
 TradeList = List[List]
+
+#Build-hyperopt options
+POSSIBLE_GUARDS = [
+    "rsi", 
+    "mfi", 
+    "fastd",
+    "slowk",
+    "CDLHAMMER",
+    "fisher_rsi"
+]
+POSSIBLE_TRIGGERS = [
+    "sar",
+    "bb_lowerband", 
+    "bb_upperband"
+]
+POSSIBLE_AIMS = [
+    ">", 
+    "<",
+    "=="
+]

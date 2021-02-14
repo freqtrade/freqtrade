@@ -288,6 +288,11 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: --sell-indicators `{"rsi":"above","bb_lowerband":"below"}`',
         metavar='DICT',
     ),
+    "extract_name": Arg(
+        '--extract-name',
+        help='Specify the name of the file to which the data should be extracted. ',
+        metavar='FILENAME',
+    ),
     # List exchanges
     "print_one_column": Arg(
         '-1', '--one-column',
