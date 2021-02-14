@@ -2418,6 +2418,19 @@ def test_get_markets_error(default_conf, mocker):
         ex.get_markets('LTC', 'USDT', True, False)
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    timeframes = ('1m', '5m', '1h')
+    expected = exchange._ft_has['ohlcv_candle_limit']
+    for timeframe in timeframes:
+        if 'ohlcv_candle_limit_per_timeframe' in exchange._ft_has:
+            expected = exchange._ft_has['ohlcv_candle_limit_per_timeframe'][timeframe]
+            # This should only run for bittrex
+            assert exchange_name == 'bittrex'
+        assert exchange.ohlcv_candle_limit(timeframe) == expected
+
+
 def test_timeframe_to_minutes():
     assert timeframe_to_minutes("5m") == 5
     assert timeframe_to_minutes("10m") == 10
