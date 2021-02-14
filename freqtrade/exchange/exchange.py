@@ -137,7 +137,7 @@ class Exchange:
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0),
-                                                   config.get('timeframe'))
+                                                   config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(

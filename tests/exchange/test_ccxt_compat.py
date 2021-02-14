@@ -6,13 +6,12 @@ suitable to run with freqtrade.
 """
 
 from datetime import datetime, timedelta, timezone
-from freqtrade.exchange.exchange import timeframe_to_minutes
 from pathlib import Path
 
 import pytest
 
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from freqtrade.exchange import timeframe_to_prev_date
 from tests.conftest import get_default_conf
 
 
