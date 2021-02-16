@@ -546,10 +546,11 @@ class Hyperopt:
 
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
-                                      params_dict, params_details)
+                                      params_dict, params_details,
+                                      processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
-                          params_dict, params_details):
+                          params_dict, params_details, processed: Dict):
         results_metrics = self._calculate_results_metrics(backtesting_results)
         results_explanation = self._format_results_explanation_string(results_metrics)
 
@@ -563,7 +564,8 @@ class Hyperopt:
         loss: float = MAX_LOSS
         if trade_count >= self.config['hyperopt_min_trades']:
             loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
-                                       min_date=min_date.datetime, max_date=max_date.datetime)
+                                       min_date=min_date.datetime, max_date=max_date.datetime,
+                                       config=self.config, processed=processed)
         return {
             'loss': loss,
             'params_dict': params_dict,
