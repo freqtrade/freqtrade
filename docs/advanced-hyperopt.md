@@ -40,6 +40,11 @@ For the sample below, you then need to add the command line parameter `--hyperop
 A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found in [userdata/hyperopts](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_loss.py).
 
 ``` python
+from datetime import datetime
+from typing import Dict
+
+from pandas import DataFrame
+
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 TARGET_TRADES = 600
@@ -54,6 +59,7 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
                                min_date: datetime, max_date: datetime,
+                               processed: Dict[str, DataFrame],
                                *args, **kwargs) -> float:
         """
         Objective function, returns smaller number for better results
@@ -81,6 +87,7 @@ Currently, the arguments are:
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the timerange used
 * `min_date`: End date of the timerange used
+* `processed`: Dict of Dataframes with the pair as keys containing the data used for backtesting.
 
 This function needs to return a floating point number (`float`). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.
 

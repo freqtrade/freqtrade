@@ -550,7 +550,7 @@ class Hyperopt:
                                       processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
-                          params_dict, params_details, processed: Dict):
+                          params_dict, params_details, processed: Dict[str, DataFrame]):
         results_metrics = self._calculate_results_metrics(backtesting_results)
         results_explanation = self._format_results_explanation_string(results_metrics)
 
