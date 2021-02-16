@@ -296,6 +296,11 @@ def test_calculate_csum(testdatadir):
     assert isinstance(csum_max, float)
     assert csum_min < 0.01
     assert csum_max > 0.02
+    csum_min1, csum_max1 = calculate_csum(bt_data, 5)
+
+    assert csum_min1 == csum_min + 5
+    assert csum_max1 == csum_max + 5
+
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
