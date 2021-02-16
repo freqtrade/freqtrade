@@ -334,11 +334,11 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'drawdown_end': drawdown_end,
                 'drawdown_end_ts': drawdown_end.timestamp() * 1000,
 
-                'max_drawdown_low': low_val,
-                'max_drawdown_high': high_val,
+                'max_drawdown_low': low_val + starting_balance,
+                'max_drawdown_high': high_val + starting_balance,
             })
 
-            csum_min, csum_max = calculate_csum(results)
+            csum_min, csum_max = calculate_csum(results, starting_balance)
             strat_stats.update({
                 'csum_min': csum_min,
                 'csum_max': csum_max
@@ -493,7 +493,15 @@ def text_table_add_metrics(strat_results: Dict) -> str:
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
     else:
-        return ''
+        start_balance = round_coin_value(strat_results['starting_balance'],
+                                         strat_results['stake_currency'])
+        stake_amount = round_coin_value(strat_results['stake_amount'],
+                                        strat_results['stake_currency'])
+        message = ("No trades made. "
+                   f"Your starting balance was {start_balance}, "
+                   f"and your stake was {stake_amount}."
+                   )
+        return message
 
 
 def show_backtest_results(config: Dict, backtest_stats: Dict):
