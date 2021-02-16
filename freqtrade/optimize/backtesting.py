@@ -382,7 +382,7 @@ class Backtesting:
                         # Prevents buying if the trade-slot was freed in this candle
                         open_trade_count_start += 1
                         open_trade_count += 1
-                        # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
+                        # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
                         open_trades[pair].append(trade)
                         Trade.trades.append(trade)
 
