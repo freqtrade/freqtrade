@@ -59,7 +59,7 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
                                min_date: datetime, max_date: datetime,
-                               processed: Dict[str, DataFrame],
+                               config: Dict, processed: Dict[str, DataFrame],
                                *args, **kwargs) -> float:
         """
         Objective function, returns smaller number for better results
@@ -87,6 +87,7 @@ Currently, the arguments are:
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the timerange used
 * `min_date`: End date of the timerange used
+* `config`: Config object used (Note: Not all strategy-related parameters will be updated here if they are part of a hyperopt space).
 * `processed`: Dict of Dataframes with the pair as keys containing the data used for backtesting.
 
 This function needs to return a floating point number (`float`). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.
