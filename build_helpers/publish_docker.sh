@@ -51,6 +51,8 @@ fi
 docker images
 
 docker push ${IMAGE_NAME}
+docker push ${IMAGE_NAME}:$TAG_PLOT
+docker push ${IMAGE_NAME}:$TAG
 if [ $? -ne 0 ]; then
     echo "failed pushing repo"
     return 1
