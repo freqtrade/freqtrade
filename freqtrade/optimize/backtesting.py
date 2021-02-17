@@ -180,10 +180,6 @@ class Backtesting:
             PairLocks.reset_locks()
             Trade.reset_trades()
 
-    def update_wallets(self):
-        if self.wallets:
-            self.wallets.update()
-
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
         Helper function to convert a processed dataframes into lists for performance reasons.
@@ -272,7 +268,6 @@ class Backtesting:
 
     def _enter_trade(self, pair: str, row, max_open_trades: int,
                      open_trade_count: int) -> Optional[Trade]:
-        self.update_wallets()
         try:
             stake_amount = self.wallets.get_trade_stake_amount(
                 pair, max_open_trades - open_trade_count, None)
@@ -391,7 +386,6 @@ class Backtesting:
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occured
                     if trade_entry:
-                        self.update_wallets()
                         # logger.debug(f"{pair} - Backtesting sell {trade}")
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
@@ -404,7 +398,7 @@ class Backtesting:
             tmp += timedelta(minutes=self.timeframe_min)
 
         trades += self.handle_left_open(open_trades, data=data)
-        self.update_wallets()
+        self.wallets.update()
 
         return trade_list_to_dataframe(trades)
 
