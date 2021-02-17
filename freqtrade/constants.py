@@ -243,7 +243,8 @@ CONF_SCHEMA = {
                     }
                 }
             },
-            'required': ['enabled', 'token', 'chat_id']
+            'required': ['enabled', 'token', 'chat_id'],
+            'balance_dust_level': 0.0001
         },
         'webhook': {
             'type': 'object',
