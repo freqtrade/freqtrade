@@ -69,7 +69,7 @@ class Wallets:
         _wallets = {}
         closed_trades = Trade.get_trades_proxy(is_open=False)
         open_trades = Trade.get_trades_proxy(is_open=True)
-        tot_profit = sum([trade.calc_profit() for trade in closed_trades])
+        tot_profit = sum([trade.close_profit_abs for trade in closed_trades])
         tot_in_trades = sum([trade.stake_amount for trade in open_trades])
 
         current_stake = self.start_cap + tot_profit - tot_in_trades
