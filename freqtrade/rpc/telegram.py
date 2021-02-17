@@ -487,6 +487,8 @@ class Telegram(RPCHandler):
             result = self._rpc._rpc_balance(self._config['stake_currency'],
                                             self._config.get('fiat_display_currency', ''))
 
+            balance_dust_level = self._config['telegram'].get('balance_dust_level', 0.0001 )
+
             output = ''
             if self._config['dry_run']:
                 output += (
@@ -496,7 +498,7 @@ class Telegram(RPCHandler):
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
                 )
             for curr in result['currencies']:
-                if curr['est_stake'] > 0.0001:
+                if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
                         f"\t`Available: {curr['free']:.8f}`\n"
@@ -505,7 +507,7 @@ class Telegram(RPCHandler):
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
-                    curr_output = f"*{curr['currency']}:* not showing <1$ amount \n"
+                    curr_output = f"*{curr['currency']}:* not showing <{balance_dust_level} {curr['stake']} amount \n"
 
                 # Handle overflowing messsage length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
