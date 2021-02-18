@@ -104,6 +104,7 @@ class Edge:
                 exchange=self.exchange,
                 timeframe=self.strategy.timeframe,
                 timerange=self._timerange,
+                data_format=self.config.get('dataformat_ohlcv', 'json'),
             )
 
         data = load_data(
