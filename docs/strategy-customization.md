@@ -444,13 +444,18 @@ It can also be used in specific callbacks to get the signal that caused the acti
 ``` python
 # fetch current dataframe
 if self.dp:
-    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
-                                                             timeframe=self.timeframe)
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                                 timeframe=self.timeframe)
 ```
 
 !!! Note "No data available"
     Returns an empty dataframe if the requested pair was not cached.
     This should not happen when using whitelisted pairs.
+
+
+!!! Warning "Warning about backtesting"
+    This method will return an empty dataframe during backtesting.
 
 ### *orderbook(pair, maximum)*
 
@@ -462,8 +467,8 @@ if self.dp:
         dataframe['best_ask'] = ob['asks'][0][0]
 ```
 
-!!! Warning
-    The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used.
+!!! Warning "Warning about backtesting"
+    The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return uptodate values.
 
 ### *ticker(pair)*
 
