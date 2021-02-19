@@ -279,13 +279,13 @@ AVAILABLE_CLI_OPTIONS = {
     "buy_indicators": Arg(
         '-b', '--buy-indicators',
         help='Specify the buy indicators the hyperopt should build. '
-        'Example: --buy-indicators `{"rsi":"above","bb_lowerband":"below"}`',
+        'Example: --buy-indicators `{"rsi":"<","bb_lowerband":">"}`',
         metavar='DICT',
     ),
     "sell_indicators": Arg(
         '-s', '--sell-indicators',
         help='Specify the sell indicators the hyperopt should build. '
-        'Example: --sell-indicators `{"rsi":"above","bb_lowerband":"below"}`',
+        'Example: --sell-indicators `{"rsi":">","bb_lowerband":"<"}`',
         metavar='DICT',
     ),
     "extract_name": Arg(

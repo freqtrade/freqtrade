@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 def extract_dicts(strategypath: Path):
+    """
+    Get the indicators, their aims and the stoploss and format them into dictionaries
+    """
     # store the file in a list for reference
     stored_file = []
     with open(strategypath) as file:
