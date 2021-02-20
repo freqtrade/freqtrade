@@ -274,7 +274,7 @@ class Backtesting:
         except DependencyException:
             stake_amount = 0
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
-        if stake_amount and stake_amount > min_stake_amount:
+        if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # print(f"{pair}, {stake_amount}")
             # Enter trade
             trade = Trade(
@@ -341,7 +341,7 @@ class Backtesting:
         indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.timeframe_min)
 
-        open_trades: Dict[str, List] = defaultdict(list)
+        open_trades: Dict[str, List[Trade]] = defaultdict(list)
         open_trade_count = 0
 
         # Loop timerange and get candle for each pair at that point in time
