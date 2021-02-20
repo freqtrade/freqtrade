@@ -11,7 +11,7 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command line option.
 
-In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
+In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream. Furthermore, the bot substitutes environment variables in the form of `${VARIABLE_NAME}`.
 
 If you used the [Quick start](installation.md/#quick-start) method for installing 
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
@@ -524,6 +524,9 @@ API Keys are usually only required for live trading (trading for real money, bot
 ```
 
 You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
+
+!!! Note
+    You can also store your secrets in environment variables and let the bot substitute them (`"key" : "${EXCHANGE_KEY}"`).
 
 ### Using proxy with Freqtrade
 
