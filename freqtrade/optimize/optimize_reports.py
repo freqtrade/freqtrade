@@ -479,9 +479,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
-                                                    strat_results['stake_currency'])),
+                                             strat_results['stake_currency'])),
             ('Max balance', round_coin_value(strat_results['csum_max'],
-                                                    strat_results['stake_currency'])),
+                                             strat_results['stake_currency'])),
 
             ('Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
