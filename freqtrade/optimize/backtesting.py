@@ -23,6 +23,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import LocalTrade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -267,7 +268,7 @@ class Backtesting:
         return None
 
     def _enter_trade(self, pair: str, row, max_open_trades: int,
-                     open_trade_count: int) -> Optional[Trade]:
+                     open_trade_count: int) -> Optional[LocalTrade]:
         try:
             stake_amount = self.wallets.get_trade_stake_amount(
                 pair, max_open_trades - open_trade_count, None)
@@ -277,7 +278,7 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # print(f"{pair}, {stake_amount}")
             # Enter trade
-            trade = Trade(
+            trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
                 open_date=row[DATE_IDX],
@@ -291,8 +292,8 @@ class Backtesting:
             return trade
         return None
 
-    def handle_left_open(self, open_trades: Dict[str, List[Trade]],
-                         data: Dict[str, List[Tuple]]) -> List[Trade]:
+    def handle_left_open(self, open_trades: Dict[str, List[LocalTrade]],
+                         data: Dict[str, List[Tuple]]) -> List[LocalTrade]:
         """
         Handling of left open trades at the end of backtesting
         """
@@ -381,7 +382,7 @@ class Backtesting:
                         open_trade_count += 1
                         # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
                         open_trades[pair].append(trade)
-                        Trade.trades.append(trade)
+                        LocalTrade.trades.append(trade)
 
                 for trade in open_trades[pair]:
                     # also check the buying candle for sell conditions.

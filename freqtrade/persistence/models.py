@@ -199,67 +199,67 @@ class Order(_DECL_BASE):
         return Order.query.filter(Order.ft_is_open.is_(True)).all()
 
 
-class Trade(_DECL_BASE):
+class LocalTrade():
     """
     Trade database model.
-    Also handles updating and querying trades
+    Used in backtesting - must be aligned to Trade model!
+
     """
-    __tablename__ = 'trades'
-
-    use_db: bool = True
+    use_db: bool = False
     # Trades container for backtesting
-    trades: List['Trade'] = []
+    trades: List['LocalTrade'] = []
 
-    id = Column(Integer, primary_key=True)
+    id: int = 0
 
-    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
+    orders: List[Order] = []
 
-    exchange = Column(String, nullable=False)
-    pair = Column(String, nullable=False, index=True)
-    is_open = Column(Boolean, nullable=False, default=True, index=True)
-    fee_open = Column(Float, nullable=False, default=0.0)
-    fee_open_cost = Column(Float, nullable=True)
-    fee_open_currency = Column(String, nullable=True)
-    fee_close = Column(Float, nullable=False, default=0.0)
-    fee_close_cost = Column(Float, nullable=True)
-    fee_close_currency = Column(String, nullable=True)
-    open_rate = Column(Float)
-    open_rate_requested = Column(Float)
+    exchange: str = ''
+    pair: str = ''
+    is_open: bool = True
+    fee_open: float = 0.0
+    fee_open_cost: Optional[float] = None
+    fee_open_currency: str = ''
+    fee_close: float = 0.0
+    fee_close_cost: Optional[float] = None
+    fee_close_currency: str = ''
+    open_rate: float
+    open_rate_requested: Optional[float] = None
     # open_trade_value - calculated via _calc_open_trade_value
-    open_trade_value = Column(Float)
-    close_rate = Column(Float)
-    close_rate_requested = Column(Float)
-    close_profit = Column(Float)
-    close_profit_abs = Column(Float)
-    stake_amount = Column(Float, nullable=False)
-    amount = Column(Float)
-    amount_requested = Column(Float)
-    open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
-    close_date = Column(DateTime)
-    open_order_id = Column(String)
+    open_trade_value: float
+    close_rate: Optional[float] = None
+    close_rate_requested: Optional[float] = None
+    close_profit: Optional[float] = None
+    close_profit_abs: Optional[float] = None
+    stake_amount: float
+    amount: float
+    amount_requested: Optional[float] = None
+    open_date: datetime
+    close_date: Optional[datetime] = None
+    open_order_id: Optional[str] = None
     # absolute value of the stop loss
-    stop_loss = Column(Float, nullable=True, default=0.0)
+    stop_loss: float = 0.0
     # percentage value of the stop loss
-    stop_loss_pct = Column(Float, nullable=True)
+    stop_loss_pct: float = 0.0
     # absolute value of the initial stop loss
-    initial_stop_loss = Column(Float, nullable=True, default=0.0)
+    initial_stop_loss: float = 0.0
     # percentage value of the initial stop loss
-    initial_stop_loss_pct = Column(Float, nullable=True)
+    initial_stop_loss_pct: float = 0.0
     # stoploss order id which is on exchange
-    stoploss_order_id = Column(String, nullable=True, index=True)
+    stoploss_order_id: Optional[str] = None
     # last update time of the stoploss order on exchange
-    stoploss_last_update = Column(DateTime, nullable=True)
+    stoploss_last_update: Optional[datetime] = None
     # absolute value of the highest reached price
-    max_rate = Column(Float, nullable=True, default=0.0)
+    max_rate: float = 0.0
     # Lowest price reached
-    min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String, nullable=True)
-    sell_order_status = Column(String, nullable=True)
-    strategy = Column(String, nullable=True)
-    timeframe = Column(Integer, nullable=True)
+    min_rate: float = 0.0
+    sell_reason: str = ''
+    sell_order_status: str = ''
+    strategy: str = ''
+    timeframe: Optional[int] = None
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
         self.recalc_open_trade_value()
 
     def __repr__(self):
@@ -349,8 +349,7 @@ class Trade(_DECL_BASE):
         """
         Resets all trades. Only active for backtesting mode.
         """
-        if not Trade.use_db:
-            Trade.trades = []
+        LocalTrade.trades = []
 
     def adjust_min_max_rates(self, current_price: float) -> None:
         """
@@ -418,8 +417,8 @@ class Trade(_DECL_BASE):
 
         if order_type in ('market', 'limit') and order['side'] == 'buy':
             # Update open rate and actual amount
-            self.open_rate = Decimal(safe_value_fallback(order, 'average', 'price'))
-            self.amount = Decimal(safe_value_fallback(order, 'filled', 'amount'))
+            self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
+            self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_value()
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
@@ -443,7 +442,7 @@ class Trade(_DECL_BASE):
         Sets close_rate to the given rate, calculates total profit
         and marks trade as closed
         """
-        self.close_rate = Decimal(rate)
+        self.close_rate = rate
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
         self.close_date = self.close_date or datetime.utcnow()
@@ -488,14 +487,6 @@ class Trade(_DECL_BASE):
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def delete(self) -> None:
-
-        for order in self.orders:
-            Order.session.delete(order)
-
-        Trade.session.delete(self)
-        Trade.session.flush()
-
     def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
@@ -525,7 +516,7 @@ class Trade(_DECL_BASE):
         if rate is None and not self.close_rate:
             return 0.0
 
-        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)
+        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = sell_trade * Decimal(fee or self.fee_close)
         return float(sell_trade - fees)
 
@@ -597,7 +588,7 @@ class Trade(_DECL_BASE):
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
-                         ) -> List['Trade']:
+                         ) -> List['LocalTrade']:
         """
         Helper function to query Trades.
         Returns a List of trades, filtered on the parameters given.
@@ -606,30 +597,19 @@ class Trade(_DECL_BASE):
 
         :return: unsorted List[Trade]
         """
-        if Trade.use_db:
-            trade_filter = []
-            if pair:
-                trade_filter.append(Trade.pair == pair)
-            if open_date:
-                trade_filter.append(Trade.open_date > open_date)
-            if close_date:
-                trade_filter.append(Trade.close_date > close_date)
-            if is_open is not None:
-                trade_filter.append(Trade.is_open.is_(is_open))
-            return Trade.get_trades(trade_filter).all()
-        else:
-            # Offline mode - without database
-            sel_trades = [trade for trade in Trade.trades]
-            if pair:
-                sel_trades = [trade for trade in sel_trades if trade.pair == pair]
-            if open_date:
-                sel_trades = [trade for trade in sel_trades if trade.open_date > open_date]
-            if close_date:
-                sel_trades = [trade for trade in sel_trades if trade.close_date
-                              and trade.close_date > close_date]
-            if is_open is not None:
-                sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
-            return sel_trades
+
+        # Offline mode - without database
+        sel_trades = [trade for trade in LocalTrade.trades]
+        if pair:
+            sel_trades = [trade for trade in sel_trades if trade.pair == pair]
+        if open_date:
+            sel_trades = [trade for trade in sel_trades if trade.open_date > open_date]
+        if close_date:
+            sel_trades = [trade for trade in sel_trades if trade.close_date
+                          and trade.close_date > close_date]
+        if is_open is not None:
+            sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
+        return sel_trades
 
     @staticmethod
     def get_open_trades() -> List[Any]:
@@ -733,6 +713,106 @@ class Trade(_DECL_BASE):
                 trade.stop_loss = None
                 trade.adjust_stop_loss(trade.open_rate, desired_stoploss)
                 logger.info(f"New stoploss: {trade.stop_loss}.")
+
+
+class Trade(_DECL_BASE, LocalTrade):
+    """
+    Trade database model.
+    Also handles updating and querying trades
+    """
+    __tablename__ = 'trades'
+
+    use_db: bool = True
+
+    id = Column(Integer, primary_key=True)
+
+    orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
+
+    exchange = Column(String, nullable=False)
+    pair = Column(String, nullable=False, index=True)
+    is_open = Column(Boolean, nullable=False, default=True, index=True)
+    fee_open = Column(Float, nullable=False, default=0.0)
+    fee_open_cost = Column(Float, nullable=True)
+    fee_open_currency = Column(String, nullable=True)
+    fee_close = Column(Float, nullable=False, default=0.0)
+    fee_close_cost = Column(Float, nullable=True)
+    fee_close_currency = Column(String, nullable=True)
+    open_rate = Column(Float)
+    open_rate_requested = Column(Float)
+    # open_trade_value - calculated via _calc_open_trade_value
+    open_trade_value = Column(Float)
+    close_rate = Column(Float)
+    close_rate_requested = Column(Float)
+    close_profit = Column(Float)
+    close_profit_abs = Column(Float)
+    stake_amount = Column(Float, nullable=False)
+    amount = Column(Float)
+    amount_requested = Column(Float)
+    open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    close_date = Column(DateTime)
+    open_order_id = Column(String)
+    # absolute value of the stop loss
+    stop_loss = Column(Float, nullable=True, default=0.0)
+    # percentage value of the stop loss
+    stop_loss_pct = Column(Float, nullable=True)
+    # absolute value of the initial stop loss
+    initial_stop_loss = Column(Float, nullable=True, default=0.0)
+    # percentage value of the initial stop loss
+    initial_stop_loss_pct = Column(Float, nullable=True)
+    # stoploss order id which is on exchange
+    stoploss_order_id = Column(String, nullable=True, index=True)
+    # last update time of the stoploss order on exchange
+    stoploss_last_update = Column(DateTime, nullable=True)
+    # absolute value of the highest reached price
+    max_rate = Column(Float, nullable=True, default=0.0)
+    # Lowest price reached
+    min_rate = Column(Float, nullable=True)
+    sell_reason = Column(String, nullable=True)
+    sell_order_status = Column(String, nullable=True)
+    strategy = Column(String, nullable=True)
+    timeframe = Column(Integer, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.recalc_open_trade_value()
+
+    def delete(self) -> None:
+
+        for order in self.orders:
+            Order.session.delete(order)
+
+        Trade.session.delete(self)
+        Trade.session.flush()
+
+    @staticmethod
+    def get_trades_proxy(*, pair: str = None, is_open: bool = None,
+                         open_date: datetime = None, close_date: datetime = None,
+                         ) -> List['LocalTrade']:
+        """
+        Helper function to query Trades.
+        Returns a List of trades, filtered on the parameters given.
+        In live mode, converts the filter to a database query and returns all rows
+        In Backtest mode, uses filters on Trade.trades to get the result.
+
+        :return: unsorted List[Trade]
+        """
+        if Trade.use_db:
+            trade_filter = []
+            if pair:
+                trade_filter.append(Trade.pair == pair)
+            if open_date:
+                trade_filter.append(Trade.open_date > open_date)
+            if close_date:
+                trade_filter.append(Trade.close_date > close_date)
+            if is_open is not None:
+                trade_filter.append(Trade.is_open.is_(is_open))
+            return Trade.get_trades(trade_filter).all()
+        else:
+            return LocalTrade.get_trades_proxy(
+                pair=pair, is_open=is_open,
+                open_date=open_date,
+                close_date=close_date
+            )
 
 
 class PairLock(_DECL_BASE):
