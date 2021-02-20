@@ -273,7 +273,9 @@ class Backtesting:
                 pair, max_open_trades - open_trade_count, None)
         except DependencyException:
             stake_amount = 0
-        if stake_amount:
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
+        if stake_amount and stake_amount > min_stake_amount:
+            # print(f"{pair}, {stake_amount}")
             # Enter trade
             trade = Trade(
                 pair=pair,
