@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, C0330, unused-argument
 import logging
-from unittest.mock import MagicMock
 
 import pytest
 

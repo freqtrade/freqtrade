@@ -19,7 +19,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade, init_db
+from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
@@ -191,7 +191,7 @@ def create_mock_trades(fee, use_db: bool = True):
         if use_db:
             Trade.session.add(trade)
         else:
-            Trade.trades.append(trade)
+            LocalTrade.trades.append(trade)
 
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
