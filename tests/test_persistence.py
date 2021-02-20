@@ -1,14 +1,16 @@
 # pragma pylint: disable=missing-docstring, C0103
+from types import FunctionType
 import logging
 from unittest.mock import MagicMock
 
 import arrow
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.sql.schema import Column
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import Order, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
@@ -1176,3 +1178,25 @@ def test_select_order(fee):
     assert order.ft_order_side == 'stoploss'
     order = trades[4].select_order('sell', False)
     assert order is None
+
+
+def test_Trade_object_idem():
+
+    assert issubclass(Trade, LocalTrade)
+
+    trade = vars(Trade)
+    localtrade = vars(LocalTrade)
+
+    # Parent (LocalTrade) should have the same attributes
+    for item in trade:
+        # Exclude private attributes and open_date (as it's not assigned a default)
+        if (not item.startswith('_')
+                and item not in ('delete', 'session', 'query', 'open_date')):
+            assert item in localtrade
+
+    # Fails if only a column is added without corresponding parent field
+    for item in localtrade:
+        if (not item.startswith('__')
+                and item not in ('trades', )
+                and type(getattr(LocalTrade, item)) not in (property, FunctionType)):
+            assert item in trade
