@@ -211,7 +211,7 @@ class Backtesting:
             data[pair] = [x for x in df_analyzed.itertuples(index=False, name=None)]
         return data
 
-    def _get_close_rate(self, sell_row: Tuple, trade: Trade, sell: SellCheckTuple,
+    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
                         trade_dur: int) -> float:
         """
         Get close rate for backtesting result
@@ -251,10 +251,10 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_sell_trade_entry(self, trade: Trade, sell_row: Tuple) -> Optional[Trade]:
+    def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
 
-        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX], sell_row[DATE_IDX],
-                                         sell_row[BUY_IDX], sell_row[SELL_IDX],
+        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
+                                         sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
         if sell.sell_flag:
 
@@ -331,7 +331,7 @@ class Backtesting:
         :param enable_protections: Should protections be enabled?
         :return: DataFrame with trades (results of backtesting)
         """
-        trades: List[Trade] = []
+        trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
 
         # Use dict of lists with data for performance
@@ -342,7 +342,7 @@ class Backtesting:
         indexes: Dict = {}
         tmp = start_date + timedelta(minutes=self.timeframe_min)
 
-        open_trades: Dict[str, List[Trade]] = defaultdict(list)
+        open_trades: Dict[str, List[LocalTrade]] = defaultdict(list)
         open_trade_count = 0
 
         # Loop timerange and get candle for each pair at that point in time
