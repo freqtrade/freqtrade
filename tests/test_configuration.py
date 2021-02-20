@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
 import logging
+import os
 import sys
 import warnings
 from copy import deepcopy
@@ -18,7 +19,8 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file, log_config_error_range
+from freqtrade.configuration.load_config import (extract_error_offset, load_config_file,
+                                                 log_config_error_range)
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
@@ -82,7 +84,8 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
         '"stake_amount": 0.001,', '"stake_amount": .001,')
     mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
 
-    x = log_config_error_range('somefile', 'Parse error at offset 64: Invalid value.')
+    offset = extract_error_offset('Parse error at offset 64: Invalid value.')
+    x = log_config_error_range('somefile', offset)
     assert isinstance(x, str)
     assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
             '"stake_amount": .001, "fiat_display_currency": "USD", '
@@ -907,6 +910,32 @@ def test_load_config_test_comments() -> None:
     conf = load_config_file(str(config_file))
 
     assert conf
+
+
+def test_load_config_test_env_variables(mocker) -> None:
+    """
+    Load config with environment variables
+    """
+    token = "17264728:eW91dHUuYmUvMDAwYWw3cnUzbXMg"
+    chat_id = "17263827"
+
+    mocker.patch.dict(os.environ, {'TELEGRAM_TOKEN': token, 'TELEGRAM_CHAT': chat_id})
+    config_file = Path(__file__).parents[0] / "config_test_environment.json"
+    conf = load_config_file(str(config_file))
+
+    assert conf
+    assert conf['telegram']['token'] == token
+    assert conf['telegram']['chat_id'] == chat_id
+
+
+def test_load_config_test_substitution_error() -> None:
+    """
+    Load config with environment variables without setting them
+    """
+
+    config_file = Path(__file__).parents[0] / "config_test_environment.json"
+    with pytest.raises(OperationalException, match=r'.*Environment variable TELEGRAM_TOKEN*'):
+        load_config_file(str(config_file))
 
 
 def test_load_config_default_exchange(all_conf) -> None:
