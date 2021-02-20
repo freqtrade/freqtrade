@@ -222,16 +222,16 @@ class LocalTrade():
     fee_close: float = 0.0
     fee_close_cost: Optional[float] = None
     fee_close_currency: str = ''
-    open_rate: float
+    open_rate: float = 0.0
     open_rate_requested: Optional[float] = None
     # open_trade_value - calculated via _calc_open_trade_value
-    open_trade_value: float
+    open_trade_value: float = 0.0
     close_rate: Optional[float] = None
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float
-    amount: float
+    stake_amount: float = 0.0
+    amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
