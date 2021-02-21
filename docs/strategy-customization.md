@@ -315,11 +315,11 @@ class AwesomeStrategy(IStrategy):
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Check if the entry already exists
-        if not metadata["pair"] in self._cust_info:
+        if not metadata["pair"] in self.cust_info:
             # Create empty entry for this pair
-            self._cust_info[metadata["pair"]] = {}
+            self.cust_info[metadata["pair"]] = {}
 
-        if "crosstime" in self.cust_info[metadata["pair"]:
+        if "crosstime" in self.cust_info[metadata["pair"]]:
             self.cust_info[metadata["pair"]]["crosstime"] += 1
         else:
             self.cust_info[metadata["pair"]]["crosstime"] = 1
