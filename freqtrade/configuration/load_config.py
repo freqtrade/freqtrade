@@ -17,15 +17,17 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PARSE_MODE = rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS
 
+ENV_PREFIX = 'FREQTRADE_'
+
 
 class SubstitutionException(Exception):
     """
     Indicates that a variable within the configuration couldn't be substituted.
     """
 
-    def __init__(self, key: str, offset: int):
+    def __init__(self, err: str, offset: int):
         self.offset = offset
-        self.err = f'Environment variable {key} was requested for substitution, but is not set.'
+        self.err = err
         super().__init__(self.err)
 
 
@@ -52,8 +54,17 @@ def substitute_environment_variable(match: re.Match) -> str:
     Substitutes a matched environment variable with its value
     """
     key = match.group(1).strip()
+    if not key.startswith(ENV_PREFIX):
+        raise SubstitutionException(
+            f'Environment variable {key} must be prefixed with {ENV_PREFIX} .',
+            match.start(0)
+        )
+
     if key not in environ:
-        raise SubstitutionException(key, match.start(0))
+        raise SubstitutionException(
+            f'Environment variable {key} was requested for substitution, but is not set.',
+            match.start(0)
+        )
 
     return environ[key]
 

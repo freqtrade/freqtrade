@@ -919,7 +919,10 @@ def test_load_config_test_env_variables(mocker) -> None:
     token = "17264728:eW91dHUuYmUvMDAwYWw3cnUzbXMg"
     chat_id = "17263827"
 
-    mocker.patch.dict(os.environ, {'TELEGRAM_TOKEN': token, 'TELEGRAM_CHAT': chat_id})
+    mocker.patch.dict(os.environ, {
+        'FREQTRADE_TELEGRAM_TOKEN': token,
+        'FREQTRADE_TELEGRAM_CHAT': chat_id
+    })
     config_file = Path(__file__).parents[0] / "config_test_environment.json"
     conf = load_config_file(str(config_file))
 
@@ -932,9 +935,18 @@ def test_load_config_test_substitution_error() -> None:
     """
     Load config with environment variables without setting them
     """
-
     config_file = Path(__file__).parents[0] / "config_test_environment.json"
-    with pytest.raises(OperationalException, match=r'.*Environment variable TELEGRAM_TOKEN*'):
+    with pytest.raises(OperationalException, match=r'.*variable FREQTRADE_TELEGRAM_TOKEN*'):
+        load_config_file(str(config_file))
+
+
+def test_load_config_test_prefix_error() -> None:
+    """
+    Load config with environment variables without setting them
+    """
+
+    config_file = Path(__file__).parents[0] / "config_test_environment_invalid.json"
+    with pytest.raises(OperationalException, match=r'.*must be prefixed*'):
         load_config_file(str(config_file))
 
 

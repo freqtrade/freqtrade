@@ -106,8 +106,8 @@
 // We can now comment out some settings
 //        "enabled": true,
         "enabled": false,
-        "token": "${FREQTRADE_TELEGRAM_TOKEN}",
-        "chat_id": "${FREQTRADE_TELEGRAM_CHAT}"
+        "token": "${TELEGRAM_TOKEN}",
+        "chat_id": "${TELEGRAM_CHAT}"
     },
     "api_server": {
         "enabled": false,
