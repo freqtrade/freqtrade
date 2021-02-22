@@ -24,7 +24,7 @@ config["strategy"] = "SampleStrategy"
 # Location of the data
 data_location = Path(config['user_data_dir'], 'data', 'binance')
 # Pair to analyze - Only use one pair here
-pair = "BTC_USDT"
+pair = "BTC/USDT"
 ```
 
 
@@ -34,7 +34,9 @@ from freqtrade.data.history import load_pair_history
 
 candles = load_pair_history(datadir=data_location,
                             timeframe=config["timeframe"],
-                            pair=pair)
+                            pair=pair,
+                            data_format = "hdf5",
+                            )
 
 # Confirm success
 print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
