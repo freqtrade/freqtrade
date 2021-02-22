@@ -11,9 +11,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
+from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
+from freqtrade.exceptions import ExchangeError
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
@@ -788,6 +790,15 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'timeframe': 5,
         'exchange': 'bittrex',
     }]
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
+
+    rc = client_get(client, f"{BASE_URI}/status")
+    assert_response(rc)
+    resp_values = rc.json()
+    assert len(resp_values) == 1
+    assert isnan(resp_values[0]['profit_abs'])
 
 
 def test_api_version(botclient):
