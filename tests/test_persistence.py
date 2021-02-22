@@ -1,12 +1,11 @@
 # pragma pylint: disable=missing-docstring, C0103
-from types import FunctionType
 import logging
+from types import FunctionType
 from unittest.mock import MagicMock
 
 import arrow
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.sql.schema import Column
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException

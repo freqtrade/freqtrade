@@ -17,8 +17,9 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
@@ -445,6 +446,44 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     with pytest.raises(OperationalException,
                        match='PrecisionFilter not allowed for backtesting multiple strategies.'):
         Backtesting(default_conf)
+
+
+def test_backtest__enter_trade(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    default_conf['stake_amount'] = 'unlimited'
+    backtesting = Backtesting(default_conf)
+    pair = 'UNITTEST/BTC'
+    row = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
+        1,  # Sell
+        0.001,  # Open
+        0.0011,  # Close
+        0,  # Sell
+        0.00099,  # Low
+        0.0012,  # High
+    ]
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert isinstance(trade, LocalTrade)
+    assert trade.stake_amount == 495
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=2)
+    assert trade is None
+
+    # Stake-amount too high!
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert trade is None
+
+    # Stake-amount too high!
+    mocker.patch("freqtrade.wallets.Wallets.get_trade_stake_amount",
+                 side_effect=DependencyException)
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert trade is None
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:

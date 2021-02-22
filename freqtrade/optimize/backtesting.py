@@ -22,8 +22,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import PairLocks, Trade
-from freqtrade.persistence.models import LocalTrade
+from freqtrade.persistence import LocalTrade, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -267,13 +266,13 @@ class Backtesting:
 
         return None
 
-    def _enter_trade(self, pair: str, row, max_open_trades: int,
+    def _enter_trade(self, pair: str, row: List, max_open_trades: int,
                      open_trade_count: int) -> Optional[LocalTrade]:
         try:
             stake_amount = self.wallets.get_trade_stake_amount(
                 pair, max_open_trades - open_trade_count, None)
         except DependencyException:
-            stake_amount = 0
+            return None
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # print(f"{pair}, {stake_amount}")
