@@ -1,13 +1,10 @@
 import ast
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from freqtrade.constants import (USERPATH_HYPEROPTS,
-                                 USERPATH_STRATEGIES,
-                                 POSSIBLE_GUARDS,
-                                 POSSIBLE_TRIGGERS,
-                                 POSSIBLE_AIMS)
+                                 USERPATH_STRATEGIES)
 from freqtrade.exceptions import OperationalException
 from freqtrade.state import RunMode
 from freqtrade.configuration import setup_utils_configuration
@@ -17,14 +14,58 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------extract-strategy------------------------------------------------------
-'''
-    TODO
-    - get the stoploss value to optimize
-    - get the values from the guards to specify the optimzation range (cooperation with custom-hyperopt)
-'''
+
+def get_indicator_info(file: List, indicators: Dict) -> None:
+    """
+    Get all necessary information to build a custom hyperopt space using
+    the file and a dictionary filled with the indicators and their corropsonding line numbers.
+    """
+    info_list = []
+    for indicator in indicators:
+        indicator_info = []
+
+        # find the corrosponding aim
+        for position, line in enumerate(file):
+            if position == indicators[indicator]:
+                # use split twice to remove the context around the indicator
+                back_of_line = line.split(f"(dataframe['{indicator}'] ", 1)[1]
+                aim = back_of_line.split()[0]
+
+                # add the indicator and aim to the info
+                indicator_info.append(indicator)
+                indicator_info.append(aim)
+
+                # check if first character after aim is a d in which case the indicator is a trigger
+                if back_of_line.split()[1][0] == "d":
+                    indicator_info.append("trigger")
+
+                    # add the second indicator of the guard to the info list
+                    back_of_line = back_of_line.split("dataframe['")[1]
+                    second_indicator = back_of_line.split("'])")[0]
+                    indicator_info.append(second_indicator)
+
+                # elif indicator[0:3] == "CDL":
+                    # indicator_info.append("guard")
+
+                # else it is a regular guard
+                else:
+                    indicator_info.append("guard")
+
+                    value = back_of_line.split()[1]
+                    value = value[:-1]
+                    value = float(value)
+
+                    indicator_info.append(value)
+        info_list.append(indicator_info)
+
+    return info_list
 
 
-def extract_dicts(strategypath: Path):
+def extract_lists(strategypath: Path) -> None:
+    """
+    Get the indicators, their aims and the stoploss and format them into lists
+    """
+
     # store the file in a list for reference
     stored_file = []
     with open(strategypath) as file:
@@ -46,13 +87,13 @@ def extract_dicts(strategypath: Path):
     # populate the indicators dictionaries with indicators attached to the line they are on
     buyindicators = {}
     sellindicators = {}
+
     for position, line in enumerate(stored_file):
         # check the lines in buy trend for indicator and add them
         if position in buy_lines and "(dataframe['" in line:
             # use split twice to remove the context around the indicator
             back_of_line = line.split("(dataframe['", 1)[1]
             buyindicator = back_of_line.split("'] ", 1)[0]
-
             buyindicators[buyindicator] = position
 
         # check the lines in sell trend for indicator and add them
@@ -60,38 +101,19 @@ def extract_dicts(strategypath: Path):
             # use split twice to remove the context around the indicator
             back_of_line = line.split("(dataframe['", 1)[1]
             sellindicator = back_of_line.split("'] ", 1)[0]
-
             sellindicators[sellindicator] = position
 
-    # build the final buy dictionary
-    buy_dict = {}
-    for indicator in buyindicators:
-        # find the corrosponding aim
-        for position, line in enumerate(stored_file):
-            if position == buyindicators[indicator]:
-                # use split twice to remove the context around the indicator
-                back_of_line = line.split(f"(dataframe['{indicator}'] ", 1)[1]
-                aim = back_of_line.split()[0]
-        buy_dict[indicator] = aim
+    # build the final lists
+    buy_info_list = get_indicator_info(stored_file, buyindicators)
+    sell_info_list = get_indicator_info(stored_file, sellindicators)
+    
+    # put the final lists into a tuple
+    final_lists = (buy_info_list, sell_info_list)
 
-    # build the final sell dictionary
-    sell_dict = {}
-    for indicator in sellindicators:
-        # find the corrosponding aim
-        for position, line in enumerate(stored_file):
-            if position == sellindicators[indicator]:
-                # use split twice to remove the context around the indicator
-                back_of_line = line.split(f"(dataframe['{indicator}'] ", 1)[1]
-                aim = back_of_line.split()[0]
-        sell_dict[indicator] = aim
-
-    # put the final dicts into a tuple
-    final_dicts = (buy_dict, sell_dict)
-
-    return final_dicts
+    return final_lists
 
 
-def start_extract_strategy(args: Dict[str, Any]) -> None:
+def start_extract_strategy(args: Dict) -> None:
     """
     Check if the right subcommands where passed and start extracting the strategy data
     """
@@ -113,26 +135,16 @@ def start_extract_strategy(args: Dict[str, Any]) -> None:
         strategy_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args['strategy'] + '.py')
 
         # extract the buy and sell indicators as dicts
-        extracted_dicts = str(extract_dicts(strategy_path))
+        extracted_lists = str(extract_lists(strategy_path))
 
         # save the dicts in a file
         logger.info(f"Writing custom hyperopt to `{new_path}`.")
-        new_path.write_text(extracted_dicts)
+        new_path.write_text(extracted_lists)
 
 
 # --------------------------------------------------custom-hyperopt------------------------------------------------------
-'''
-    TODO
-    -make the code below more dynamic with a large list of indicators and aims
-    -buy_space integer values variation based on aim and input value form extract-strategy(later deep learning)
-    -add --mode , see notes (denk hierbij ook aan value range bij guards)
-    -Custom stoploss and roi (based on input from extract-strategy)
-    -cli option to read extracted strategies files (--extraction)
-    -code cleanup (maybe the two elements functions can be combined)
-'''
 
-
-def custom_hyperopt_buyelements(buy_indicators: Dict[str, str]):
+def custom_hyperopt_buyelements(buy_indicators: List):
     """
     Build the arguments with the placefillers for the buygenerator
     """
@@ -140,39 +152,44 @@ def custom_hyperopt_buyelements(buy_indicators: Dict[str, str]):
     buy_triggers = ""
     buy_space = ""
 
-    for indicator in buy_indicators:
-        # Error handling
-        if not indicator in POSSIBLE_GUARDS and not indicator in POSSIBLE_TRIGGERS:
-            raise OperationalException(
-                f"`{indicator}` is not part of the available indicators. The current options are {POSSIBLE_GUARDS + POSSIBLE_TRIGGERS}.")
-        elif not buy_indicators[indicator] in POSSIBLE_AIMS:
-            raise OperationalException(
-                f"`{buy_indicators[indicator]}` is not part of the available indicator options. The current options are {POSSIBLE_AIMS}.")
+    for indicator_info in buy_indicators:
+        indicator = indicator_info[0]
+        aim = indicator_info[1]
+        usage = indicator_info[2]
+
         # If the indicator is a guard
-        elif indicator in POSSIBLE_GUARDS:
-            # get the symbol corrosponding to the value
-            aim = buy_indicators[indicator]
+        if usage == "guard":
+            value = indicator_info[3]
+            
+            if value >= -1.0 and value <= 1.0:
+                lower_bound = value - 0.3
+                upper_bound = value + 0.3
+            else:
+                lower_bound = value - 30.0
+                upper_bound = value + 30.0
 
             # add the guard to its argument
-            buy_guards += f"if '{indicator}-enabled' in params and params['{indicator}-enabled']:\n    conditions.append(dataframe['{indicator}'] {aim} params['{indicator}-value'])\n"
+            buy_guards += f"if params.get('{indicator}-enabled'):\n    conditions.append(dataframe['{indicator}'] {aim} params['{indicator}-value'])\n"
 
             # add the space to its argument
-            buy_space += f"Integer(10, 90, name='{indicator}-value'),\nCategorical([True, False], name='{indicator}-enabled'),\n"
-        # If the indicator is a trigger
-        elif indicator in POSSIBLE_TRIGGERS:
-            # get the symbol corrosponding to the value
-            aim = buy_indicators[indicator]
+            buy_space += f"Integer({lower_bound}, {upper_bound}, name='{indicator}-value'),\nCategorical([True, False], name='{indicator}-enabled'),\n"
 
+        # If the indicator is a trigger
+        elif usage == "trigger":
+            secondindicator = indicator_info[3]
             # add the trigger to its argument
-            buy_triggers += f"if params['trigger'] == '{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])\n"
+            buy_triggers += f"if params['trigger'] == '{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['{secondindicator}'])\n"
 
     # Final line of indicator space makes all triggers
 
     buy_space += "Categorical(["
 
     # adding all triggers to the list
-    for indicator in buy_indicators:
-        if indicator in POSSIBLE_TRIGGERS:
+    for indicator_info in buy_indicators:
+        indicator = indicator_info[0]
+        usage = indicator_info[2]
+
+        if usage == "trigger":
             buy_space += f"'{indicator}', "
 
     # Deleting the last ", "
@@ -190,44 +207,50 @@ def custom_hyperopt_sellelements(sell_indicators: Dict[str, str]):
     sell_triggers = ""
     sell_space = ""
 
-    for indicator in sell_indicators:
-        # Error handling
-        if not indicator in POSSIBLE_GUARDS and not indicator in POSSIBLE_TRIGGERS:
-            raise OperationalException(
-                f"`{indicator}` is not part of the available indicators. The current options are {POSSIBLE_GUARDS + POSSIBLE_TRIGGERS}.")
-        elif not sell_indicators[indicator] in POSSIBLE_AIMS:
-            raise OperationalException(
-                f"`{sell_indicators[indicator]}` is not part of the available indicator options. The current options are {POSSIBLE_AIMS}.")
-        # If indicator is a guard
-        elif indicator in POSSIBLE_GUARDS:
-            # get the symbol corrosponding to the value
-            aim = sell_indicators[indicator]
+    for indicator_info in sell_indicators:
+        indicator = indicator_info[0]
+        aim = indicator_info[1]
+        usage = indicator_info[2]
+
+        # If the indicator is a guard
+        if usage == "guard":
+            value = indicator_info[3]
+            
+            if value >= -1 and value <= 1:
+                lower_bound = value - 0.3
+                upper_bound = value + 0.3
+            else:
+                lower_bound = value - 30
+                upper_bound = value + 30
 
             # add the guard to its argument
-            sell_guards += f"if '{indicator}-enabled' in params and params['sell-{indicator}-enabled']:\n    conditions.append(dataframe['{indicator}'] {aim} params['sell-{indicator}-value'])\n"
+            sell_guards += f"if params.get('sell-{indicator}-enabled'):\n    conditions.append(dataframe['{indicator}'] {aim} params['sell-{indicator}-value'])\n"
 
             # add the space to its argument
-            sell_space += f"Integer(10, 90, name='sell-{indicator}-value'),\nCategorical([True, False], name='sell-{indicator}-enabled'),\n"
+            sell_space += f"Integer({lower_bound}, {upper_bound}, name='sell-{indicator}-value'),\nCategorical([True, False], name='sell-{indicator}-enabled'),\n"
+
         # If the indicator is a trigger
-        elif indicator in POSSIBLE_TRIGGERS:
-            # get the symbol corrosponding to the value
-            aim = sell_indicators[indicator]
+        elif usage == "trigger":
+            secondindicator = indicator_info[3]
 
             # add the trigger to its argument
-            sell_triggers += f"if params['sell-trigger'] == 'sell-{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['close'])\n"
+            sell_triggers += f"if params['sell-trigger'] == 'sell-{indicator}':\n    conditions.append(dataframe['{indicator}'] {aim} dataframe['{secondindicator}'])\n"
 
     # Final line of indicator space makes all triggers
 
     sell_space += "Categorical(["
 
-    # Adding all triggers to the list
-    for indicator in sell_indicators:
-        if indicator in POSSIBLE_TRIGGERS:
+    # adding all triggers to the list
+    for indicator_info in sell_indicators:
+        indicator = indicator_info[0]
+        usage = indicator_info[2]
+
+        if usage == "trigger":
             sell_space += f"'sell-{indicator}', "
 
     # Deleting the last ", "
     sell_space = sell_space[:-2]
-    sell_space += "], name='trigger')"
+    sell_space += "], name='sell-trigger')"
 
     return {"sell_guards": sell_guards, "sell_triggers": sell_triggers, "sell_space": sell_space}
 
@@ -242,7 +265,7 @@ def deploy_custom_hyperopt(hyperopt_name: str, hyperopt_path: Path, buy_indicato
     sell_args = custom_hyperopt_sellelements(sell_indicators)
 
     # Build the final template
-    strategy_text = render_template(templatefile='base_hyperopt.py.j2',
+    strategy_text = render_template(templatefile='base_custom_hyperopt.py.j2',
                                     arguments={"hyperopt": hyperopt_name,
                                                "buy_guards": buy_args["buy_guards"],
                                                "buy_triggers": buy_args["buy_triggers"],
@@ -285,11 +308,6 @@ def start_custom_hyperopt(args: Dict[str, Any]) -> None:
 
 
 # --------------------------------------------------build-hyperopt------------------------------------------------------
-'''
-    TODO
-    -hyperopt optional (door bv standaard naming toe te passen)
-'''
-
 
 def start_build_hyperopt(args: Dict[str, Any]) -> None:
     """
@@ -301,7 +319,7 @@ def start_build_hyperopt(args: Dict[str, Any]) -> None:
     if not 'strategy' in args or not args['strategy']:
         raise OperationalException("`build-hyperopt` requires --strategy to be set.")
     if not 'hyperopt' in args or not args['hyperopt']:
-        raise OperationalException("`build-hyperopt` requires --hyperopt to be set.")
+        args['hyperopt'] = args['strategy'] + "opt"
     else:
         if args['hyperopt'] == 'DefaultHyperopt':
             raise OperationalException("DefaultHyperopt is not allowed as name.")
@@ -316,10 +334,10 @@ def start_build_hyperopt(args: Dict[str, Any]) -> None:
                                        "Please choose another Hyperopt Name.")
 
         # extract the buy and sell indicators as dicts
-        extracted_dicts = extract_dicts(strategy_path)
+        extracted_lists = extract_lists(strategy_path)
 
-        buy_indicators = extracted_dicts[0]
-        sell_indicators = extracted_dicts[1]
+        buy_indicators = extracted_lists[0]
+        sell_indicators = extracted_lists[1]
 
         # use the dicts to write the hyperopt
         deploy_custom_hyperopt(args['hyperopt'], new_path,
