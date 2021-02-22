@@ -11,6 +11,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
+from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
@@ -797,7 +798,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert_response(rc)
     resp_values = rc.json()
     assert len(resp_values) == 1
-    assert resp_values[0]['profit_abs'] is None
+    assert isnan(resp_values[0]['profit_abs'])
 
 
 def test_api_version(botclient):
