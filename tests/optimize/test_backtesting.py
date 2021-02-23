@@ -341,12 +341,14 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
+    sbs = mocker.patch('freqtrade.optimize.backtesting.store_backtest_stats')
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = '1m'
     default_conf['datadir'] = testdatadir
-    default_conf['export'] = None
+    default_conf['export'] = 'trades'
+    default_conf['exportfilename'] = 'export.txt'
     default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
@@ -361,6 +363,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
         assert log_has(line, caplog)
     assert backtesting.strategy.dp._pairlists is not None
     assert backtesting.strategy.bot_loop_start.call_count == 1
+    assert sbs.call_count == 1
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:

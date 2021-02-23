@@ -35,6 +35,22 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 - Control/Monitor: Use Telegram or a REST API (start/stop the bot, show profit/loss, daily summary, current open trades results, etc.).
 - Analyse: Further analysis can be performed on either Backtesting data or Freqtrade trading history (SQL database), including automated standard plots, and methods to load the data into [interactive environments](data-analysis.md).
 
+## Supported exchange marketplaces
+
+Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
+
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#blacklists))
+- [X] [Bittrex](https://bittrex.com/)
+- [X] [FTX](https://ftx.com)
+- [X] [Kraken](https://kraken.com/)
+- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+
+### Community tested
+
+Exchanges confirmed working by the community:
+
+- [X] [Bitvavo](https://bitvavo.com/)
+
 ## Requirements
 
 ### Hardware requirements

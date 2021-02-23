@@ -8,11 +8,12 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
-                                       analyze_trade_parallelism, calculate_market_change,
-                                       calculate_max_drawdown, combine_dataframes_with_mean,
-                                       create_cum_profit, extract_trades_of_period,
-                                       get_latest_backtest_filename, get_latest_hyperopt_file,
-                                       load_backtest_data, load_trades, load_trades_from_db)
+                                       analyze_trade_parallelism, calculate_csum,
+                                       calculate_market_change, calculate_max_drawdown,
+                                       combine_dataframes_with_mean, create_cum_profit,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
+                                       load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -282,6 +283,20 @@ def test_calculate_max_drawdown(testdatadir):
     assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         drawdown, h, low = calculate_max_drawdown(DataFrame())
+
+
+def test_calculate_csum(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    csum_min, csum_max = calculate_csum(bt_data)
+
+    assert isinstance(csum_min, float)
+    assert isinstance(csum_max, float)
+    assert csum_min < 0.01
+    assert csum_max > 0.02
+
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        csum_min, csum_max = calculate_csum(DataFrame())
 
 
 def test_calculate_max_drawdown2():

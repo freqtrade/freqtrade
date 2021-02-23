@@ -171,6 +171,10 @@ class Order(_DECL_BASE):
         """
         Get all non-closed orders - useful when trying to batch-update orders
         """
+        if not isinstance(order, dict):
+            logger.warning(f"{order} is not a valid response object.")
+            return
+
         filtered_orders = [o for o in orders if o.order_id == order.get('id')]
         if filtered_orders:
             oobj = filtered_orders[0]

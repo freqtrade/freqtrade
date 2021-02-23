@@ -83,7 +83,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
         "method": "StoplossGuard",
         "lookback_period": 60,
         "stop_duration": 40,
-        "trade_limit": 2
+        "trade_limit": 3
     }]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     message = r"Trading stopped due to .*"
@@ -136,7 +136,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
     default_conf['protections'] = [{
         "method": "StoplossGuard",
         "lookback_period": 60,
-        "trade_limit": 1,
+        "trade_limit": 2,
         "stop_duration": 60,
         "only_per_pair": only_per_pair
     }]

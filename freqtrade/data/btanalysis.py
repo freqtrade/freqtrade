@@ -383,3 +383,21 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
     low_date = profit_results.loc[idxmin, date_col]
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
+
+
+def calculate_csum(trades: pd.DataFrame) -> Tuple[float, float]:
+    """
+    Calculate min/max cumsum of trades, to show if the wallet/stake amount ratio is sane
+    :param trades: DataFrame containing trades (requires columns close_date and profit_percent)
+    :return: Tuple (float, float) with cumsum of profit_abs
+    :raise: ValueError if trade-dataframe was found empty.
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
+
+    csum_df = pd.DataFrame()
+    csum_df['sum'] = trades['profit_abs'].cumsum()
+    csum_min = csum_df['sum'].min()
+    csum_max = csum_df['sum'].max()
+
+    return csum_min, csum_max

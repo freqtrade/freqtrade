@@ -32,10 +32,10 @@ class RangeStabilityFilter(IPairList):
 
         if self._days < 1:
             raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
-        if self._days > exchange.ohlcv_candle_limit:
+        if self._days > exchange.ohlcv_candle_limit('1d'):
             raise OperationalException("RangeStabilityFilter requires lookback_days to not "
                                        "exceed exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit})")
+                                       f"({exchange.ohlcv_candle_limit('1d')})")
 
     @property
     def needstickers(self) -> bool:

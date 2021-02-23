@@ -1074,7 +1074,7 @@ def test_get_best_pair(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_order_from_ccxt():
+def test_update_order_from_ccxt(caplog):
     # Most basic order return (only has orderid)
     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ETH/BTC', 'buy')
     assert isinstance(o, Order)
@@ -1119,6 +1119,14 @@ def test_update_order_from_ccxt():
     ccxt_order.update({'id': 'somethingelse'})
     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
         o.update_from_ccxt_object(ccxt_order)
+
+    message = "aaaa is not a valid response object."
+    assert not log_has(message, caplog)
+    Order.update_orders([o], 'aaaa')
+    assert log_has(message, caplog)
+
+    # Call regular update - shouldn't fail.
+    Order.update_orders([o], {'id': '1234'})
 
 
 @pytest.mark.usefixtures("init_persistence")
