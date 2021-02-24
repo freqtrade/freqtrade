@@ -38,12 +38,11 @@ you can't say much from few trades.
 
 ### I’d like to make changes to the config. Can I do that without having to kill the bot?
 
-Yes. You can edit your config, use the `/stop` command in Telegram, followed by `/reload_config` and the bot will run with the new config.
+Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
 ### I want to improve the bot with a new strategy
 
-That's great. We have a nice backtesting and hyperoptimization setup. See
-the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
+That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
