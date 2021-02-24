@@ -34,9 +34,9 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
         annual_risk_free_rate = 0.0
         risk_free_rate = annual_risk_free_rate / days_in_year
 
-        # apply slippage per trade to profit_percent
-        results.loc[:, 'profit_percent_after_slippage'] = \
-            results['profit_percent'] - slippage_per_trade_ratio
+        # apply slippage per trade to profit_ratio
+        results.loc[:, 'profit_ratio_after_slippage'] = \
+            results['profit_ratio'] - slippage_per_trade_ratio
 
         # create the index within the min_date and end max_date
         t_index = date_range(start=min_date, end=max_date, freq=resample_freq,
@@ -44,10 +44,10 @@ class SharpeHyperOptLossDaily(IHyperOptLoss):
 
         sum_daily = (
             results.resample(resample_freq, on='close_date').agg(
-                {"profit_percent_after_slippage": sum}).reindex(t_index).fillna(0)
+                {"profit_ratio_after_slippage": sum}).reindex(t_index).fillna(0)
         )
 
-        total_profit = sum_daily["profit_percent_after_slippage"] - risk_free_rate
+        total_profit = sum_daily["profit_ratio_after_slippage"] - risk_free_rate
         expected_returns_mean = total_profit.mean()
         up_stdev = total_profit.std()
 

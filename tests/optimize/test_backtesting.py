@@ -341,12 +341,14 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest')
     mocker.patch('freqtrade.optimize.backtesting.generate_backtest_stats')
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results')
+    sbs = mocker.patch('freqtrade.optimize.backtesting.store_backtest_stats')
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
 
     default_conf['timeframe'] = '1m'
     default_conf['datadir'] = testdatadir
-    default_conf['export'] = None
+    default_conf['export'] = 'trades'
+    default_conf['exportfilename'] = 'export.txt'
     default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
@@ -361,6 +363,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
         assert log_has(line, caplog)
     assert backtesting.strategy.dp._pairlists is not None
     assert backtesting.strategy.bot_loop_start.call_count == 1
+    assert sbs.call_count == 1
 
 
 def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) -> None:
@@ -445,7 +448,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
         Backtesting(default_conf)
 
 
-def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
+def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
@@ -469,21 +472,28 @@ def test_backtest(default_conf, fee, mocker, testdatadir) -> None:
 
     expected = pd.DataFrame(
         {'pair': [pair, pair],
-         'profit_percent': [0.0, 0.0],
-         'profit_abs': [0.0, 0.0],
+         'stake_amount': [0.001, 0.001],
+         'amount': [0.00957442, 0.0097064],
          'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
                                       Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
                                      ),
-         'open_rate': [0.104445, 0.10302485],
-         'open_fee': [0.0025, 0.0025],
          'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 35, 0).datetime,
                                        Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'open_rate': [0.104445, 0.10302485],
          'close_rate': [0.104969, 0.103541],
-         'close_fee': [0.0025, 0.0025],
-         'amount': [0.00957442, 0.0097064],
+         'fee_open': [0.0025, 0.0025],
+         'fee_close': [0.0025, 0.0025],
          'trade_duration': [235, 40],
-         'open_at_end': [False, False],
-         'sell_reason': [SellType.ROI, SellType.ROI]
+         'profit_ratio': [0.0, 0.0],
+         'profit_abs': [0.0, 0.0],
+         'sell_reason': [SellType.ROI, SellType.ROI],
+         'initial_stop_loss_abs': [0.0940005, 0.09272236],
+         'initial_stop_loss_ratio': [-0.1, -0.1],
+         'stop_loss_abs': [0.0940005, 0.09272236],
+         'stop_loss_ratio': [-0.1, -0.1],
+         'min_rate': [0.1038, 0.10302485],
+         'max_rate': [0.10501, 0.1038888],
+         'is_open': [False, False],
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
@@ -629,7 +639,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     # 100 buys signals
     assert len(results) == 100
     # One trade was force-closed at the end
-    assert len(results.loc[results.open_at_end]) == 0
+    assert len(results.loc[results['is_open']]) == 0
 
 
 @pytest.mark.parametrize("pair", ['ADA/BTC', 'LTC/BTC'])
@@ -737,7 +747,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     patch_exchange(mocker)
-    backtestmock = MagicMock(return_value=pd.DataFrame(columns=BT_DATA_COLUMNS + ['profit_abs']))
+    backtestmock = MagicMock(return_value=pd.DataFrame(columns=BT_DATA_COLUMNS))
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
@@ -803,7 +813,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     patch_exchange(mocker)
     backtestmock = MagicMock(side_effect=[
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
-                      'profit_percent': [0.0, 0.0],
+                      'profit_ratio': [0.0, 0.0],
                       'profit_abs': [0.0, 0.0],
                       'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00', ], utc=True
@@ -811,13 +821,13 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                       'close_date': pd.to_datetime(['2018-01-29 20:45:00',
                                                     '2018-01-30 05:35:00', ], utc=True),
                       'trade_duration': [235, 40],
-                      'open_at_end': [False, False],
+                      'is_open': [False, False],
                       'open_rate': [0.104445, 0.10302485],
                       'close_rate': [0.104969, 0.103541],
                       'sell_reason': [SellType.ROI, SellType.ROI]
                       }),
         pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
-                      'profit_percent': [0.03, 0.01, 0.1],
+                      'profit_ratio': [0.03, 0.01, 0.1],
                       'profit_abs': [0.01, 0.02, 0.2],
                       'open_date': pd.to_datetime(['2018-01-29 18:40:00',
                                                    '2018-01-30 03:30:00',
@@ -827,7 +837,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                                                     '2018-01-30 05:35:00',
                                                     '2018-01-30 08:30:00'], utc=True),
                       'trade_duration': [47, 40, 20],
-                      'open_at_end': [False, False, False],
+                      'is_open': [False, False, False],
                       'open_rate': [0.104445, 0.10302485, 0.122541],
                       'close_rate': [0.104969, 0.103541, 0.123541],
                       'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]

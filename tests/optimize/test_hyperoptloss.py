@@ -60,9 +60,9 @@ def test_loss_calculation_prefer_shorter_trades(hyperopt_conf, hyperopt_results)
 
 def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     hl = HyperOptLossResolver.load_hyperoptloss(hyperopt_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, 600,
@@ -77,9 +77,9 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
 
 def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLoss'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
@@ -95,9 +95,9 @@ def test_sharpe_loss_prefers_higher_profits(default_conf, hyperopt_results) -> N
 
 def test_sharpe_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': 'SharpeHyperOptLossDaily'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
@@ -113,9 +113,9 @@ def test_sharpe_loss_daily_prefers_higher_profits(default_conf, hyperopt_results
 
 def test_sortino_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': 'SortinoHyperOptLoss'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
@@ -131,9 +131,9 @@ def test_sortino_loss_prefers_higher_profits(default_conf, hyperopt_results) -> 
 
 def test_sortino_loss_daily_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': 'SortinoHyperOptLossDaily'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
@@ -149,9 +149,9 @@ def test_sortino_loss_daily_prefers_higher_profits(default_conf, hyperopt_result
 
 def test_onlyprofit_loss_prefers_higher_profits(default_conf, hyperopt_results) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_percent'] = hyperopt_results['profit_percent'] * 2
+    results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_percent'] = hyperopt_results['profit_percent'] / 2
+    results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': 'OnlyProfitHyperOptLoss'})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)

@@ -19,7 +19,7 @@ if readme_file.is_file():
     readme_long = (Path(__file__).parent / "README.md").read_text()
 
 # Requirements used for submodules
-api = ['flask', 'flask-jwt-extended', 'flask-cors']
+api = ['fastapi', 'uvicorn', 'pyjwt', 'aiofiles']
 plot = ['plotly>=4.0']
 hyperopt = [
     'scipy',

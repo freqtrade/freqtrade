@@ -126,6 +126,20 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
                                        default_conf, {}, 1)
 
 
+def test_load_pairlist_verify_multi(mocker, markets, default_conf):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    plm = PairListManager(freqtrade.exchange, default_conf)
+    # Call different versions one after the other, should always consider what was passed in
+    # and have no side-effects (therefore the same check multiple times)
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', 'BUUU/BTC'], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['XRP/BTC', 'BUUU/BTC'], print) == ['XRP/BTC']
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['ETH/USDT', 'XRP/USDT', ], print) == ['ETH/USDT', ]
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+
+
 def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
 
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)

@@ -7,13 +7,14 @@ import logging
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
+from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
@@ -39,25 +40,6 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
-
-
-class BacktestResult(NamedTuple):
-    """
-    NamedTuple Defining BacktestResults inputs.
-    """
-    pair: str
-    profit_percent: float
-    profit_abs: float
-    open_date: datetime
-    open_rate: float
-    open_fee: float
-    close_date: datetime
-    close_rate: float
-    close_fee: float
-    amount: float
-    trade_duration: float
-    open_at_end: bool
-    sell_reason: SellType
 
 
 class Backtesting:
@@ -264,7 +246,7 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_sell_trade_entry(self, trade: Trade, sell_row: Tuple) -> Optional[BacktestResult]:
+    def _get_sell_trade_entry(self, trade: Trade, sell_row: Tuple) -> Optional[Trade]:
 
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX], sell_row[DATE_IDX],
                                          sell_row[BUY_IDX], sell_row[SELL_IDX],
@@ -276,25 +258,12 @@ class Backtesting:
             trade.close_date = sell_row[DATE_IDX]
             trade.sell_reason = sell.sell_type
             trade.close(closerate, show_msg=False)
+            return trade
 
-            return BacktestResult(pair=trade.pair,
-                                  profit_percent=trade.calc_profit_ratio(rate=closerate),
-                                  profit_abs=trade.calc_profit(rate=closerate),
-                                  open_date=trade.open_date,
-                                  open_rate=trade.open_rate,
-                                  open_fee=self.fee,
-                                  close_date=sell_row[DATE_IDX],
-                                  close_rate=closerate,
-                                  close_fee=self.fee,
-                                  amount=trade.amount,
-                                  trade_duration=trade_dur,
-                                  open_at_end=False,
-                                  sell_reason=sell.sell_type
-                                  )
         return None
 
     def handle_left_open(self, open_trades: Dict[str, List[Trade]],
-                         data: Dict[str, List[Tuple]]) -> List[BacktestResult]:
+                         data: Dict[str, List[Tuple]]) -> List[Trade]:
         """
         Handling of left open trades at the end of backtesting
         """
@@ -304,24 +273,11 @@ class Backtesting:
                 for trade in open_trades[pair]:
                     sell_row = data[pair][-1]
 
-                    trade_entry = BacktestResult(pair=trade.pair,
-                                                 profit_percent=trade.calc_profit_ratio(
-                                                     rate=sell_row[OPEN_IDX]),
-                                                 profit_abs=trade.calc_profit(sell_row[OPEN_IDX]),
-                                                 open_date=trade.open_date,
-                                                 open_rate=trade.open_rate,
-                                                 open_fee=self.fee,
-                                                 close_date=sell_row[DATE_IDX],
-                                                 close_rate=sell_row[OPEN_IDX],
-                                                 close_fee=self.fee,
-                                                 amount=trade.amount,
-                                                 trade_duration=int((
-                                                     sell_row[DATE_IDX] - trade.open_date
-                                                 ).total_seconds() // 60),
-                                                 open_at_end=True,
-                                                 sell_reason=SellType.FORCE_SELL
-                                                 )
-                    trades.append(trade_entry)
+                    trade.close_date = sell_row[DATE_IDX]
+                    trade.sell_reason = SellType.FORCE_SELL
+                    trade.close(sell_row[OPEN_IDX], show_msg=False)
+                    trade.is_open = True
+                    trades.append(trade)
         return trades
 
     def backtest(self, processed: Dict, stake_amount: float,
@@ -348,7 +304,7 @@ class Backtesting:
                      f"start_date: {start_date}, end_date: {end_date}, "
                      f"max_open_trades: {max_open_trades}, position_stacking: {position_stacking}"
                      )
-        trades = []
+        trades: List[Trade] = []
         self.prepare_backtest(enable_protections)
 
         # Use dict of lists with data for performance
@@ -429,7 +385,7 @@ class Backtesting:
 
         trades += self.handle_left_open(open_trades, data=data)
 
-        return DataFrame.from_records(trades, columns=BacktestResult._fields)
+        return trade_list_to_dataframe(trades)
 
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())

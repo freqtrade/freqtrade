@@ -4,6 +4,7 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 
 ## Freqtrade terminology
 
+* Strategy: Your trading strategy, telling the bot what to do.
 * Trade: Open position.
 * Open Order: Order which is currently placed on the exchange, and is not yet complete.
 * Pair: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).

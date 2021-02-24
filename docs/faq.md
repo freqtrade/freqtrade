@@ -38,12 +38,11 @@ you can't say much from few trades.
 
 ### I’d like to make changes to the config. Can I do that without having to kill the bot?
 
-Yes. You can edit your config, use the `/stop` command in Telegram, followed by `/reload_config` and the bot will run with the new config.
+Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
 ### I want to improve the bot with a new strategy
 
-That's great. We have a nice backtesting and hyperoptimization setup. See
-the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
+That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
@@ -143,7 +142,7 @@ freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossD
 
 ### Why does it take a long time to run hyperopt?
 
-* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-l9d9iqgl-9cVBIeBkCBa8j6upSmd_NA) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
+* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
 * If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:
 

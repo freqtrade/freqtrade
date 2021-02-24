@@ -53,7 +53,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
-    if startup_candles:
+    if startup_candles and data:
         min_date, max_date = get_timerange(data)
         logger.info(f"Loading data from {min_date} to {max_date}")
         timerange.adjust_start_if_necessary(timeframe_to_seconds(config.get('timeframe', '5m')),
@@ -67,14 +67,16 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         if not filename.is_dir() and not filename.is_file():
             logger.warning("Backtest file is missing skipping trades.")
             no_trades = True
-
-    trades = load_trades(
-        config['trade_source'],
-        db_url=config.get('db_url'),
-        exportfilename=filename,
-        no_trades=no_trades,
-        strategy=config.get('strategy'),
-    )
+    try:
+        trades = load_trades(
+            config['trade_source'],
+            db_url=config.get('db_url'),
+            exportfilename=filename,
+            no_trades=no_trades,
+            strategy=config.get('strategy'),
+        )
+    except ValueError as e:
+        raise OperationalException(e) from e
     trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
@@ -175,7 +177,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)
@@ -195,9 +197,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profit_percent'] > 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] > 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] > 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] > 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] > 0, "desc"],
             mode='markers',
             name='Sell - Profit',
             marker=dict(
@@ -208,9 +210,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profit_percent'] <= 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] <= 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] <= 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] <= 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] <= 0, "desc"],
             mode='markers',
             name='Sell - Loss',
             marker=dict(

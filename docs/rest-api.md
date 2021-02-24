@@ -1,4 +1,19 @@
-# REST API Usage
+# REST API & FreqUI
+
+## FreqUI
+
+Freqtrade provides a builtin webserver, which can serve [FreqUI](https://github.com/freqtrade/frequi), the freqtrade UI.
+
+By default, the UI is not included in the installation (except for docker images), and must be installed explicitly with `freqtrade install-ui`.
+This same command can also be used to update freqUI, should there be a new release.
+
+Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the UI will be available under the configured port below (usually `http://127.0.0.1:8080`).
+
+!!! info "Alpha release"
+    FreqUI is still considered an alpha release - if you encounter bugs or inconsistencies please open a [FreqUI issue](https://github.com/freqtrade/frequi/issues/new/choose).
+
+!!! Note "developers"
+    Developers should not use this method, but instead use the method described in the [freqUI repository](https://github.com/freqtrade/frequi) to get the source-code of freqUI.
 
 ## Configuration
 
@@ -23,9 +38,6 @@ Sample configuration:
 !!! Danger "Security warning"
     By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
-!!! Danger "Password selection"
-    Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
-
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
 This should return the response:
 
@@ -35,15 +47,21 @@ This should return the response:
 
 All other endpoints return sensitive info and require authentication and are therefore not available through a web browser.
 
-To generate a secure password, either use a password manager, or use the below code snipped.
+### Security
+
+To generate a secure password, best use a password manager, or use the below code.
 
 ``` python
 import secrets
 secrets.token_hex()
 ```
 
-!!! Hint
+!!! Hint "JWT token"
     Use the same method to also generate a JWT secret key (`jwt_secret_key`).
+
+!!! Danger "Password selection"
+    Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
+    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!). 
 
 ### Configuration with docker
 
@@ -57,28 +75,20 @@ If you run your bot using docker, you'll need to have the bot listen to incoming
     },
 ```
 
-Add the following to your docker command:
+Uncomment the following from your docker-compose file:
 
-``` bash
-  -p 127.0.0.1:8080:8080
-```
-
-A complete sample-command may then look as follows:
-
-```bash
-docker run -d \
-  --name freqtrade \
-  -v ~/.freqtrade/config.json:/freqtrade/config.json \
-  -v ~/.freqtrade/user_data/:/freqtrade/user_data \
-  -v ~/.freqtrade/tradesv3.sqlite:/freqtrade/tradesv3.sqlite \
-  -p 127.0.0.1:8080:8080 \
-  freqtrade trade --db-url sqlite:///tradesv3.sqlite --strategy MyAwesomeStrategy
+```yml
+    ports:
+      - "127.0.0.1:8080:8080"
 ```
 
 !!! Danger "Security warning"
-    By using `-p 8080:8080` the API is available to everyone connecting to the server under the correct port, so others may be able to control your bot.
+    By using `8080:8080` in the docker port mapping, the API will be available to everyone connecting to the server under the correct port, so others may be able to control your bot.
 
-## Consuming the API
+
+## Rest API
+
+### Consuming the API
 
 You can consume the API by using the script `scripts/rest_client.py`.
 The client script only requires the `requests` module, so Freqtrade does not need to be installed on the system.
@@ -89,7 +99,7 @@ python3 scripts/rest_client.py <command> [optional parameters]
 
 By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be used, however you can specify a configuration file to override this behaviour.
 
-### Minimalistic client config
+#### Minimalistic client config
 
 ``` json
 {
@@ -105,7 +115,7 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
 python3 scripts/rest_client.py --config rest_config.json <command> [optional parameters]
 ```
 
-## Available endpoints
+### Available endpoints
 
 |  Command | Description |
 |----------|-------------|
@@ -264,12 +274,12 @@ whitelist
 
 ```
 
-## OpenAPI interface
+### OpenAPI interface
 
 To enable the builtin openAPI interface (Swagger UI), specify `"enable_openapi": true` in the api_server configuration.
 This will enable the Swagger UI at the `/docs` endpoint. By default, that's running at http://localhost:8080/docs/ - but it'll depend on your settings.
 
-## Advanced API usage using JWT tokens
+### Advanced API usage using JWT tokens
 
 !!! Note
     The below should be done in an application (a Freqtrade REST API client, which fetches info via API), and is not intended to be used on a regular basis.
@@ -294,9 +304,9 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 {"access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs"}
 ```
 
-## CORS
+### CORS
 
-All web-based frontends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
+All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
 Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
 Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
 

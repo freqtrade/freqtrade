@@ -2,6 +2,7 @@ import logging
 from ipaddress import IPv4Address
 from typing import Any, Dict
 
+import rapidjson
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +13,17 @@ from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
 
 logger = logging.getLogger(__name__)
+
+
+class FTJSONResponse(JSONResponse):
+    media_type = "application/json"
+
+    def render(self, content: Any) -> bytes:
+        """
+        Use rapidjson for responses
+        Handles NaN and Inf / -Inf in a javascript way by default.
+        """
+        return rapidjson.dumps(content).encode("utf-8")
 
 
 class ApiServer(RPCHandler):
@@ -32,6 +44,7 @@ class ApiServer(RPCHandler):
         self.app = FastAPI(title="Freqtrade API",
                            docs_url='/docs' if api_config.get('enable_openapi', False) else None,
                            redoc_url=None,
+                           default_response_class=FTJSONResponse,
                            )
         self.configure_app(self.app, self._config)
 
@@ -57,12 +70,16 @@ class ApiServer(RPCHandler):
         from freqtrade.rpc.api_server.api_auth import http_basic_or_jwt_token, router_login
         from freqtrade.rpc.api_server.api_v1 import router as api_v1
         from freqtrade.rpc.api_server.api_v1 import router_public as api_v1_public
+        from freqtrade.rpc.api_server.web_ui import router_ui
+
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
+        # UI Router MUST be last!
+        app.include_router(router_ui, prefix='')
 
         app.add_middleware(
             CORSMiddleware,

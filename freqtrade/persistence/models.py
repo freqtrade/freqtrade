@@ -171,6 +171,10 @@ class Order(_DECL_BASE):
         """
         Get all non-closed orders - useful when trying to batch-update orders
         """
+        if not isinstance(order, dict):
+            logger.warning(f"{order} is not a valid response object.")
+            return
+
         filtered_orders = [o for o in orders if o.order_id == order.get('id')]
         if filtered_orders:
             oobj = filtered_orders[0]
@@ -301,6 +305,11 @@ class Trade(_DECL_BASE):
             'close_profit': self.close_profit,  # Deprecated
             'close_profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'close_profit_abs': self.close_profit_abs,  # Deprecated
+
+            'trade_duration_s': (int((self.close_date - self.open_date).total_seconds())
+                                 if self.close_date else None),
+            'trade_duration': (int((self.close_date - self.open_date).total_seconds() // 60)
+                               if self.close_date else None),
 
             'profit_ratio': self.close_profit,
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,

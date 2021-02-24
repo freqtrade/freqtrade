@@ -9,7 +9,7 @@ from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
-from numpy import NAN, int64, mean
+from numpy import NAN, inf, int64, mean
 from pandas import DataFrame
 
 from freqtrade.configuration.timerange import TimeRange
@@ -129,6 +129,7 @@ class RPC:
             'trailing_stop_positive': config.get('trailing_stop_positive'),
             'trailing_stop_positive_offset': config.get('trailing_stop_positive_offset'),
             'trailing_only_offset_is_reached': config.get('trailing_only_offset_is_reached'),
+            'use_custom_stoploss': config.get('use_custom_stoploss'),
             'bot_name': config.get('bot_name', 'freqtrade'),
             'timeframe': config.get('timeframe'),
             'timeframe_ms': timeframe_to_msecs(config['timeframe']
@@ -377,7 +378,7 @@ class RPC:
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)
-        profit_closed_ratio_mean = mean(profit_closed_ratio) if profit_closed_ratio else 0.0
+        profit_closed_ratio_mean = float(mean(profit_closed_ratio) if profit_closed_ratio else 0.0)
         profit_closed_ratio_sum = sum(profit_closed_ratio) if profit_closed_ratio else 0.0
 
         profit_closed_fiat = self._fiat_converter.convert_amount(
@@ -387,7 +388,7 @@ class RPC:
         ) if self._fiat_converter else 0
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
-        profit_all_ratio_mean = mean(profit_all_ratio) if profit_all_ratio else 0.0
+        profit_all_ratio_mean = float(mean(profit_all_ratio) if profit_all_ratio else 0.0)
         profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
@@ -450,7 +451,7 @@ class RPC:
                     pair = self._freqtrade.exchange.get_valid_pair_combination(coin, stake_currency)
                     rate = tickers.get(pair, {}).get('bid', None)
                     if rate:
-                        if pair.startswith(stake_currency):
+                        if pair.startswith(stake_currency) and not pair.endswith(stake_currency):
                             rate = 1.0 / rate
                         est_stake = rate * balance.total
                 except (ExchangeError):
@@ -589,7 +590,8 @@ class RPC:
             raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
         # gen stake amount
-        stakeamount = self._freqtrade.get_trade_stake_amount(pair)
+        stakeamount = self._freqtrade.wallets.get_trade_stake_amount(
+            pair, self._freqtrade.get_free_open_trades())
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price):
@@ -745,6 +747,7 @@ class RPC:
                 sell_mask = (dataframe['sell'] == 1)
                 sell_signals = int(sell_mask.sum())
                 dataframe.loc[sell_mask, '_sell_signal_open'] = dataframe.loc[sell_mask, 'open']
+            dataframe = dataframe.replace([inf, -inf], NAN)
             dataframe = dataframe.replace({NAN: None})
 
         res = {
@@ -773,7 +776,8 @@ class RPC:
             })
         return res
 
-    def _rpc_analysed_dataframe(self, pair: str, timeframe: str, limit: int) -> Dict[str, Any]:
+    def _rpc_analysed_dataframe(self, pair: str, timeframe: str,
+                                limit: Optional[int]) -> Dict[str, Any]:
 
         _data, last_analyzed = self._freqtrade.dataprovider.get_analyzed_dataframe(
             pair, timeframe)

@@ -1,4 +1,4 @@
-FROM python:3.8.6-slim-buster as base
+FROM python:3.9.2-slim-buster as base
 
 # Setup env
 ENV LANG C.UTF-8
@@ -40,7 +40,9 @@ COPY --from=python-deps /root/.local /root/.local
 # Install and execute
 COPY . /freqtrade/
 RUN pip install -e . --no-cache-dir \
-  && mkdir /freqtrade/user_data/
+  && mkdir /freqtrade/user_data/ \
+  && freqtrade install-ui
+
 ENTRYPOINT ["freqtrade"]
 # Default to trade mode
 CMD [ "trade" ]

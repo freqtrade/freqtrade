@@ -34,5 +34,5 @@ class OnlyProfitHyperOptLoss(IHyperOptLoss):
         """
         Objective function, returns smaller number for better results.
         """
-        total_profit = results['profit_percent'].sum()
+        total_profit = results['profit_ratio'].sum()
         return 1 - total_profit / EXPECTED_MAX_PROFIT

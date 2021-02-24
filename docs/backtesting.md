@@ -5,6 +5,89 @@ This page explains how to validate your strategy performance by using Backtestin
 Backtesting requires historic data to be available.
 To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
+## Backtesting command reference
+
+```
+usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [-s NAME]
+                             [--strategy-path PATH] [-i TIMEFRAME]
+                             [--timerange TIMERANGE]
+                             [--data-format-ohlcv {json,jsongz,hdf5}]
+                             [--max-open-trades INT]
+                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
+                             [--eps] [--dmmp] [--enable-protections]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export EXPORT] [--export-filename PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking).
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
+                        Provide a space-separated list of strategies to
+                        backtest. Please note that ticker-interval needs to be
+                        set either in config or via command line. When using
+                        this together with `--export trades`, the strategy-
+                        name is injected into the filename (so `backtest-
+                        data.json` becomes `backtest-data-
+                        DefaultStrategy.json`
+  --export EXPORT       Export backtest results, argument are: trades.
+                        Example: `--export=trades`
+  --export-filename PATH
+                        Save backtest results to the file with this filename.
+                        Requires `--export` to be set as well. Example:
+                        `--export-filename=user_data/backtest_results/backtest
+                        _today.json`
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+
+```
+
 ## Test your strategy with Backtesting
 
 Now you have good Buy and Sell strategies and some historic data, you want to test it against
@@ -20,7 +103,7 @@ The result of backtesting will confirm if your bot has better odds of making a p
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
     Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
-    Please read the [pairlists documentation](configuration.md#pairlists) for more information.
+    Please read the [pairlists documentation](plugins.md#pairlists) for more information.
 
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
@@ -262,9 +345,9 @@ It contains some useful key metrics about performance of your strategy on backte
 ```
 
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
-- `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - to clearly see settings for this.
+- `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - or number of pairs in the pairlist (whatever is lower).
 - `Total trades`: Identical to the total trades of the backtest output table.
-- `Total Profit %`: Total profit per stake amount. Aligned to the TOTAL column of the first table.
+- `Total Profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
 - `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade

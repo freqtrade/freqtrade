@@ -37,7 +37,7 @@ def hyperopt_results():
     return pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'profit_percent': [-0.1, 0.2, 0.3],
+            'profit_ratio': [-0.1, 0.2, 0.3],
             'profit_abs': [-0.2, 0.4, 0.6],
             'trade_duration': [10, 30, 10],
             'sell_reason': [SellType.STOP_LOSS, SellType.ROI, SellType.ROI],

@@ -11,9 +11,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
+from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
+from freqtrade.exceptions import ExchangeError
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
@@ -83,9 +85,24 @@ def assert_response(response, expected_code=200, needs_cors=True):
 def test_api_not_found(botclient):
     ftbot, client = botclient
 
-    rc = client_post(client, f"{BASE_URI}/invalid_url")
+    rc = client_get(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
     assert rc.json() == {"detail": "Not Found"}
+
+
+def test_api_ui_fallback(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, "/favicon.ico")
+    assert rc.status_code == 200
+
+    rc = client_get(client, "/fallback_file.html")
+    assert rc.status_code == 200
+    assert '`freqtrade install-ui`' in rc.text
+
+    # Forwarded to fallback_html or index.html (depending if it's installed or not)
+    rc = client_get(client, "/something")
+    assert rc.status_code == 200
 
 
 def test_api_auth():
@@ -280,7 +297,7 @@ def test_api_run(default_conf, mocker, caplog):
                    "Please make sure that this is intentional!", caplog)
     assert log_has_re("SECURITY WARNING - `jwt_secret_key` seems to be default.*", caplog)
 
-    # Test crashing flask
+    # Test crashing API server
     caplog.clear()
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer',
                  MagicMock(side_effect=Exception))
@@ -588,7 +605,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc)
-    assert rc.json() == {'avg_duration': '0:00:00',
+    assert rc.json() == {'avg_duration': ANY,
                          'best_pair': 'ETH/BTC',
                          'best_rate': 6.2,
                          'first_trade_date': 'just now',
@@ -773,6 +790,15 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'timeframe': 5,
         'exchange': 'bittrex',
     }]
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+                 MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
+
+    rc = client_get(client, f"{BASE_URI}/status")
+    assert_response(rc)
+    resp_values = rc.json()
+    assert len(resp_values) == 1
+    assert isnan(resp_values[0]['profit_abs'])
 
 
 def test_api_version(botclient):
@@ -1109,7 +1135,7 @@ def test_list_available_pairs(botclient):
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 
     assert_response(rc)
-    assert rc.json()['length'] == 12
+    assert rc.json()['length'] == 13
     assert isinstance(rc.json()['pairs'], list)
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")

@@ -22,12 +22,21 @@ expect.
 We strongly recommend you to have coding and Python knowledge. Do not
 hesitate to read the source code and understand the mechanism of this bot.
 
-## Exchange marketplaces supported
+## Supported Exchange marketplaces
+
+Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#blacklists))
 - [X] [Kraken](https://kraken.com/)
-- [ ] [113 others to tests](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+- [X] [FTX](https://ftx.com)
+- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+
+### Community tested
+
+Exchanges confirmed working by the community:
+
+- [X] [Bitvavo](https://bitvavo.com/)
 
 ## Documentation
 
@@ -39,7 +48,7 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 
 - [x] **Based on Python 3.7+**: For botting on any operating system - Windows, macOS and Linux.
 - [x] **Persistence**: Persistence is achieved through sqlite.
-- [x] **Dry-run**: Run the bot without playing money.
+- [x] **Dry-run**: Run the bot without paying money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
 - [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/latest/edge/).
@@ -138,7 +147,7 @@ For any questions not covered by the documentation or for further information ab
 
 Please check out our [discord server](https://discord.gg/MA9v74M).
 
-You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-l9d9iqgl-9cVBIeBkCBa8j6upSmd_NA).
+You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -169,7 +178,7 @@ to understand the requirements before sending your pull-requests.
 Coding is not a necessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/MA9v74M) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-k9o2v5ut-jX8Mc4CwNM8CDc2Dyg96YA). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/MA9v74M) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
 **Important:** Always create your PR against the `develop` branch, not `stable`.
 
@@ -191,5 +200,5 @@ To run this bot we recommend you a cloud instance with a minimum of:
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://mrjbq7.github.io/ta-lib/install.html)
-- [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) (Recommended)
+- [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)
 - [Docker](https://www.docker.com/products/docker) (Recommended)

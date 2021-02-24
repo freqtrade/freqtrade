@@ -8,29 +8,30 @@ nav:
     - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
+    - Plugins: plugins.md
     - Stoploss: stoploss.md
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
         - Web Hook: webhook-config.md
-        - REST API: rest-api.md
+        - REST API & FreqUI: rest-api.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
-    - Edge Positioning: edge.md
-    - Plugins: plugins.md
-    - Utility Subcommands: utils.md
-    - FAQ: faq.md
+    - Utility Sub-commands: utils.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
         - Strategy analysis: strategy_analysis_example.md
         - Plotting: plotting.md
-    - SQL Cheatsheet: sql_cheatsheet.md
     - Exchange-specific Notes: exchanges.md
-    - Advanced Post-installation Tasks: advanced-setup.md
-    - Advanced Strategy: strategy-advanced.md
-    - Advanced Hyperopt: advanced-hyperopt.md
-    - Sandbox Testing: sandbox-testing.md
+    - Advanced Topics:
+        - Advanced Post-installation Tasks: advanced-setup.md
+        - Edge Positioning: edge.md
+        - Advanced Strategy: strategy-advanced.md
+        - Advanced Hyperopt: advanced-hyperopt.md
+        - Sandbox Testing: sandbox-testing.md
+    - FAQ: faq.md
+    - SQL Cheat-sheet: sql_cheatsheet.md
     - Updating Freqtrade: updating.md
     - Deprecated Features: deprecated.md
     - Contributors Guide: developer.md

@@ -2,7 +2,7 @@
 
 This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
-All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/MA9v74M) or [slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-l9d9iqgl-9cVBIeBkCBa8j6upSmd_NA) where you can ask questions.
+All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/MA9v74M) or [slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) where you can ask questions.
 
 ## Documentation
 
@@ -177,7 +177,7 @@ In `VolumePairList`, this implements different methods of sorting, does early va
 
 ### Protections
 
-Best read the [Protection documentation](configuration.md#protections) to understand protections.
+Best read the [Protection documentation](plugins.md#protections) to understand protections.
 This Guide is directed towards Developers who want to develop a new protection.
 
 No protection should use datetime directly, but use the provided `date_now` variable for date calculations. This preserves the ability to backtest protections.

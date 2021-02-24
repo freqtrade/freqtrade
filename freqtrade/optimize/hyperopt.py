@@ -546,10 +546,11 @@ class Hyperopt:
 
         )
         return self._get_results_dict(backtesting_results, min_date, max_date,
-                                      params_dict, params_details)
+                                      params_dict, params_details,
+                                      processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
-                          params_dict, params_details):
+                          params_dict, params_details, processed: Dict[str, DataFrame]):
         results_metrics = self._calculate_results_metrics(backtesting_results)
         results_explanation = self._format_results_explanation_string(results_metrics)
 
@@ -563,7 +564,8 @@ class Hyperopt:
         loss: float = MAX_LOSS
         if trade_count >= self.config['hyperopt_min_trades']:
             loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
-                                       min_date=min_date.datetime, max_date=max_date.datetime)
+                                       min_date=min_date.datetime, max_date=max_date.datetime,
+                                       config=self.config, processed=processed)
         return {
             'loss': loss,
             'params_dict': params_dict,
@@ -574,20 +576,20 @@ class Hyperopt:
         }
 
     def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
-        wins = len(backtesting_results[backtesting_results.profit_percent > 0])
-        draws = len(backtesting_results[backtesting_results.profit_percent == 0])
-        losses = len(backtesting_results[backtesting_results.profit_percent < 0])
+        wins = len(backtesting_results[backtesting_results['profit_ratio'] > 0])
+        draws = len(backtesting_results[backtesting_results['profit_ratio'] == 0])
+        losses = len(backtesting_results[backtesting_results['profit_ratio'] < 0])
         return {
             'trade_count': len(backtesting_results.index),
             'wins': wins,
             'draws': draws,
             'losses': losses,
             'winsdrawslosses': f"{wins:>4} {draws:>4} {losses:>4}",
-            'avg_profit': backtesting_results.profit_percent.mean() * 100.0,
-            'median_profit': backtesting_results.profit_percent.median() * 100.0,
-            'total_profit': backtesting_results.profit_abs.sum(),
-            'profit': backtesting_results.profit_percent.sum() * 100.0,
-            'duration': backtesting_results.trade_duration.mean(),
+            'avg_profit': backtesting_results['profit_ratio'].mean() * 100.0,
+            'median_profit': backtesting_results['profit_ratio'].median() * 100.0,
+            'total_profit': backtesting_results['profit_abs'].sum(),
+            'profit': backtesting_results['profit_ratio'].sum() * 100.0,
+            'duration': backtesting_results['trade_duration'].mean(),
         }
 
     def _format_results_explanation_string(self, results_metrics: Dict) -> str:

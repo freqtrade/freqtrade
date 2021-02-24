@@ -9,6 +9,7 @@ The `Edge Positioning` module uses probability to calculate your win rate and ri
     `Edge Positioning` only considers *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
     `Edge Positioning` improves the performance of some trading strategies and *decreases* the performance of others.
 
+
 ## Introduction
 
 Trading strategies are not perfect. They are frameworks that are susceptible to the market and its indicators. Because the market is not at all predictable, sometimes a strategy will win and sometimes the same strategy will lose.
@@ -207,6 +208,60 @@ Let's say the stake currency is **ETH** and there is $10$ **ETH** on the wallet.
 -   The strategy detects a sell signal in the **XLM/ETH** market. The bot exits **Trade 1** for a profit of $1$ **ETH**. The total capital in the wallet becomes $11$ **ETH** and the available capital for trading becomes $5.5$ **ETH**.
 
 -   **Trade 4** The strategy detects a new buy signal int the **XLM/ETH** market. `Edge Positioning` calculates the stoploss of $2\%$, and the position size of $0.055 / 0.02 = 2.75$ **ETH**.
+
+## Edge command reference
+
+```
+usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                      [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                      [-i TIMEFRAME] [--timerange TIMERANGE]
+                      [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
+                      [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  --stoplosses STOPLOSS_RANGE
+                        Defines a range of stoploss values against which edge
+                        will assess the strategy. The format is "min,max,step"
+                        (without any space). Example:
+                        `--stoplosses=-0.01,-0.1,-0.001`
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+
+```
 
 ## Configurations
 

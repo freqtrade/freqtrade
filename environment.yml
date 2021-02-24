@@ -1,60 +1,71 @@
 name: freqtrade
 channels:
-  - defaults
   - conda-forge
+# - defaults
 dependencies:
-  # Required for app
-  - python>=3.7
-  - pip
-  - wheel
-  - numpy
-  - pandas
-  - SQLAlchemy
-  - arrow
-  - requests
-  - urllib3
-  - wrapt
-  - jsonschema
-  - tabulate
-  - python-rapidjson
-  - flask
-  - python-dotenv
-  - cachetools
-  - python-telegram-bot
-  # Optional for plotting
-  - plotly
-  # Optional for hyperopt
-  - scipy
-  - scikit-optimize
-  - scikit-learn
-  - filelock
-  - joblib
-  # Optional for development
-  - flake8
-  - pytest
-  - pytest-mock
-  - pytest-asyncio
-  - pytest-cov
-  - coveralls
-  - mypy
-  # Useful for jupyter
-  - jupyter
-  - ipykernel
-  - isort
-  - yapf
-  - pip:
-    # Required for app
-    - cython
-    - pycoingecko
-    - ccxt
+# 1/4 req main
+    - python>=3.7
+    - numpy
+    - pandas
+    - pip
+
+    - aiohttp
+    - SQLAlchemy
+    - python-telegram-bot
+    - arrow
+    - cachetools
+    - requests
+    - urllib3
+    - wrapt
+    - jsonschema
     - TA-Lib
-    - py_find_1st
+    - tabulate
+    - jinja2
+    - blosc
     - sdnotify
-    # Optional for develpment
-    - flake8-tidy-imports
-    - flake8-type-annotations
-    - pytest-random-order
-    - -e .
+    - fastapi
+    - uvicorn
+    - pyjwt
+    - colorama
+    - questionary
+    - prompt-toolkit
 
 
+    # ============================
+    # 2/4 req dev
 
+    - coveralls
+    - flake8
+    - mypy
+    - pytest
+    - pytest-asyncio
+    - pytest-cov
+    - pytest-mock
+    - isort
+    - nbconvert
+
+    # ============================
+    # 3/4 req hyperopt
+
+    - scipy
+    - scikit-learn
+    - filelock
+    - scikit-optimize
+    - joblib
+    - progressbar2
+    # ============================
+    # 4/4 req plot
+
+    - plotly
+    - jupyter
+
+    - pip:
+        - pycoingecko
+        - py_find_1st
+        - tables
+        - pytest-random-order
+        - flake8-type-annotations
+        - ccxt
+        - flake8-tidy-imports
+        - -e .
+    # - python-rapidjso
