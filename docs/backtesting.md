@@ -95,14 +95,15 @@ Strategy arguments:
 ## Test your strategy with Backtesting
 
 Now you have good Buy and Sell strategies and some historic data, you want to test it against
-real data. This is what we call
-[backtesting](https://en.wikipedia.org/wiki/Backtesting).
+real data. This is what we call [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
+
+All profit calculations include fees, and freqtrade will use the exchange's default fees for the calculation.
 
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
@@ -111,38 +112,46 @@ The result of backtesting will confirm if your bot has better odds of making a p
 
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
-### Run a backtesting against the currencies listed in your config file
+### Example backtesting commands
 
-#### With 5 min candle (OHLCV) data (per default)
-
-```bash
-freqtrade backtesting
-```
-
-#### With 1 min candle (OHLCV) data
+With 5 min candle (OHLCV) data (per default)
 
 ```bash
-freqtrade backtesting --timeframe 1m
+freqtrade backtesting --strategy AwesomeStrategy
 ```
 
-#### Using a different on-disk historical candle (OHLCV) data source
+Where `--strategy AwesomeStrategy` / `-s AwesomeStrategy` refers to the class name of the strategy, which is within a python file in the `user_data/strategies` directory.
+
+---
+
+With 1 min candle (OHLCV) data
+
+```bash
+freqtrade backtesting --strategy AwesomeStrategy --timeframe 1m
+```
+
+---
+
+Providing a custom starting balance of 1000 (in stake currency)
+
+```bash
+freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000
+```
+
+---
+
+Using a different on-disk historical candle (OHLCV) data source
 
 Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade --datadir user_data/data/bittrex-20180101 backtesting
+freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/bittrex-20180101 
 ```
 
-#### With a (custom) strategy file
+---
 
-```bash
-freqtrade backtesting -s SampleStrategy
-```
-
-Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.
-
-#### Comparing multiple Strategies
+Comparing multiple Strategies
 
 ```bash
 freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m
@@ -150,23 +159,29 @@ freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timefram
 
 Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
 
-#### Exporting trades to file
+---
+
+Exporting trades to file
 
 ```bash
-freqtrade backtesting --export trades --config config.json --strategy SampleStrategy
+freqtrade backtesting --strategy backtesting --export trades --config config.json 
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
 
-#### Exporting trades to file specifying a custom filename
+---
+
+Exporting trades to file specifying a custom filename
 
 ```bash
-freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
+freqtrade backtesting --strategy backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
 Please also read about the [strategy startup period](strategy-customization.md#strategy-startup-period).
 
-#### Supplying custom fee value
+---
+
+Supplying custom fee value
 
 Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
 To account for this in backtesting, you can use the `--fee` command line option to supply this value to backtesting.
@@ -181,26 +196,26 @@ freqtrade backtesting --fee 0.001
 !!! Note
     Only supply this option (or the corresponding configuration parameter) if you want to experiment with different fee values. By default, Backtesting fetches the default fee from the exchange pair/market info.
 
-#### Running backtest with smaller testset by using timerange
+---
 
-Use the `--timerange` argument to change how much of the testset you want to use.
+Running backtest with smaller test-set by using timerange
 
+Use the `--timerange` argument to change how much of the test-set you want to use.
 
-For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your inputdata.
+For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your input data.
 
 ```bash
 freqtrade backtesting --timerange=20190501-
 ```
 
-You can also specify particular dates or a range span indexed by start and stop.
+You can also specify particular date ranges.
 
 The full timerange specification:
 
-- Use tickframes till 2018/01/31: `--timerange=-20180131`
-- Use tickframes since 2018/01/31: `--timerange=20180131-`
-- Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
-- Use tickframes between POSIX timestamps 1527595200 1527618600:
-                                                `--timerange=1527595200-1527618600`
+- Use data until 2018/01/31: `--timerange=-20180131`
+- Use data since 2018/01/31: `--timerange=20180131-`
+- Use data since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
+- Use data between POSIX / epoch timestamps 1527595200 1527618600: `--timerange=1527595200-1527618600`
 
 ## Understand the backtesting result
 
@@ -296,9 +311,9 @@ here:
 The bot has made `429` trades for an average duration of `4:12:00`, with a performance of `76.20%` (profit), that means it has
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
-The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums up all the profits/losses.
-The column `tot profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
-In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `tot_profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
+The column `Avg Profit %` shows the average profit for all trades made while the column `Cum Profit %` sums up all the profits/losses.
+The column `Tot Profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
+In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `Tot Profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
 
 Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
@@ -452,6 +467,5 @@ Detailed output for all strategies one after the other will be available, so mak
 
 ## Next step
 
-Great, your strategy is profitable. What if the bot can give your the
-optimal parameters to use for your strategy?
+Great, your strategy is profitable. What if the bot can give your the optimal parameters to use for your strategy?
 Your next step is to learn [how to find optimal parameters with Hyperopt](hyperopt.md)
