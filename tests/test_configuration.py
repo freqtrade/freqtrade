@@ -430,7 +430,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--stake-amount', 'unlimited'
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -463,6 +464,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'export' in config
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
+    assert 'stake_amount' in config
+    assert config['stake_amount'] == 'unlimited'
 
 
 def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> None:
