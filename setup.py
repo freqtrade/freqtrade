@@ -28,6 +28,7 @@ hyperopt = [
     'filelock',
     'joblib',
     'progressbar2',
+    'psutil',
     ]
 
 develop = [
