@@ -133,7 +133,6 @@ AVAILABLE_CLI_OPTIONS = {
     "stake_amount": Arg(
         '--stake-amount',
         help='Override the value of the `stake_amount` configuration setting.',
-        type=float,
     ),
     # Backtesting
     "position_stacking": Arg(

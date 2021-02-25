@@ -229,6 +229,13 @@ class Configuration:
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
 
+        if self.args.get('stake_amount', None):
+            # Convert explicitly to float to support CLI argument for both unlimited and value
+            try:
+                self.args['stake_amount'] = float(self.args['stake_amount'])
+            except ValueError:
+                pass
+
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
