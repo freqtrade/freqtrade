@@ -19,10 +19,10 @@ nav:
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
     - Utility Sub-commands: utils.md
+    - Plotting: plotting.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
         - Strategy analysis: strategy_analysis_example.md
-        - Plotting: plotting.md
     - Exchange-specific Notes: exchanges.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md

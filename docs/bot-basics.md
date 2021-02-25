@@ -4,14 +4,14 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 
 ## Freqtrade terminology
 
-* Strategy: Your trading strategy, telling the bot what to do.
-* Trade: Open position.
-* Open Order: Order which is currently placed on the exchange, and is not yet complete.
-* Pair: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).
-* Timeframe: Candle length to use (e.g. `"5m"`, `"1h"`, ...).
-* Indicators: Technical indicators (SMA, EMA, RSI, ...).
-* Limit order: Limit orders which execute at the defined limit price or better.
-* Market order: Guaranteed to fill, may move price depending on the order size.
+* **Strategy**: Your trading strategy, telling the bot what to do.
+* **Trade**: Open position.
+* **Open Order**: Order which is currently placed on the exchange, and is not yet complete.
+* **Pair**: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).
+* **Timeframe**: Candle length to use (e.g. `"5m"`, `"1h"`, ...).
+* **Indicators**: Technical indicators (SMA, EMA, RSI, ...).
+* **Limit order**: Limit orders which execute at the defined limit price or better.
+* **Market order**: Guaranteed to fill, may move price depending on the order size.
 
 ## Fee handling
 
