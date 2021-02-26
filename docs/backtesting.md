@@ -49,7 +49,7 @@ optional arguments:
                         Enable protections for backtesting.Will slow
                         backtesting down by a considerable amount, but will
                         include configured protections
-  --dry-run-wallet DRY_RUN_WALLET
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
@@ -108,9 +108,18 @@ All profit calculations include fees, and freqtrade will use the exchange's defa
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
     Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
-    Please read the [pairlists documentation](plugins.md#pairlists) for more information.
-
+    Please read the [pairlists documentation](plugins.md#pairlists) for more information.  
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
+
+### Starting balance
+
+Backtesting will require a starting balance, which can be given as `--dry-run-wallet <balance>` or `--starting-balance <balance>` command line argument, or via `dry_run_wallet` configuration setting.
+This amount must be higher than `stake_amount`, otherwise the bot will not be able to simulate any trade.
+
+### Dynamic stake amount
+
+Backtesting supports [dynamic stake amount](configuration.md#dynamic-stake-amount) by configuring `stake_amount` as `"unlimited"`, which will split the starting balance into `max_open_trades` pieces.
+Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period.
 
 ### Example backtesting commands
 

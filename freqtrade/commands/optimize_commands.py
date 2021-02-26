@@ -30,12 +30,6 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
             stake = round_coin_value(config['stake_amount'], config['stake_currency'])
             raise OperationalException(f"Starting balance ({wallet}) "
                                        f"is smaller than stake_amount {stake}.")
-        pass
-        # config['dry_run_wallet'] = config['stake_amount'] * \
-        #     config['max_open_trades'] * (2 - config['tradable_balance_ratio'])
-
-        # logger.warning(f"Changing dry-run-wallet to {config['dry_run_wallet']} "
-        #                "(max_open_trades * stake_amount).")
 
     return config
 
