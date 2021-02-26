@@ -1,5 +1,7 @@
 # Using Freqtrade with Docker
 
+This page explains how to run the bot with Docker. It is not meant to work out of the box. You'll still need to read through the documentation and understand how to properly configure it.
+
 ## Install Docker
 
 Start by downloading and installing Docker CE for your platform:
