@@ -41,13 +41,13 @@
             "ETH/BTC",
             "LTC/BTC",
             "ETC/BTC",
-            "DASH/BTC",
-            "ZEC/BTC",
+            "RVN/BTC",
+            "CRO/BTC",
             "XLM/BTC",
             "XRP/BTC",
             "TRX/BTC",
             "ADA/BTC",
-            "XMR/BTC"
+            "DOT/BTC"
         ],
         "pair_blacklist": [
             "DOGE/BTC"
