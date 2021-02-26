@@ -92,9 +92,6 @@ To use subaccounts with FTX, you need to edit the configuration and add the foll
 }
 ```
 
-!!! Note
-    Older versions of freqtrade may require this key to be added to `"ccxt_async_config"` as well.
-
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
