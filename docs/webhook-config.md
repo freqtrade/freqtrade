@@ -53,6 +53,8 @@ You can set the POST body format to Form-Encoded (default) or JSON-Encoded. Use 
     },
 ```
 
+The result would be e.g. `Status: running` message in the Mattermost channel.
+
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
 ### Webhookbuy
