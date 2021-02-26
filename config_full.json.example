@@ -49,6 +49,7 @@
         "buy": "limit",
         "sell": "limit",
         "emergencysell": "market",
+        "forcesell": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
