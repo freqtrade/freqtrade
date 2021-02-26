@@ -28,6 +28,12 @@ class Webhook(RPCHandler):
 
         self._url = self._config['webhook']['url']
 
+        self._format = self._config['webhook'].get('format', 'form')
+
+        if self._format != 'form' and self._format != 'json':
+            raise NotImplementedError('Unknown webhook format `{}`, possible values are '
+                                      '`form` (default) and `json`'.format(self._format))
+
     def cleanup(self) -> None:
         """
         Cleanup pending module resources.
@@ -66,7 +72,14 @@ class Webhook(RPCHandler):
     def _send_msg(self, payload: dict) -> None:
         """do the actual call to the webhook"""
 
+        if self._format == 'form':
+            kwargs = {'data': payload}
+        elif self._format == 'json':
+            kwargs = {'json': payload}
+        else:
+            raise NotImplementedError('Unknown format: {}'.format(self._format))
+
         try:
-            post(self._url, data=payload)
+            post(self._url, **kwargs)
         except RequestException as exc:
             logger.warning("Could not call webhook url. Exception: %s", exc)
