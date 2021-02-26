@@ -12,7 +12,6 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
@@ -130,8 +129,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert log_has('Parameter --print-all detected ...', caplog)
 
 
-def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_conf) -> None:
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None:
 
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -139,10 +137,21 @@ def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_con
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--stake-amount', '1',
+        '--starting-balance', '2'
     ]
-    # TODO: does this test still make sense?
     conf = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
     assert isinstance(conf, dict)
+
+    args = [
+        'hyperopt',
+        '--config', 'config.json',
+        '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '0.5'
+    ]
+    with pytest.raises(OperationalException, match=r"Starting balance .* smaller .*"):
+        setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
 
 
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:

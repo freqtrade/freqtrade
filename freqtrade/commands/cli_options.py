@@ -111,7 +111,7 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_true',
     ),
     "dry_run_wallet": Arg(
-        '--dry-run-wallet',
+        '--dry-run-wallet', '--starting-balance',
         help='Starting balance, used for backtesting / hyperopt and dry-runs.',
         type=float,
     ),

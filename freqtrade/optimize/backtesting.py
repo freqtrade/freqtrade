@@ -128,7 +128,7 @@ class Backtesting:
         PairLocks.use_db = True
         Trade.use_db = True
 
-    def _set_strategy(self, strategy):
+    def _set_strategy(self, strategy: IStrategy):
         """
         Load strategy into backtesting
         """

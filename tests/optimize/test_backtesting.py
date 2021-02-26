@@ -9,7 +9,6 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
-from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
@@ -232,8 +231,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --fee detected, setting fee to: {} ...'.format(config['fee']), caplog)
 
 
-def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog) -> None:
 
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -241,11 +239,22 @@ def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_con
         'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '2'
     ]
 
-    # TODO: does this test still make sense?
     conf = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
     assert isinstance(conf, dict)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '0.5'
+    ]
+    with pytest.raises(OperationalException, match=r"Starting balance .* smaller .*"):
+        setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
 
 
 def test_start(mocker, fee, default_conf, caplog) -> None:
