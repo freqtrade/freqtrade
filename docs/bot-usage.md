@@ -67,7 +67,7 @@ optional arguments:
   --sd-notify           Notify systemd service manager.
   --dry-run             Enforce dry-run for trading (removes Exchange secrets
                         and simulates trades).
-  --dry-run-wallet DRY_RUN_WALLET
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
 

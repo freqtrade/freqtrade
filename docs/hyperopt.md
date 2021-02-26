@@ -83,7 +83,7 @@ optional arguments:
                         Enable protections for backtesting.Will slow
                         backtesting down by a considerable amount, but will
                         include configured protections
-  --dry-run-wallet DRY_RUN_WALLET
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
   -e INT, --epochs INT  Specify number of epochs (default: 100).
