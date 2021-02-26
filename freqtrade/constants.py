@@ -45,6 +45,16 @@ USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 
+
+# Define decimals per coin for outputs
+# Only used for outputs.
+DECIMAL_PER_COIN_FALLBACK = 3  # Should be low to avoid listing all possible FIAT's
+DECIMALS_PER_COIN = {
+    'BTC': 8,
+    'ETH': 5,
+}
+
+
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
     'sample_strategy.py': USERPATH_STRATEGIES,

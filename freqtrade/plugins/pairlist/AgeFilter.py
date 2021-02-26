@@ -30,10 +30,10 @@ class AgeFilter(IPairList):
 
         if self._min_days_listed < 1:
             raise OperationalException("AgeFilter requires min_days_listed to be >= 1")
-        if self._min_days_listed > exchange.ohlcv_candle_limit:
+        if self._min_days_listed > exchange.ohlcv_candle_limit('1d'):
             raise OperationalException("AgeFilter requires min_days_listed to not exceed "
                                        "exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit})")
+                                       f"({exchange.ohlcv_candle_limit('1d')})")
 
     @property
     def needstickers(self) -> bool:

@@ -40,7 +40,9 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 #### Stoploss Guard
 
-`StoplossGuard` selects all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`), and determines if the amount of trades that resulted in stoploss are above `trade_limit` - in which case trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
+`StoplossGuard` selects all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`).
+If `trade_limit` or more trades resulted in stoploss, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
+
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.

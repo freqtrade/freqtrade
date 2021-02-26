@@ -9,8 +9,9 @@ from pandas import DataFrame
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import calculate_market_change, calculate_max_drawdown
-from freqtrade.misc import file_dump_json
+from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
+                                       calculate_max_drawdown)
+from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
 
 
 logger = logging.getLogger(__name__)
@@ -38,11 +39,12 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def _get_line_floatfmt() -> List[str]:
+def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
     Generate floatformat (goes in line with _generate_result_line())
     """
-    return ['s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', 'd', 'd', 'd']
+    return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f',
+            '.2f', 'd', 'd', 'd', 'd']
 
 
 def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
@@ -323,6 +325,13 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'drawdown_end': drawdown_end,
                 'drawdown_end_ts': drawdown_end.timestamp() * 1000,
             })
+
+            csum_min, csum_max = calculate_csum(results)
+            strat_stats.update({
+                'csum_min': csum_min,
+                'csum_max': csum_max
+            })
+
         except ValueError:
             strat_stats.update({
                 'max_drawdown': 0.0,
@@ -330,6 +339,8 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'drawdown_start_ts': 0,
                 'drawdown_end': datetime(1970, 1, 1, tzinfo=timezone.utc),
                 'drawdown_end_ts': 0,
+                'csum_min': 0,
+                'csum_max': 0
             })
 
     strategy_results = generate_strategy_metrics(all_results=all_results)
@@ -352,7 +363,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     """
 
     headers = _get_line_header('Pair', stake_currency)
-    floatfmt = _get_line_floatfmt()
+    floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
@@ -383,7 +394,9 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
 
     output = [[
         t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
-        t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'], t['profit_total_pct'],
+        t['profit_mean_pct'], t['profit_sum_pct'],
+        round_coin_value(t['profit_total_abs'], stake_currency, False),
+        t['profit_total_pct'],
     ] for t in sell_reason_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
@@ -396,7 +409,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
-    floatfmt = _get_line_floatfmt()
+    floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header('Strategy', stake_currency)
 
     output = [[
@@ -436,6 +449,12 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
+
+            ('Abs Profit Min', round_coin_value(strat_results['csum_min'],
+                                                strat_results['stake_currency'])),
+            ('Abs Profit Max', round_coin_value(strat_results['csum_max'],
+                                                strat_results['stake_currency'])),
+
             ('Max Drawdown', f"{round(strat_results['max_drawdown'] * 100, 2)}%"),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Drawdown End', strat_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),

@@ -113,7 +113,7 @@ class Daily(BaseModel):
 
 
 class ShowConfig(BaseModel):
-    dry_run: str
+    dry_run: bool
     stake_currency: str
     stake_amount: Union[float, str]
     max_open_trades: int
