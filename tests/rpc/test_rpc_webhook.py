@@ -226,6 +226,7 @@ def test__send_msg(default_conf, mocker, caplog):
     webhook._send_msg(msg)
     assert log_has('Could not call webhook url. Exception: ', caplog)
 
+
 def test__send_msg_with_json_format(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
     default_conf["webhook"]["format"] = "json"
