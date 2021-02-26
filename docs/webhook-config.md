@@ -40,6 +40,19 @@ Sample configuration (tested using IFTTT).
 
 The url in `webhook.url` should point to the correct url for your webhook. If you're using [IFTTT](https://ifttt.com) (as shown in the sample above) please insert our event and key to the url.
 
+You can set the POST body format to Form-Encoded (default) or JSON-Encoded. Use `"format": "form"` or `"format": "json"` respectively. Example configuration for Mattermost Cloud integration:
+
+```json
+  "webhook": {
+        "enabled": true,
+        "url": "https://<YOURSUBDOMAIN>.cloud.mattermost.com/hooks/<YOURHOOK>",
+        "format": "json",
+        "webhookstatus": {
+            "text": "Status: {status}"
+        }
+    },
+```
+
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
 ### Webhookbuy
