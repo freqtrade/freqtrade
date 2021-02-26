@@ -31,7 +31,8 @@ class Webhook(RPCHandler):
         self._format = self._config['webhook'].get('format', 'form')
 
         if self._format != 'form' and self._format != 'json':
-            raise NotImplementedError('Unknown webhook format `{}`, possible values are `form` (default) and `json`'.format(self._format))
+            raise NotImplementedError('Unknown webhook format `{}`, possible values are '
+                                      '`form` (default) and `json`'.format(self._format))
 
     def cleanup(self) -> None:
         """
