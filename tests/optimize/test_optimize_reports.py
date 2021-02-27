@@ -102,6 +102,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     # Above sample had no loosing trade
     assert strat_stats['max_drawdown'] == 0.0
 
+    # Retry with losing trade
     results = {'DefStrat': {
         'results': pd.DataFrame(
             {"pair": ["UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC", "UNITTEST/BTC"],
@@ -118,18 +119,31 @@ def test_generate_backtest_stats(default_conf, testdatadir):
              "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
              "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
              "trade_duration": [123, 34, 31, 14],
-             "open_at_end": [False, False, False, True],
-             "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                             SellType.ROI, SellType.FORCE_SELL]
+             "is_open": [False, False, False, True],
+             "stake_amount": [0.01, 0.01, 0.01, 0.01],
+             "sell_reason": [SellType.ROI, SellType.ROI,
+                             SellType.STOP_LOSS, SellType.FORCE_SELL]
              }),
-        'config': default_conf}
+        'config': default_conf,
+        'locks': [],
+        'final_balance': 1000.02,
+        'backtest_start_time': Arrow.utcnow().int_timestamp,
+        'backtest_end_time': Arrow.utcnow().int_timestamp,
+        }
     }
 
-    assert strat_stats['max_drawdown'] == 0.0
-    assert strat_stats['drawdown_start'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
-    assert strat_stats['drawdown_end'] == datetime(1970, 1, 1, tzinfo=timezone.utc)
-    assert strat_stats['drawdown_end_ts'] == 0
-    assert strat_stats['drawdown_start_ts'] == 0
+    stats = generate_backtest_stats(btdata, results, min_date, max_date)
+    assert isinstance(stats, dict)
+    assert 'strategy' in stats
+    assert 'DefStrat' in stats['strategy']
+    assert 'strategy_comparison' in stats
+    strat_stats = stats['strategy']['DefStrat']
+
+    assert strat_stats['max_drawdown'] == 0.013803
+    assert strat_stats['drawdown_start'] == datetime(2017, 11, 14, 22, 10, tzinfo=timezone.utc)
+    assert strat_stats['drawdown_end'] == datetime(2017, 11, 14, 22, 43, tzinfo=timezone.utc)
+    assert strat_stats['drawdown_end_ts'] == 1510699380000
+    assert strat_stats['drawdown_start_ts'] == 1510697400000
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
 
     # Test storing stats
