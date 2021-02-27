@@ -322,8 +322,8 @@ The bot has made `429` trades for an average duration of `4:12:00`, with a perfo
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
 The column `Avg Profit %` shows the average profit for all trades made while the column `Cum Profit %` sums up all the profits/losses.
-The column `Tot Profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
-In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `Tot Profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
+The column `Tot Profit %` shows instead the total profit % in relation to the starting balance.
+In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the `Tot Profit %` will be `(0.00762792 / 0.01) * 100 ~= 76.2%`.
 
 Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
