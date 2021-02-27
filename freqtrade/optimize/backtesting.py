@@ -115,8 +115,7 @@ class Backtesting:
         if self.config.get('enable_protections', False):
             self.protections = ProtectionManager(self.config)
 
-        self.wallets = Wallets(self.config, self.exchange)
-        self.wallets._log = False
+        self.wallets = Wallets(self.config, self.exchange, log=False)
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])

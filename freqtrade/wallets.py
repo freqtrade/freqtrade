@@ -27,15 +27,14 @@ class Wallet(NamedTuple):
 
 class Wallets:
 
-    def __init__(self, config: dict, exchange: Exchange, skip_update: bool = False) -> None:
+    def __init__(self, config: dict, exchange: Exchange, log: bool = True) -> None:
         self._config = config
-        self._log = True
+        self._log = log
         self._exchange = exchange
         self._wallets: Dict[str, Wallet] = {}
         self.start_cap = config['dry_run_wallet']
         self._last_wallet_refresh = 0
-        if not skip_update:
-            self.update()
+        self.update()
 
     def get_free(self, currency: str) -> float:
         balance = self._wallets.get(currency)
