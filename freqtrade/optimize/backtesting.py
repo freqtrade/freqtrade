@@ -274,7 +274,6 @@ class Backtesting:
             return None
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
-            # print(f"{pair}, {stake_amount}")
             # Enter trade
             trade = LocalTrade(
                 pair=pair,

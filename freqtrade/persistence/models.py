@@ -652,9 +652,8 @@ class LocalTrade():
         in stake currency
         """
         if Trade.use_db:
-            total_open_stake_amount = Trade.session.query(func.sum(Trade.stake_amount))\
-                .filter(Trade.is_open.is_(True))\
-                .scalar()
+            total_open_stake_amount = Trade.session.query(
+                func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True)).scalar()
         else:
             total_open_stake_amount = sum(
                 t.stake_amount for t in Trade.get_trades_proxy(is_open=True))
@@ -719,6 +718,8 @@ class Trade(_DECL_BASE, LocalTrade):
     """
     Trade database model.
     Also handles updating and querying trades
+
+    Note: Fields must be aligned with LocalTrade class
     """
     __tablename__ = 'trades'
 
