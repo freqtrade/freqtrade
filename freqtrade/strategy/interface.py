@@ -659,7 +659,7 @@ class IStrategy(ABC):
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advice_buy or advise_sell!
+        Does not run advise_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when
