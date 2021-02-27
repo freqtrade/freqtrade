@@ -108,12 +108,13 @@ All profit calculations include fees, and freqtrade will use the exchange's defa
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
     Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
-    Please read the [pairlists documentation](plugins.md#pairlists) for more information.  
+    Please read the [pairlists documentation](plugins.md#pairlists) for more information.
+
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
 ### Starting balance
 
-Backtesting will require a starting balance, which can be given as `--dry-run-wallet <balance>` or `--starting-balance <balance>` command line argument, or via `dry_run_wallet` configuration setting.
+Backtesting will require a starting balance, which can be provided as `--dry-run-wallet <balance>` or `--starting-balance <balance>` command line argument, or via `dry_run_wallet` configuration setting.
 This amount must be higher than `stake_amount`, otherwise the bot will not be able to simulate any trade.
 
 ### Dynamic stake amount
@@ -281,7 +282,7 @@ A backtesting result will look like that:
 | Absolute profit       | 0.00762792 BTC      |
 | Total profit %        | 76.2%               |
 | Trades per day        | 3.575               |
-| Avg. stake amount     | 0.001               |
+| Avg. stake amount     | 0.001      BTC      |
 | Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
@@ -368,7 +369,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Absolute profit       | 0.00762792 BTC      |
 | Total profit %        | 76.2%               |
 | Trades per day        | 3.575               |
-| Avg. stake amount     | 0.001               |
+| Avg. stake amount     | 0.001      BTC      |
 | Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
@@ -398,7 +399,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - or number of pairs in the pairlist (whatever is lower).
 - `Total trades`: Identical to the total trades of the backtest output table.
 - `Starting balance`: Start balance - as given by dry-run-wallet (config or command line).
-- `End balance`: Final balance - starting balance + absolute profit.
+- `Final balance`: Final balance - starting balance + absolute profit.
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
