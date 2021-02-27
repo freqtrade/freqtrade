@@ -157,8 +157,15 @@ def custom_hyperopt_buyelements(buy_indicators: List):
         aim = indicator_info[1]
         usage = indicator_info[2]
 
+        #If the indicator is a CDL indicator
+        if indicator[:3] == "CDL":
+
+            # add the triggers to its argument
+            for value in ["-100", "0", "100"]:
+                buy_triggers += f"if params['trigger'] == '{indicator + value}':\n    conditions.append(dataframe['{indicator}'] == {value})\n"
+
         # If the indicator is a guard
-        if usage == "guard":
+        elif usage == "guard":
             value = indicator_info[3]
             
             if value >= -1.0 and value <= 1.0:
@@ -191,7 +198,9 @@ def custom_hyperopt_buyelements(buy_indicators: List):
 
         if usage == "trigger":
             buy_space += f"'{indicator}', "
-
+        elif indicator[:3] == "CDL":
+            for value in [-100, 0, 100]:
+                buy_space += f"'{indicator + value}', "
     # Deleting the last ", "
     buy_space = buy_space[:-2]
     buy_space += "], name='trigger')"
@@ -211,6 +220,13 @@ def custom_hyperopt_sellelements(sell_indicators: Dict[str, str]):
         indicator = indicator_info[0]
         aim = indicator_info[1]
         usage = indicator_info[2]
+
+        #If the indicator is a CDL indicator
+        if indicator[:3] == "CDL":
+
+            # add the triggers to its argument
+            for value in ["-100", "0", "100"]:
+                sell_triggers += f"if params['sell-trigger'] == 'sell-{indicator + value}':\n    conditions.append(dataframe['{indicator}'] == {value})\n"
 
         # If the indicator is a guard
         if usage == "guard":
@@ -247,6 +263,9 @@ def custom_hyperopt_sellelements(sell_indicators: Dict[str, str]):
 
         if usage == "trigger":
             sell_space += f"'sell-{indicator}', "
+        elif indicator[:3] == "CDL":
+            for value in [-100, 0, 100]:
+                sell_space += f"'sell-{indicator + value}', "
 
     # Deleting the last ", "
     sell_space = sell_space[:-2]
