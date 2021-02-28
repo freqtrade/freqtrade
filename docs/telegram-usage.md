@@ -83,9 +83,12 @@ Example configuration showing the different settings:
          "sell": "on",
          "buy_cancel": "silent",
          "sell_cancel": "on"
-      }
+      },
+      "balance_dust_level": 0.01
    },
 ```
+
+`balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 
 ## Create a custom keyboard (command shortcut buttons)
 

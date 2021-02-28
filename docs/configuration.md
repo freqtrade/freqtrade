@@ -97,6 +97,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `telegram.balance_dust_level` | Dust-level (in stake currency) - currencies with a balance below this will not be shown by `/balance`. <br> **Datatype:** float
 | `webhook.enabled` | Enable usage of Webhook notifications <br> **Datatype:** Boolean
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
