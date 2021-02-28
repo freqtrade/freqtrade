@@ -17,6 +17,7 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
+from freqtrade.constants import DUST_PER_COIN
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
 from freqtrade.rpc import RPC, RPCException, RPCHandler, RPCMessageType
@@ -487,6 +488,10 @@ class Telegram(RPCHandler):
             result = self._rpc._rpc_balance(self._config['stake_currency'],
                                             self._config.get('fiat_display_currency', ''))
 
+            balance_dust_level = self._config['telegram'].get('balance_dust_level', 0.0)
+            if not balance_dust_level:
+                balance_dust_level = DUST_PER_COIN.get(self._config['stake_currency'], 1.0)
+
             output = ''
             if self._config['dry_run']:
                 output += (
@@ -496,7 +501,7 @@ class Telegram(RPCHandler):
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
                 )
             for curr in result['currencies']:
-                if curr['est_stake'] > 0.0001:
+                if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
                         f"\t`Available: {curr['free']:.8f}`\n"
@@ -505,7 +510,8 @@ class Telegram(RPCHandler):
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
                 else:
-                    curr_output = f"*{curr['currency']}:* not showing <1$ amount \n"
+                    curr_output = (f"*{curr['currency']}:* not showing <{balance_dust_level} "
+                                   f"{curr['stake']} amount \n")
 
                 # Handle overflowing messsage length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
