@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -205,7 +205,8 @@ class TradeResponse(BaseModel):
     trades_count: int
 
 
-ForceBuyResponse = TypeVar('ForceBuyResponse', TradeSchema, StatusMsg)
+class ForceBuyResponse(BaseModel):
+    __root__: Union[TradeSchema, StatusMsg]
 
 
 class LockModel(BaseModel):
@@ -267,7 +268,8 @@ class PlotConfig_(BaseModel):
     subplots: Optional[Dict[str, Any]]
 
 
-PlotConfig = TypeVar('PlotConfig', PlotConfig_, Dict)
+class PlotConfig(BaseModel):
+    __root__: Union[PlotConfig_, Dict]
 
 
 class StrategyListResponse(BaseModel):
