@@ -320,8 +320,9 @@ class BacktestRequest(BaseModel):
     timeframe: Optional[str]
     timerange: Optional[str]
     max_open_trades: Optional[int]
-    stake_amount: Optional[int]
+    stake_amount: Optional[Union[float, str]]
     enable_protections: bool
+    dry_run_wallet: Optional[float]
 
 
 class BacktestResponse(BaseModel):
