@@ -54,6 +54,11 @@ DECIMALS_PER_COIN = {
     'ETH': 5,
 }
 
+DUST_PER_COIN = {
+    'BTC': 0.0001,
+    'ETH': 0.01
+}
+
 
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
@@ -230,6 +235,7 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
                     'properties': {
@@ -243,7 +249,7 @@ CONF_SCHEMA = {
                     }
                 }
             },
-            'required': ['enabled', 'token', 'chat_id']
+            'required': ['enabled', 'token', 'chat_id'],
         },
         'webhook': {
             'type': 'object',

@@ -225,3 +225,15 @@ def test__send_msg(default_conf, mocker, caplog):
     mocker.patch("freqtrade.rpc.webhook.post", post)
     webhook._send_msg(msg)
     assert log_has('Could not call webhook url. Exception: ', caplog)
+
+
+def test__send_msg_with_json_format(default_conf, mocker, caplog):
+    default_conf["webhook"] = get_webhook_dict()
+    default_conf["webhook"]["format"] = "json"
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    msg = {'text': 'Hello'}
+    post = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.post", post)
+    webhook._send_msg(msg)
+
+    assert post.call_args[1] == {'json': msg}

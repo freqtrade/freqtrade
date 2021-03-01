@@ -1156,6 +1156,10 @@ class FreqtradeBot(LoggingMixin):
         if sell_reason == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
+        if sell_reason == SellType.FORCE_SELL:
+            # Force sells (default to the sell_type defined in the strategy,
+            # but we allow this value to be changed)
+            order_type = self.strategy.order_types.get("forcesell", order_type)
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']

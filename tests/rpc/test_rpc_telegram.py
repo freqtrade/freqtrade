@@ -520,7 +520,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12.00000000' in result
-    assert '*XRP:* not showing <1$ amount' in result
+    assert '*XRP:* not showing <0.0001 BTC amount' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:

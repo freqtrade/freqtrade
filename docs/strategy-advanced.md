@@ -176,7 +176,7 @@ class AwesomeStrategy(IStrategy):
         if current_profit > 0.25:
             return (-0.15 + current_profit)
         if current_profit > 0.20:
-            return (-0.7 + current_profit)
+            return (-0.07 + current_profit)
         return 1
 ```
 
