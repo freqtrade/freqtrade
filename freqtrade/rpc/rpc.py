@@ -3,7 +3,7 @@ This module contains class to define a RPC communications
 """
 import logging
 from abc import abstractmethod
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -20,6 +20,7 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
 from freqtrade.misc import shorten_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
@@ -663,13 +664,32 @@ class RPC:
         }
 
     def _rpc_locks(self) -> Dict[str, Any]:
-        """ Returns the  current locks"""
+        """ Returns the  current locks """
 
         locks = PairLocks.get_pair_locks(None)
         return {
             'lock_count': len(locks),
             'locks': [lock.to_json() for lock in locks]
         }
+
+    def _rpc_delete_lock(self, lockid: Optional[int] = None,
+                         pair: Optional[str] = None) -> Dict[str, Any]:
+        """ Delete specific lock(s) """
+        locks = []
+
+        if pair:
+            locks = PairLocks.get_pair_locks(pair)
+        if lockid:
+            locks = PairLock.query.filter(PairLock.id == lockid).all()
+
+        for lock in locks:
+            lock.active = False
+            lock.lock_end_time = datetime.now(timezone.utc)
+
+        # session is always the same
+        PairLock.session.flush()
+
+        return self._rpc_locks()
 
     def _rpc_whitelist(self) -> Dict:
         """ Returns the currently active whitelist"""

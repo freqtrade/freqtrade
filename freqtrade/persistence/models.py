@@ -765,6 +765,7 @@ class PairLock(_DECL_BASE):
 
     def to_json(self) -> Dict[str, Any]:
         return {
+            'id': self.id,
             'pair': self.pair,
             'lock_time': self.lock_time.strftime(DATETIME_PRINT_FORMAT),
             'lock_timestamp': int(self.lock_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
