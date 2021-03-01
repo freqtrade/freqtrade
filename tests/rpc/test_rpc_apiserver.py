@@ -418,6 +418,16 @@ def test_api_locks(botclient):
     assert 'randreason' in (rc.json()['locks'][0]['reason'], rc.json()['locks'][1]['reason'])
     assert 'deadbeef' in (rc.json()['locks'][0]['reason'], rc.json()['locks'][1]['reason'])
 
+    # Test deletions
+    rc = client_delete(client, f"{BASE_URI}/locks/1")
+    assert_response(rc)
+    assert rc.json()['lock_count'] == 1
+
+    rc = client_post(client, f"{BASE_URI}/locks/delete",
+                     data='{"pair": "XRP/BTC"}')
+    assert_response(rc)
+    assert rc.json()['lock_count'] == 0
+
 
 def test_api_show_config(botclient, mocker):
     ftbot, client = botclient
