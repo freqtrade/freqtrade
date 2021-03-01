@@ -111,9 +111,9 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     trade = rpc._rpc_forcebuy(payload.pair, payload.price)
 
     if trade:
-        return {'__root__': trade.to_json()}
+        return ForceBuyResponse.parse_obj(trade.to_json())
     else:
-        return {'__root__': {"status": f"Error buying pair {payload.pair}."}}
+        return ForceBuyResponse.parse_obj({"status": f"Error buying pair {payload.pair}."})
 
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
@@ -183,7 +183,7 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
 def plot_config(rpc: RPC = Depends(get_rpc)):
-    return {'__root__': rpc._rpc_plot_config()}
+    return PlotConfig.parse_obj(rpc._rpc_plot_config())
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])
