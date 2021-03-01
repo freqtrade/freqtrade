@@ -1,7 +1,8 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from freqtrade.persistence.pairlock_middleware import PairLocks
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
@@ -909,6 +910,24 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):
         rpc._rpc_forcebuy(pair, None)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_rpc_delete_lock(mocker, default_conf):
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
+    pair = 'ETH/BTC'
+
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    locks = rpc._rpc_locks()
+    assert locks['lock_count'] == 3
+    locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])
+    assert locks1['lock_count'] == 2
+
+    locks2 = rpc._rpc_delete_lock(pair=pair)
+    assert locks2['lock_count'] == 0
 
 
 def test_rpc_whitelist(mocker, default_conf) -> None:
