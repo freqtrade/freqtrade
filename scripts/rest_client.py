@@ -118,6 +118,14 @@ class FtRestClient():
         """
         return self._get("locks")
 
+    def delete_lock(self, lock_id):
+        """Delete (disable) lock from the database.
+
+        :param lock_id: ID for the lock to delete
+        :return: json object
+        """
+        return self._delete("locks/{}".format(lock_id))
+
     def daily(self, days=None):
         """Return the amount of open trades.
 
