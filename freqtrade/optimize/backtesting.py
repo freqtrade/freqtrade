@@ -443,16 +443,14 @@ class Backtesting:
 
         data, timerange = self.load_bt_data()
 
-        min_date = None
-        max_date = None
         for strat in self.strategylist:
             min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+        if len(self.strategylist) > 0:
+            stats = generate_backtest_stats(data, self.all_results,
+                                            min_date=min_date, max_date=max_date)
 
-        stats = generate_backtest_stats(data, self.all_results,
-                                        min_date=min_date, max_date=max_date)
+            if self.config.get('export', False):
+                store_backtest_stats(self.config['exportfilename'], stats)
 
-        if self.config.get('export', False):
-            store_backtest_stats(self.config['exportfilename'], stats)
-
-        # Show backtest results
-        show_backtest_results(self.config, stats)
+            # Show backtest results
+            show_backtest_results(self.config, stats)
