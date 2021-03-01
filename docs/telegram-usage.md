@@ -146,6 +146,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
+| `/unlock <pair | lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).

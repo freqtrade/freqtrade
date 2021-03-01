@@ -2,7 +2,6 @@
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
 from datetime import datetime, timedelta, timezone
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
@@ -11,6 +10,7 @@ from numpy import isnan
 from freqtrade.edge import PairInfo
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
+from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
