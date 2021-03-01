@@ -1,4 +1,5 @@
 site_name: Freqtrade
+repo_url: https://github.com/freqtrade/freqtrade
 nav:
     - Home: index.md
     - Quickstart with Docker: docker_quickstart.md
@@ -13,8 +14,8 @@ nav:
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md
-        - Web Hook: webhook-config.md
         - REST API & FreqUI: rest-api.md
+        - Web Hook: webhook-config.md
     - Data Downloading: data-download.md
     - Backtesting: backtesting.md
     - Hyperopt: hyperopt.md
@@ -50,24 +51,25 @@ extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
-    - admonition
-    - footnotes
-    - codehilite:
-        guess_lang: false
-    - toc:
-        permalink: true
-    - pymdownx.arithmatex:
-        generic: true
-    - pymdownx.details
-    - pymdownx.inlinehilite
-    - pymdownx.magiclink
-    - pymdownx.pathconverter
-    - pymdownx.smartsymbols
-    - pymdownx.snippets:
-        base_path: docs
-        check_paths: true
-    - pymdownx.tabbed
-    - pymdownx.superfences
-    - pymdownx.tasklist:
-        custom_checkbox: true
-    - mdx_truly_sane_lists
+  - attr_list
+  - admonition
+  - footnotes
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.pathconverter
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      base_path: docs
+      check_paths: true
+  - pymdownx.tabbed
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - mdx_truly_sane_lists
