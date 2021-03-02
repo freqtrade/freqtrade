@@ -176,9 +176,10 @@ class FtRestClient():
 
     def ping(self):
         """simple ping"""
-        if not self.show_config():
+        configstatus = self.show_config()
+        if not configstatus:
             return {"status": "not_running"}
-        elif self.show_config()['state'] == "running":
+        elif configstatus['state'] == "running":
             return {"status": "pong"}
         else:
             return {"status": "not_running"}
