@@ -318,6 +318,9 @@ class Backtesting:
         open_trades: Dict[str, List] = defaultdict(list)
         open_trade_count = 0
 
+        # Variable to keep tabs on available balance
+        available_balance: float = self.config['dry_run_wallet']
+
         # Loop timerange and get candle for each pair at that point in time
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
@@ -338,6 +341,12 @@ class Backtesting:
                     continue
                 indexes[pair] += 1
 
+                # Get available balance
+                if (available_balance < stake_amount and open_trade_count == 0):
+                    end_date = row[DATE_IDX]
+                    logger.info(f'Out of balance, cannot take another trade! Bakctest end date: {end_date}')
+                    break
+                
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
@@ -345,7 +354,8 @@ class Backtesting:
                         and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
                         and tmp != end_date
                         and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
-                        and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
+                        and not PairLocks.is_pair_locked(pair, row[DATE_IDX])
+                        and available_balance > stake_amount):
                     # Enter trade
                     trade = Trade(
                         pair=pair,
@@ -357,6 +367,7 @@ class Backtesting:
                         fee_close=self.fee,
                         is_open=True,
                     )
+                    
                     # TODO: hacky workaround to avoid opening > max_open_trades
                     # This emulates previous behaviour - not sure if this is correct
                     # Prevents buying if the trade-slot was freed in this candle
@@ -365,6 +376,9 @@ class Backtesting:
                     # logger.debug(f"{pair} - Backtesting emulates creation of new trade: {trade}.")
                     open_trades[pair].append(trade)
                     Trade.trades.append(trade)
+                                        
+                    # Update available balance
+                    available_balance -= trade.stake_amount
 
                 for trade in open_trades[pair]:
                     # since indexes has been incremented before, we need to go one step back to
@@ -376,10 +390,12 @@ class Backtesting:
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
                         trades.append(trade_entry)
+                        # Update available balance
+                        available_balance += trade_entry.close_profit_abs + trade_entry.stake_amount
                         if enable_protections:
                             self.protections.stop_per_pair(pair, row[DATE_IDX])
                             self.protections.global_stop(tmp)
-
+                            
             # Move time one configured time_interval ahead.
             tmp += timedelta(minutes=self.timeframe_min)
 
