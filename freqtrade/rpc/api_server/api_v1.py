@@ -11,13 +11,14 @@ from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily, DeleteTrade,
-                                                  ForceBuyPayload, ForceBuyResponse,
-                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
-                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse,
-                                                  TradeResponse, Version, WhitelistResponse)
+                                                  BlacklistResponse, Count, Daily,
+                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
+                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
+                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
+                                                  Stats, StatusMsg, StrategyListResponse,
+                                                  StrategyResponse, TradeResponse, Version,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -136,9 +137,19 @@ def whitelist(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_whitelist()
 
 
-@router.get('/locks', response_model=Locks, tags=['info'])
+@router.get('/locks', response_model=Locks, tags=['info', 'locks'])
 def locks(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_locks()
+
+
+@router.delete('/locks/{lockid}', response_model=Locks, tags=['info', 'locks'])
+def delete_lock(lockid: int, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=lockid)
+
+
+@router.post('/locks/delete', response_model=Locks, tags=['info', 'locks'])
+def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])

@@ -92,7 +92,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['delete'], ['performance'], ['stats'], ['daily'], ['count'], ['locks'], "
-                   "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
+                   "['unlock', 'delete_locks'], ['reload_config', 'reload_conf'], "
+                   "['show_config', 'show_conf'], ['stopbuy'], "
                    "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']"
                    "]")
 
@@ -980,6 +981,16 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     assert 'XRP/BTC' in msg_mock.call_args_list[0][0][0]
     assert 'deadbeef' in msg_mock.call_args_list[0][0][0]
     assert 'randreason' in msg_mock.call_args_list[0][0][0]
+
+    context = MagicMock()
+    context.args = ['XRP/BTC']
+    msg_mock.reset_mock()
+    telegram._delete_locks(update=update, context=context)
+
+    assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'randreason' in msg_mock.call_args_list[0][0][0]
+    assert 'XRP/BTC' not in msg_mock.call_args_list[0][0][0]
+    assert 'deadbeef' not in msg_mock.call_args_list[0][0][0]
 
 
 def test_whitelist_static(default_conf, update, mocker) -> None:

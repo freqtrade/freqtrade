@@ -6,6 +6,7 @@ This module manage Telegram communication
 import json
 import logging
 from datetime import timedelta
+from html import escape
 from itertools import chain
 from typing import Any, Callable, Dict, List, Union
 
@@ -144,6 +145,7 @@ class Telegram(RPCHandler):
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
             CommandHandler('locks', self._locks),
+            CommandHandler(['unlock', 'delete_locks'], self._delete_locks),
             CommandHandler(['reload_config', 'reload_conf'], self._reload_config),
             CommandHandler(['show_config', 'show_conf'], self._show_config),
             CommandHandler('stopbuy', self._stopbuy),
@@ -719,19 +721,35 @@ class Telegram(RPCHandler):
         Handler for /locks.
         Returns the currently active locks
         """
-        try:
-            locks = self._rpc._rpc_locks()
-            message = tabulate([[
-                lock['pair'],
-                lock['lock_end_time'],
-                lock['reason']] for lock in locks['locks']],
-                headers=['Pair', 'Until', 'Reason'],
-                tablefmt='simple')
-            message = "<pre>{}</pre>".format(message)
-            logger.debug(message)
-            self._send_msg(message, parse_mode=ParseMode.HTML)
-        except RPCException as e:
-            self._send_msg(str(e))
+        locks = self._rpc._rpc_locks()
+        message = tabulate([[
+            lock['id'],
+            lock['pair'],
+            lock['lock_end_time'],
+            lock['reason']] for lock in locks['locks']],
+            headers=['ID', 'Pair', 'Until', 'Reason'],
+            tablefmt='simple')
+        message = f"<pre>{escape(message)}</pre>"
+        logger.debug(message)
+        self._send_msg(message, parse_mode=ParseMode.HTML)
+
+    @authorized_only
+    def _delete_locks(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /delete_locks.
+        Returns the currently active locks
+        """
+        arg = context.args[0] if context.args and len(context.args) > 0 else None
+        lockid = None
+        pair = None
+        if arg:
+            try:
+                lockid = int(arg)
+            except ValueError:
+                pair = arg
+
+        self._rpc._rpc_delete_lock(lockid=lockid, pair=pair)
+        self._locks(update, context)
 
     @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
@@ -850,6 +868,7 @@ class Telegram(RPCHandler):
                    "Avg. holding durationsfor buys and sells.`\n"
                    "*/count:* `Show number of active trades compared to allowed number of trades`\n"
                    "*/locks:* `Show currently locked pairs`\n"
+                   "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
                    "*/balance:* `Show account balance per currency`\n"
                    "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
                    "*/reload_config:* `Reload configuration file` \n"
