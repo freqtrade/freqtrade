@@ -38,11 +38,11 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     file_dump_json(latest_filename, {'latest_backtest': str(filename.name)})
 
 
-def _get_line_floatfmt() -> List[str]:
+def _get_line_floatfmt(stake_currency: str) -> List[str]:
     """
     Generate floatformat (goes in line with _generate_result_line())
     """
-    return ['s', 'd', '.2f', '.2f', '.8f', '.2f', 'd', 'd', 'd', 'd']
+    return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f', '.2f', 'd', 'd', 'd', 'd']
 
 
 def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
@@ -86,7 +86,7 @@ def _generate_result_line(result: DataFrame, starting_balance: float, first_colu
     }
 
 
-def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_balance: int,
+def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_balance: float,
                           results: DataFrame, skip_nan: bool = False) -> List[Dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
@@ -270,7 +270,6 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             max_date = max_date_real
             ended_early = True
             
-        
         backtest_days = (max_date - min_date).days
         strat_stats = {
             'trades': results.to_dict(orient='records'),
@@ -385,7 +384,7 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     """
 
     headers = _get_line_header('Pair', stake_currency)
-    floatfmt = _get_line_floatfmt()
+    floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_total_abs'],
         t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
@@ -428,7 +427,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
-    floatfmt = _get_line_floatfmt()
+    floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header('Strategy', stake_currency)
 
     output = [[
