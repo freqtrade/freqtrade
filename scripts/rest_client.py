@@ -75,7 +75,7 @@ class FtRestClient():
         :return: json object
         """
         return self._post("start")
-
+    
     def stop(self):
         """Stop the bot. Use `start` to restart.
 
@@ -174,6 +174,14 @@ class FtRestClient():
         """
         return self._get("show_config")
 
+    def ping(self):
+        """simple ping"""
+
+        if self.show_config()['state']=="running":
+            return {"status": "pong"}
+        else:
+            return{"status": "not_running"}
+    
     def logs(self, limit=None):
         """Show latest logs.
 
