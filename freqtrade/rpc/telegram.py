@@ -721,20 +721,17 @@ class Telegram(RPCHandler):
         Handler for /locks.
         Returns the currently active locks
         """
-        try:
-            locks = self._rpc._rpc_locks()
-            message = tabulate([[
-                lock['id'],
-                lock['pair'],
-                lock['lock_end_time'],
-                lock['reason']] for lock in locks['locks']],
-                headers=['ID', 'Pair', 'Until', 'Reason'],
-                tablefmt='simple')
-            message = f"<pre>{escape(message)}</pre>"
-            logger.debug(message)
-            self._send_msg(message, parse_mode=ParseMode.HTML)
-        except RPCException as e:
-            self._send_msg(str(e))
+        locks = self._rpc._rpc_locks()
+        message = tabulate([[
+            lock['id'],
+            lock['pair'],
+            lock['lock_end_time'],
+            lock['reason']] for lock in locks['locks']],
+            headers=['ID', 'Pair', 'Until', 'Reason'],
+            tablefmt='simple')
+        message = f"<pre>{escape(message)}</pre>"
+        logger.debug(message)
+        self._send_msg(message, parse_mode=ParseMode.HTML)
 
     @authorized_only
     def _delete_locks(self, update: Update, context: CallbackContext) -> None:
@@ -742,20 +739,17 @@ class Telegram(RPCHandler):
         Handler for /delete_locks.
         Returns the currently active locks
         """
-        try:
-            arg = context.args[0] if context.args and len(context.args) > 0 else None
-            lockid = None
-            pair = None
-            if arg:
-                try:
-                    lockid = int(arg)
-                except ValueError:
-                    pair = arg
+        arg = context.args[0] if context.args and len(context.args) > 0 else None
+        lockid = None
+        pair = None
+        if arg:
+            try:
+                lockid = int(arg)
+            except ValueError:
+                pair = arg
 
-            self._rpc._rpc_delete_lock(lockid=lockid, pair=pair)
-            self._locks(update, context)
-        except RPCException as e:
-            self._send_msg(str(e))
+        self._rpc._rpc_delete_lock(lockid=lockid, pair=pair)
+        self._locks(update, context)
 
     @authorized_only
     def _whitelist(self, update: Update, context: CallbackContext) -> None:
