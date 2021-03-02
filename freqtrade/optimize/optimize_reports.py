@@ -8,7 +8,7 @@ from numpy import int64
 from pandas import DataFrame
 from tabulate import tabulate
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
 from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
@@ -499,8 +499,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     else:
         start_balance = round_coin_value(strat_results['starting_balance'],
                                          strat_results['stake_currency'])
-        stake_amount = round_coin_value(strat_results['stake_amount'],
-                                        strat_results['stake_currency'])
+        stake_amount = round_coin_value(
+            strat_results['stake_amount'], strat_results['stake_currency']
+            ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
+
         message = ("No trades made. "
                    f"Your starting balance was {start_balance}, "
                    f"and your stake was {stake_amount}."
