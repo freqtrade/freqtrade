@@ -75,7 +75,7 @@ class FtRestClient():
         :return: json object
         """
         return self._post("start")
-    
+
     def stop(self):
         """Stop the bot. Use `start` to restart.
 
