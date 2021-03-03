@@ -188,6 +188,7 @@ See: (Storing custom information using DatetimeIndex from `dataframe`
 
 ``` python
 from freqtrade.persistence import Trade
+from freqtrade.state import RunMode
 
 class AwesomeStrategy(IStrategy):
 
@@ -200,12 +201,23 @@ class AwesomeStrategy(IStrategy):
 
         result = 1
         if self.custom_info[pair] is not None and trade is not None:
-            atr = self.custom_info[pair].loc[current_time]['atr']
-            if (atr is not None):
+            # using current_time directly (like below) will only work in backtesting.
+            # so check "runmode" to make sure that it's only used in backtesting
+            if(self.dp.runmode == RunMode.BACKTEST):
+              relative_sl = self.custom_info[pair].loc[current_time]['atr]
+            # in live / dry-run, it'll be really the current time
+            else:
+              # but we can just use the last entry to get the current value
+              relative_sl =  self.custom_info[pair]['atr].iloc[ -1 ]
+
+            if (relative_sl is not None):
+                print("Custom SL: {}".format(relative_sl))
                 # new stoploss relative to current_rate
-                new_stoploss = (current_rate-atr)/current_rate
+                new_stoploss = (current_rate-relative_sl)/current_rate
                 # turn into relative negative offset required by `custom_stoploss` return implementation
                 result = new_stoploss - 1
+
+        print("Result: {}".format(result))
         return result
 ```
 
