@@ -333,6 +333,22 @@ class AwesomeStrategy(IStrategy):
 
 ***
 
+#### Storing custom information using DatetimeIndex from `dataframe`
+
+Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
+
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # add indicator mapped to correct DatetimeIndex to custom_info
+        # using "ATR" here as example
+        self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
+        return dataframe
+
+See: (custom_stoploss example)[WIP] for how to access it
+
 ## Additional data (informative_pairs)
 
 ### Get data for non-tradeable pairs
