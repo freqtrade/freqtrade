@@ -211,13 +211,11 @@ class AwesomeStrategy(IStrategy):
               relative_sl =  self.custom_info[pair]['atr].iloc[ -1 ]
 
             if (relative_sl is not None):
-                print("Custom SL: {}".format(relative_sl))
                 # new stoploss relative to current_rate
                 new_stoploss = (current_rate-relative_sl)/current_rate
                 # turn into relative negative offset required by `custom_stoploss` return implementation
                 result = new_stoploss - 1
 
-        print("Result: {}".format(result))
         return result
 ```
 
