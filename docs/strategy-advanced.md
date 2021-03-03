@@ -179,6 +179,35 @@ class AwesomeStrategy(IStrategy):
             return (-0.07 + current_profit)
         return 1
 ```
+#### Custom stoploss using an indicator from dataframe example
+
+Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
+
+See: (Storing custom information using DatetimeIndex from `dataframe`
+)[WIP] on how to store the indicator into `custom_info`
+
+``` python
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        result = 1
+        if self.custom_info[pair] is not None and trade is not None:
+            atr = self.custom_info[pair].loc[current_time]['atr']
+            if (atr is not None):
+                # new stoploss relative to current_rate
+                new_stoploss = (current_rate-atr)/current_rate
+                # turn into relative negative offset required by `custom_stoploss` return implementation
+                result = new_stoploss - 1
+        return result
+```
 
 ---
 
