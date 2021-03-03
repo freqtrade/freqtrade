@@ -399,7 +399,7 @@ if self.dp:
 
 ### *current_whitelist()*
 
-Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
+Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume.
 
 The strategy might look something like this:
 
@@ -418,7 +418,7 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
         pairs = self.dp.current_whitelist()
         # Assign tf to each pair so they can be downloaded and cached for strategy.
         informative_pairs = [(pair, '1d') for pair in pairs]
-        return informative_pairs   
+        return informative_pairs
 ```
 
 ### *get_pair_dataframe(pair, timeframe)*
@@ -583,7 +583,7 @@ All columns of the informative dataframe will be available on the returning data
 
     ``` python
     'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
-    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe 
+    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe
     ```
 
 ??? Example "Custom implementation"
