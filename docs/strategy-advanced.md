@@ -249,8 +249,8 @@ class AwesomeStrategy(IStrategy):
         result = 1
         if self.custom_info[pair] is not None and trade is not None:
             # using current_time directly (like below) will only work in backtesting.
-            # so check "runmode" to make sure that it's only used in backtesting
-            if(self.dp.runmode == RunMode.BACKTEST):
+            # so check "runmode" to make sure that it's only used in backtesting/hyperopt
+            if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
               relative_sl = self.custom_info[pair].loc[current_time]['atr]
             # in live / dry-run, it'll be really the current time
             else:
