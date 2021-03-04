@@ -300,7 +300,7 @@ The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `p
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](#Storing-information)
+Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
 
 ## Additional data (informative_pairs)
 
