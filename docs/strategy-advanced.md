@@ -246,7 +246,7 @@ See: "Storing custom information using DatetimeIndex from `dataframe`" example a
 !!! Warning
     only use .iat[-1] in live mode, not in backtesting/hyperopt
     otherwise you will look into the future
-    see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
+    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
 
 ``` python
 from freqtrade.persistence import Trade
