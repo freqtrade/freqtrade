@@ -55,8 +55,9 @@ class AwesomeStrategy(IStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # using "ATR" here as example
         dataframe['atr'] = ta.ATR(dataframe)
-        # add indicator mapped to correct DatetimeIndex to custom_info
-        self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
+        if self.dp.runmode.value in ('backtest', 'hyperopt'):
+          # add indicator mapped to correct DatetimeIndex to custom_info
+          self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
         return dataframe
 ```
 
