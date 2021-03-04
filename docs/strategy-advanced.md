@@ -261,7 +261,7 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         result = 1
-        if self.custom_info[pair] is not None and trade is not None:
+        if self.custom_info and pair in self.custom_info and trade:
             # using current_time directly (like below) will only work in backtesting.
             # so check "runmode" to make sure that it's only used in backtesting/hyperopt
             if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
