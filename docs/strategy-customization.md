@@ -302,53 +302,6 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 The Metadata-dict should not be modified and does not persist information across multiple calls.
 Instead, have a look at the section [Storing information](#Storing-information)
 
-### Storing information
-
-Storing information can be accomplished by creating a new dictionary within the strategy class.
-
-The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
-
-```python
-class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    custom_info = {}
-
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Check if the entry already exists
-        if not metadata["pair"] in self.custom_info:
-            # Create empty entry for this pair
-            self.custom_info[metadata["pair"]] = {}
-
-        if "crosstime" in self.custom_info[metadata["pair"]]:
-            self.custom_info[metadata["pair"]]["crosstime"] += 1
-        else:
-            self.custom_info[metadata["pair"]]["crosstime"] = 1
-```
-
-!!! Warning
-    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
-
-!!! Note
-    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
-
-***
-
-#### Storing custom information using DatetimeIndex from `dataframe`
-
-Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
-
-class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    custom_info = {}
-
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # add indicator mapped to correct DatetimeIndex to custom_info
-        # using "ATR" here as example
-        self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
-        return dataframe
-
-See: (custom_stoploss example)[WIP] for how to access it
-
 ## Additional data (informative_pairs)
 
 ### Get data for non-tradeable pairs
