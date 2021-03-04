@@ -234,8 +234,7 @@ class AwesomeStrategy(IStrategy):
 
 Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
 
-See: (Storing custom information using DatetimeIndex from `dataframe`
-)[WIP] on how to store the indicator into `custom_info`
+See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
 
 ``` python
 from freqtrade.persistence import Trade
