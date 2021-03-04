@@ -60,6 +60,12 @@ class AwesomeStrategy(IStrategy):
         return dataframe
 ```
 
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
 See `custom_stoploss` examples below on how to access the saved dataframe columns
 
 ## Custom stoploss
@@ -236,6 +242,11 @@ Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g
 
 See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
 
+!!! Warning
+    only use .iat[-1] in live mode, not in backtesting/hyperopt
+    otherwise you will look into the future
+    see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
+
 ``` python
 from freqtrade.persistence import Trade
 from freqtrade.state import RunMode
@@ -260,7 +271,10 @@ class AwesomeStrategy(IStrategy):
               # but we can just use the last entry from an already analyzed dataframe instead
               dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                        timeframe=self.timeframe)
-              # but we can just use the last entry to get the current value
+              # WARNING
+              # only use .iat[-1] in live mode, not in backtesting/hyperopt
+              # otherwise you will look into the future
+              # see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
               relative_sl = dataframe['atr'].iat[-1]
 
             if (relative_sl is not None):
