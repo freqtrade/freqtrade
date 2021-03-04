@@ -257,8 +257,11 @@ class AwesomeStrategy(IStrategy):
               relative_sl = self.custom_info[pair].loc[current_time]['atr]
             # in live / dry-run, it'll be really the current time
             else:
+              # but we can just use the last entry from an already analyzed dataframe instead
+              dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                       timeframe=self.timeframe)
               # but we can just use the last entry to get the current value
-              relative_sl =  self.custom_info[pair]['atr].iloc[ -1 ]
+              relative_sl = dataframe['atr'].iat[-1]
 
             if (relative_sl is not None):
                 # new stoploss relative to current_rate
