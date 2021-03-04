@@ -46,15 +46,19 @@ class AwesomeStrategy(IStrategy):
 
 Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
 
+```python
+import talib.abstract as ta
 class AwesomeStrategy(IStrategy):
     # Create custom dictionary
     custom_info = {}
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # add indicator mapped to correct DatetimeIndex to custom_info
         # using "ATR" here as example
+        dataframe['atr'] = ta.ATR(dataframe)
+        # add indicator mapped to correct DatetimeIndex to custom_info
         self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
         return dataframe
+```
 
 See `custom_stoploss` examples below on how to access the saved dataframe columns
 
