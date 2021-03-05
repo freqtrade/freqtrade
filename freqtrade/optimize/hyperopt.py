@@ -79,7 +79,8 @@ class Hyperopt:
         time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         strategy = str(self.config['strategy'])
         self.results_file = (self.config['user_data_dir'] /
-                             'hyperopt_results' / f'strategy_{strategy}_' f'hyperopt_results_{time_now}.pickle')
+                             'hyperopt_results' /
+                             f'strategy_{strategy}_hyperopt_results_{time_now}.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
