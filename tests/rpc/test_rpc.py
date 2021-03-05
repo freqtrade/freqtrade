@@ -413,10 +413,10 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
-    assert prec_satoshi(stats['profit_closed_percent'], 6.2)
+    assert prec_satoshi(stats['profit_closed_percent_mean'], 6.2)
     assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
     assert prec_satoshi(stats['profit_all_coin'], 5.802e-05)
-    assert prec_satoshi(stats['profit_all_percent'], 2.89)
+    assert prec_satoshi(stats['profit_all_percent_mean'], 2.89)
     assert prec_satoshi(stats['profit_all_fiat'], 0.8703)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
@@ -482,10 +482,10 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert prec_satoshi(stats['profit_closed_coin'], 0)
-    assert prec_satoshi(stats['profit_closed_percent'], 0)
+    assert prec_satoshi(stats['profit_closed_percent_mean'], 0)
     assert prec_satoshi(stats['profit_closed_fiat'], 0)
     assert prec_satoshi(stats['profit_all_coin'], 0)
-    assert prec_satoshi(stats['profit_all_percent'], 0)
+    assert prec_satoshi(stats['profit_all_percent_mean'], 0)
     assert prec_satoshi(stats['profit_all_fiat'], 0)
     assert stats['trade_count'] == 1
     assert stats['first_trade_date'] == 'just now'
