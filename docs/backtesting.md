@@ -289,8 +289,8 @@ A backtesting result will look like that:
 | Worst Pair            | ZEC/BTC -10.18%     |
 | Best Trade            | LSK/BTC 4.25%       |
 | Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 25.27%              |
-| Worst day             | -30.67%             |
+| Best day              | 0.00076 BTC         |
+| Worst day             | -0.00036 BTC        |
 | Days win/draw/lose    | 12 / 82 / 25        |
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
@@ -376,8 +376,8 @@ It contains some useful key metrics about performance of your strategy on backte
 | Worst Pair            | ZEC/BTC -10.18%     |
 | Best Trade            | LSK/BTC 4.25%       |
 | Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 25.27%              |
-| Worst day             | -30.67%             |
+| Best day              | 0.00076 BTC         |
+| Worst day             | -0.00036 BTC        |
 | Days win/draw/lose    | 12 / 82 / 25        |
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
@@ -406,7 +406,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
-- `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade
+- `Best Trade` / `Worst Trade`: Biggest single winning trade and biggest single losing trade.
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
