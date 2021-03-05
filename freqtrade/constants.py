@@ -179,6 +179,8 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},

@@ -593,7 +593,7 @@ class RPC:
             pair, self._freqtrade.get_free_open_trades())
 
         # execute buy
-        if self._freqtrade.execute_buy(pair, stakeamount, price):
+        if self._freqtrade.execute_buy(pair, stakeamount, price, forcebuy=True):
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
