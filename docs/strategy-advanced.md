@@ -11,6 +11,64 @@ If you're just getting started, please be familiar with the methods described in
 !!! Tip
     You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
+## Storing information
+
+Storing information can be accomplished by creating a new dictionary within the strategy class.
+
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+
+```python
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # Check if the entry already exists
+        if not metadata["pair"] in self.custom_info:
+            # Create empty entry for this pair
+            self.custom_info[metadata["pair"]] = {}
+
+        if "crosstime" in self.custom_info[metadata["pair"]]:
+            self.custom_info[metadata["pair"]]["crosstime"] += 1
+        else:
+            self.custom_info[metadata["pair"]]["crosstime"] = 1
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+***
+
+### Storing custom information using DatetimeIndex from `dataframe`
+
+Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
+
+```python
+import talib.abstract as ta
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # using "ATR" here as example
+        dataframe['atr'] = ta.ATR(dataframe)
+        if self.dp.runmode.value in ('backtest', 'hyperopt'):
+          # add indicator mapped to correct DatetimeIndex to custom_info
+          self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
+        return dataframe
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+See `custom_stoploss` examples below on how to access the saved dataframe columns
+
 ## Custom stoploss
 
 A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
@@ -142,7 +200,7 @@ class AwesomeStrategy(IStrategy):
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
-        desired_stoploss = current_profit / 2 
+        desired_stoploss = current_profit / 2
 
         # Use a minimum of 2.5% and a maximum of 5%
         return max(min(desired_stoploss, 0.05), 0.025)
@@ -178,6 +236,55 @@ class AwesomeStrategy(IStrategy):
         if current_profit > 0.20:
             return (-0.07 + current_profit)
         return 1
+```
+#### Custom stoploss using an indicator from dataframe example
+
+Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
+
+See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
+
+!!! Warning
+    only use .iat[-1] in live mode, not in backtesting/hyperopt
+    otherwise you will look into the future
+    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
+
+``` python
+from freqtrade.persistence import Trade
+from freqtrade.state import RunMode
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        result = 1
+        if self.custom_info and pair in self.custom_info and trade:
+            # using current_time directly (like below) will only work in backtesting.
+            # so check "runmode" to make sure that it's only used in backtesting/hyperopt
+            if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
+              relative_sl = self.custom_info[pair].loc[current_time]['atr]
+            # in live / dry-run, it'll be really the current time
+            else:
+              # but we can just use the last entry from an already analyzed dataframe instead
+              dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                       timeframe=self.timeframe)
+              # WARNING
+              # only use .iat[-1] in live mode, not in backtesting/hyperopt
+              # otherwise you will look into the future
+              # see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
+              relative_sl = dataframe['atr'].iat[-1]
+
+            if (relative_sl is not None):
+                # new stoploss relative to current_rate
+                new_stoploss = (current_rate-relative_sl)/current_rate
+                # turn into relative negative offset required by `custom_stoploss` return implementation
+                result = new_stoploss - 1
+
+        return result
 ```
 
 ---
