@@ -1145,7 +1145,7 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     captured = capsys.readouterr()
     log_has("CSV file created: test_file.csv", caplog)
     f = Path("test_file.csv")
-    assert 'Best,1,2,-1.25%,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
+    assert 'Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
     assert f.is_file()
     f.unlink()
 

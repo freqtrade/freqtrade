@@ -419,14 +419,16 @@ class Hyperopt:
         trials['Stake currency'] = config['stake_currency']
 
         base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
-                        'results_metrics.avg_profit', 'results_metrics.total_profit',
+                        'results_metrics.avg_profit', 'results_metrics.median_profit',
+                        'results_metrics.total_profit',
                         'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
                         'loss', 'is_initial_point', 'is_best']
         param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
-        base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Total profit', 'Stake currency',
-                        'Profit', 'Avg duration', 'Objective', 'is_initial_point', 'is_best']
+        base_columns = ['Best', 'Epoch', 'Trades', 'Avg profit', 'Median profit', 'Total profit',
+                        'Stake currency', 'Profit', 'Avg duration', 'Objective',
+                        'is_initial_point', 'is_best']
         param_columns = list(results[0]['params_dict'].keys())
         trials.columns = base_columns + param_columns
 
