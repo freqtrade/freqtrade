@@ -193,7 +193,7 @@ class Telegram(RPCHandler):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}\n"
+            message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']} (#{msg['trade_id']})\n"
                        f"*Amount:* `{msg['amount']:.8f}`\n"
                        f"*Open Rate:* `{msg['limit']:.8f}`\n"
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
@@ -216,7 +216,7 @@ class Telegram(RPCHandler):
 
             msg['emoji'] = self._get_sell_emoji(msg)
 
-            message = ("{emoji} *{exchange}:* Selling {pair}\n"
+            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
                        "*Amount:* `{amount:.8f}`\n"
                        "*Open Rate:* `{open_rate:.8f}`\n"
                        "*Current Rate:* `{current_rate:.8f}`\n"
