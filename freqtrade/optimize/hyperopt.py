@@ -77,8 +77,9 @@ class Hyperopt:
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
         time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        strategy = str(self.config['strategy'])
         self.results_file = (self.config['user_data_dir'] /
-                             'hyperopt_results' / f'hyperopt_results_{time_now}.pickle')
+                             'hyperopt_results' / f'strategy_{strategy}_' f'hyperopt_results_{time_now}.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
