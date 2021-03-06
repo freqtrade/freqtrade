@@ -1241,12 +1241,14 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'reason': CANCEL_REASON['TIMEOUT']
     })
     assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Bittrex:* '
-            'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
+            'Cancelling open buy Order for ETH/BTC (#1). '
+            'Reason: cancelled due to timeout.')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1324,23 +1326,26 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. '
-            'Reason: Cancelled on exchange')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH (#1).'
+            ' Reason: Cancelled on exchange')
 
     msg_mock.reset_mock()
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'reason': 'timeout'
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH (#1).'
+            ' Reason: timeout')
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
