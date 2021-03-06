@@ -193,7 +193,8 @@ class Telegram(RPCHandler):
             else:
                 msg['stake_amount_fiat'] = 0
 
-            message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']} (#{msg['trade_id']})\n"
+            message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
+                       f" (#{msg['trade_id']})\n"
                        f"*Amount:* `{msg['amount']:.8f}`\n"
                        f"*Open Rate:* `{msg['limit']:.8f}`\n"
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
@@ -205,7 +206,8 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
             message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling open buy Order for {pair}. Reason: {reason}.".format(**msg))
+                       "Cancelling open buy Order for {pair} (#{trade_id}). "
+                       "Reason: {reason}.".format(**msg))
 
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
@@ -236,7 +238,7 @@ class Telegram(RPCHandler):
 
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
             message = ("\N{WARNING SIGN} *{exchange}:* Cancelling Open Sell Order "
-                       "for {pair}. Reason: {reason}").format(**msg)
+                       "for {pair} (#{trade_id}). Reason: {reason}").format(**msg)
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)
