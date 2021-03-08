@@ -289,9 +289,10 @@ class RPC:
         """ Returns the X last trades """
         if limit > 0:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.id.desc()).limit(limit)
+                Trade.close_date.desc()).limit(limit)
         else:
-            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(Trade.id.desc()).all()
+            trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
+                Trade.close_date.desc()).all()
 
         output = [trade.to_json() for trade in trades]
 
