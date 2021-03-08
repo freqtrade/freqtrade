@@ -174,10 +174,8 @@ class Backtesting:
         PairLocks.use_db = False
         PairLocks.timeframe = self.config['timeframe']
         Trade.use_db = False
-        if enable_protections:
-            # Reset persisted data - used for protections only
-            PairLocks.reset_locks()
-            Trade.reset_trades()
+        PairLocks.reset_locks()
+        Trade.reset_trades()
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
