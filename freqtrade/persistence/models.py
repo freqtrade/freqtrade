@@ -425,7 +425,7 @@ class Trade(_DECL_BASE):
             self.close_rate_requested = self.stop_loss
             if self.is_open:
                 logger.info(f'{order_type.upper()} is hit for {self}.')
-            self.close(order['average'])
+            self.close(safe_value_fallback(order, 'average', 'price'))
         else:
             raise ValueError(f'Unknown order type: {order_type}')
         cleanup_db()

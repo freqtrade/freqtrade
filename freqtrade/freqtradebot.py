@@ -1023,13 +1023,13 @@ class FreqtradeBot(LoggingMixin):
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
-        if order['status'] not in ('canceled', 'closed'):
+        if order['status'] not in ('cancelled', 'canceled', 'closed'):
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
             # Avoid race condition where the order could not be cancelled coz its already filled.
             # Simply bailing here is the only safe way - as this order will then be
             # handled in the next iteration.
-            if corder.get('status') not in ('canceled', 'closed'):
+            if corder.get('status') not in ('cancelled', 'canceled', 'closed'):
                 logger.warning(f"Order {trade.open_order_id} for {trade.pair} not cancelled.")
                 return False
         else:
