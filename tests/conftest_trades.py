@@ -88,7 +88,7 @@ def mock_trade_2(fee):
         timeframe=5,
         sell_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
-        close_date=datetime.now(tz=timezone.utc),
+        close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
     )
     o = Order.parse_from_ccxt_object(mock_order_2(), 'ETC/BTC', 'buy')
     trade.orders.append(o)

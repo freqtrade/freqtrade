@@ -637,13 +637,13 @@ class Telegram(RPCHandler):
                 nrecent
             )
             trades_tab = tabulate(
-                [[arrow.get(trade['open_date']).humanize(),
-                  trade['pair'],
+                [[arrow.get(trade['close_date']).humanize(),
+                  trade['pair'] + " (#" + str(trade['trade_id']) + ")",
                   f"{(100 * trade['close_profit']):.2f}% ({trade['close_profit_abs']})"]
                  for trade in trades['trades']],
                 headers=[
-                    'Open Date',
-                    'Pair',
+                    'Close Date',
+                    'Pair (ID)',
                     f'Profit ({stake_cur})',
                 ],
                 tablefmt='simple')
