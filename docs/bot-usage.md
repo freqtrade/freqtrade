@@ -56,6 +56,7 @@ optional arguments:
 usage: freqtrade trade [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                        [--userdir PATH] [-s NAME] [--strategy-path PATH]
                        [--db-url PATH] [--sd-notify] [--dry-run]
+                       [--dry-run-wallet DRY_RUN_WALLET]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -66,6 +67,9 @@ optional arguments:
   --sd-notify           Notify systemd service manager.
   --dry-run             Enforce dry-run for trading (removes Exchange secrets
                         and simulates trades).
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
+                        Starting balance, used for backtesting / hyperopt and
+                        dry-runs.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

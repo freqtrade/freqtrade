@@ -43,7 +43,8 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
                           [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
-                          [--dmmp] [--enable-protections] [-e INT]
+                          [--dmmp] [--enable-protections]
+                          [--dry-run-wallet DRY_RUN_WALLET] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
@@ -82,6 +83,9 @@ optional arguments:
                         Enable protections for backtesting.Will slow
                         backtesting down by a considerable amount, but will
                         include configured protections
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
+                        Starting balance, used for backtesting / hyperopt and
+                        dry-runs.
   -e INT, --epochs INT  Specify number of epochs (default: 100).
   --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
                         Specify which parameters to hyperopt. Space-separated

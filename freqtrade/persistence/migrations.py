@@ -141,7 +141,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
 
-    if 'orders' not in previous_tables:
+    if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
     else:

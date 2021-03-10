@@ -19,7 +19,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import Trade, init_db
+from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
@@ -183,28 +183,34 @@ def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False)) -> None:
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee):
+def create_mock_trades(fee, use_db: bool = True):
     """
     Create some fake trades ...
     """
+    def add_trade(trade):
+        if use_db:
+            Trade.session.add(trade)
+        else:
+            LocalTrade.trades.append(trade)
+
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
     trade = mock_trade_2(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
     trade = mock_trade_3(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
     trade = mock_trade_4(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
     trade = mock_trade_5(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
     trade = mock_trade_6(fee)
-    Trade.session.add(trade)
+    add_trade(trade)
 
 
 @pytest.fixture(autouse=True)
@@ -255,6 +261,7 @@ def get_default_conf(testdatadir):
             "20": 0.02,
             "0": 0.04
         },
+        "dry_run_wallet": 1000,
         "stoploss": -0.10,
         "unfilledtimeout": {
             "buy": 10,

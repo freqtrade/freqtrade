@@ -147,6 +147,9 @@ class Exchange:
         """
         Destructor - clean up async stuff
         """
+        self.close()
+
+    def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
             asyncio.get_event_loop().run_until_complete(self._api_async.close())

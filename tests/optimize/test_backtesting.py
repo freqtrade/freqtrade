@@ -9,7 +9,6 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
-from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
@@ -19,6 +18,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
@@ -90,7 +90,6 @@ def simple_backtest(config, contour, mocker, testdatadir) -> None:
     assert isinstance(processed, dict)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=config['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
@@ -111,7 +110,6 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     min_date, max_date = get_timerange(processed)
     return {
         'processed': processed,
-        'stake_amount': conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 10,
@@ -233,8 +231,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --fee detected, setting fee to: {} ...'.format(config['fee']), caplog)
 
 
-def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_conf, caplog) -> None:
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog) -> None:
 
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -242,9 +239,21 @@ def test_setup_optimize_configuration_unlimited_stake_amount(mocker, default_con
         'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '2'
     ]
 
-    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
+    conf = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
+    assert isinstance(conf, dict)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '0.5'
+    ]
+    with pytest.raises(OperationalException, match=r"Starting balance .* smaller .*"):
         setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
 
 
@@ -448,9 +457,48 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
         Backtesting(default_conf)
 
 
+def test_backtest__enter_trade(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['ask_strategy']['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    default_conf['stake_amount'] = 'unlimited'
+    backtesting = Backtesting(default_conf)
+    pair = 'UNITTEST/BTC'
+    row = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
+        1,  # Sell
+        0.001,  # Open
+        0.0011,  # Close
+        0,  # Sell
+        0.00099,  # Low
+        0.0012,  # High
+    ]
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert isinstance(trade, LocalTrade)
+    assert trade.stake_amount == 495
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=2)
+    assert trade is None
+
+    # Stake-amount too high!
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert trade is None
+
+    # Stake-amount too high!
+    mocker.patch("freqtrade.wallets.Wallets.get_trade_stake_amount",
+                 side_effect=DependencyException)
+
+    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    assert trade is None
+
+
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
@@ -461,7 +509,6 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
@@ -486,7 +533,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'trade_duration': [235, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'sell_reason': [SellType.ROI, SellType.ROI],
+         'sell_reason': [SellType.ROI.value, SellType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],
@@ -512,6 +559,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
 
@@ -523,7 +571,6 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=1,
@@ -558,6 +605,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
 
     default_conf['enable_protections'] = True
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     tests = [
         ['sine', 9],
         ['raise', 10],
@@ -589,6 +637,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
         default_conf['protections'] = protections
         default_conf['enable_protections'] = True
 
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     # While buy-signals are unrealistic, running backtesting
     # over and over again should not cause different results
@@ -626,6 +675,7 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
 
 
 def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf,
                                         pair='UNITTEST/BTC', datadir=testdatadir)
@@ -658,6 +708,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
         dataframe['sell'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
         return dataframe
 
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     patch_exchange(mocker)
 
@@ -678,7 +729,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     min_date, max_date = get_timerange(processed)
     backtest_conf = {
         'processed': processed,
-        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
@@ -694,7 +744,6 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     backtest_conf = {
         'processed': processed,
-        'stake_amount': default_conf['stake_amount'],
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,
@@ -822,6 +871,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                                                     '2018-01-30 05:35:00', ], utc=True),
                       'trade_duration': [235, 40],
                       'is_open': [False, False],
+                      'stake_amount': [0.01, 0.01],
                       'open_rate': [0.104445, 0.10302485],
                       'close_rate': [0.104969, 0.103541],
                       'sell_reason': [SellType.ROI, SellType.ROI]
@@ -838,6 +888,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                                                     '2018-01-30 08:30:00'], utc=True),
                       'trade_duration': [47, 40, 20],
                       'is_open': [False, False, False],
+                      'stake_amount': [0.01, 0.01, 0.01],
                       'open_rate': [0.104445, 0.10302485, 0.122541],
                       'close_rate': [0.104969, 0.103541, 0.123541],
                       'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
