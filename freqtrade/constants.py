@@ -378,6 +378,16 @@ SCHEMA_TRADE_REQUIRED = [
     'dataformat_trades',
 ]
 
+SCHEMA_BACKTEST_REQUIRED = [
+    'exchange',
+    'max_open_trades',
+    'stake_currency',
+    'stake_amount',
+    'dry_run_wallet',
+    'dataformat_ohlcv',
+    'dataformat_trades',
+]
+
 SCHEMA_MINIMAL_REQUIRED = [
     'exchange',
     'dry_run',

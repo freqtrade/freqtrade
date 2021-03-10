@@ -47,6 +47,8 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
     conf_schema = deepcopy(constants.CONF_SCHEMA)
     if conf.get('runmode', RunMode.OTHER) in (RunMode.DRY_RUN, RunMode.LIVE):
         conf_schema['required'] = constants.SCHEMA_TRADE_REQUIRED
+    elif conf.get('runmode', RunMode.OTHER) in (RunMode.BACKTEST, RunMode.HYPEROPT):
+        conf_schema['required'] = constants.SCHEMA_BACKTEST_REQUIRED
     else:
         conf_schema['required'] = constants.SCHEMA_MINIMAL_REQUIRED
     try:
