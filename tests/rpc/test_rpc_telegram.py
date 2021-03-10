@@ -1130,7 +1130,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Close Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
-    assert bool(re.search("just now[ ]*XRP\\/BTC \\(#3\\)  1.00% \\(None\\)",
+    assert bool(re.search(r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(",
                 msg_mock.call_args_list[0][0][0]))
 
 
