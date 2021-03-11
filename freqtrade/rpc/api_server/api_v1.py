@@ -23,6 +23,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, BacktestReques
                                                   WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
+from freqtrade.state import BacktestState
 
 
 logger = logging.getLogger(__name__)
@@ -292,8 +293,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                     or lastconfig.get('timeframe') != strat.timeframe
                     or lastconfig.get('enable_protections') != btconfig.get('enable_protections')
                     or lastconfig.get('protections') != btconfig.get('protections', [])
-                    or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)
-                    ):
+                    or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)):
                 # TODO: Investigate if enabling protections can be dynamically ingested from here...
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
@@ -327,6 +327,8 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     return {
         "status": "running",
         "running": True,
+        "progress": 0,
+        "step": str(BacktestState.STARTUP),
         "status_msg": "Backtest started",
     }
 
@@ -341,6 +343,8 @@ def api_get_backtest():
         return {
             "status": "running",
             "running": True,
+            "step": ApiServer._bt.get_action() if ApiServer._bt else str(BacktestState.STARTUP),
+            "progress": ApiServer._bt.get_progress() if ApiServer._bt else 0,
             "status_msg": "Backtest running",
         }
 
@@ -348,6 +352,8 @@ def api_get_backtest():
         return {
             "status": "not_started",
             "running": False,
+            "step": "",
+            "progress": 0,
             "status_msg": "Backtesting not yet executed"
         }
 
@@ -355,6 +361,8 @@ def api_get_backtest():
         "status": "ended",
         "running": False,
         "status_msg": "Backtest ended",
+        "step": "finished",
+        "progress": 1,
         "backtest_result": ApiServer._bt.results,
     }
 
@@ -366,6 +374,7 @@ def api_delete_backtest():
         return {
             "status": "running",
             "running": True,
+            "progress": 0,
             "status_msg": "Backtest running",
         }
     if ApiServer._bt:
@@ -377,5 +386,6 @@ def api_delete_backtest():
     return {
         "status": "reset",
         "running": False,
+        "progress": 0,
         "status_msg": "Backtesting reset",
     }

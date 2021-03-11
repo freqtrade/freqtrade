@@ -329,5 +329,7 @@ class BacktestResponse(BaseModel):
     status: str
     running: bool
     status_msg: str
+    step: str
+    progress: float
     # TODO: Properly type backtestresult...
     backtest_result: Optional[Dict[str, Any]]
