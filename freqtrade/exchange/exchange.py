@@ -1056,7 +1056,8 @@ class Exchange:
         :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
-        return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
+        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+                and order.get('filled') == 0.0)
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
