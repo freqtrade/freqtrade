@@ -339,12 +339,14 @@ def api_get_backtest():
     Get backtesting result.
     Returns Result after backtesting has been ran.
     """
+    from freqtrade.persistence import Trade
     if ApiServer._bgtask_running:
         return {
             "status": "running",
             "running": True,
             "step": ApiServer._bt.get_action() if ApiServer._bt else str(BacktestState.STARTUP),
             "progress": ApiServer._bt.get_progress() if ApiServer._bt else 0,
+            "trade_count": Trade.get_trades_proxy(is_open=False),
             "status_msg": "Backtest running",
         }
 
