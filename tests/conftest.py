@@ -199,7 +199,7 @@ def create_mock_trades(fee, use_db: bool = True):
         if use_db:
             Trade.session.add(trade)
         else:
-            LocalTrade.trades.append(trade)
+            LocalTrade.add_bt_trade(trade)
 
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
