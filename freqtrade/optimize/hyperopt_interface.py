@@ -222,12 +222,12 @@ class IHyperOpt(ABC):
         Create a dynamic_roi table.
         """
         dynamic_roi_table = {
-            'dynamic_roi_enabled': params['enabled'],
-            'dynamic_roi_type': params['type'],
-            'dynamic_roi_rate': params['decay-rate'],
-            'dynamic_roi_time': params['decay-time'],
-            'dynamic_roi_start': params['start'],
-            'dynamic_roi_end': params['end']
+            'dynamic_roi_enabled': params['dynamic_roi_enabled'],
+            'dynamic_roi_type': params['dynamic_roi_type'],
+            'dynamic_roi_rate': params['dynamic_roi_rate'],
+            'dynamic_roi_time': params['dynamic_roi_time'],
+            'dynamic_roi_start': params['dynamic_roi_start'],
+            'dynamic_roi_end': params['dynamic_roi_end']
         }
 
         return dynamic_roi_table
