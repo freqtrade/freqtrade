@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+from datetime import datetime, timedelta, timezone
 from types import FunctionType
 from unittest.mock import MagicMock
 
@@ -1044,11 +1045,32 @@ def test_fee_updated(fee):
 def test_total_open_trades_stakes(fee, use_db):
 
     Trade.use_db = use_db
+    Trade.reset_trades()
     res = Trade.total_open_trades_stakes()
     assert res == 0
     create_mock_trades(fee, use_db)
     res = Trade.total_open_trades_stakes()
     assert res == 0.004
+
+    Trade.use_db = True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
+def test_get_trades_proxy(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    create_mock_trades(fee, use_db)
+    trades = Trade.get_trades_proxy()
+    assert len(trades) == 6
+
+    assert isinstance(trades[0], Trade)
+
+    assert len(Trade.get_trades_proxy(is_open=True)) == 4
+    assert len(Trade.get_trades_proxy(is_open=False)) == 2
+    opendate = datetime.now(tz=timezone.utc) - timedelta(minutes=15)
+
+    assert len(Trade.get_trades_proxy(open_date=opendate)) == 3
 
     Trade.use_db = True
 
