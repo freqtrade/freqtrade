@@ -283,7 +283,7 @@ So let's write the buy strategy using these values:
         """
         Define the buy strategy parameters to be used by Hyperopt.
         """
-        def populate_buy_trend(dataframe: DataFrame) -> DataFrame:
+        def populate_buy_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
             conditions = []
             # GUARDS AND TRENDS
             if 'adx-enabled' in params and params['adx-enabled']:
