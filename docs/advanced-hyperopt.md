@@ -6,7 +6,7 @@ class.
 
 ## Derived hyperopt classes
 
-Custom hyperop classes can be derived in the same way [it can be done for strategies](strategy-customization.md#derived-strategies).
+Custom hyperopt classes can be derived in the same way [it can be done for strategies](strategy-customization.md#derived-strategies).
 
 Applying to hyperoptimization, as an example, you may override how dimensions are defined in your optimization hyperspace:
 
@@ -30,6 +30,51 @@ and then quickly switch between hyperopt classes, running optimization process w
 $ freqtrade hyperopt --hyperopt MyAwesomeHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --strategy MyAwesomeStrategy ...
 or
 $ freqtrade hyperopt --hyperopt MyAwesomeHyperOpt2 --hyperopt-loss SharpeHyperOptLossDaily --strategy MyAwesomeStrategy ...
+```
+
+## Sharing methods with your strategy
+
+Hyperopt classes provide access to the Strategy via the `strategy` class attribute.
+This can be a great way to reduce code duplication if used correctly, but will also complicate usage for inexperienced users.
+
+``` python
+from pandas import DataFrame
+from freqtrade.strategy.interface import IStrategy
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+class MyAwesomeStrategy(IStrategy):
+
+    buy_params = {
+        'rsi-value': 30,
+        'adx-value': 35,
+    }
+
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        return self.buy_strategy_generator(self.buy_params, dataframe, metadata)
+
+    @staticmethod
+    def buy_strategy_generator(params, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                qtpylib.crossed_above(dataframe['rsi'], params['rsi-value']) &
+                dataframe['adx'] > params['adx-value']) &
+                dataframe['volume'] > 0
+            )
+            , 'buy'] = 1
+        return dataframe
+
+class MyAwesomeHyperOpt(IHyperOpt):
+    ...
+    @staticmethod
+    def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the buy strategy parameters to be used by Hyperopt.
+        """
+        def populate_buy_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Call strategy's buy strategy generator
+            return self.StrategyClass.buy_strategy_generator(params, dataframe, metadata)
+
+        return populate_buy_trend
 ```
 
 ## Creating and using a custom loss function
