@@ -625,12 +625,12 @@ Best result:
 
     # Dynamic ROI table:
     dynamic_roi = {
-        'decay-rate': 0.02356,
-        'decay-time': 909,
-        'enabled': True,
-        'end': 0.002,
-        'start': 0.07778,
-        'type': 'connect'
+        'dynamic_roi_rate': 0.02356,
+        'dynamic_roi_time': 909,
+        'dynamic_roi_enabled': True,
+        'dynamic_roi_end': 0.002,
+        'dynamic_roi_start': 0.07778,
+        'dynamic_roi_type': 'connect'
     }
 ```
 

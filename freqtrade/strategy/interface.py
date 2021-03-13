@@ -636,17 +636,18 @@ class IStrategy(ABC):
         """
         dynamic_roi = self.dynamic_roi
         minimal_roi = self.minimal_roi
+        start, end = dynamic_roi['dynamic_roi_start'], dynamic_roi['dynamic_roi_end']
 
         # if the dynamic_roi dict is defined and enabled, use it, otherwise fallback to default functionality
-        if dynamic_roi and dynamic_roi['enabled']:
+        if dynamic_roi and dynamic_roi['dynamic_roi_enabled']:
             # linear decay: f(t) = start - (rate * t)
-            if dynamic_roi['type'] == 'linear':
-                rate = (dynamic_roi['start'] - dynamic_roi['end']) / dynamic_roi['decay-time']
-                min_roi = max(dynamic_roi['end'], dynamic_roi['start'] - (rate * trade_dur))
+            if dynamic_roi['dynamic_roi_type'] == 'linear':
+                rate = (start - end) / dynamic_roi['dynamic_roi_time']
+                min_roi = max(end, start - (rate * trade_dur))
             # exponential decay: f(t) = start * e^(-rate*t)
-            elif dynamic_roi['type'] == 'exponential':
-                min_roi = max(dynamic_roi['end'], dynamic_roi['start'] * np.exp(-dynamic_roi['decay-rate']*trade_dur))
-            elif dynamic_roi['type'] == 'connect':
+            elif dynamic_roi['dynamic_roi_type'] == 'exponential':
+                min_roi = max(end, start * np.exp(-dynamic_roi['dynamic_roi_rate']*trade_dur))
+            elif dynamic_roi['dynamic_roi_type'] == 'connect':
                 # connect the points in the defined table with lines
                 past_roi = list(filter(lambda x: x <= trade_dur, minimal_roi.keys()))
                 next_roi = list(filter(lambda x: x >  trade_dur, minimal_roi.keys()))

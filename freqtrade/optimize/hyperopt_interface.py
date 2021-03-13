@@ -222,12 +222,12 @@ class IHyperOpt(ABC):
         Create a dynamic_roi table.
         """
         dynamic_roi_table = {
-            'enabled': params['enabled'],
-            'type': params['type'],
-            'decay-rate': params['decay-rate'],
-            'decay-time': params['decay-time'],
-            'start': params['start'],
-            'end': params['end']
+            'dynamic_roi_enabled': params['enabled'],
+            'dynamic_roi_type': params['type'],
+            'dynamic_roi_rate': params['decay-rate'],
+            'dynamic_roi_time': params['decay-time'],
+            'dynamic_roi_start': params['start'],
+            'dynamic_roi_end': params['end']
         }
 
         return dynamic_roi_table
@@ -240,12 +240,12 @@ class IHyperOpt(ABC):
         You may override it in your custom Hyperopt class.
         """        
         return [
-            Categorical([True, False], name='enabled'),
-            Categorical(['linear', 'exponential', 'connect'], name='type'),
-            Real(0.001, 0.03, name='decay-rate'),
-            Integer(180, 1440, name='decay-time'),
-            Real(0.05, 0.25, name='start'),
-            Real(0, 0.005, name='end')
+            Categorical([True, False], name='dynamic_roi_enabled'),
+            Categorical(['linear', 'exponential', 'connect'], name='dynamic_roi_type'),
+            Real(0.001, 0.03, name='dynamic_roi_rate'),
+            Integer(180, 1440, name='dynamic_roi_time'),
+            Real(0.05, 0.25, name='dynamic_roi_start'),
+            Real(0, 0.005, name='dynamic_roi_end')
         ]
 
 

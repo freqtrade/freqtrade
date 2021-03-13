@@ -280,12 +280,12 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         the ranges for decay-rate, decay-time, start, or end.
         """        
         return [
-            Categorical([True, False], name='enabled'),
-            Categorical(['linear', 'exponential', 'connect'], name='type'),
-            Real(0.001, 0.03, name='decay-rate'),
-            Integer(180, 1440, name='decay-time'),
-            Real(0.05, 0.25, name='start'),
-            Real(0, 0.005, name='end')
+            Categorical([True, False], name='dynamic_roi_enabled'),
+            Categorical(['linear', 'exponential', 'connect'], name='dynamic_roi_type'),
+            Real(0.001, 0.03, name='dynamic_roi_rate'),
+            Integer(180, 1440, name='dynamic_roi_time'),
+            Real(0.05, 0.25, name='dynamic_roi_start'),
+            Real(0, 0.005, name='dynamic_roi_end')
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

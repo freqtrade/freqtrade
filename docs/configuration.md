@@ -264,60 +264,60 @@ There are 3 different types of dynamic ROI algorithms available, `linear`, `expo
 Exapmple Linear Config:
 ```json
     "dynamic_roi": {
-        "enabled": true,
-        "type": "linear",
-        "decay-time": 720,
-        "start": 0.10,
-        "end": 0
+        "dynamic_roi_enabled": true,
+        "dynamic_roi_type": "linear",
+        "dynamic_roi_time": 720,
+        "dynamic_roi_start": 0.10,
+        "dynamic_roi_end": 0
     }
 ```
 
 Exapmple Linear Config for strategy:
 ```python
     dynamic_roi = {
-        'enabled': True,
-        'type': 'linear',
-        'decay-time': 720,
-        'start': 0.10,
-        'end': 0
+        'dynamic_roi_enabled': True,
+        'dynamic_roi_type': 'linear',
+        'dynamic_roi_time': 720,
+        'dynamic_roi_start': 0.10,
+        'dynamic_roi_end': 0
     }
 ```
 
 Exapmple Exponential Config:
 ```json
     "dynamic_roi": {
-        "enabled": true,
-        "type": "exponential",
-        "decay-rate": 0.015,
-        "start": 0.10,
-        "end": 0
+        "dynamic_roi_enabled": true,
+        "dynamic_roi_type": "exponential",
+        "dynamic_roi_rate": 0.015,
+        "dynamic_roi_start": 0.10,
+        "dynamic_roi_end": 0
     }
 ```
 
 Example Exponential Config for strategy:
 ```python
     dynamic_roi = {
-        'enabled': True,
-        'type': 'exponential',
-        'decay-rate': 0.015,
-        'start': 0.10,
-        'end': 0
+        'dynamic_roi_enabled': True,
+        'dynamic_roi_type': 'exponential',
+        'dynamic_roi_rate': 0.015,
+        'dynamic_roi_start': 0.10,
+        'dynamic_roi_end': 0
     }
 ```
 
 Example Connect Config:
 ```json
     "dynamic_roi": {
-        "enabled": true,
-        "type": "connect"
+        "dynamic_roi_enabled": true,
+        "dynamic_roi_type": "connect"
     }
 ```
 
 Example Connect Config for strategy:
 ```python
     dynamic_roi = {
-        'enabled': True,
-        'type': 'connect'
+        'dynamic_roi_enabled': True,
+        'dynamic_roi_type': 'connect'
     }
 ```
 

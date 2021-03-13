@@ -129,12 +129,12 @@ CONF_SCHEMA = {
         'dynamic_roi': {
             'type': 'object',
             'properties': {
-                'enabled': {'type': 'boolean'},
-                'type': {'type': 'string', 'enum': DYNAMIC_ROI_TYPES},
-                'decay-rate': {'type': 'number', 'minimum': 0.0001, 'maximum': 0.9},
-                'decay-time': {'type': 'integer', 'minimum': 1},
-                'start': {'type': 'number', 'minimum': 0.0, 'maximum': 1.0},
-                'end': {'type': 'number', 'minimum': 0.0}
+                'dynamic_roi_enabled': {'type': 'boolean'},
+                'dynamic_roi_type': {'type': 'string', 'enum': DYNAMIC_ROI_TYPES},
+                'dynamic_roi_rate': {'type': 'number', 'minimum': 0.0001, 'maximum': 0.9},
+                'dynamic_roi_time': {'type': 'integer', 'minimum': 1},
+                'dynamic_roi_start': {'type': 'number', 'minimum': 0.0, 'maximum': 1.0},
+                'dynamic_roi_end': {'type': 'number', 'minimum': 0.0}
             }
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
