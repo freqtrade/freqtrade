@@ -239,11 +239,26 @@ class IHyperOpt(ABC):
 
         You may override it in your custom Hyperopt class.
         """        
+        # Time and percentage scaling are the same as in roi_space()
+        # Refer to the notes there for additional details
+        roi_t_alpha = 1.0
+        timeframe_min = timeframe_to_minutes(IHyperOpt.ticker_interval)
+        roi_t_scale = timeframe_min / 5
+
+        # scaled range in minutes 
+        # candle    min    max
+        # 1m        30     144
+        # 5m        150    720
+        # 1h        1800   8640
+        # 1d        3456   207360
+        time_min = 150 * roi_t_scale * roi_t_alpha
+        time_max = 720 * roi_t_scale * roi_t_alpha
+
         return [
             Categorical([True, False], name='dynamic_roi_enabled'),
             Categorical(['linear', 'exponential', 'connect'], name='dynamic_roi_type'),
             Real(0.001, 0.03, name='dynamic_roi_rate'),
-            Integer(180, 1440, name='dynamic_roi_time'),
+            Integer(time_min, time_max, name='dynamic_roi_time'),
             Real(0.05, 0.25, name='dynamic_roi_start'),
             Real(0, 0.005, name='dynamic_roi_end')
         ]
