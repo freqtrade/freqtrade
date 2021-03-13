@@ -62,6 +62,7 @@ class StrategyResolver(IResolver):
         # Check if we need to override configuration
         #             (Attribute name,                    default,     subkey)
         attributes = [("minimal_roi",                     {"0": 10.0}, None),
+                      ("dynamic_roi",  {'dynamic_roi_enabled': False}, None),
                       ("timeframe",                       None,        None),
                       ("stoploss",                        None,        None),
                       ("trailing_stop",                   None,        None),
