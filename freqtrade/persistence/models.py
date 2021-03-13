@@ -208,6 +208,8 @@ class LocalTrade():
     use_db: bool = False
     # Trades container for backtesting
     trades: List['LocalTrade'] = []
+    trades_open: List['LocalTrade'] = []
+    total_profit: float = 0
 
     id: int = 0
 
@@ -350,6 +352,8 @@ class LocalTrade():
         Resets all trades. Only active for backtesting mode.
         """
         LocalTrade.trades = []
+        LocalTrade.trades_open = []
+        LocalTrade.total_profit = 0
 
     def adjust_min_max_rates(self, current_price: float) -> None:
         """
@@ -599,7 +603,17 @@ class LocalTrade():
         """
 
         # Offline mode - without database
-        sel_trades = [trade for trade in LocalTrade.trades]
+        if is_open is not None:
+            if is_open:
+                sel_trades = LocalTrade.trades_open
+            else:
+                sel_trades = LocalTrade.trades
+
+        else:
+            # Not used during backtesting, but might be used by a strategy
+            sel_trades = [trade for trade in LocalTrade.trades + LocalTrade.trades_open
+                          if trade.is_open == is_open]
+
         if pair:
             sel_trades = [trade for trade in sel_trades if trade.pair == pair]
         if open_date:
@@ -607,9 +621,21 @@ class LocalTrade():
         if close_date:
             sel_trades = [trade for trade in sel_trades if trade.close_date
                           and trade.close_date > close_date]
-        if is_open is not None:
-            sel_trades = [trade for trade in sel_trades if trade.is_open == is_open]
+
         return sel_trades
+
+    @staticmethod
+    def close_bt_trade(trade):
+        LocalTrade.trades_open.remove(trade)
+        LocalTrade.trades.append(trade)
+        LocalTrade.total_profit += trade.close_profit_abs
+
+    @staticmethod
+    def add_bt_trade(trade):
+        if trade.is_open:
+            LocalTrade.trades_open.append(trade)
+        else:
+            LocalTrade.trades.append(trade)
 
     @staticmethod
     def get_open_trades() -> List[Any]:

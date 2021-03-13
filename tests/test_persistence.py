@@ -1196,6 +1196,6 @@ def test_Trade_object_idem():
     # Fails if only a column is added without corresponding parent field
     for item in localtrade:
         if (not item.startswith('__')
-                and item not in ('trades', )
+                and item not in ('trades', 'trades_open', 'total_profit')
                 and type(getattr(LocalTrade, item)) not in (property, FunctionType)):
             assert item in trade
