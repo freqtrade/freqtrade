@@ -216,6 +216,39 @@ class IHyperOpt(ABC):
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
 
+    @staticmethod
+    def generate_dynamic_roi_table(params: Dict) -> Dict[int, float]:
+        """
+        Create a dynamic_roi table.
+        """
+        dynamic_roi_table = {
+            'enabled': params['enabled'],
+            'type': params['type'],
+            'decay-rate': params['decay-rate'],
+            'decay-time': params['decay-time'],
+            'start': params['start'],
+            'end': params['end']
+        }
+
+        return dynamic_roi_table
+
+    @staticmethod
+    def dynamic_roi_space() -> List[Dimension]:
+        """
+        Create a dynamic ROI space.
+
+        You may override it in your custom Hyperopt class.
+        """        
+        return [
+            Categorical([True, False], name='enabled'),
+            Categorical(['linear', 'exponential', 'connect'], name='type'),
+            Real(0.001, 0.03, name='decay-rate'),
+            Integer(180, 1440, name='decay-time'),
+            Real(0.05, 0.25, name='start'),
+            Real(0, 0.005, name='end')
+        ]
+
+
     # This is needed for proper unpickling the class attribute ticker_interval
     # which is set to the actual value by the resolver.
     # Why do I still need such shamanic mantras in modern python?

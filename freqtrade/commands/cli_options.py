@@ -211,7 +211,7 @@ AVAILABLE_CLI_OPTIONS = {
     "spaces": Arg(
         '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list.',
-        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'dynamic-roi', 'default'],
         nargs='+',
         default='default',
     ),

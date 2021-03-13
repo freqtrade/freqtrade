@@ -53,6 +53,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `dynamic_roi` | Set the parameters which govern the dynamic ROI functionality. [More information below](#understand-dynamic_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
 | `stoploss` |  **Required.** Value as ratio of the stoploss used by the bot. More details in the [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy).  <br> **Datatype:** Float (as ratio)
 | `trailing_stop` | Enables trailing stoploss (based on `stoploss` in either configuration or strategy file). More details in the [stoploss documentation](stoploss.md#trailing-stop-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Boolean
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-custom-positive-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Float
@@ -132,6 +133,7 @@ The following parameters can be set in either configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
 * `minimal_roi`
+* `dynamic_roi`
 * `timeframe`
 * `stoploss`
 * `trailing_stop`
@@ -248,6 +250,76 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 
 !!! Note "Special case to forcesell after a specific time"
     A special case presents using `"<N>": -1` as ROI. This forces the bot to sell a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-sell.
+
+### Understand dynamic_roi
+
+The `dynamic_roi` configuration parameters enable and control the functionality of dyanamic ROI. In a nutshell, dynamic ROI either works along side the existing ROI table, or moves it to a different method entirely.
+
+There are 3 different types of dynamic ROI algorithms available, `linear`, `exponential`, and `connect`.  The `linear` and `exponential` types will override the standard `minimal_roi` table, while the `connect` type works along side the standard table and requires one to be defined to properly work.
+
+* The `linear` type will decay from the `start` value to the `end` value in a straight line over `decay-time` (in minutes). Formula: `f(t) = start - (rate * t)` where `rate = (start -end) / decay-time`
+* The `exponential` type will decay from the `start` value in an exponential curve with `decay-rate` and end at minimum value of `end`. Formula: `f(t) = start * e^(-decay-rate*t)`
+* The `connect` type will "connect the dots" on the minimal_roi table with straight lines returning the values between the points.
+
+Exapmple Linear Config:
+```json
+    "dynamic_roi": {
+        "enabled": true,
+        "type": "linear",
+        "decay-time": 720,
+        "start": 0.10,
+        "end": 0
+    }
+```
+
+Exapmple Linear Config for strategy:
+```python
+    dynamic_roi = {
+        'enabled': True,
+        'type': 'linear',
+        'decay-time': 720,
+        'start': 0.10,
+        'end': 0
+    }
+```
+
+Exapmple Exponential Config:
+```json
+    "dynamic_roi": {
+        "enabled": true,
+        "type": "exponential",
+        "decay-rate": 0.015,
+        "start": 0.10,
+        "end": 0
+    }
+```
+
+Example Exponential Config for strategy:
+```python
+    dynamic_roi = {
+        'enabled': True,
+        'type': 'exponential',
+        'decay-rate': 0.015,
+        'start': 0.10,
+        'end': 0
+    }
+```
+
+Example Connect Config:
+```json
+    "dynamic_roi": {
+        "enabled": true,
+        "type": "connect"
+    }
+```
+
+Example Connect Config for strategy:
+```python
+    dynamic_roi = {
+        'enabled': True,
+        'type': 'connect'
+    }
+```
 
 ### Understand forcebuy_enable
 

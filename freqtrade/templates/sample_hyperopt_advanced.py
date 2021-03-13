@@ -268,6 +268,22 @@ class AdvancedSampleHyperOpt(IHyperOpt):
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
 
+    @staticmethod
+    def dynamic_roi_space() -> List[Dimension]:
+        """
+        Create a dynamic ROI space.
+
+        You may override it in your custom Hyperopt class.
+        """        
+        return [
+            Categorical([True, False], name='enabled'),
+            Categorical(['linear', 'exponential', 'connect'], name='type'),
+            Real(0.001, 0.03, name='decay-rate'),
+            Integer(180, 1440, name='decay-time'),
+            Real(0.05, 0.25, name='start'),
+            Real(0, 0.005, name='end')
+        ]
+
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators.

@@ -87,7 +87,7 @@ optional arguments:
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
   -e INT, --epochs INT  Specify number of epochs (default: 100).
-  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
+  --spaces {all,buy,sell,roi,stoploss,trailing,dynamic-roi,default} [{all,buy,sell,roi,stoploss,trailing,dynamic-roi,default} ...]
                         Specify which parameters to hyperopt. Space-separated
                         list.
   --print-all           Print all results, not only the best ones.
@@ -180,12 +180,13 @@ Optional in hyperopt - can also be loaded from a strategy (recommended):
 Rarely you may also need to override:
 
 * `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
+* `dynamic_roi_space` - for custom dynamic ROI optimization (if you need the ranges for the dynamic ROI parameters in the optimization hyperspace that differ from default)
 * `generate_roi_table` - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)
 * `stoploss_space` - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)
 * `trailing_space` - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)
 
 !!! Tip "Quickly optimize ROI, stoploss and trailing stoploss"
-    You can quickly optimize the spaces `roi`, `stoploss` and `trailing` without changing anything (i.e. without creation of a "complete" Hyperopt class with dimensions, parameters, triggers and guards, as described in this document) from the default hyperopt template by relying on your strategy to do most of the calculations.
+    You can quickly optimize the spaces `roi`, `stoploss`, `trailing` and `dynamic-roi` without changing anything (i.e. without creation of a "complete" Hyperopt class with dimensions, parameters, triggers and guards, as described in this document) from the default hyperopt template by relying on your strategy to do most of the calculations.
 
     ```python
     # Have a working strategy at hand.
@@ -401,10 +402,11 @@ Legal values are:
 * `roi`: just optimize the minimal profit table for your strategy
 * `stoploss`: search for the best stoploss value
 * `trailing`: search for the best trailing stop values
-* `default`: `all` except `trailing`
+* `dynamic-roi`: search for the best dynamic roi values
+* `default`: `all` except `trailing` and `dynamic-roi`
 * space-separated list of any of the above values for example `--spaces roi stoploss`
 
-The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.
+The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` or `dynamic-roi` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy. For `dynamic-roi` this is best run alone after an optimal `roi` space has been found.
 
 ### Position stacking and disabling max market positions
 
@@ -610,6 +612,45 @@ As stated in the comment, you can also use it as the values of the corresponding
 If you are optimizing trailing stop values, Freqtrade creates the 'trailing' optimization hyperspace for you. By default, the `trailing_stop` parameter is always set to True in that hyperspace, the value of the `trailing_only_offset_is_reached` vary between True and False, the values of the `trailing_stop_positive` and `trailing_stop_positive_offset` parameters vary in the ranges 0.02...0.35 and 0.01...0.1 correspondingly, which is sufficient in most cases.
 
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
+
+### Understand Hyperopt Dynamic ROI results
+
+If you are optimizing dynamic ROI values (i.e. if optimization search-space contains 'all' or 'dynamic-roi'), your result will look as follows and include dynamic ROI parameters:
+
+```
+Best result:
+
+*    1/10:   1263 trades. 1140/90/33 Wins/Draws/Losses. Avg profit   0.77%. Median profit   1.43%. Total profit  489.21273292 USD ( 976.86Σ%). Avg duration 851.3 min. Objective: -89.68666
+
+
+    # Dynamic ROI table:
+    dynamic_roi = {
+        'decay-rate': 0.02356,
+        'decay-time': 909,
+        'enabled': True,
+        'end': 0.002,
+        'start': 0.07778,
+        'type': 'connect'
+    }
+```
+
+In order to use these best dynamic ROI parameters found by Hyperopt in backtesting and for live trades/dry-run, copy-paste the output into your strategy or transpose the values into your configuration file.
+
+**Note:** The hyperopt output will include every parameter available to the dynamic ROI table, but depending on the type, only certain ones are needed. It is fine to copy them all over but you can clean the list up if you so desire.
+
+#### Default Dynamic ROI Search Space
+
+If you are optimizing dynamic ROI values, Freqtrade creates the 'dynamic-roi' optimization hyperspace for you. By default, the `enabled` parameter will try both True and False values. The value the `type` vary between `linear`, `exponential`, and `connect`. 
+
+Other values have default ranges of:
+| Param      | Range       |
+|------------|-------------|
+| decay-time | 180..1440   |
+| decay-rate | 0.001..0.03 |
+| start      | 0.05..0.25  |
+| end        | 0..0.005    |
+
+Override the `dynamic_roi_space()` method and define the desired range in it if you want values of the dynamic ROI parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 ## Show details of Hyperopt results
 

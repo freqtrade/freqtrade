@@ -191,6 +191,8 @@ class Hyperopt:
                               for p in self.hyperopt_space('sell')}
         if self.has_space('roi'):
             result['roi'] = self.custom_hyperopt.generate_roi_table(params)
+        if self.has_space('dynamic-roi'):
+            result['dynamic-roi'] = self.custom_hyperopt.generate_dynamic_roi_table(params)
         if self.has_space('stoploss'):
             result['stoploss'] = {p.name: params.get(p.name)
                                   for p in self.hyperopt_space('stoploss')}
@@ -217,7 +219,7 @@ class Hyperopt:
 
         if print_json:
             result_dict: Dict = {}
-            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+            for s in ['buy', 'sell', 'roi', 'dynamic-roi', 'stoploss', 'trailing']:
                 Hyperopt._params_update_for_json(result_dict, params, s)
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
@@ -225,6 +227,7 @@ class Hyperopt:
             Hyperopt._params_pretty_print(params, 'buy', "Buy hyperspace params:")
             Hyperopt._params_pretty_print(params, 'sell', "Sell hyperspace params:")
             Hyperopt._params_pretty_print(params, 'roi', "ROI table:")
+            Hyperopt._params_pretty_print(params, 'dynamic-roi', "Dynamic ROI table:")
             Hyperopt._params_pretty_print(params, 'stoploss', "Stoploss:")
             Hyperopt._params_pretty_print(params, 'trailing', "Trailing stop:")
 
@@ -245,6 +248,8 @@ class Hyperopt:
                 result_dict['minimal_roi'] = OrderedDict(
                     (str(k), v) for k, v in space_params.items()
                 )
+            elif space == 'dynamic-roi':
+                result_dict['dynamic_roi'] = space_params
             else:  # 'stoploss', 'trailing'
                 result_dict.update(space_params)
 
@@ -269,6 +274,9 @@ class Hyperopt:
                 for k, v in space_params.items():
                     params_result += f'{k} = {v}\n'
 
+            elif space == 'dynamic-roi':
+                params_result += f"dynamic_roi = {pformat(space_params, indent=4)}"
+                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
             else:
                 params_result += f"{space}_params = {pformat(space_params, indent=4)}"
                 params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
@@ -466,8 +474,8 @@ class Hyperopt:
         """
         Tell if the space value is contained in the configuration
         """
-        # The 'trailing' space is not included in the 'default' set of spaces
-        if space == 'trailing':
+        # The 'trailing' and 'dynamic-roi' space is not included in the 'default' set of spaces
+        if space == 'trailing' or space == 'dynamic-roi':
             return any(s in self.config['spaces'] for s in [space, 'all'])
         else:
             return any(s in self.config['spaces'] for s in [space, 'all', 'default'])
@@ -492,6 +500,10 @@ class Hyperopt:
         if space == 'roi' or (space is None and self.has_space('roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
+        
+        if space == 'dynamic-roi' or (space is None and self.has_space('dynamic-roi')):
+            logger.debug("Hyperopt has 'dynamic-roi' space")
+            spaces += self.custom_hyperopt.dynamic_roi_space()
 
         if space == 'stoploss' or (space is None and self.has_space('stoploss')):
             logger.debug("Hyperopt has 'stoploss' space")
@@ -514,6 +526,10 @@ class Hyperopt:
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore
                 self.custom_hyperopt.generate_roi_table(params_dict))
+        
+        if self.has_space('dynamic-roi'):
+            self.backtesting.strategy.dynamic_roi = (  # type: ignore
+                self.custom_hyperopt.generate_dynamic_roi_table(params_dict))
 
         if self.has_space('buy'):
             self.backtesting.strategy.advise_buy = (  # type: ignore

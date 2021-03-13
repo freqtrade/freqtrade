@@ -45,6 +45,7 @@ USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 
+DYNAMIC_ROI_TYPES = ['linear', 'exponential', 'connect']
 
 # Define decimals per coin for outputs
 # Only used for outputs.
@@ -124,6 +125,17 @@ CONF_SCHEMA = {
                 '^[0-9.]+$': {'type': 'number'}
             },
             'minProperties': 1
+        },
+        'dynamic_roi': {
+            'type': 'object',
+            'properties': {
+                'enabled': {'type': 'boolean'},
+                'type': {'type': 'string', 'enum': DYNAMIC_ROI_TYPES},
+                'decay-rate': {'type': 'number', 'minimum': 0.0001, 'maximum': 0.9},
+                'decay-time': {'type': 'integer', 'minimum': 1},
+                'start': {'type': 'number', 'minimum': 0.0, 'maximum': 1.0},
+                'end': {'type': 'number', 'minimum': 0.0}
+            }
         },
         'amount_reserve_percent': {'type': 'number', 'minimum': 0.0, 'maximum': 0.5},
         'stoploss': {'type': 'number', 'maximum': 0, 'exclusiveMaximum': True},
