@@ -706,7 +706,7 @@ def test_download_data_timerange(mocker, caplog, markets):
     start_download_data(get_args(args))
     assert dl_mock.call_count == 1
     # 20days ago
-    days_ago = arrow.get(arrow.utcnow().shift(days=-20).date()).int_timestamp
+    days_ago = arrow.get(arrow.now().shift(days=-20).date()).int_timestamp
     assert dl_mock.call_args_list[0][1]['timerange'].startts == days_ago
 
     dl_mock.reset_mock()
