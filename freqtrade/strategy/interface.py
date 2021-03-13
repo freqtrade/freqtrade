@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import arrow
+import numpy as np
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
@@ -636,38 +637,60 @@ class IStrategy(ABC):
         """
         dynamic_roi = self.dynamic_roi
         minimal_roi = self.minimal_roi
-        start, end = dynamic_roi['dynamic_roi_start'], dynamic_roi['dynamic_roi_end']
+        
+        if not dynamic_roi:
+            return None, None
 
-        # linear decay: f(t) = start - (rate * t)
-        if dynamic_roi['dynamic_roi_type'] == 'linear':
-            rate = (start - end) / dynamic_roi['dynamic_roi_time']
-            min_roi = max(end, start - (rate * trade_dur))
-        # exponential decay: f(t) = start * e^(-rate*t)
-        elif dynamic_roi['dynamic_roi_type'] == 'exponential':
-            min_roi = max(end, start * np.exp(-dynamic_roi['dynamic_roi_rate']*trade_dur))
-        elif dynamic_roi['dynamic_roi_type'] == 'connect':
-            # connect the points in the defined table with lines
-            past_roi = list(filter(lambda x: x <= trade_dur, minimal_roi.keys()))
-            next_roi = list(filter(lambda x: x >  trade_dur, minimal_roi.keys()))
-            if not past_roi:
-                return None, None
-            current_entry = max(past_roi)
-            # if we are past the final point in the table, use that key/vaule pair
-            if not next_roi:
-                return current_entry, minimal_roi[current_entry]
-            # use the slope-intercept formula between the two points in the roi table we are between
-            else:
+        if 'dynamic_roi_type' in dynamic_roi and dynamic_roi['dynamic_roi_type'] \
+                              in ['linear', 'exponential', 'connect']:
+            roi_type = dynamic_roi['dynamic_roi_type']
+            # linear decay: f(t) = start - (rate * t)
+            if roi_type == 'linear':
+                if 'dynamic_roi_start' in dynamic_roi and 'dynamic_roi_end' in dynamic_roi and \
+                   'dynamic_roi_time' in dynamic_roi:
+                    start = dynamic_roi['dynamic_roi_start']
+                    end   = dynamic_roi['dynamic_roi_end']
+                    time  = dynamic_roi['dynamic_roi_time']
+                    rate  = (start - end) / time
+                    min_roi = max(end, start - (rate * trade_dur))
+                    return trade_dur, min_roi
+                else:
+                    return None, None
+            # exponential decay: f(t) = start * e^(-rate*t)
+            elif roi_type == 'exponential':
+                if 'dynamic_roi_start' in dynamic_roi and 'dynamic_roi_end' in dynamic_roi and \
+                   'dynamic_roi_rate' in dynamic_roi:
+                    start = dynamic_roi['dynamic_roi_start']
+                    end   = dynamic_roi['dynamic_roi_end']
+                    rate  = dynamic_roi['dynamic_roi_rate']
+                    min_roi = max(end, start * np.exp(-rate*trade_dur))
+                    return trade_dur, min_roi
+                else:
+                    return None, None
+            # "connect the dots" between the points on the minima_roi table
+            elif roi_type == 'connect':
+                if not minimal_roi:
+                    return None, None
+                # figure out where we are in the defined roi table
+                past_roi = list(filter(lambda x: x <= trade_dur, minimal_roi.keys()))
+                next_roi = list(filter(lambda x: x >  trade_dur, minimal_roi.keys()))
+                # if we are past the final point in the table, use that key/vaule pair
+                if not past_roi:
+                    return None, None
+                current_entry = max(past_roi)
+                if not next_roi:
+                    return current_entry, minimal_roi[current_entry]
                 next_entry = min(next_roi)
+                # use the slope-intercept formula between the two points
                 # y = mx + b
                 x1, y1 = current_entry, minimal_roi[current_entry]
                 x2, y2 = next_entry, minimal_roi[next_entry]
                 m = (y1-y2)/(x1-x2)
                 b = (x1*y2 - x2*y1)/(x1-x2)
                 min_roi = (m * trade_dur) + b
+                return trade_dur, min_roi
         else:
             return None, None
-
-        return trade_dur, min_roi
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
@@ -691,7 +714,9 @@ class IStrategy(ABC):
         """
         # Check if time matches and current rate is above threshold
         trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
-        if self.dynamic_roi and self.dynamic_roi['dynamic_roi_enabled']:
+        
+        if self.dynamic_roi and 'dynamic_roi_enabled' in self.dynamic_roi \
+                            and self.dynamic_roi['dynamic_roi_enabled']:
             _, roi = self.min_roi_reached_dynamic(trade_dur)
         else:
             _, roi = self.min_roi_reached_entry(trade_dur)
