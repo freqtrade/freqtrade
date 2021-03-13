@@ -6,7 +6,7 @@ from copy import deepcopy
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, Mock, PropertyMock
 
 import arrow
 import numpy as np
@@ -62,6 +62,14 @@ def log_has_re(line, logs):
 
 def get_args(args):
     return Arguments(args).get_parsed_arg()
+
+
+# Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
+def get_mock_coro(return_value):
+    async def mock_coro(*args, **kwargs):
+        return return_value
+
+    return Mock(wraps=mock_coro)
 
 
 def patched_configuration_load_config_file(mocker, config) -> None:
@@ -1736,7 +1744,7 @@ def import_fails() -> None:
     realimport = builtins.__import__
 
     def mockedimport(name, *args, **kwargs):
-        if name in ["filelock", 'systemd.journal']:
+        if name in ["filelock", 'systemd.journal', 'uvloop']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
 
