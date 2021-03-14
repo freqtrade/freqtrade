@@ -473,7 +473,7 @@ def test_format_results(hyperopt):
 
 @pytest.mark.parametrize("spaces, expected_results", [
     (['buy'],
-     {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False, 
+     {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
       'dynamic-roi': False}),
     (['sell'],
      {'buy': False, 'sell': True, 'roi': False, 'stoploss': False, 'trailing': False,
@@ -491,7 +491,7 @@ def test_format_results(hyperopt):
      {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
       'dynamic-roi': True}),
     (['buy', 'sell', 'roi', 'stoploss'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False, 
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
       'dynamic-roi': False}),
     (['buy', 'sell', 'roi', 'stoploss', 'trailing'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
