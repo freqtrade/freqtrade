@@ -643,14 +643,23 @@ In order to use these best dynamic ROI parameters found by Hyperopt in backtesti
 If you are optimizing dynamic ROI values, Freqtrade creates the 'dynamic-roi' optimization hyperspace for you. By default, the `enabled` parameter will try both True and False values. The value the `type` vary between `linear`, `exponential`, and `connect`. 
 
 Other values have default ranges of:
+
 | Param      | Range       |
 |------------|-------------|
-| decay-time | 180..1440   |
 | decay-rate | 0.001..0.03 |
 | start      | 0.05..0.25  |
 | end        | 0..0.005    |
 
-Override the `dynamic_roi_space()` method and define the desired range in it if you want values of the dynamic ROI parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
+Just as the standard ROI table, the time decay value (in minutes) has a range which varies based on your candle size, for example:
+
+| Candle   | Range         |
+|----------|---------------|
+| 1m       | 30..144       |
+| 5m       | 150..720      |
+| 1h       | 1800..8640    |
+| 1d       | 3456..207360  |
+
+It is **highly** recommended to override the `dynamic_roi_space()` method and define the desired ranges in it if you want values of the dynamic ROI parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 ## Show details of Hyperopt results
 

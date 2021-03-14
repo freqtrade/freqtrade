@@ -637,21 +637,21 @@ class IStrategy(ABC):
         """
         dynamic_roi = self.dynamic_roi
         minimal_roi = self.minimal_roi
-        
+
         if not dynamic_roi:
             return None, None
 
         if 'dynamic_roi_type' in dynamic_roi and dynamic_roi['dynamic_roi_type'] \
-                              in ['linear', 'exponential', 'connect']:
+           in ['linear', 'exponential', 'connect']:
             roi_type = dynamic_roi['dynamic_roi_type']
             # linear decay: f(t) = start - (rate * t)
             if roi_type == 'linear':
                 if 'dynamic_roi_start' in dynamic_roi and 'dynamic_roi_end' in dynamic_roi and \
                    'dynamic_roi_time' in dynamic_roi:
                     start = dynamic_roi['dynamic_roi_start']
-                    end   = dynamic_roi['dynamic_roi_end']
-                    time  = dynamic_roi['dynamic_roi_time']
-                    rate  = (start - end) / time
+                    end = dynamic_roi['dynamic_roi_end']
+                    time = dynamic_roi['dynamic_roi_time']
+                    rate = (start - end) / time
                     min_roi = max(end, start - (rate * trade_dur))
                     return trade_dur, min_roi
                 else:
@@ -661,8 +661,8 @@ class IStrategy(ABC):
                 if 'dynamic_roi_start' in dynamic_roi and 'dynamic_roi_end' in dynamic_roi and \
                    'dynamic_roi_rate' in dynamic_roi:
                     start = dynamic_roi['dynamic_roi_start']
-                    end   = dynamic_roi['dynamic_roi_end']
-                    rate  = dynamic_roi['dynamic_roi_rate']
+                    end = dynamic_roi['dynamic_roi_end']
+                    rate = dynamic_roi['dynamic_roi_rate']
                     min_roi = max(end, start * np.exp(-rate*trade_dur))
                     return trade_dur, min_roi
                 else:
@@ -673,7 +673,7 @@ class IStrategy(ABC):
                     return None, None
                 # figure out where we are in the defined roi table
                 past_roi = list(filter(lambda x: x <= trade_dur, minimal_roi.keys()))
-                next_roi = list(filter(lambda x: x >  trade_dur, minimal_roi.keys()))
+                next_roi = list(filter(lambda x: x > trade_dur, minimal_roi.keys()))
                 # if we are past the final point in the table, use that key/vaule pair
                 if not past_roi:
                     return None, None
@@ -714,9 +714,9 @@ class IStrategy(ABC):
         """
         # Check if time matches and current rate is above threshold
         trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
-        
+
         if self.dynamic_roi and 'dynamic_roi_enabled' in self.dynamic_roi \
-                            and self.dynamic_roi['dynamic_roi_enabled']:
+           and self.dynamic_roi['dynamic_roi_enabled']:
             _, roi = self.min_roi_reached_dynamic(trade_dur)
         else:
             _, roi = self.min_roi_reached_entry(trade_dur)

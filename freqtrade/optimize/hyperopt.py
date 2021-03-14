@@ -500,7 +500,7 @@ class Hyperopt:
         if space == 'roi' or (space is None and self.has_space('roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
-        
+
         if space == 'dynamic-roi' or (space is None and self.has_space('dynamic-roi')):
             logger.debug("Hyperopt has 'dynamic-roi' space")
             spaces += self.custom_hyperopt.dynamic_roi_space()
@@ -526,7 +526,7 @@ class Hyperopt:
         if self.has_space('roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore
                 self.custom_hyperopt.generate_roi_table(params_dict))
-        
+
         if self.has_space('dynamic-roi'):
             self.backtesting.strategy.dynamic_roi = (  # type: ignore
                 self.custom_hyperopt.generate_dynamic_roi_table(params_dict))

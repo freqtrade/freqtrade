@@ -238,14 +238,14 @@ class IHyperOpt(ABC):
         Create a dynamic ROI space.
 
         You may override it in your custom Hyperopt class.
-        """        
+        """
         # Time and percentage scaling are the same as in roi_space()
         # Refer to the notes there for additional details
         roi_t_alpha = 1.0
         timeframe_min = timeframe_to_minutes(IHyperOpt.ticker_interval)
         roi_t_scale = timeframe_min / 5
 
-        # scaled range in minutes 
+        # scaled range in minutes
         # candle    min    max
         # 1m        30     144
         # 5m        150    720
@@ -262,7 +262,6 @@ class IHyperOpt(ABC):
             Real(0.05, 0.25, name='dynamic_roi_start'),
             Real(0, 0.005, name='dynamic_roi_end')
         ]
-
 
     # This is needed for proper unpickling the class attribute ticker_interval
     # which is set to the actual value by the resolver.

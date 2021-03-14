@@ -275,10 +275,10 @@ class AdvancedSampleHyperOpt(IHyperOpt):
 
         You may override it in your custom Hyperopt class.
 
-        If you are reducing the types, you may also remove the parameters that will not be used on the 
-        reduced scope.  For example, if you reduce the types to only 'connect' you do not need to specify
-        the ranges for decay-rate, decay-time, start, or end.
-        """        
+        If you are reducing the types, you may also remove the parameters that will not be used on
+        the reduced scope.  For example, if you reduce the types to only 'connect' you do not
+        need to specify the ranges for decay-rate, decay-time, start, or end.
+        """
         return [
             Categorical([True, False], name='dynamic_roi_enabled'),
             Categorical(['linear', 'exponential', 'connect'], name='dynamic_roi_type'),
