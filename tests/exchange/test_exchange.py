@@ -2268,11 +2268,19 @@ def test_get_fee(default_conf, mocker, exchange_name):
         'cost': 0.05
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._config.pop('fee', None)
 
     assert exchange.get_fee('ETH/BTC') == 0.025
+    assert api_mock.calculate_fee.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_fee', 'calculate_fee', symbol="ETH/BTC")
+
+    api_mock.calculate_fee.reset_mock()
+    exchange._config['fee'] = 0.001
+
+    assert exchange.get_fee('ETH/BTC') == 0.001
+    assert api_mock.calculate_fee.call_count == 0
 
 
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):

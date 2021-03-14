@@ -14,7 +14,7 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", ]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
 ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee"]

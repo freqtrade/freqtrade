@@ -1232,6 +1232,8 @@ class Exchange:
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+                return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets()
