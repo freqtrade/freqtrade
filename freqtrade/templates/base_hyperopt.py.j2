@@ -40,6 +40,15 @@ class {{ hyperopt }}(IHyperOpt):
     """
 
     @staticmethod
+    def indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching buy strategy parameters.
+        """
+        return [
+            {{ buy_space | indent(12) }}
+        ]
+
+    @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Define the buy strategy parameters to be used by Hyperopt.
@@ -79,12 +88,12 @@ class {{ hyperopt }}(IHyperOpt):
         return populate_buy_trend
 
     @staticmethod
-    def indicator_space() -> List[Dimension]:
+    def sell_indicator_space() -> List[Dimension]:
         """
-        Define your Hyperopt space for searching buy strategy parameters.
+        Define your Hyperopt space for searching sell strategy parameters.
         """
         return [
-            {{ buy_space | indent(12) }}
+            {{ sell_space | indent(12) }}
         ]
 
     @staticmethod
@@ -126,11 +135,3 @@ class {{ hyperopt }}(IHyperOpt):
 
         return populate_sell_trend
 
-    @staticmethod
-    def sell_indicator_space() -> List[Dimension]:
-        """
-        Define your Hyperopt space for searching sell strategy parameters.
-        """
-        return [
-            {{ sell_space | indent(12) }}
-        ]
