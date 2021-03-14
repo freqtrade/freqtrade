@@ -41,6 +41,13 @@ class {{ strategy }}(IStrategy):
         "0": 0.04
     }
 
+    # Dynamic ROI - It is not recommended to enable this without first fully
+    # reading the documentation.
+    # This attribute will be overridden if the config file contains "minimal_roi".
+    dynamic_roi = {
+        'dynamic_roi_enabled': False
+    }
+
     # Optimal stoploss designed for the strategy.
     # This attribute will be overridden if the config file contains "stoploss".
     stoploss = -0.10
