@@ -301,6 +301,7 @@ class Backtesting:
                     trade.close_date = sell_row[DATE_IDX]
                     trade.sell_reason = SellType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
+                    LocalTrade.close_bt_trade(trade)
                     # Deepcopy object to have wallets update correctly
                     trade1 = deepcopy(trade)
                     trade1.is_open = True
