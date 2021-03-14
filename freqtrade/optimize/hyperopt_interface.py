@@ -217,7 +217,7 @@ class IHyperOpt(ABC):
         ]
 
     @staticmethod
-    def generate_dynamic_roi_table(params: Dict) -> Dict[int, float]:
+    def generate_dynamic_roi_table(params: Dict) -> Dict:
         """
         Create a dynamic_roi table.
         """

@@ -82,6 +82,9 @@ class IStrategy(ABC):
     # associated minimal roi
     minimal_roi: Dict
 
+    # associated dynamic roi
+    dynamic_roi: Dict
+
     # associated stoploss
     stoploss: float
 
@@ -653,7 +656,6 @@ class IStrategy(ABC):
                     time = dynamic_roi['dynamic_roi_time']
                     rate = (start - end) / time
                     min_roi = max(end, start - (rate * trade_dur))
-                    return trade_dur, min_roi
                 else:
                     return None, None
             # exponential decay: f(t) = start * e^(-rate*t)
@@ -664,7 +666,6 @@ class IStrategy(ABC):
                     end = dynamic_roi['dynamic_roi_end']
                     rate = dynamic_roi['dynamic_roi_rate']
                     min_roi = max(end, start * np.exp(-rate*trade_dur))
-                    return trade_dur, min_roi
                 else:
                     return None, None
             # "connect the dots" between the points on the minima_roi table
@@ -688,9 +689,10 @@ class IStrategy(ABC):
                 m = (y1-y2)/(x1-x2)
                 b = (x1*y2 - x2*y1)/(x1-x2)
                 min_roi = (m * trade_dur) + b
-                return trade_dur, min_roi
         else:
             return None, None
+
+        return trade_dur, min_roi
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
