@@ -102,7 +102,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -194,7 +194,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -257,7 +257,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -288,7 +288,7 @@ jobs:
         mkdocs build
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -311,7 +311,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -398,7 +398,7 @@ jobs:
 
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
