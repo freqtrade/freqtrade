@@ -32,7 +32,6 @@ from freqtrade.strategy.interface import IStrategy, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -206,11 +205,11 @@ class FreqtradeBot(LoggingMixin):
         if len(open_trades) != 0:
             msg = {
                 'type': RPCMessageType.WARNING_NOTIFICATION,
-                'status':  f"{len(open_trades)} open trades active.\n\n"
-                           f"Handle these trades manually on {self.exchange.name}, "
-                           f"or '/start' the bot again and use '/stopbuy' "
-                           f"to handle open trades gracefully. \n"
-                           f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+                'status': f"{len(open_trades)} open trades active.\n\n"
+                          f"Handle these trades manually on {self.exchange.name}, "
+                          f"or '/start' the bot again and use '/stopbuy' "
+                          f"to handle open trades gracefully. \n"
+                          f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
             }
             self.rpc.send_msg(msg)
 
@@ -349,9 +348,9 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError:
                 logger.warning(f"Error updating {order.order_id}.")
 
-#
-# BUY / enter positions / open trades logic and methods
-#
+    #
+    # BUY / enter positions / open trades logic and methods
+    #
 
     def enter_positions(self) -> int:
         """
@@ -423,7 +422,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning(
                     "Buy Price from orderbook could not be determined."
                     f"Orderbook: {order_book}"
-                 )
+                )
                 raise PricingError from e
             logger.info(f'...top {order_book_top} order book buy rate {rate_from_l2:.8f}')
             used_rate = rate_from_l2
@@ -678,9 +677,9 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-#
-# SELL / exit positions / close trades logic and methods
-#
+    #
+    # SELL / exit positions / close trades logic and methods
+    #
 
     def exit_positions(self, trades: List[Any]) -> int:
         """
@@ -988,12 +987,12 @@ class FreqtradeBot(LoggingMixin):
                 self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
-                  fully_cancelled
-                  or self._check_timed_out('sell', order)
-                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,
-                                           default_retval=False)(pair=trade.pair,
-                                                                 trade=trade,
-                                                                 order=order))):
+                    fully_cancelled
+                    or self._check_timed_out('sell', order)
+                    or strategy_safe_wrapper(self.strategy.check_sell_timeout,
+                                             default_retval=False)(pair=trade.pair,
+                                                                   trade=trade,
+                                                                   order=order))):
                 self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
     def cancel_all_open_orders(self) -> None:
@@ -1141,18 +1140,13 @@ class FreqtradeBot(LoggingMixin):
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
-        if sell_reason == SellType.STOP_LOSS:
+        if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
-        elif sell_reason == SellType.TRAILING_STOP_LOSS:
-            if 'trailing_stop_loss' in self.strategy.order_types:
-                sell_type = 'trailing_stop_loss'
-            else:
-                sell_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
         if self.config['dry_run'] and sell_type == 'stoploss' \
-           and self.strategy.order_types['stoploss_on_exchange']:
+                and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
         # First cancelling stoploss on exchange ...
@@ -1163,10 +1157,13 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = self.strategy.order_types[sell_type]
-        if sell_reason == SellType.EMERGENCY_SELL:
+
+        if sell_reason == SellType.TRAILING_STOP_LOSS:
+            order_type = self.strategy.order_types.get("trailing_stop_loss", order_type)
+        elif sell_reason == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if sell_reason == SellType.FORCE_SELL:
+        elif sell_reason == SellType.FORCE_SELL:
             # Force sells (default to the sell_type defined in the strategy,
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
@@ -1297,9 +1294,9 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-#
-# Common update trade state methods
-#
+    #
+    # Common update trade state methods
+    #
 
     def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
                            stoploss_order: bool = False) -> bool:
