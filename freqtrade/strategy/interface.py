@@ -100,6 +100,7 @@ class IStrategy(ABC):
         'buy': 'limit',
         'sell': 'limit',
         'stoploss': 'limit',
+        'trailing_stop_loss': 'limit',
         'stoploss_on_exchange': False,
         'stoploss_on_exchange_interval': 60,
     }

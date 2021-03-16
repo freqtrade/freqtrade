@@ -1141,8 +1141,10 @@ class FreqtradeBot(LoggingMixin):
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
-        if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell_reason == SellType.STOP_LOSS:
             sell_type = 'stoploss'
+        elif sell_reason == SellType.TRAILING_STOP_LOSS:
+            sell_type = 'trailing_stop_loss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
