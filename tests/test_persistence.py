@@ -1066,8 +1066,14 @@ def test_get_trades_proxy(fee, use_db):
 
     assert isinstance(trades[0], Trade)
 
-    assert len(Trade.get_trades_proxy(is_open=True)) == 4
-    assert len(Trade.get_trades_proxy(is_open=False)) == 2
+    trades = Trade.get_trades_proxy(is_open=True)
+    assert len(trades) == 4
+    assert trades[0].is_open
+    trades = Trade.get_trades_proxy(is_open=False)
+
+    assert len(trades) == 2
+    assert not trades[0].is_open
+
     opendate = datetime.now(tz=timezone.utc) - timedelta(minutes=15)
 
     assert len(Trade.get_trades_proxy(open_date=opendate)) == 3
