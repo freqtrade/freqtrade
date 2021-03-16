@@ -280,13 +280,13 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `trailing_stop_loss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
-limit-orders, and create stoplosses using market orders. It also allows to set the
+limit-orders, and create stoplosses or trailing_stop_loss using market orders. It also allows to set the
 stoploss "on exchange" which means stoploss order would be placed immediately once
 the buy order is fulfilled.
     
 `order_types` set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole `order_types` dictionary in one place.
 
-If this is configured, the following 5 values (`buy`, `sell`, `stoploss`, `trailing_stop_loss` and
+If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will fail to start.
 
 For information on (`emergencysell`,`forcesell`, `forcebuy`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)

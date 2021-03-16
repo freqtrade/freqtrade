@@ -1144,7 +1144,10 @@ class FreqtradeBot(LoggingMixin):
         if sell_reason == SellType.STOP_LOSS:
             sell_type = 'stoploss'
         elif sell_reason == SellType.TRAILING_STOP_LOSS:
-            sell_type = 'trailing_stop_loss'
+            if 'trailing_stop_loss' in self.strategy.order_types:
+                sell_type = 'trailing_stop_loss'
+            else:
+                sell_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
