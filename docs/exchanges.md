@@ -118,3 +118,23 @@ Whether your exchange returns incomplete candles or not can be checked using [th
 Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
 However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.
+
+### Advanced Freqtrade Exchange configuration
+
+Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behavior.
+
+Available options are listed in the exchange-class as `_ft_has_default`.
+
+For example, to test the order type `FOK` with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):
+
+```json
+"exchange": {
+    "name": "kraken",
+    "_ft_has_params": {
+        "order_time_in_force": ["gtc", "fok"],
+        "ohlcv_candle_limit": 200
+        }
+```
+
+!!! Warning
+    Please make sure to fully understand the impacts of these settings before modifying them.
