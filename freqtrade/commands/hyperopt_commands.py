@@ -17,7 +17,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
-    from freqtrade.optimize.hyperopt import Hyperopt
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -47,7 +47,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         config.get('hyperoptexportfilename'))
 
     # Previous evaluations
-    epochs = Hyperopt.load_previous_results(results_file)
+    epochs = HyperoptTools.load_previous_results(results_file)
     total_epochs = len(epochs)
 
     epochs = hyperopt_filter_epochs(epochs, filteroptions)
@@ -57,18 +57,19 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     if not export_csv:
         try:
-            print(Hyperopt.get_result_table(config, epochs, total_epochs,
-                                            not filteroptions['only_best'], print_colorized, 0))
+            print(HyperoptTools.get_result_table(config, epochs, total_epochs,
+                                                 not filteroptions['only_best'],
+                                                 print_colorized, 0))
         except KeyboardInterrupt:
             print('User interrupted..')
 
     if epochs and not no_details:
         sorted_epochs = sorted(epochs, key=itemgetter('loss'))
         results = sorted_epochs[0]
-        Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
+        HyperoptTools.print_epoch_details(results, total_epochs, print_json, no_header)
 
     if epochs and export_csv:
-        Hyperopt.export_csv_file(
+        HyperoptTools.export_csv_file(
             config, epochs, total_epochs, not filteroptions['only_best'], export_csv
         )
 
@@ -77,7 +78,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     """
     Show details of a hyperopt epoch previously evaluated
     """
-    from freqtrade.optimize.hyperopt import Hyperopt
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -105,7 +106,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     }
 
     # Previous evaluations
-    epochs = Hyperopt.load_previous_results(results_file)
+    epochs = HyperoptTools.load_previous_results(results_file)
     total_epochs = len(epochs)
 
     epochs = hyperopt_filter_epochs(epochs, filteroptions)
@@ -124,8 +125,8 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     if epochs:
         val = epochs[n]
-        Hyperopt.print_epoch_details(val, total_epochs, print_json, no_header,
-                                     header_str="Epoch details")
+        HyperoptTools.print_epoch_details(val, total_epochs, print_json, no_header,
+                                          header_str="Epoch details")
 
 
 def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:

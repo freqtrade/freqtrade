@@ -16,6 +16,7 @@ from freqtrade.commands.optimize_commands import setup_optimize_configuration, s
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
@@ -336,9 +337,9 @@ def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> Non
 
 def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
-    hyperopt_epochs = hyperopt._read_results(results_file)
+    hyperopt_epochs = HyperoptTools._read_results(results_file)
     assert log_has(f"Reading epochs from '{results_file}'", caplog)
     assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
@@ -346,7 +347,7 @@ def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> N
 
 def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
     mocker.patch.object(Path, 'is_file', MagicMock(return_value=True))
     statmock = MagicMock()
     statmock.st_size = 5
@@ -354,16 +355,16 @@ def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
 
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
 
-    hyperopt_epochs = hyperopt.load_previous_results(results_file)
+    hyperopt_epochs = HyperoptTools.load_previous_results(results_file)
 
     assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
 
     del epochs[0]['is_best']
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
 
     with pytest.raises(OperationalException):
-        hyperopt.load_previous_results(results_file)
+        HyperoptTools.load_previous_results(results_file)
 
 
 def test_roi_table_generation(hyperopt) -> None:
@@ -453,7 +454,7 @@ def test_format_results(hyperopt):
         'is_initial_point': True,
     }
 
-    result = hyperopt._format_explanation_string(results, 1)
+    result = HyperoptTools._format_explanation_string(results, 1)
     assert result.find(' 66.67%')
     assert result.find('Total profit 1.00000000 BTC')
     assert result.find('2.0000Σ %')
@@ -467,7 +468,7 @@ def test_format_results(hyperopt):
     df = pd.DataFrame.from_records(trades, columns=labels)
     results_metrics = hyperopt._calculate_results_metrics(df)
     results['total_profit'] = results_metrics['total_profit']
-    result = hyperopt._format_explanation_string(results, 1)
+    result = HyperoptTools._format_explanation_string(results, 1)
     assert result.find('Total profit 1.00000000 EUR')
 
 
@@ -1076,7 +1077,7 @@ def test_print_epoch_details(capsys):
         'is_best': True
     }
 
-    Hyperopt.print_epoch_details(test_result, 5, False, no_header=True)
+    HyperoptTools.print_epoch_details(test_result, 5, False, no_header=True)
     captured = capsys.readouterr()
     assert '# Trailing stop:' in captured.out
     # re.match(r"Pairs for .*", captured.out)
