@@ -65,12 +65,21 @@ def stoploss_from_open(open_relative_stop: float, current_profit: float) -> floa
     return a stop loss value that is relative to the current price, and which can be
     returned from `custom_stoploss`.
 
-    :param open_relative_stop: Desired stop loss value relative to open price
+    The requested stop can be positive for a stop above the open price, or negative for
+    a stop below the open price. The return value is always >= 0.
+
+    Returns 0 if the resulting stop price would be above the current price.
+
+    :param open_relative_stop: Desired stop loss percentage relative to open price
     :param current_profit: The current profit percentage
-    :return: Stop loss value relative to current price
+    :return: Positive stop loss value relative to current price
     """
 
+    # formula is undefined for current_profit -1, return maximum value
     if current_profit == -1:
         return 1
 
-    return 1-((1+open_relative_stop)/(1+current_profit))
+    stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+
+    # negative stoploss values indicate the requested stop price is higher than the current price
+    return max(stoploss, 0.0)
