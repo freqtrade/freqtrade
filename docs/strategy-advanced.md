@@ -181,17 +181,9 @@ class AwesomeStrategy(IStrategy):
 
 #### Calculating stoploss relative to open price
 
-Stoploss values returned from `custom_stoploss` always specify a percentage relative to `current_rate`.  In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`.  In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
 
-This can be calculated as:
-
-``` python
-def stoploss_from_open(open_relative_stop: float, current_profit: float) -> float:
-    return 1-((1+open_relative_stop)/(1+current_profit))
-
-```
-
-For example, say our open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).  If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, 0.21)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
 
 #### Trailing stoploss with positive offset
 
@@ -201,9 +193,7 @@ Use the initial stoploss until the profit is above 4%, then use a trailing stopl
 ``` python
 from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
-
-def stoploss_from_open(open_relative_stop: float, current_profit: float) -> float:
-    return 1-((1+open_relative_stop)/(1+current_profit))
+from freqtrade.strategy import stoploss_from_open
 
 class AwesomeStrategy(IStrategy):
 
@@ -237,9 +227,7 @@ Instead of continuously trailing behind the current price, this example sets fix
 ``` python
 from datetime import datetime
 from freqtrade.persistence import Trade
-
-def stoploss_from_open(open_relative_stop: float, current_profit: float) -> float:
-    return 1-((1+open_relative_stop)/(1+current_profit))
+from freqtrade.strategy import stoploss_from_open
 
 class AwesomeStrategy(IStrategy):
 
@@ -290,7 +278,7 @@ class AwesomeStrategy(IStrategy):
             # using current_time directly (like below) will only work in backtesting.
             # so check "runmode" to make sure that it's only used in backtesting/hyperopt
             if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
-              relative_sl = self.custom_info[pair].loc[current_time]['atr]
+              relative_sl = self.custom_info[pair].loc[current_time]['atr']
             # in live / dry-run, it'll be really the current time
             else:
               # but we can just use the last entry from an already analyzed dataframe instead
