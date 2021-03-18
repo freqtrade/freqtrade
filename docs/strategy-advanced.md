@@ -71,12 +71,13 @@ See `custom_stoploss` examples below on how to access the saved dataframe column
 
 ## Custom stoploss
 
-A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
-Also, the traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
-The method must return a stoploss value (float / number) with a relative ratio below the current price.
-E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
+The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
+
+The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
@@ -206,18 +207,26 @@ class AwesomeStrategy(IStrategy):
         return max(min(desired_stoploss, 0.05), 0.025)
 ```
 
-#### Absolute stoploss
+#### Calculating stoploss relative to open price
 
-The below example sets absolute profit levels based on the current profit.
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
+
+#### Stepped stoploss
+
+Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.
 
 * Use the regular stoploss until 20% profit is reached
-* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
-* Once profit is > 25% - stoploss will be 15%.
-* Once profit is > 20% - stoploss will be set to 7%.
+* Once profit is > 20% - set stoploss to 7% above open price.
+* Once profit is > 25% - set stoploss to 15% above open price.
+* Once profit is > 40% - set stoploss to 25% above open price.
+
 
 ``` python
 from datetime import datetime
 from freqtrade.persistence import Trade
+from freqtrade.strategy import stoploss_from_open
 
 class AwesomeStrategy(IStrategy):
 
@@ -228,13 +237,15 @@ class AwesomeStrategy(IStrategy):
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
-        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
+        # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
-            return (-0.25 + current_profit)
-        if current_profit > 0.25:
-            return (-0.15 + current_profit)
-        if current_profit > 0.20:
-            return (-0.07 + current_profit)
+            return stoploss_from_open(0.25, current_profit)
+        elif current_profit > 0.25:
+            return stoploss_from_open(0.15, current_profit)
+        elif current_profit > 0.20:
+            return stoploss_from_open(0.07, current_profit)
+
+        # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
 ```
 #### Custom stoploss using an indicator from dataframe example
@@ -266,7 +277,7 @@ class AwesomeStrategy(IStrategy):
             # using current_time directly (like below) will only work in backtesting.
             # so check "runmode" to make sure that it's only used in backtesting/hyperopt
             if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
-              relative_sl = self.custom_info[pair].loc[current_time]['atr]
+              relative_sl = self.custom_info[pair].loc[current_time]['atr']
             # in live / dry-run, it'll be really the current time
             else:
               # but we can just use the last entry from an already analyzed dataframe instead
