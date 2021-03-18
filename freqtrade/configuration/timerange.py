@@ -104,6 +104,6 @@ class TimeRange:
                     else:
                         stop = int(stops)
                 if start > stop > 0:
-                    raise Exception('Start date is after stop date for timerange "%s"' % text)      
+                    raise Exception('Start date is after stop date for timerange "%s"' % text)
                 return TimeRange(stype[0], stype[1], start, stop)
         raise Exception('Incorrect syntax for timerange "%s"' % text)
