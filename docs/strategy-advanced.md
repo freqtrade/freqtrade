@@ -178,17 +178,15 @@ class AwesomeStrategy(IStrategy):
         return -0.15
 ```
 
-
 #### Calculating stoploss relative to open price
 
-Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`.  In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
 
 The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
 
 #### Trailing stoploss with positive offset
 
 Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.
-
 
 ``` python
 from datetime import datetime, timedelta

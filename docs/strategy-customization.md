@@ -600,9 +600,9 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
     ``` python
 
-    from freqtrade.strategy import IStrategy, stoploss_from_open
     from datetime import datetime
     from freqtrade.persistence import Trade
+    from freqtrade.strategy import IStrategy, stoploss_from_open
 
     class AwesomeStrategy(IStrategy):
 
@@ -621,6 +621,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
     ```
 
+    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
 
 
 ## Additional data (Wallets)
