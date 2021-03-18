@@ -204,7 +204,7 @@ class AwesomeStrategy(IStrategy):
         desired_stoploss = current_profit / 2
 
         # Use a minimum of 2.5% and a maximum of 5%
-        return max(min(desired_stoploss, 0.05), 0.025
+        return max(min(desired_stoploss, 0.05), 0.025)
 ```
 
 #### Calculating stoploss relative to open price
