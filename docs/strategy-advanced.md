@@ -178,20 +178,15 @@ class AwesomeStrategy(IStrategy):
         return -0.15
 ```
 
-#### Calculating stoploss relative to open price
-
-Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
-
-The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
-
 #### Trailing stoploss with positive offset
 
 Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.
 
+Please note that the stoploss can only increase, values lower than the current stoploss are ignored.
+
 ``` python
 from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
-from freqtrade.strategy import stoploss_from_open
 
 class AwesomeStrategy(IStrategy):
 
@@ -203,14 +198,20 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit < 0.04:
-            return 1 # return a value bigger than the inital stoploss to keep using the inital stoploss
+            return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
-        # Use a minimum of 2.5% and a maximum of 5%
-        desired_stop_from_open = max(min(current_profit / 2, 0.05), 0.025)
+        desired_stoploss = current_profit / 2
 
-        return stoploss_from_open(desired_stop_from_open, current_profit)
+        # Use a minimum of 2.5% and a maximum of 5%
+        return max(min(desired_stoploss, 0.05), 0.025
 ```
+
+#### Calculating stoploss relative to open price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
 
 #### Stepped stoploss
 
