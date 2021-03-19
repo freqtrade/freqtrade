@@ -1,0 +1,136 @@
+
+   172/300:      9 trades. 6/3/0 Wins/Draws/Losses. Avg profit   1.45%. Median profit   0.93%. Total profit  0.13055133 USDT (  13.04Σ%). Avg duration  77.0 min. Objective: 0.95653
+
+
+    # Buy hyperspace params:
+    buy_params = {
+        'angle_long-enabled': True,
+        'angle_long-value': -8,
+        'angle_mid-enabled': True,
+        'angle_mid-value': -27,
+        'angle_short-enabled': True,
+        'angle_short-value': 10,
+        'cci-enabled': False,
+        'cci-value': -59,
+        'correl_angle_long_close-enabled': True,
+        'correl_angle_long_close-value': 0.21787,
+        'correl_angle_mid_close-enabled': True,
+        'correl_angle_mid_close-value': 0.44494,
+        'correl_angle_short_close-enabled': False,
+        'correl_angle_short_close-value': -0.9378,
+        'correl_close_last_close-enabled': False,
+        'correl_close_last_close-value': 0.06954,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value': 0.75227,
+        'correl_hist_close-enabled': False,
+        'correl_hist_close-value': 0.59611,
+        'correl_ht_sine_close-enabled': False,
+        'correl_ht_sine_close-value': 0.64922,
+        'correl_mfi_close-enabled': True,
+        'correl_mfi_close-value': -0.97597,
+        'correl_tsf_long_close-enabled': False,
+        'correl_tsf_long_close-value': 0.0799,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value': 0.46867,
+        'correl_tsf_short_close-enabled': False,
+        'correl_tsf_short_close-value': 0.27662,
+        'ema-enabled': False,
+        'ema-value': 15,
+        'ema_bol-enabled': False,
+        'ema_bol-value': 9,
+        'ht_phase-enabled': False,
+        'ht_phase1-value': -36,
+        'ht_phase2-value': 255,
+        'ht_trendline-enabled': False,
+        'ht_trendline-value': -0.02648,
+        'ht_trendmode-enabled': False,
+        'ht_trendmode-value': 0,
+        'inphase-enabled': True,
+        'inphase-value': -0.03953,
+        'macd-enabled': True,
+        'macdhist-value': 0.23545,
+        'mfi-enabled': True,
+        'mfi-value': 57,
+        'trigger': 'cci',
+        'tsf_long-enabled': True,
+        'tsf_long-value': -3,
+        'tsf_mid-enabled': False,
+        'tsf_mid-value': -98,
+        'tsf_short-enabled': False,
+        'tsf_short-value': -22
+    }
+
+    # Sell hyperspace params:
+    sell_params = {
+        'angle_long-enabled': True,
+        'angle_long-value_sell': -19,
+        'angle_mid-enabled': True,
+        'angle_mid-value_sell': 30,
+        'angle_short-enabled': True,
+        'angle_short-value_sell': -9,
+        'cci-enabled': False,
+        'cci-value_sell': -83,
+        'correl_angle_long_close-enabled': True,
+        'correl_angle_long_close-value_sell': 0.2552,
+        'correl_angle_mid_close-enabled': True,
+        'correl_angle_mid_close-value_sell': 0.46789,
+        'correl_angle_short_close-enabled': False,
+        'correl_angle_short_close-value_sell': 0.57124,
+        'correl_close_last_close-enabled': False,
+        'correl_close_last_close-value_sell': 0.65996,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value_sell': 0.41353,
+        'correl_hist_close-enabled': False,
+        'correl_hist_close-value_sell': -0.98429,
+        'correl_ht_sine_close-enabled': False,
+        'correl_ht_sine_close-value_sell': 0.66294,
+        'correl_mfi_close-enabled': True,
+        'correl_mfi_close-value_sell': -0.4065,
+        'correl_tsf_long_close-enabled': False,
+        'correl_tsf_long_close-value_sell': -0.99299,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value_sell': 0.5597,
+        'correl_tsf_short_close-enabled': False,
+        'correl_tsf_short_close-value_sell': -0.9004,
+        'ema-enabled': False,
+        'ema-value_sell': 24,
+        'ema_bol-enabled': False,
+        'ema_bol-value_sell': 19,
+        'ht_phase-enabled': False,
+        'ht_phase1-value_sell': 228,
+        'ht_phase2-value_sell': -19,
+        'ht_trendline-enabled': False,
+        'ht_trendline-value_sell': -0.01794,
+        'ht_trendmode-enabled': False,
+        'ht_trendmode-value_sell': 0,
+        'inphase-enabled': True,
+        'inphase-value_sell': 0.00585,
+        'macd-enabled': True,
+        'macdhist-value_sell': -6.78881,
+        'mfi-value_sell': 67,
+        'trigger': 'cci',
+        'tsf_long-enabled': True,
+        'tsf_long-value_sell': 66,
+        'tsf_mid-enabled': False,
+        'tsf_mid-value_sell': -3,
+        'tsf_short-enabled': False,
+        'tsf_short-value_sell': 1
+    }
+
+    # ROI table:
+    minimal_roi = {
+        "0": 0.19091,
+        "17": 0.07922,
+        "45": 0.01411,
+        "59": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.05668
+
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.27147
+    trailing_stop_positive_offset = 0.31663
+    trailing_only_offset_is_reached = False
+

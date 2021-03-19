@@ -1,0 +1,121 @@
++--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------+
+|   Best |   Epoch |   Trades |    Win Draw Loss |   Avg profit |                        Profit |   Avg duration |   Objective |
+|--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------|
+| * Best |  30/300 |      527 |    287  186   54 |        0.18% |    0.95172018 USDT   (95.08%) |        820.9 m |     -0.7889 |
+|   Best |  43/300 |      386 |    225  130   31 |        0.32% |    1.25468221 USDT  (125.34%) |        399.1 m |    -1.50724 |
+|   Best |  92/300 |      132 |     91   37    4 |        1.45% |    1.91635024 USDT  (191.44%) |        158.7 m |      -1.796 |
+|   Best | 100/300 |      684 |    372  291   21 |        0.26% |    1.76455458 USDT  (176.28%) |        679.4 m |    -1.91233 |
+|   Best | 131/300 |     1936 |   1108  692  136 |        0.25% |    4.85130056 USDT  (484.65%) |      1,201.8 m |    -2.79078 |
+|   Best | 270/300 |        8 |      6    2    0 |        0.28% |    0.02219733 USDT    (2.22%) |      2,454.4 m | -9,004.65032 |
+ [Epoch 300 of 300 (100%)] ||                | [Time:  1:23:04, Elapsed Time: 1:23:04]
+2021-02-08 01:20:27,607 - freqtrade.optimize.hyperopt - INFO - 300 epochs saved to '/home/yakov/PycharmProjects/freqtrade/.env/bin/user_data/hyperopt_results/hyperopt_results_2021-02-07_23-57-04.pickle'.
+
+Best result:
+
+   270/300:      8 trades. 6/2/0 Wins/Draws/Losses. Avg profit   0.28%. Median profit   0.16%. Total profit  0.02219733 USDT (   2.22Σ%). Avg duration 2454.4 min. Objective: -9004.65032
+
+
+    # Buy hyperspace params:
+    buy_params = {
+        'angle_long-enabled': False,
+        'angle_long-value': 69,
+        'angle_mid-enabled': True,
+        'angle_mid-value': -30,
+        'angle_short-enabled': False,
+        'angle_short-value': -51,
+        'correl_angle_long_close-enabled': True,
+        'correl_angle_long_close-value': 0.01945,
+        'correl_angle_mid_close-enabled': True,
+        'correl_angle_mid_close-value': 0.80691,
+        'correl_angle_short_close-enabled': False,
+        'correl_angle_short_close-value': 0.79822,
+        'correl_close_last_close-enabled': True,
+        'correl_close_last_close-value': 0.13071,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value': 0.99955,
+        'correl_hist_close-enabled': True,
+        'correl_hist_close-value': -0.4257,
+        'correl_mfi_close-enabled': False,
+        'correl_mfi_close-value': -0.05654,
+        'correl_tsf_long_close-enabled': False,
+        'correl_tsf_long_close-value': 0.08529,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value': 0.98883,
+        'correl_tsf_short_close-enabled': True,
+        'correl_tsf_short_close-value': -0.74093,
+        'ema-enabled': True,
+        'ema-value': -0.22445,
+        'macd-enabled': False,
+        'macd-value': 0.31501,
+        'macdhist-value': 0.4072,
+        'mfi-enabled': True,
+        'mfi-value': 0.8919,
+        'trigger': 'ma_cross',
+        'tsf_long-enabled': False,
+        'tsf_long-value': 46,
+        'tsf_mid-enabled': False,
+        'tsf_mid-value': -50,
+        'tsf_short-enabled': False,
+        'tsf_short-value': 68
+    }
+
+    # Sell hyperspace params:
+    sell_params = {
+        'angle_long-enabled': False,
+        'angle_long-value_sell': -74,
+        'angle_mid-enabled': True,
+        'angle_mid-value_sell': -29,
+        'angle_short-enabled': False,
+        'angle_short-value_sell': 89,
+        'correl_angle_long_close-enabled': True,
+        'correl_angle_long_close-value_sell': -0.31549,
+        'correl_angle_mid_close-enabled': True,
+        'correl_angle_mid_close-value_sell': 0.12343,
+        'correl_angle_short_close-enabled': False,
+        'correl_angle_short_close-value_sell': 0.75309,
+        'correl_close_last_close-enabled': True,
+        'correl_close_last_close-value_sell': 0.895,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value_sell': -0.90613,
+        'correl_hist_close-enabled': True,
+        'correl_hist_close-value_sell': 0.4866,
+        'correl_mfi_close-enabled': False,
+        'correl_mfi_close-value_sell': 0.50188,
+        'correl_tsf_long_close-enabled': False,
+        'correl_tsf_long_close-value_sell': 0.04306,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value_sell': -0.33186,
+        'correl_tsf_short_close-enabled': True,
+        'correl_tsf_short_close-value_sell': -0.25287,
+        'ema-enabled': True,
+        'ema-value_sell': 0.88304,
+        'macd-enabled': False,
+        'macd-value_sell': -0.49075,
+        'macdhist-value_sell': -0.19491,
+        'mfi-enabled': True,
+        'mfi-value_sell': 0.63614,
+        'trigger': 'ma_cross',
+        'tsf_long-enabled': False,
+        'tsf_long-value_sell': -52,
+        'tsf_mid-enabled': False,
+        'tsf_mid-value_sell': 12,
+        'tsf_short-enabled': False,
+        'tsf_short-value_sell': 84
+    }
+
+    # ROI table:
+    minimal_roi = {
+        "0": 0.21377,
+        "22": 0.08011,
+        "72": 0.01195,
+        "150": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.23077
+
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.26744
+    trailing_stop_positive_offset = 0.31499
+    trailing_only_offset_is_reached = True

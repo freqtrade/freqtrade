@@ -1,0 +1,128 @@
+(freqtrade-conda) crypto_rahino@fretrade-1:~/freqtrade$ freqtrade hyperopt --config user_data/config_ethusdt_safe_1h.json --hyperopt hyper_ethusdt2 --hyperopt-loss SharpeHyperOptLoss --strategy strg2_ETHUSDT_1h_prod1 -e 300 --spaces all --timerange 20190101-
+2021-02-28 20:54:23,663 - freqtrade.configuration.configuration - INFO - Using config: user_data/config_ethusdt_safe_1h.json ...
+2021-02-28 20:54:23,663 - freqtrade.loggers - INFO - Verbosity set to 0
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Using max_open_trades: 3 ...
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Parameter --timerange detected: 20190101- ...
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Using user-data directory: /home/crypto_rahino/freqtrade/user_data ...
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Using data directory: /home/crypto_rahino/freqtrade/user_data/data/binance ...
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Using Hyperopt class name: hyper_ethusdt2
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Parameter --epochs detected ... Will run Hyperopt with for 300 epochs ...
+2021-02-28 20:54:23,664 - freqtrade.configuration.configuration - INFO - Parameter -s/--spaces detected: ['all']
+2021-02-28 20:54:23,665 - freqtrade.configuration.configuration - INFO - Parameter -j/--job-workers detected: -1
+2021-02-28 20:54:23,665 - freqtrade.configuration.configuration - INFO - Parameter --min-trades detected: 1
+2021-02-28 20:54:23,665 - freqtrade.configuration.configuration - INFO - Using Hyperopt loss class name: SharpeHyperOptLoss
+2021-02-28 20:54:23,665 - freqtrade.configuration.check_exchange - INFO - Checking exchange...
+2021-02-28 20:54:23,665 - freqtrade.configuration.check_exchange - INFO - Exchange "binance" is officially supported by the Freqtrade development team.
+2021-02-28 20:54:23,665 - freqtrade.configuration.configuration - INFO - Using pairlist from configuration.
+2021-02-28 20:54:23,665 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2021-02-28 20:54:23,667 - freqtrade.commands.optimize_commands - INFO - Starting freqtrade in Hyperopt mode
+2021-02-28 20:54:23,667 - filelock - INFO - Lock 140536302744960 acquired on /home/crypto_rahino/freqtrade/user_data/hyperopt.lock
+2021-02-28 20:54:23,667 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2021-02-28 20:54:23,667 - freqtrade.exchange.exchange - INFO - Using CCXT 1.40.99
+2021-02-28 20:54:23,667 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'enableRateLimit': True}
+2021-02-28 20:54:23,673 - freqtrade.exchange.exchange - INFO - Applying additional ccxt config: {'enableRateLimit': True, 'rateLimit': 200}
+2021-02-28 20:54:23,678 - freqtrade.exchange.exchange - INFO - Using Exchange "Binance"
+2021-02-28 20:54:24,878 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2021-02-28 20:54:24,884 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy strg2_ETHUSDT_1h_prod1 from '/home/crypto_rahino/freqtrade/user_data/strategies/ethusdt2_safe_prod1.py'...
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value in config file: 1h.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value in config file: USDT.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value in config file: 100.0.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'unfilledtimeout' with value in config file: {'buy': 10, 'sell': 30}.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'use_sell_signal' with value in config file: True.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'sell_profit_only' with value in config file: False.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'ignore_roi_if_buy_signal' with value in config file: False.
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 0.14918562374415067, '500': 0.058385372968253246, '2000': 0.02650295809826818, '1500': 0}
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 1h
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.23
+2021-02-28 20:54:24,885 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: True
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive: 0.04
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.07
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: True
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: False
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'buy': 'market', 'sell': 'market', 'stoploss': 'market', 'stoploss_on_exchange': False}
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'buy': 'gtc', 'sell': 'gtc'}
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: USDT
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 100.0
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using unfilledtimeout: {'buy': 10, 'sell': 30}
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_sell_signal: True
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using sell_profit_only: False
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_buy_signal: False
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using sell_profit_offset: 0.0
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2021-02-28 20:54:24,886 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2021-02-28 20:54:24,887 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2021-02-28 20:54:24,889 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/crypto_rahino/freqtrade/freqtrade/plugins/pairlist/StaticPairList.py'...
+2021-02-28 20:54:24,898 - freqtrade.resolvers.iresolver - INFO - Using resolved hyperopt hyper_ethusdt2 from '/home/crypto_rahino/freqtrade/user_data/hyperopts/hyper_ethusdt2.py'...
+2021-02-28 20:54:24,898 - freqtrade.resolvers.hyperopt_resolver - INFO - Hyperopt class does not provide populate_indicators() method. Using populate_indicators from the strategy.
+2021-02-28 20:54:24,898 - freqtrade.resolvers.hyperopt_resolver - INFO - Hyperopt class does not provide populate_buy_trend() method. Using populate_buy_trend from the strategy.
+2021-02-28 20:54:24,898 - freqtrade.resolvers.hyperopt_resolver - INFO - Hyperopt class does not provide populate_sell_trend() method. Using populate_sell_trend from the strategy.
+2021-02-28 20:54:24,907 - freqtrade.resolvers.iresolver - INFO - Using resolved hyperoptloss SharpeHyperOptLoss from '/home/crypto_rahino/freqtrade/freqtrade/optimize/hyperopt_loss_sharpe.py'...
+2021-02-28 20:54:24,908 - freqtrade.optimize.hyperopt - INFO - Using optimizer random state: 32325
+2021-02-28 20:54:24,966 - numexpr.utils - INFO - NumExpr defaulting to 4 threads.
+2021-02-28 20:54:25,041 - freqtrade.data.converter - INFO - Missing data fillup for ETH/USDT: before: 18908 - after: 18954
+2021-02-28 20:54:25,042 - freqtrade.optimize.backtesting - INFO - Loading data from 2019-01-01 00:00:00 up to 2021-02-28 17:00:00 (789 days)..
+2021-02-28 20:54:25,133 - freqtrade.optimize.hyperopt - INFO - Hyperopting with data from 2019-01-01 00:00:00 up to 2021-02-28 17:00:00 (789 days)..
+2021-02-28 20:54:25,139 - freqtrade.optimize.hyperopt - INFO - Found 4 CPU cores. Let's make them scream!
+2021-02-28 20:54:25,139 - freqtrade.optimize.hyperopt - INFO - Number of parallel jobs set as: -1
+2021-02-28 20:54:25,184 - freqtrade.optimize.hyperopt - INFO - Effective number of parallel workers used: 4
++--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------+                                                
+|   Best |   Epoch |   Trades |    Win Draw Loss |   Avg profit |                        Profit |   Avg duration |   Objective |
+|--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------|
+| * Best |   2/300 |     2235 |    895  120 1220 |       -0.20% | -441.54732382 USDT (-441.11%) |        790.9 m |     5.51805 |
+| * Best |   6/300 |      788 |    341  389   58 |        0.20% |  155.51998858 USDT  (155.36%) |      3,753.7 m |     -0.4659 |                                                
+| * Best |  13/300 |      738 |    382  232  124 |        0.50% |  372.56940254 USDT  (372.20%) |      3,831.4 m |    -1.16905 |                                                
+| * Best |  19/300 |     1044 |    474  105  465 |        0.33% |  341.31744129 USDT  (340.98%) |      1,497.9 m |    -1.68198 |                                                
+| * Best |  25/300 |      709 |    360  308   41 |        0.94% |  668.46193419 USDT  (667.79%) |      4,734.6 m |    -2.16973 |                                                
+|   Best | 207/300 |      782 |    427  304   51 |        0.82% |  638.26843226 USDT  (637.63%) |      3,986.9 m |    -2.28832 |                                                
+ [Epoch 300 of 300 (100%)] ||                                                                                                          | [Time:  0:12:33, Elapsed Time: 0:12:33]
+2021-02-28 21:07:07,336 - freqtrade.optimize.hyperopt - INFO - 300 epochs saved to '/home/crypto_rahino/freqtrade/user_data/hyperopt_results/hyperopt_results_2021-02-28_20-54-24.pickle'.
+
+Best result:
+
+   207/300:    782 trades. 427/304/51 Wins/Draws/Losses. Avg profit   0.82%. Median profit   1.26%. Total profit  638.26843226 USDT ( 637.63Σ%). Avg duration 3986.9 min. Objective: -2.28832
+
+
+    # Buy hyperspace params:
+    buy_params = {
+        'angle_tsf_mid-enabled': True,
+        'angle_tsf_mid-value': 31,
+        'ao-enabled': False,
+        'ao1-value': 49,
+        'ao2-value': 37,
+        'rsi-enabled': False,
+        'rsi1-value': 9,
+        'rsi2-value': 79,
+        'trigger': 'ao_cross_dw'
+    }
+
+    # Sell hyperspace params:
+    sell_params = {
+        'angle_tsf_mid-enabled': True,
+        'angle_tsf_mid-value_sell': 83,
+        'ao-enabled': False,
+        'ao1-value_sell': -11,
+        'ao2-value_sell': 20,
+        'rsi-enabled': False,
+        'rsi1-value_sell': 16,
+        'rsi2-value_sell': 77,
+        'trigger': 'ao_cross_dw'
+    }
+
+    # ROI table:
+    minimal_roi = {
+        "0": 0.0681,
+        "976": 0.05144,
+        "1656": 0.01257,
+        "1963": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.22706
+
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.27174
+    trailing_stop_positive_offset = 0.29437
+    trailing_only_offset_is_reached = Fals
