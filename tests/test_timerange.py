@@ -30,6 +30,9 @@ def test_parse_timerange_incorrect():
     with pytest.raises(Exception, match=r'Incorrect syntax.*'):
         TimeRange.parse_timerange('-')
 
+    with pytest.raises(Exception, match=r'Start date is after stop date for timerange.*'):
+        TimeRange.parse_timerange('20100523-20100522')
+
 
 def test_subtract_start():
     x = TimeRange('date', 'date', 1274486400, 1438214400)
