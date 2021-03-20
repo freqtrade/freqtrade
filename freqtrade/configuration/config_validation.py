@@ -100,12 +100,12 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
     """
     When using market orders, price sides must be using the "other" side of the price
     """
-    if (conf['order_types'].get('buy') == 'market'
-            and conf['bid_strategy'].get('price_side') != 'ask'):
+    if (conf.get('order_types', {}).get('buy') == 'market'
+            and conf.get('bid_strategy', {}).get('price_side') != 'ask'):
         raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
 
-    if (conf['order_types'].get('sell') == 'market'
-            and conf['ask_strategy'].get('price_side') != 'bid'):
+    if (conf.get('order_types', {}).get('sell') == 'market'
+            and conf.get('ask_strategy', {}).get('price_side') != 'bid'):
         raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
 
 
