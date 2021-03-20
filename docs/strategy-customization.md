@@ -436,6 +436,26 @@ if self.dp:
         dataframe['best_ask'] = ob['asks'][0][0]
 ```
 
+The orderbook structure is aligned with the order structure from [ccxt](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure), so the result will look as follows:
+
+``` js
+{
+    'bids': [
+        [ price, amount ], // [ float, float ]
+        [ price, amount ],
+        ...
+    ],
+    'asks': [
+        [ price, amount ],
+        [ price, amount ],
+        //...
+    ],
+    //...
+}
+```
+
+Therefore, using `ob['bids'][0][0]` as demonstrated above will result in using the best bid price. `ob['bids'][0][1]` would look at the amount at this orderbook position.
+
 !!! Warning "Warning about backtesting"
     The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return uptodate values.
 
