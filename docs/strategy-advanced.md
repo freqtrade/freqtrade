@@ -146,9 +146,9 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
-        if current_time - timedelta(minutes=120) > trade.open_date:
+        if current_time - timedelta(minutes=120) > trade.open_date_utc:
             return -0.05
-        elif current_time - timedelta(minutes=60) > trade.open_date:
+        elif current_time - timedelta(minutes=60) > trade.open_date_utc:
             return -0.10
         return 1
 ```
@@ -317,7 +317,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from freqtrade.persistence import Trade
 
 class AwesomeStrategy(IStrategy):
@@ -331,21 +331,21 @@ class AwesomeStrategy(IStrategy):
     }
 
     def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 
 
     def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 ```
