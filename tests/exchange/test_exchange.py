@@ -498,7 +498,7 @@ def test__load_markets(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     Exchange(default_conf)
-    assert log_has('Unable to initialize markets. Reason: SomeError', caplog)
+    assert log_has('Unable to initialize markets.', caplog)
 
     expected_return = {'ETH/BTC': 'available'}
     api_mock = MagicMock()

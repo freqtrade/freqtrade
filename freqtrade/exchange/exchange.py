@@ -311,8 +311,8 @@ class Exchange:
             self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
-        except ccxt.BaseError as e:
-            logger.warning('Unable to initialize markets. Reason: %s', e)
+        except ccxt.BaseError:
+            logger.exception('Unable to initialize markets.')
 
     def reload_markets(self) -> None:
         """Reload markets both sync and async if refresh interval has passed """
