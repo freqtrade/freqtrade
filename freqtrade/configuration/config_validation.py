@@ -74,6 +74,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
 
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
+    _validate_price_config(conf)
     _validate_edge(conf)
     _validate_whitelist(conf)
     _validate_protections(conf)
@@ -93,6 +94,19 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
        and conf.get('max_open_trades') == float('inf')
        and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
         raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
+
+
+def _validate_price_config(conf: Dict[str, Any]) -> None:
+    """
+    When using market orders, price sides must be using the "other" side of the price
+    """
+    if (conf['order_types'].get('buy') == 'market'
+            and conf['bid_strategy'].get('price_side') != 'ask'):
+        raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
+
+    if (conf['order_types'].get('sell') == 'market'
+            and conf['ask_strategy'].get('price_side') != 'bid'):
+        raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:

@@ -790,6 +790,38 @@ def test_validate_max_open_trades(default_conf):
         validate_config_consistency(default_conf)
 
 
+def test_validate_price_side(default_conf):
+    default_conf['order_types'] = {
+        "buy": "limit",
+        "sell": "limit",
+        "stoploss": "limit",
+        "stoploss_on_exchange": False,
+    }
+    # Default should pass
+    validate_config_consistency(default_conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['buy'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market buy orders require bid_strategy.price_side = "ask".'):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market sell orders require ask_strategy.price_side = "bid".'):
+        validate_config_consistency(conf)
+
+    # Validate inversed case
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    conf['order_types']['buy'] = 'market'
+    conf['ask_strategy']['price_side'] = 'bid'
+    conf['bid_strategy']['price_side'] = 'ask'
+
+    validate_config_consistency(conf)
+
+
 def test_validate_tsl(default_conf):
     default_conf['stoploss'] = 0.0
     with pytest.raises(OperationalException, match='The config stoploss needs to be different '
