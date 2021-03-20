@@ -1,6 +1,7 @@
 import copy
 import logging
 from datetime import datetime, timedelta, timezone
+from math import isclose
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -370,7 +371,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result == 2 / 0.9
+    assert isclose(result, 2 * 1.1)
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -382,7 +383,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == 2 * 2 / 0.9
+    assert isclose(result, 2 * 2 * 1.1)
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -394,7 +395,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == max(2, 2 * 2) / 0.9
+    assert isclose(result, max(2, 2 * 2) * 1.1)
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -406,7 +407,14 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == max(8, 2 * 2) / 0.9
+    assert isclose(result, max(8, 2 * 2) * 1.1)
+
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
+    assert isclose(result, max(8, 2 * 2) * 1.45)
+
+    # Really big stoploss
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
+    assert isclose(result, max(8, 2 * 2) * 1.5)
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -424,7 +432,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) / 0.9, 8)
+    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * 1.1, 8)
 
 
 def test_set_sandbox(default_conf, mocker):

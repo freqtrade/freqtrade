@@ -156,6 +156,23 @@ Values set in the configuration file always overwrite values set in the strategy
 
 There are several methods to configure how much of the stake currency the bot will use to enter a trade. All methods respect the [available balance configuration](#available-balance) as explained below.
 
+#### Minimum trade stake
+
+The minimum stake amount will depend by exchange and pair, and is usually listed in the exchange support pages.
+Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.4$.
+
+The minimum stake amount to buy this pair is therefore `20 * 0.6 ~= 12`.
+This exchange has also a limit on USD - where all orders must be > 10$ - which however does not apply in this case.
+
+To guarantee safe execution, freqtrade will not allow buying with a stake-amount of 10.1$, instead, it'll make sure that there's enough space to place a stoploss below the pair (+ an offset, defined by `amount_reserve_percent`, which defaults to 5%).
+
+With a stoploss of 10% - we'd therefore end up with a value of ~13.8$ (`12 * (1 + 0.05 + 0.1)`).
+
+To limit this calculation in case of large stoploss values, the calculated minimum stake-limit will never be more than 50% above the real limit.
+
+!!! Warning
+    Since the limits on exchanges are usually stable and are not updated often, some pairs can show pretty high minimum limits, simply because the price increased a lot since the last limit adjustment by the exchange.
+
 #### Available balance
 
 By default, the bot assumes that the `complete amount - 1%` is at it's disposal, and when using [dynamic stake amount](#dynamic-stake-amount), it will split the complete balance into `max_open_trades` buckets per trade.
