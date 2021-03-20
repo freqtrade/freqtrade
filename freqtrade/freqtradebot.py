@@ -432,7 +432,7 @@ class FreqtradeBot(LoggingMixin):
             ticker = self.exchange.fetch_ticker(pair)
             ticker_rate = ticker[bid_strategy['price_side']]
             if ticker['last'] and ticker_rate > ticker['last']:
-                balance = self.config['bid_strategy']['ask_last_balance']
+                balance = bid_strategy['ask_last_balance']
                 ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
             used_rate = ticker_rate
 
@@ -745,7 +745,13 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning("Sell Price at location from orderbook could not be determined.")
                 raise PricingError from e
         else:
-            rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
+            ticker = self.exchange.fetch_ticker(pair)
+            ticker_rate = ticker[ask_strategy['price_side']]
+            if ticker['last'] and ticker_rate < ticker['last']:
+                balance = ask_strategy.get('bid_last_balance', 0.0)
+                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
+            rate = ticker_rate
+
         if rate is None:
             raise PricingError(f"Sell-Rate for {pair} was empty.")
         self._sell_rate_cache[pair] = rate
