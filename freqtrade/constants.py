@@ -165,6 +165,12 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
+                'bid_last_balance': {
+                    'type': 'number',
+                    'minimum': 0,
+                    'maximum': 1,
+                    'exclusiveMaximum': False,
+                },
                 'use_order_book': {'type': 'boolean'},
                 'order_book_min': {'type': 'integer', 'minimum': 1},
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
