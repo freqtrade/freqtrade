@@ -94,6 +94,7 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
+    conf['bid_strategy']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
     assert freqtrade.strategy.order_types['stoploss_on_exchange']
@@ -128,6 +129,7 @@ def test_order_dict_live(default_conf, mocker, caplog) -> None:
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
+    conf['bid_strategy']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
