@@ -839,17 +839,17 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
-    ('bid', 10, 20, 10, 0.0, 20),  # Full bid side
-    ('bid', 10, 20, 10, 1.0, 10),  # Full last side
-    ('bid', 10, 20, 10, 0.5, 15),  # Between bid and last
-    ('bid', 10, 20, 10, 0.7, 13),  # Between bid and last
-    ('bid', 10, 20, 10, 0.3, 17),  # Between bid and last
-    ('bid', 4, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 4, 5, 10, 0.5, 5),  # last bigger than bid
-    ('bid', 10, 20, None, 0.5, 20),  # last not available - uses bid
-    ('bid', 4, 5, None, 0.5, 5),  # last not available - uses bid
-    ('bid', 4, 5, None, 1, 5),  # last not available - uses bid
-    ('bid', 4, 5, None, 0, 5),  # last not available - uses bid
+    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
+    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
+    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
+    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
+    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
 ])
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
@@ -858,7 +858,7 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     default_conf['bid_strategy']['price_side'] = side
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={'ask': ask, 'last': last, 'bid': bid}))
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
 
     assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
