@@ -166,6 +166,9 @@ class ApiServer(RPCHandler):
                                   )
         try:
             self._server = UvicornServer(uvconfig)
-            self._server.run_in_thread()
+            if self._standalone:
+                self._server.run()
+            else:
+                self._server.run_in_thread()
         except Exception:
             logger.exception("Api server failed to start.")
