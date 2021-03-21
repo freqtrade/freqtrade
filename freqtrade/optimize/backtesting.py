@@ -21,6 +21,7 @@ from freqtrade.enums import BacktestState, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin
+from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
 from freqtrade.persistence import LocalTrade, PairLocks, Trade
@@ -118,25 +119,12 @@ class Backtesting:
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
 
-        self._progress = 0
-        self._max_steps = 0
-        self._action = BacktestState.STARTUP
+        self.progress = BTProgress()
 
     def __del__(self):
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
-
-    def set_progress(self, action: BacktestState, progress: float):
-        self._progress = 0
-        self._action = action
-
-    def get_progress(self) -> float:
-
-        return round(self._progress / self._max_steps, 5) if self._max_steps > 0 else 0
-
-    def get_action(self) -> str:
-        return str(self._action)
 
     def _set_strategy(self, strategy: IStrategy):
         """
@@ -160,7 +148,7 @@ class Backtesting:
         Loads backtest data and returns the data combined with the timerange
         as tuple.
         """
-        self.set_progress(BacktestState.DATALOAD, 0)
+        self.progress.init_step(BacktestState.DATALOAD, 1)
 
         timerange = TimeRange.parse_timerange(None if self.config.get(
             'timerange') is None else str(self.config.get('timerange')))
@@ -185,7 +173,7 @@ class Backtesting:
         timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
                                             self.required_startup, min_date)
 
-        self.set_progress(BacktestState.DATALOAD, 1)
+        self.progress.set_new_value(1)
         return data, timerange
 
     def prepare_backtest(self, enable_protections):
@@ -210,8 +198,11 @@ class Backtesting:
         # and eventually change the constants for indexes at the top
         headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
         data: Dict = {}
+        self.progress.init_step(BacktestState.CONVERT, len(processed))
+
         # Create dict with data
         for pair, pair_data in processed.items():
+            self.progress.increment()
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
                 pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
@@ -422,8 +413,8 @@ class Backtesting:
         open_trades: Dict[str, List[LocalTrade]] = defaultdict(list)
         open_trade_count = 0
 
-        self.set_progress(BacktestState.BACKTEST, 0)
-        self._max_steps = int((end_date - start_date) / timedelta(minutes=self.timeframe_min))
+        self.progress.init_step(BacktestState.BACKTEST, int(
+            (end_date - start_date) / timedelta(minutes=self.timeframe_min)))
 
         # Loop timerange and get candle for each pair at that point in time
         while tmp <= end_date:
@@ -484,7 +475,7 @@ class Backtesting:
                             self.protections.global_stop(tmp)
 
             # Move time one configured time_interval ahead.
-            self._progress += 1
+            self.progress.increment()
             tmp += timedelta(minutes=self.timeframe_min)
 
         trades += self.handle_left_open(open_trades, data=data)
@@ -500,8 +491,8 @@ class Backtesting:
         }
 
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
-        self.set_progress(BacktestState.ANALYZE, 0)
-        self._max_steps = 0
+        self.progress.init_step(BacktestState.ANALYZE, 0)
+
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
         backtest_start_time = datetime.now(timezone.utc)
         self._set_strategy(strat)
@@ -528,7 +519,6 @@ class Backtesting:
                 "No data left after adjusting for startup candles.")
 
         min_date, max_date = history.get_timerange(preprocessed)
-        self.set_progress(BacktestState.BACKTEST, 0)
 
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '

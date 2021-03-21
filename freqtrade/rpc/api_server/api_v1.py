@@ -291,6 +291,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
 
             if (not ApiServer._bt
                     or lastconfig.get('timeframe') != strat.timeframe
+                    or lastconfig.get('stake_amount') != btconfig.get('stake_amount')
                     or lastconfig.get('enable_protections') != btconfig.get('enable_protections')
                     or lastconfig.get('protections') != btconfig.get('protections', [])
                     or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)):
@@ -298,11 +299,10 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
                 # Reset data if backtesting is reloaded
-                # TODO: is this always necessary??
-                ApiServer._backtestdata = None
 
             if (not ApiServer._backtestdata or not ApiServer._bt_timerange
-                    or lastconfig.get('timerange') != btconfig['timerange']):
+                    or lastconfig.get('timerange') != btconfig['timerange']
+                    or lastconfig.get('timeframe') != strat.timeframe):
                 lastconfig['timerange'] = btconfig['timerange']
                 lastconfig['protections'] = btconfig.get('protections', [])
                 lastconfig['enable_protections'] = btconfig.get('enable_protections')
@@ -344,8 +344,8 @@ def api_get_backtest():
         return {
             "status": "running",
             "running": True,
-            "step": ApiServer._bt.get_action() if ApiServer._bt else str(BacktestState.STARTUP),
-            "progress": ApiServer._bt.get_progress() if ApiServer._bt else 0,
+            "step": ApiServer._bt.progress.action if ApiServer._bt else str(BacktestState.STARTUP),
+            "progress": ApiServer._bt.progress.progress if ApiServer._bt else 0,
             "trade_count": len(LocalTrade.trades),
             "status_msg": "Backtest running",
         }
