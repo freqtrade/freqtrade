@@ -15,9 +15,6 @@ class CooldownPeriod(IProtection):
     has_global_stop: bool = False
     has_local_stop: bool = True
 
-    def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
-        super().__init__(config, protection_config)
-
     def _reason(self) -> str:
         """
         LockReason to use

@@ -15,11 +15,6 @@ logger = logging.getLogger(__name__)
 
 class PerformanceFilter(IPairList):
 
-    def __init__(self, exchange, pairlistmanager,
-                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
-                 pairlist_pos: int) -> None:
-        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
-
     @property
     def needstickers(self) -> bool:
         """
