@@ -2,7 +2,7 @@
 Performance pair list filter
 """
 import logging
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import pandas as pd
 

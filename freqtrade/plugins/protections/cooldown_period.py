@@ -1,7 +1,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict
 
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn

@@ -806,7 +806,7 @@ class Exchange:
 
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if (not ((pair, timeframe) in self._klines)
+            if (((pair, timeframe) not in self._klines)
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 input_coroutines.append(self._async_get_candle_history(pair, timeframe,
                                                                        since_ms=since_ms))

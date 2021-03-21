@@ -197,8 +197,8 @@ class StrategyResolver(IResolver):
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
             strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
             if any(x == 2 for x in [strategy._populate_fun_len,
-                                     strategy._buy_fun_len,
-                                     strategy._sell_fun_len]):
+                                    strategy._buy_fun_len,
+                                    strategy._sell_fun_len]):
                 strategy.INTERFACE_VERSION = 1
 
             return strategy
