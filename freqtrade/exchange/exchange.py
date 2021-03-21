@@ -958,7 +958,7 @@ class Exchange:
         while True:
             t = await self._async_fetch_trades(pair,
                                                params={self._trades_pagination_arg: from_id})
-            if len(t):
+            if t:
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
                 if from_id == t[-1][1] or t[-1][0] > until:
@@ -990,7 +990,7 @@ class Exchange:
         # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
             t = await self._async_fetch_trades(pair, since=since)
-            if len(t):
+            if t:
                 since = t[-1][0]
                 trades.extend(t)
                 # Reached the end of the defined-download period

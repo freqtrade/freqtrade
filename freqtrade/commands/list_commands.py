@@ -177,7 +177,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             # human-readable formats.
             print()
 
-        if len(pairs):
+        if pairs:
             if args.get('print_list', False):
                 # print data as a list, with human-readable summary
                 print(f"{summary_str}: {', '.join(pairs.keys())}.")
