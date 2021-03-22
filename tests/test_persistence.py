@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import FunctionType
 from unittest.mock import MagicMock
 
@@ -21,14 +22,15 @@ def test_init_create_session(default_conf):
     assert 'scoped_session' in type(Trade.session).__name__
 
 
-def test_init_custom_db_url(default_conf, mocker):
+def test_init_custom_db_url(default_conf, tmpdir):
     # Update path to a value other than default, but still in-memory
-    default_conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
-    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
+    filename = f"{tmpdir}/freqtrade2_test.sqlite"
+    assert not Path(filename).is_file()
+
+    default_conf.update({'db_url': f'sqlite:///{filename}'})
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
+    assert Path(filename).is_file()
 
 
 def test_init_invalid_db_url(default_conf):
@@ -49,15 +51,16 @@ def test_init_prod_db(default_conf, mocker):
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
 
-def test_init_dryrun_db(default_conf, mocker):
-    default_conf.update({'dry_run': True})
-    default_conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
-
-    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
+def test_init_dryrun_db(default_conf, tmpdir):
+    filename = f"{tmpdir}/freqtrade2_prod.sqlite"
+    assert not Path(filename).is_file()
+    default_conf.update({
+        'dry_run': True,
+        'db_url': f'sqlite:///{filename}'
+    })
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.dryrun.sqlite'
+    assert Path(filename).is_file()
 
 
 @pytest.mark.usefixtures("init_persistence")
