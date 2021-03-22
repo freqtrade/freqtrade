@@ -330,8 +330,12 @@ class Telegram(RPCHandler):
             statlist, head = self._rpc._rpc_status_table(
                 self._config['stake_currency'], self._config.get('fiat_display_currency', ''))
 
-            message = tabulate(statlist, headers=head, tablefmt='simple')
-            self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
+            max_trades_per_msg = 50
+            for i in range(0, max(int(len(statlist) / max_trades_per_msg), 1)):
+                message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
+                                   headers=head,
+                                   tablefmt='simple')
+                self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
 
