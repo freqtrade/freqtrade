@@ -113,7 +113,7 @@
         "password": "",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
-            "enableRateLimit": false,
+            "enableRateLimit": true,
             "rateLimit": 500,
             "aiohttp_trust_env": false
         },
