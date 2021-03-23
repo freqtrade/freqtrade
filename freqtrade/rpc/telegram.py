@@ -331,6 +331,11 @@ class Telegram(RPCHandler):
                 self._config['stake_currency'], self._config.get('fiat_display_currency', ''))
 
             max_trades_per_msg = 50
+            """
+            Calculate the number of messages of 50 trades per message
+            0.99 is used to make sure that there are no extra (empty) messages
+            As an example with 50 trades, there will be int(50/50 + 0.99) = 1 message
+            """
             for i in range(0, max(int(len(statlist) / max_trades_per_msg + 0.99), 1)):
                 message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
                                    headers=head,
