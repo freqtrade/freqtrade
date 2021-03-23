@@ -331,7 +331,7 @@ class Telegram(RPCHandler):
                 self._config['stake_currency'], self._config.get('fiat_display_currency', ''))
 
             max_trades_per_msg = 50
-            for i in range(0, max(int(len(statlist) / max_trades_per_msg), 1)):
+            for i in range(0, max(int(len(statlist) / max_trades_per_msg) + 1, 1)):
                 message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
                                    headers=head,
                                    tablefmt='simple')
