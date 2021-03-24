@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List
 from pandas import DataFrame
 from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
@@ -19,9 +18,6 @@ class HyperOptAuto(IHyperOpt):
     """
 
     def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
-            raise OperationalException('Strategy must inherit from IHyperStrategy.')
-
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('buy'):
                 attr.value = params[attr_name]
@@ -30,9 +26,6 @@ class HyperOptAuto(IHyperOpt):
         return populate_buy_trend
 
     def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
-            raise OperationalException('Strategy must inherit from IHyperStrategy.')
-
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('sell'):
                 attr.value = params[attr_name]
@@ -54,9 +47,6 @@ class HyperOptAuto(IHyperOpt):
             return default_func
 
     def _generate_indicator_space(self, category):
-        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
-            raise OperationalException('Strategy must inherit from IHyperStrategy.')
-
         for attr_name, attr in self.strategy.enumerate_parameters(category):
             yield attr.get_space(attr_name)
 

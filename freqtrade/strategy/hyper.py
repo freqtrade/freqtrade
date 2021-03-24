@@ -135,13 +135,9 @@ class HyperStrategyMixin(object):
      strategy logic.
     """
 
-    # Hint that class can be used with HyperOptAuto.
-    HYPER_STRATEGY = 1
-
     def __init__(self):
         """
         Initialize hyperoptable strategy mixin.
-        :param config:
         """
         self._load_params(getattr(self, 'buy_params', None))
         self._load_params(getattr(self, 'sell_params', None))

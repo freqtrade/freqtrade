@@ -70,10 +70,6 @@ class Hyperopt:
         self.backtesting = Backtesting(self.config)
 
         if not self.config.get('hyperopt'):
-            if not getattr(self.backtesting.strategy, 'HYPER_STRATEGY', False):
-                raise OperationalException('Strategy is not auto-hyperoptable. Specify --hyperopt '
-                                           'parameter or add HyperStrategyMixin mixin to your '
-                                           'strategy class.')
             self.custom_hyperopt = HyperOptAuto(self.config)
         else:
             self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
