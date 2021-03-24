@@ -2,7 +2,7 @@
 IHyperStrategy interface, hyperoptable Parameter class.
 This module defines a base class for auto-hyperoptable strategies.
 """
-from typing import Iterator, Tuple, Any, Optional, Sequence
+from typing import Iterator, Tuple, Any, Optional, Sequence, Union
 
 from skopt.space import Integer, Real, Categorical
 
@@ -22,7 +22,8 @@ class BaseParameter(object):
                  **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.(Integer|Real|Categorical).
         """
@@ -37,6 +38,9 @@ class BaseParameter(object):
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
 
+    def get_space(self, name: str) -> Union[Integer, Real, Categorical]:
+        raise NotImplementedError()
+
 
 class IntParameter(BaseParameter):
     default: int
@@ -49,7 +53,8 @@ class IntParameter(BaseParameter):
         Initialize hyperopt-optimizable parameter.
         :param space: Optimization space, [min, max].
         :param default: A default value.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
@@ -76,7 +81,8 @@ class FloatParameter(BaseParameter):
         Initialize hyperopt-optimizable parameter.
         :param space: Optimization space, [min, max].
         :param default: A default value.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Real.
         """

@@ -7,10 +7,10 @@ from typing import Any, Callable, Dict, List
 from pandas import DataFrame
 from skopt.space import Categorical, Dimension, Integer, Real  # noqa
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
 
-# noinspection PyUnresolvedReferences
 class HyperOptAuto(IHyperOpt):
     """
     This class delegates functionality to Strategy(IHyperStrategy) and Strategy.HyperOpt classes.
