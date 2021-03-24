@@ -1,7 +1,7 @@
 """
 HyperOptAuto class.
-This module implements a convenience auto-hyperopt class, which can be used together with strategies that implement
-IHyperStrategy interface.
+This module implements a convenience auto-hyperopt class, which can be used together with strategies
+ that implement IHyperStrategy interface.
 """
 from typing import Any, Callable, Dict, List
 from pandas import DataFrame
@@ -13,26 +13,31 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt
 # noinspection PyUnresolvedReferences
 class HyperOptAuto(IHyperOpt):
     """
-    This class delegates functionality to Strategy(IHyperStrategy) and Strategy.HyperOpt classes. Most of the time
-    Strategy.HyperOpt class would only implement indicator_space and sell_indicator_space methods, but other hyperopt
-    methods can be overridden as well.
+    This class delegates functionality to Strategy(IHyperStrategy) and Strategy.HyperOpt classes.
+     Most of the time Strategy.HyperOpt class would only implement indicator_space and
+     sell_indicator_space methods, but other hyperopt methods can be overridden as well.
     """
+
     def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        assert hasattr(self.strategy, 'enumerate_parameters'), 'Strategy must inherit from IHyperStrategy.'
+        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
+            raise OperationalException('Strategy must inherit from IHyperStrategy.')
 
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('buy'):
                 attr.value = params[attr_name]
             return self.strategy.populate_buy_trend(dataframe, metadata)
+
         return populate_buy_trend
 
     def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        assert hasattr(self.strategy, 'enumerate_parameters'), 'Strategy must inherit from IHyperStrategy.'
+        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
+            raise OperationalException('Strategy must inherit from IHyperStrategy.')
 
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('sell'):
                 attr.value = params[attr_name]
             return self.strategy.populate_sell_trend(dataframe, metadata)
+
         return populate_buy_trend
 
     def _get_func(self, name) -> Callable:
@@ -49,7 +54,8 @@ class HyperOptAuto(IHyperOpt):
             return default_func
 
     def _generate_indicator_space(self, category):
-        assert hasattr(self.strategy, 'enumerate_parameters'), 'Strategy must inherit from IHyperStrategy.'
+        if not getattr(self.strategy, 'HYPER_STRATEGY', False):
+            raise OperationalException('Strategy must inherit from IHyperStrategy.')
 
         for attr_name, attr in self.strategy.enumerate_parameters(category):
             yield attr.get_space(attr_name)

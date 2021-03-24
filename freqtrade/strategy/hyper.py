@@ -2,83 +2,158 @@
 IHyperStrategy interface, hyperoptable Parameter class.
 This module defines a base class for auto-hyperoptable strategies.
 """
-from abc import ABC
-from typing import Union, List, Iterator, Tuple
+from typing import Iterator, Tuple, Any, Optional, Sequence
 
 from skopt.space import Integer, Real, Categorical
 
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.exceptions import OperationalException
 
 
-class Parameter(object):
+class BaseParameter(object):
     """
     Defines a parameter that can be optimized by hyperopt.
     """
-    default: Union[int, float, str, bool]
-    space: List[Union[int, float, str, bool]]
-    category: str
+    category: Optional[str]
+    default: Any
+    value: Any
+    space: Sequence[Any]
 
-    def __init__(self, *, space: List[Union[int, float, str, bool]], default: Union[int, float, str, bool] = None,
-                 category: str = None, **kwargs):
+    def __init__(self, *, space: Sequence[Any], default: Any, category: Optional[str] = None,
+                 **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param space: Optimization space. [min, max] for ints and floats or a list of strings for categorial parameters.
-        :param default: A default value. Required for ints and floats, optional for categorial parameters (first item
-         from the space will be used). Type of default value determines skopt space used for optimization.
         :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.(Integer|Real|Categorical).
         """
-        assert 'name' not in kwargs, 'Name is determined by parameter field name and can not be specified manually.'
-        self.value = default
-        self.space = space
+        if 'name' in kwargs:
+            raise OperationalException(
+                'Name is determined by parameter field name and can not be specified manually.')
         self.category = category
         self._space_params = kwargs
-        if default is None:
-            assert len(space) > 0
-            self.value = space[0]
+        self.value = default
+        self.space = space
 
-    def get_space(self, name: str) -> Union[Integer, Real, Categorical, None]:
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.value})'
+
+
+class IntParameter(BaseParameter):
+    default: int
+    value: int
+    space: Sequence[int]
+
+    def __init__(self, *, space: Sequence[int], default: int, category: Optional[str] = None,
+                 **kwargs):
+        """
+        Initialize hyperopt-optimizable parameter.
+        :param space: Optimization space, [min, max].
+        :param default: A default value.
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
+         name is prefixed with 'buy_' or 'sell_'.
+        :param kwargs: Extra parameters to skopt.space.Integer.
+        """
+        if len(space) != 2:
+            raise OperationalException('IntParameter space must be [min, max]')
+        super().__init__(space=space, default=default, category=category, **kwargs)
+
+    def get_space(self, name: str) -> Integer:
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
-        :return: skopt space of this parameter, or None if parameter is not optimizable (i.e. space is set to None)
         """
-        if not self.space:
-            return None
-        if isinstance(self.value, int):
-            assert len(self.space) == 2
-            return Integer(*self.space, name=name, **self._space_params)
-        if isinstance(self.value, float):
-            assert len(self.space) == 2
-            return Real(*self.space, name=name, **self._space_params)
+        return Integer(*self.space, name=name, **self._space_params)
 
-        assert len(self.space) > 0
+
+class FloatParameter(BaseParameter):
+    default: float
+    value: float
+    space: Sequence[float]
+
+    def __init__(self, *, space: Sequence[float], default: float, category: Optional[str] = None,
+                 **kwargs):
+        """
+        Initialize hyperopt-optimizable parameter.
+        :param space: Optimization space, [min, max].
+        :param default: A default value.
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if parameter field
+         name is prefixed with 'buy_' or 'sell_'.
+        :param kwargs: Extra parameters to skopt.space.Real.
+        """
+        if len(space) != 2:
+            raise OperationalException('IntParameter space must be [min, max]')
+        super().__init__(space=space, default=default, category=category, **kwargs)
+
+    def get_space(self, name: str) -> Real:
+        """
+        Create skopt optimization space.
+        :param name: A name of parameter field.
+        """
+        return Real(*self.space, name=name, **self._space_params)
+
+
+class CategoricalParameter(BaseParameter):
+    default: Any
+    value: Any
+    space: Sequence[Any]
+
+    def __init__(self, *, space: Sequence[Any], default: Optional[Any] = None,
+                 category: Optional[str] = None,
+                 **kwargs):
+        """
+        Initialize hyperopt-optimizable parameter.
+        :param space: Optimization space, [a, b, ...].
+        :param default: A default value. If not specified, first item from specified space will be
+         used.
+        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
+         name is prefixed with 'buy_' or 'sell_'.
+        :param kwargs: Extra parameters to skopt.space.Categorical.
+        """
+        if len(space) < 2:
+            raise OperationalException(
+                'IntParameter space must be [a, b, ...] (at least two parameters)')
+        super().__init__(space=space, default=default, category=category, **kwargs)
+
+    def get_space(self, name: str) -> Categorical:
+        """
+        Create skopt optimization space.
+        :param name: A name of parameter field.
+        """
         return Categorical(self.space, name=name, **self._space_params)
 
 
-class IHyperStrategy(IStrategy, ABC):
+class HyperStrategyMixin(object):
     """
-    A helper base class which allows HyperOptAuto class to reuse implementations of of buy/sell strategy logic.
+    A helper base class which allows HyperOptAuto class to reuse implementations of of buy/sell
+     strategy logic.
     """
 
-    def __init__(self, config):
-        super().__init__(config)
+    # Hint that class can be used with HyperOptAuto.
+    HYPER_STRATEGY = 1
+
+    def __init__(self):
+        """
+        Initialize hyperoptable strategy mixin.
+        :param config:
+        """
         self._load_params(getattr(self, 'buy_params', None))
         self._load_params(getattr(self, 'sell_params', None))
 
-    def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, Parameter]]:
+    def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
         Find all optimizeable parameters and return (name, attr) iterator.
         :param category:
         :return:
         """
-        assert category in ('buy', 'sell', None)
+        if category not in ('buy', 'sell', None):
+            raise OperationalException('Category must be one of: "buy", "sell", None.')
         for attr_name in dir(self):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
                 attr = getattr(self, attr_name)
-                if isinstance(attr, Parameter):
-                    if category is None or category == attr.category or attr_name.startswith(category + '_'):
+                if issubclass(attr.__class__, BaseParameter):
+                    if category is None or category == attr.category or \
+                       attr_name.startswith(category + '_'):
                         yield attr_name, attr
 
     def _load_params(self, params: dict) -> None:
