@@ -10,6 +10,14 @@ If multiple Pairlist Handlers are used, they are chained and a combination of al
 
 Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
 
+### Pair blacklist
+
+The pair blacklist (configured via `exchange.pair_blacklist` in the configuration) disallows certain pairs from trading.
+This can be as simple as excluding `DOGE/BTC` - which will remove exactly this pair.
+
+The pair-blacklist does also support wildcards (in regex-style) - so `BNB/.*` will exclude ALL pairs that start with BNB.
+You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged tokens (check Pair naming conventions for your exchange!)
+
 ### Available Pairlist Handlers
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
@@ -27,7 +35,7 @@ Inactive markets are always removed from the resulting pairlist. Explicitly blac
 
 #### Static Pair List
 
-By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration.
+By default, the `StaticPairList` method is used, which uses a statically defined pair whitelist from the configuration. The pairlist also supports wildcards (in regex-style) - so `.*/BTC` will include all pairs with BTC as a stake.
 
 It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklist`.
 

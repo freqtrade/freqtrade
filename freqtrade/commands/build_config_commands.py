@@ -93,10 +93,10 @@ def ask_user_config() -> Dict[str, Any]:
             "message": "Select exchange",
             "choices": [
                 "binance",
-                "binanceje",
                 "binanceus",
                 "bittrex",
                 "kraken",
+                "ftx",
                 Separator(),
                 "other",
             ],
@@ -173,6 +173,9 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
                                   arguments=selections)
 
     logger.info(f"Writing config to `{config_path}`.")
+    logger.info(
+        "Please make sure to check the configuration contents and adjust settings to your needs.")
+
     config_path.write_text(config_text)
 
 

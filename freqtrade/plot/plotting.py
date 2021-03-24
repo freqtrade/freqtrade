@@ -13,6 +13,7 @@ from freqtrade.data.history import get_timerange, load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_prev_date, timeframe_to_seconds
 from freqtrade.misc import pair_to_filename
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
 
@@ -29,16 +30,16 @@ except ImportError:
     exit(1)
 
 
-def init_plotscript(config, startup_candles: int = 0):
+def init_plotscript(config, markets: List, startup_candles: int = 0):
     """
     Initialize objects needed for plotting
     :return: Dict with candle (OHLCV) data, trades and pairs
     """
 
     if "pairs" in config:
-        pairs = config['pairs']
+        pairs = expand_pairlist(config['pairs'], markets)
     else:
-        pairs = config['exchange']['pair_whitelist']
+        pairs = expand_pairlist(config['exchange']['pair_whitelist'], markets)
 
     # Set timerange to use
     timerange = TimeRange.parse_timerange(config.get('timerange'))
@@ -52,7 +53,7 @@ def init_plotscript(config, startup_candles: int = 0):
         data_format=config.get('dataformat_ohlcv', 'json'),
     )
 
-    if startup_candles:
+    if startup_candles and data:
         min_date, max_date = get_timerange(data)
         logger.info(f"Loading data from {min_date} to {max_date}")
         timerange.adjust_start_if_necessary(timeframe_to_seconds(config.get('timeframe', '5m')),
@@ -66,14 +67,16 @@ def init_plotscript(config, startup_candles: int = 0):
         if not filename.is_dir() and not filename.is_file():
             logger.warning("Backtest file is missing skipping trades.")
             no_trades = True
-
-    trades = load_trades(
-        config['trade_source'],
-        db_url=config.get('db_url'),
-        exportfilename=filename,
-        no_trades=no_trades,
-        strategy=config.get('strategy'),
-    )
+    try:
+        trades = load_trades(
+            config['trade_source'],
+            db_url=config.get('db_url'),
+            exportfilename=filename,
+            no_trades=no_trades,
+            strategy=config.get('strategy'),
+        )
+    except ValueError as e:
+        raise OperationalException(e) from e
     trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
@@ -142,7 +145,7 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     Add scatter points indicating max drawdown
     """
     try:
-        max_drawdown, highdate, lowdate = calculate_max_drawdown(trades)
+        max_drawdown, highdate, lowdate, _, _ = calculate_max_drawdown(trades)
 
         drawdown = go.Scatter(
             x=[highdate, lowdate],
@@ -174,10 +177,10 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_percent'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
-                                                  axis=1)
+                                      axis=1)
         trade_buys = go.Scatter(
             x=trades["open_date"],
             y=trades["open_rate"],
@@ -194,9 +197,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
         )
 
         trade_sells = go.Scatter(
-            x=trades.loc[trades['profit_percent'] > 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] > 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] > 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] > 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] > 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] > 0, "desc"],
             mode='markers',
             name='Sell - Profit',
             marker=dict(
@@ -207,9 +210,9 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             )
         )
         trade_sells_loss = go.Scatter(
-            x=trades.loc[trades['profit_percent'] <= 0, "close_date"],
-            y=trades.loc[trades['profit_percent'] <= 0, "close_rate"],
-            text=trades.loc[trades['profit_percent'] <= 0, "desc"],
+            x=trades.loc[trades['profit_ratio'] <= 0, "close_date"],
+            y=trades.loc[trades['profit_ratio'] <= 0, "close_rate"],
+            text=trades.loc[trades['profit_ratio'] <= 0, "desc"],
             mode='markers',
             name='Sell - Loss',
             marker=dict(
@@ -444,6 +447,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
 
     # Trim trades to available OHLCV data
     trades = extract_trades_of_period(df_comb, trades, date_index=True)
+    if len(trades) == 0:
+        raise OperationalException('No trades found in selected timerange.')
 
     # Add combined cumulative profit
     df_comb = create_cum_profit(df_comb, trades, 'cum_profit', timeframe)
@@ -525,7 +530,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     IStrategy.dp = DataProvider(config, exchange)
-    plot_elements = init_plotscript(config, strategy.startup_candle_count)
+    plot_elements = init_plotscript(config, list(exchange.markets), strategy.startup_candle_count)
     timerange = plot_elements['timerange']
     trades = plot_elements['trades']
     pair_counter = 0
@@ -560,7 +565,8 @@ def plot_profit(config: Dict[str, Any]) -> None:
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
     """
-    plot_elements = init_plotscript(config)
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
+    plot_elements = init_plotscript(config, list(exchange.markets))
     trades = plot_elements['trades']
     # Filter trades to relevant pairs
     # Remove open pairs - we don't know the profit yet so can't calculate profit for these.

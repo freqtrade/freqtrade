@@ -4,13 +4,14 @@ This page provides you some basic concepts on how Freqtrade works and operates.
 
 ## Freqtrade terminology
 
-* Trade: Open position.
-* Open Order: Order which is currently placed on the exchange, and is not yet complete.
-* Pair: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).
-* Timeframe: Candle length to use (e.g. `"5m"`, `"1h"`, ...).
-* Indicators: Technical indicators (SMA, EMA, RSI, ...).
-* Limit order: Limit orders which execute at the defined limit price or better.
-* Market order: Guaranteed to fill, may move price depending on the order size.
+* **Strategy**: Your trading strategy, telling the bot what to do.
+* **Trade**: Open position.
+* **Open Order**: Order which is currently placed on the exchange, and is not yet complete.
+* **Pair**: Tradable pair, usually in the format of Quote/Base (e.g. XRP/USDT).
+* **Timeframe**: Candle length to use (e.g. `"5m"`, `"1h"`, ...).
+* **Indicators**: Technical indicators (SMA, EMA, RSI, ...).
+* **Limit order**: Limit orders which execute at the defined limit price or better.
+* **Market order**: Guaranteed to fill, may move price depending on the order size.
 
 ## Fee handling
 
@@ -49,8 +50,9 @@ This loop will be repeated again and again until the bot is stopped.
 [backtesting](backtesting.md) or [hyperopt](hyperopt.md) do only part of the above logic, since most of the trading operations are fully simulated.
 
 * Load historic data for configured pairlist.
-* Calculate indicators (calls `populate_indicators()`).
-* Calls `populate_buy_trend()` and `populate_sell_trend()`
+* Calls `bot_loop_start()` once.
+* Calculate indicators (calls `populate_indicators()` once per pair).
+* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair)
 * Loops per candle simulating entry and exit points.
 * Generate backtest report output
 

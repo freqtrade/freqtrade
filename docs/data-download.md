@@ -264,7 +264,19 @@ If you are using Binance for example:
 
 ```bash
 mkdir -p user_data/data/binance
-cp freqtrade/tests/testdata/pairs.json user_data/data/binance
+cp tests/testdata/pairs.json user_data/data/binance
+```
+
+If you your configuration directory `user_data` was made by docker, you may get the following error:
+
+```
+cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
+```
+
+You can fix the permissions of your user-data directory as follows:
+
+```
+sudo chown -R $UID:$GID user_data
 ```
 
 The format of the `pairs.json` file is a simple json list.
@@ -308,10 +320,13 @@ Since this data is large by default, the files use gzip by default. They are sto
 
 To use this mode, simply add `--dl-trades` to your call. This will swap the download method to download trades, and resamples the data locally.
 
+!!! Warning "do not use"
+    You should not use this unless you're a kraken user. Most other exchanges provide OHLCV data with sufficient history.
+
 Example call:
 
 ```bash
-freqtrade download-data --exchange binance --pairs XRP/ETH ETH/BTC --days 20 --dl-trades
+freqtrade download-data --exchange kraken --pairs XRP/EUR ETH/EUR --days 20 --dl-trades
 ```
 
 !!! Note

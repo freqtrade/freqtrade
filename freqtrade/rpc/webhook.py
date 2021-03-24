@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from requests import RequestException, post
 
-from freqtrade.rpc import RPC, RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
 
 
 logger = logging.getLogger(__name__)
@@ -14,18 +14,25 @@ logger = logging.getLogger(__name__)
 logger.debug('Included module rpc.webhook ...')
 
 
-class Webhook(RPC):
+class Webhook(RPCHandler):
     """  This class handles all webhook communication """
 
-    def __init__(self, freqtrade) -> None:
+    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
         """
-        Init the Webhook class, and init the super class RPC
-        :param freqtrade: Instance of a freqtrade bot
+        Init the Webhook class, and init the super class RPCHandler
+        :param rpc: instance of RPC Helper class
+        :param config: Configuration object
         :return: None
         """
-        super().__init__(freqtrade)
+        super().__init__(rpc, config)
 
         self._url = self._config['webhook']['url']
+
+        self._format = self._config['webhook'].get('format', 'form')
+
+        if self._format != 'form' and self._format != 'json':
+            raise NotImplementedError('Unknown webhook format `{}`, possible values are '
+                                      '`form` (default) and `json`'.format(self._format))
 
     def cleanup(self) -> None:
         """
@@ -65,7 +72,14 @@ class Webhook(RPC):
     def _send_msg(self, payload: dict) -> None:
         """do the actual call to the webhook"""
 
+        if self._format == 'form':
+            kwargs = {'data': payload}
+        elif self._format == 'json':
+            kwargs = {'json': payload}
+        else:
+            raise NotImplementedError('Unknown format: {}'.format(self._format))
+
         try:
-            post(self._url, data=payload)
+            post(self._url, **kwargs)
         except RequestException as exc:
             logger.warning("Could not call webhook url. Exception: %s", exc)

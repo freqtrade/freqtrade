@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
@@ -125,6 +126,20 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
                                        default_conf, {}, 1)
 
 
+def test_load_pairlist_verify_multi(mocker, markets, default_conf):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    plm = PairListManager(freqtrade.exchange, default_conf)
+    # Call different versions one after the other, should always consider what was passed in
+    # and have no side-effects (therefore the same check multiple times)
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', 'BUUU/BTC'], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['XRP/BTC', 'BUUU/BTC'], print) == ['XRP/BTC']
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+    assert plm.verify_whitelist(['ETH/USDT', 'XRP/USDT', ], print) == ['ETH/USDT', ]
+    assert plm.verify_whitelist(['ETH/BTC', 'XRP/BTC', ], print) == ['ETH/BTC', 'XRP/BTC']
+
+
 def test_refresh_market_pair_not_in_whitelist(mocker, markets, static_pl_conf):
 
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
@@ -153,6 +168,47 @@ def test_refresh_static_pairlist(mocker, markets, static_pl_conf):
     # Ensure all except those in whitelist are removed
     assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+
+
+@pytest.mark.parametrize('pairs,expected', [
+    (['NOEXIST/BTC', r'\+WHAT/BTC'],
+     ['ETH/BTC', 'TKN/BTC', 'TRST/BTC', 'NOEXIST/BTC', 'SWT/BTC', 'BCC/BTC', 'HOT/BTC']),
+    (['NOEXIST/BTC', r'*/BTC'],  # This is an invalid regex
+     []),
+])
+def test_refresh_static_pairlist_noexist(mocker, markets, static_pl_conf, pairs, expected, caplog):
+
+    static_pl_conf['pairlists'][0]['allow_inactive'] = True
+    static_pl_conf['exchange']['pair_whitelist'] += pairs
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+
+    # Ensure all except those in whitelist are removed
+    assert set(expected) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    if not expected:
+        assert log_has_re(r'Pair whitelist contains an invalid Wildcard: Wildcard error.*', caplog)
+
+
+def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
+    static_pl_conf['exchange']['pair_blacklist'] = ['*/BTC']
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = []
+    # Ensure all except those in whitelist are removed
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    log_has_re(r"Pair blacklist contains an invalid Wildcard.*", caplog)
 
 
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
@@ -677,6 +733,32 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
 
 
+def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplog):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'SpreadFilter', 'max_spread_ratio': 0.1}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    ftbot.pairlists.refresh_pairlist()
+
+    assert len(ftbot.pairlists.whitelist) == 5
+
+    tickers.return_value['ETH/BTC']['ask'] = 0.0
+    del tickers.return_value['TKN/BTC']
+    del tickers.return_value['LTC/BTC']
+    mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers)
+
+    ftbot.pairlists.refresh_pairlist()
+    assert log_has_re(r'Removed .* invalid ticker data.*', caplog)
+
+    assert len(ftbot.pairlists.whitelist) == 2
+
+
 @pytest.mark.parametrize("pairlistconfig,desc_expected,exception_expected", [
     ({"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010,
       "max_price": 1.0},
@@ -804,3 +886,73 @@ def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, o
     freqtrade.pairlists.refresh_pairlist()
     allowlist = freqtrade.pairlists.whitelist
     assert allowlist == allowlist_result
+
+
+@pytest.mark.parametrize('wildcardlist,pairs,expected', [
+    (['BTC/USDT'],
+     ['BTC/USDT'],
+     ['BTC/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT'], ['BTC/USDT']),  # Test one too many
+    (['.*/USDT'],
+     ['BTC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Wildcard simple
+    (['.*C/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETC/USDT']),  # Wildcard exclude one
+    (['.*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     ['BTC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT']),  # Wildcard exclude one
+    (['BTC/.*', 'ETH/.*'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP'],
+     ['BTC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP']),  # Wildcard exclude one
+    (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     None),
+    (['BTC/USD'],
+     ['BTC/USD', 'BTC/USDT'],
+     ['BTC/USD']),
+])
+def test_expand_pairlist(wildcardlist, pairs, expected):
+    if expected is None:
+        with pytest.raises(ValueError, match=r'Wildcard error in \*UP/USDT,'):
+            expand_pairlist(wildcardlist, pairs)
+    else:
+        assert sorted(expand_pairlist(wildcardlist, pairs)) == sorted(expected)
+
+
+@pytest.mark.parametrize('wildcardlist,pairs,expected', [
+    (['BTC/USDT'],
+     ['BTC/USDT'],
+     ['BTC/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETH/USDT']),
+    (['BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Test one too many
+    (['.*/USDT'],
+     ['BTC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETH/USDT']),  # Wildcard simple
+    (['.*C/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT'], ['BTC/USDT', 'ETC/USDT']),  # Wildcard exclude one
+    (['.*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     ['BTC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT']),  # Wildcard exclude one
+    (['BTC/.*', 'ETH/.*'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP'],
+     ['BTC/USDT', 'ETH/USDT', 'BTC/USD', 'ETH/EUR', 'BTC/GBP']),  # Wildcard exclude one
+    (['*UP/USDT', 'BTC/USDT', 'ETH/USDT'],
+     ['BTC/USDT', 'ETC/USDT', 'ETH/USDT', 'BTCUP/USDT', 'XRPUP/USDT', 'XRPDOWN/USDT'],
+     None),
+    (['HELLO/WORLD'], [], ['HELLO/WORLD']),  # Invalid pair kept
+    (['BTC/USD'],
+     ['BTC/USD', 'BTC/USDT'],
+     ['BTC/USD']),
+
+])
+def test_expand_pairlist_keep_invalid(wildcardlist, pairs, expected):
+    if expected is None:
+        with pytest.raises(ValueError, match=r'Wildcard error in \*UP/USDT,'):
+            expand_pairlist(wildcardlist, pairs, keep_invalid=True)
+    else:
+        assert sorted(expand_pairlist(wildcardlist, pairs, keep_invalid=True)) == sorted(expected)

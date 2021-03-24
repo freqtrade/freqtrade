@@ -12,6 +12,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.exceptions import OperationalException
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.strategy.interface import SellType
 
 
@@ -80,10 +81,12 @@ class Edge:
         if config.get('fee'):
             self.fee = config['fee']
         else:
-            self.fee = self.exchange.get_fee(symbol=self.config['exchange']['pair_whitelist'][0])
+            self.fee = self.exchange.get_fee(symbol=expand_pairlist(
+                self.config['exchange']['pair_whitelist'], list(self.exchange.markets))[0])
 
     def calculate(self) -> bool:
-        pairs = self.config['exchange']['pair_whitelist']
+        pairs = expand_pairlist(self.config['exchange']['pair_whitelist'],
+                                list(self.exchange.markets))
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (
@@ -101,6 +104,7 @@ class Edge:
                 exchange=self.exchange,
                 timeframe=self.strategy.timeframe,
                 timerange=self._timerange,
+                data_format=self.config.get('dataformat_ohlcv', 'json'),
             )
 
         data = load_data(
@@ -156,7 +160,8 @@ class Edge:
         available_capital = (total_capital + capital_in_trade) * self._capital_ratio
         allowed_capital_at_risk = available_capital * self._allowed_risk
         max_position_size = abs(allowed_capital_at_risk / stoploss)
-        position_size = min(max_position_size, free_capital)
+        # Position size must be below available capital.
+        position_size = min(min(max_position_size, free_capital), available_capital)
         if pair in self._cached_pairs:
             logger.info(
                 'winrate: %s, expectancy: %s, position size: %s, pair: %s,'

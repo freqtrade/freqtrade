@@ -6,33 +6,37 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.data.converter import ohlcv_to_dataframe
-from freqtrade.misc import (datesarray_to_datetimearray, file_dump_json, file_load_json,
-                            format_ms_time, pair_to_filename, plural, render_template,
-                            render_template_with_fallback, safe_value_fallback,
+from freqtrade.misc import (decimals_per_coin, file_dump_json, file_load_json, format_ms_time,
+                            pair_to_filename, plural, render_template,
+                            render_template_with_fallback, round_coin_value, safe_value_fallback,
                             safe_value_fallback2, shorten_date)
+
+
+def test_decimals_per_coin():
+    assert decimals_per_coin('USDT') == 3
+    assert decimals_per_coin('EUR') == 3
+    assert decimals_per_coin('BTC') == 8
+    assert decimals_per_coin('ETH') == 5
+
+
+def test_round_coin_value():
+    assert round_coin_value(222.222222, 'USDT') == '222.222 USDT'
+    assert round_coin_value(222.2, 'USDT') == '222.200 USDT'
+    assert round_coin_value(222.12745, 'EUR') == '222.127 EUR'
+    assert round_coin_value(0.1274512123, 'BTC') == '0.12745121 BTC'
+    assert round_coin_value(0.1274512123, 'ETH') == '0.12745 ETH'
+
+    assert round_coin_value(222.222222, 'USDT', False) == '222.222'
+    assert round_coin_value(222.2, 'USDT', False) == '222.200'
+    assert round_coin_value(222.12745, 'EUR', False) == '222.127'
+    assert round_coin_value(0.1274512123, 'BTC', False) == '0.12745121'
+    assert round_coin_value(0.1274512123, 'ETH', False) == '0.12745'
 
 
 def test_shorten_date() -> None:
     str_data = '1 day, 2 hours, 3 minutes, 4 seconds ago'
     str_shorten_data = '1 d, 2 h, 3 min, 4 sec ago'
     assert shorten_date(str_data) == str_shorten_data
-
-
-def test_datesarray_to_datetimearray(ohlcv_history_list):
-    dataframes = ohlcv_to_dataframe(ohlcv_history_list, "5m", pair="UNITTEST/BTC",
-                                    fill_missing=True)
-    dates = datesarray_to_datetimearray(dataframes['date'])
-
-    assert isinstance(dates[0], datetime.datetime)
-    assert dates[0].year == 2017
-    assert dates[0].month == 11
-    assert dates[0].day == 26
-    assert dates[0].hour == 8
-    assert dates[0].minute == 50
-
-    date_len = len(dates)
-    assert date_len == 2
 
 
 def test_file_dump_json(mocker) -> None:

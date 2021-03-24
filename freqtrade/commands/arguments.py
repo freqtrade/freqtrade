@@ -14,18 +14,18 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
 ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
-                                        "enable_protections",
+                                        "enable_protections", "dry_run_wallet",
                                         "strategy_list", "export", "exportfilename"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "use_max_market_positions",
-                                        "enable_protections",
+                                        "enable_protections", "dry_run_wallet",
                                         "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
@@ -69,6 +69,8 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe"]
+
+ARGS_INSTALL_UI = ["erase_ui_only"]
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
@@ -167,8 +169,8 @@ class Arguments:
 
         from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
                                         start_download_data, start_edge, start_hyperopt,
-                                        start_hyperopt_list, start_hyperopt_show, start_list_data,
-                                        start_list_exchanges, start_list_hyperopts,
+                                        start_hyperopt_list, start_hyperopt_show, start_install_ui,
+                                        start_list_data, start_list_exchanges, start_list_hyperopts,
                                         start_list_markets, start_list_strategies,
                                         start_list_timeframes, start_new_config, start_new_hyperopt,
                                         start_new_strategy, start_plot_dataframe, start_plot_profit,
@@ -354,6 +356,14 @@ class Arguments:
         )
         test_pairlist_cmd.set_defaults(func=start_test_pairlist)
         self._build_args(optionlist=ARGS_TEST_PAIRLIST, parser=test_pairlist_cmd)
+
+        # Add install-ui subcommand
+        install_ui_cmd = subparsers.add_parser(
+            'install-ui',
+            help='Install FreqUI',
+        )
+        install_ui_cmd.set_defaults(func=start_install_ui)
+        self._build_args(optionlist=ARGS_INSTALL_UI, parser=install_ui_cmd)
 
         # Add Plotting subcommand
         plot_dataframe_cmd = subparsers.add_parser(

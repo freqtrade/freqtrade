@@ -30,7 +30,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Run backtest
-docker run --rm -v $(pwd)/config.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
+docker run --rm -v $(pwd)/config_bittrex.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
 
 if [ $? -ne 0 ]; then
     echo "failed running backtest"
@@ -51,6 +51,8 @@ fi
 docker images
 
 docker push ${IMAGE_NAME}
+docker push ${IMAGE_NAME}:$TAG_PLOT
+docker push ${IMAGE_NAME}:$TAG
 if [ $? -ne 0 ]; then
     echo "failed pushing repo"
     return 1

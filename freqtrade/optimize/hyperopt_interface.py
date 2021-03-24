@@ -12,6 +12,7 @@ from skopt.space import Categorical, Dimension, Integer, Real
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
+from freqtrade.strategy import IStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class IHyperOpt(ABC):
     """
     ticker_interval: str  # DEPRECATED
     timeframe: str
+    strategy: IStrategy
 
     def __init__(self, config: dict) -> None:
         self.config = config

@@ -1,5 +1,6 @@
 from datetime import datetime
 from math import exp
+from typing import Dict
 
 from pandas import DataFrame
 
@@ -35,12 +36,13 @@ class SampleHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
                                min_date: datetime, max_date: datetime,
+                               config: Dict, processed: Dict[str, DataFrame],
                                *args, **kwargs) -> float:
         """
         Objective function, returns smaller number for better results
         """
-        total_profit = results.profit_percent.sum()
-        trade_duration = results.trade_duration.mean()
+        total_profit = results['profit_ratio'].sum()
+        trade_duration = results['trade_duration'].mean()
 
         trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
         profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)

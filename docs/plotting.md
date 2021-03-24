@@ -188,7 +188,7 @@ Sample configuration with inline comments explaining the process:
 	    'senkou_a': {
 	        'color': 'green', #optional
 	        'fill_to': 'senkou_b',
-	        'fill_label': 'Ichimoku Cloud' #optional,
+	        'fill_label': 'Ichimoku Cloud', #optional
 	        'fill_color': 'rgba(255,76,46,0.2)', #optional
 	    },
 	    # plot senkou_b, too. Not only the area to it.
@@ -208,6 +208,7 @@ Sample configuration with inline comments explaining the process:
     }
 
 ```
+
 !!! Note
     The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`,
     `macd`, `macdsignal`, `macdhist` and `rsi` are columns in the DataFrame created by the strategy.

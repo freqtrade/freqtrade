@@ -3,6 +3,7 @@
 Cryptocurrency Exchanges support
 """
 import asyncio
+import http
 import inspect
 import logging
 from copy import deepcopy
@@ -17,7 +18,7 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRU
                                             decimal_to_precision)
 from pandas import DataFrame
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, RetryableOrderError,
@@ -25,12 +26,19 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
                                        retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
 CcxtModuleType = Any
 
 
 logger = logging.getLogger(__name__)
+
+
+# Workaround for adding samesite support to pre 3.8 python
+# Only applies to python3.7, and only on certain exchanges (kraken)
+# Replicates the fix from starlette (which is actually causing this problem)
+http.cookies.Morsel._reserved["samesite"] = "SameSite"  # type: ignore
 
 
 class Exchange:
@@ -65,6 +73,7 @@ class Exchange:
         """
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
+        self._markets: Dict = {}
 
         self._config.update(config)
 
@@ -92,7 +101,6 @@ class Exchange:
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
         # Assign this directly for easy access
-        self._ohlcv_candle_limit = self._ft_has['ohlcv_candle_limit']
         self._ohlcv_partial_candle = self._ft_has['ohlcv_partial_candle']
 
         self._trades_pagination = self._ft_has['trades_pagination']
@@ -128,7 +136,8 @@ class Exchange:
                 self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-            self.validate_required_startup_candles(config.get('startup_candle_count', 0))
+            self.validate_required_startup_candles(config.get('startup_candle_count', 0),
+                                                   config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -138,6 +147,9 @@ class Exchange:
         """
         Destructor - clean up async stuff
         """
+        self.close()
+
+    def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
@@ -190,25 +202,31 @@ class Exchange:
         return list((self._api.timeframes or {}).keys())
 
     @property
-    def ohlcv_candle_limit(self) -> int:
-        """exchange ohlcv candle limit"""
-        return int(self._ohlcv_candle_limit)
-
-    @property
     def markets(self) -> Dict:
         """exchange ccxt markets"""
-        if not self._api.markets:
+        if not self._markets:
             logger.info("Markets were not loaded. Loading them now..")
             self._load_markets()
-        return self._api.markets
+        return self._markets
 
     @property
     def precisionMode(self) -> str:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
 
+    def ohlcv_candle_limit(self, timeframe: str) -> int:
+        """
+        Exchange ohlcv candle limit
+        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limts
+        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        :param timeframe: Timeframe to check
+        :return: Candle limit as integer
+        """
+        return int(self._ft_has.get('ohlcv_candle_limit_per_timeframe', {}).get(
+            timeframe, self._ft_has.get('ohlcv_candle_limit')))
+
     def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
-                    pairs_only: bool = False, active_only: bool = False) -> Dict:
+                    pairs_only: bool = False, active_only: bool = False) -> Dict[str, Any]:
         """
         Return exchange ccxt markets, filtered out by base currency and quote currency
         if this was requested in parameters.
@@ -290,11 +308,11 @@ class Exchange:
     def _load_markets(self) -> None:
         """ Initialize markets both sync and async """
         try:
-            self._api.load_markets()
+            self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
-        except ccxt.BaseError as e:
-            logger.warning('Unable to initialize markets. Reason: %s', e)
+        except ccxt.BaseError:
+            logger.exception('Unable to initialize markets.')
 
     def reload_markets(self) -> None:
         """Reload markets both sync and async if refresh interval has passed """
@@ -305,7 +323,7 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
-            self._api.load_markets(reload=True)
+            self._markets = self._api.load_markets(reload=True)
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
@@ -335,8 +353,9 @@ class Exchange:
         if not self.markets:
             logger.warning('Unable to validate pairs (assuming they are correct).')
             return
+        extended_pairs = expand_pairlist(pairs, list(self.markets), keep_invalid=True)
         invalid_pairs = []
-        for pair in pairs:
+        for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             # TODO: add a support for having coins in BTC/USDT format
             if self.markets and pair not in self.markets:
@@ -418,15 +437,16 @@ class Exchange:
             raise OperationalException(
                 f'Time in force policies are not supported for {self.name} yet.')
 
-    def validate_required_startup_candles(self, startup_candles: int) -> None:
+    def validate_required_startup_candles(self, startup_candles: int, timeframe: str) -> None:
         """
-        Checks if required startup_candles is more than ohlcv_candle_limit.
+        Checks if required startup_candles is more than ohlcv_candle_limit().
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
         """
-        if startup_candles + 5 > self._ft_has['ohlcv_candle_limit']:
+        candle_limit = self.ohlcv_candle_limit(timeframe)
+        if startup_candles + 5 > candle_limit:
             raise OperationalException(
                 f"This strategy requires {startup_candles} candles to start. "
-                f"{self.name} only provides {self._ft_has['ohlcv_candle_limit']}.")
+                f"{self.name} only provides {candle_limit} for {timeframe}.")
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -486,6 +506,41 @@ class Exchange:
             return precision
         else:
             return 1 / pow(10, precision)
+
+    def get_min_pair_stake_amount(self, pair: str, price: float,
+                                  stoploss: float) -> Optional[float]:
+        try:
+            market = self.markets[pair]
+        except KeyError:
+            raise ValueError(f"Can't get market information for symbol {pair}")
+
+        if 'limits' not in market:
+            return None
+
+        min_stake_amounts = []
+        limits = market['limits']
+        if ('cost' in limits and 'min' in limits['cost']
+                and limits['cost']['min'] is not None):
+            min_stake_amounts.append(limits['cost']['min'])
+
+        if ('amount' in limits and 'min' in limits['amount']
+                and limits['amount']['min'] is not None):
+            min_stake_amounts.append(limits['amount']['min'] * price)
+
+        if not min_stake_amounts:
+            return None
+
+        # reserve some percent defined in config (5% default) + stoploss
+        amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
+                                                        DEFAULT_AMOUNT_RESERVE_PERCENT)
+        amount_reserve_percent += abs(stoploss)
+        # it should not be more than 50%
+        amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
+
+        # The value returned should satisfy both limits: for amount (base currency) and
+        # for cost (quote, stake currency), so max() is used here.
+        # See also #2575 at github.
+        return max(min_stake_amounts) * amount_reserve_percent
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
@@ -658,8 +713,8 @@ class Exchange:
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
-            if (pair not in self._api.markets or
-                    self._api.markets[pair].get('active', False) is False):
+            if (pair not in self.markets or
+                    self.markets[pair].get('active', False) is False):
                 raise ExchangeError(f"Pair {pair} not available")
             data = self._api.fetch_ticker(pair)
             return data
@@ -676,7 +731,7 @@ class Exchange:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
-        Async over one pair, assuming we get `self._ohlcv_candle_limit` candles per call.
+        Async over one pair, assuming we get `self.ohlcv_candle_limit()` candles per call.
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
@@ -706,7 +761,7 @@ class Exchange:
         Download historic ohlcv
         """
 
-        one_call = timeframe_to_msecs(timeframe) * self._ohlcv_candle_limit
+        one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
         logger.debug(
             "one_call: %s msecs (%s)",
             one_call,
@@ -808,7 +863,7 @@ class Exchange:
 
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
-                                                     limit=self._ohlcv_candle_limit)
+                                                     limit=self.ohlcv_candle_limit(timeframe))
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
@@ -936,7 +991,7 @@ class Exchange:
         while True:
             t = await self._async_fetch_trades(pair, since=since)
             if len(t):
-                since = t[-1][1]
+                since = t[-1][0]
                 trades.extend(t)
                 # Reached the end of the defined-download period
                 if until and t[-1][0] > until:
@@ -981,7 +1036,7 @@ class Exchange:
         """
         Get trade history data using asyncio.
         Handles all async work and returns the list of candles.
-        Async over one pair, assuming we get `self._ohlcv_candle_limit` candles per call.
+        Async over one pair, assuming we get `self.ohlcv_candle_limit()` candles per call.
         :param pair: Pair to download
         :param since: Timestamp in milliseconds to get history from
         :param until: Timestamp in milliseconds. Defaults to current timestamp if not defined.
@@ -1001,7 +1056,8 @@ class Exchange:
         :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
-        return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
+        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+                and order.get('filled') == 0.0)
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
@@ -1176,6 +1232,8 @@ class Exchange:
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+                return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets()

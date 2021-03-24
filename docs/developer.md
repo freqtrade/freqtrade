@@ -2,7 +2,7 @@
 
 This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
-All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/MA9v74M) or [slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-jaut7r4m-Y17k4x5mcQES9a9swKuxbg) where you can ask questions.
+All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/MA9v74M) or [slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) where you can ask questions.
 
 ## Documentation
 
@@ -177,7 +177,7 @@ In `VolumePairList`, this implements different methods of sorting, does early va
 
 ### Protections
 
-Best read the [Protection documentation](configuration.md#protections) to understand protections.
+Best read the [Protection documentation](plugins.md#protections) to understand protections.
 This Guide is directed towards Developers who want to develop a new protection.
 
 No protection should use datetime directly, but use the provided `date_now` variable for date calculations. This preserves the ability to backtest protections.
@@ -241,6 +241,9 @@ The `IProtection` parent class provides a helper method for this in `calculate_l
     This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.
 
 Most exchanges supported by CCXT should work out of the box.
+
+To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
+Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
 
 ### Stoploss On Exchange
 

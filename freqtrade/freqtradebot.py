@@ -179,6 +179,7 @@ class FreqtradeBot(LoggingMixin):
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
         # while selling is in process, since telegram messages arrive in an different thread.
         with self._sell_lock:
+            trades = Trade.get_open_trades()
             # First process current opened trades (positions)
             self.exit_positions(trades)
 
@@ -200,7 +201,7 @@ class FreqtradeBot(LoggingMixin):
         Notify the user when the bot is stopped
         and there are still open trades active.
         """
-        open_trades = Trade.get_trades([Trade.is_open == 1]).all()
+        open_trades = Trade.get_trades([Trade.is_open.is_(True)]).all()
 
         if len(open_trades) != 0:
             msg = {
@@ -233,7 +234,7 @@ class FreqtradeBot(LoggingMixin):
             _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
         return _whitelist
 
-    def get_free_open_trades(self):
+    def get_free_open_trades(self) -> int:
         """
         Return the number of free open trades slots or 0 if
         max number of open trades reached
@@ -246,6 +247,10 @@ class FreqtradeBot(LoggingMixin):
         Updates open orders based on order list kept in the database.
         Mainly updates the state of orders - but may also close trades
         """
+        if self.config['dry_run'] or self.config['exchange'].get('skip_open_order_update', False):
+            # Updating open orders in dry-run does not make sense and will fail.
+            return
+
         orders = Order.get_open_orders()
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
@@ -256,6 +261,7 @@ class FreqtradeBot(LoggingMixin):
                 self.update_trade_state(order.trade, order.order_id, fo)
 
             except ExchangeError as e:
+
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
 
     def update_closed_trades_without_assigned_fees(self):
@@ -263,6 +269,10 @@ class FreqtradeBot(LoggingMixin):
         Update closed trades without close fees assigned.
         Only acts when Orders are in the database, otherwise the last orderid is unknown.
         """
+        if self.config['dry_run']:
+            # Updating open orders in dry-run does not make sense and will fail.
+            return
+
         trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
         for trade in trades:
 
@@ -422,124 +432,13 @@ class FreqtradeBot(LoggingMixin):
             ticker = self.exchange.fetch_ticker(pair)
             ticker_rate = ticker[bid_strategy['price_side']]
             if ticker['last'] and ticker_rate > ticker['last']:
-                balance = self.config['bid_strategy']['ask_last_balance']
+                balance = bid_strategy['ask_last_balance']
                 ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
             used_rate = ticker_rate
 
         self._buy_rate_cache[pair] = used_rate
 
         return used_rate
-
-    def get_trade_stake_amount(self, pair: str) -> float:
-        """
-        Calculate stake amount for the trade
-        :return: float: Stake amount
-        :raise: DependencyException if the available stake amount is too low
-        """
-        stake_amount: float
-        # Ensure wallets are uptodate.
-        self.wallets.update()
-
-        if self.edge:
-            stake_amount = self.edge.stake_amount(
-                pair,
-                self.wallets.get_free(self.config['stake_currency']),
-                self.wallets.get_total(self.config['stake_currency']),
-                Trade.total_open_trades_stakes()
-            )
-        else:
-            stake_amount = self.config['stake_amount']
-            if stake_amount == constants.UNLIMITED_STAKE_AMOUNT:
-                stake_amount = self._calculate_unlimited_stake_amount()
-
-        return self._check_available_stake_amount(stake_amount)
-
-    def _get_available_stake_amount(self) -> float:
-        """
-        Return the total currently available balance in stake currency,
-        respecting tradable_balance_ratio.
-        Calculated as
-        <open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
-        """
-        val_tied_up = Trade.total_open_trades_stakes()
-
-        # Ensure <tradable_balance_ratio>% is used from the overall balance
-        # Otherwise we'd risk lowering stakes with each open trade.
-        # (tied up + current free) * ratio) - tied up
-        available_amount = ((val_tied_up + self.wallets.get_free(self.config['stake_currency'])) *
-                            self.config['tradable_balance_ratio']) - val_tied_up
-        return available_amount
-
-    def _calculate_unlimited_stake_amount(self) -> float:
-        """
-        Calculate stake amount for "unlimited" stake amount
-        :return: 0 if max number of trades reached, else stake_amount to use.
-        """
-        free_open_trades = self.get_free_open_trades()
-        if not free_open_trades:
-            return 0
-
-        available_amount = self._get_available_stake_amount()
-
-        return available_amount / free_open_trades
-
-    def _check_available_stake_amount(self, stake_amount: float) -> float:
-        """
-        Check if stake amount can be fulfilled with the available balance
-        for the stake currency
-        :return: float: Stake amount
-        """
-        available_amount = self._get_available_stake_amount()
-
-        if self.config['amend_last_stake_amount']:
-            # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
-            # Otherwise the remaining amount is too low to trade.
-            if available_amount > (stake_amount * self.config['last_stake_amount_min_ratio']):
-                stake_amount = min(stake_amount, available_amount)
-            else:
-                stake_amount = 0
-
-        if available_amount < stake_amount:
-            raise DependencyException(
-                f"Available balance ({available_amount} {self.config['stake_currency']}) is "
-                f"lower than stake amount ({stake_amount} {self.config['stake_currency']})"
-            )
-
-        return stake_amount
-
-    def _get_min_pair_stake_amount(self, pair: str, price: float) -> Optional[float]:
-        try:
-            market = self.exchange.markets[pair]
-        except KeyError:
-            raise ValueError(f"Can't get market information for symbol {pair}")
-
-        if 'limits' not in market:
-            return None
-
-        min_stake_amounts = []
-        limits = market['limits']
-        if ('cost' in limits and 'min' in limits['cost']
-                and limits['cost']['min'] is not None):
-            min_stake_amounts.append(limits['cost']['min'])
-
-        if ('amount' in limits and 'min' in limits['amount']
-                and limits['amount']['min'] is not None):
-            min_stake_amounts.append(limits['amount']['min'] * price)
-
-        if not min_stake_amounts:
-            return None
-
-        # reserve some percent defined in config (5% default) + stoploss
-        amount_reserve_percent = 1.0 - self.config.get('amount_reserve_percent',
-                                                       constants.DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += self.strategy.stoploss
-        # it should not be more than 50%
-        amount_reserve_percent = max(amount_reserve_percent, 0.5)
-
-        # The value returned should satisfy both limits: for amount (base currency) and
-        # for cost (quote, stake currency), so max() is used here.
-        # See also #2575 at github.
-        return max(min_stake_amounts) / amount_reserve_percent
 
     def create_trade(self, pair: str) -> bool:
         """
@@ -574,7 +473,8 @@ class FreqtradeBot(LoggingMixin):
         (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
-            stake_amount = self.get_trade_stake_amount(pair)
+            stake_amount = self.wallets.get_trade_stake_amount(pair, self.get_free_open_trades(),
+                                                               self.edge)
             if not stake_amount:
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
                 return False
@@ -620,7 +520,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None) -> bool:
+    def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
+                    forcebuy: bool = False) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -637,7 +538,8 @@ class FreqtradeBot(LoggingMixin):
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
 
-        min_stake_amount = self._get_min_pair_stake_amount(pair, buy_limit_requested)
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, buy_limit_requested,
+                                                                   self.strategy.stoploss)
         if min_stake_amount is not None and min_stake_amount > stake_amount:
             logger.warning(
                 f"Can't open a new trade for {pair}: stake amount "
@@ -647,6 +549,10 @@ class FreqtradeBot(LoggingMixin):
 
         amount = stake_amount / buy_limit_requested
         order_type = self.strategy.order_types['buy']
+        if forcebuy:
+            # Forcebuy can define a different ordertype
+            order_type = self.strategy.order_types.get('forcebuy', order_type)
+
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
                 time_in_force=time_in_force):
@@ -839,7 +745,13 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning("Sell Price at location from orderbook could not be determined.")
                 raise PricingError from e
         else:
-            rate = self.exchange.fetch_ticker(pair)[ask_strategy['price_side']]
+            ticker = self.exchange.fetch_ticker(pair)
+            ticker_rate = ticker[ask_strategy['price_side']]
+            if ticker['last'] and ticker_rate < ticker['last']:
+                balance = ask_strategy.get('bid_last_balance', 0.0)
+                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
+            rate = ticker_rate
+
         if rate is None:
             raise PricingError(f"Sell-Rate for {pair} was empty.")
         self._sell_rate_cache[pair] = rate
@@ -989,7 +901,8 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
-        if stoploss_order and self.config.get('trailing_stop', False):
+        if stoploss_order and (self.config.get('trailing_stop', False)
+                               or self.config.get('use_custom_stoploss', False)):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
             # value immediately
@@ -1030,7 +943,7 @@ class FreqtradeBot(LoggingMixin):
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-            trade, sell_rate, datetime.utcnow(), buy, sell,
+            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
@@ -1116,13 +1029,13 @@ class FreqtradeBot(LoggingMixin):
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
-        if order['status'] not in ('canceled', 'closed'):
+        if order['status'] not in ('cancelled', 'canceled', 'closed'):
             corder = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
                                                             trade.amount)
             # Avoid race condition where the order could not be cancelled coz its already filled.
             # Simply bailing here is the only safe way - as this order will then be
             # handled in the next iteration.
-            if corder.get('status') not in ('canceled', 'closed'):
+            if corder.get('status') not in ('cancelled', 'canceled', 'closed'):
                 logger.warning(f"Order {trade.open_order_id} for {trade.pair} not cancelled.")
                 return False
         else:
@@ -1169,7 +1082,9 @@ class FreqtradeBot(LoggingMixin):
             if not self.exchange.check_order_canceled_empty(order):
                 try:
                     # if trade is not partially completed, just delete the order
-                    self.exchange.cancel_order(trade.open_order_id, trade.pair)
+                    co = self.exchange.cancel_order_with_result(trade.open_order_id, trade.pair,
+                                                                trade.amount)
+                    trade.update_order(co)
                 except InvalidOrderException:
                     logger.exception(f"Could not cancel sell order {trade.open_order_id}")
                     return 'error cancelling order'
@@ -1177,6 +1092,7 @@ class FreqtradeBot(LoggingMixin):
             else:
                 reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
                 logger.info('Sell order %s for %s.', reason, trade)
+                trade.update_order(order)
 
             trade.close_rate = None
             trade.close_rate_requested = None
@@ -1251,6 +1167,10 @@ class FreqtradeBot(LoggingMixin):
         if sell_reason == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
+        if sell_reason == SellType.FORCE_SELL:
+            # Force sells (default to the sell_type defined in the strategy,
+            # but we allow this value to be changed)
+            order_type = self.strategy.order_types.get("forcesell", order_type)
 
         amount = self._safe_sell_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
@@ -1279,6 +1199,7 @@ class FreqtradeBot(LoggingMixin):
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
+        trade.sell_order_status = ''
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.value
         # In case of market sell orders the order can be closed immediately

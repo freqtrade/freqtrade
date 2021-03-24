@@ -9,11 +9,35 @@ from pathlib import Path
 from typing import Any
 from typing.io import IO
 
-import numpy as np
 import rapidjson
+
+from freqtrade.constants import DECIMAL_PER_COIN_FALLBACK, DECIMALS_PER_COIN
 
 
 logger = logging.getLogger(__name__)
+
+
+def decimals_per_coin(coin: str):
+    """
+    Helper method getting decimal amount for this coin
+    example usage: f".{decimals_per_coin('USD')}f"
+    :param coin: Which coin are we printing the price / value for
+    """
+    return DECIMALS_PER_COIN.get(coin, DECIMAL_PER_COIN_FALLBACK)
+
+
+def round_coin_value(value: float, coin: str, show_coin_name=True) -> str:
+    """
+    Get price value for this coin
+    :param value: Value to be printed
+    :param coin: Which coin are we printing the price / value for
+    :param show_coin_name: Return string in format: "222.22 USDT" or "222.22"
+    :return: Formatted / rounded value (with or without coin name)
+    """
+    if show_coin_name:
+        return f"{value:.{decimals_per_coin(coin)}f} {coin}"
+    else:
+        return f"{value:.{decimals_per_coin(coin)}f}"
 
 
 def shorten_date(_date: str) -> str:
@@ -26,20 +50,6 @@ def shorten_date(_date: str) -> str:
     new_date = re.sub('days?', 'd', new_date)
     new_date = re.sub('^an?', '1', new_date)
     return new_date
-
-
-############################################
-# Used by scripts                          #
-# Matplotlib doesn't support ::datetime64, #
-# so we need to convert it into ::datetime #
-############################################
-def datesarray_to_datetimearray(dates: np.ndarray) -> np.ndarray:
-    """
-    Convert an pandas-array of timestamps into
-    An numpy-array of datetimes
-    :return: numpy-array of datetime
-    """
-    return dates.dt.to_pydatetime()
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:

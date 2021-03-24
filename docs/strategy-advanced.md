@@ -8,11 +8,303 @@ If you're just getting started, please be familiar with the methods described in
 !!! Note
     All callback methods described below should only be implemented in a strategy if they are actually used.
 
+!!! Tip
+    You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
+
+## Storing information
+
+Storing information can be accomplished by creating a new dictionary within the strategy class.
+
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+
+```python
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # Check if the entry already exists
+        if not metadata["pair"] in self.custom_info:
+            # Create empty entry for this pair
+            self.custom_info[metadata["pair"]] = {}
+
+        if "crosstime" in self.custom_info[metadata["pair"]]:
+            self.custom_info[metadata["pair"]]["crosstime"] += 1
+        else:
+            self.custom_info[metadata["pair"]]["crosstime"] = 1
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+***
+
+### Storing custom information using DatetimeIndex from `dataframe`
+
+Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
+
+```python
+import talib.abstract as ta
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # using "ATR" here as example
+        dataframe['atr'] = ta.ATR(dataframe)
+        if self.dp.runmode.value in ('backtest', 'hyperopt'):
+          # add indicator mapped to correct DatetimeIndex to custom_info
+          self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].copy().set_index('date')
+        return dataframe
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+See `custom_stoploss` examples below on how to access the saved dataframe columns
+
+## Custom stoploss
+
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
+
+The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
+The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
+
+The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
+
+To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
+
+``` python
+# additional imports required
+from datetime import datetime
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+        """
+        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+        e.g. returning -0.05 would create a stoploss 5% below current_rate.
+        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns the initial stoploss value
+        Only called when use_custom_stoploss is set to True.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New stoploss value, relative to the currentrate
+        """
+        return -0.04
+```
+
+Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchange-freqtrade)).
+
+!!! Note "Use of dates"
+    All time-based calculations should be done based on `current_time` - using `datetime.now()` or `datetime.utcnow()` is discouraged, as this will break backtesting support.
+
+!!! Tip "Trailing stoploss"
+    It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
+
+### Custom stoploss examples
+
+The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.
+
+#### Time based trailing stop
+
+Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
+
+``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+        if current_time - timedelta(minutes=120) > trade.open_date_utc:
+            return -0.05
+        elif current_time - timedelta(minutes=60) > trade.open_date_utc:
+            return -0.10
+        return 1
+```
+
+#### Different stoploss per pair
+
+Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
+
+``` python
+from datetime import datetime
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        if pair in ('ETH/BTC', 'XRP/BTC'):
+            return -0.10
+        elif pair in ('LTC/BTC'):
+            return -0.05
+        return -0.15
+```
+
+#### Trailing stoploss with positive offset
+
+Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.
+
+Please note that the stoploss can only increase, values lower than the current stoploss are ignored.
+
+``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        if current_profit < 0.04:
+            return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
+
+        # After reaching the desired offset, allow the stoploss to trail by half the profit
+        desired_stoploss = current_profit / 2
+
+        # Use a minimum of 2.5% and a maximum of 5%
+        return max(min(desired_stoploss, 0.05), 0.025)
+```
+
+#### Calculating stoploss relative to open price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
+
+#### Stepped stoploss
+
+Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.
+
+* Use the regular stoploss until 20% profit is reached
+* Once profit is > 20% - set stoploss to 7% above open price.
+* Once profit is > 25% - set stoploss to 15% above open price.
+* Once profit is > 40% - set stoploss to 25% above open price.
+
+
+``` python
+from datetime import datetime
+from freqtrade.persistence import Trade
+from freqtrade.strategy import stoploss_from_open
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        # evaluate highest to lowest, so that highest possible stop is used
+        if current_profit > 0.40:
+            return stoploss_from_open(0.25, current_profit)
+        elif current_profit > 0.25:
+            return stoploss_from_open(0.15, current_profit)
+        elif current_profit > 0.20:
+            return stoploss_from_open(0.07, current_profit)
+
+        # return maximum stoploss value, keeping current stoploss price unchanged
+        return 1
+```
+#### Custom stoploss using an indicator from dataframe example
+
+Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
+
+See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
+
+!!! Warning
+    only use .iat[-1] in live mode, not in backtesting/hyperopt
+    otherwise you will look into the future
+    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
+
+``` python
+from freqtrade.persistence import Trade
+from freqtrade.state import RunMode
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        result = 1
+        if self.custom_info and pair in self.custom_info and trade:
+            # using current_time directly (like below) will only work in backtesting.
+            # so check "runmode" to make sure that it's only used in backtesting/hyperopt
+            if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
+              relative_sl = self.custom_info[pair].loc[current_time]['atr']
+            # in live / dry-run, it'll be really the current time
+            else:
+              # but we can just use the last entry from an already analyzed dataframe instead
+              dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                       timeframe=self.timeframe)
+              # WARNING
+              # only use .iat[-1] in live mode, not in backtesting/hyperopt
+              # otherwise you will look into the future
+              # see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
+              relative_sl = dataframe['atr'].iat[-1]
+
+            if (relative_sl is not None):
+                # new stoploss relative to current_rate
+                new_stoploss = (current_rate-relative_sl)/current_rate
+                # turn into relative negative offset required by `custom_stoploss` return implementation
+                result = new_stoploss - 1
+
+        return result
+```
+
+---
+
 ## Custom order timeout rules
 
-Simple, timebased order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
+Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
-However, freqtrade also offers a custom callback for both ordertypes, which allows you to decide based on custom criteria if a order did time out or not.
+However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if a order did time out or not.
 
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
@@ -25,10 +317,10 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -39,21 +331,21 @@ class Awesomestrategy(IStrategy):
     }
 
     def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 
 
     def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 ```
@@ -67,7 +359,7 @@ class Awesomestrategy(IStrategy):
 from datetime import datetime
 from freqtrade.persistence import Trade
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -95,6 +387,8 @@ class Awesomestrategy(IStrategy):
         return False
 ```
 
+---
+
 ## Bot loop start callback
 
 A simple callback which is called once at the start of every bot throttling iteration.
@@ -103,7 +397,7 @@ This can be used to perform calculations which are pair independent (apply to al
 ``` python
 import requests
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -128,7 +422,7 @@ class Awesomestrategy(IStrategy):
 `confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
 ``` python
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -164,7 +458,7 @@ class Awesomestrategy(IStrategy):
 from freqtrade.persistence import Trade
 
 
-class Awesomestrategy(IStrategy):
+class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
@@ -200,6 +494,8 @@ class Awesomestrategy(IStrategy):
 
 ```
 
+---
+
 ## Derived strategies
 
 The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:
@@ -219,4 +515,41 @@ class MyAwesomeStrategy2(MyAwesomeStrategy):
     trailing_stop = True
 ```
 
-Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.
+Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.
+
+!!! Note "Parent-strategy in different files"
+    If you have the parent-strategy in a different file, you'll need to add the following to the top of your "child"-file to ensure proper loading, otherwise freqtrade may not be able to load the parent strategy correctly.
+
+    ``` python
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent))
+
+    from myawesomestrategy import MyAwesomeStrategy
+    ```
+
+## Embedding Strategies
+
+Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
+This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
+in your chosen config file.
+
+### Encoding a string as BASE64
+
+This is a quick example, how to generate the BASE64 string in python
+
+```python
+from base64 import urlsafe_b64encode
+
+with open(file, 'r') as f:
+    content = f.read()
+content = urlsafe_b64encode(content.encode('utf-8'))
+```
+
+The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following
+
+```json
+"strategy": "NameOfStrategy:BASE64String"
+```
+
+Please ensure that 'NameOfStrategy' is identical to the strategy name!

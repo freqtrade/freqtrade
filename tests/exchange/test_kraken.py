@@ -89,6 +89,7 @@ def test_get_balances_prod(default_conf, mocker):
         '2ST': balance_item.copy(),
         '3ST': balance_item.copy(),
         '4ST': balance_item.copy(),
+        'EUR': balance_item.copy(),
     })
     kraken_open_orders = [{'symbol': '1ST/EUR',
                            'type': 'limit',
@@ -123,21 +124,22 @@ def test_get_balances_prod(default_conf, mocker):
                            'remaining': 2.0,
                            },
                           {'status': 'open',
-                           'symbol': 'BTC/3ST',
+                           'symbol': '3ST/EUR',
                            'type': 'limit',
                            'side': 'buy',
-                           'price': 20,
+                           'price': 0.02,
                            'cost': 0.0,
-                           'amount': 3.0,
+                           'amount': 100.0,
                            'filled': 0.0,
                            'average': 0.0,
-                           'remaining': 3.0,
+                           'remaining': 100.0,
                            }]
     api_mock.fetch_open_orders = MagicMock(return_value=kraken_open_orders)
     default_conf['dry_run'] = False
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
     balances = exchange.get_balances()
-    assert len(balances) == 4
+    assert len(balances) == 5
+
     assert balances['1ST']['free'] == 9.0
     assert balances['1ST']['total'] == 10.0
     assert balances['1ST']['used'] == 1.0
@@ -146,13 +148,17 @@ def test_get_balances_prod(default_conf, mocker):
     assert balances['2ST']['total'] == 10.0
     assert balances['2ST']['used'] == 4.0
 
-    assert balances['3ST']['free'] == 7.0
+    assert balances['3ST']['free'] == 10.0
     assert balances['3ST']['total'] == 10.0
-    assert balances['3ST']['used'] == 3.0
+    assert balances['3ST']['used'] == 0.0
 
     assert balances['4ST']['free'] == 10.0
     assert balances['4ST']['total'] == 10.0
     assert balances['4ST']['used'] == 0.0
+
+    assert balances['EUR']['free'] == 8.0
+    assert balances['EUR']['total'] == 10.0
+    assert balances['EUR']['used'] == 2.0
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
                            "get_balances", "fetch_balance")
 

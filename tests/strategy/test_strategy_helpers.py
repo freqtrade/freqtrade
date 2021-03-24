@@ -1,7 +1,10 @@
+from math import isclose
+
 import numpy as np
 import pandas as pd
+import pytest
 
-from freqtrade.strategy import merge_informative_pair, timeframe_to_minutes
+from freqtrade.strategy import merge_informative_pair, stoploss_from_open, timeframe_to_minutes
 
 
 def generate_test_data(timeframe: str, size: int):
@@ -47,17 +50,17 @@ def test_merge_informative_pair():
     assert 'volume_1h' in result.columns
     assert result['volume'].equals(data['volume'])
 
-    # First 4 rows are empty
+    # First 3 rows are empty
     assert result.iloc[0]['date_1h'] is pd.NaT
     assert result.iloc[1]['date_1h'] is pd.NaT
     assert result.iloc[2]['date_1h'] is pd.NaT
-    assert result.iloc[3]['date_1h'] is pd.NaT
     # Next 4 rows contain the starting date (0:00)
+    assert result.iloc[3]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[4]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[5]['date_1h'] == result.iloc[0]['date']
     assert result.iloc[6]['date_1h'] == result.iloc[0]['date']
-    assert result.iloc[7]['date_1h'] == result.iloc[0]['date']
     # Next 4 rows contain the next Hourly date original date row 4
+    assert result.iloc[7]['date_1h'] == result.iloc[4]['date']
     assert result.iloc[8]['date_1h'] == result.iloc[4]['date']
 
 
@@ -86,3 +89,46 @@ def test_merge_informative_pair_same():
 
     # Dates match 1:1
     assert result['date_15m'].equals(result['date'])
+
+
+def test_merge_informative_pair_lower():
+    data = generate_test_data('1h', 40)
+    informative = generate_test_data('15m', 40)
+
+    with pytest.raises(ValueError, match=r"Tried to merge a faster timeframe .*"):
+        merge_informative_pair(data, informative, '1h', '15m', ffill=True)
+
+
+def test_stoploss_from_open():
+    open_price_ranges = [
+        [0.01, 1.00, 30],
+        [1, 100, 30],
+        [100, 10000, 30],
+    ]
+    current_profit_range = [-0.99, 2, 30]
+    desired_stop_range = [-0.50, 0.50, 30]
+
+    for open_range in open_price_ranges:
+        for open_price in np.linspace(*open_range):
+            for desired_stop in np.linspace(*desired_stop_range):
+
+                # -1 is not a valid current_profit, should return 1
+                assert stoploss_from_open(desired_stop, -1) == 1
+
+                for current_profit in np.linspace(*current_profit_range):
+                    current_price = open_price * (1 + current_profit)
+                    expected_stop_price = open_price * (1 + desired_stop)
+
+                    stoploss = stoploss_from_open(desired_stop, current_profit)
+
+                    assert stoploss >= 0
+                    assert stoploss <= 1
+
+                    stop_price = current_price * (1 - stoploss)
+
+                    # there is no correct answer if the expected stop price is above
+                    # the current price
+                    if expected_stop_price > current_price:
+                        assert stoploss == 0
+                    else:
+                        assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)

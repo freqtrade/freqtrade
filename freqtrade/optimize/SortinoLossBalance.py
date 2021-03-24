@@ -56,22 +56,22 @@ class SortinoLossBalance(IHyperOptLoss):
             # index becomes open_time
             pair_trades = (
                 results.loc[results["pair"].values == pair]
-                .set_index("open_time")
+                .set_index("open_date")
                 .resample(timeframe)
                 .asfreq()
                 .reindex(date_index)
             )
             open_rate = pair_trades["open_rate"].fillna(0).values
-            open_time = pair_trades.index.values
-            close_time = pair_trades["close_time"].values
+            open_date = pair_trades.index.values
+            close_date = pair_trades["close_date"].values
             close = pair_candles["close"].values
-            profits = pair_trades["profit_percent"].values - slippage
+            profits = pair_trades["profit_ratio"].values - slippage
             # at the open_time candle, the balance is matched to the close of the candle
             pair_balance = np.where(
                 # only the rows with actual trades
                 (open_rate > 0)
                 # only if the trade is not also closed on the same candle
-                & (open_time != close_time),
+                & (open_date != close_date),
                 1 - open_rate / close - slippage,
                 # or initialize to 0
                 0,
@@ -81,16 +81,16 @@ class SortinoLossBalance(IHyperOptLoss):
                 # only rows with actual trades
                 (open_rate > 0)
                 # the rows where a close happens
-                & (open_time == close_time),
+                & (open_date == close_date),
                 # use to profits
                 profits,
                 # otherwise leave unchanged
                 pair_balance,
             )
 
-            # how much time each trade was open, close - open time
-            periods = close_time - open_time
-            # how many candles each trade was open, set as a counter at each trade open_time index
+            # how much time each trade was open, close - open date
+            periods = close_date - open_date
+            # how many candles each trade was open, set as a counter at each trade open_date index
             hops = np.nan_to_num(periods / timedelta).astype(int)
 
             # each loop update one timeframe forward, the balance on each timeframe

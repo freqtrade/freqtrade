@@ -214,9 +214,6 @@ class Configuration:
         self._args_to_config(
             config, argname='enable_protections',
             logstring='Parameter --enable-protections detected, enabling Protections. ...')
-        # Setting max_open_trades to infinite if -1
-        if config.get('max_open_trades') == -1:
-            config['max_open_trades'] = float('inf')
 
         if 'use_max_market_positions' in self.args and not self.args["use_max_market_positions"]:
             config.update({'use_max_market_positions': False})
@@ -228,11 +225,23 @@ class Configuration:
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+        # Setting max_open_trades to infinite if -1
+        if config.get('max_open_trades') == -1:
+            config['max_open_trades'] = float('inf')
+
+        if self.args.get('stake_amount', None):
+            # Convert explicitly to float to support CLI argument for both unlimited and value
+            try:
+                self.args['stake_amount'] = float(self.args['stake_amount'])
+            except ValueError:
+                pass
 
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
-
+        self._args_to_config(config, argname='dry_run_wallet',
+                             logstring='Parameter --dry-run-wallet detected, '
+                             'overriding dry_run_wallet to: {} ...')
         self._args_to_config(config, argname='fee',
                              logstring='Parameter --fee detected, '
                              'setting fee to: {} ...')

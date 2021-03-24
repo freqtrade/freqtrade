@@ -61,6 +61,12 @@ jobs:
     - name: Tests
       run: |
         pytest --random-order --cov=freqtrade --cov-config=.coveragerc
+      if: matrix.python-version != '3.9'
+
+    - name: Tests incl. ccxt compatibility tests
+      run: |
+        pytest --random-order --cov=freqtrade --cov-config=.coveragerc --longrun
+      if: matrix.python-version == '3.9'
 
     - name: Coveralls
       if: (startsWith(matrix.os, 'ubuntu-20') && matrix.python-version == '3.8')
@@ -73,13 +79,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -96,7 +102,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -111,7 +117,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -140,8 +146,9 @@ jobs:
       run: |
         cd build_helpers && ./install_ta-lib.sh ${HOME}/dependencies/; cd ..
 
-    - name: Installation - *nix
+    - name: Installation - macOS
       run: |
+        brew install hdf5 c-blosc
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
@@ -164,13 +171,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -187,7 +194,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -231,13 +238,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config.json.example config.json
+        cp config_bittrex.json.example config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -250,7 +257,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -281,7 +288,7 @@ jobs:
         mkdocs build
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -304,7 +311,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -391,7 +398,7 @@ jobs:
 
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}

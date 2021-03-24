@@ -43,7 +43,7 @@ class SpreadFilter(IPairList):
         :param ticker: ticker dict as returned from ccxt.load_markets()
         :return: True if the pair can stay, false if it should be removed
         """
-        if 'bid' in ticker and 'ask' in ticker:
+        if 'bid' in ticker and 'ask' in ticker and ticker['ask']:
             spread = 1 - ticker['bid'] / ticker['ask']
             if spread > self._max_spread_ratio:
                 self.log_once(f"Removed {pair} from whitelist, because spread "
@@ -52,4 +52,6 @@ class SpreadFilter(IPairList):
                 return False
             else:
                 return True
+        self.log_once(f"Removed {pair} from whitelist due to invalid ticker data: {ticker}",
+                      logger.info)
         return False
