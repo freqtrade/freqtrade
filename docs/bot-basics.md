@@ -53,6 +53,7 @@ This loop will be repeated again and again until the bot is stopped.
 * Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
 * Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair)
+* Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy)
 * Loops per candle simulating entry and exit points.
 * Generate backtest report output
 
