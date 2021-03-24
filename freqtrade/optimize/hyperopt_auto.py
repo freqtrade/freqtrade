@@ -39,7 +39,7 @@ class HyperOptAuto(IHyperOpt):
         :param name: function name.
         :return: a requested function.
         """
-        hyperopt_cls = getattr(self.strategy, 'HyperOpt')
+        hyperopt_cls = getattr(self.strategy, 'HyperOpt', None)
         default_func = getattr(super(), name)
         if hyperopt_cls:
             return getattr(hyperopt_cls, name, default_func)
