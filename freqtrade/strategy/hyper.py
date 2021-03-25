@@ -2,9 +2,11 @@
 IHyperStrategy interface, hyperoptable Parameter class.
 This module defines a base class for auto-hyperoptable strategies.
 """
+from contextlib import suppress
 from typing import Iterator, Tuple, Any, Optional, Sequence, Union
 
-from skopt.space import Integer, Real, Categorical
+with suppress(ImportError):
+    from skopt.space import Integer, Real, Categorical
 
 from freqtrade.exceptions import OperationalException
 
@@ -38,7 +40,7 @@ class BaseParameter(object):
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
 
-    def get_space(self, name: str) -> Union[Integer, Real, Categorical]:
+    def get_space(self, name: str) -> Union['Integer', 'Real', 'Categorical']:
         raise NotImplementedError()
 
 
@@ -62,7 +64,7 @@ class IntParameter(BaseParameter):
             raise OperationalException('IntParameter space must be [min, max]')
         super().__init__(space=space, default=default, category=category, **kwargs)
 
-    def get_space(self, name: str) -> Integer:
+    def get_space(self, name: str) -> 'Integer':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
@@ -90,7 +92,7 @@ class FloatParameter(BaseParameter):
             raise OperationalException('IntParameter space must be [min, max]')
         super().__init__(space=space, default=default, category=category, **kwargs)
 
-    def get_space(self, name: str) -> Real:
+    def get_space(self, name: str) -> 'Real':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
@@ -121,7 +123,7 @@ class CategoricalParameter(BaseParameter):
                 'IntParameter space must be [a, b, ...] (at least two parameters)')
         super().__init__(space=space, default=default, category=category, **kwargs)
 
-    def get_space(self, name: str) -> Categorical:
+    def get_space(self, name: str) -> 'Categorical':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
