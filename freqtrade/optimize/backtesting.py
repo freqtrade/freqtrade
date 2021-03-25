@@ -30,7 +30,6 @@ from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
-
 logger = logging.getLogger(__name__)
 
 # Indexes for backtest tuples
@@ -253,20 +252,21 @@ class Backtesting:
                                          sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
-        time_in_force = self.strategy.order_time_in_force['sell']
-        # confirm_trade_exit
-        if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
-                pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
-                rate=sell_row[LOW_IDX],
-                time_in_force=time_in_force,
-                sell_reason=sell.sell_type.value):
-            return None
-
         if sell.sell_flag:
             trade.close_date = sell_row[DATE_IDX]
             trade.sell_reason = sell.sell_type.value
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+
+            # Confirm trade exit:
+            time_in_force = self.strategy.order_time_in_force['sell']
+            if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                    pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
+                    rate=closerate,
+                    time_in_force=time_in_force,
+                    sell_reason=sell.sell_type.value):
+                return None
+
             trade.close(closerate, show_msg=False)
             return trade
 
@@ -283,7 +283,7 @@ class Backtesting:
 
         order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['sell']
-        # confirm_trade_entry
+        # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
                 time_in_force=time_in_force):
