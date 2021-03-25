@@ -8,9 +8,9 @@ import os
 from datetime import datetime
 
 import numpy as np
-from pandas import DataFrame, DatetimeIndex, Timedelta, date_range
-from scipy.ndimage.interpolation import shift
+from pandas import DataFrame, Timedelta
 
+from freqtrade.data.btanalysis import calculate_outstanding_balance
 from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
@@ -44,85 +44,15 @@ class SortinoLossBalance(IHyperOptLoss):
         Uses Sortino Ratio calculation.
         """
         hloc = kwargs["processed"]
-        timeframe = SortinoLossBalance.ticker_interval
-        timedelta = Timedelta(timeframe)
+        timeframe = SortinoLossBalance.timeframe
 
-        date_index: DatetimeIndex = date_range(
-            start=min_date, end=max_date, freq=timeframe, normalize=True
-        )
-        balance_total: np.ndarray = []
-        for pair in hloc:
-            pair_candles = hloc[pair].set_index("date").reindex(date_index)
-            # index becomes open_time
-            pair_trades = (
-                results.loc[results["pair"].values == pair]
-                .set_index("open_date")
-                .resample(timeframe)
-                .asfreq()
-                .reindex(date_index)
-            )
-            open_rate = pair_trades["open_rate"].fillna(0).values
-            open_date = pair_trades.index.values
-            close_date = pair_trades["close_date"].values
-            close = pair_candles["close"].values
-            profits = pair_trades["profit_ratio"].values - slippage
-            # at the open_time candle, the balance is matched to the close of the candle
-            pair_balance = np.where(
-                # only the rows with actual trades
-                (open_rate > 0)
-                # only if the trade is not also closed on the same candle
-                & (open_date != close_date),
-                1 - open_rate / close - slippage,
-                # or initialize to 0
-                0,
-            )
-            # at the close_time candle, the balance just uses the profits col
-            pair_balance = pair_balance + np.where(
-                # only rows with actual trades
-                (open_rate > 0)
-                # the rows where a close happens
-                & (open_date == close_date),
-                # use to profits
-                profits,
-                # otherwise leave unchanged
-                pair_balance,
-            )
-
-            # how much time each trade was open, close - open date
-            periods = close_date - open_date
-            # how many candles each trade was open, set as a counter at each trade open_date index
-            hops = np.nan_to_num(periods / timedelta).astype(int)
-
-            # each loop update one timeframe forward, the balance on each timeframe
-            # where there is at least one hop left to do (>0)
-            for _ in range(1, hops.max() + 1):
-                # move hops and open_rate by one
-                hops = shift(hops, 1, cval=0)
-                open_rate = shift(open_rate, 1, cval=0)
-                pair_balance = np.where(
-                    hops > 0, pair_balance + (1 - open_rate / close) - slippage, pair_balance
-                )
-                hops -= 1
-
-            # same as above but one loop per pair
-            # trades_indexes = np.nonzero(hops)[0]
-            # for i in trades_indexes:
-            #     # start from 1 because counters are set at the open_time balance
-            #     # which was already added previously
-            #     for c in range(1, hops[i]):
-            #         offset = i + c
-            #         # the open rate is always for the current date, not the offset
-            #         pair_balance[offset] += 1 - open_rate[i] / close[offset] - slippage
-
-            # add the pair balance to the total
-            balance_total.append(pair_balance)
-        balance_total = np.array(balance_total).sum(axis=0)
+        balance_total = calculate_outstanding_balance(results, timeframe, hloc)
 
         returns = balance_total.mean()
         # returns = balance_total.values.mean()
 
         downside_returns = np.where(balance_total < 0, balance_total, 0)
-        downside_risk = np.sqrt((downside_returns ** 2).sum() / len(date_index))
+        downside_risk = np.sqrt((downside_returns ** 2).sum() / len(hloc))
 
         if downside_risk != 0.0:
             sortino_ratio = (returns - target) / downside_risk * annualize
