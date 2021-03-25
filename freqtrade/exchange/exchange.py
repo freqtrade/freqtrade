@@ -727,7 +727,7 @@ class Exchange:
             raise OperationalException(e) from e
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
-                           since_ms: int) -> List:
+                           since_ms: int, until_ms: int = None) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -737,9 +737,13 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
+
+        if not until_ms:
+            until_ms = datetime.now(timezone.utc).timestamp() * 1000
+
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                           since_ms=since_ms))
+                                           since_ms=since_ms, until_ms=until_ms))
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
                                  since_ms: int) -> DataFrame:
@@ -756,7 +760,8 @@ class Exchange:
 
     async def _async_get_historic_ohlcv(self, pair: str,
                                         timeframe: str,
-                                        since_ms: int) -> List:
+                                        since_ms: int,
+                                        until_ms: int) -> List:
         """
         Download historic ohlcv
         """
@@ -769,7 +774,7 @@ class Exchange:
         )
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
-            range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
+            range(since_ms, until_ms, one_call)]
 
         results = await asyncio.gather(*input_coroutines, return_exceptions=True)
 
