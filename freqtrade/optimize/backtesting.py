@@ -252,12 +252,22 @@ class Backtesting:
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
-        if sell.sell_flag:
 
+        if sell.sell_flag:
             trade.close_date = sell_row[DATE_IDX]
             trade.sell_reason = sell.sell_type.value
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+
+            # Confirm trade exit:
+            time_in_force = self.strategy.order_time_in_force['sell']
+            if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
+                    pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
+                    rate=closerate,
+                    time_in_force=time_in_force,
+                    sell_reason=sell.sell_type.value):
+                return None
+
             trade.close(closerate, show_msg=False)
             return trade
 
@@ -271,6 +281,15 @@ class Backtesting:
         except DependencyException:
             return None
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
+
+        order_type = self.strategy.order_types['buy']
+        time_in_force = self.strategy.order_time_in_force['sell']
+        # Confirm trade entry:
+        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
+                time_in_force=time_in_force):
+            return None
+
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
             trade = LocalTrade(
