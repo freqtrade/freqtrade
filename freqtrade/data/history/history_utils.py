@@ -152,71 +152,114 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     return data, start_ms
 
 
-def _download_pair_history(datadir: Path,
-                           exchange: Exchange,
-                           pair: str, *,
-                           timeframe: str = '5m',
-                           timerange: Optional[TimeRange] = None,
-                           data_handler: IDataHandler = None) -> bool:
-    """
-    Download latest candles from the exchange for the pair and timeframe passed in parameters
-    The data is downloaded starting from the last correct data that
-    exists in a cache. If timerange starts earlier than the data in the cache,
-    the full data will be redownloaded
+def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
+                               timeframe: str = '5m',
+                               since: datetime = None, until: datetime = None,
+                               data_handler: IDataHandler = None,
+                               fill_gaps: bool = False) -> bool:
 
-    Based on @Rybolov work: https://github.com/rybolov/freqtrade-data
-
-    :param pair: pair to download
-    :param timeframe: Timeframe (e.g "5m")
-    :param timerange: range of time to download
-    :return: bool with success state
-    """
     data_handler = get_datahandler(datadir, data_handler=data_handler)
 
     try:
         logger.info(
-            f'Download history data for pair: "{pair}", timeframe: {timeframe} '
-            f'and store in {datadir}.'
+            f'Downloading history data for par: "{pair}", timeframe: '
+            f'{timeframe} and storing in "{datadir}"'
         )
 
-        # data, since_ms = _load_cached_data_for_updating_old(datadir, pair, timeframe, timerange)
-        data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
-                                                        data_handler=data_handler)
+        # Load existing data for updating
+        cached = data_handler.ohlcv_load(pair, timeframe=timeframe,
+                                       timerange=None, fill_missing=False,
+                                       warn_no_data=False)
 
-        logger.debug("Current Start: %s",
-                     f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
-        logger.debug("Current End: %s",
-                     f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
+        cached_start, cached_end = None, None
+        if not cached.empty:
+            cached_start = cached.iloc[0]['date']
+            cached_end = cached.iloc[-1]['date']
 
-        # Default since_ms to 30 days if nothing is given
+        logger.debug("Cached Start: %s",
+                     f"{cached_start:%Y-%m-%d %H:%M:%S}" if cached_start else 'None')
+        logger.debug("Cached End: %s",
+                     f"{cached_end:%Y-%m-%d %H:%M:%S}" if not cached_end else 'None')
+
+        since_ms, until_ms = None, None
+
+        if cached.empty:
+            if since:
+                since_ms = since.timestamp() * 1000
+            else:
+                since_ms = arrow.utcnow().shift(days=-30).float_timestamp * \
+                           1000
+            if until:
+                until_ms = until.timestamp() * 1000
+            else:
+                until_ms = datetime.now(timezone.utc).timestamp() * 1000
+        else:
+            if since:
+                if since < cached_start:
+                    since_ms = since.timestamp() * 1000
+                elif cached_start <= since < cached_end:
+                    logger.warning("The timerange overlaps with cached data."
+                                   " This may lead to unexpected outcomes "
+                                   "including overwriting existing data!")
+                    since_ms = since.timestamp() * 1000
+                else:
+                    if fill_gaps:
+                        since_ms = cached_end.timestamp() * 1000
+                    else:
+                        logger.warning("The timerange starts after cached "
+                                       "data. There will be a gap in the "
+                                       "saved data! Use --fill-gaps to "
+                                       "prevent this!")
+                        since_ms = since.timestamp() * 1000
+            else:
+                since_ms = cached_end.timestamp() * 1000
+            if until:
+                if until < cached_start:
+                    if fill_gaps:
+                        until_ms = cached_start.timestamp() * 1000
+                    else:
+                        logger.warning("The timerange ends before the cached "
+                                       "data. There will be a gap in the "
+                                       "saved data! Use --fill-gaps to "
+                                       "prevent this!")
+                        until_ms = until.timestamp() * 1000
+                elif cached_start < until <= cached_end:
+                    logger.warning("The timerange overlaps with cached data."
+                                   " This may lead to unexpected outcomes "
+                                   "including overwriting existing data!")
+                    until_ms = until.timestamp() * 1000
+                else:
+                    until_ms = until.timestamp()
+            else:
+                until_ms = datetime.now(timezone.utc).timestamp() * 1000
+
         new_data = exchange.get_historic_ohlcv(pair=pair,
                                                timeframe=timeframe,
-                                               since_ms=since_ms if since_ms else
-                                               int(arrow.utcnow().shift(
-                                                   days=-30).float_timestamp) * 1000
-                                               )
-        # TODO: Maybe move parsing to exchange class (?)
-        new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
-                                           fill_missing=False, drop_incomplete=True)
-        if data.empty:
-            data = new_dataframe
+                                               since_ms=since_ms,
+                                               until_ms=until_ms)
+
+        new_df = ohlcv_to_dataframe(new_data, timeframe, pair,
+                                    fill_missing=False)
+
+        if cached.empty:
+            data = new_df
         else:
-            # Run cleaning again to ensure there were no duplicate candles
-            # Especially between existing and new data.
-            data = clean_ohlcv_dataframe(data.append(new_dataframe), timeframe, pair,
-                                         fill_missing=False, drop_incomplete=False)
+            data = clean_ohlcv_dataframe(cached.append(new_df), timeframe,
+                                         pair, fill_missing=True,
+                                         drop_incomplete=False)
 
         logger.debug("New  Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
         logger.debug("New End: %s",
                      f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
 
-        data_handler.ohlcv_store(pair, timeframe, data=data)
+        data_handler.ohlcv_store(pair, timeframe, data)
         return True
 
     except Exception:
         logger.exception(
-            f'Failed to download history data for pair: "{pair}", timeframe: {timeframe}.'
+            f'Failed to download history data for pari: "{pair}", '
+            f'timeframe: {timeframe}.'
         )
         return False
 
