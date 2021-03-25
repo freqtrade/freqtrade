@@ -287,9 +287,12 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                         f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
+            # What happens when until should be None?
+            since, until = timerange.to_datetime()
             _download_pair_history(datadir=datadir, exchange=exchange,
                                    pair=pair, timeframe=str(timeframe),
-                                   timerange=timerange, data_handler=data_handler)
+                                   since=since, until=until,
+                                   data_handler=data_handler)
     return pairs_not_available
 
 

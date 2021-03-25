@@ -4,6 +4,7 @@ This module contains the argument manager class
 import logging
 import re
 from typing import Optional
+from datetime import datetime, timezone
 
 import arrow
 
@@ -32,6 +33,10 @@ class TimeRange:
         """Override the default Equals behavior"""
         return (self.starttype == other.starttype and self.stoptype == other.stoptype
                 and self.startts == other.startts and self.stopts == other.stopts)
+
+    def to_datetime(self) -> (datetime, datetime):
+        return datetime.fromtimestamp(self.startts, timezone.utc), \
+               datetime.fromtimestamp(self.stopts, timezone.utc)
 
     def subtract_start(self, seconds: int) -> None:
         """
