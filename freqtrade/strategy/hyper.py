@@ -18,13 +18,13 @@ class BaseParameter(object):
     category: Optional[str]
     default: Any
     value: Any
-    space: Sequence[Any]
+    opt_range: Sequence[Any]
 
-    def __init__(self, *, space: Sequence[Any], default: Any, category: Optional[str] = None,
+    def __init__(self, *, opt_range: Sequence[Any], default: Any, space: Optional[str] = None,
                  **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.(Integer|Real|Categorical).
@@ -32,10 +32,10 @@ class BaseParameter(object):
         if 'name' in kwargs:
             raise OperationalException(
                 'Name is determined by parameter field name and can not be specified manually.')
-        self.category = category
+        self.category = space
         self._space_params = kwargs
         self.value = default
-        self.space = space
+        self.opt_range = opt_range
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
@@ -47,88 +47,97 @@ class BaseParameter(object):
 class IntParameter(BaseParameter):
     default: int
     value: int
-    space: Sequence[int]
+    opt_range: Sequence[int]
 
-    def __init__(self, *, space: Sequence[int], default: int, category: Optional[str] = None,
-                 **kwargs):
+    def __init__(self, low: Union[int, Sequence[int]], high: Optional[int] = None, *, default: int,
+                 space: Optional[str] = None, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param space: Optimization space, [min, max].
+        :param low: lower end of optimization space or [low, high].
+        :param high: high end of optimization space. Must be none of entire range is passed first parameter.
         :param default: A default value.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
-        if len(space) != 2:
-            raise OperationalException('IntParameter space must be [min, max]')
-        super().__init__(space=space, default=default, category=category, **kwargs)
+        if high is None:
+            if len(low) != 2:
+                raise OperationalException('IntParameter space must be [low, high]')
+            opt_range = low
+        else:
+            opt_range = [low, high]
+        super().__init__(opt_range=opt_range, default=default, space=space, **kwargs)
 
     def get_space(self, name: str) -> 'Integer':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
         """
-        return Integer(*self.space, name=name, **self._space_params)
+        return Integer(*self.opt_range, name=name, **self._space_params)
 
 
 class FloatParameter(BaseParameter):
     default: float
     value: float
-    space: Sequence[float]
+    opt_range: Sequence[float]
 
-    def __init__(self, *, space: Sequence[float], default: float, category: Optional[str] = None,
-                 **kwargs):
+    def __init__(self, low: Union[float, Sequence[float]], high: Optional[int] = None, *,
+                 default: float, space: Optional[str] = None, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param space: Optimization space, [min, max].
+        :param low: lower end of optimization space or [low, high].
+        :param high: high end of optimization space. Must be none of entire range is passed first parameter.
         :param default: A default value.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Real.
         """
-        if len(space) != 2:
-            raise OperationalException('IntParameter space must be [min, max]')
-        super().__init__(space=space, default=default, category=category, **kwargs)
+        if high is None:
+            if len(low) != 2:
+                raise OperationalException('IntParameter space must be [low, high]')
+            opt_range = low
+        else:
+            opt_range = [low, high]
+        super().__init__(opt_range=opt_range, default=default, space=space, **kwargs)
 
     def get_space(self, name: str) -> 'Real':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
         """
-        return Real(*self.space, name=name, **self._space_params)
+        return Real(*self.opt_range, name=name, **self._space_params)
 
 
 class CategoricalParameter(BaseParameter):
     default: Any
     value: Any
-    space: Sequence[Any]
+    opt_range: Sequence[Any]
 
-    def __init__(self, *, space: Sequence[Any], default: Optional[Any] = None,
-                 category: Optional[str] = None,
-                 **kwargs):
+    def __init__(self, categories: Sequence[Any], *, default: Optional[Any] = None,
+                 space: Optional[str] = None, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param space: Optimization space, [a, b, ...].
+        :param categories: Optimization space, [a, b, ...].
         :param default: A default value. If not specified, first item from specified space will be
          used.
-        :param category: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Categorical.
         """
-        if len(space) < 2:
+        if len(categories) < 2:
             raise OperationalException(
                 'IntParameter space must be [a, b, ...] (at least two parameters)')
-        super().__init__(space=space, default=default, category=category, **kwargs)
+        super().__init__(opt_range=categories, default=default, space=space, **kwargs)
 
     def get_space(self, name: str) -> 'Categorical':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
         """
-        return Categorical(self.space, name=name, **self._space_params)
+        return Categorical(self.opt_range, name=name, **self._space_params)
 
 
 class HyperStrategyMixin(object):
