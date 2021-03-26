@@ -67,6 +67,7 @@ optional arguments:
                         Requires `--export` to be set as well. Example:
                         `--export-filename=user_data/backtest_results/backtest
                         _today.json`
+  --show-days           Print a days breakdown table of the backtest results
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

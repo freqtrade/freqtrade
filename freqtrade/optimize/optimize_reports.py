@@ -13,7 +13,6 @@ from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
 from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +31,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
         filename = Path.joinpath(
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-            ).with_suffix(recordfilename.suffix)
+        ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -75,8 +74,8 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         'profit_total': profit_total,
         'profit_total_pct': round(profit_total * 100.0, 2),
         'duration_avg': str(timedelta(
-                            minutes=round(result['trade_duration'].mean()))
-                            ) if not result.empty else '0:00',
+            minutes=round(result['trade_duration'].mean()))
+        ) if not result.empty else '0:00',
         # 'duration_max': str(timedelta(
         #                     minutes=round(result['trade_duration'].max()))
         #                     ) if not result.empty else '0:00',
@@ -161,12 +160,11 @@ def generate_strategy_metrics(all_results: Dict) -> List[Dict]:
     for strategy, results in all_results.items():
         tabular_data.append(_generate_result_line(
             results['results'], results['config']['dry_run_wallet'], strategy)
-            )
+        )
     return tabular_data
 
 
 def generate_edge_table(results: dict) -> str:
-
     floatfmt = ('s', '.10g', '.2f', '.2f', '.2f', '.2f', 'd', 'd', 'd')
     tabular_data = []
     headers = ['Pair', 'Stoploss', 'Win Rate', 'Risk Reward Ratio',
@@ -189,6 +187,29 @@ def generate_edge_table(results: dict) -> str:
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(tabular_data, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
+
+
+def generate_days_breakdown_stats(results: DataFrame, starting_balance: int) -> Dict[str, Any]:
+    days = results.resample('1d', on='close_date')
+    days_stats = []
+    for name, day in days:
+        profit_abs = day['profit_abs'].sum().round(10)
+        profit_total = day['profit_abs'].sum() / starting_balance
+        wins = sum(day['profit_abs'] > 0)
+        draws = sum(day['profit_abs'] == 0)
+        loses = sum(day['profit_abs'] < 0)
+        profit_percentage = round(profit_total * 100.0, 2)
+        days_stats.append(
+            {
+                'date': name.strftime('%d/%m/%Y'),
+                'profit_percentage': profit_percentage,
+                'profit_abs': profit_abs,
+                'wins': wins,
+                'draws': draws,
+                'loses': loses
+            }
+        )
+    return days_stats
 
 
 def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
@@ -266,6 +287,8 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                                                   starting_balance=starting_balance,
                                                   results=results.loc[results['is_open']],
                                                   skip_nan=True)
+        days_breakdown_stats = generate_days_breakdown_stats(results=results,
+                                                             starting_balance=starting_balance)
         daily_stats = generate_daily_stats(results)
         best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                         key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
@@ -283,6 +306,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
             'results_per_pair': pair_results,
             'sell_reason_summary': sell_reason_stats,
             'left_open_trades': left_open_results,
+            'days_breakdown_stats': days_breakdown_stats,
             'total_trades': len(results),
             'total_volume': float(results['stake_amount'].sum()),
             'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
@@ -425,6 +449,28 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
+def text_table_days_breakdown(days_breakdown_stats: List[Dict[str, Any]], stake_currency: str) -> str:
+    """
+    Generate small table with Backtest results by days
+    :param days_breakdown_stats: Days breakdown metrics
+    :param stake_currency: Stakecurrency used
+    :return: pretty printed table with tabulate as string
+    """
+    headers = [
+        'Day',
+        'Profit %',
+        f'Tot Profit {stake_currency}',
+        'Wins',
+        'Draws',
+        'Losses',
+    ]
+    output = [[
+        d['date'], d['profit_percentage'], round_coin_value(d['profit_abs'], stake_currency, False),
+        d['wins'], d['draws'], d['loses'],
+    ] for d in days_breakdown_stats]
+    return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
+
+
 def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     Generate summary table per strategy
@@ -463,6 +509,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
             ('Trades per day', strat_results['trades_per_day']),
+            ('Avg. daily profit %',
+             f"{round(strat_results['profit_total'] / strat_results['backtest_days'] * 100, 2)}%"),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
@@ -482,7 +530,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Worst day', round_coin_value(strat_results['backtest_worst_day_abs'],
                                            strat_results['stake_currency'])),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
-                f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
+                                   f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
@@ -510,7 +558,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                          strat_results['stake_currency'])
         stake_amount = round_coin_value(
             strat_results['stake_amount'], strat_results['stake_currency']
-            ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
+        ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 
         message = ("No trades made. "
                    f"Your starting balance was {start_balance}, "
@@ -541,6 +589,13 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         if isinstance(table, str) and len(table) > 0:
             print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
         print(table)
+
+        if config.get('show_days', False):
+            table = text_table_days_breakdown(days_breakdown_stats=results['days_breakdown_stats'],
+                                              stake_currency=stake_currency)
+            if isinstance(table, str) and len(table) > 0:
+                print(' DAYS BREAKDOWN '.center(len(table.splitlines()[0]), '='))
+            print(table)
 
         table = text_table_add_metrics(results)
         if isinstance(table, str) and len(table) > 0:

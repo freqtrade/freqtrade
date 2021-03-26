@@ -183,6 +183,12 @@ AVAILABLE_CLI_OPTIONS = {
         type=float,
         metavar='FLOAT',
     ),
+    "show_days": Arg(
+        '--show-days',
+        help='Print days breakdown for backtest results',
+        action='store_true',
+        default=False,
+    ),
     # Edge
     "stoploss_range": Arg(
         '--stoplosses',

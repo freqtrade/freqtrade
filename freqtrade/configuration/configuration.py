@@ -260,6 +260,9 @@ class Configuration:
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
 
+        self._args_to_config(config, argname='show_days',
+                             logstring='Parameter --show-days detected ...')
+
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
             txt_range = eval(self.args["stoploss_range"])
