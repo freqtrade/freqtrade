@@ -165,7 +165,7 @@ Depending on the space you want to optimize, only some of the below are required
 * fill `sell_indicator_space` - for sell signal optimization
 
 !!! Note
-    `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
+    `populate_indicators` needs to create all indicators any of the spaces may use, otherwise hyperopt will not work.
 
 Optional in hyperopt - can also be loaded from a strategy (recommended):
 
