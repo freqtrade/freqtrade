@@ -196,9 +196,6 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                 if since < cached_start:
                     since_ms = since.timestamp() * 1000
                 elif cached_start <= since < cached_end:
-                    logger.warning("The timerange overlaps with cached data."
-                                   " This may lead to unexpected outcomes "
-                                   "including overwriting existing data!")
                     since_ms = since.timestamp() * 1000
                 else:
                     since_ms = cached_end.timestamp() * 1000
@@ -208,9 +205,6 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                 if until < cached_start:
                     until_ms = cached_start.timestamp() * 1000
                 elif cached_start < until <= cached_end:
-                    logger.warning("The timerange overlaps with cached data."
-                                   " This may lead to unexpected outcomes "
-                                   "including overwriting existing data!")
                     until_ms = until.timestamp() * 1000
                 else:
                     until_ms = until.timestamp()
