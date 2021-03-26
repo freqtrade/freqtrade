@@ -90,8 +90,8 @@ def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) ->
     load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'])
     assert file.is_file()
     assert not log_has(
-        'Download history data for pair: "UNITTEST/BTC", interval: 1m '
-        'and store in None.', caplog
+        'Downloading history data for pair: "UNITTEST/BTC", interval: 1m '
+        'and storing in None.', caplog
     )
     _clean_test_file(file)
 
@@ -135,8 +135,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=testdatadir, timeframe='1m', pair='MEME/BTC')
     assert file.is_file()
     assert log_has_re(
-        'Download history data for pair: "MEME/BTC", timeframe: 1m '
-        'and store in .*', caplog
+        'Downloading history data for pair: "MEME/BTC", timeframe: 1m '
+        'and storing in .*', caplog
     )
     _clean_test_file(file)
 
