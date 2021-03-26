@@ -162,7 +162,7 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
     try:
         since, until = None, None
         if timerange:
-            since, until = timerange.to_datetime()
+            since, until = timerange.startts, timerange.stopts
 
         logger.info(
             f'Downloading history data for par: "{pair}", timeframe: '
@@ -176,49 +176,35 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
 
         cached_start, cached_end = None, None
         if not cached.empty:
-            cached_start = cached.iloc[0]['date']
-            cached_end = cached.iloc[-1]['date']
+            cached_start = cached.iloc[0]['date'].timestamp()
+            cached_end = cached.iloc[-1]['date'].timestamp()
 
         logger.debug("Cached Start: %s",
-                     f"{cached_start:%Y-%m-%d %H:%M:%S}" if cached_start else 'None')
+                     f"{cached.iloc[0]['date']:%Y-%m-%d %H:%M:%S}"
+                     if cached_start else 'None')
         logger.debug("Cached End: %s",
-                     f"{cached_end:%Y-%m-%d %H:%M:%S}" if not cached_end else 'None')
+                     f"{cached.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}"
+                     if not cached_end else 'None')
 
         # Set the bounds for downloading
         since_ms, until_ms = None, None
         if cached.empty:
-            if since:
-                since_ms = since.timestamp() * 1000
-            else:
-                # The default lower-bound is 30 days before the current time.
-                since_ms = arrow.utcnow().shift(days=-30).float_timestamp * \
-                           1000
-            if until:
-                until_ms = until.timestamp() * 1000
-            else:
-                # Default upper-bound is the current time.
-                until_ms = datetime.now(timezone.utc).timestamp() * 1000
+            since_ms = (since if since else
+                        arrow.utcnow().shift(days=-30).timestamp()) * 1000
+            until_ms = (until if until else
+                        datetime.now(timezone.utc).timestamp()) * 1000
         else:
             # Determine lower bound
             if since:
-                if since < cached_start:
-                    since_ms = since.timestamp() * 1000
-                elif cached_start <= since < cached_end:
-                    since_ms = since.timestamp() * 1000
-                else:
-                    since_ms = cached_end.timestamp() * 1000
+                since_ms = (since if since < cached_end else cached_end) * 1000
             else:
                 # Set lower-bound to the end of the cache if not provided
-                since_ms = cached_end.timestamp() * 1000
+                since_ms = cached_end * 1000
 
             # Determine upper bound
             if until:
-                if until < cached_start:
-                    until_ms = cached_start.timestamp() * 1000
-                elif cached_start < until <= cached_end:
-                    until_ms = until.timestamp() * 1000
-                else:
-                    until_ms = until.timestamp()
+                until_ms = (until if until > cached_start else cached_start) \
+                           * 1000
             else:
                 # Default upper-bound is the current time.
                 until_ms = datetime.now(timezone.utc).timestamp() * 1000
