@@ -153,10 +153,9 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
 
 
 def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
-                               timeframe: str = '5m',
-                               since: datetime = None, until: datetime = None,
-                               data_handler: IDataHandler = None,
-                               fill_gaps: bool = False) -> bool:
+                           timeframe: str = '5m',
+                           since: datetime = None, until: datetime = None,
+                           data_handler: IDataHandler = None) -> bool:
 
     data_handler = get_datahandler(datadir, data_handler=data_handler)
 
@@ -182,7 +181,6 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                      f"{cached_end:%Y-%m-%d %H:%M:%S}" if not cached_end else 'None')
 
         since_ms, until_ms = None, None
-
         if cached.empty:
             if since:
                 since_ms = since.timestamp() * 1000
@@ -203,26 +201,12 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                                    "including overwriting existing data!")
                     since_ms = since.timestamp() * 1000
                 else:
-                    if fill_gaps:
-                        since_ms = cached_end.timestamp() * 1000
-                    else:
-                        logger.warning("The timerange starts after cached "
-                                       "data. There will be a gap in the "
-                                       "saved data! Use --fill-gaps to "
-                                       "prevent this!")
-                        since_ms = since.timestamp() * 1000
+                    since_ms = cached_end.timestamp() * 1000
             else:
                 since_ms = cached_end.timestamp() * 1000
             if until:
                 if until < cached_start:
-                    if fill_gaps:
-                        until_ms = cached_start.timestamp() * 1000
-                    else:
-                        logger.warning("The timerange ends before the cached "
-                                       "data. There will be a gap in the "
-                                       "saved data! Use --fill-gaps to "
-                                       "prevent this!")
-                        until_ms = until.timestamp() * 1000
+                    until_ms = cached_start.timestamp() * 1000
                 elif cached_start < until <= cached_end:
                     logger.warning("The timerange overlaps with cached data."
                                    " This may lead to unexpected outcomes "
