@@ -88,7 +88,7 @@ class FloatParameter(BaseParameter):
     value: float
     opt_range: Sequence[float]
 
-    def __init__(self, low: Union[float, Sequence[float]], high: Optional[int] = None, *,
+    def __init__(self, low: Union[float, Sequence[float]], high: Optional[float] = None, *,
                  default: float, space: Optional[str] = None, enabled: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
