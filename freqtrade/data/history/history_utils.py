@@ -184,7 +184,7 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                      if cached_start else 'None')
         logger.debug("Cached End: %s",
                      f"{cached.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}"
-                     if not cached_end else 'None')
+                     if cached_end else 'None')
 
         # Set the bounds for downloading
         since_ms, until_ms = None, None
