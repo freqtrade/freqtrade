@@ -13,6 +13,7 @@ from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
                                        calculate_max_drawdown)
 from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +32,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
         filename = Path.joinpath(
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-        ).with_suffix(recordfilename.suffix)
+            ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -74,8 +75,8 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         'profit_total': profit_total,
         'profit_total_pct': round(profit_total * 100.0, 2),
         'duration_avg': str(timedelta(
-            minutes=round(result['trade_duration'].mean()))
-        ) if not result.empty else '0:00',
+                            minutes=round(result['trade_duration'].mean()))
+                            ) if not result.empty else '0:00',
         # 'duration_max': str(timedelta(
         #                     minutes=round(result['trade_duration'].max()))
         #                     ) if not result.empty else '0:00',
@@ -530,7 +531,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Worst day', round_coin_value(strat_results['backtest_worst_day_abs'],
                                            strat_results['stake_currency'])),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
-                                   f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
+            f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
@@ -558,7 +559,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                          strat_results['stake_currency'])
         stake_amount = round_coin_value(
             strat_results['stake_amount'], strat_results['stake_currency']
-        ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
+            ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 
         message = ("No trades made. "
                    f"Your starting balance was {start_balance}, "
