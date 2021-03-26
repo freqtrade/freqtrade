@@ -146,7 +146,7 @@ class HyperStrategyMixin(object):
      strategy logic.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
         Initialize hyperoptable strategy mixin.
         """

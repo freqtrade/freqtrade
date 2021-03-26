@@ -141,6 +141,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        super().__init__(config)
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
