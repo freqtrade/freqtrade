@@ -154,12 +154,16 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
 
 def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                            timeframe: str = '5m',
-                           since: datetime = None, until: datetime = None,
+                           timerange: Optional[TimeRange] = None,
                            data_handler: IDataHandler = None) -> bool:
 
     data_handler = get_datahandler(datadir, data_handler=data_handler)
 
     try:
+        since, until = None, None
+        if timerange:
+            since, until = timerange.to_datetime()
+
         logger.info(
             f'Downloading history data for par: "{pair}", timeframe: '
             f'{timeframe} and storing in "{datadir}"'
@@ -273,11 +277,9 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                         f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
-            # What happens when until should be None?
-            since, until = timerange.to_datetime()
             _download_pair_history(datadir=datadir, exchange=exchange,
                                    pair=pair, timeframe=str(timeframe),
-                                   since=since, until=until,
+                                   timerange=timerange,
                                    data_handler=data_handler)
     return pairs_not_available
 
