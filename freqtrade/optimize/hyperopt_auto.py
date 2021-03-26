@@ -51,7 +51,8 @@ class HyperOptAuto(IHyperOpt):
 
     def _generate_indicator_space(self, category):
         for attr_name, attr in self.strategy.enumerate_parameters(category):
-            yield attr.get_space(attr_name)
+            if attr.enabled:
+                yield attr.get_space(attr_name)
 
     def _get_indicator_space(self, category, fallback_method_name):
         indicator_space = list(self._generate_indicator_space(category))
