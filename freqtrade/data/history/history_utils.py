@@ -165,7 +165,7 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
             since, until = timerange.startts, timerange.stopts
 
         logger.info(
-            f'Downloading history data for par: "{pair}", timeframe: '
+            f'Downloading history data for pair: "{pair}", timeframe: '
             f'{timeframe} and storing in "{datadir}"'
         )
 
@@ -234,7 +234,7 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
 
     except Exception:
         logger.exception(
-            f'Failed to download history data for pari: "{pair}", '
+            f'Failed to download history data for pair: "{pair}", '
             f'timeframe: {timeframe}.'
         )
         return False
