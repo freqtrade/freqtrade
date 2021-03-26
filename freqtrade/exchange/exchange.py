@@ -739,7 +739,7 @@ class Exchange:
         """
 
         if not until_ms:
-            until_ms = datetime.now(timezone.utc).timestamp() * 1000
+            until_ms = arrow.utcnow().int_timestamp * 1000
 
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,

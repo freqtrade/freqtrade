@@ -176,8 +176,8 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
 
         cached_start, cached_end = None, None
         if not cached.empty:
-            cached_start = cached.iloc[0]['date'].timestamp()
-            cached_end = cached.iloc[-1]['date'].timestamp()
+            cached_start = int(cached.iloc[0]['date'].timestamp())
+            cached_end = int(cached.iloc[-1]['date'].timestamp())
 
         logger.debug("Cached Start: %s",
                      f"{cached.iloc[0]['date']:%Y-%m-%d %H:%M:%S}"
@@ -190,9 +190,9 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
         since_ms, until_ms = None, None
         if cached.empty:
             since_ms = (since if since else
-                        arrow.utcnow().shift(days=-30).timestamp()) * 1000
+                        arrow.utcnow().shift(days=-30).int_timestamp) * 1000
             until_ms = (until if until else
-                        datetime.now(timezone.utc).timestamp()) * 1000
+                        arrow.utcnow().int_timestamp) * 1000
         else:
             # Determine lower bound
             if since:
@@ -207,7 +207,7 @@ def _download_pair_history(datadir: Path, exchange: Exchange, pair: str, *,
                            * 1000
             else:
                 # Default upper-bound is the current time.
-                until_ms = datetime.now(timezone.utc).timestamp() * 1000
+                until_ms = arrow.utcnow().int_timestamp * 1000
 
         new_data = exchange.get_historic_ohlcv(pair=pair,
                                                timeframe=timeframe,
