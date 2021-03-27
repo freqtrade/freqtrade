@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-from freqtrade.strategy.hyper import BaseParameter, FloatParameter, IntParameter
 import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
@@ -14,6 +13,7 @@ from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.strategy.hyper import BaseParameter, FloatParameter, IntParameter
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
