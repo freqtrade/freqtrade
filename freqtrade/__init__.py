@@ -1,5 +1,5 @@
 """ Freqtrade bot """
-__version__ = '2021.2'
+__version__ = '2021.3'
 
 if __version__ == 'develop':
 
