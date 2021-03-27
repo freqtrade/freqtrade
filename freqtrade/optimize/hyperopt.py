@@ -62,6 +62,7 @@ class Hyperopt:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
+    custom_hyperopt: IHyperOpt
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
