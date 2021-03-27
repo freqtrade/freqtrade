@@ -67,8 +67,10 @@ class IntParameter(BaseParameter):
                       parameter fieldname is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
-        if high is None:
-            if len(low) != 2:
+        if high is not None and isinstance(low, Sequence):
+            raise OperationalException('IntParameter space invalid.')
+        if high is None or isinstance(low, Sequence):
+            if not isinstance(low, Sequence) or len(low) != 2:
                 raise OperationalException('IntParameter space must be [low, high]')
             opt_range = low
         else:
@@ -101,9 +103,11 @@ class FloatParameter(BaseParameter):
                       parameter fieldname is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Real.
         """
-        if high is None:
-            if len(low) != 2:
-                raise OperationalException('IntParameter space must be [low, high]')
+        if high is not None and isinstance(low, Sequence):
+            raise OperationalException('FloatParameter space invalid.')
+        if high is None or isinstance(low, Sequence):
+            if not isinstance(low, Sequence) or len(low) != 2:
+                raise OperationalException('FloatParameter space must be [low, high]')
             opt_range = low
         else:
             opt_range = [low, high]

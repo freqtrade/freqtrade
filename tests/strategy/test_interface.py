@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
+from freqtrade.strategy.hyper import BaseParameter, FloatParameter, IntParameter
 import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
@@ -10,7 +11,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import StrategyError
+from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.interface import SellCheckTuple, SellType
@@ -552,3 +553,38 @@ def test_strategy_safe_wrapper(value):
 
     assert type(ret) == type(value)
     assert ret == value
+
+
+def test_hyperopt_parameters():
+    with pytest.raises(OperationalException, match=r"Name is determined.*"):
+        IntParameter(low=0, high=5, default=1, name='hello')
+
+    with pytest.raises(OperationalException, match=r"IntParameter space must be.*"):
+        IntParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"FloatParameter space must be.*"):
+        FloatParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"IntParameter space invalid\."):
+        IntParameter([0, 10], high=7, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"FloatParameter space invalid\."):
+        FloatParameter([0, 10], high=7, default=5, space='buy')
+
+    x = BaseParameter(opt_range=[0, 1], default=1, space='buy')
+    with pytest.raises(NotImplementedError):
+        x.get_space('space')
+
+    fltpar = IntParameter(low=0, high=5, default=1, space='buy')
+    assert fltpar.value == 1
+
+
+def test_auto_hyperopt_interface(default_conf):
+    default_conf.update({'strategy': 'HyperoptableStrategy'})
+    PairLocks.timeframe = default_conf['timeframe']
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    assert strategy.buy_rsi.value == strategy.buy_params['buy_rsi']
+    # PlusDI is NOT in the buy-params, so default should be used
+    assert strategy.buy_plusdi.value == 0.5
+    assert strategy.sell_rsi.value == strategy.sell_params['sell_rsi']
