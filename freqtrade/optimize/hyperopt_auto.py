@@ -7,6 +7,8 @@ from contextlib import suppress
 from typing import Any, Callable, Dict, List
 
 from pandas import DataFrame
+
+
 with suppress(ImportError):
     from skopt.space import Dimension
 

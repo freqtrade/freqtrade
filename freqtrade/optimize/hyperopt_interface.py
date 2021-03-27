@@ -14,6 +14,7 @@ from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 from freqtrade.strategy import IStrategy
 
+
 logger = logging.getLogger(__name__)
 
 

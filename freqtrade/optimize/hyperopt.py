@@ -23,7 +23,6 @@ from pandas import DataFrame
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.history import get_timerange
-from freqtrade.exceptions import OperationalException
 from freqtrade.misc import file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules

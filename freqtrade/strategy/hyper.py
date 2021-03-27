@@ -4,7 +4,8 @@ This module defines a base class for auto-hyperoptable strategies.
 """
 import logging
 from contextlib import suppress
-from typing import Iterator, Tuple, Any, Optional, Sequence, Union
+from typing import Any, Iterator, Optional, Sequence, Tuple, Union
+
 
 with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
@@ -58,12 +59,12 @@ class IntParameter(BaseParameter):
                  space: Optional[str] = None, enabled: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param low: lower end of optimization space or [low, high].
-        :param high: high end of optimization space. Must be none of entire range is passed first parameter.
+        :param low: Lower end (inclusive) of optimization space or [low, high].
+        :param high: Upper end (inclusive) of optimization space.
+                     Must be none of entire range is passed first parameter.
         :param default: A default value.
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
-         parameter field
-         name is prefixed with 'buy_' or 'sell_'.
+                      parameter fieldname is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
         if high is None:
@@ -92,12 +93,12 @@ class FloatParameter(BaseParameter):
                  default: float, space: Optional[str] = None, enabled: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
-        :param low: lower end of optimization space or [low, high].
-        :param high: high end of optimization space. Must be none of entire range is passed first parameter.
+        :param low: Lower end (inclusive) of optimization space or [low, high].
+        :param high: Upper end (inclusive) of optimization space.
+                     Must be none if entire range is passed first parameter.
         :param default: A default value.
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
-         parameter field
-         name is prefixed with 'buy_' or 'sell_'.
+                      parameter fieldname is prefixed with 'buy_' or 'sell_'.
         :param kwargs: Extra parameters to skopt.space.Real.
         """
         if high is None:
