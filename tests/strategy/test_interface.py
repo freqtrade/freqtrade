@@ -571,9 +571,8 @@ def test_hyperopt_parameters():
     with pytest.raises(OperationalException, match=r"FloatParameter space invalid\."):
         FloatParameter([0, 10], high=7, default=5, space='buy')
 
-    x = BaseParameter(opt_range=[0, 1], default=1, space='buy')
-    with pytest.raises(NotImplementedError):
-        x.get_space('space')
+    with pytest.raises(TypeError):
+        BaseParameter(opt_range=[0, 1], default=1, space='buy')
 
     fltpar = IntParameter(low=0, high=5, default=1, space='buy')
     assert fltpar.value == 1

@@ -3,6 +3,7 @@ IHyperStrategy interface, hyperoptable Parameter class.
 This module defines a base class for auto-hyperoptable strategies.
 """
 import logging
+from abc import ABC, abstractmethod
 from contextlib import suppress
 from typing import Any, Iterator, Optional, Sequence, Tuple, Union
 
@@ -16,7 +17,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-class BaseParameter(object):
+class BaseParameter(ABC):
     """
     Defines a parameter that can be optimized by hyperopt.
     """
@@ -46,8 +47,11 @@ class BaseParameter(object):
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
 
+    @abstractmethod
     def get_space(self, name: str) -> Union['Integer', 'Real', 'Categorical']:
-        raise NotImplementedError()
+        """
+        Get-space - will be used by Hyperopt to get the hyperopt Space
+        """
 
 
 class IntParameter(BaseParameter):
