@@ -92,7 +92,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
                    "['delete'], ['performance'], ['stats'], ['daily'], ['count'], ['locks'], "
-                   "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], ['stopbuy'], "
+                   "['unlock', 'delete_locks'], ['reload_config', 'reload_conf'], "
+                   "['show_config', 'show_conf'], ['stopbuy'], "
                    "['whitelist'], ['blacklist'], ['logs'], ['edge'], ['help'], ['version']"
                    "]")
 
@@ -520,7 +521,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12.00000000' in result
-    assert '*XRP:* not showing <1$ amount' in result
+    assert '*XRP:* not showing <0.0001 BTC amount' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
@@ -981,6 +982,16 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     assert 'deadbeef' in msg_mock.call_args_list[0][0][0]
     assert 'randreason' in msg_mock.call_args_list[0][0][0]
 
+    context = MagicMock()
+    context.args = ['XRP/BTC']
+    msg_mock.reset_mock()
+    telegram._delete_locks(update=update, context=context)
+
+    assert 'ETH/BTC' in msg_mock.call_args_list[0][0][0]
+    assert 'randreason' in msg_mock.call_args_list[0][0][0]
+    assert 'XRP/BTC' not in msg_mock.call_args_list[0][0][0]
+    assert 'deadbeef' not in msg_mock.call_args_list[0][0][0]
+
 
 def test_whitelist_static(default_conf, update, mocker) -> None:
 
@@ -1117,8 +1128,10 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     msg_mock.call_count == 1
     assert "2 recent trades</b>:" in msg_mock.call_args_list[0][0][0]
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
-    assert "Open Date" in msg_mock.call_args_list[0][0][0]
+    assert "Close Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
+    assert bool(re.search(r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(",
+                msg_mock.call_args_list[0][0][0]))
 
 
 def test_telegram_delete_trade(mocker, update, default_conf, fee):
@@ -1185,6 +1198,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
 
     msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
@@ -1201,7 +1215,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
 
     telegram.send_msg(msg)
     assert msg_mock.call_args[0][0] \
-        == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n' \
+        == '\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC (#1)\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
@@ -1229,12 +1243,14 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'reason': CANCEL_REASON['TIMEOUT']
     })
     assert (msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Bittrex:* '
-            'Cancelling open buy Order for ETH/BTC. Reason: cancelled due to timeout.')
+            'Cancelling open buy Order for ETH/BTC (#1). '
+            'Reason: cancelled due to timeout.')
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1245,6 +1261,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
@@ -1262,7 +1279,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
+        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1274,6 +1291,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     msg_mock.reset_mock()
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
@@ -1290,7 +1308,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
+        == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
@@ -1310,23 +1328,26 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'reason': 'Cancelled on exchange'
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. '
-            'Reason: Cancelled on exchange')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH (#1).'
+            ' Reason: Cancelled on exchange')
 
     msg_mock.reset_mock()
     telegram.send_msg({
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'reason': 'timeout'
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH. Reason: timeout')
+        == ('\N{WARNING SIGN} *Binance:* Cancelling Open Sell Order for KEY/ETH (#1).'
+            ' Reason: timeout')
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -1373,6 +1394,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Bittrex',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
@@ -1385,7 +1407,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    assert msg_mock.call_args[0][0] == ('\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC\n'
+    assert msg_mock.call_args[0][0] == ('\N{LARGE BLUE CIRCLE} *Bittrex:* Buying ETH/BTC (#1)\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
@@ -1398,6 +1420,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.SELL_NOTIFICATION,
+        'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
         'gain': 'loss',
@@ -1414,7 +1437,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })
-    assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH\n'
+    assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00007500`\n'
                                         '*Current Rate:* `0.00003201`\n'

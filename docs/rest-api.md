@@ -131,6 +131,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `status` | Lists all open trades.
 | `count` | Displays number of trades used and available.
 | `locks` | Displays currently locked pairs.
+| `delete_lock <lock_id>` | Deletes (disables) the lock by id.
 | `profit` | Display a summary of your profit/loss from close trades and some stats about your performance.
 | `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
@@ -182,6 +183,11 @@ count
 daily
 	Return the amount of open trades.
 
+delete_lock
+	Delete (disable) lock from the database.
+
+        :param lock_id: ID for the lock to delete
+
 delete_trade
 	Delete trade from the database.
         Tries to close open orders. Requires manual handling of this asset on the exchange.
@@ -201,6 +207,9 @@ forcesell
 	Force-sell a trade.
 
         :param tradeid: Id of the trade (can be received via status command)
+
+locks
+	Return current locks
 
 logs
 	Show latest logs.

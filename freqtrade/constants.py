@@ -54,6 +54,11 @@ DECIMALS_PER_COIN = {
     'ETH': 5,
 }
 
+DUST_PER_COIN = {
+    'BTC': 0.0001,
+    'ETH': 0.01
+}
+
 
 # Soure files with destination directories within user-directory
 USER_DATA_FILES = {
@@ -160,6 +165,12 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
+                'bid_last_balance': {
+                    'type': 'number',
+                    'minimum': 0,
+                    'maximum': 1,
+                    'exclusiveMaximum': False,
+                },
                 'use_order_book': {'type': 'boolean'},
                 'order_book_min': {'type': 'integer', 'minimum': 1},
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
@@ -174,6 +185,8 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
@@ -230,6 +243,7 @@ CONF_SCHEMA = {
                 'enabled': {'type': 'boolean'},
                 'token': {'type': 'string'},
                 'chat_id': {'type': 'string'},
+                'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
                     'properties': {
@@ -243,7 +257,7 @@ CONF_SCHEMA = {
                     }
                 }
             },
-            'required': ['enabled', 'token', 'chat_id']
+            'required': ['enabled', 'token', 'chat_id'],
         },
         'webhook': {
             'type': 'object',
@@ -366,6 +380,16 @@ SCHEMA_TRADE_REQUIRED = [
     'stoploss',
     'minimal_roi',
     'internals',
+    'dataformat_ohlcv',
+    'dataformat_trades',
+]
+
+SCHEMA_BACKTEST_REQUIRED = [
+    'exchange',
+    'max_open_trades',
+    'stake_currency',
+    'stake_amount',
+    'dry_run_wallet',
     'dataformat_ohlcv',
     'dataformat_trades',
 ]

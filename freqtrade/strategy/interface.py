@@ -649,7 +649,7 @@ class IStrategy(ABC):
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
-        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
         _, roi = self.min_roi_reached_entry(trade_dur)
         if roi is None:
             return False
@@ -659,7 +659,7 @@ class IStrategy(ABC):
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advice_buy or advise_sell!
+        Does not run advise_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when

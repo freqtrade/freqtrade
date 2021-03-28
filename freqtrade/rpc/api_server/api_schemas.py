@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, TypeVar, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -62,14 +62,12 @@ class PerformanceEntry(BaseModel):
 
 class Profit(BaseModel):
     profit_closed_coin: float
-    profit_closed_percent: float
     profit_closed_percent_mean: float
     profit_closed_ratio_mean: float
     profit_closed_percent_sum: float
     profit_closed_ratio_sum: float
     profit_closed_fiat: float
     profit_all_coin: float
-    profit_all_percent: float
     profit_all_percent_mean: float
     profit_all_ratio_mean: float
     profit_all_percent_sum: float
@@ -205,10 +203,12 @@ class TradeResponse(BaseModel):
     trades_count: int
 
 
-ForceBuyResponse = TypeVar('ForceBuyResponse', TradeSchema, StatusMsg)
+class ForceBuyResponse(BaseModel):
+    __root__: Union[TradeSchema, StatusMsg]
 
 
 class LockModel(BaseModel):
+    id: int
     active: bool
     lock_end_time: str
     lock_end_timestamp: int
@@ -221,6 +221,11 @@ class LockModel(BaseModel):
 class Locks(BaseModel):
     lock_count: int
     locks: List[LockModel]
+
+
+class DeleteLockRequest(BaseModel):
+    pair: Optional[str]
+    lockid: Optional[int]
 
 
 class Logs(BaseModel):
@@ -267,7 +272,8 @@ class PlotConfig_(BaseModel):
     subplots: Optional[Dict[str, Any]]
 
 
-PlotConfig = TypeVar('PlotConfig', PlotConfig_, Dict)
+class PlotConfig(BaseModel):
+    __root__: Union[PlotConfig_, Dict]
 
 
 class StrategyListResponse(BaseModel):

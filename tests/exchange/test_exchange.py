@@ -1,6 +1,7 @@
 import copy
 import logging
 from datetime import datetime, timedelta, timezone
+from math import isclose
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -18,19 +19,11 @@ from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes,
                                          timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_patched_exchange, log_has, log_has_re
+from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
-
-
-# Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
-def get_mock_coro(return_value):
-    async def mock_coro(*args, **kwargs):
-        return return_value
-
-    return Mock(wraps=mock_coro)
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
@@ -378,7 +371,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert result == 2 / 0.9
+    assert isclose(result, 2 * 1.1)
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -390,7 +383,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == 2 * 2 / 0.9
+    assert isclose(result, 2 * 2 * 1.1)
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -402,7 +395,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == max(2, 2 * 2) / 0.9
+    assert isclose(result, max(2, 2 * 2) * 1.1)
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -414,7 +407,14 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert result == max(8, 2 * 2) / 0.9
+    assert isclose(result, max(8, 2 * 2) * 1.1)
+
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
+    assert isclose(result, max(8, 2 * 2) * 1.45)
+
+    # Really big stoploss
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
+    assert isclose(result, max(8, 2 * 2) * 1.5)
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -432,7 +432,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) / 0.9, 8)
+    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * 1.1, 8)
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -498,7 +498,7 @@ def test__load_markets(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
     Exchange(default_conf)
-    assert log_has('Unable to initialize markets. Reason: SomeError', caplog)
+    assert log_has('Unable to initialize markets.', caplog)
 
     expected_return = {'ETH/BTC': 'available'}
     api_mock = MagicMock()
@@ -2276,11 +2276,19 @@ def test_get_fee(default_conf, mocker, exchange_name):
         'cost': 0.05
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._config.pop('fee', None)
 
     assert exchange.get_fee('ETH/BTC') == 0.025
+    assert api_mock.calculate_fee.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            'get_fee', 'calculate_fee', symbol="ETH/BTC")
+
+    api_mock.calculate_fee.reset_mock()
+    exchange._config['fee'] = 0.001
+
+    assert exchange.get_fee('ETH/BTC') == 0.001
+    assert api_mock.calculate_fee.call_count == 0
 
 
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):

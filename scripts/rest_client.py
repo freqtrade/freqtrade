@@ -118,6 +118,14 @@ class FtRestClient():
         """
         return self._get("locks")
 
+    def delete_lock(self, lock_id):
+        """Delete (disable) lock from the database.
+
+        :param lock_id: ID for the lock to delete
+        :return: json object
+        """
+        return self._delete("locks/{}".format(lock_id))
+
     def daily(self, days=None):
         """Return the amount of open trades.
 
@@ -173,6 +181,16 @@ class FtRestClient():
         :return: json object containing the version
         """
         return self._get("show_config")
+
+    def ping(self):
+        """simple ping"""
+        configstatus = self.show_config()
+        if not configstatus:
+            return {"status": "not_running"}
+        elif configstatus['state'] == "running":
+            return {"status": "pong"}
+        else:
+            return {"status": "not_running"}
 
     def logs(self, limit=None):
         """Show latest logs.

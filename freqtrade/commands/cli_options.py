@@ -110,6 +110,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
+    "dry_run_wallet": Arg(
+        '--dry-run-wallet', '--starting-balance',
+        help='Starting balance, used for backtesting / hyperopt and dry-runs.',
+        type=float,
+    ),
     # Optimize common
     "timeframe": Arg(
         '-i', '--timeframe', '--ticker-interval',
@@ -128,7 +133,6 @@ AVAILABLE_CLI_OPTIONS = {
     "stake_amount": Arg(
         '--stake-amount',
         help='Override the value of the `stake_amount` configuration setting.',
-        type=float,
     ),
     # Backtesting
     "position_stacking": Arg(

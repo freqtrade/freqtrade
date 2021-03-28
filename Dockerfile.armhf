@@ -41,7 +41,9 @@ COPY --from=python-deps /root/.local /root/.local
 
 # Install and execute
 COPY . /freqtrade/
-RUN pip install -e . --no-cache-dir \
+RUN apt-get install -y libhdf5-serial-dev \
+  && apt-get clean \
+  && pip install -e . --no-cache-dir \
   && freqtrade install-ui
 
 ENTRYPOINT ["freqtrade"]

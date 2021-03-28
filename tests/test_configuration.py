@@ -430,7 +430,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--stake-amount', 'unlimited'
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -463,6 +464,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'export' in config
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
+    assert 'stake_amount' in config
+    assert config['stake_amount'] == 'unlimited'
 
 
 def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> None:
@@ -785,6 +788,38 @@ def test_validate_max_open_trades(default_conf):
     with pytest.raises(OperationalException, match='`max_open_trades` and `stake_amount` '
                                                    'cannot both be unlimited.'):
         validate_config_consistency(default_conf)
+
+
+def test_validate_price_side(default_conf):
+    default_conf['order_types'] = {
+        "buy": "limit",
+        "sell": "limit",
+        "stoploss": "limit",
+        "stoploss_on_exchange": False,
+    }
+    # Default should pass
+    validate_config_consistency(default_conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['buy'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market buy orders require bid_strategy.price_side = "ask".'):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market sell orders require ask_strategy.price_side = "bid".'):
+        validate_config_consistency(conf)
+
+    # Validate inversed case
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    conf['order_types']['buy'] = 'market'
+    conf['ask_strategy']['price_side'] = 'bid'
+    conf['bid_strategy']['price_side'] = 'ask'
+
+    validate_config_consistency(conf)
 
 
 def test_validate_tsl(default_conf):

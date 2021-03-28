@@ -51,6 +51,14 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
+### forcesell
+
+`forcesell` is an optional value, which defaults to the same value as `sell` and is used when sending a `/forcesell` command from Telegram or from the Rest API.
+
+### forcebuy
+
+`forcebuy` is an optional value, which defaults to the same value as `buy` and is used when sending a `/forcebuy` command from Telegram or from the Rest API.
+
 ### emergencysell
 
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.

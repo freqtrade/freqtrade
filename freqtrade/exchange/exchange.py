@@ -147,6 +147,9 @@ class Exchange:
         """
         Destructor - clean up async stuff
         """
+        self.close()
+
+    def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
         if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
@@ -308,8 +311,8 @@ class Exchange:
             self._markets = self._api.load_markets()
             self._load_async_markets()
             self._last_markets_refresh = arrow.utcnow().int_timestamp
-        except ccxt.BaseError as e:
-            logger.warning('Unable to initialize markets. Reason: %s', e)
+        except ccxt.BaseError:
+            logger.exception('Unable to initialize markets.')
 
     def reload_markets(self) -> None:
         """Reload markets both sync and async if refresh interval has passed """
@@ -528,16 +531,16 @@ class Exchange:
             return None
 
         # reserve some percent defined in config (5% default) + stoploss
-        amount_reserve_percent = 1.0 - self._config.get('amount_reserve_percent',
+        amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += stoploss
+        amount_reserve_percent += abs(stoploss)
         # it should not be more than 50%
-        amount_reserve_percent = max(amount_reserve_percent, 0.5)
+        amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
 
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return max(min_stake_amounts) / amount_reserve_percent
+        return max(min_stake_amounts) * amount_reserve_percent
 
     def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                       rate: float, params: Dict = {}) -> Dict[str, Any]:
@@ -1053,7 +1056,8 @@ class Exchange:
         :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
-        return order.get('status') in ('closed', 'canceled') and order.get('filled') == 0.0
+        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+                and order.get('filled') == 0.0)
 
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
@@ -1228,6 +1232,8 @@ class Exchange:
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
         try:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+                return self._config['fee']
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets()

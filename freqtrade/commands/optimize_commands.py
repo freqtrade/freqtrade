@@ -3,7 +3,8 @@ from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import OperationalException
+from freqtrade.misc import round_coin_value
 from freqtrade.state import RunMode
 
 
@@ -22,11 +23,13 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
         RunMode.BACKTEST: 'backtesting',
         RunMode.HYPEROPT: 'hyperoptimization',
     }
-    if (method in no_unlimited_runmodes.keys() and
-            config['stake_amount'] == constants.UNLIMITED_STAKE_AMOUNT):
-        raise DependencyException(
-            f'The value of `stake_amount` cannot be set as "{constants.UNLIMITED_STAKE_AMOUNT}" '
-            f'for {no_unlimited_runmodes[method]}')
+    if method in no_unlimited_runmodes.keys():
+        if (config['stake_amount'] != constants.UNLIMITED_STAKE_AMOUNT
+                and config['stake_amount'] > config['dry_run_wallet']):
+            wallet = round_coin_value(config['dry_run_wallet'], config['stake_currency'])
+            stake = round_coin_value(config['stake_amount'], config['stake_currency'])
+            raise OperationalException(f"Starting balance ({wallet}) "
+                                       f"is smaller than stake_amount {stake}.")
 
     return config
 

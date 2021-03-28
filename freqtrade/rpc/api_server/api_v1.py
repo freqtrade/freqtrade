@@ -11,13 +11,14 @@ from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily, DeleteTrade,
-                                                  ForceBuyPayload, ForceBuyResponse,
-                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
-                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse,
-                                                  TradeResponse, Version, WhitelistResponse)
+                                                  BlacklistResponse, Count, Daily,
+                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
+                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
+                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
+                                                  Stats, StatusMsg, StrategyListResponse,
+                                                  StrategyResponse, TradeResponse, Version,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -111,9 +112,9 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     trade = rpc._rpc_forcebuy(payload.pair, payload.price)
 
     if trade:
-        return trade.to_json()
+        return ForceBuyResponse.parse_obj(trade.to_json())
     else:
-        return {"status": f"Error buying pair {payload.pair}."}
+        return ForceBuyResponse.parse_obj({"status": f"Error buying pair {payload.pair}."})
 
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
@@ -136,9 +137,19 @@ def whitelist(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_whitelist()
 
 
-@router.get('/locks', response_model=Locks, tags=['info'])
+@router.get('/locks', response_model=Locks, tags=['info', 'locks'])
 def locks(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_locks()
+
+
+@router.delete('/locks/{lockid}', response_model=Locks, tags=['info', 'locks'])
+def delete_lock(lockid: int, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=lockid)
+
+
+@router.post('/locks/delete', response_model=Locks, tags=['info', 'locks'])
+def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])
@@ -183,7 +194,7 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
 def plot_config(rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_plot_config()
+    return PlotConfig.parse_obj(rpc._rpc_plot_config())
 
 
 @router.get('/strategies', response_model=StrategyListResponse, tags=['strategy'])

@@ -1,5 +1,8 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from types import FunctionType
 from unittest.mock import MagicMock
 
 import arrow
@@ -8,7 +11,7 @@ from sqlalchemy import create_engine
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import Order, Trade, clean_dry_run_db, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
@@ -19,14 +22,15 @@ def test_init_create_session(default_conf):
     assert 'scoped_session' in type(Trade.session).__name__
 
 
-def test_init_custom_db_url(default_conf, mocker):
+def test_init_custom_db_url(default_conf, tmpdir):
     # Update path to a value other than default, but still in-memory
-    default_conf.update({'db_url': 'sqlite:///tmp/freqtrade2_test.sqlite'})
-    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
+    filename = f"{tmpdir}/freqtrade2_test.sqlite"
+    assert not Path(filename).is_file()
+
+    default_conf.update({'db_url': f'sqlite:///{filename}'})
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tmp/freqtrade2_test.sqlite'
+    assert Path(filename).is_file()
 
 
 def test_init_invalid_db_url(default_conf):
@@ -47,15 +51,16 @@ def test_init_prod_db(default_conf, mocker):
     assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.sqlite'
 
 
-def test_init_dryrun_db(default_conf, mocker):
-    default_conf.update({'dry_run': True})
-    default_conf.update({'db_url': constants.DEFAULT_DB_DRYRUN_URL})
-
-    create_engine_mock = mocker.patch('freqtrade.persistence.models.create_engine', MagicMock())
+def test_init_dryrun_db(default_conf, tmpdir):
+    filename = f"{tmpdir}/freqtrade2_prod.sqlite"
+    assert not Path(filename).is_file()
+    default_conf.update({
+        'dry_run': True,
+        'db_url': f'sqlite:///{filename}'
+    })
 
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert create_engine_mock.call_count == 1
-    assert create_engine_mock.mock_calls[0][1][0] == 'sqlite:///tradesv3.dryrun.sqlite'
+    assert Path(filename).is_file()
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1039,13 +1044,44 @@ def test_fee_updated(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_total_open_trades_stakes(fee):
+@pytest.mark.parametrize('use_db', [True, False])
+def test_total_open_trades_stakes(fee, use_db):
 
+    Trade.use_db = use_db
+    Trade.reset_trades()
     res = Trade.total_open_trades_stakes()
     assert res == 0
-    create_mock_trades(fee)
+    create_mock_trades(fee, use_db)
     res = Trade.total_open_trades_stakes()
     assert res == 0.004
+
+    Trade.use_db = True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
+def test_get_trades_proxy(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    create_mock_trades(fee, use_db)
+    trades = Trade.get_trades_proxy()
+    assert len(trades) == 6
+
+    assert isinstance(trades[0], Trade)
+
+    trades = Trade.get_trades_proxy(is_open=True)
+    assert len(trades) == 4
+    assert trades[0].is_open
+    trades = Trade.get_trades_proxy(is_open=False)
+
+    assert len(trades) == 2
+    assert not trades[0].is_open
+
+    opendate = datetime.now(tz=timezone.utc) - timedelta(minutes=15)
+
+    assert len(Trade.get_trades_proxy(open_date=opendate)) == 3
+
+    Trade.use_db = True
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1172,3 +1208,25 @@ def test_select_order(fee):
     assert order.ft_order_side == 'stoploss'
     order = trades[4].select_order('sell', False)
     assert order is None
+
+
+def test_Trade_object_idem():
+
+    assert issubclass(Trade, LocalTrade)
+
+    trade = vars(Trade)
+    localtrade = vars(LocalTrade)
+
+    # Parent (LocalTrade) should have the same attributes
+    for item in trade:
+        # Exclude private attributes and open_date (as it's not assigned a default)
+        if (not item.startswith('_')
+                and item not in ('delete', 'session', 'query', 'open_date')):
+            assert item in localtrade
+
+    # Fails if only a column is added without corresponding parent field
+    for item in localtrade:
+        if (not item.startswith('__')
+                and item not in ('trades', 'trades_open', 'total_profit')
+                and type(getattr(LocalTrade, item)) not in (property, FunctionType)):
+            assert item in trade

@@ -55,7 +55,7 @@ class MaxDrawdown(IProtection):
 
         # Drawdown is always positive
         try:
-            drawdown, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
+            drawdown, _, _, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
         except ValueError:
             return False, None, None
 

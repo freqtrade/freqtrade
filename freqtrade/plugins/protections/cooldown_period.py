@@ -44,7 +44,8 @@ class CooldownPeriod(IProtection):
         trades = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
         if trades:
             # Get latest trade
-            trade = sorted(trades, key=lambda t: t.close_date)[-1]
+            # Ignore type error as we know we only get closed trades.
+            trade = sorted(trades, key=lambda t: t.close_date)[-1]  # type: ignore
             self.log_once(f"Cooldown for {pair} for {self.stop_duration_str}.", logger.info)
             until = self.calculate_lock_end([trade], self._stop_duration)
 

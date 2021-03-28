@@ -40,8 +40,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 |  Parameter | Description |
 |------------|-------------|
 | `max_open_trades` | **Required.** Number of open trades your bot is allowed to have. Only one open trade per pair is possible, so the length of your pairlist is another limitation which can apply. If -1 then it is ignored (i.e. potentially unlimited open trades, limited by the pairlist). [More information below](#configuring-amount-per-trade).<br> **Datatype:** Positive integer or -1.
-| `stake_currency` | **Required.** Crypto-currency used for trading. [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
-| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Positive float or `"unlimited"`.
+| `stake_currency` | **Required.** Crypto-currency used for trading. <br> **Datatype:** String
+| `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float or `"unlimited"`.
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
@@ -49,7 +49,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `timeframe` | The timeframe (former ticker interval) to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** String
 | `fiat_display_currency` | Fiat currency used to show your profits. [More information below](#what-values-can-be-used-for-fiat_display_currency). <br> **Datatype:** String
 | `dry_run` | **Required.** Define if the bot must be in Dry Run or production mode. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
-| `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in the Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
+| `dry_run_wallet` | Define the starting amount in stake currency for the simulated wallet used by the bot running in Dry Run mode.<br>*Defaults to `1000`.* <br> **Datatype:** Float
 | `cancel_open_orders_on_exit` | Cancel open orders when the `/stop` RPC command is issued, `Ctrl+C` is pressed or the bot dies unexpectedly. When set to `true`, this allows you to use `/stop` to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `process_only_new_candles` | Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `minimal_roi` | **Required.** Set the threshold as ratio the bot will use to sell a trade. [More information below](#understand-minimal_roi). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
@@ -58,15 +58,17 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive` | Changes stoploss once profit has been reached. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-custom-positive-loss). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Float
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> **Datatype:** Float
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
+| `fee` | Fee used during backtesting / dry-runs. Should normally not be configured, which has freqtrade fall back to the exchange default fee. Set as ratio (e.g. 0.001 = 0.1%). Fee is applied twice for each trade, once when buying, once when selling. <br> **Datatype:** Float (as ratio)
 | `unfilledtimeout.buy` | **Required.** How long (in minutes) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.sell` | **Required.** How long (in minutes) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `bid_strategy.price_side` | Select the side of the spread the bot should look at to get the buy rate. [More information below](#buy-price-side).<br> *Defaults to `bid`.* <br> **Datatype:** String (either `ask` or `bid`).
-| `bid_strategy.ask_last_balance` | **Required.** Set the bidding price. More information [below](#buy-price-without-orderbook-enabled).
+| `bid_strategy.ask_last_balance` | **Required.** Interpolate the bidding price. More information [below](#buy-price-without-orderbook-enabled).
 | `bid_strategy.use_order_book` | Enable buying using the rates in [Order Book Bids](#buy-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `bid_strategy.order_book_top` | Bot will use the top N rate in Order Book Bids to buy. I.e. a value of 2 will allow the bot to pick the 2nd bid rate in [Order Book Bids](#buy-price-with-orderbook-enabled). <br>*Defaults to `1`.*  <br> **Datatype:** Positive Integer
 | `bid_strategy. check_depth_of_market.enabled` | Do not buy if the difference of buy orders and sell orders is met in Order Book. [Check market depth](#check-depth-of-market). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `bid_strategy. check_depth_of_market.bids_to_ask_delta` | The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. [Check market depth](#check-depth-of-market) <br> *Defaults to `0`.*  <br> **Datatype:** Float (as ratio)
 | `ask_strategy.price_side` | Select the side of the spread the bot should look at to get the sell rate. [More information below](#sell-price-side).<br> *Defaults to `ask`.* <br> **Datatype:** String (either `ask` or `bid`).
+| `ask_strategy.bid_last_balance` | Interpolate the selling price. More information [below](#sell-price-without-orderbook-enabled).
 | `ask_strategy.use_order_book` | Enable selling of open trades using [Order Book Asks](#sell-price-with-orderbook-enabled). <br> **Datatype:** Boolean
 | `ask_strategy.order_book_min` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
 | `ask_strategy.order_book_max` | Bot will scan from the top min to max Order Book Asks searching for a profitable rate. <br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
@@ -97,6 +99,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `telegram.balance_dust_level` | Dust-level (in stake currency) - currencies with a balance below this will not be shown by `/balance`. <br> **Datatype:** float
 | `webhook.enabled` | Enable usage of Webhook notifications <br> **Datatype:** Boolean
 | `webhook.url` | URL for the webhook. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
 | `webhook.webhookbuy` | Payload to send on buy. Only required if `webhook.enabled` is `true`. See the [webhook documentation](webhook-config.md) for more details. <br> **Datatype:** String
@@ -141,8 +144,6 @@ Values set in the configuration file always overwrite values set in the strategy
 * `process_only_new_candles`
 * `order_types`
 * `order_time_in_force`
-* `stake_currency`
-* `stake_amount`
 * `unfilledtimeout`
 * `disable_dataframe_checks`
 * `protections`
@@ -155,6 +156,23 @@ Values set in the configuration file always overwrite values set in the strategy
 ### Configuring amount per trade
 
 There are several methods to configure how much of the stake currency the bot will use to enter a trade. All methods respect the [available balance configuration](#available-balance) as explained below.
+
+#### Minimum trade stake
+
+The minimum stake amount will depend by exchange and pair, and is usually listed in the exchange support pages.
+Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.4$.
+
+The minimum stake amount to buy this pair is therefore `20 * 0.6 ~= 12`.
+This exchange has also a limit on USD - where all orders must be > 10$ - which however does not apply in this case.
+
+To guarantee safe execution, freqtrade will not allow buying with a stake-amount of 10.1$, instead, it'll make sure that there's enough space to place a stoploss below the pair (+ an offset, defined by `amount_reserve_percent`, which defaults to 5%).
+
+With a stoploss of 10% - we'd therefore end up with a value of ~13.8$ (`12 * (1 + 0.05 + 0.1)`).
+
+To limit this calculation in case of large stoploss values, the calculated minimum stake-limit will never be more than 50% above the real limit.
+
+!!! Warning
+    Since the limits on exchanges are usually stable and are not updated often, some pairs can show pretty high minimum limits, simply because the price increased a lot since the last limit adjustment by the exchange.
 
 #### Available balance
 
@@ -218,11 +236,14 @@ To allow the bot to trade all the available `stake_currency` in your account (mi
 "tradable_balance_ratio": 0.99,
 ```
 
-!!! Note
-    This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available).
+!!! Tip "Compounding profits"
+    This configuration will allow increasing / decreasing stakes depending on the performance of the bot (lower stake if bot is loosing, higher stakes if the bot has a winning record, since higher balances are available), and will result in profit compounding.
 
 !!! Note "When using Dry-Run Mode"
-    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time. It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
+    When using `"stake_amount" : "unlimited",` in combination with Dry-Run, Backtesting or Hyperopt, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve over time.  
+    It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
+
+--8<-- "includes/pricing.md"
 
 ### Understand minimal_roi
 
@@ -275,7 +296,7 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
 
 ### Understand order_types
 
-The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
+The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
 
 This allows to buy using limit orders, sell using
 limit-orders, and create stoplosses using market orders. It also allows to set the
@@ -287,7 +308,7 @@ the buy order is fulfilled.
 If this is configured, the following 4 values (`buy`, `sell`, `stoploss` and
 `stoploss_on_exchange`) need to be present, otherwise the bot will fail to start.
 
-For information on (`emergencysell`,`stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
+For information on (`emergencysell`,`forcesell`, `forcebuy`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
 
 Syntax for Strategy:
 
@@ -296,6 +317,8 @@ order_types = {
     "buy": "limit",
     "sell": "limit",
     "emergencysell": "market",
+    "forcebuy": "market",
+    "forcesell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
     "stoploss_on_exchange_interval": 60,
@@ -310,6 +333,8 @@ Configuration:
     "buy": "limit",
     "sell": "limit",
     "emergencysell": "market",
+    "forcebuy": "market",
+    "forcesell": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
     "stoploss_on_exchange_interval": 60
@@ -410,26 +435,6 @@ This configuration enables binance, as well as rate limiting to avoid bans from 
     Optimal settings for rate limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
     We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
-#### Advanced Freqtrade Exchange configuration
-
-Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behaviours.
-
-Available options are listed in the exchange-class as `_ft_has_default`.
-
-For example, to test the order type `FOK` with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):
-
-```json
-"exchange": {
-    "name": "kraken",
-    "_ft_has_params": {
-        "order_time_in_force": ["gtc", "fok"],
-        "ohlcv_candle_limit": 200
-        }
-```
-
-!!! Warning
-    Please make sure to fully understand the impacts of these settings before modifying them.
-
 ### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
@@ -448,8 +453,6 @@ The valid values are:
 ```json
 "BTC", "ETH", "XRP", "LTC", "BCH", "USDT"
 ```
-
---8<-- "includes/pricing.md"
 
 ## Using Dry-run mode
 

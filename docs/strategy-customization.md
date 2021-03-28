@@ -300,38 +300,7 @@ The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `p
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](#Storing-information)
-
-### Storing information
-
-Storing information can be accomplished by creating a new dictionary within the strategy class.
-
-The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
-
-```python
-class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    cust_info = {}
-
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Check if the entry already exists
-        if not metadata["pair"] in self.cust_info:
-            # Create empty entry for this pair
-            self.cust_info[metadata["pair"]] = {}
-
-        if "crosstime" in self.cust_info[metadata["pair"]]:
-            self.cust_info[metadata["pair"]]["crosstime"] += 1
-        else:
-            self.cust_info[metadata["pair"]]["crosstime"] = 1
-```
-
-!!! Warning
-    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
-
-!!! Note
-    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
-
-***
+Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
 
 ## Additional data (informative_pairs)
 
@@ -399,7 +368,7 @@ if self.dp:
 
 ### *current_whitelist()*
 
-Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume. 
+Imagine you've developed a strategy that trades the `5m` timeframe using signals generated from a `1d` timeframe on the top 10 volume pairs by volume.
 
 The strategy might look something like this:
 
@@ -418,7 +387,7 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
         pairs = self.dp.current_whitelist()
         # Assign tf to each pair so they can be downloaded and cached for strategy.
         informative_pairs = [(pair, '1d') for pair in pairs]
-        return informative_pairs   
+        return informative_pairs
 ```
 
 ### *get_pair_dataframe(pair, timeframe)*
@@ -466,6 +435,26 @@ if self.dp:
         dataframe['best_bid'] = ob['bids'][0][0]
         dataframe['best_ask'] = ob['asks'][0][0]
 ```
+
+The orderbook structure is aligned with the order structure from [ccxt](https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure), so the result will look as follows:
+
+``` js
+{
+    'bids': [
+        [ price, amount ], // [ float, float ]
+        [ price, amount ],
+        ...
+    ],
+    'asks': [
+        [ price, amount ],
+        [ price, amount ],
+        //...
+    ],
+    //...
+}
+```
+
+Therefore, using `ob['bids'][0][0]` as demonstrated above will result in using the best bid price. `ob['bids'][0][1]` would look at the amount at this orderbook position.
 
 !!! Warning "Warning about backtesting"
     The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return uptodate values.
@@ -583,7 +572,7 @@ All columns of the informative dataframe will be available on the returning data
 
     ``` python
     'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
-    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe 
+    'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe
     ```
 
 ??? Example "Custom implementation"
@@ -617,6 +606,43 @@ All columns of the informative dataframe will be available on the returning data
     To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).
 
 ***
+
+### *stoploss_from_open()*
+
+Stoploss values returned from `custom_stoploss` must specify a percentage relative to `current_rate`, but sometimes you may want to specify a stoploss relative to the open price instead. `stoploss_from_open()` is a helper function to calculate a stoploss value that can be returned from `custom_stoploss` which will be equivalent to the desired percentage above the open price.
+
+??? Example "Returning a stoploss relative to the open price from the custom stoploss function"
+
+    Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).  
+
+    If we want a stop price at 7% above the open price we can call `stoploss_from_open(0.07, current_profit)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+
+
+    ``` python
+
+    from datetime import datetime
+    from freqtrade.persistence import Trade
+    from freqtrade.strategy import IStrategy, stoploss_from_open
+
+    class AwesomeStrategy(IStrategy):
+
+        # ... populate_* methods
+
+        use_custom_stoploss = True
+
+        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                            current_rate: float, current_profit: float, **kwargs) -> float:
+
+            # once the profit has risin above 10%, keep the stoploss at 7% above the open price
+            if current_profit > 0.10:
+                return stoploss_from_open(0.07, current_profit)
+
+            return 1
+
+    ```
+
+    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
+
 
 ## Additional data (Wallets)
 
@@ -709,7 +735,7 @@ To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
     Locked pairs will always be rounded up to the next candle. So assuming a `5m` timeframe, a lock with `until` set to 10:18 will lock the pair until the candle from 10:15-10:20 will be finished.
 
 !!! Warning
-    Locking pairs is not available during backtesting.
+    Manually locking pairs is not available during backtesting, only locks via Protections are allowed.
 
 #### Pair locking example
 

@@ -94,6 +94,7 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
+    conf['bid_strategy']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
     assert freqtrade.strategy.order_types['stoploss_on_exchange']
@@ -128,6 +129,7 @@ def test_order_dict_live(default_conf, mocker, caplog) -> None:
         'stoploss': 'limit',
         'stoploss_on_exchange': True,
     }
+    conf['bid_strategy']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
@@ -837,17 +839,17 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
-    ('bid', 10, 20, 10, 0.0, 20),  # Full bid side
-    ('bid', 10, 20, 10, 1.0, 10),  # Full last side
-    ('bid', 10, 20, 10, 0.5, 15),  # Between bid and last
-    ('bid', 10, 20, 10, 0.7, 13),  # Between bid and last
-    ('bid', 10, 20, 10, 0.3, 17),  # Between bid and last
-    ('bid', 4, 5, 10, 1.0, 5),  # last bigger than bid
-    ('bid', 4, 5, 10, 0.5, 5),  # last bigger than bid
-    ('bid', 10, 20, None, 0.5, 20),  # last not available - uses bid
-    ('bid', 4, 5, None, 0.5, 5),  # last not available - uses bid
-    ('bid', 4, 5, None, 1, 5),  # last not available - uses bid
-    ('bid', 4, 5, None, 0, 5),  # last not available - uses bid
+    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
+    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
+    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
+    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
+    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
 ])
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
@@ -856,7 +858,7 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     default_conf['bid_strategy']['price_side'] = side
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={'ask': ask, 'last': last, 'bid': bid}))
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
 
     assert freqtrade.get_buy_rate('ETH/BTC', True) == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
@@ -2243,6 +2245,7 @@ def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_
 
     open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.close_profit_abs = 0.001
     open_trade.is_open = False
 
     Trade.session.add(open_trade)
@@ -2290,6 +2293,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
 
     open_trade.open_date = arrow.utcnow().shift(hours=-5).datetime
     open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
+    open_trade.close_profit_abs = 0.001
     open_trade.is_open = False
 
     Trade.session.add(open_trade)
@@ -2794,7 +2798,7 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, c
     mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
                  side_effect=InvalidOrderException())
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=300))
-    sellmock = MagicMock()
+    sellmock = MagicMock(return_value={'id': '12345555'})
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -4108,22 +4112,33 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
     assert log_has('Sell Price at location 1 from orderbook could not be determined.', caplog)
 
 
-@pytest.mark.parametrize('side,ask,bid,expected', [
-    ('bid', 10.0, 11.0, 11.0),
-    ('bid', 10.0, 11.2, 11.2),
-    ('bid', 10.0, 11.0, 11.0),
-    ('bid', 9.8, 11.0, 11.0),
-    ('bid', 0.0001, 0.002, 0.002),
-    ('ask', 10.0, 11.0, 10.0),
-    ('ask', 10.11, 11.2, 10.11),
-    ('ask', 0.001, 0.002, 0.001),
-    ('ask', 0.006, 1.0, 0.006),
+@pytest.mark.parametrize('side,ask,bid,last,last_ab,expected', [
+    ('bid', 12.0, 11.0, 11.5, 0.0, 11.0),  # full bid side
+    ('bid', 12.0, 11.0, 11.5, 1.0, 11.5),  # full last side
+    ('bid', 12.0, 11.0, 11.5, 0.5, 11.25),  # between bid and lat
+    ('bid', 12.0, 11.2, 10.5, 0.0, 11.2),  # Last smaller than bid
+    ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
+    ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
+    ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
+    ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
+    ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
+    ('ask', 12.2, 11.2, 10.5, 0.0, 12.2),  # Last smaller than ask
+    ('ask', 12.0, 11.0, 10.5, 1.0, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 12.0, 11.2, 10.5, 0.5, 12.0),  # Last smaller than ask - uses ask
+    ('ask', 10.0, 11.0, 11.0, 0.0, 10.0),
+    ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
+    ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
+    ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
 ])
-def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask, expected) -> None:
+def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
+                       last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
 
     default_conf['ask_strategy']['price_side'] = side
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'ask': ask, 'bid': bid})
+    default_conf['ask_strategy']['bid_last_balance'] = last_ab
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
 
     # Test regular mode
@@ -4182,7 +4197,7 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
     default_conf['ask_strategy']['price_side'] = 'ask'
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 return_value={'ask': None, 'bid': 0.12})
+                 return_value={'ask': None, 'bid': 0.12, 'last': None})
     ft = get_patched_freqtradebot(mocker, default_conf)
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
         ft.get_sell_rate(pair, True)
@@ -4191,7 +4206,7 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
     assert ft.get_sell_rate(pair, True) == 0.12
     # Reverse sides
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 return_value={'ask': 0.13, 'bid': None})
+                 return_value={'ask': 0.13, 'bid': None, 'last': None})
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
         ft.get_sell_rate(pair, True)
 
