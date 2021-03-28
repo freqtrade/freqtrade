@@ -5,7 +5,7 @@ import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
 
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import IStrategy
 
 # --------------------------------
 # Add your lib to import here
@@ -27,8 +27,9 @@ class SampleStrategy(IStrategy):
 
     You must keep:
     - the lib in the section "Do not remove these libs"
-    - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
-    populate_sell_trend, hyperopt_space, buy_strategy_generator
+    - the methods: populate_indicators, populate_buy_trend, populate_sell_trend
+    You should keep:
+    - timeframe, minimal_roi, stoploss, trailing_*
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.

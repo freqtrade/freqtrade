@@ -26,8 +26,9 @@ class {{ strategy }}(IStrategy):
 
     You must keep:
     - the lib in the section "Do not remove these libs"
-    - the prototype for the methods: minimal_roi, stoploss, populate_indicators, populate_buy_trend,
-    populate_sell_trend, hyperopt_space, buy_strategy_generator
+    - the methods: populate_indicators, populate_buy_trend, populate_sell_trend
+    You should keep:
+    - timeframe, minimal_roi, stoploss, trailing_*
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
