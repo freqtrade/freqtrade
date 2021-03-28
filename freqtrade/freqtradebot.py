@@ -67,8 +67,15 @@ class FreqtradeBot(LoggingMixin):
 
         # Check config consistency here since strategies can set certain options
         validate_config_consistency(config)
+        
+        unwanted_exchanges = ['coinex']
+        exchange_name = self.config['exchange']['name']
+        
+        if exchange_name in unwanted_exchanges:
+          logger.error(f'Exchange, {exchange_name} not supported by freqtrade! continue with your own risk!')
+            
 
-        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+        self.exchange = ExchangeResolver.load_exchange(exchange_name, self.config)
 
         init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
