@@ -55,12 +55,14 @@ class HyperoptableStrategy(IStrategy):
     }
 
     sell_params = {
-        'sell_rsi': 74
+        'sell_rsi': 74,
+        'sell_minusdi': 0.4
     }
 
     buy_rsi = IntParameter([0, 50], default=30, space='buy')
     buy_plusdi = FloatParameter(low=0, high=1, default=0.5, space='buy')
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
+    sell_minusdi = FloatParameter(low=0, high=1, default=0.5, space='sell', enabled=False)
 
     def informative_pairs(self):
         """
@@ -164,7 +166,7 @@ class HyperoptableStrategy(IStrategy):
             ) |
             (
                 (dataframe['adx'] > 70) &
-                (dataframe['minus_di'] > 0.5)
+                (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
             'sell'] = 1
         return dataframe

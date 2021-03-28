@@ -145,7 +145,7 @@ class CategoricalParameter(BaseParameter):
         """
         if len(categories) < 2:
             raise OperationalException(
-                'IntParameter space must be [a, b, ...] (at least two parameters)')
+                'CategoricalParameter space must be [a, b, ...] (at least two parameters)')
         super().__init__(opt_range=categories, default=default, space=space, enabled=enabled,
                          **kwargs)
 

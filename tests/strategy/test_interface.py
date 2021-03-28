@@ -13,7 +13,8 @@ from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import BaseParameter, FloatParameter, IntParameter
+from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, FloatParameter,
+                                      IntParameter)
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -556,6 +557,7 @@ def test_strategy_safe_wrapper(value):
 
 
 def test_hyperopt_parameters():
+    from skopt.space import Categorical, Integer, Real
     with pytest.raises(OperationalException, match=r"Name is determined.*"):
         IntParameter(low=0, high=5, default=1, name='hello')
 
@@ -571,11 +573,23 @@ def test_hyperopt_parameters():
     with pytest.raises(OperationalException, match=r"FloatParameter space invalid\."):
         FloatParameter([0, 10], high=7, default=5, space='buy')
 
+    with pytest.raises(OperationalException, match=r"CategoricalParameter space must.*"):
+        CategoricalParameter(['aa'], default='aa', space='buy')
+
     with pytest.raises(TypeError):
         BaseParameter(opt_range=[0, 1], default=1, space='buy')
 
-    fltpar = IntParameter(low=0, high=5, default=1, space='buy')
+    intpar = IntParameter(low=0, high=5, default=1, space='buy')
+    assert intpar.value == 1
+    assert isinstance(intpar.get_space(''), Integer)
+
+    fltpar = FloatParameter(low=0.0, high=5.5, default=1.0, space='buy')
+    assert isinstance(fltpar.get_space(''), Real)
     assert fltpar.value == 1
+
+    catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'], default='buy_macd', space='buy')
+    assert isinstance(catpar.get_space(''), Categorical)
+    assert catpar.value == 'buy_macd'
 
 
 def test_auto_hyperopt_interface(default_conf):
@@ -587,3 +601,6 @@ def test_auto_hyperopt_interface(default_conf):
     # PlusDI is NOT in the buy-params, so default should be used
     assert strategy.buy_plusdi.value == 0.5
     assert strategy.sell_rsi.value == strategy.sell_params['sell_rsi']
+
+    # Parameter is disabled - so value from sell_param dict will NOT be used.
+    assert strategy.sell_minusdi.value == 0.5
