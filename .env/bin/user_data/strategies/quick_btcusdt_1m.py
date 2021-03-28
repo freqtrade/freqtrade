@@ -4,8 +4,10 @@
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
-from talib._ta_lib import ULTOSC, MACD, SAR, LINEARREG_ANGLE, TEMA, STOCHRSI, STOCH, STOCHF, RSI
+from talib._ta_lib import ULTOSC, MACD, SAR, LINEARREG_ANGLE, TEMA, TSF, CCI, ATR, CORREL, \
+    BOP, WMA, KAMA, HT_DCPERIOD, HT_TRENDMODE, HT_SINE
 
+from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
 # --------------------------------
@@ -33,37 +35,35 @@ class quick_btcusdt_1m(IStrategy):
     """
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
-    INTERFACE_VERSION = 1
+    INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
-        "0": 0.07186329732926479,
-        "6": 0.03610260437996321,
-        "14": 0.014117594921808408,
-        "23": 0
+        "0": 0.06443,
+        "360": 0.06597,
+        "1790": 0.0108,
+        "2116": 0
+
     }
 
     # Optimal stoploss designed for the strategy.
     # This attribute will be overridden if the config file contains "stoploss".
-    stoploss = -0.073946396013718
+    # Stoploss:
+    stoploss = -0.15825
 
-    # Trailing stoploss
+    # Trailing stop:
     trailing_stop = True
-    trailing_stop_positive = 0.11645094244761
-    trailing_stop_positive_offset = 0.20201226976340847
+    trailing_stop_positive = 0.3274
+    trailing_stop_positive_offset = 0.38967
     trailing_only_offset_is_reached = True
+
 
     # Optimal ticker interval for the strategy.
     timeframe = '1m'
 
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
-
-    # These values can be overridden in the "ask_strategy" section in the config.
-    use_sell_signal = True
-    sell_profit_only = True
-    ignore_roi_if_buy_signal = False
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30
@@ -78,8 +78,8 @@ class quick_btcusdt_1m(IStrategy):
 
     # Optional order time in force.
     order_time_in_force = {
-        'buy': 'gtc',
-        'sell': 'gtc'
+        'buy': 'fok',
+        'sell': 'fok'
     }
 
     plot_config = {
@@ -109,7 +109,7 @@ class quick_btcusdt_1m(IStrategy):
                             ("BTC/USDT", "15m"),
                             ]
         """
-        return [("BTC/USDT", "1m")]
+        return [("BTC/USDT", "1h")]
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -122,38 +122,39 @@ class quick_btcusdt_1m(IStrategy):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
 
-        # MACD
+        dataframe['period'] = HT_DCPERIOD(dataframe['close'])
+
         dataframe['macd'], dataframe['macdsignal'], dataframe['macdhist'] = MACD(dataframe['close'], fastperiod=12,
                                                                                  slowperiod=26, signalperiod=9)
-        dataframe['macd_angle'] = LINEARREG_ANGLE(dataframe['macd'], timeperiod=3)
-        dataframe['macdhist_angle'] = LINEARREG_ANGLE(dataframe['macd'], timeperiod=3)
+        dataframe['cci'] = CCI(dataframe['high'], dataframe['low'], dataframe['close'], timeperiod=30)
+        dataframe['sar'] = SAR(dataframe['high'], dataframe['low'])
+        dataframe['wma'] = WMA(dataframe['close'], timeperiod=30)
+        dataframe['wma_ratio'] = (dataframe['close'] - dataframe['wma'])
+        dataframe['kama'] = KAMA(dataframe['close'], timeperiod=30)
+        dataframe['angle_kama'] = LINEARREG_ANGLE(dataframe['kama'], timeperiod=10)
+        dataframe['tsf_mid'] = TSF(dataframe['close'], timeperiod=30)
+        dataframe['angle_tsf_mid'] = LINEARREG_ANGLE(dataframe['tsf_mid'], timeperiod=10)
+        dataframe['atr'] = ATR(dataframe['high'], dataframe['low'], dataframe['close'], timeperiod=30)
+        dataframe['uo'] = ULTOSC(dataframe['high'], dataframe['low'], dataframe['close'], timeperiod1=7, timeperiod2=14,
+                                 timeperiod3=28)
+        dataframe['tema'] = TEMA(dataframe['close'], timeperiod=50)
+        dataframe['macd_ratio'] = (dataframe['macd'] - dataframe['macdsignal'])
+        dataframe['tsf_ratio'] = (dataframe['tsf_mid'] - dataframe['close'])
+        dataframe['correl_h_l'] = CORREL(dataframe['high'], dataframe['low'], timeperiod=30)
+        dataframe['correl_tsf_mid_close'] = CORREL(dataframe['tsf_mid'], dataframe['close'], timeperiod=12)
+        dataframe['bop'] = BOP(dataframe['open'], dataframe['high'], dataframe['low'], dataframe['close'])
 
-        # Linear angle 
-        dataframe['angle'] = LINEARREG_ANGLE(dataframe['close'], timeperiod=14)
+        if not self.dp:
+            # Don't do anything if DataProvider is not available.
+            return dataframe
+        # Get the informative pair
+        informative = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='1h')
+        informative['bop'] = BOP(informative['open'], informative['high'], informative['low'], informative['close'])
+        informative['period'] = HT_DCPERIOD(informative['close'])
+        informative['mode'] = HT_TRENDMODE(informative['close'])
+        informative['sine'], informative['leadsine'] = HT_SINE(informative['close'])
 
-        dataframe['tema'] = TEMA(dataframe['close'], timeperiod=30)
-        dataframe['sr_fastk'], dataframe['sr_fastd'] = STOCHRSI(dataframe['close'], timeperiod=14, fastk_period=5,
-                                                                fastd_period=3, fastd_matype=0)
-        dataframe['sr_fastd_angle'] = LINEARREG_ANGLE(dataframe['sr_fastd'], timeperiod=4)
-
-        dataframe['slowk'], dataframe['slowd'] = STOCH(dataframe['high'], dataframe['low'], dataframe['close'],
-                                                       fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3,
-                                                       slowd_matype=0)
-        dataframe['slowd_angle'] = LINEARREG_ANGLE(dataframe['slowd'], timeperiod=3)
-        dataframe['sf_fastk'], dataframe['sf_fastd'] = STOCHF(dataframe['high'], dataframe['low'], dataframe['close'], fastk_period=5, fastd_period=3, fastd_matype=0)
-        dataframe['sf_fastd_angle'] = LINEARREG_ANGLE(dataframe['sf_fastd'], timeperiod=3)
-
-        dataframe['rsi'] = RSI(dataframe['close'], timeperiod=14)
-        dataframe['rsi_angle'] = LINEARREG_ANGLE(dataframe['rsi'], timeperiod=5)
-
-
-        # # first check if dataprovider is available
-        # if self.dp:
-        #     if self.dp.runmode in ('live', 'dry_run'):
-        #         ob = self.dp.orderbook(metadata['pair'], 1)
-        #         dataframe['best_bid'] = ob['bids'][0][0]
-        #         dataframe['best_ask'] = ob['asks'][0][0]
-        #
+        dataframe = merge_informative_pair(dataframe, informative, self.timeframe, '1h', ffill=True)
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -165,12 +166,8 @@ class quick_btcusdt_1m(IStrategy):
         """
         dataframe.loc[
             (
-                    (qtpylib.crossed_above(dataframe['macd'], dataframe['macdsignal'])) &
-                    (dataframe['sr_fastd_angle'] > -39) &
-                    (dataframe['sf_fastk'] > 33) &
-                    (dataframe['sf_fastd_angle'] > -80) &
-                    (dataframe['rsi_angle'] > 24) &
-                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (qtpylib.crossed_above(dataframe['low'], dataframe['tsf_mid']))
+
             ),
             'buy'] = 1
 
@@ -185,12 +182,102 @@ class quick_btcusdt_1m(IStrategy):
         """
         dataframe.loc[
             (
-                    ((dataframe['macdhist']) < 0.000241872676925719) &
-                    (dataframe['sr_fastd_angle'] > 71) &
-                    (dataframe['sf_fastd_angle'] < 21) &
-                    (dataframe['rsi_angle'] < 1) &
-                    (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (qtpylib.crossed_below(dataframe['high'], dataframe['tsf_mid']))
+
             ),
             'sell'] = 1
         return dataframe
 
+
+"""
+freqtrade hyperopt --config user_data/config_btcusdt_1m.json --hyperopt hyper_btcusdt_1m --hyperopt-loss OnlyProfitHyperOptLoss --strategy quick_btcusdt_1m -e 500 --spaces all
+
++--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------+
+|   Best |   Epoch |   Trades |    Win Draw Loss |   Avg profit |                        Profit |   Avg duration |   Objective |
+|--------+---------+----------+------------------+--------------+-------------------------------+----------------+-------------|
+| * Best |   1/500 |        2 |      1    0    1 |       -3.39% |  -67.10930706 USDT   (-6.77%) |      4,154.0 m |     1.02257 |
+| * Best |   2/500 |        2 |      1    0    1 |        0.08% |    1.60699817 USDT    (0.16%) |      1,156.5 m |     0.99946 |                                                
+| * Best |   8/500 |        4 |      4    0    0 |        3.59% |  142.17731149 USDT   (14.35%) |        981.5 m |     0.95218 |                                                
+|   Best |  39/500 |       13 |     11    0    2 |        3.80% |  489.61841267 USDT   (49.41%) |        736.2 m |     0.83531 |                                                
+|   Best |  70/500 |       25 |     19    4    2 |        2.99% |  740.67168932 USDT   (74.74%) |      1,597.7 m |     0.75086 |                                                
+|   Best | 106/500 |       52 |     35   12    5 |        1.82% |  937.66182441 USDT   (94.62%) |      1,666.9 m |      0.6846 |                                                
+|   Best | 427/500 |       52 |     32   17    3 |        2.83% | 1,460.67464976 USDT  (147.40%) |      2,592.9 m |     0.50868 |                                               
+|   Best | 439/500 |      179 |    101   57   21 |        0.83% | 1,480.44117660 USDT  (149.39%) |      3,457.9 m |     0.50203 |                                               
+ [Epoch 500 of 500 (100%)] ||                                                                                                          | [Time:  1:22:09, Elapsed Time: 1:22:09]
+2021-03-26 22:31:08,615 - freqtrade.optimize.hyperopt - INFO - 500 epochs saved to '/home/crypto_rahino/freqtrade/user_data/hyperopt_results/strategy_quick_btcusdt_1m_hyperopt_results_2021-03-26_21-08-16.pickle'.
+
+Best result:
+
+   439/500:    179 trades. 101/57/21 Wins/Draws/Losses. Avg profit   0.83%. Median profit   0.82%. Total profit  1480.44117660 USDT ( 149.39Σ%). Avg duration 3457.9 min. Objective: 0.50203
+
+
+    # Buy hyperspace params:
+    buy_params = {
+        'angle_tsf_mid-enabled': False,
+        'angle_tsf_mid-value': 9,
+        'atr-enabled': False,
+        'atr-value': 180,
+        'bop-value': 0.7274,
+        'cci-enabled': False,
+        'cci-value': 57,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value': -0.5389,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value': -0.8364,
+        'macd_ratio-enabled': False,
+        'macd_ratio-value': 101,
+        'macdhist-enabled': True,
+        'macdhist-value': 22,
+        'macdsignal-enabled': False,
+        'macdsignal-value': -478,
+        'trigger': 'macd',
+        'tsf_ratio-enabled': False,
+        'tsf_ratio-value': -1323,
+        'uo-enabled': False,
+        'uo-value': 33.5021
+    }
+
+    # Sell hyperspace params:
+    sell_params = {
+        'angle_tsf_mid-enabled': False,
+        'angle_tsf_mid-value': 9,
+        'atr-enabled': False,
+        'atr-value': 180,
+        'cci-enabled': False,
+        'cci-value': 57,
+        'correl_h_l-enabled': True,
+        'correl_h_l-value': -0.5389,
+        'correl_tsf_mid_close-enabled': False,
+        'correl_tsf_mid_close-value': -0.8364,
+        'macd_ratio-enabled': False,
+        'macd_ratio-value': 101,
+        'macdhist-enabled': True,
+        'macdhist-value': 22,
+        'macdsignal-enabled': False,
+        'macdsignal-value': -478,
+        'trigger': 'macd',
+        'tsf_ratio-enabled': False,
+        'tsf_ratio-value': -1323,
+        'uo-enabled': False,
+        'uo-value': 33.5021
+    }
+
+    # ROI table:
+    minimal_roi = {
+        "0": 0.16344,
+        "793": 0.05931,
+        "1121": 0.03143,
+        "1474": 0
+    }
+
+    # Stoploss:
+    stoploss = -0.2884
+
+    # Trailing stop:
+    trailing_stop = True
+    trailing_stop_positive = 0.21554
+    trailing_stop_positive_offset = 0.23749
+    trailing_only_offset_is_reached = False
+
+
+"""

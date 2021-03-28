@@ -53,13 +53,29 @@ class hyper_ltcusdt_1h(IHyperOpt):
 
             # GUARDS AND TRENDS
             if params.get('ao-enabled'):
-                conditions.append(dataframe['ao'] > params['ao1-value'])
-                conditions.append(dataframe['ao'] < params['ao2-value'])
+                conditions.append(dataframe['ao'] > params['ao-value'])
+            if params.get('uo-enabled'):
+                conditions.append(dataframe['uo'] > params['uo-value'])
+            if params.get('sar_close-enabled'):
+                conditions.append(dataframe['sar_close'] < params['sar_close-value'])
+            if params.get('natr-enabled'):
+                conditions.append(dataframe['natr'] > params['natr-value'])
             if params.get('angle_tsf_mid-enabled'):
                 conditions.append(dataframe['angle_tsf_mid'] < params['angle_tsf_mid-value'])
-            if params.get('rsi-enabled'):
-                conditions.append(params['rsi1-value'] < dataframe['rsi'])
-                conditions.append(params['rsi2-value'] > dataframe['rsi'])
+            if params.get('angle_trend_mid-enabled'):
+                conditions.append(dataframe['angle_trend_mid'] < params['angle_trend_mid-value'])
+            if params.get('mfi-enabled'):
+                conditions.append(params['mfi-value'] < dataframe['mfi'])
+            if params.get('angle-enabled'):
+                conditions.append(params['angle-value'] < dataframe['angle'])
+            if params.get('angle_macdsignal-enabled'):
+                conditions.append(params['angle_macdsignal-value'] < dataframe['angle_macdsignal'])
+            if params.get('macdhist-enabled'):
+                conditions.append(params['macdhist-value'] < dataframe['macdhist'])
+            if params.get('macdsignal-enabled'):
+                conditions.append(params['macdsignal-value'] < dataframe['macdsignal'])
+            if params.get('macd-enabled'):
+                conditions.append(params['macd-value'] < (dataframe['macd'] - dataframe['macdsignal']))
 
             # TRIGGERS
             if 'trigger' in params:
@@ -70,6 +86,14 @@ class hyper_ltcusdt_1h(IHyperOpt):
                 if params['trigger'] == 'sine':
                     conditions.append(qtpylib.crossed_above(
                         dataframe['leadsine'], dataframe['sine']
+                    ))
+                if params['trigger'] == 'phase':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['quadrature'], dataframe['inphase']
+                    ))
+                if params['trigger'] == 'angle_tsf_mid':
+                    conditions.append(qtpylib.crossed_above(
+                        dataframe['angle_tsf_mid'], 0
                     ))
 
             if conditions:
@@ -87,15 +111,31 @@ class hyper_ltcusdt_1h(IHyperOpt):
         Define your Hyperopt space for searching buy strategy parameters.
         """
         return [
-            Integer(-50, 50, name='ao1-value'),
-            Integer(-50, 50, name='ao2-value'),
-            Integer(-87, 85, name='angle_tsf_mid-value'),
-            Integer(8, 92, name='rsi1-value'),
-            Integer(8, 92, name='rsi2-value'),
+            Integer(-50, 35, name='ao-value'),
+            Integer(-86, 70, name='sar_close-value'),
+            Integer(-75, 72, name='angle_tsf_mid-value'),
+            Integer(-73, 68, name='angle_trend_mid-value'),
+            Integer(-2, 80, name='uo-value'),
+            Real(0.36, 11, name='natr-value'),
+            Integer(0, 100, name='mfi-value'),
+            Integer(-81, 78, name='angle-value'),
+            Integer(-38, 50, name='angle_macdsignal-value'),
+            Real(-4, 5.3, name='macdhist-value'),
+            Integer(-15, 11, name='macdsignal-value'),
+            Real(-4, 5, name='macd-value'),
             Categorical([True, False], name='ao-enabled'),
             Categorical([True, False], name='angle_tsf_mid-enabled'),
-            Categorical([True, False], name='rsi-enabled'),
-            Categorical(['sar', 'sine'], name='trigger')
+            Categorical([True, False], name='sar_close-enabled'),
+            Categorical([True, False], name='angle_trend_mid-enabled'),
+            Categorical([True, False], name='uo-enabled'),
+            Categorical([True, False], name='natr-enabled'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='angle-enabled'),
+            Categorical([True, False], name='angle_macdsignal-enabled'),
+            Categorical([True, False], name='macdhist-enabled'),
+            Categorical([True, False], name='macdsignal-enabled'),
+            Categorical([True, False], name='macd-enabled'),
+            Categorical(['sar', 'sine', 'angle_tsf_mid', 'angle_trend_mid', 'phase'], name='trigger')
         ]
 
     @staticmethod
@@ -112,13 +152,29 @@ class hyper_ltcusdt_1h(IHyperOpt):
 
             # GUARDS AND TRENDS
             if params.get('ao-enabled'):
-                conditions.append(dataframe['ao'] > params['ao1-value_sell'])
-                conditions.append(dataframe['ao'] < params['ao2-value_sell'])
+                conditions.append(dataframe['ao'] > params['ao-value_sell'])
+            if params.get('uo-enabled'):
+                conditions.append(dataframe['uo'] > params['uo-value_sell'])
+            if params.get('sar_close-enabled'):
+                conditions.append(dataframe['sar_close'] < params['sar_close-value_sell'])
+            if params.get('natr-enabled'):
+                conditions.append(dataframe['natr'] > params['natr-value_sell'])
             if params.get('angle_tsf_mid-enabled'):
-                conditions.append(dataframe['angle_tsf_mid'] > params['angle_tsf_mid-value_sell'])
-            if params.get('rsi-enabled'):
-                conditions.append(params['rsi1-value_sell'] < dataframe['rsi'])
-                conditions.append(params['rsi2-value_sell'] > dataframe['rsi'])
+                conditions.append(dataframe['angle_tsf_mid'] < params['angle_tsf_mid-value_sell'])
+            if params.get('angle_trend_mid-enabled'):
+                conditions.append(dataframe['angle_trend_mid'] < params['angle_trend_mid-value_sell'])
+            if params.get('mfi-enabled'):
+                conditions.append(params['mfi-value_sell'] < dataframe['mfi'])
+            if params.get('angle-enabled'):
+                conditions.append(params['angle-value_sell'] < dataframe['angle'])
+            if params.get('angle_macdsignal-enabled'):
+                conditions.append(params['angle_macdsignal-value_sell'] < dataframe['angle_macdsignal'])
+            if params.get('macdhist-enabled'):
+                conditions.append(params['macdhist-value_sell'] < dataframe['macdhist'])
+            if params.get('macdsignal-enabled'):
+                conditions.append(params['macdsignal-value_sell'] < dataframe['macdsignal'])
+            if params.get('macd-enabled'):
+                conditions.append(params['macd-value_sell'] < (dataframe['macd'] - dataframe['macdsignal']))
 
             # TRIGGERS
             if 'trigger' in params:
@@ -129,6 +185,18 @@ class hyper_ltcusdt_1h(IHyperOpt):
                 if params['trigger'] == 'sine':
                     conditions.append(qtpylib.crossed_below(
                         dataframe['leadsine'], dataframe['sine']
+                    ))
+                if params['trigger'] == 'phase':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['quadrature'], dataframe['inphase']
+                    ))
+                if params['trigger'] == 'angle_trend_mid':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['angle_trend_mid'], 0
+                    ))
+                if params['trigger'] == 'angle_tsf_mid':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['angle_tsf_mid'], 0
                     ))
 
 
@@ -147,15 +215,31 @@ class hyper_ltcusdt_1h(IHyperOpt):
         Define your Hyperopt space for searching sell strategy parameters.
         """
         return [
-            Integer(-50, 50, name='ao1-value_sell'),
-            Integer(-50, 50, name='ao2-value_sell'),
-            Integer(-87, 85, name='angle_tsf_mid-value_sell'),
-            Integer(8, 92, name='rsi1-value_sell'),
-            Integer(8, 92, name='rsi2-value_sell'),
+            Integer(-50, 35, name='ao-value_sell'),
+            Integer(-86, 70, name='sar_close-value_sell'),
+            Integer(-75, 72, name='angle_tsf_mid-value_sell'),
+            Integer(-73, 68, name='angle_trend_mid-value_sell'),
+            Integer(-2, 80, name='uo-value_sell'),
+            Real(0.36, 11, name='natr-value_sell'),
+            Integer(0, 100, name='mfi-value_sell'),
+            Integer(-81, 78, name='angle-value_sell'),
+            Integer(-38, 50, name='angle_macdsignal-value_sell'),
+            Real(-4, 5.3, name='macdhist-value_sell'),
+            Integer(-15, 11, name='macdsignal-value_sell'),
+            Real(-4, 5, name='macd-value_sell'),
             Categorical([True, False], name='ao-enabled'),
             Categorical([True, False], name='angle_tsf_mid-enabled'),
-            Categorical([True, False], name='rsi-enabled'),
-            Categorical(['sar', 'sine'], name='trigger')
+            Categorical([True, False], name='sar_close-enabled'),
+            Categorical([True, False], name='angle_trend_mid-enabled'),
+            Categorical([True, False], name='uo-enabled'),
+            Categorical([True, False], name='natr-enabled'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='angle-enabled'),
+            Categorical([True, False], name='angle_macdsignal-enabled'),
+            Categorical([True, False], name='macdhist-enabled'),
+            Categorical([True, False], name='macdsignal-enabled'),
+            Categorical([True, False], name='macd-enabled'),
+            Categorical(['sar', 'sine', 'angle_tsf_mid', 'angle_trend_mid', 'phase'], name='trigger')
         ]
 
     @staticmethod
@@ -208,7 +292,7 @@ class hyper_ltcusdt_1h(IHyperOpt):
         'stoploss' optimization hyperspace.
         """
         return [
-            Real(-0.25, -0.02, name='stoploss'),
+            Real(-0.3, -0.02, name='stoploss'),
         ]
 
     @staticmethod

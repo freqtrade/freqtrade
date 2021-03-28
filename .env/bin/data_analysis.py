@@ -15,18 +15,18 @@ import matplotlib
 # # Initialize empty configuration object
 from freqtrade.strategy import IStrategy
 
-config = Configuration.from_files(["user_data/config_ltcusdt_1h.json"])
+config = Configuration.from_files(["user_data/config_btcusdt_1m.json"])
 # # Optionally, use existing configuration file
 # config = Configuration.from_files(["config.json"])
 #
 # # Define some constants
 # config["timeframe"] = "1m"
 # # Name of the strategy class
-config["strategy"] = "ltcusdt_1h"
+config["strategy"] = "quick_btcusdt_1m"
 # # Location of the data
 data_location = Path(config['user_data_dir'], 'data', 'binance')
 # # Pair to analyze - Only use one pair here
-pair = "LTC/USDT"
+pair = "BTC/USDT"
 #
 # # Load data using values set above
 #
@@ -102,7 +102,7 @@ def plot_db(path):
     graph = generate_candlestick_graph(pair=pair,
                                        data=data_red,
                                        trades=trades_red,
-                                       indicators1=['tsf_mid'],
+                                       indicators1=['tsf_mid', 'match_low'],
                                        indicators2=['correl_tsf_mid_close', 'correl_angle_short_close',
                                                     'correl_angle_long_close', 'correl_hist_close']
                                        )
@@ -148,12 +148,12 @@ def plot_backtest(start_date, stop_date):
     graph = generate_candlestick_graph(pair=pair,
                                        data=data_red,
                                        trades=trades,
-                                       indicators1=['sar', 'tsf_mid'],
-                                       indicators2=['sine', 'leadsine', 'angle_trend_mid', 'inphase', 'quadrature' ]
+                                       indicators1=['tsf_mid', 'fib', 'kama', 'fib_1h'],
+                                       indicators2=['macd', 'bop_1h', 'macdsignal', 'mode', 'period_1h', 'sine', 'leadsine', 'period']
                                        )
 
     graph.show()
 
 
-plot_backtest(start_date='2020-01-01', stop_date='2021-03-18')
+plot_backtest(start_date='2021-03-01', stop_date='2021-03-26')
 

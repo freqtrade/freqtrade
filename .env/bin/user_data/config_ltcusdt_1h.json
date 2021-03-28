@@ -1,18 +1,19 @@
 {
-    "max_open_trades": 3,
+    "max_open_trades": 2,
     "stake_currency": "USDT",
-    "stake_amount": 100.0,
+    "stake_amount": 990,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "timeframe": "1h",
     "dry_run": true,
-    "position_stacking": true,
+    "position_stacking": false,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30
     },
     "bid_strategy": {
+        "price_side": "ask",
         "use_order_book": false,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
@@ -22,12 +23,13 @@
         }
     },
     "ask_strategy":{
-        "use_order_book": true,
+        "price_side": "bid",
+        "use_order_book": false,
         "order_book_min": 1,
         "order_book_max": 1,
         "use_sell_signal": true,
-        "sell_profit_only": true,
-        "ignore_roi_if_buy_signal": true
+        "sell_profit_only": false,
+        "ignore_roi_if_buy_signal": false
     },
     "exchange": {
         "name": "binance",
@@ -40,6 +42,7 @@
         },
         "pair_whitelist": [
             "LTC/USDT"
+
         ],
         "pair_blacklist": [
             "BNB/BTC"
@@ -49,22 +52,22 @@
         {"method": "StaticPairList"}
     ],
     "edge": {
-        "enabled": false,
+        "enabled": true,
         "process_throttle_secs": 3600,
-        "calculate_since_number_of_days": 7,
-        "allowed_risk": 0.01,
+        "calculate_since_number_of_days": 14,
+        "allowed_risk": 0.02,
         "stoploss_range_min": -0.01,
         "stoploss_range_max": -0.1,
         "stoploss_range_step": -0.01,
         "minimum_winrate": 0.60,
         "minimum_expectancy": 0.20,
         "min_trade_number": 10,
-        "max_trade_duration_minute": 1440,
+        "max_trade_duration_minute": 14400,
         "remove_pumps": false
     },
     "telegram": {
         "enabled": false,
-        "token": "1661670711:AAEjHFL_wnvc-hN0V8NKe0G53mzrz9rWnzk",
+        "token": "1725064196:AAGvqiJEC_uv8THpsZG1F_Or7T2dGYRFuqU",
         "chat_id": "1288347675",
         "keyboard": [
           ["/daily", "/stats", "/balance", "/profit"],

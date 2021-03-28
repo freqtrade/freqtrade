@@ -1,10 +1,10 @@
 {
-    "max_open_trades": 3,
+    "max_open_trades": 10,
     "stake_currency": "USDT",
-    "stake_amount": 0.05,
+    "stake_amount": 100,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
-    "timeframe": "1m",
+    "timeframe": "1h",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
@@ -44,7 +44,7 @@
             "DOGE/USDT",
             "BTC/USDT",
             "ADA/USDT",
-            "TRX/XRP"
+            "LTC/USDT"
         ],
         "pair_blacklist": [
             "BNB/BTC"

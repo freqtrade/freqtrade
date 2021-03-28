@@ -1,18 +1,19 @@
 {
     "max_open_trades": 3,
     "stake_currency": "USDT",
-    "stake_amount": 1000.0,
+    "stake_amount": 990.0,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "timeframe": "1m",
     "dry_run": true,
-    "position_stacking": true,
+    "position_stacking": false,
     "cancel_open_orders_on_exit": true,
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30
     },
     "bid_strategy": {
+        "price_side": "ask",
         "use_order_book": false,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
@@ -22,6 +23,7 @@
         }
     },
     "ask_strategy":{
+        "price_side": "bid",
         "use_order_book": false,
         "order_book_min": 1,
         "order_book_max": 1,
