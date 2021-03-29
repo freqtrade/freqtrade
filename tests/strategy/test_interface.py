@@ -587,7 +587,8 @@ def test_hyperopt_parameters():
     assert isinstance(fltpar.get_space(''), Real)
     assert fltpar.value == 1
 
-    catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'], default='buy_macd', space='buy')
+    catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
+                                  default='buy_macd', space='buy')
     assert isinstance(catpar.get_space(''), Categorical)
     assert catpar.value == 'buy_macd'
 
