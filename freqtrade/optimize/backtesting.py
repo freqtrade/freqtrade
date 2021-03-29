@@ -443,7 +443,8 @@ class Backtesting:
 
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
-            preprocessed[pair] = trim_dataframe(df, timerange)
+            preprocessed[pair] = trim_dataframe(df, timerange,
+                                                startup_candles=self.required_startup)
         min_date, max_date = history.get_timerange(preprocessed)
 
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '

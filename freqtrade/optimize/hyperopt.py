@@ -379,7 +379,8 @@ class Hyperopt:
 
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
-            preprocessed[pair] = trim_dataframe(df, timerange)
+            preprocessed[pair] = trim_dataframe(df, timerange,
+                                                startup_candles=self.backtesting.required_startup)
         min_date, max_date = get_timerange(preprocessed)
 
         logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
