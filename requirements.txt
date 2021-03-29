@@ -3,7 +3,7 @@ pandas==1.2.3
 
 ccxt==1.45.44
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==3.4.6
+cryptography==3.4.7
 aiohttp==3.7.4.post0
 SQLAlchemy==1.4.3
 python-telegram-bot==13.4.1
