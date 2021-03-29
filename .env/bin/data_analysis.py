@@ -148,8 +148,8 @@ def plot_backtest(start_date, stop_date):
     graph = generate_candlestick_graph(pair=pair,
                                        data=data_red,
                                        trades=trades,
-                                       indicators1=['tsf_mid', 'fib', 'kama', 'fib_1h'],
-                                       indicators2=['macd', 'bop_1h', 'macdsignal', 'mode', 'period_1h', 'sine', 'leadsine', 'period']
+                                       indicators1=['tsf_mid','kama'],
+                                       indicators2=['macd','macdsignal', 'mode', 'sine', 'leadsine', 'period']
                                        )
 
     graph.show()
