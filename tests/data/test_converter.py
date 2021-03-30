@@ -10,7 +10,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
-from tests.conftest import log_has
+from tests.conftest import log_has, log_has_re
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
@@ -62,8 +62,8 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}", caplog)
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+                      f"{len(data)} - after: {len(data2)}.*", caplog)
 
     # Test fillup actually fixes invalid backtest data
     min_date, max_date = get_timerange({'UNITTEST/BTC': data})
@@ -125,8 +125,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}", caplog)
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+                      f"{len(data)} - after: {len(data2)}.*", caplog)
 
 
 def test_ohlcv_drop_incomplete(caplog):
