@@ -626,6 +626,10 @@ class Telegram(RPCHandler):
                 self._rpc._rpc_forcebuy(pair, price)
             except RPCException as e:
                 self._send_msg(str(e))
+        else:
+            whitelist = self._rpc._rpc_whitelist()['whitelist']
+            pairs_keyboard: List[List[Union[str, KeyboardButton]]] = [[f'/forcebuy {pair}' for pair in whitelist]]
+            self._send_msg("Which pair?", keyboard=pairs_keyboard)
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
@@ -942,7 +946,8 @@ class Telegram(RPCHandler):
         )
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
-                  disable_notification: bool = False) -> None:
+                  disable_notification: bool = False,
+                  keyboard: List[List[Union[str, KeyboardButton]]] = None) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -950,7 +955,9 @@ class Telegram(RPCHandler):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
+        if keyboard is None:
+            keyboard = self._keyboard
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         try:
             try:
                 self._updater.bot.send_message(
