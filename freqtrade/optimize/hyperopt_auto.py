@@ -25,7 +25,8 @@ class HyperOptAuto(IHyperOpt):
     def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('buy'):
-                attr.value = params[attr_name]
+                if attr.optimize:
+                    attr.value = params[attr_name]
             return self.strategy.populate_buy_trend(dataframe, metadata)
 
         return populate_buy_trend
@@ -33,7 +34,8 @@ class HyperOptAuto(IHyperOpt):
     def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('sell'):
-                attr.value = params[attr_name]
+                if attr.optimize:
+                    attr.value = params[attr_name]
             return self.strategy.populate_sell_trend(dataframe, metadata)
 
         return populate_buy_trend
@@ -53,7 +55,7 @@ class HyperOptAuto(IHyperOpt):
 
     def _generate_indicator_space(self, category):
         for attr_name, attr in self.strategy.enumerate_parameters(category):
-            if attr.enabled:
+            if attr.optimize:
                 yield attr.get_space(attr_name)
 
     def _get_indicator_space(self, category, fallback_method_name):

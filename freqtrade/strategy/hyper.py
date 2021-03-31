@@ -27,12 +27,14 @@ class BaseParameter(ABC):
     opt_range: Sequence[Any]
 
     def __init__(self, *, opt_range: Sequence[Any], default: Any, space: Optional[str] = None,
-                 enabled: bool = True, **kwargs):
+                 optimize: bool = True, load: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.(Integer|Real|Categorical).
         """
         if 'name' in kwargs:
@@ -42,7 +44,8 @@ class BaseParameter(ABC):
         self._space_params = kwargs
         self.value = default
         self.opt_range = opt_range
-        self.enabled = enabled
+        self.optimize = optimize
+        self.load = load
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.value})'
@@ -60,7 +63,7 @@ class IntParameter(BaseParameter):
     opt_range: Sequence[int]
 
     def __init__(self, low: Union[int, Sequence[int]], high: Optional[int] = None, *, default: int,
-                 space: Optional[str] = None, enabled: bool = True, **kwargs):
+                 space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
         :param low: Lower end (inclusive) of optimization space or [low, high].
@@ -69,6 +72,8 @@ class IntParameter(BaseParameter):
         :param default: A default value.
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
                       parameter fieldname is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
         if high is not None and isinstance(low, Sequence):
@@ -79,8 +84,8 @@ class IntParameter(BaseParameter):
             opt_range = low
         else:
             opt_range = [low, high]
-        super().__init__(opt_range=opt_range, default=default, space=space, enabled=enabled,
-                         **kwargs)
+        super().__init__(opt_range=opt_range, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
 
     def get_space(self, name: str) -> 'Integer':
         """
@@ -96,7 +101,7 @@ class FloatParameter(BaseParameter):
     opt_range: Sequence[float]
 
     def __init__(self, low: Union[float, Sequence[float]], high: Optional[float] = None, *,
-                 default: float, space: Optional[str] = None, enabled: bool = True, **kwargs):
+                 default: float, space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
         :param low: Lower end (inclusive) of optimization space or [low, high].
@@ -105,6 +110,8 @@ class FloatParameter(BaseParameter):
         :param default: A default value.
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
                       parameter fieldname is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.Real.
         """
         if high is not None and isinstance(low, Sequence):
@@ -115,8 +122,8 @@ class FloatParameter(BaseParameter):
             opt_range = low
         else:
             opt_range = [low, high]
-        super().__init__(opt_range=opt_range, default=default, space=space, enabled=enabled,
-                         **kwargs)
+        super().__init__(opt_range=opt_range, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
 
     def get_space(self, name: str) -> 'Real':
         """
@@ -132,7 +139,7 @@ class CategoricalParameter(BaseParameter):
     opt_range: Sequence[Any]
 
     def __init__(self, categories: Sequence[Any], *, default: Optional[Any] = None,
-                 space: Optional[str] = None, enabled: bool = True, **kwargs):
+                 space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
         """
         Initialize hyperopt-optimizable parameter.
         :param categories: Optimization space, [a, b, ...].
@@ -141,13 +148,15 @@ class CategoricalParameter(BaseParameter):
         :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
          parameter field
          name is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.Categorical.
         """
         if len(categories) < 2:
             raise OperationalException(
                 'CategoricalParameter space must be [a, b, ...] (at least two parameters)')
-        super().__init__(opt_range=categories, default=default, space=space, enabled=enabled,
-                         **kwargs)
+        super().__init__(opt_range=categories, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
 
     def get_space(self, name: str) -> 'Categorical':
         """
@@ -184,8 +193,7 @@ class HyperStrategyMixin(object):
                 if issubclass(attr.__class__, BaseParameter):
                     if category is None or category == attr.category or \
                        attr_name.startswith(category + '_'):
-                        if attr.enabled:
-                            yield attr_name, attr
+                        yield attr_name, attr
 
     def _load_params(self, params: dict) -> None:
         """
@@ -196,7 +204,7 @@ class HyperStrategyMixin(object):
             return
         for attr_name, attr in self.enumerate_parameters():
             if attr_name in params:
-                if attr.enabled:
+                if attr.load:
                     attr.value = params[attr_name]
                     logger.info(f'attr_name = {attr.value}')
                 else:
