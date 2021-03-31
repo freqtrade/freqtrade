@@ -860,22 +860,6 @@ def test_validate_tsl(default_conf):
         validate_config_consistency(default_conf)
 
 
-def test_validate_edge(edge_conf):
-    edge_conf.update({"pairlist": {
-        "method": "VolumePairList",
-    }})
-
-    with pytest.raises(OperationalException,
-                       match="Edge and VolumePairList are incompatible, "
-                       "Edge will override whatever pairs VolumePairlist selects."):
-        validate_config_consistency(edge_conf)
-
-    edge_conf.update({"pairlist": {
-        "method": "StaticPairList",
-    }})
-    validate_config_consistency(edge_conf)
-
-
 def test_validate_edge2(edge_conf):
     edge_conf.update({"ask_strategy": {
         "use_sell_signal": True,

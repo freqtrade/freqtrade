@@ -149,11 +149,6 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if conf.get('pairlist', {}).get('method') == 'VolumePairList':
-        raise OperationalException(
-            "Edge and VolumePairList are incompatible, "
-            "Edge will override whatever pairs VolumePairlist selects."
-        )
     if not conf.get('ask_strategy', {}).get('use_sell_signal', True):
         raise OperationalException(
             "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."

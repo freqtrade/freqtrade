@@ -1,9 +1,9 @@
 # Edge positioning
 
-The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss. 
+The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss.
 
 !!! Warning
-    `Edge positioning` is not compatible with dynamic (volume-based) whitelist.
+    WHen using `Edge positioning` with a dynamic whitelist (VolumePairList), make sure to also use `AgeFilter` and set it to at least `calculate_since_number_of_days` to avoid problems with missing data.
 
 !!! Note
     `Edge Positioning` only considers *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
@@ -14,7 +14,7 @@ The `Edge Positioning` module uses probability to calculate your win rate and ri
 
 Trading strategies are not perfect. They are frameworks that are susceptible to the market and its indicators. Because the market is not at all predictable, sometimes a strategy will win and sometimes the same strategy will lose.
 
-To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about *how often* the strategy makes or loses money. 
+To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about *how often* the strategy makes or loses money.
 
 !!! tip "It doesn't matter how often, but how much!"
     A bad strategy might make 1 penny in *ten* transactions but lose 1 dollar in *one* transaction. If one only checks the number of winning trades, it would be misleading to think that the strategy is actually making a profit.
