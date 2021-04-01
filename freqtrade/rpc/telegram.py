@@ -628,7 +628,9 @@ class Telegram(RPCHandler):
                 self._send_msg(str(e))
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
-            pairs_keyboard: List[List[Union[str, KeyboardButton]]] = [[f'/forcebuy {pair}' for pair in whitelist]]
+            pairs_keyboard: List[List[Union[str, KeyboardButton]]] = [
+                [f'/forcebuy {pair}' for pair in whitelist]
+            ]
             self._send_msg("Which pair?", keyboard=pairs_keyboard)
 
     @authorized_only
