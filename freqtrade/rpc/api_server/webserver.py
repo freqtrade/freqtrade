@@ -112,10 +112,14 @@ class ApiServer(RPCHandler):
         from freqtrade.rpc.api_server.api_v1 import router as api_v1
         from freqtrade.rpc.api_server.api_v1 import router_public as api_v1_public
         from freqtrade.rpc.api_server.web_ui import router_ui
+        from freqtrade.rpc.api_server.api_backtest import router as api_backtest
 
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",
+                           dependencies=[Depends(http_basic_or_jwt_token)],
+                           )
+        app.include_router(api_backtest, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
