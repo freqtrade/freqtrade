@@ -56,6 +56,14 @@ class BaseParameter(ABC):
         Get-space - will be used by Hyperopt to get the hyperopt Space
         """
 
+    def _set_value(self, value: Any):
+        """
+        Update current value. Used by hyperopt functions for the purpose where optimization and
+         value spaces differ.
+        :param value: A numerical value.
+        """
+        self.value = value
+
 
 class IntParameter(BaseParameter):
     default: int
@@ -65,7 +73,7 @@ class IntParameter(BaseParameter):
     def __init__(self, low: Union[int, Sequence[int]], high: Optional[int] = None, *, default: int,
                  space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
         """
-        Initialize hyperopt-optimizable parameter.
+        Initialize hyperopt-optimizable integer parameter.
         :param low: Lower end (inclusive) of optimization space or [low, high].
         :param high: Upper end (inclusive) of optimization space.
                      Must be none of entire range is passed first parameter.
@@ -95,16 +103,16 @@ class IntParameter(BaseParameter):
         return Integer(*self.opt_range, name=name, **self._space_params)
 
 
-class FloatParameter(BaseParameter):
+class RealParameter(BaseParameter):
     default: float
     value: float
     opt_range: Sequence[float]
 
     def __init__(self, low: Union[float, Sequence[float]], high: Optional[float] = None, *,
-                 default: float, space: Optional[str] = None,
-                 optimize: bool = True, load: bool = True, **kwargs):
+                 default: float, space: Optional[str] = None, optimize: bool = True,
+                 load: bool = True, **kwargs):
         """
-        Initialize hyperopt-optimizable parameter.
+        Initialize hyperopt-optimizable floating point parameter with unlimited precision.
         :param low: Lower end (inclusive) of optimization space or [low, high].
         :param high: Upper end (inclusive) of optimization space.
                      Must be none if entire range is passed first parameter.
@@ -116,10 +124,10 @@ class FloatParameter(BaseParameter):
         :param kwargs: Extra parameters to skopt.space.Real.
         """
         if high is not None and isinstance(low, Sequence):
-            raise OperationalException('FloatParameter space invalid.')
+            raise OperationalException(f'{self.__class__.__name__} space invalid.')
         if high is None or isinstance(low, Sequence):
             if not isinstance(low, Sequence) or len(low) != 2:
-                raise OperationalException('FloatParameter space must be [low, high]')
+                raise OperationalException(f'{self.__class__.__name__} space must be [low, high]')
             opt_range = low
         else:
             opt_range = [low, high]
@@ -132,6 +140,50 @@ class FloatParameter(BaseParameter):
         :param name: A name of parameter field.
         """
         return Real(*self.opt_range, name=name, **self._space_params)
+
+
+class DecimalParameter(RealParameter):
+    default: float
+    value: float
+    opt_range: Sequence[float]
+
+    def __init__(self, low: Union[float, Sequence[float]], high: Optional[float] = None, *,
+                 default: float, decimals: int = 3, space: Optional[str] = None,
+                 optimize: bool = True, load: bool = True, **kwargs):
+        """
+        Initialize hyperopt-optimizable decimal parameter with a limited precision.
+        :param low: Lower end (inclusive) of optimization space or [low, high].
+        :param high: Upper end (inclusive) of optimization space.
+                     Must be none if entire range is passed first parameter.
+        :param default: A default value.
+        :param decimals: A number of decimals after floating point to be included in testing.
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+                      parameter fieldname is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
+        :param kwargs: Extra parameters to skopt.space.Real.
+        """
+        self._decimals = decimals
+        default = round(default, self._decimals)
+        super().__init__(low=low, high=high, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
+
+    def get_space(self, name: str) -> 'Integer':
+        """
+        Create skopt optimization space.
+        :param name: A name of parameter field.
+        """
+        low = int(self.opt_range[0] * pow(10, self._decimals))
+        high = int(self.opt_range[1] * pow(10, self._decimals))
+        return Integer(low, high, name=name, **self._space_params)
+
+    def _set_value(self, value: int):
+        """
+        Update current value. Used by hyperopt functions for the purpose where optimization and
+         value spaces differ.
+        :param value: An integer value.
+        """
+        self.value = round(value * pow(0.1, self._decimals), self._decimals)
 
 
 class CategoricalParameter(BaseParameter):

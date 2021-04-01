@@ -13,8 +13,8 @@ from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, FloatParameter,
-                                      IntParameter)
+from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
+                                      IntParameter, RealParameter)
 from freqtrade.strategy.interface import SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -564,14 +564,20 @@ def test_hyperopt_parameters():
     with pytest.raises(OperationalException, match=r"IntParameter space must be.*"):
         IntParameter(low=0, default=5, space='buy')
 
-    with pytest.raises(OperationalException, match=r"FloatParameter space must be.*"):
-        FloatParameter(low=0, default=5, space='buy')
+    with pytest.raises(OperationalException, match=r"RealParameter space must be.*"):
+        RealParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"DecimalParameter space must be.*"):
+        DecimalParameter(low=0, default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"IntParameter space invalid\."):
         IntParameter([0, 10], high=7, default=5, space='buy')
 
-    with pytest.raises(OperationalException, match=r"FloatParameter space invalid\."):
-        FloatParameter([0, 10], high=7, default=5, space='buy')
+    with pytest.raises(OperationalException, match=r"RealParameter space invalid\."):
+        RealParameter([0, 10], high=7, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"DecimalParameter space invalid\."):
+        DecimalParameter([0, 10], high=7, default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"CategoricalParameter space must.*"):
         CategoricalParameter(['aa'], default='aa', space='buy')
@@ -583,9 +589,15 @@ def test_hyperopt_parameters():
     assert intpar.value == 1
     assert isinstance(intpar.get_space(''), Integer)
 
-    fltpar = FloatParameter(low=0.0, high=5.5, default=1.0, space='buy')
+    fltpar = RealParameter(low=0.0, high=5.5, default=1.0, space='buy')
     assert isinstance(fltpar.get_space(''), Real)
     assert fltpar.value == 1
+
+    fltpar = DecimalParameter(low=0.0, high=5.5, default=1.0004, decimals=3, space='buy')
+    assert isinstance(fltpar.get_space(''), Integer)
+    assert fltpar.value == 1
+    fltpar._set_value(2222)
+    assert fltpar.value == 2.222
 
     catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
                                   default='buy_macd', space='buy')

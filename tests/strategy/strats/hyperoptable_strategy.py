@@ -4,7 +4,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.strategy import FloatParameter, IntParameter, IStrategy
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, RealParameter
 
 
 class HyperoptableStrategy(IStrategy):
@@ -60,9 +60,10 @@ class HyperoptableStrategy(IStrategy):
     }
 
     buy_rsi = IntParameter([0, 50], default=30, space='buy')
-    buy_plusdi = FloatParameter(low=0, high=1, default=0.5, space='buy')
+    buy_plusdi = RealParameter(low=0, high=1, default=0.5, space='buy')
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
-    sell_minusdi = FloatParameter(low=0, high=1, default=0.5, space='sell', load=False)
+    sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
+                                    load=False)
 
     def informative_pairs(self):
         """

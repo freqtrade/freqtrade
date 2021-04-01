@@ -26,7 +26,8 @@ class HyperOptAuto(IHyperOpt):
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('buy'):
                 if attr.optimize:
-                    attr.value = params[attr_name]
+                    # noinspection PyProtectedMember
+                    attr._set_value(params[attr_name])
             return self.strategy.populate_buy_trend(dataframe, metadata)
 
         return populate_buy_trend
@@ -35,7 +36,8 @@ class HyperOptAuto(IHyperOpt):
         def populate_buy_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('sell'):
                 if attr.optimize:
-                    attr.value = params[attr_name]
+                    # noinspection PyProtectedMember
+                    attr._set_value(params[attr_name])
             return self.strategy.populate_sell_trend(dataframe, metadata)
 
         return populate_buy_trend
