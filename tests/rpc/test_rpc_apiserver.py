@@ -2,6 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -1227,3 +1228,68 @@ def test_list_available_pairs(botclient):
     assert rc.json()['length'] == 1
     assert rc.json()['pairs'] == ['XRP/ETH']
     assert len(rc.json()['pair_interval']) == 1
+
+
+def test_api_backtesting(botclient, mocker, fee):
+    ftbot, client = botclient
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+
+    # Backtesting not started yet
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'not_started'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest not yet executed'
+    assert result['progress'] == 0
+
+    # Reset backtesting
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'reset'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest reset'
+
+    # bt_mock = mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+    #                        return_value=(1, 2))
+    # stats_mock = mocker.patch('freqtrade.optimize.optimize_reports.generate_backtest_stats')
+    # bt_mock.load_bt_data = MagicMock(return_value=(xxx, 'asdfadf'))
+    # start backtesting
+    data = {
+        "strategy": "DefaultStrategy",
+        "timeframe": "5m",
+        "timerange": "20180110-20180111",
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run_wallet": 1000,
+        "enable_protections": False
+    }
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert_response(rc)
+    result = rc.json()
+
+    assert result['status'] == 'running'
+    assert result['progress'] == 0
+    assert result['running']
+    assert result['status_msg'] == 'Backtest started'
+
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'ended'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
+    assert result['progress'] == 1
+    assert result['backtest_result']
+
+    # Delete backtesting to avoid leakage since the backtest-object may stick around.
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'reset'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest reset'

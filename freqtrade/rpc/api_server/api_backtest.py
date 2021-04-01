@@ -70,7 +70,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             ApiServer._bt.results = generate_backtest_stats(
                 ApiServer._backtestdata, ApiServer._bt.all_results,
                 min_date=min_date, max_date=max_date)
-            logger.info("Backtesting finished.")
+            logger.info("Backtest finished.")
 
         finally:
             ApiServer._bgtask_running = False
@@ -110,7 +110,7 @@ def api_get_backtest():
             "running": False,
             "step": "",
             "progress": 0,
-            "status_msg": "Backtesting not yet executed"
+            "status_msg": "Backtest not yet executed"
         }
 
     return {
@@ -145,5 +145,5 @@ def api_delete_backtest():
         "running": False,
         "step": "",
         "progress": 0,
-        "status_msg": "Backtesting reset",
+        "status_msg": "Backtest reset",
     }
