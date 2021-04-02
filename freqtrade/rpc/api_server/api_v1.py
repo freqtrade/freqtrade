@@ -11,15 +11,14 @@ from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
-from freqtrade.rpc.api_server.api_schemas import (AvailablePairs,
-                                                  Balances, BlacklistPayload, BlacklistResponse,
-                                                  Count, Daily, DeleteLockRequest, DeleteTrade,
-                                                  ForceBuyPayload, ForceBuyResponse,
-                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
-                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse, Version,
-                                                  WhitelistResponse)
+from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
+                                                  BlacklistResponse, Count, Daily,
+                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
+                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
+                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
+                                                  Stats, StatusMsg, StrategyListResponse,
+                                                  StrategyResponse, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -260,4 +259,3 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
         'pair_interval': pair_interval,
     }
     return result
-
