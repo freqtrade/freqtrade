@@ -175,11 +175,12 @@ class RPC:
                 current_profit_abs = trade.calc_profit(current_rate)
 
                 # Calculate fiat profit
-                current_profit_fiat = self._fiat_converter.convert_amount(
-                    current_profit_abs,
-                    self._freqtrade.config['stake_currency'],
-                    self._freqtrade.config['fiat_display_currency']
-                )
+                if self._fiat_converter:
+                    current_profit_fiat = self._fiat_converter.convert_amount(
+                        current_profit_abs,
+                        self._freqtrade.config['stake_currency'],
+                        self._freqtrade.config['fiat_display_currency']
+                    )
 
                 # Calculate guaranteed profit (in case of trailing stop)
                 stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
