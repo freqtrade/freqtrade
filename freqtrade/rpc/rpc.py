@@ -118,9 +118,9 @@ class RPC:
             'bot_name': config.get('bot_name', 'freqtrade'),
             'timeframe': config.get('timeframe'),
             'timeframe_ms': timeframe_to_msecs(config['timeframe']
-                                               ) if 'timeframe' in config else '',
+                                               ) if 'timeframe' in config else 0,
             'timeframe_min': timeframe_to_minutes(config['timeframe']
-                                                  ) if 'timeframe' in config else '',
+                                                  ) if 'timeframe' in config else 0,
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
