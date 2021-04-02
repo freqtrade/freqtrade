@@ -786,6 +786,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'profit_ratio': -0.00408133,
         'profit_pct': -0.41,
         'profit_abs': -4.09e-06,
+        'profit_fiat': ANY,
         'current_rate': 1.099e-05,
         'open_date': ANY,
         'open_date_hum': 'just now',
