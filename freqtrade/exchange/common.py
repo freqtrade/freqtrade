@@ -140,7 +140,7 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                     logger.warning('retrying %s() still for %s times', f.__name__, count)
                     count -= 1
                     kwargs.update({'count': count})
-                    if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
+                    if isinstance(ex, (DDosProtection, RetryableOrderError)):
                         # increasing backoff
                         backoff_delay = calculate_backoff(count + 1, retries)
                         logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
