@@ -966,6 +966,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'profit_ratio': None,
         'profit_pct': None,
         'profit_abs': None,
+        'profit_fiat': None,
         'fee_close': 0.0025,
         'fee_close_cost': None,
         'fee_close_currency': None,
