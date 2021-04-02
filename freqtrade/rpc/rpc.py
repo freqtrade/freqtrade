@@ -173,6 +173,14 @@ class RPC:
                     current_rate = NAN
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
+
+                # Calculate fiat profit
+                current_profit_fiat = self._fiat_converter.convert_amount(
+                    current_profit_abs,
+                    self._freqtrade.config['stake_currency'],
+                    self._freqtrade.config['fiat_display_currency']
+                )
+
                 # Calculate guaranteed profit (in case of trailing stop)
                 stoploss_entry_dist = trade.calc_profit(trade.stop_loss)
                 stoploss_entry_dist_ratio = trade.calc_profit_ratio(trade.stop_loss)
@@ -191,6 +199,7 @@ class RPC:
                     profit_ratio=current_profit,
                     profit_pct=round(current_profit * 100, 2),
                     profit_abs=current_profit_abs,
+                    profit_fiat=current_profit_fiat,
 
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
