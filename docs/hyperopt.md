@@ -1,21 +1,21 @@
 # Hyperopt
 
 This page explains how to tune your strategy by finding the optimal
-parameters, a process called hyperparameter optimization. The bot uses several
-algorithms included in the `scikit-optimize` package to accomplish this. The
-search will burn all your CPU cores, make your laptop sound like a fighter jet
-and still take a long time.
+parameters, a process called hyperparameter optimization. The bot uses algorithms included in the `scikit-optimize` package to accomplish this.
+The search will burn all your CPU cores, make your laptop sound like a fighter jet and still take a long time.
 
 In general, the search for best parameters starts with a few random combinations (see [below](#reproducible-results) for more details) and then uses Bayesian search with a ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace that minimizes the value of the [loss function](#loss-functions).
 
-Hyperopt requires historic data to be available, just as backtesting does.
+Hyperopt requires historic data to be available, just as backtesting does (hyperopt runs backtesting many times with different parameters).
 To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
 
 !!! Bug
     Hyperopt can crash when used with only 1 CPU Core as found out in [Issue #1133](https://github.com/freqtrade/freqtrade/issues/1133)
 
 !!! Note
-    Since 2021.4 release you no longer have to write a separate hyperopt class. Legacy method is still supported, but it is no longer a preferred way of hyperopting. Legacy documentation is available at [Legacy Hyperopt](hyperopt_legacy.md).
+    Since 2021.4 release you no longer have to write a separate hyperopt class, but can configure the parameters directly in the strategy.
+    The legacy method is still supported, but it is no longer the recommended way of setting up hyperopt. 
+    The legacy documentation is available at [Legacy Hyperopt](hyperopt_legacy.md).
 
 ## Install hyperopt dependencies
 
@@ -36,7 +36,6 @@ pip install -r requirements-hyperopt.txt
 ```
 
 ## Hyperopt command reference
-
 
 ```
 usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
@@ -150,7 +149,7 @@ Depending on the space you want to optimize, only some of the below are required
 * define parameters with `space='sell'` - for sell signal optimization
 
 !!! Note
-    `populate_indicators` needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.
+    `populate_indicators` needs to create all indicators any of the spaces may use, otherwise hyperopt will not work.
 
 Rarely you may also need to create a nested class named `HyperOpt` and implement:
 
@@ -299,7 +298,7 @@ Based on the results, hyperopt will tell you which parameter combination produce
 There are four parameter types each suited for different purposes.
 * `IntParameter` - defines an integral parameter with upper and lower boundaries of search space.
 * `DecimalParameter` - defines a floating point parameter with a limited number of decimals (default 3). Should be preferred instead of `RealParameter` in most cases.
-* `RealParameter` - defines a floating point parameter with upper and lower boundarie and no precision limit. Rarely used.
+* `RealParameter` - defines a floating point parameter with upper and lower boundaries and no precision limit. Rarely used as it creates a space with a near infinite number of possibilities.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
 
 !!! Tip "Disabling parameter optimization"
@@ -329,7 +328,7 @@ Creation of a custom loss function is covered in the [Advanced Hyperopt](advance
 ## Execute Hyperopt
 
 Once you have updated your hyperopt configuration you can run it.
-Because hyperopt tries a lot of combinations to find the best parameters it will take time to get a good result. More time usually results in better results.
+Because hyperopt tries a lot of combinations to find the best parameters it will take time to get a good result.
 
 We strongly recommend to use `screen` or `tmux` to prevent any connection loss.
 
@@ -365,7 +364,7 @@ freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timeran
 ### Running Hyperopt with Smaller Search Space
 
 Use the `--spaces` option to limit the search space used by hyperopt.
-Letting Hyperopt optimize everything is a huuuuge search space. 
+Letting Hyperopt optimize everything is a huuuuge search space.
 Often it might make more sense to start by just searching for initial buy algorithm.
 Or maybe you just want to optimize your stoploss or roi table for that awesome new buy strategy you have.
 
@@ -435,16 +434,16 @@ Best result:
 
 You should understand this result like:
 
-- The buy trigger that worked best was `bb_lower`.
-- You should not use ADX because `'buy_adx_enabled': False`)
-- You should **consider** using the RSI indicator (`'buy_rsi_enabled': True` and the best value is `29.0` (`'buy_rsi': 29.0`)
+* The buy trigger that worked best was `bb_lower`.
+* You should not use ADX because `'buy_adx_enabled': False`.
+* You should **consider** using the RSI indicator (`'buy_rsi_enabled': True`) and the best value is `29.0` (`'buy_rsi': 29.0`)
 
-Your strategy class can immediately take advantage of these results. Simply copy hyperopt results block and paste it at class level, replacing old parameters (if any). New parameters will automatically be loaded next time strategy is executed.
+Your strategy class can immediately take advantage of these results. Simply copy hyperopt results block and paste them at class level, replacing old parameters (if any). New parameters will automatically be loaded next time strategy is executed.
 
 Transferring your whole hyperopt result to your strategy would then look like:
 
 ```python
-class MyAwsomeStrategy(IStrategy):
+class MyAwesomeStrategy(IStrategy):
     # Buy hyperspace params:
     buy_params = {
         'buy_adx': 44,
@@ -454,13 +453,6 @@ class MyAwsomeStrategy(IStrategy):
         'buy_trigger': 'bb_lower'
     }
 ```
-
-By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
-
-You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
-
-!!! Note "Windows and color output"
-    Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
 
 ### Understand Hyperopt ROI results
 
@@ -587,6 +579,15 @@ As stated in the comment, you can also use it as the values of the corresponding
 If you are optimizing trailing stop values, Freqtrade creates the 'trailing' optimization hyperspace for you. By default, the `trailing_stop` parameter is always set to True in that hyperspace, the value of the `trailing_only_offset_is_reached` vary between True and False, the values of the `trailing_stop_positive` and `trailing_stop_positive_offset` parameters vary in the ranges 0.02...0.35 and 0.01...0.1 correspondingly, which is sufficient in most cases.
 
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
+
+### Output formatting
+
+By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
+
+You can use the `--print-all` command line option if you would like to see all results in the hyperopt output, not only the best ones. When `--print-all` is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the `--no-color` command line option.
+
+!!! Note "Windows and color output"
+    Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
 
 ## Show details of Hyperopt results
 
