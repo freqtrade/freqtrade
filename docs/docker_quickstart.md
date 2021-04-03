@@ -156,8 +156,8 @@ Head over to the [Backtesting Documentation](backtesting.md) to learn more.
 
 ### Additional dependencies with docker-compose
 
-If your strategy requires dependencies not included in the default image (like [technical](https://github.com/freqtrade/technical)) - it will be necessary to build the image on your host.
-For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at [docker/Dockerfile.technical](https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.technical) for an example).
+If your strategy requires dependencies not included in the default image - it will be necessary to build the image on your host.
+For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at [docker/Dockerfile.custom](https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.cusotm) for an example).
 
 You'll then also need to modify the `docker-compose.yml` file and uncomment the build step, as well as rename the image to avoid naming collisions.
 
