@@ -15,7 +15,7 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 !!! Note
     Since 2021.4 release you no longer have to write a separate hyperopt class, but can configure the parameters directly in the strategy.
     The legacy method is still supported, but it is no longer the recommended way of setting up hyperopt. 
-    The legacy documentation is available at [Legacy Hyperopt](hyperopt_legacy.md).
+    The legacy documentation is available at [Legacy Hyperopt](advanced-hyperopt.md#legacy-hyperopt).
 
 ## Install hyperopt dependencies
 
@@ -247,12 +247,11 @@ class MyAwesomeStrategy(IStrategy):
     buy_trigger = CategoricalParameter(['bb_lower', 'macd_cross_signal']),
 ```
 
-Above definition says: I have five parameters I want you to randomly combine
-to find the best combination. Two of them are integer values (`buy_adx`
-and `buy_rsi`) and I want you test in the range of values 20 to 40.  
+Above definition says: I have five parameters I want to randomly combine to find the best combination.
+Two of them are integer values (`buy_adx` and `buy_rsi`) and I want you test in the range of values 20 to 40.  
 Then we have three category variables. First two are either `True` or `False`.
-We use these to either enable or disable the ADX and RSI guards. The last
-one we call `trigger` and use it to decide which buy trigger we want to use.
+We use these to either enable or disable the ADX and RSI guards.
+The last one we call `trigger` and use it to decide which buy trigger we want to use.
 
 So let's write the buy strategy using these values:
 
@@ -349,8 +348,7 @@ The `--spaces all` option determines that all possible parameters should be opti
 ### Execute Hyperopt with different historical data source
 
 If you would like to hyperopt parameters using an alternate historical data set that
-you have on-disk, use the `--datadir PATH` option. By default, hyperopt
-uses data from directory `user_data/data`.
+you have on-disk, use the `--datadir PATH` option. By default, hyperopt uses data from directory `user_data/data`.
 
 ### Running Hyperopt with a smaller test-set
 
