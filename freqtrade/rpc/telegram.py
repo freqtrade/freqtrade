@@ -695,14 +695,18 @@ class Telegram(RPCHandler):
         """
         try:
             trades = self._rpc._rpc_performance()
-            stats = '\n'.join('{index}.\t<code>{pair}\t{profit:.2f}% ({count})</code>'.format(
-                index=i + 1,
-                pair=trade['pair'],
-                profit=trade['profit'],
-                count=trade['count']
-            ) for i, trade in enumerate(trades))
-            message = '<b>Performance:</b>\n{}'.format(stats)
-            self._send_msg(message, parse_mode=ParseMode.HTML)
+            output = "<b>Performance:</b>\n"
+            for i, trade in enumerate(trades):
+                stat_line = (f"{i+1}.\t <code>{trade['pair']}\t{trade['profit']:.2f}% "
+                             f"({trade['count']})</code>\n")
+
+                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output)
+                    output = stat_line
+                else:
+                    output += stat_line
+
+            self._send_msg(output, parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
 
