@@ -355,10 +355,12 @@ uses data from directory `user_data/data`.
 ### Running Hyperopt with a smaller test-set
 
 Use the `--timerange` argument to change how much of the test-set you want to use.
-For example, to use one month of data, pass the following parameter to the hyperopt call:
+For example, to use one month of data, pass `--timerange 20210101-20210201` (from january 2021 - february 2021) to the hyperopt call.
+
+Full command:
 
 ```bash
-freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timerange 20180401-20180501
+freqtrade hyperopt --hyperopt <hyperoptname> --strategy <strategyname> --timerange 20210101-20210201
 ```
 
 ### Running Hyperopt with Smaller Search Space
@@ -380,37 +382,6 @@ Legal values are:
 * space-separated list of any of the above values for example `--spaces roi stoploss`
 
 The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.
-
-### Position stacking and disabling max market positions
-
-In some situations, you may need to run Hyperopt (and Backtesting) with the
-`--eps`/`--enable-position-staking` and `--dmmp`/`--disable-max-market-positions` arguments.
-
-By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
-open trade is allowed for every traded pair. The total number of trades open for all pairs
-is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
-some potential trades to be hidden (or masked) by previously open trades.
-
-The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
-while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades`
-during Hyperopt/Backtesting (which is equal to setting `max_open_trades` to a very high
-number).
-
-!!! Note
-    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
-
-You can also enable position stacking in the configuration file by explicitly setting
-`"position_stacking"=true`.
-
-### Reproducible results
-
-The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with an asterisk character (`*`) in the first column in the Hyperopt output.
-
-The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
-
-If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the `--random-state` command line option to repeat the set of the initial random epochs used.
-
-If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.
 
 ## Understand the Hyperopt Result
 
@@ -580,7 +551,17 @@ If you are optimizing trailing stop values, Freqtrade creates the 'trailing' opt
 
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
-### Output formatting
+### Reproducible results
+
+The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with an asterisk character (`*`) in the first column in the Hyperopt output.
+
+The initial state for generation of these random values (random state) is controlled by the value of the `--random-state` command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.
+
+If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the `--random-state` command line option to repeat the set of the initial random epochs used.
+
+If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.
+
+## Output formatting
 
 By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.
 
@@ -588,6 +569,27 @@ You can use the `--print-all` command line option if you would like to see all r
 
 !!! Note "Windows and color output"
     Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.
+
+## Position stacking and disabling max market positions
+
+In some situations, you may need to run Hyperopt (and Backtesting) with the
+`--eps`/`--enable-position-staking` and `--dmmp`/`--disable-max-market-positions` arguments.
+
+By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
+open trade is allowed for every traded pair. The total number of trades open for all pairs
+is also limited by the `max_open_trades` setting. During Hyperopt/Backtesting this may lead to
+some potential trades to be hidden (or masked) by previously open trades.
+
+The `--eps`/`--enable-position-stacking` argument allows emulation of buying the same pair multiple times,
+while `--dmmp`/`--disable-max-market-positions` disables applying `max_open_trades`
+during Hyperopt/Backtesting (which is equal to setting `max_open_trades` to a very high
+number).
+
+!!! Note
+    Dry/live runs will **NOT** use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.
+
+You can also enable position stacking in the configuration file by explicitly setting
+`"position_stacking"=true`.
 
 ## Show details of Hyperopt results
 
