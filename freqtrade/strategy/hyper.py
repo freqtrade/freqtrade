@@ -244,8 +244,8 @@ class HyperStrategyMixin(object):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
                 attr = getattr(self, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
-                    if category is None or category == attr.category or \
-                       attr_name.startswith(category + '_'):
+                    if (category is None or category == attr.category or
+                            (attr_name.startswith(category + '_') and attr.category is None)):
                         yield attr_name, attr
 
     def _load_params(self, params: dict) -> None:
