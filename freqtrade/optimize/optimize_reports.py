@@ -110,6 +110,9 @@ def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_b
 
         tabular_data.append(_generate_result_line(result, starting_balance, pair))
 
+    # Sort by total profit %:
+    tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
+
     # Append Total
     tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
     return tabular_data
