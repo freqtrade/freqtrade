@@ -66,8 +66,7 @@ optional arguments:
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --no-trades           Skip using trades from backtesting file and DB.
 
 Common arguments:
@@ -264,8 +263,7 @@ optional arguments:
                         Specify the source for trades (Can be DB or file
                         (backtest file)) Default: file
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

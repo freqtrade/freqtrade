@@ -99,7 +99,7 @@ def start_list_hyperopts(args: Dict[str, Any]) -> None:
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
-    Print ticker intervals (timeframes) available on Exchange
+    Print timeframes available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
     # Do not use timeframe set in the config
