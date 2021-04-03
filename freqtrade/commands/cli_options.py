@@ -49,8 +49,10 @@ class SetDictFromArgAction(argparse.Action):
         for key_value in values:
             try:
                 (k, v) = key_value.split("=", 2)
-            except ValueError as ex:
-                raise argparse.ArgumentError(self, f"could not parse argument \"{values[0]}\" as k=v format")
+            except ValueError:
+                raise argparse.ArgumentError(
+                    self,
+                    f"could not parse argument \"{values[0]}\" as k=v format")
             d = self.set_dict_path_value(getattr(args, self.dest) or {}, k, v)
             setattr(args, self.dest, d)
 
@@ -76,7 +78,9 @@ class SetDictFromArgAction(argparse.Action):
             elif value == "False" or value == "false" or value == "0":
                 value = False
             else:
-                raise ArgumentTypeError(f"Argument '{key}' has unknown value '{value}'. Must be (true|false|True|False|1|0)")
+                raise ArgumentTypeError(
+                    f"Argument '{key}' has unknown value '{value}'. "
+                    f"Must be (true|false|True|False|1|0)")
         else:
             raise Exception(f"Unsupported arg type '{value_type}'")
         obj[latest_key] = value
