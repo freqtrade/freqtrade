@@ -57,7 +57,7 @@ class SampleStrategy(IStrategy):
 
     # Hyperoptable parameters
     buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
-    sell_rsi = IntParameter(low=50, high=100, defualt=70, space='buy', optimize=True, load=True)
+    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell', optimize=True, load=True)
 
     # Optimal timeframe for the strategy.
     timeframe = '5m'

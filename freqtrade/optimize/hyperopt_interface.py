@@ -103,7 +103,7 @@ class IHyperOpt(ABC):
         roi_t_alpha = 1.0
         roi_p_alpha = 1.0
 
-        timeframe_min = timeframe_to_minutes(self.ticker_interval)
+        timeframe_min = timeframe_to_minutes(self.timeframe)
 
         # We define here limits for the ROI space parameters automagically adapted to the
         # timeframe used by the bot:
