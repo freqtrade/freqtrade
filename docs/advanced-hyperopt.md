@@ -82,6 +82,8 @@ class MyAwesomeStrategy(IStrategy):
             return [Real(-0.05, -0.01, name='stoploss')]
 ```
 
+---
+
 ## Legacy Hyperopt
 
 This Section explains the configuration of an explicit Hyperopt file (separate to the strategy).

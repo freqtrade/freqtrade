@@ -264,7 +264,7 @@ All exchanges supported by the ccxt library: _1btcxe, acx, adara, allcoin, anxpr
 
 ## List Timeframes
 
-Use the `list-timeframes` subcommand to see the list of timeframes (ticker intervals) available for the exchange.
+Use the `list-timeframes` subcommand to see the list of timeframes available for the exchange.
 
 ```
 usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]

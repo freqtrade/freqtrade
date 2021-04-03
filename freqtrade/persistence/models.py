@@ -611,7 +611,7 @@ class LocalTrade():
 
         else:
             # Not used during backtesting, but might be used by a strategy
-            sel_trades = [trade for trade in LocalTrade.trades + LocalTrade.trades_open]
+            sel_trades = list(LocalTrade.trades + LocalTrade.trades_open)
 
         if pair:
             sel_trades = [trade for trade in sel_trades if trade.pair == pair]

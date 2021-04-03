@@ -268,7 +268,7 @@ tc16 = BTContainer(data=[
 # Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
-# Uses open as sell-rate (special case) - since the roi-time is a multiple of the ticker interval.
+# Uses open as sell-rate (special case) - since the roi-time is a multiple of the timeframe.
 tc17 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],

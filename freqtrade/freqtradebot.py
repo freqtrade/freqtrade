@@ -225,7 +225,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Calculating Edge positioning
         if self.edge:
-            self.edge.calculate()
+            self.edge.calculate(_whitelist)
             _whitelist = self.edge.adjust(_whitelist)
 
         if trades:

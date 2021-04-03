@@ -806,7 +806,7 @@ class Exchange:
 
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if (not ((pair, timeframe) in self._klines)
+            if (((pair, timeframe) not in self._klines)
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 input_coroutines.append(self._async_get_candle_history(pair, timeframe,
                                                                        since_ms=since_ms))
@@ -958,7 +958,7 @@ class Exchange:
         while True:
             t = await self._async_fetch_trades(pair,
                                                params={self._trades_pagination_arg: from_id})
-            if len(t):
+            if t:
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
                 if from_id == t[-1][1] or t[-1][0] > until:
@@ -990,7 +990,7 @@ class Exchange:
         # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
             t = await self._async_fetch_trades(pair, since=since)
-            if len(t):
+            if t:
                 since = t[-1][0]
                 trades.extend(t)
                 # Reached the end of the defined-download period

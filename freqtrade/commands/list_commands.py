@@ -99,7 +99,7 @@ def start_list_hyperopts(args: Dict[str, Any]) -> None:
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
-    Print ticker intervals (timeframes) available on Exchange
+    Print timeframes available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
     # Do not use timeframe set in the config
@@ -177,7 +177,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             # human-readable formats.
             print()
 
-        if len(pairs):
+        if pairs:
             if args.get('print_list', False):
                 # print data as a list, with human-readable summary
                 print(f"{summary_str}: {', '.join(pairs.keys())}.")

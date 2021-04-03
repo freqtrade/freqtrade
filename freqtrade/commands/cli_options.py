@@ -118,7 +118,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Optimize common
     "timeframe": Arg(
         '-i', '--timeframe', '--ticker-interval',
-        help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
+        help='Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
         '--timerange',

@@ -72,6 +72,5 @@ def copy_sample_files(directory: Path, overwrite: bool = False) -> None:
             if not overwrite:
                 logger.warning(f"File `{targetfile}` exists already, not deploying sample file.")
                 continue
-            else:
-                logger.warning(f"File `{targetfile}` exists already, overwriting.")
+            logger.warning(f"File `{targetfile}` exists already, overwriting.")
         shutil.copy(str(sourcedir / source), str(targetfile))

@@ -1,11 +1,11 @@
-numpy==1.20.1
+numpy==1.20.2
 pandas==1.2.3
 
-ccxt==1.43.89
+ccxt==1.45.44
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==3.4.6
+cryptography==3.4.7
 aiohttp==3.7.4.post0
-SQLAlchemy==1.4.2
+SQLAlchemy==1.4.3
 python-telegram-bot==13.4.1
 arrow==1.0.3
 cachetools==4.2.1
@@ -14,6 +14,7 @@ urllib3==1.26.4
 wrapt==1.12.1
 jsonschema==3.2.0
 TA-Lib==0.4.19
+technical==1.2.2
 tabulate==0.8.9
 pycoingecko==1.4.0
 jinja2==2.11.3
@@ -39,4 +40,4 @@ aiofiles==0.6.0
 colorama==0.4.4
 # Building config files interactively
 questionary==1.9.0
-prompt-toolkit==3.0.17
+prompt-toolkit==3.0.18

@@ -31,7 +31,7 @@ class IHyperOpt(ABC):
     Defines the mandatory structure must follow any custom hyperopt
 
     Class attributes you can use:
-        ticker_interval -> int: value of the ticker interval to use for the strategy
+        timeframe -> int: value of the timeframe to use for the strategy
     """
     ticker_interval: str  # DEPRECATED
     timeframe: str
@@ -91,7 +91,7 @@ class IHyperOpt(ABC):
 
         This method implements adaptive roi hyperspace with varied
         ranges for parameters which automatically adapts to the
-        ticker interval used.
+        timeframe used.
 
         It's used by Freqtrade by default, if no custom roi_space method is defined.
         """
@@ -113,7 +113,7 @@ class IHyperOpt(ABC):
         # * 'roi_p' (limits for the ROI value steps) components are scaled logarithmically.
         #
         # The scaling is designed so that it maps exactly to the legacy Freqtrade roi_space()
-        # method for the 5m ticker interval.
+        # method for the 5m timeframe.
         roi_t_scale = timeframe_min / 5
         roi_p_scale = math.log1p(timeframe_min) / math.log1p(5)
         roi_limits = {
