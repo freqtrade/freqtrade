@@ -191,6 +191,9 @@ For example, if you have 10 ETH available in your wallet on the exchange and `tr
 Assuming we have the tradable balance of 1000 USDT, `stake_amount=400`, and `max_open_trades=3`.
 The bot would open 2 trades, and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available, since 800 USDT are already tied in other trades.
 
+!!! Warning
+    Unlimited `max_open_trades` count (max_open_trades: -1) will cause unreal results in backtest and hyperopt high iterations because of unfulfilled order list in real exchanges
+
 To overcome this, the option `amend_last_stake_amount` can be set to `True`, which will enable the bot to reduce stake_amount to the available balance in order to fill the last trade slot.
 
 In the example above this would mean:
