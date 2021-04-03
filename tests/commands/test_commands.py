@@ -35,6 +35,30 @@ def test_setup_utils_configuration():
     assert config['exchange']['secret'] == ''
 
 
+def test_cfg_argument_replaces_configuration():
+    args = [
+        'list-exchanges', '--config', 'config_bittrex.json.example',
+    ]
+
+    # Check original config
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER)
+    assert config['dry_run'] is True
+    assert config['exchange']['key'] == ''
+    assert config['stake_amount'] == 0.05
+    assert config['timeframe'] == '5m'
+
+    args = [
+        'list-exchanges', '--config', 'config_bittrex.json.example',
+        '--cfg', 'stake_amount:float=0.1', 'timeframe=15m', 'exchange.sandbox:bool=true',
+    ]
+
+    # Check original config
+    config = setup_utils_configuration(get_args(args), RunMode.OTHER)
+    assert config['stake_amount'] == 0.1
+    assert config['timeframe'] == '15m'
+    assert config['exchange']['sandbox'] is True
+
+
 def test_start_trading_fail(mocker, caplog):
 
     mocker.patch("freqtrade.worker.Worker.run", MagicMock(side_effect=OperationalException))

@@ -93,6 +93,9 @@ class Configuration:
         # Load all configs
         config: Dict[str, Any] = self.load_from_files(self.args.get("config", []))
 
+        if 'cfg' in self.args:
+            config = deep_merge_dicts(self.args['cfg'] or {}, config)
+
         # Keep a copy of the original configuration file
         config['original_config'] = deepcopy(config)
 

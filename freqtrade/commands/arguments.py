@@ -10,7 +10,7 @@ from freqtrade.commands.cli_options import AVAILABLE_CLI_OPTIONS
 from freqtrade.constants import DEFAULT_CONFIG
 
 
-ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_data_dir"]
+ARGS_COMMON = ["verbosity", "logfile", "version", "config", "cfg", "datadir", "user_data_dir"]
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 

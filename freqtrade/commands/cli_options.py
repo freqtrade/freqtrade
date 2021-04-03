@@ -1,6 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
+import argparse
 from argparse import ArgumentTypeError
 
 from freqtrade import __version__, constants
@@ -36,6 +37,50 @@ class Arg:
     def __init__(self, *args, **kwargs):
         self.cli = args
         self.kwargs = kwargs
+
+
+class SetDictFromArgAction(argparse.Action):
+    """
+    argparse action to split an argument into KEY=VALUE form
+    on the first = and append to a dictionary.
+    """
+
+    def __call__(self, parser, args, values, option_string=None):
+        for key_value in values:
+            try:
+                (k, v) = key_value.split("=", 2)
+            except ValueError as ex:
+                raise argparse.ArgumentError(self, f"could not parse argument \"{values[0]}\" as k=v format")
+            d = self.set_dict_path_value(getattr(args, self.dest) or {}, k, v)
+            setattr(args, self.dest, d)
+
+    @staticmethod
+    def set_dict_path_value(obj, key, value):
+        root_obj = obj
+        keys = key.split('.')
+        latest = keys.pop()
+        for k in keys:
+            obj[k] = obj.get(k, {})
+            obj = obj[k]
+        latest_key, *value_type = latest.split(':')
+        value_type = value_type[0] if len(value_type) > 0 else None
+        if value_type is None or value_type == "str":
+            value = value
+        elif value_type == "int":
+            value = int(value)
+        elif value_type == "float":
+            value = float(value)
+        elif value_type == "bool":
+            if value == "True" or value == "true" or value == "1":
+                value = True
+            elif value == "False" or value == "false" or value == "0":
+                value = False
+            else:
+                raise ArgumentTypeError(f"Argument '{key}' has unknown value '{value}'. Must be (true|false|True|False|1|0)")
+        else:
+            raise Exception(f"Unsupported arg type '{value_type}'")
+        obj[latest_key] = value
+        return root_obj
 
 
 # List of available command line options
@@ -529,5 +574,13 @@ AVAILABLE_CLI_OPTIONS = {
         '--no-header',
         help='Do not print epoch details header.',
         action='store_true',
+    ),
+    "cfg": Arg(
+        '--cfg',
+        nargs='+',
+        metavar="KEY=VALUE",
+        action=SetDictFromArgAction,
+        help='Set any config value.',
+        # action='store_const'
     ),
 }
