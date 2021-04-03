@@ -70,6 +70,18 @@ This function needs to return a floating point number (`float`). Smaller numbers
 !!! Note
     Please keep the arguments `*args` and `**kwargs` in the interface to allow us to extend this interface later.
 
+## Overriding pre-defined spaces
+
+To override a pre-defined space (`roi_space`, `generate_roi_table`, `stoploss_space`, `trailing_space`), define a nested class called Hyperopt and define the required spaces as follows:
+
+```python
+class MyAwesomeStrategy(IStrategy):
+    class HyperOpt:
+        # Define a custom stoploss space.
+        def stoploss_space(self):
+            return [Real(-0.05, -0.01, name='stoploss')]
+```
+
 ## Legacy Hyperopt
 
 This Section explains the configuration of an explicit Hyperopt file (separate to the strategy).

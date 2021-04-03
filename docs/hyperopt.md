@@ -151,7 +151,7 @@ Depending on the space you want to optimize, only some of the below are required
 !!! Note
     `populate_indicators` needs to create all indicators any of the spaces may use, otherwise hyperopt will not work.
 
-Rarely you may also need to create a nested class named `HyperOpt` and implement:
+Rarely you may also need to create a [nested class](advanced-hyperopt.md#overriding-pre-defined-spaces) named `HyperOpt` and implement
 
 * `roi_space` - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)
 * `generate_roi_table` - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)
