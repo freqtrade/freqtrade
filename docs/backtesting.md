@@ -420,6 +420,7 @@ It contains some useful key metrics about performance of your strategy on backte
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
+- All orders are filled at the requested price (no slippage, no unfilled orders)
 - Sell-signal sells happen at open-price of the consecutive candle
 - Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI
