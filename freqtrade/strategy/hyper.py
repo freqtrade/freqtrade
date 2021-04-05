@@ -263,7 +263,7 @@ class HyperStrategyMixin(object):
             if attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
-                    logger.info(f'{attr_name} = {attr.value}')
+                    logger.info(f'Strategy Parameter: {attr_name} = {attr.value}')
                 else:
                     logger.warning(f'Parameter "{attr_name}" exists, but is disabled. '
                                    f'Default value "{attr.value}" used.')
