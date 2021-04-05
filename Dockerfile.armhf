@@ -1,4 +1,4 @@
-FROM --platform=linux/arm/v7 python:3.7.9-slim-buster as base
+FROM --platform=linux/arm/v7 python:3.7.10-slim-buster as base
 
 # Setup env
 ENV LANG C.UTF-8
