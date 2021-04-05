@@ -125,6 +125,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `reload_config` | Reloads the configuration file.
 | `trades` | List last trades.
+| `trade/<tradeid>` | Get specific trade.
 | `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation.
 | `logs` | Shows last log messages.
@@ -274,6 +275,10 @@ trades
 	Return trades history.
 
         :param limit: Limits trades to the X last trades. No limit to get all the trades.
+
+trade
+	Return specific trade.
+        :param tradeid: Specify which trade to get.
 
 version
 	Return the version of the bot.
