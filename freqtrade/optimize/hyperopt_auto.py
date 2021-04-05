@@ -33,14 +33,14 @@ class HyperOptAuto(IHyperOpt):
         return populate_buy_trend
 
     def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        def populate_buy_trend(dataframe: DataFrame, metadata: dict):
+        def populate_sell_trend(dataframe: DataFrame, metadata: dict):
             for attr_name, attr in self.strategy.enumerate_parameters('sell'):
                 if attr.optimize:
                     # noinspection PyProtectedMember
                     attr._set_value(params[attr_name])
             return self.strategy.populate_sell_trend(dataframe, metadata)
 
-        return populate_buy_trend
+        return populate_sell_trend
 
     def _get_func(self, name) -> Callable:
         """
