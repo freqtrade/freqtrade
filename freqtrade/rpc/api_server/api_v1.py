@@ -88,6 +88,11 @@ def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
 
 
+@router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
+def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_trade_status([tradeid])[0]
+
+
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
 def trades_delete(tradeid: int, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_delete(tradeid)
