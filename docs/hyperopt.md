@@ -305,6 +305,9 @@ There are four parameter types each suited for different purposes.
     * `optimize` - when set to `False` parameter will not be included in optimization process.
     Use these parameters to quickly prototype various ideas.
 
+!!! Warning
+    Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.
+
 ## Loss-functions
 
 Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.
