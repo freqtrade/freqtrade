@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
+# flake8: noqa: F401
 # isort: skip_file
 # --- Do not remove these libs ---
 import numpy as np  # noqa
@@ -6,6 +7,7 @@ import pandas as pd  # noqa
 from pandas import DataFrame
 
 from freqtrade.strategy import IStrategy
+from freqtrade.strategy import CategoricalParameter, DecimalParameter, IntParameter
 
 # --------------------------------
 # Add your lib to import here
@@ -52,6 +54,10 @@ class SampleStrategy(IStrategy):
     # trailing_only_offset_is_reached = False
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
+
+    # Hyperoptable parameters
+    buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
+    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell', optimize=True, load=True)
 
     # Optimal timeframe for the strategy.
     timeframe = '5m'
@@ -340,7 +346,8 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                # Signal: RSI crosses above 30
+                (qtpylib.crossed_above(dataframe['rsi'], self.buy_rsi.value)) &
                 (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
                 (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
@@ -358,7 +365,8 @@ class SampleStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                # Signal: RSI crosses above 70
+                (qtpylib.crossed_above(dataframe['rsi'], self.sell_rsi.value)) &
                 (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
                 (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0

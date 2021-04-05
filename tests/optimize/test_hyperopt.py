@@ -16,6 +16,7 @@ from freqtrade.commands.optimize_commands import setup_optimize_configuration, s
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
@@ -1089,3 +1090,17 @@ def test_print_epoch_details(capsys):
     assert '# ROI table:' in captured.out
     assert re.search(r'^\s+minimal_roi = \{$', captured.out, re.MULTILINE)
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
+
+
+def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir) -> None:
+    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    # No hyperopt needed
+    del hyperopt_conf['hyperopt']
+    hyperopt_conf.update({
+        'strategy': 'HyperoptableStrategy',
+        'user_data_dir': Path(tmpdir),
+    })
+    hyperopt = Hyperopt(hyperopt_conf)
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+
+    hyperopt.start()
