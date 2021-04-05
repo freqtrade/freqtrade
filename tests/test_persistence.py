@@ -403,7 +403,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='dry_run_buy_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     trade = Trade(
         pair='ETC/BTC',
@@ -415,7 +415,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='dry_run_sell_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # Simulate prod entry
     trade = Trade(
@@ -428,7 +428,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='prod_buy_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # We have 3 entries: 2 dry_run, 1 prod
     assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 3
@@ -933,7 +933,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.06)

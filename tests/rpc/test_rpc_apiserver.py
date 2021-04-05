@@ -510,7 +510,7 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['trades_count'] == 0
 
     create_mock_trades(fee)
-    Trade.session.flush()
+    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
@@ -538,7 +538,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
     assert_response(rc, 502)
 
     create_mock_trades(fee)
-    Trade.session.flush()
+    Trade.query.session.flush()
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
@@ -720,7 +720,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
 
     )
     trade.close_profit = trade.calc_profit_ratio()
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     trade = Trade(
         pair='XRP/ETH',
@@ -735,8 +735,8 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.391
     )
     trade.close_profit = trade.calc_profit_ratio()
-    Trade.session.add(trade)
-    Trade.session.flush()
+    Trade.query.session.add(trade)
+    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
@@ -764,7 +764,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     trades = Trade.get_open_trades()
     trades[0].open_order_id = None
     ftbot.exit_positions(trades)
-    Trade.session.flush()
+    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
