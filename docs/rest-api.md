@@ -182,7 +182,7 @@ count
 	Return the amount of open trades.
 
 daily
-	Return the amount of open trades.
+	Return the profits for each day, and amount of trades.
 
 delete_lock
 	Delete (disable) lock from the database.
@@ -215,7 +215,7 @@ locks
 logs
 	Show latest logs.
 
-        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
+        :param limit: Limits log messages to the last <limit> logs. No limit to get the entire log.
 
 pair_candles
 	Return live dataframe for <pair><timeframe>.
