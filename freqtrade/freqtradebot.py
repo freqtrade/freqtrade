@@ -187,7 +187,7 @@ class FreqtradeBot(LoggingMixin):
         if self.get_free_open_trades():
             self.enter_positions()
 
-        Trade.session.flush()
+        Trade.query.session.flush()
 
     def process_stopped(self) -> None:
         """
@@ -621,8 +621,8 @@ class FreqtradeBot(LoggingMixin):
         if order_status == 'closed':
             self.update_trade_state(trade, order_id, order)
 
-        Trade.session.add(trade)
-        Trade.session.flush()
+        Trade.query.session.add(trade)
+        Trade.query.session.flush()
 
         # Updating wallets
         self.wallets.update()
@@ -1205,7 +1205,7 @@ class FreqtradeBot(LoggingMixin):
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)
-        Trade.session.flush()
+        Trade.query.session.flush()
 
         # Lock pair for one candle to prevent immediate rebuys
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),

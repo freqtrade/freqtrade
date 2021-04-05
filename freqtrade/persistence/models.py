@@ -59,13 +59,10 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
     # Scoped sessions proxy requests to the appropriate thread-local session.
     # We should use the scoped_session object - not a seperately initialized version
-    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.query = Trade.session.query_property()
-    # Copy session attributes to order object too
-    Order.session = Trade.session
-    Order.query = Order.session.query_property()
-    PairLock.session = Trade.session
-    PairLock.query = PairLock.session.query_property()
+    Trade._session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.query = Trade._session.query_property()
+    Order.query = Trade._session.query_property()
+    PairLock.query = Trade._session.query_property()
 
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
@@ -81,7 +78,7 @@ def cleanup_db() -> None:
     Flushes all pending operations to disk.
     :return: None
     """
-    Trade.session.flush()
+    Trade.query.session.flush()
 
 
 def clean_dry_run_db() -> None:
@@ -677,7 +674,7 @@ class LocalTrade():
         in stake currency
         """
         if Trade.use_db:
-            total_open_stake_amount = Trade.session.query(
+            total_open_stake_amount = Trade.query.with_entities(
                 func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True)).scalar()
         else:
             total_open_stake_amount = sum(
@@ -689,7 +686,7 @@ class LocalTrade():
         """
         Returns List of dicts containing all Trades, including profit and trade count
         """
-        pair_rates = Trade.session.query(
+        pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.count(Trade.pair).label('count')
@@ -712,7 +709,7 @@ class LocalTrade():
         Get best pair with closed trade.
         :returns: Tuple containing (pair, profit_sum)
         """
-        best_pair = Trade.session.query(
+        best_pair = Trade.query.with_entities(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
         ).filter(Trade.is_open.is_(False)) \
             .group_by(Trade.pair) \
@@ -805,10 +802,10 @@ class Trade(_DECL_BASE, LocalTrade):
     def delete(self) -> None:
 
         for order in self.orders:
-            Order.session.delete(order)
+            Order.query.session.delete(order)
 
-        Trade.session.delete(self)
-        Trade.session.flush()
+        Trade.query.session.delete(self)
+        Trade.query.session.flush()
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,

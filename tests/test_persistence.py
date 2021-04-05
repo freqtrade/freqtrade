@@ -18,8 +18,8 @@ from tests.conftest import create_mock_trades, log_has, log_has_re
 def test_init_create_session(default_conf):
     # Check if init create a session
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert hasattr(Trade, 'session')
-    assert 'scoped_session' in type(Trade.session).__name__
+    assert hasattr(Trade, '_session')
+    assert 'scoped_session' in type(Trade._session).__name__
 
 
 def test_init_custom_db_url(default_conf, tmpdir):
@@ -403,7 +403,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='dry_run_buy_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     trade = Trade(
         pair='ETC/BTC',
@@ -415,7 +415,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='dry_run_sell_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # Simulate prod entry
     trade = Trade(
@@ -428,7 +428,7 @@ def test_clean_dry_run_db(default_conf, fee):
         exchange='bittrex',
         open_order_id='prod_buy_12345'
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # We have 3 entries: 2 dry_run, 1 prod
     assert len(Trade.query.filter(Trade.open_order_id.isnot(None)).all()) == 3
@@ -933,7 +933,7 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade.stop_loss_pct == -0.05
     assert trade.initial_stop_loss == 0.95
     assert trade.initial_stop_loss_pct == -0.05
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     # Lower stoploss
     Trade.stoploss_reinitialization(0.06)

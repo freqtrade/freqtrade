@@ -768,7 +768,7 @@ def test_process_trade_no_whitelist_pair(default_conf, ticker, limit_buy_order,
     assert pair not in default_conf['exchange']['pair_whitelist']
 
     # create open trade not in whitelist
-    Trade.session.add(Trade(
+    Trade.query.session.add(Trade(
         pair=pair,
         stake_amount=0.001,
         fee_open=fee.return_value,
@@ -778,7 +778,7 @@ def test_process_trade_no_whitelist_pair(default_conf, ticker, limit_buy_order,
         open_rate=0.01,
         exchange='bittrex',
     ))
-    Trade.session.add(Trade(
+    Trade.query.session.add(Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
         fee_open=fee.return_value,
@@ -1779,7 +1779,6 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
     patch_exchange(mocker)
-    Trade.session = MagicMock()
     amount = sum(x['amount'] for x in trades_for_order)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     trade = Trade(
@@ -1805,7 +1804,6 @@ def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
     patch_exchange(mocker)
-    Trade.session = MagicMock()
     amount = sum(x['amount'] for x in trades_for_order)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     trade = Trade(
@@ -1868,7 +1866,6 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
     mocker.patch('freqtrade.wallets.Wallets.update', wallet_mock)
 
     patch_exchange(mocker)
-    Trade.session = MagicMock()
     amount = limit_sell_order["amount"]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     wallet_mock.reset_mock()
@@ -2110,7 +2107,7 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     # Ensure default is to return empty (so not mocked yet)
     freqtrade.check_handle_timedout()
@@ -2161,7 +2158,7 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     # check it does cancel buy orders over the time limit
@@ -2191,7 +2188,7 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
@@ -2218,7 +2215,7 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     freqtrade.check_handle_timedout()
@@ -2248,7 +2245,7 @@ def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_
     open_trade.close_profit_abs = 0.001
     open_trade.is_open = False
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
     # Ensure default is false
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
@@ -2296,7 +2293,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     open_trade.close_profit_abs = 0.001
     open_trade.is_open = False
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
     # check it does cancel sell orders over the time limit
@@ -2327,7 +2324,7 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     open_trade.close_date = arrow.utcnow().shift(minutes=-601).datetime
     open_trade.is_open = False
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
@@ -2353,7 +2350,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit
     # note this is for a partially-complete buy order
@@ -2386,7 +2383,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
 
     open_trade.fee_open = fee()
     open_trade.fee_close = fee()
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
     # cancelling a half-filled order should update the amount to the bought amount
     # and apply fees if necessary.
     freqtrade.check_handle_timedout()
@@ -2426,7 +2423,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
 
     open_trade.fee_open = fee()
     open_trade.fee_close = fee()
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
     # cancelling a half-filled order should update the amount to the bought amount
     # and apply fees if necessary.
     freqtrade.check_handle_timedout()
@@ -2463,7 +2460,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
     )
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session.add(open_trade)
+    Trade.query.session.add(open_trade)
 
     freqtrade.check_handle_timedout()
     assert log_has_re(r"Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, "
@@ -2486,7 +2483,6 @@ def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> Non
     freqtrade = FreqtradeBot(default_conf)
     freqtrade._notify_buy_cancel = MagicMock()
 
-    Trade.session = MagicMock()
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
     limit_buy_order['filled'] = 0.0
@@ -2520,7 +2516,6 @@ def test_handle_cancel_buy_exchanges(mocker, caplog, default_conf,
     nofiy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot._notify_buy_cancel')
     freqtrade = FreqtradeBot(default_conf)
 
-    Trade.session = MagicMock()
     reason = CANCEL_REASON['TIMEOUT']
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
@@ -2549,7 +2544,6 @@ def test_handle_cancel_buy_corder_empty(mocker, default_conf, limit_buy_order,
     freqtrade = FreqtradeBot(default_conf)
     freqtrade._notify_buy_cancel = MagicMock()
 
-    Trade.session = MagicMock()
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
     limit_buy_order['filled'] = 0.0
@@ -2812,7 +2806,6 @@ def test_execute_sell_sloe_cancel_exception(mocker, default_conf, ticker, fee, c
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    Trade.session = MagicMock()
     PairLock.session = MagicMock()
 
     freqtrade.config['dry_run'] = False
@@ -4422,7 +4415,7 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
         open_rate=0.01,
         exchange='bittrex',
     )
-    Trade.session.add(trade)
+    Trade.query.session.add(trade)
 
     freqtrade.reupdate_buy_order_fees(trade)
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)

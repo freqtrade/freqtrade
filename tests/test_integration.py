@@ -89,7 +89,6 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     freqtrade.strategy.confirm_trade_entry.reset_mock()
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
-    Trade.session = MagicMock()
 
     trades = Trade.query.all()
     # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)

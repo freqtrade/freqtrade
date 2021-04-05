@@ -197,7 +197,7 @@ def create_mock_trades(fee, use_db: bool = True):
     """
     def add_trade(trade):
         if use_db:
-            Trade.session.add(trade)
+            Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
