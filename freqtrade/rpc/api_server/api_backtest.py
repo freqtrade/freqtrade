@@ -6,6 +6,7 @@ from copy import deepcopy
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from freqtrade.enums import BacktestState
+from freqtrade.exceptions import DependencyException
 from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver import ApiServer
@@ -64,6 +65,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 lastconfig['timeframe'] = strat.timeframe
                 ApiServer._backtestdata, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
 
+            ApiServer._bt.abort = False
             min_date, max_date = ApiServer._bt.backtest_one_strategy(
                 strat, ApiServer._backtestdata,
                 ApiServer._bt_timerange)
@@ -72,6 +74,9 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 min_date=min_date, max_date=max_date)
             logger.info("Backtest finished.")
 
+        except DependencyException as e:
+            logger.info(f"Backtesting caused an error: {e}")
+            pass
         finally:
             ApiServer._bgtask_running = False
 
@@ -146,4 +151,24 @@ def api_delete_backtest():
         "step": "",
         "progress": 0,
         "status_msg": "Backtest reset",
+    }
+
+
+@router.get('/backtest/abort', response_model=BacktestResponse, tags=['webserver', 'backtest'])
+def api_backtest_abort():
+    if not ApiServer._bgtask_running:
+        return {
+            "status": "not_running",
+            "running": False,
+            "step": "",
+            "progress": 0,
+            "status_msg": "Backtest ended",
+        }
+    ApiServer._bt.abort = True
+    return {
+        "status": "stopping",
+        "running": False,
+        "step": "",
+        "progress": 0,
+        "status_msg": "Backtest ended",
     }

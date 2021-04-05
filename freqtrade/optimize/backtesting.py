@@ -120,6 +120,7 @@ class Backtesting:
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
 
         self.progress = BTProgress()
+        self.abort = False
 
     def __del__(self):
         LoggingMixin.show_output = True
@@ -202,6 +203,8 @@ class Backtesting:
 
         # Create dict with data
         for pair, pair_data in processed.items():
+            if self.abort:
+                raise DependencyException("Stop requested")
             self.progress.increment()
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
@@ -419,7 +422,8 @@ class Backtesting:
         # Loop timerange and get candle for each pair at that point in time
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
-
+            if self.abort:
+                raise DependencyException("Stop requested")
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 try:
