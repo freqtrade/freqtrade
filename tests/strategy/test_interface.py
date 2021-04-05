@@ -617,3 +617,8 @@ def test_auto_hyperopt_interface(default_conf):
 
     # Parameter is disabled - so value from sell_param dict will NOT be used.
     assert strategy.sell_minusdi.value == 0.5
+
+    strategy.sell_rsi = IntParameter([0, 10], default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
+        [x for x in strategy.enumerate_parameters('sell')]

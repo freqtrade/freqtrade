@@ -244,6 +244,10 @@ class HyperStrategyMixin(object):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
                 attr = getattr(self, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
+                    if (category and attr_name.startswith(category + '_')
+                            and attr.category is not None and attr.category != category):
+                        raise OperationalException(
+                            f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
                     if (category is None or category == attr.category or
                             (attr_name.startswith(category + '_') and attr.category is None)):
                         yield attr_name, attr

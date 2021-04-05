@@ -1093,8 +1093,6 @@ def test_print_epoch_details(capsys):
 
 
 def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir) -> None:
-    # mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
-    # mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     del hyperopt_conf['hyperopt']
