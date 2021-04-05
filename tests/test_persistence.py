@@ -18,8 +18,8 @@ from tests.conftest import create_mock_trades, log_has, log_has_re
 def test_init_create_session(default_conf):
     # Check if init create a session
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    assert hasattr(Trade, 'session')
-    assert 'scoped_session' in type(Trade.session).__name__
+    assert hasattr(Trade, '_session')
+    assert 'scoped_session' in type(Trade._session).__name__
 
 
 def test_init_custom_db_url(default_conf, tmpdir):
