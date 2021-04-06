@@ -1038,37 +1038,30 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
 
 def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
-                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
-
-    assert load_mock.call_count == 1
-    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert len(config['pairs']) == 23
+    assert 'ETH/BTC' in config['pairs']
+    assert 'XRP/BTC' in config['pairs']
     assert config['exchange']['name'] == default_conf['exchange']['name']
 
 
 def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch("freqtrade.configuration.configuration.json_load",
-                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs_doesnotexist.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -1081,7 +1074,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
 def test_pairlist_resolving_fallback(mocker):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
-    mocker.patch("freqtrade.configuration.configuration.json_load",
+    mocker.patch("freqtrade.configuration.configuration.load_file",
                  MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
     arglist = [
         'download-data',
