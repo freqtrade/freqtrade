@@ -1,5 +1,5 @@
 """
-Rate of change pairlist filter
+Volatility pairlist filter
 """
 import logging
 from copy import deepcopy
