@@ -176,7 +176,7 @@ CONF_SCHEMA = {
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                'sell_profit_offset': {'type': 'number', 'minimum': -100},
+                'sell_profit_offset': {'type': 'number'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
             }
         },
