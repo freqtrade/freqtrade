@@ -118,3 +118,4 @@ class VolatilityFilter(IPairList):
             self._pair_cache[pair] = result
 
         return result
+        
