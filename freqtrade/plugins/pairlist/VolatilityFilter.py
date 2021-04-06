@@ -16,7 +16,6 @@ from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +57,8 @@ class VolatilityFilter(IPairList):
         Short whitelist method description - used for startup-messages
         """
         return (f"{self.name} - Filtering pairs with volatility range "
-                f"{self._min_volatility}-{self._max_volatility} the last {self._days} {plural(self._days, 'day')}.")
+                f"{self._min_volatility}-{self._max_volatility} "
+                f" the last {self._days} {plural(self._days, 'day')}.")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -118,4 +118,3 @@ class VolatilityFilter(IPairList):
             self._pair_cache[pair] = result
 
         return result
-        

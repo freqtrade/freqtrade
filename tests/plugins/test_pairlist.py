@@ -419,7 +419,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     whitelist_conf['stake_currency'] = base_currency
 
     ohlcv_history_high_vola = ohlcv_history.copy()
-    ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index==1, 'close'] = 0.00090
+    ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
 
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
@@ -428,15 +428,12 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
         ('XRP/BTC', '1d'): ohlcv_history,
         ('HOT/BTC', '1d'): ohlcv_history_high_vola,
     }
-    
-    
-
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
 
     if whitelist_result == 'static_in_the_middle':
         with pytest.raises(OperationalException,
-                           match=r"StaticPairList can only be used in the first position "
+                           match=r"StaticPairList only in the first position "
                                  r"in the list of Pairlist Handlers."):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
         return
@@ -499,6 +496,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                     assert not log_has(logmsg, caplog)
             if pairlist["method"] == 'VolatilityFilter':
                 assert log_has_re(r'^Removed .* from whitelist, because volatility.*$', caplog)
+
 
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}]
