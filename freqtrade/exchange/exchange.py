@@ -1307,14 +1307,6 @@ class Exchange:
                 self.calculate_fee_rate(order))
 
 
-def is_exchange_bad(exchange_name: str) -> bool:
-    return exchange_name in BAD_EXCHANGES
-
-
-def get_exchange_bad_reason(exchange_name: str) -> str:
-    return BAD_EXCHANGES.get(exchange_name, "")
-
-
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 
@@ -1335,18 +1327,21 @@ def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
     exchanges = ccxt_exchanges(ccxt_module)
-    return [x for x in exchanges if not is_exchange_bad(x)]
+    return [x for x in exchanges if validate_exchange(x)[0]]
 
 
 def validate_exchange(exchange: str) -> Tuple[bool, str]:
     ex_mod = getattr(ccxt, exchange.lower())()
     if not ex_mod or not ex_mod.has:
         return False, ''
-    missing = [k for k in EXCHANGE_HAS_REQUIRED if not ex_mod.has.get(k)]
+    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
     if missing:
         return False, f"missing: {', '.join(missing)}"
 
     missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
+
+    if exchange.lower() in BAD_EXCHANGES:
+        return False, BAD_EXCHANGES.get(exchange.lower(), '')
     if missing_opt:
         return True, f"missing opt: {', '.join(missing_opt)}"
 
