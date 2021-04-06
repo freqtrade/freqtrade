@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 
 logger = logging.getLogger(__name__)
@@ -62,15 +62,17 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
-    engine.execute(f"alter table trades rename to {table_back_name}")
-    # drop indexes on backup table
-    for index in inspector.get_indexes(table_back_name):
-        engine.execute(f"drop index {index['name']}")
+    with engine.begin() as connection:
+        connection.execute(text(f"alter table trades rename to {table_back_name}"))
+        # drop indexes on backup table
+        for index in inspector.get_indexes(table_back_name):
+            connection.execute(text(f"drop index {index['name']}"))
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
 
     # Copy data back - following the correct schema
-    engine.execute(f"""insert into trades
+    with engine.begin() as connection:
+        connection.execute(text(f"""insert into trades
             (id, exchange, pair, is_open,
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_open_currency, open_rate,
@@ -104,11 +106,12 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
-            """)
+            """))
 
 
 def migrate_open_orders_to_trades(engine):
-    engine.execute("""
+    with engine.begin() as connection:
+        connection.execute(text("""
         insert into orders (ft_trade_id, ft_pair, order_id, ft_order_side, ft_is_open)
         select id ft_trade_id, pair ft_pair, open_order_id,
             case when close_rate_requested is null then 'buy'
@@ -120,7 +123,7 @@ def migrate_open_orders_to_trades(engine):
             'stoploss' ft_order_side, 1 ft_is_open
         from trades
         where stoploss_order_id is not null
-        """)
+        """))
 
 
 def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, cols: List):
