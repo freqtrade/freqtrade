@@ -12,6 +12,6 @@ from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges,
                                          is_exchange_known_ccxt, is_exchange_officially_supported,
                                          market_is_active, timeframe_to_minutes, timeframe_to_msecs,
                                          timeframe_to_next_date, timeframe_to_prev_date,
-                                         timeframe_to_seconds)
+                                         timeframe_to_seconds, validate_exchanges)
 from freqtrade.exchange.ftx import Ftx
 from freqtrade.exchange.kraken import Kraken

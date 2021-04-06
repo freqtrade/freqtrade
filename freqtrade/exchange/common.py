@@ -98,6 +98,29 @@ MAP_EXCHANGE_CHILDCLASS = {
 }
 
 
+EXCHANGE_HAS_REQUIRED = [
+    # Required / private
+    'fetchOrder',
+    'cancelOrder',
+    'createOrder',
+    # 'createLimitOrder', 'createMarketOrder',
+    'fetchBalance',
+
+    # Public endpoints
+    'loadMarkets',
+    'fetchOHLCV',
+]
+
+EXCHANGE_HAS_OPTIONAL = [
+    # Private
+    'fetchMyTrades',  # Trades for order - fee detection
+    # Public
+    'fetchOrderBook', 'fetchL2OrderBook', 'fetchTicker',  # OR for pricing
+    'fetchTickers',  # For volumepairlist?
+    'fetchTrades',  # Downloading trades data
+]
+
+
 def calculate_backoff(retrycount, max_retries):
     """
     Calculate backoff

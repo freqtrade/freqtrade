@@ -23,7 +23,8 @@ from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, RetryableOrderError,
                                   TemporaryError)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
+                                       EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED, retrier,
                                        retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -1335,6 +1336,32 @@ def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     """
     exchanges = ccxt_exchanges(ccxt_module)
     return [x for x in exchanges if not is_exchange_bad(x)]
+
+
+def validate_exchange(exchange: str) -> Tuple[bool, str]:
+    ex_mod = getattr(ccxt, exchange.lower())()
+    if not ex_mod or not ex_mod.has:
+        return False, ''
+    missing = [k for k in EXCHANGE_HAS_REQUIRED if not ex_mod.has.get(k)]
+    if missing:
+        return False, f"missing: {', '.join(missing)}"
+
+    missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
+    if missing_opt:
+        return True, f"missing opt: {', '.join(missing_opt)}"
+
+    return True, ''
+
+
+def validate_exchanges(all_exchanges: bool) -> List[Tuple[str, bool, str]]:
+    """
+    :return: List of tuples with exchangename, valid, reason.
+    """
+    exchanges = ccxt_exchanges() if all_exchanges else available_exchanges()
+    exchanges_valid = [
+        (e, *validate_exchange(e)) for e in exchanges
+    ]
+    return exchanges_valid
 
 
 def timeframe_to_seconds(timeframe: str) -> int:
