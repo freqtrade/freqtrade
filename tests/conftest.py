@@ -220,6 +220,9 @@ def create_mock_trades(fee, use_db: bool = True):
     trade = mock_trade_6(fee)
     add_trade(trade)
 
+    if use_db:
+        Trade.query.session.flush()
+
 
 @pytest.fixture(autouse=True)
 def patch_coingekko(mocker) -> None:
