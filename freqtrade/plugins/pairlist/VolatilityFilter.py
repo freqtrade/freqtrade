@@ -67,7 +67,7 @@ class VolatilityFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new allowlist
         """
-        needed_pairs = [(p, '1h') for p in pairlist if p not in self._pair_cache]
+        needed_pairs = [(p, '1d') for p in pairlist if p not in self._pair_cache]
 
         since_ms = int(arrow.utcnow()
                        .floor('day')
@@ -81,7 +81,7 @@ class VolatilityFilter(IPairList):
 
         if self._enabled:
             for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1h')] if (p, '1h') in candles else None
+                daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
         return pairlist
@@ -102,7 +102,7 @@ class VolatilityFilter(IPairList):
             returns = (np.log(daily_candles.close / daily_candles.close.shift(-1)))
             returns.fillna(0, inplace=True)
 
-            volatility_series = returns.rolling(window=self._days*24).std()*np.sqrt(self._days*24)
+            volatility_series = returns.rolling(window=self._days).std()*np.sqrt(self._days)
             volatility_avg = volatility_series.mean()
 
             if self._min_volatility <= volatility_avg <= self._max_volatility:
