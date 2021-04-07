@@ -2,14 +2,14 @@
 Volatility pairlist filter
 """
 import logging
+import sys
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-import sys
 import arrow
+import numpy as np
 from cachetools.ttl import TTLCache
 from pandas import DataFrame
-import numpy as np
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
