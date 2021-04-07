@@ -753,25 +753,21 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
+        markets=PropertyMock(return_value=markets),
+        fetch_order=MagicMock(return_value={}),
     )
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc, 200)
     assert rc.json() == []
-
-    ftbot.enter_positions()
-    trades = Trade.get_open_trades()
-    trades[0].open_order_id = None
-    ftbot.exit_positions(trades)
-    Trade.query.session.flush()
+    create_mock_trades(fee)
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
-    assert len(rc.json()) == 1
-    assert rc.json() == [{
-        'amount': 91.07468123,
-        'amount_requested': 91.07468123,
+    assert len(rc.json()) == 4
+    assert rc.json()[0] == {
+        'amount': 123.0,
+        'amount_requested': 123.0,
         'base_currency': 'BTC',
         'close_date': None,
         'close_date_hum': None,
@@ -780,37 +776,37 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'close_profit_pct': None,
         'close_profit_abs': None,
         'close_rate': None,
-        'current_profit': -0.00408133,
-        'current_profit_pct': -0.41,
-        'current_profit_abs': -4.09e-06,
-        'profit_ratio': -0.00408133,
-        'profit_pct': -0.41,
-        'profit_abs': -4.09e-06,
+        'current_profit': ANY,
+        'current_profit_pct': ANY,
+        'current_profit_abs': ANY,
+        'profit_ratio': ANY,
+        'profit_pct': ANY,
+        'profit_abs': ANY,
         'profit_fiat': ANY,
         'current_rate': 1.099e-05,
         'open_date': ANY,
-        'open_date_hum': 'just now',
+        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'open_order': None,
-        'open_rate': 1.098e-05,
+        'open_rate': 0.123,
         'pair': 'ETH/BTC',
         'stake_amount': 0.001,
-        'stop_loss_abs': 9.882e-06,
-        'stop_loss_pct': -10.0,
-        'stop_loss_ratio': -0.1,
+        'stop_loss_abs': ANY,
+        'stop_loss_pct': ANY,
+        'stop_loss_ratio': ANY,
         'stoploss_order_id': None,
         'stoploss_last_update': ANY,
         'stoploss_last_update_timestamp': ANY,
-        'initial_stop_loss_abs': 9.882e-06,
-        'initial_stop_loss_pct': -10.0,
-        'initial_stop_loss_ratio': -0.1,
-        'stoploss_current_dist': -1.1080000000000002e-06,
-        'stoploss_current_dist_ratio': -0.10081893,
-        'stoploss_current_dist_pct': -10.08,
-        'stoploss_entry_dist': -0.00010475,
-        'stoploss_entry_dist_ratio': -0.10448878,
+        'initial_stop_loss_abs': 0.0,
+        'initial_stop_loss_pct': ANY,
+        'initial_stop_loss_ratio': ANY,
+        'stoploss_current_dist': ANY,
+        'stoploss_current_dist_ratio': ANY,
+        'stoploss_current_dist_pct': ANY,
+        'stoploss_entry_dist': ANY,
+        'stoploss_entry_dist_ratio': ANY,
         'trade_id': 1,
-        'close_rate_requested': None,
+        'close_rate_requested': ANY,
         'fee_close': 0.0025,
         'fee_close_cost': None,
         'fee_close_currency': None,
@@ -818,17 +814,17 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': True,
-        'max_rate': 1.099e-05,
-        'min_rate': 1.098e-05,
-        'open_order_id': None,
-        'open_rate_requested': 1.098e-05,
-        'open_trade_value': 0.0010025,
+        'max_rate': ANY,
+        'min_rate': ANY,
+        'open_order_id': 'dry_run_buy_12345',
+        'open_rate_requested': ANY,
+        'open_trade_value': 15.1668225,
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
         'exchange': 'bittrex',
-    }]
+    }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
@@ -836,7 +832,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
     resp_values = rc.json()
-    assert len(resp_values) == 1
+    assert len(resp_values) == 4
     assert isnan(resp_values[0]['profit_abs'])
 
 

@@ -241,7 +241,8 @@ def mock_trade_5(fee):
         open_rate=0.123,
         exchange='bittrex',
         strategy='SampleStrategy',
-        stoploss_order_id='prod_stoploss_3455'
+        stoploss_order_id='prod_stoploss_3455',
+        timeframe=5,
     )
     o = Order.parse_from_ccxt_object(mock_order_5(), 'XRP/BTC', 'buy')
     trade.orders.append(o)
@@ -295,6 +296,7 @@ def mock_trade_6(fee):
         exchange='bittrex',
         strategy='SampleStrategy',
         open_order_id="prod_sell_6",
+        timeframe=5,
     )
     o = Order.parse_from_ccxt_object(mock_order_6(), 'LTC/BTC', 'buy')
     trade.orders.append(o)
