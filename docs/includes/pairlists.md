@@ -4,7 +4,7 @@ Pairlist Handlers define the list of pairs (pairlist) that the bot should trade.
 
 In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
 
-Additionally, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter) and [`SpreadFilter`](#spreadfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
+Additionally, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter), [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
 If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either `StaticPairList` or `VolumePairList` as the starting Pairlist Handler.
 
@@ -29,6 +29,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 * [`ShuffleFilter`](#shufflefilter)
 * [`SpreadFilter`](#spreadfilter)
 * [`RangeStabilityFilter`](#rangestabilityfilter)
+* [`VolatilityFilter`](#volatilityfilter)
 
 !!! Tip "Testing pairlists"
     Pairlist configurations can be quite tricky to get right. Best use the [`test-pairlist`](utils.md#test-pairlist) utility sub-command to test your configuration quickly.
@@ -164,6 +165,29 @@ If the trading range over the last 10 days is <1%, remove the pair from the whit
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
 
+#### VolatilityFilter
+
+Volatily is the degree of historical variation of a pairs over time, is is measured by the standard deviation of logarithmic daily returns.
+
+Removes pairs where the average volatility over a `lookback_days` days is below `min_volatility` and above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
+
+This filter can be used to narrow down your pairs to a certain volatilty or avoid very volatile pairs. 
+
+In the below example:
+If the volatilty over the last 10 days is not in the range of 0.20-0.30, remove the pair from the whitelist. The filter is applied every 24h.
+
+```json
+"pairlists": [
+    {
+        "method": "VolatilityFilter",
+        "lookback_days": 10,
+        "min_volatilty": 0.20,
+        "max_volatilty": 0.30,
+        "refresh_period": 86400
+    }
+]
+```
+
 ### Full example of Pairlist Handlers
 
 The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the `SpreadFilter` is applied and pairs are finally shuffled with the random seed set to some predefined value.
@@ -188,6 +212,13 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
         "refresh_period": 1440
+    },
+    {
+        "method": "VolatilityFilter",
+        "lookback_days": 10,
+        "min_volatilty": 0.20,
+        "max_volatilty": 0.30,
+        "refresh_period": 86400
     },
     {"method": "ShuffleFilter", "seed": 42}
     ],

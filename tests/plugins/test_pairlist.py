@@ -433,7 +433,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
     if whitelist_result == 'static_in_the_middle':
         with pytest.raises(OperationalException,
-                           match=r"StaticPairList only in the first position "
+                           match=r"StaticPairList can only be used in the first position "
                                  r"in the list of Pairlist Handlers."):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
         return
