@@ -69,7 +69,7 @@ setup(name='freqtrade',
           # from requirements.txt
           'ccxt>=1.24.96',
           'SQLAlchemy',
-          'python-telegram-bot',
+          'python-telegram-bot>=13.4',
           'arrow>=0.17.0',
           'cachetools',
           'requests',

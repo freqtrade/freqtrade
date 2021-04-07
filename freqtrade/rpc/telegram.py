@@ -159,10 +159,10 @@ class Telegram(RPCHandler):
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
         self._updater.start_polling(
-            clean=True,
             bootstrap_retries=-1,
             timeout=30,
             read_latency=60,
+            drop_pending_updates=True,
         )
         logger.info(
             'rpc.telegram is listening for following commands: %s',
