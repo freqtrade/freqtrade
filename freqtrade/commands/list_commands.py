@@ -13,7 +13,7 @@ from tabulate import tabulate
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import available_exchanges, ccxt_exchanges, market_is_active
+from freqtrade.exchange import market_is_active, validate_exchanges
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.state import RunMode
@@ -28,14 +28,18 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = ccxt_exchanges() if args['list_exchanges_all'] else available_exchanges()
+    exchanges = validate_exchanges(args['list_exchanges_all'])
+
     if args['print_one_column']:
-        print('\n'.join(exchanges))
+        print('\n'.join([e[0] for e in exchanges]))
     else:
         if args['list_exchanges_all']:
-            print(f"All exchanges supported by the ccxt library: {', '.join(exchanges)}")
+            print("All exchanges supported by the ccxt library:")
         else:
-            print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
+            print("Exchanges available for Freqtrade:")
+            exchanges = [e for e in exchanges if e[1] is not False]
+
+        print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:

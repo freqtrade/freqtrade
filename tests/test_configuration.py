@@ -565,7 +565,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
     with pytest.raises(OperationalException,
-                       match=r"Exchange .* is known to not work with the bot yet.*"):
+                       match=r"Exchange .* will not work with Freqtrade\..*"):
         check_exchange(default_conf)
     caplog.clear()
 
