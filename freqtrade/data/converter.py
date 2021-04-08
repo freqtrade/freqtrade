@@ -132,13 +132,12 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
     :param startup_candles: When not 0, is used instead the timerange start date
     :return: trimmed dataframe
     """
+    if timerange.starttype == 'date':
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+        df = df.loc[df[df_date_col] >= start, :]
     if startup_candles:
         # Trim candles instead of timeframe in case of given startup_candle count
         df = df.iloc[startup_candles:, :]
-    else:
-        if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-            df = df.loc[df[df_date_col] >= start, :]
     if timerange.stoptype == 'date':
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df[df_date_col] <= stop, :]
