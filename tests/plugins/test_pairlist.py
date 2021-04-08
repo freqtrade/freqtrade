@@ -407,6 +407,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
       {"method": "RangeStabilityFilter", "lookback_days": 10,
        "min_rate_of_change": 0.01, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
+    ([{"method": "StaticPairList"},
+      {"method": "VolatilityFilter", "lookback_days": 3,
+       "min_volatility": 0.002, "max_volatility": 0.004, "refresh_period": 1440}],
+     "BTC", ['ETH/BTC', 'TKN/BTC'])
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history, pairlists, base_currency,
@@ -414,12 +418,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
 
+    ohlcv_history_high_vola = ohlcv_history.copy()
+    ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
+
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
         ('LTC/BTC', '1d'): ohlcv_history,
         ('XRP/BTC', '1d'): ohlcv_history,
-        ('HOT/BTC', '1d'): ohlcv_history,
+        ('HOT/BTC', '1d'): ohlcv_history_high_vola,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -487,6 +494,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                     assert log_has(logmsg, caplog)
                 else:
                     assert not log_has(logmsg, caplog)
+            if pairlist["method"] == 'VolatilityFilter':
+                assert log_has_re(r'^Removed .* from whitelist, because volatility.*$', caplog)
 
 
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
