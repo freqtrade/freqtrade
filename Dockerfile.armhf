@@ -5,15 +5,20 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONFAULTHANDLER 1
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/ftuser/.local/bin:$PATH
+ENV FT_APP_ENV="docker"
 
 # Prepare environment
-RUN mkdir /freqtrade
-WORKDIR /freqtrade
+RUN mkdir /freqtrade \
+  && apt-get update \
+  && apt-get -y install libatlas3-base curl sqlite3 libhdf5-serial-dev sudo \
+  && apt-get clean \
+  && useradd -u 1000 -G sudo -U -m ftuser \
+  && chown ftuser:ftuser /freqtrade \
+  # Allow sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-RUN  apt-get update \
-  && apt-get -y install libatlas3-base curl sqlite3 \
-  && apt-get clean
+WORKDIR /freqtrade
 
 # Install dependencies
 FROM base as python-deps
@@ -37,13 +42,14 @@ FROM base as runtime-image
 COPY --from=python-deps /usr/local/lib /usr/local/lib
 ENV LD_LIBRARY_PATH /usr/local/lib
 
-COPY --from=python-deps /root/.local /root/.local
+COPY --from=python-deps /home/ftuser/.local /home/ftuser/.local
 
+USER ftuser
 # Install and execute
-COPY . /freqtrade/
-RUN apt-get install -y libhdf5-serial-dev \
-  && apt-get clean \
-  && pip install -e . --no-cache-dir \
+COPY --chown=ftuser:ftuser . /freqtrade/
+
+RUN pip install -e . --user --no-cache-dir \
+  && mkdir /freqtrade/user_data/ \
   && freqtrade install-ui
 
 ENTRYPOINT ["freqtrade"]

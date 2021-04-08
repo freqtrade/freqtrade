@@ -1,7 +1,7 @@
 FROM freqtradeorg/freqtrade:develop
 
-RUN apt-get update \
-    && apt-get -y install git \
-    && apt-get clean \
+RUN sudo apt-get update \
+    && sudo apt-get -y install git \
+    && sudo apt-get clean \
     # The below dependency - pyti - serves as an example. Please use whatever you need!
-    && pip install pyti
+    && pip install --user pyti
