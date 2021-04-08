@@ -16,7 +16,7 @@ RUN mkdir /freqtrade \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
-  && echo "ftuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers
 
 WORKDIR /freqtrade
 
