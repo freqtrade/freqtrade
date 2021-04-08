@@ -167,14 +167,14 @@ If the trading range over the last 10 days is <1%, remove the pair from the whit
 
 #### VolatilityFilter
 
-Volatily is the degree of historical variation of a pairs over time, is is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatilty of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of [`volatility`](https://en.wikipedia.org/wiki/Volatility_(finance)).
+Volatility is the degree of historical variation of a pairs over time, is is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatilty of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of [`volatility`](https://en.wikipedia.org/wiki/Volatility_(finance)).
 
-Removes pairs where the average volatility over a `lookback_days` days is below `min_volatility` and above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
+This filter removes pairs if the average volatility over a `lookback_days` days is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-This filter can be used to narrow down your pairs to a certain volatilty or avoid very volatile pairs. 
+This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. 
 
 In the below example:
-If the volatilty over the last 10 days is not in the range of 0.20-0.30, remove the pair from the whitelist. The filter is applied every 24h.
+If the volatility over the last 10 days is not in the range of 0.20-0.30, remove the pair from the whitelist. The filter is applied every 24h.
 
 ```json
 "pairlists": [
