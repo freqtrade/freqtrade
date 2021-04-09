@@ -596,8 +596,6 @@ def test_hyperopt_parameters():
     fltpar = DecimalParameter(low=0.0, high=5.5, default=1.0004, decimals=3, space='buy')
     assert isinstance(fltpar.get_space(''), Integer)
     assert fltpar.value == 1
-    fltpar._set_value(2222)
-    assert fltpar.value == 2.222
 
     catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
                                   default='buy_macd', space='buy')
