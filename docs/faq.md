@@ -1,5 +1,19 @@
 # Freqtrade FAQ
 
+## Supported Markets
+
+Freqtrade supports spot trading only.
+
+### Can I open short positions?
+
+No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+
+In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+
+### Can I trade options or futures?
+
+No, options and futures trading are not supported.
+
 ## Beginner Tips & Tricks
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
