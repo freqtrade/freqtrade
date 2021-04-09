@@ -10,6 +10,7 @@ from typing import Any, Iterator, Optional, Sequence, Tuple, Union
 
 with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
+    from freqtrade.optimize.decimalspace import SKDecimal
 
 from freqtrade.exceptions import OperationalException
 
@@ -168,22 +169,13 @@ class DecimalParameter(RealParameter):
         super().__init__(low=low, high=high, default=default, space=space, optimize=optimize,
                          load=load, **kwargs)
 
-    def get_space(self, name: str) -> 'Integer':
+    def get_space(self, name: str) -> 'SKDecimal':
         """
         Create skopt optimization space.
         :param name: A name of parameter field.
         """
-        low = int(self.opt_range[0] * pow(10, self._decimals))
-        high = int(self.opt_range[1] * pow(10, self._decimals))
-        return Integer(low, high, name=name, **self._space_params)
-
-    def _set_value(self, value: int):
-        """
-        Update current value. Used by hyperopt functions for the purpose where optimization and
-         value spaces differ.
-        :param value: An integer value.
-        """
-        self.value = round(value * pow(0.1, self._decimals), self._decimals)
+        return SKDecimal(*self.opt_range, decimals=self._decimals, name=name,
+                         **self._space_params)
 
 
 class CategoricalParameter(BaseParameter):
