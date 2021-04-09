@@ -1,5 +1,4 @@
 import numpy as np
-
 from skopt.space import Integer
 
 
