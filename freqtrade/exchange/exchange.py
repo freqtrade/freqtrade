@@ -543,8 +543,8 @@ class Exchange:
         # See also #2575 at github.
         return max(min_stake_amounts) * amount_reserve_percent
 
-    def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                      rate: float, params: Dict = {}) -> Dict[str, Any]:
+    def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
+                             rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order = {
@@ -618,7 +618,7 @@ class Exchange:
             rate: float, time_in_force: str) -> Dict:
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
+            dry_order = self.create_dry_run_order(pair, ordertype, "buy", amount, rate)
             return dry_order
 
         params = self._params.copy()
@@ -631,7 +631,7 @@ class Exchange:
              rate: float, time_in_force: str = 'gtc') -> Dict:
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
+            dry_order = self.create_dry_run_order(pair, ordertype, "sell", amount, rate)
             return dry_order
 
         params = self._params.copy()
