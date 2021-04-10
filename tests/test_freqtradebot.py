@@ -685,7 +685,8 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, limit_buy
     assert trade.amount == 91.07468123
 
     assert log_has(
-        'Buy signal found: about create a new trade for ETH/BTC with stake_amount: 0.001 ...', caplog
+        'Buy signal found: about create a new trade for ETH/BTC with stake_amount: 0.001 ...',
+        caplog
     )
 
 
