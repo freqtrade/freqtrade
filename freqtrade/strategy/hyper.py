@@ -50,18 +50,10 @@ class BaseParameter(ABC):
         return f'{self.__class__.__name__}({self.value})'
 
     @abstractmethod
-    def get_space(self, name: str) -> Union['Integer', 'Real', 'Categorical']:
+    def get_space(self, name: str) -> Union['Integer', 'Real', 'SKDecimal', 'Categorical']:
         """
         Get-space - will be used by Hyperopt to get the hyperopt Space
         """
-
-    def _set_value(self, value: Any):
-        """
-        Update current value. Used by hyperopt functions for the purpose where optimization and
-         value spaces differ.
-        :param value: A numerical value.
-        """
-        self.value = value
 
 
 class NumericParameter(BaseParameter):
