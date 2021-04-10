@@ -174,7 +174,7 @@ This filter removes pairs if the average volatility over a `lookback_days` days 
 This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. 
 
 In the below example:
-If the volatility over the last 10 days is not in the range of 0.20-0.30, remove the pair from the whitelist. The filter is applied every 24h.
+If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.
 
 ```json
 "pairlists": [
@@ -190,7 +190,7 @@ If the volatility over the last 10 days is not in the range of 0.20-0.30, remove
 
 ### Full example of Pairlist Handlers
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies both [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the `SpreadFilter` is applied and pairs are finally shuffled with the random seed set to some predefined value.
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) is applied and pairs are finally shuffled with the random seed set to some predefined value.
 
 ```json
 "exchange": {
