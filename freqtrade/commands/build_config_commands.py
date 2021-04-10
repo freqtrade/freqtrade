@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
+from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
@@ -216,6 +217,7 @@ def start_new_config(args: Dict[str, Any]) -> None:
     """
 
     config_path = Path(args['config'][0])
+    chown_user_directory(config_path.parent)
     if config_path.exists():
         overwrite = ask_user_overwrite(config_path)
         if overwrite:
