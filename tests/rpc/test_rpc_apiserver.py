@@ -888,7 +888,7 @@ def test_api_whitelist(botclient):
         "whitelist": ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC'],
         "length": 4,
         "method": ["StaticPairList"]
-        }
+    }
 
 
 def test_api_forcebuy(botclient, mocker, fee):
@@ -980,7 +980,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
         'exchange': 'bittrex',
-        }
+    }
 
 
 def test_api_forcesell(botclient, mocker, ticker, fee, markets):
@@ -1150,8 +1150,9 @@ def test_api_strategies(botclient):
     assert rc.json() == {'strategies': [
         'DefaultStrategy',
         'HyperoptableStrategy',
+        'Strategy002',
         'TestStrategyLegacy'
-        ]}
+    ]}
 
 
 def test_api_strategy(botclient):
