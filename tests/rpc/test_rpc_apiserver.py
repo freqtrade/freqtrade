@@ -416,10 +416,10 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json()["max"] == 1
 
     # Create some test data
-    ftbot.enter_positions()
+    create_mock_trades(fee)
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
-    assert rc.json()["current"] == 1
+    assert rc.json()["current"] == 4
     assert rc.json()["max"] == 1
 
     ftbot.config['max_open_trades'] = float('inf')
@@ -612,7 +612,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, limit_sell_order):
+def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
     mocker.patch.multiple(
@@ -627,48 +627,33 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, limit_buy_order, li
     assert_response(rc, 200)
     assert rc.json()['trade_count'] == 0
 
-    ftbot.enter_positions()
-    trade = Trade.query.first()
-
+    create_mock_trades(fee)
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
-    rc = client_get(client, f"{BASE_URI}/profit")
-    assert_response(rc, 200)
-    # One open trade
-    assert rc.json()['trade_count'] == 1
-    assert rc.json()['best_pair'] == ''
-    assert rc.json()['best_rate'] == 0
-
-    trade = Trade.query.first()
-    trade.update(limit_sell_order)
-
-    trade.close_date = datetime.utcnow()
-    trade.is_open = False
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc)
     assert rc.json() == {'avg_duration': ANY,
-                         'best_pair': 'ETH/BTC',
-                         'best_rate': 6.2,
-                         'first_trade_date': 'just now',
+                         'best_pair': 'XRP/BTC',
+                         'best_rate': 1.0,
+                         'first_trade_date': ANY,
                          'first_trade_timestamp': ANY,
-                         'latest_trade_date': 'just now',
+                         'latest_trade_date': '5 minutes ago',
                          'latest_trade_timestamp': ANY,
-                         'profit_all_coin': 6.217e-05,
-                         'profit_all_fiat': 0.76748865,
-                         'profit_all_percent_mean': 6.2,
-                         'profit_all_ratio_mean': 0.06201058,
-                         'profit_all_percent_sum': 6.2,
-                         'profit_all_ratio_sum': 0.06201058,
-                         'profit_closed_coin': 6.217e-05,
-                         'profit_closed_fiat': 0.76748865,
-                         'profit_closed_ratio_mean': 0.06201058,
-                         'profit_closed_percent_mean': 6.2,
-                         'profit_closed_ratio_sum': 0.06201058,
-                         'profit_closed_percent_sum': 6.2,
-                         'trade_count': 1,
-                         'closed_trade_count': 1,
-                         'winning_trades': 1,
+                         'profit_all_coin': -44.0631579,
+                         'profit_all_fiat': -543959.6842755,
+                         'profit_all_percent_mean': -66.41,
+                         'profit_all_ratio_mean': -0.6641100666666667,
+                         'profit_all_percent_sum': -398.47,
+                         'profit_all_ratio_sum': -3.9846604,
+                         'profit_closed_coin': 0.00073913,
+                         'profit_closed_fiat': 9.124559849999999,
+                         'profit_closed_ratio_mean': 0.0075,
+                         'profit_closed_percent_mean': 0.75,
+                         'profit_closed_ratio_sum': 0.015,
+                         'profit_closed_percent_sum': 1.5,
+                         'trade_count': 6,
+                         'closed_trade_count': 2,
+                         'winning_trades': 2,
                          'losing_trades': 0,
                          }
 
