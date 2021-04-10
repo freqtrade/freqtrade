@@ -1245,14 +1245,6 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     assert "timeInForce" not in api_mock.create_order.call_args[0][5]
 
 
-def test_get_balance_dry_run(default_conf, mocker):
-    default_conf['dry_run'] = True
-    default_conf['dry_run_wallet'] = 999.9
-
-    exchange = get_patched_exchange(mocker, default_conf)
-    assert exchange.get_balance(currency='BTC') == 999.9
-
-
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_balance_prod(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
@@ -1274,13 +1266,6 @@ def test_get_balance_prod(default_conf, mocker, exchange_name):
         mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
         mocker.patch('freqtrade.exchange.Kraken.get_balances', MagicMock(return_value={}))
         exchange.get_balance(currency='BTC')
-
-
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_balances_dry_run(default_conf, mocker, exchange_name):
-    default_conf['dry_run'] = True
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_balances() == {}
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
