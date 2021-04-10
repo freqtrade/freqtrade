@@ -64,7 +64,43 @@ class BaseParameter(ABC):
         self.value = value
 
 
-class IntParameter(BaseParameter):
+class NumericParameter(BaseParameter):
+    """ Internal parameter used for Numeric purposes """
+    float_or_int = Union[int, float]
+    default: float_or_int
+    value: float_or_int
+
+    def __init__(self, low: Union[float_or_int, Sequence[float_or_int]],
+                 high: Optional[float_or_int] = None, *, default: float_or_int,
+                 space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
+        """
+        Initialize hyperopt-optimizable numeric parameter.
+        Cannot be instantiated, but provides the validation for other numeric parameters
+        :param low: Lower end (inclusive) of optimization space or [low, high].
+        :param high: Upper end (inclusive) of optimization space.
+                     Must be none of entire range is passed first parameter.
+        :param default: A default value.
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+                      parameter fieldname is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
+        :param kwargs: Extra parameters to skopt.space.*.
+        """
+        if high is not None and isinstance(low, Sequence):
+            raise OperationalException(f'{self.__class__.__name__} space invalid.')
+        if high is None or isinstance(low, Sequence):
+            if not isinstance(low, Sequence) or len(low) != 2:
+                raise OperationalException(f'{self.__class__.__name__} space must be [low, high]')
+            self.low, self.high = low
+        else:
+            self.low = low
+            self.high = high
+
+        super().__init__(default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
+
+
+class IntParameter(NumericParameter):
     default: int
     value: int
 
@@ -82,17 +118,8 @@ class IntParameter(BaseParameter):
         :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.Integer.
         """
-        if high is not None and isinstance(low, Sequence):
-            raise OperationalException('IntParameter space invalid.')
-        if high is None or isinstance(low, Sequence):
-            if not isinstance(low, Sequence) or len(low) != 2:
-                raise OperationalException('IntParameter space must be [low, high]')
-            self.low, self.high = low
-        else:
-            self.low = low
-            self.high = high
 
-        super().__init__(default=default, space=space, optimize=optimize,
+        super().__init__(low=low, high=high, default=default, space=space, optimize=optimize,
                          load=load, **kwargs)
 
     def get_space(self, name: str) -> 'Integer':
@@ -103,7 +130,7 @@ class IntParameter(BaseParameter):
         return Integer(low=self.low, high=self.high, name=name, **self._space_params)
 
 
-class RealParameter(BaseParameter):
+class RealParameter(NumericParameter):
     default: float
     value: float
 
@@ -122,16 +149,7 @@ class RealParameter(BaseParameter):
         :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to skopt.space.Real.
         """
-        if high is not None and isinstance(low, Sequence):
-            raise OperationalException(f'{self.__class__.__name__} space invalid.')
-        if high is None or isinstance(low, Sequence):
-            if not isinstance(low, Sequence) or len(low) != 2:
-                raise OperationalException(f'{self.__class__.__name__} space must be [low, high]')
-            self.low, self.high = low
-        else:
-            self.low = low
-            self.high = high
-        super().__init__(default=default, space=space, optimize=optimize,
+        super().__init__(low=low, high=high, default=default, space=space, optimize=optimize,
                          load=load, **kwargs)
 
     def get_space(self, name: str) -> 'Real':
@@ -142,7 +160,7 @@ class RealParameter(BaseParameter):
         return Real(low=self.low, high=self.high, name=name, **self._space_params)
 
 
-class DecimalParameter(BaseParameter):
+class DecimalParameter(NumericParameter):
     default: float
     value: float
 
@@ -165,17 +183,7 @@ class DecimalParameter(BaseParameter):
         self._decimals = decimals
         default = round(default, self._decimals)
 
-        if high is not None and isinstance(low, Sequence):
-            raise OperationalException(f'{self.__class__.__name__} space invalid.')
-        if high is None or isinstance(low, Sequence):
-            if not isinstance(low, Sequence) or len(low) != 2:
-                raise OperationalException(f'{self.__class__.__name__} space must be [low, high]')
-            self.low, self.high = low
-        else:
-            self.low = low
-            self.high = high
-
-        super().__init__(default=default, space=space, optimize=optimize,
+        super().__init__(low=low, high=high, default=default, space=space, optimize=optimize,
                          load=load, **kwargs)
 
     def get_space(self, name: str) -> 'SKDecimal':
