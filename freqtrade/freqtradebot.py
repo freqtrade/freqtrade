@@ -410,9 +410,7 @@ class FreqtradeBot(LoggingMixin):
 
         bid_strategy = self.config.get('bid_strategy', {})
         if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
-            logger.info(
-                f"Getting price from order book {bid_strategy['price_side'].capitalize()} side."
-            )
+
             order_book_top = bid_strategy.get('order_book_top', 1)
             order_book = self.exchange.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
@@ -425,7 +423,8 @@ class FreqtradeBot(LoggingMixin):
                     f"Orderbook: {order_book}"
                  )
                 raise PricingError from e
-            logger.info(f'...top {order_book_top} order book buy rate {rate_from_l2:.8f}')
+            logger.info(f"Buy price from orderbook {bid_strategy['price_side'].capitalize()} side "
+                        f"- top {order_book_top} order book buy rate {rate_from_l2:.8f}")
             used_rate = rate_from_l2
         else:
             logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
@@ -479,19 +478,17 @@ class FreqtradeBot(LoggingMixin):
                 logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
                 return False
 
-            logger.info(f"Buy signal found: about create a new trade with stake_amount: "
+            logger.info(f"Buy signal found: about create a new trade for {pair} with stake_amount: "
                         f"{stake_amount} ...")
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    logger.info(f'Executing Buy for {pair}.')
                     return self.execute_buy(pair, stake_amount)
                 else:
                     return False
 
-            logger.info(f'Executing Buy for {pair}')
             return self.execute_buy(pair, stake_amount)
         else:
             return False
