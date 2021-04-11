@@ -23,7 +23,7 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'upbit']
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
