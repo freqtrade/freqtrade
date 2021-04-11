@@ -12,7 +12,7 @@ from pandas import DataFrame
 
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
+from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken, Upbit
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
                                        calculate_backoff)
 from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
@@ -157,13 +157,21 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     exchange = ExchangeResolver.load_exchange('kraken', default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
-    assert not isinstance(exchange, Binance)
+    assert not isinstance(exchange, Upbit)
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
                           caplog)
 
     exchange = ExchangeResolver.load_exchange('binance', default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Binance)
+    assert not isinstance(exchange, Kraken)
+
+    assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
+                          caplog)
+
+    exchange = ExchangeResolver.load_exchange('upbit', default_conf)
+    assert isinstance(exchange, Exchange)
+    assert isinstance(exchange, Upbit)
     assert not isinstance(exchange, Kraken)
 
     assert not log_has_re(r"No .* specific subclass found. Using the generic class instead.",
@@ -1998,7 +2006,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     ({'status': 'canceled', 'filled': 10.0}, False),
     ({'status': 'unknown', 'filled': 10.0}, False),
     ({'result': 'testest123'}, False),
-    ])
+])
 def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.check_order_canceled_empty(order) == result
