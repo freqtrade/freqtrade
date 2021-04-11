@@ -22,10 +22,10 @@ Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.co
 
 ### Docker quick start
 
-Create a new directory and place the [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) in this directory.
+Create a new directory and place the [docker-compose file](https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml) in this directory.
 
-=== "PC/MAC/Linux"
-    ``` bash
+#### PC/MAC/Linux
+    
     mkdir ft_userdata
     cd ft_userdata/
     # Download the docker-compose file from the repository
@@ -39,10 +39,10 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
 
     # Create configuration - Requires answering interactive questions
     docker-compose run --rm freqtrade new-config --config user_data/config.json
-    ```
+    
 
-=== "RaspberryPi"
-    ``` bash
+#### RaspberryPi
+
     mkdir ft_userdata
     cd ft_userdata/
     # Download the docker-compose file from the repository
@@ -56,7 +56,6 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
 
     # Create configuration - Requires answering interactive questions
     docker-compose run --rm freqtrade new-config --config user_data/config.json
-    ```
 
     !!! Note "Change your docker Image"
         You have to change the docker image in the docker-compose file for your Raspberry build to work properly.
@@ -68,12 +67,11 @@ Create a new directory and place the [docker-compose file](https://github.com/fr
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.
 The last 2 steps in the snippet create the directory with `user_data`, as well as (interactively) the default configuration based on your selections.
 
-!!! Question "How to edit the bot configuration?"
-    You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
+### Question: "How to edit the bot configuration?"
+You can edit the configuration at any time, which is available as `user_data/config.json` (within the directory `ft_userdata`) when using the above configuration.
+You can also change the both Strategy and commands by editing the command section of your `docker-compose.yml` file.
 
-    You can also change the both Strategy and commands by editing the command section of your `docker-compose.yml` file.
-
-#### Adding a custom strategy
+##### Adding a custom strategy
 
 1. The configuration is now available as `user_data/config.json`
 2. Copy a custom strategy to the directory `user_data/strategies/`
@@ -81,7 +79,7 @@ The last 2 steps in the snippet create the directory with `user_data`, as well a
 
 The `SampleStrategy` is run by default.
 
-!!! Warning "`SampleStrategy` is just a demo!"
+#### Warning "`SampleStrategy` is just a demo!"
     The `SampleStrategy` is there for your reference and give you ideas for your own strategy.
     Please always backtest your strategy and use dry-run for some time before risking real money!
     You will find more information about Strategy development in the [Strategy documentation](strategy-customization.md).
@@ -92,7 +90,7 @@ Once this is done, you're ready to launch the bot in trading mode (Dry-run or Li
 docker-compose up -d
 ```
 
-!!! Warning "Default configuration"
+#### Warning "Default configuration"
     While the configuration generated will be mostly functional, you will still need to verify that all options correspond to what you want (like Pricing, pairlist, ...) before starting the bot.
 
 #### Monitoring the bot
@@ -122,7 +120,7 @@ docker-compose up -d
 
 This will first pull the latest image, and will then restart the container with the just pulled version.
 
-!!! Warning "Check the Changelog"
+#### Warning "Check the Changelog"
     You should always check the changelog for breaking changes / manual interventions required and make sure the bot starts correctly after the update.
 
 ### Editing the docker-compose file
@@ -131,7 +129,7 @@ Advanced users may edit the docker-compose file further to include all possible 
 
 All freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
 
-!!! Note "`docker-compose run --rm`"
+#### Note "`docker-compose run --rm`"
     Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
 
 #### Example: Download data with docker-compose
