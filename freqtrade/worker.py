@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.state import State
 
+from sqlalchemy.exc import OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,9 @@ class Worker:
 
             logger.exception('OperationalException. Stopping trader ...')
             self.freqtrade.state = State.STOPPED
+        except OperationalError as error:
+            logger.warning(f"Warning: {error}, retrying in half a second...")
+            time.sleep(0.5)
 
     def _reconfigure(self) -> None:
         """
