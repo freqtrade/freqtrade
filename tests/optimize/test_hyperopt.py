@@ -15,6 +15,7 @@ from filelock import Timeout
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
+from freqtrade.optimize.decimalspace import SKDecimal
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
@@ -1104,3 +1105,20 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir) -> None:
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
 
     hyperopt.start()
+
+
+def test_SKDecimal():
+    space = SKDecimal(1, 2, decimals=2)
+    assert 1.5 in space
+    assert 2.5 not in space
+    assert space.low == 100
+    assert space.high == 200
+
+    assert space.inverse_transform([200]) == [2.0]
+    assert space.inverse_transform([100]) == [1.0]
+    assert space.inverse_transform([150, 160]) == [1.5, 1.6]
+
+    assert space.transform([1.5]) == [150]
+    assert space.transform([2.0]) == [200]
+    assert space.transform([1.0]) == [100]
+    assert space.transform([1.5, 1.6]) == [150, 160]
