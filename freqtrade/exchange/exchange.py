@@ -63,6 +63,7 @@ class Exchange:
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
+        "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
 
@@ -1154,14 +1155,20 @@ class Exchange:
         return self.fetch_order(order_id, pair)
 
     @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
         """
         Get next greater value in the list.
         Used by fetch_l2_order_book if the api only supports a limited range
         """
         if not limit_range:
             return limit
-        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -1171,7 +1178,8 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
         try:
 
             return self._api.fetch_l2_order_book(pair, limit1)

@@ -1641,6 +1641,9 @@ def test_get_next_limit_in_list():
     # Going over the limit ...
     assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
     assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
+    # Without required range
+    assert Exchange.get_next_limit_in_list(2000, limit_range, False) is None
+    assert Exchange.get_next_limit_in_list(15, limit_range, False) == 20
 
     assert Exchange.get_next_limit_in_list(21, None) == 21
     assert Exchange.get_next_limit_in_list(100, None) == 100

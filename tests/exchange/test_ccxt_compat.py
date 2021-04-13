@@ -36,7 +36,12 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-    }
+    },
+    'kucoin': {
+        'pair': 'BTC/USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
@@ -100,14 +105,16 @@ class TestCCXTExchange():
         assert 'asks' in l2
         assert 'bids' in l2
         l2_limit_range = exchange._ft_has['l2_limit_range']
+        l2_limit_range_required = exchange._ft_has['l2_limit_range_required']
         for val in [1, 2, 5, 25, 100]:
             l2 = exchange.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
                 assert len(l2['asks']) == val
                 assert len(l2['bids']) == val
             else:
-                next_limit = exchange.get_next_limit_in_list(val, l2_limit_range)
-                if next_limit > 200:
+                next_limit = exchange.get_next_limit_in_list(
+                    val, l2_limit_range, l2_limit_range_required)
+                if next_limit is None or next_limit > 200:
                     # Large orderbook sizes can be a problem for some exchanges (bitrex ...)
                     assert len(l2['asks']) > 200
                     assert len(l2['asks']) > 200
