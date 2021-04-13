@@ -100,6 +100,18 @@ To use subaccounts with FTX, you need to edit the configuration and add the foll
 }
 ```
 
+## Kucoin
+
+Kucoin requries a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+
+```json
+"exchange": {
+    "name": "kucoin",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+```
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
