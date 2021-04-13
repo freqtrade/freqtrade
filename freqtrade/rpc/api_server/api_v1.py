@@ -17,8 +17,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, TradeResponse, Version,
-                                                  WhitelistResponse)
+                                                  StrategyResponse, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -83,7 +82,9 @@ def status(rpc: RPC = Depends(get_rpc)):
         return []
 
 
-@router.get('/trades', response_model=TradeResponse, tags=['info', 'trading'])
+# Using the responsemodel here will cause a ~100% increase in response time (from 1s to 2s)
+# on big databases. Correct response model: response_model=TradeResponse,
+@router.get('/trades', tags=['info', 'trading'])
 def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
 
