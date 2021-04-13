@@ -1327,6 +1327,8 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     tickers2 = exchange.get_tickers(cached=True)
     assert tickers2 == tickers
     assert api_mock.fetch_tickers.call_count == 0
+    tickers2 = exchange.get_tickers(cached=False)
+    assert api_mock.fetch_tickers.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "get_tickers", "fetch_tickers")

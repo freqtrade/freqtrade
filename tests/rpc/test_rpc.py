@@ -570,7 +570,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     assert prec_satoshi(result['total'], 12.309096315)
     assert prec_satoshi(result['value'], 184636.44472997)
     assert tickers.call_count == 1
-    assert tickers.call_args.kwargs['cached'] is True
+    assert tickers.call_args[1]['cached'] is True
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',
