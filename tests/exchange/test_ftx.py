@@ -39,8 +39,9 @@ def test_stoploss_order_ftx(default_conf, mocker):
     assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
-    assert api_mock.create_order.call_args_list[0][1]['price'] == 190
     assert 'orderPrice' not in api_mock.create_order.call_args_list[0][1]['params']
+    assert 'stopPrice' in api_mock.create_order.call_args_list[0][1]['params']
+    assert api_mock.create_order.call_args_list[0][1]['params']['stopPrice'] == 190
 
     assert api_mock.create_order.call_count == 1
 
@@ -55,8 +56,8 @@ def test_stoploss_order_ftx(default_conf, mocker):
     assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
-    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
     assert 'orderPrice' not in api_mock.create_order.call_args_list[0][1]['params']
+    assert api_mock.create_order.call_args_list[0][1]['params']['stopPrice'] == 220
 
     api_mock.create_order.reset_mock()
     order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
@@ -69,9 +70,9 @@ def test_stoploss_order_ftx(default_conf, mocker):
     assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
     assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
-    assert api_mock.create_order.call_args_list[0][1]['price'] == 220
     assert 'orderPrice' in api_mock.create_order.call_args_list[0][1]['params']
     assert api_mock.create_order.call_args_list[0][1]['params']['orderPrice'] == 217.8
+    assert api_mock.create_order.call_args_list[0][1]['params']['stopPrice'] == 220
 
     # test exception handling
     with pytest.raises(DependencyException):

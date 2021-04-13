@@ -63,10 +63,11 @@ class Ftx(Exchange):
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
 
+            params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
-                                           amount=amount, price=stop_price, params=params)
+                                           amount=amount, params=params)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)
             return order
