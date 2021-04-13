@@ -442,7 +442,7 @@ class RPC:
         output = []
         total = 0.0
         try:
-            tickers = self._freqtrade.exchange.get_tickers()
+            tickers = self._freqtrade.exchange.get_tickers(cached=True)
         except (ExchangeError):
             raise RPCException('Error getting current tickers.')
 

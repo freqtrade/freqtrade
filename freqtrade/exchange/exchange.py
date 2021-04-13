@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from cachetools import TTLCache
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from pandas import DataFrame
@@ -83,6 +84,9 @@ class Exchange:
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
+
+        # Cache for 10 minutes ...
+        self._fetch_tickers_cache = TTLCache(maxsize=1, ttl=60 * 10)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -693,9 +697,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self) -> Dict:
+    def get_tickers(self, cached: bool = False) -> Dict:
+        """
+        :param cached: Allow cached result
+        :return: fetch_tickers result
+        """
+        if cached:
+            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            if tickers:
+                return tickers
         try:
-            return self._api.fetch_tickers()
+            tickers = self._api.fetch_tickers()
+            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
