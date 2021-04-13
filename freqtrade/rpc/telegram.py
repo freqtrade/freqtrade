@@ -702,7 +702,7 @@ class Telegram(RPCHandler):
                              f"({trade['count']})</code>\n")
 
                 if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
-                    self._send_msg(output)
+                    self._send_msg(output, parse_mode=ParseMode.HTML)
                     output = stat_line
                 else:
                     output += stat_line
