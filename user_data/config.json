@@ -132,7 +132,7 @@
         "username": "kecheon@gmail.com",
         "password": "dmdcjs0"
     },
-    "bot_name": "freqtrade",
+    "bot_name": "bitsbee",
     "initial_state": "running",
     "forcebuy_enable": false,
     "internals": {
