@@ -29,7 +29,7 @@ class DefaultStrategy(IStrategy):
     stoploss = -0.10
 
     # Optimal timeframe for the strategy
-    timeframe = '5m'
+    timeframe = '15m'
 
     # Optional order type mapping
     order_types = {
@@ -119,7 +119,7 @@ class DefaultStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['rsi'] < 35) &
+                (dataframe['rsi'] < 30) &
                 (dataframe['fastd'] < 35) &
                 (dataframe['adx'] > 30) &
                 (dataframe['plus_di'] > 0.5)
@@ -142,7 +142,7 @@ class DefaultStrategy(IStrategy):
         dataframe.loc[
             (
                 (
-                    (qtpylib.crossed_above(dataframe['rsi'], 70)) |
+                    (qtpylib.crossed_above(dataframe['rsi'], 75)) |
                     (qtpylib.crossed_above(dataframe['fastd'], 70))
                 ) &
                 (dataframe['adx'] > 10) &
