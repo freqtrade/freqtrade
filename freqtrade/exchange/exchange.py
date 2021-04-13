@@ -86,7 +86,7 @@ class Exchange:
         self._last_markets_refresh: int = 0
 
         # Cache for 10 minutes ...
-        self._fetch_tickers_cache = TTLCache(maxsize=1, ttl=60 * 10)
+        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
