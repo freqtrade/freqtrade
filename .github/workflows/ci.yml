@@ -148,6 +148,7 @@ jobs:
 
     - name: Installation - macOS
       run: |
+        brew update
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
