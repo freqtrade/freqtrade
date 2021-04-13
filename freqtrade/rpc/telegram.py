@@ -294,6 +294,7 @@ class Telegram(RPCHandler):
 
             messages = []
             for r in results:
+                r['open_date_hum'] = arrow.get(r['open_date']).humanize()
                 lines = [
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",

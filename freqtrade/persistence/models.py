@@ -294,15 +294,12 @@ class LocalTrade():
             'fee_close_cost': self.fee_close_cost,
             'fee_close_currency': self.fee_close_currency,
 
-            'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
 
-            'close_date_hum': (arrow.get(self.close_date).humanize()
-                               if self.close_date else None),
             'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
