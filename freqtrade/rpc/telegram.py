@@ -12,7 +12,10 @@ from typing import Any, Callable, Dict, List, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import KeyboardButton, ParseMode, ReplyKeyboardMarkup, Update, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import (
+        KeyboardButton, ParseMode, ReplyKeyboardMarkup,
+        Update, InlineKeyboardMarkup, InlineKeyboardButton
+    )
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CallbackContext, CommandHandler, Updater, CallbackQueryHandler
 from telegram.utils.helpers import escape_markdown
@@ -615,7 +618,7 @@ class Telegram(RPCHandler):
         except RPCException as e:
             self._send_msg(str(e))
 
-    def _forcebuy_action(self, pair, price = None):
+    def _forcebuy_action(self, pair, price=None):
         try:
             self._rpc._rpc_forcebuy(pair, price)
         except RPCException as e:
@@ -969,7 +972,7 @@ class Telegram(RPCHandler):
 
     def _send_inline_msg(self, msg: str, callback_query_handler,
                          parse_mode: str = ParseMode.MARKDOWN, disable_notification: bool = False,
-                  keyboard: List[List[InlineKeyboardButton]] = None, ) -> None:
+                         keyboard: List[List[InlineKeyboardButton]] = None, ) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -982,7 +985,8 @@ class Telegram(RPCHandler):
         self._current_callback_query_handler = self._callback_query_handlers[callback_query_handler]
         self._updater.dispatcher.add_handler(self._current_callback_query_handler)
 
-        self._send_msg(msg, parse_mode, disable_notification, keyboard, reply_markup=InlineKeyboardMarkup)
+        self._send_msg(msg, parse_mode, disable_notification, keyboard,
+                       reply_markup=InlineKeyboardMarkup)
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,

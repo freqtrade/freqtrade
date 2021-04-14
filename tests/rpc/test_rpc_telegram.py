@@ -54,12 +54,14 @@ class DummyCls(Telegram):
         """
         raise Exception('test')
 
+
 def get_telegram_testobject_with_inline(mocker, default_conf, mock=True, ftbot=None):
     inline_msg_mock = MagicMock()
     telegram, ftbot, msg_mock = get_telegram_testobject(mocker, default_conf)
     mocker.patch('freqtrade.rpc.telegram.Telegram._send_inline_msg', inline_msg_mock)
 
     return telegram, ftbot, msg_mock, inline_msg_mock
+
 
 def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
     msg_mock = MagicMock()
@@ -914,7 +916,8 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
 
-    telegram, freqtradebot, _, inline_msg_mock = get_telegram_testobject_with_inline(mocker, default_conf)
+    telegram, freqtradebot, _, inline_msg_mock = get_telegram_testobject_with_inline(mocker,
+                                                                                     default_conf)
     patch_get_signal(freqtradebot, (True, False))
 
     context = MagicMock()
