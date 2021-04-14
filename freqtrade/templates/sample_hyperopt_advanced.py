@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
-from skopt.space import Categorical, Dimension, Integer, Real  # noqa
+from freqtrade.optimize.space import Categorical, Dimension, Integer, SKDecimal, Real  # noqa
 
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
@@ -237,7 +237,7 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         'stoploss' optimization hyperspace.
         """
         return [
-            Real(-0.35, -0.02, name='stoploss'),
+            SKDecimal(-0.35, -0.02, decimals=3, name='stoploss'),
         ]
 
     @staticmethod

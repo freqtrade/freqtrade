@@ -12,6 +12,7 @@ from skopt.space import Categorical, Dimension, Integer, Real
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
+from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IStrategy
 
 
@@ -167,7 +168,7 @@ class IHyperOpt(ABC):
         You may override it in your custom Hyperopt class.
         """
         return [
-            Real(-0.35, -0.02, name='stoploss'),
+            SKDecimal(-0.35, -0.02, decimals=3, name='stoploss'),
         ]
 
     def generate_trailing_params(self, params: Dict) -> Dict:
