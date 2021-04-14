@@ -7,10 +7,10 @@ This page combines common gotchas and informations which are exchange-specific a
 !!! Tip "Stoploss on Exchange"
     Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
-### Blacklists
+### Binance Blacklist
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
-Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
+Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
 ### Binance sites
 
@@ -111,6 +111,11 @@ Kucoin requries a passphrase for each api key, you will therefore need to add th
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
 ```
+
+### Kucoin Blacklists
+
+For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
+Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
 
 ## All exchanges
 
