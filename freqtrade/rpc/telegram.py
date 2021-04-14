@@ -12,12 +12,10 @@ from typing import Any, Callable, Dict, List, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import (
-        KeyboardButton, ParseMode, ReplyKeyboardMarkup,
-        Update, InlineKeyboardMarkup, InlineKeyboardButton
-    )
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ParseMode,
+                      ReplyKeyboardMarkup, Update)
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CallbackContext, CommandHandler, Updater, CallbackQueryHandler
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__

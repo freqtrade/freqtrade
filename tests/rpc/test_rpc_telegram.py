@@ -4,9 +4,9 @@
 
 import re
 from datetime import datetime
+from functools import reduce
 from random import choice, randint
 from string import ascii_uppercase
-from functools import reduce
 from unittest.mock import ANY, MagicMock
 
 import arrow
