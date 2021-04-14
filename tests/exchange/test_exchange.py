@@ -383,7 +383,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, 2 * 2 * 1.1)
+    assert isclose(result, (2 * 2)*((1+0.5)/1-0.1))
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -395,7 +395,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(2, 2 * 2) * 1.1)
+    assert isclose(result, max(2, 2 * 2) * ((1+0.5)/1-0.1))
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -407,10 +407,10 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(8, 2 * 2) * 1.1)
+    assert isclose(result, max(8, 2 * 2) * ((1+0.5)/1-0.1))
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * 1.45)
+    assert isclose(result, max(8, 2 * 2) * ((1+0.5)/1-0.4))
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
@@ -432,7 +432,7 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * 1.1, 8)
+    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * ((1+0.5)/1-0.05), 8)
 
 
 def test_set_sandbox(default_conf, mocker):
