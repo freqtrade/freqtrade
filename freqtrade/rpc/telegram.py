@@ -8,7 +8,7 @@ import logging
 from datetime import timedelta
 from html import escape
 from itertools import chain
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import arrow
 from tabulate import tabulate
@@ -88,7 +88,7 @@ class Telegram(RPCHandler):
         Validates the keyboard configuration from telegram config
         section.
         """
-        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
+        self._keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = [
             ['/daily', '/profit', '/balance'],
             ['/status', '/status table', '/performance'],
             ['/count', '/start', '/stop', '/help']
@@ -170,7 +170,7 @@ class Telegram(RPCHandler):
             [h.command for h in handles]
         )
 
-        self._current_callback_query_handler = None
+        self._current_callback_query_handler: Optional[CallbackQueryHandler] = None
         self._callback_query_handlers = {
             'forcebuy': CallbackQueryHandler(self._forcebuy_inline)
         }
@@ -623,11 +623,12 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     def _forcebuy_inline(self, update: Update, _: CallbackContext) -> None:
-        query = update.callback_query
-        pair = query.data
-        query.answer()
-        query.edit_message_text(text=f"Force Buying: {pair}")
-        self._forcebuy_action(pair)
+        if update.callback_query:
+            query = update.callback_query
+            pair = query.data
+            query.answer()
+            query.edit_message_text(text=f"Force Buying: {pair}")
+            self._forcebuy_action(pair)
 
     @staticmethod
     def _layout_inline_keyboard(buttons: List[InlineKeyboardButton],
@@ -983,12 +984,13 @@ class Telegram(RPCHandler):
         self._current_callback_query_handler = self._callback_query_handlers[callback_query_handler]
         self._updater.dispatcher.add_handler(self._current_callback_query_handler)
 
-        self._send_msg(msg, parse_mode, disable_notification, keyboard,
+        self._send_msg(msg, parse_mode, disable_notification,
+                       cast(List[List[Union[str, KeyboardButton, InlineKeyboardButton]]], keyboard),
                        reply_markup=InlineKeyboardMarkup)
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,
-                  keyboard: List[List[Union[str, KeyboardButton]]] = None,
+                  keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = None,
                   reply_markup=ReplyKeyboardMarkup) -> None:
         """
         Send given markdown message
