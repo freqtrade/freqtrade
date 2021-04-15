@@ -410,7 +410,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(-0.4)))
+    assert isclose(result, max(8, 2 * 2) * 1.5)
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
