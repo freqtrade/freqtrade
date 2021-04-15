@@ -9,8 +9,9 @@ class SKDecimal(Integer):
         self.decimals = decimals
         _low = int(low * pow(10, self.decimals))
         _high = int(high * pow(10, self.decimals))
-        self.low_orig = low
-        self.high_orig = high
+        # trunc to precision to avoid points out of space
+        self.low_orig = round(_low * pow(0.1, self.decimals), self.decimals)
+        self.high_orig = round(_high * pow(0.1, self.decimals), self.decimals)
 
         super().__init__(_low, _high, prior, base, transform, name, dtype)
 
