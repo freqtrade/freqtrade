@@ -432,7 +432,10 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)), 8)
+    assert round(result, 8) == round(
+        max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
+        8
+    )
 
 
 def test_set_sandbox(default_conf, mocker):

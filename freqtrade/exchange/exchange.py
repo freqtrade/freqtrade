@@ -541,7 +541,7 @@ class Exchange:
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
         amount_reserve_percent = (
           amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
-        )     
+        )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
 
