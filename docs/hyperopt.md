@@ -294,6 +294,7 @@ Based on the results, hyperopt will tell you which parameter combination produce
 ## Parameter types
 
 There are four parameter types each suited for different purposes.
+
 * `IntParameter` - defines an integral parameter with upper and lower boundaries of search space.
 * `DecimalParameter` - defines a floating point parameter with a limited number of decimals (default 3). Should be preferred instead of `RealParameter` in most cases.
 * `RealParameter` - defines a floating point parameter with upper and lower boundaries and no precision limit. Rarely used as it creates a space with a near infinite number of possibilities.
