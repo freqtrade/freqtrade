@@ -235,6 +235,9 @@ pair_history
 performance
 	Return the performance of the different coins.
 
+ping
+	simple ping
+
 plot_config
 	Return plot configuration if the strategy defines one.
 
@@ -271,14 +274,15 @@ strategy
 
         :param strategy: Strategy class name
 
+trade
+	Return specific trade
+
+        :param trade_id: Specify which trade to get.
+
 trades
 	Return trades history.
 
         :param limit: Limits trades to the X last trades. No limit to get all the trades.
-
-trade
-	Return specific trade.
-        :param tradeid: Specify which trade to get.
 
 version
 	Return the version of the bot.
