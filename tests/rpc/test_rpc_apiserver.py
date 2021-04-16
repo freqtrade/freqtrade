@@ -522,6 +522,26 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['trades_count'] == 1
 
 
+def test_api_trade_single(botclient, mocker, fee, ticker, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+    )
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Trade not found.'
+
+    create_mock_trades(fee)
+    Trade.query.session.flush()
+
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc)
+    assert rc.json()['trade_id'] == 3
+
+
 def test_api_delete_trade(botclient, mocker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
