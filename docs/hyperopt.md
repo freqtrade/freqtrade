@@ -479,7 +479,7 @@ Override the `roi_space()` method if you need components of the ROI tables to va
 A sample for these methods can be found in [sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 !!! Note "Reduced search space"
-    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is sufficient, every value more precise than this will usually result in overfitted results.
+    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is usually sufficient, every value more precise than this will usually result in overfitted results. You can however [overriding pre-defined spaces](advanced-hyperopt.md#pverriding-pre-defined-spaces) to change this to your needs.
 
 ### Understand Hyperopt Stoploss results
 
@@ -521,7 +521,7 @@ If you have the `stoploss_space()` method in your custom hyperopt file, remove i
 Override the `stoploss_space()` method and define the desired range in it if you need stoploss values to vary in other range during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 !!! Note "Reduced search space"
-    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is sufficient, every value more precise than this will usually result in overfitted results.
+    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is usually sufficient, every value more precise than this will usually result in overfitted results. You can however [overriding pre-defined spaces](advanced-hyperopt.md#pverriding-pre-defined-spaces) to change this to your needs.
 
 ### Understand Hyperopt Trailing Stop results
 
@@ -559,7 +559,7 @@ If you are optimizing trailing stop values, Freqtrade creates the 'trailing' opt
 Override the `trailing_space()` method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in [user_data/hyperopts/sample_hyperopt_advanced.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py).
 
 !!! Note "Reduced search space"
-    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is sufficient, every value more precise than this will usually result in overfitted results.
+    To limit the search space further, Decimals are limited to 3 decimal places (a precision of 0.001). This is usually sufficient, every value more precise than this will usually result in overfitted results. You can however [overriding pre-defined spaces](advanced-hyperopt.md#pverriding-pre-defined-spaces) to change this to your needs.
 
 ### Reproducible results
 
