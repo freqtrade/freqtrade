@@ -10,7 +10,7 @@ from typing import Any, Iterator, Optional, Sequence, Tuple, Union
 
 with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
-    from freqtrade.optimize.decimalspace import SKDecimal
+    from freqtrade.optimize.space import SKDecimal
 
 from freqtrade.exceptions import OperationalException
 
