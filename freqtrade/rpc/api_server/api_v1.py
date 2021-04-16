@@ -90,7 +90,10 @@ def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
 
 @router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
 def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_trade_status([tradeid])[0]
+    try:
+        return rpc._rpc_trade_status([tradeid])[0]
+    except (RPCException, KeyError):
+        raise HTTPException(status_code=404, detail='Trade not found.')
 
 
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
