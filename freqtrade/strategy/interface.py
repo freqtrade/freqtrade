@@ -557,7 +557,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             sell_signal = False
         elif ask_strategy.get('use_sell_signal', True):
-            sell = sell or self.custom_sell(trade.pair, trade, date, current_rate, current_profit)
+            sell = sell or strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                trade.pair, trade, date, current_rate, current_profit)
             sell_signal = sell and not buy
             # TODO: return here if sell-signal should be favored over ROI
         else:
