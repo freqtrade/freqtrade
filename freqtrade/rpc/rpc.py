@@ -167,10 +167,13 @@ class RPC:
                 if trade.open_order_id:
                     order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
-                try:
-                    current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except (ExchangeError, PricingError):
-                    current_rate = NAN
+                if trade.is_open:
+                    try:
+                        current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
+                    except (ExchangeError, PricingError):
+                        current_rate = NAN
+                else:
+                    current_rate = trade.close_rate
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
 

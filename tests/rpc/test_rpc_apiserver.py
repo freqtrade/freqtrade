@@ -773,7 +773,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert rc.json()[0] == {
         'amount': 123.0,
         'amount_requested': 123.0,
-        'base_currency': 'BTC',
         'close_date': None,
         'close_timestamp': None,
         'close_profit': None,
