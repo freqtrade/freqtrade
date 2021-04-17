@@ -285,6 +285,27 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
+    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> bool:
+        """
+        Custom sell signal logic indicating that specified position should be sold. Returning True
+        from this method is equal to setting sell signal on a candle at specified time.
+        This method is not called when sell signal is set.
+
+        This method should be overridden to create sell signals that depend on trade parameters. For
+        example you could implement a stoploss relative to candle when trade was opened, or a custom
+        1:2 risk-reward ROI.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return bool: Whether trade should exit now.
+        """
+        return False
+
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
@@ -535,9 +556,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             sell_signal = False
-        else:
-            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
+        elif ask_strategy.get('use_sell_signal', True):
+            sell = sell or self.custom_sell(trade.pair, trade, date, current_rate, current_profit)
+            sell_signal = sell and not buy
             # TODO: return here if sell-signal should be favored over ROI
+        else:
+            sell_signal = False
 
         # Start evaluations
         # Sequence:
