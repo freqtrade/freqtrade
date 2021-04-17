@@ -15,7 +15,8 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--data-format-ohlcv {json,jsongz,hdf5}]
                              [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [--eps] [--dmmp] [--enable-protections]
+                             [-p PAIRS [PAIRS ...]] [--eps] [--dmmp]
+                             [--enable-protections]
                              [--dry-run-wallet DRY_RUN_WALLET]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
@@ -37,6 +38,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).

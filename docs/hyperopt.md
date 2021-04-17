@@ -44,8 +44,9 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--data-format-ohlcv {json,jsongz,hdf5}]
                           [--max-open-trades INT]
                           [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                          [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
-                          [--dmmp] [--enable-protections]
+                          [-p PAIRS [PAIRS ...]] [--hyperopt NAME]
+                          [--hyperopt-path PATH] [--eps] [--dmmp]
+                          [--enable-protections]
                           [--dry-run-wallet DRY_RUN_WALLET] [-e INT]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
@@ -69,6 +70,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --hyperopt NAME       Specify hyperopt class name which will be used by the
                         bot.
   --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
@@ -105,7 +109,8 @@ optional arguments:
                         reproducible hyperopt results.
   --min-trades INT      Set minimal desired number of trades for evaluations
                         in the hyperopt optimization path (default: 1).
-  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
+  --hyperopt-loss NAME, --hyperoptloss NAME
+                        Specify the class name of the hyperopt loss function
                         class (IHyperOptLoss). Different functions can
                         generate completely different results, since the
                         target for optimization is different. Built-in
