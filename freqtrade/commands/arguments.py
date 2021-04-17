@@ -17,7 +17,7 @@ ARGS_STRATEGY = ["strategy", "strategy_path"]
 ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
 ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
-                        "max_open_trades", "stake_amount", "fee"]
+                        "max_open_trades", "stake_amount", "fee", "pairs"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "enable_protections", "dry_run_wallet",

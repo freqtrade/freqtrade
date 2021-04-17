@@ -330,7 +330,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are space-separated.',
+        help='Limit command to these pairs. Pairs are space-separated.',
         nargs='+',
     ),
     # Download data
