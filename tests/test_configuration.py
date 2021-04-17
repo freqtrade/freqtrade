@@ -1002,6 +1002,7 @@ def test_pairlist_resolving():
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['pair_whitelist'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
 
 

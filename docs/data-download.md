@@ -30,7 +30,7 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
@@ -48,10 +48,10 @@ optional arguments:
                         exchange/pairs/timeframes.
   --data-format-ohlcv {json,jsongz,hdf5}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
+                        (default: `None`).
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
-                        `jsongz`).
+                        `None`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
