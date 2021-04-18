@@ -506,7 +506,7 @@ def test_api_trades(botclient, mocker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json()) == 2
+    assert len(rc.json()) == 3
     assert rc.json()['trades_count'] == 0
 
     create_mock_trades(fee)

@@ -199,6 +199,7 @@ class OpenTradeSchema(TradeSchema):
 class TradeResponse(BaseModel):
     trades: List[TradeSchema]
     trades_count: int
+    total_trades: int
 
 
 class ForceBuyResponse(BaseModel):
