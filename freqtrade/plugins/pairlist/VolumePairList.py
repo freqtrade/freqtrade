@@ -67,7 +67,7 @@ class VolumePairList(IPairList):
         """
         Generate the pairlist
         :param cached_pairlist: Previously generated pairlist (cached)
-        :param tickers: Tickers (from exchange.get_tickers()).
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
         """
         # Generate dynamic whitelist
