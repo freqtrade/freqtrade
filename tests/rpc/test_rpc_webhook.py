@@ -25,6 +25,11 @@ def get_webhook_dict() -> dict:
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
+        "webhookbuyfill": {
+            "value1": "Buy Order for {pair} filled",
+            "value2": "at {open_rate:8f}",
+            "value3": "{stake_amount:8f} {stake_currency}"
+        },
         "webhooksell": {
             "value1": "Selling {pair}",
             "value2": "limit {limit:8f}",
@@ -34,6 +39,11 @@ def get_webhook_dict() -> dict:
             "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
+        },
+        "webhooksellfill": {
+            "value1": "Sell Order for {pair} filled",
+            "value2": "at {close_rate:8f}",
+            "value3": "{stake_amount:8f} {stake_currency}"
         },
         "webhookstatus": {
             "value1": "Status: {status}",
@@ -76,8 +86,8 @@ def test_send_msg(default_conf, mocker):
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
     # Test buy cancel
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    msg_mock.reset_mock()
+
     msg = {
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
         'exchange': 'Binance',
@@ -97,8 +107,7 @@ def test_send_msg(default_conf, mocker):
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
     # Test sell
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    msg_mock.reset_mock()
     msg = {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'exchange': 'Binance',
@@ -123,8 +132,7 @@ def test_send_msg(default_conf, mocker):
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhooksell"]["value3"].format(**msg))
     # Test sell cancel
-    msg_mock = MagicMock()
-    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    msg_mock.reset_mock()
     msg = {
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
         'exchange': 'Binance',
