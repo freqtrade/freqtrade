@@ -9,7 +9,7 @@ flake8-type-annotations==0.1.0
 flake8-tidy-imports==4.2.1
 mypy==0.812
 pytest==6.2.3
-pytest-asyncio==0.14.0
+pytest-asyncio==0.15.0
 pytest-cov==2.11.1
 pytest-mock==3.5.1
 pytest-random-order==1.0.4
