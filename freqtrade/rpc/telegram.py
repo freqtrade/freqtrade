@@ -209,6 +209,10 @@ class Telegram(RPCHandler):
                        "Cancelling open buy Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))
 
+        elif msg['type'] == RPCMessageType.BUY_FILL_NOTIFICATION:
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Buy order for {pair} (#{trade_id}) filled for {open_rate}.".format(**msg))
+
         elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
             msg['amount'] = round(msg['amount'], 8)
             msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
@@ -239,6 +243,10 @@ class Telegram(RPCHandler):
         elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
             message = ("\N{WARNING SIGN} *{exchange}:* Cancelling Open Sell Order "
                        "for {pair} (#{trade_id}). Reason: {reason}").format(**msg)
+
+        elif msg['type'] == RPCMessageType.SELL_FILL_NOTIFICATION:
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Sell order for {pair} (#{trade_id}) filled at {close_rate}.".format(**msg))
 
         elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
             message = '*Status:* `{status}`'.format(**msg)

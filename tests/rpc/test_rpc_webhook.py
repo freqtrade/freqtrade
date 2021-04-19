@@ -43,7 +43,7 @@ def get_webhook_dict() -> dict:
         "webhooksellfill": {
             "value1": "Sell Order for {pair} filled",
             "value2": "at {close_rate:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
+            "value3": ""
         },
         "webhookstatus": {
             "value1": "Status: {status}",
@@ -59,7 +59,7 @@ def test__init__(mocker, default_conf):
     assert webhook._config == default_conf
 
 
-def test_send_msg(default_conf, mocker):
+def test_send_msg_webhook(default_conf, mocker):
     default_conf["webhook"] = get_webhook_dict()
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
@@ -106,6 +106,27 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
+    # Test buy fill
+    msg_mock.reset_mock()
+
+    msg = {
+        'type': RPCMessageType.BUY_FILL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'open_rate': 0.005,
+        'stake_amount': 0.8,
+        'stake_amount_fiat': 500,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'EUR'
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value3"].format(**msg))
     # Test sell
     msg_mock.reset_mock()
     msg = {
@@ -156,6 +177,32 @@ def test_send_msg(default_conf, mocker):
             default_conf["webhook"]["webhooksellcancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhooksellcancel"]["value3"].format(**msg))
+    # Test Sell fill
+    msg_mock.reset_mock()
+    msg = {
+        'type': RPCMessageType.SELL_FILL_NOTIFICATION,
+        'exchange': 'Bittrex',
+        'pair': 'ETH/BTC',
+        'gain': "profit",
+        'close_rate': 0.005,
+        'amount': 0.8,
+        'order_type': 'limit',
+        'open_rate': 0.004,
+        'current_rate': 0.005,
+        'profit_amount': 0.001,
+        'profit_ratio': 0.20,
+        'stake_currency': 'BTC',
+        'sell_reason': SellType.STOP_LOSS.value
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhooksellfill"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhooksellfill"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhooksellfill"]["value3"].format(**msg))
+
     for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
                     RPCMessageType.WARNING_NOTIFICATION,
                     RPCMessageType.STARTUP_NOTIFICATION]:
