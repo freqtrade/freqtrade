@@ -1710,6 +1710,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
         open_rate=0.01,
         open_date=arrow.utcnow().datetime,
         amount=11,
+        exchange="binance",
     )
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
@@ -2262,7 +2263,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     assert open_trade.is_open is True
     # Custom user sell-timeout is never called
     assert freqtrade.strategy.check_sell_timeout.call_count == 0
@@ -2319,7 +2320,7 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     # note this is for a partially-complete buy order
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     assert trades[0].amount == 23.0
@@ -2354,7 +2355,7 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert log_has_re(r"Applying fee on amount for Trade.*", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that trade has been updated
@@ -2394,7 +2395,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
     assert log_has_re(r"Could not update trade amount: .*", caplog)
 
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 1
+    assert rpc_mock.call_count == 2
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     assert len(trades) == 1
     # Verify that trade has been updated
@@ -2639,6 +2640,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
         'sell_reason': SellType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
     } == last_msg
 
 
@@ -2689,6 +2691,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
     } == last_msg
 
 
@@ -2746,7 +2749,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': ANY,
         'close_date': ANY,
-
+        'close_rate': ANY,
     } == last_msg
 
 
@@ -2830,7 +2833,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf, ticker, fee, ticke
     trade = Trade.query.first()
     assert trade
     assert cancel_order.call_count == 1
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
 
 
 def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf, ticker, fee,
@@ -2898,7 +2901,10 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf, ticker, f
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
+    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY_NOTIFICATION
+    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL_NOTIFICATION
+    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL_NOTIFICATION
 
 
 def test_execute_sell_market_order(default_conf, ticker, fee,
@@ -2932,7 +2938,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
     assert not trade.is_open
     assert trade.close_profit == 0.0620716
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
@@ -2952,6 +2958,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
         'sell_reason': SellType.ROI.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
 
     } == last_msg
 

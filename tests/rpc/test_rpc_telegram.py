@@ -683,7 +683,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert msg_mock.call_count == 3
+    assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
@@ -703,6 +703,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
     } == last_msg
 
 
@@ -743,7 +744,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     context.args = ["1"]
     telegram._forcesell(update=update, context=context)
 
-    assert msg_mock.call_count == 3
+    assert msg_mock.call_count == 4
 
     last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
@@ -764,6 +765,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
     } == last_msg
 
 
@@ -794,9 +796,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     context.args = ["all"]
     telegram._forcesell(update=update, context=context)
 
-    # Called for each trade 3 times
-    assert msg_mock.call_count == 8
-    msg = msg_mock.call_args_list[1][0][0]
+    # Called for each trade 4 times
+    assert msg_mock.call_count == 12
+    msg = msg_mock.call_args_list[2][0][0]
     assert {
         'type': RPCMessageType.SELL_NOTIFICATION,
         'trade_id': 1,
@@ -815,6 +817,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
+        'close_rate': ANY,
     } == msg
 
 
