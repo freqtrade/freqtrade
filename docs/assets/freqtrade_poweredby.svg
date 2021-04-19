@@ -34,11 +34,11 @@
     <path d="m124.1 149.4a14.91 13.76 0 0 1-7.453 11.92 14.91 13.76 0 0 1-14.91 0 14.91 13.76 0 0 1-7.453-11.92" stroke-width=".2884"/>
     <path d="m109.5 168.6-0.0236 0.0126-3e-3 0.0266-0.0192-0.0186-0.0262 5e-3 0.0117-0.024-0.0132-0.0233 0.0265 4e-3 0.0181-0.0197 5e-3 0.0263z" stroke-width=".2567"/>
    </g>
-   <text x="193.47108" y="203.99724" fill="#000000" font-family="sans-serif" font-size="96.8px" stroke="#000000" stroke-width="2.42" style="line-height:1.25" xml:space="preserve"><tspan x="193.47108" y="203.99724" stroke="#000000" stroke-width="2.42">Freqtrade</tspan></text>
+   <text x="193.47108" y="203.99724" fill="#000000" font-family="sans-serif" font-size="96.8px" stroke="#000000" stroke-width="2.42" style="line-height:1.25" xml:space="preserve"><tspan x="193.47108" y="203.99724" font-family="'DejaVu Sans'" stroke="#000000" stroke-width="2.42">Freqtrade</tspan></text>
   </g>
  </g>
  <g transform="translate(-.5293 -59.8)">
   <use transform="matrix(.5686 0 0 .5651 704.5 87.9)" width="100%" height="100%" fill="#000000" xlink:href="#c6g67PWSoP"/>
-  <text x="701.3158" y="107.94523" fill="#666666" font-family="sans-serif" font-size="17.62px" stroke-width=".4405" text-align="end" text-anchor="end" style="line-height:1.25" xml:space="preserve"><tspan x="701.3158" y="107.94523" text-align="end">powered</tspan><tspan x="701.3158" y="129.97223" text-align="end">by</tspan></text>
+  <text x="691.69672" y="107.94523" fill="#666666" font-family="sans-serif" font-size="17.62px" stroke-width=".4405" text-align="end" text-anchor="end" style="line-height:1.25" xml:space="preserve"><tspan x="691.69672" y="107.94523" text-align="end">powered</tspan><tspan x="691.69672" y="129.97223" text-align="end">by</tspan></text>
  </g>
 </svg>
