@@ -122,9 +122,9 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
 
 
 @pytest.mark.parametrize("balance_ratio,result1", [
-                        (1, 0.005),
-                        (0.99, 0.00495),
-                        (0.50, 0.0025),
+                        (1, 50),
+                        (0.99, 49.5),
+                        (0.50, 25),
 ])
 def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
                                                  limit_buy_order_open, fee, mocker) -> None:
@@ -137,29 +137,29 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
 
     conf = deepcopy(default_conf)
     conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
-    conf['dry_run_wallet'] = 0.01
+    conf['dry_run_wallet'] = 100
     conf['max_open_trades'] = 2
     conf['tradable_balance_ratio'] = balance_ratio
 
     freqtrade = get_patched_freqtradebot(mocker, conf)
 
     # no open trades, order amount should be 'balance / max_open_trades'
-    result = freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('ETH/USDT', freqtrade.get_free_open_trades())
     assert result == result1
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
-    freqtrade.execute_buy('ETH/BTC', result)
+    freqtrade.execute_buy('ETH/USDT', result)
 
-    result = freqtrade.wallets.get_trade_stake_amount('LTC/BTC', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('LTC/USDDT', freqtrade.get_free_open_trades())
     assert result == result1
 
     # create 2 trades, order amount should be None
     freqtrade.execute_buy('LTC/BTC', result)
 
-    result = freqtrade.wallets.get_trade_stake_amount('XRP/BTC', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('XRP/USDT', freqtrade.get_free_open_trades())
     assert result == 0
 
     # set max_open_trades = None, so do not trade
     freqtrade.config['max_open_trades'] = 0
-    result = freqtrade.wallets.get_trade_stake_amount('NEO/BTC', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('NEO/USDT', freqtrade.get_free_open_trades())
     assert result == 0
