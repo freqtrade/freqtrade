@@ -246,14 +246,24 @@ CONF_SCHEMA = {
                 'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
+                    'default': {},
                     'properties': {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS}
+                        'buy_fill': {'type': 'string',
+                                     'enum': TELEGRAM_SETTING_OPTIONS,
+                                     'default': 'off'
+                                     },
+                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_fill': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                            },
                     }
                 }
             },

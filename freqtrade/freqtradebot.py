@@ -1361,12 +1361,12 @@ class FreqtradeBot(LoggingMixin):
 
         # Updating wallets when order is closed
         if not trade.is_open:
-            if not stoploss_order:
+            if not stoploss_order and not trade.open_order_id:
                 self._notify_sell(trade, '', True)
             self.protections.stop_per_pair(trade.pair)
             self.protections.global_stop()
             self.wallets.update()
-        elif trade.open_order_id is None:
+        elif not trade.open_order_id:
             # Buy fill
             self._notify_buy_fill(trade)
 
