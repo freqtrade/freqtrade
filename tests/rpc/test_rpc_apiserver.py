@@ -508,6 +508,7 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert_response(rc)
     assert len(rc.json()) == 3
     assert rc.json()['trades_count'] == 0
+    assert rc.json()['total_trades'] == 0
 
     create_mock_trades(fee)
     Trade.query.session.flush()
@@ -516,10 +517,12 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert_response(rc)
     assert len(rc.json()['trades']) == 2
     assert rc.json()['trades_count'] == 2
+    assert rc.json()['total_trades'] == 2
     rc = client_get(client, f"{BASE_URI}/trades?limit=1")
     assert_response(rc)
     assert len(rc.json()['trades']) == 1
     assert rc.json()['trades_count'] == 1
+    assert rc.json()['total_trades'] == 2
 
 
 def test_api_trade_single(botclient, mocker, fee, ticker, markets):

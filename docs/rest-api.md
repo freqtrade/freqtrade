@@ -290,8 +290,6 @@ version
 
 whitelist
 	Show the current whitelist.
-
-
 ```
 
 ### OpenAPI interface
