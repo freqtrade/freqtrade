@@ -207,65 +207,6 @@ def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_b
                                                          freqtrade.get_free_open_trades())
 
 
-def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    patch_wallet(mocker, free=default_conf['stake_amount'] * 0.5)
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-
-    with pytest.raises(DependencyException, match=r'.*stake amount.*'):
-        freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.get_free_open_trades())
-
-
-@pytest.mark.parametrize("balance_ratio,result1", [
-                        (1, 0.005),
-                        (0.99, 0.00495),
-                        (0.50, 0.0025),
-                        ])
-def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
-                                                 limit_buy_order_open, fee, mocker) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        buy=MagicMock(return_value=limit_buy_order_open),
-        get_fee=fee
-    )
-
-    conf = deepcopy(default_conf)
-    conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
-    conf['dry_run_wallet'] = 0.01
-    conf['max_open_trades'] = 2
-    conf['tradable_balance_ratio'] = balance_ratio
-
-    freqtrade = FreqtradeBot(conf)
-    patch_get_signal(freqtrade)
-
-    # no open trades, order amount should be 'balance / max_open_trades'
-    result = freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.get_free_open_trades())
-    assert result == result1
-
-    # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
-    freqtrade.execute_buy('ETH/BTC', result)
-
-    result = freqtrade.wallets.get_trade_stake_amount('LTC/BTC', freqtrade.get_free_open_trades())
-    assert result == result1
-
-    # create 2 trades, order amount should be None
-    freqtrade.execute_buy('LTC/BTC', result)
-
-    result = freqtrade.wallets.get_trade_stake_amount('XRP/BTC', freqtrade.get_free_open_trades())
-    assert result == 0
-
-    # set max_open_trades = None, so do not trade
-    conf['max_open_trades'] = 0
-    freqtrade = FreqtradeBot(conf)
-    result = freqtrade.wallets.get_trade_stake_amount('NEO/BTC', freqtrade.get_free_open_trades())
-    assert result == 0
-
-
 def test_edge_called_in_process(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_edge(mocker)
