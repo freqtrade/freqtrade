@@ -1254,6 +1254,25 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
             'Reason: cancelled due to timeout.')
 
 
+def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
+
+    default_conf['telegram']['notification_settings']['buy_fill'] = 'on'
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    telegram.send_msg({
+        'type': RPCMessageType.BUY_FILL,
+        'trade_id': 1,
+        'exchange': 'Binance',
+        'pair': 'ETH/USDT',
+        'open_rate': 200,
+        'stake_amount': 100,
+        'amount': 0.5,
+        'open_date': arrow.utcnow().datetime
+    })
+    assert (msg_mock.call_args[0][0] == '\N{LARGE CIRCLE} *Binance:* '
+            'Buy order for ETH/USDT (#1) filled for 200.')
+
+
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
