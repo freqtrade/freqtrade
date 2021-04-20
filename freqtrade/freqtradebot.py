@@ -113,7 +113,7 @@ class FreqtradeBot(LoggingMixin):
         via RPC about changes in the bot status.
         """
         self.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'type': RPCMessageType.STATUS,
             'status': msg
         })
 
@@ -205,7 +205,7 @@ class FreqtradeBot(LoggingMixin):
 
         if len(open_trades) != 0:
             msg = {
-                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'type': RPCMessageType.WARNING,
                 'status':  f"{len(open_trades)} open trades active.\n\n"
                            f"Handle these trades manually on {self.exchange.name}, "
                            f"or '/start' the bot again and use '/stopbuy' "
@@ -634,7 +634,7 @@ class FreqtradeBot(LoggingMixin):
         """
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY_NOTIFICATION,
+            'type': RPCMessageType.BUY,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -658,7 +658,7 @@ class FreqtradeBot(LoggingMixin):
 
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+            'type': RPCMessageType.BUY_CANCEL,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -678,7 +678,7 @@ class FreqtradeBot(LoggingMixin):
     def _notify_buy_fill(self, trade: Trade) -> None:
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY_FILL_NOTIFICATION,
+            'type': RPCMessageType.BUY_FILL,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'open_rate': trade.open_rate,
@@ -1239,8 +1239,8 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': (RPCMessageType.SELL_FILL_NOTIFICATION if fill
-                     else RPCMessageType.SELL_NOTIFICATION),
+            'type': (RPCMessageType.SELL_FILL if fill
+                     else RPCMessageType.SELL),
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
@@ -1284,7 +1284,7 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+            'type': RPCMessageType.SELL_CANCEL,
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,

@@ -2624,7 +2624,7 @@ def test_execute_sell_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> N
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         'trade_id': 1,
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': 'profit',
@@ -2674,7 +2674,7 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -2732,7 +2732,7 @@ def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fe
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -2902,9 +2902,9 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf, ticker, f
     assert trade.is_open is False
     assert trade.sell_reason == SellType.STOPLOSS_ON_EXCHANGE.value
     assert rpc_mock.call_count == 3
-    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY_NOTIFICATION
-    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL_NOTIFICATION
-    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL_NOTIFICATION
+    assert rpc_mock.call_args_list[0][0][0]['type'] == RPCMessageType.BUY
+    assert rpc_mock.call_args_list[1][0][0]['type'] == RPCMessageType.BUY_FILL
+    assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
 
 
 def test_execute_sell_market_order(default_conf, ticker, fee,
@@ -2941,7 +2941,7 @@ def test_execute_sell_market_order(default_conf, ticker, fee,
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',

@@ -67,7 +67,7 @@ class RPCManager:
     def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
         if config['dry_run']:
             self.send_msg({
-                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'type': RPCMessageType.WARNING,
                 'status': 'Dry run is enabled. All trades are simulated.'
             })
         stake_currency = config['stake_currency']
@@ -79,7 +79,7 @@ class RPCManager:
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.STARTUP,
             'status': f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
@@ -88,13 +88,13 @@ class RPCManager:
                       f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.STARTUP,
             'status': f'Searching for {stake_currency} pairs to buy and sell '
                       f'based on {pairlist.short_desc()}'
         })
         if len(protections.name_list) > 0:
             prots = '\n'.join([p for prot in protections.short_desc() for k, p in prot.items()])
             self.send_msg({
-                'type': RPCMessageType.STARTUP_NOTIFICATION,
+                'type': RPCMessageType.STARTUP,
                 'status': f'Using Protections: \n{prots}'
             })

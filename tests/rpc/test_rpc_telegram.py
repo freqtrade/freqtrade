@@ -686,7 +686,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -748,7 +748,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     last_msg = msg_mock.call_args_list[-1][0][0]
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -800,7 +800,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     assert msg_mock.call_count == 12
     msg = msg_mock.call_args_list[2][0][0]
     assert {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1198,7 +1198,7 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
 def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
 
     msg = {
-        'type': RPCMessageType.BUY_NOTIFICATION,
+        'type': RPCMessageType.BUY,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1243,7 +1243,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+        'type': RPCMessageType.BUY_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1261,7 +1261,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1291,7 +1291,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1328,7 +1328,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     old_convamount = telegram._rpc._fiat_converter.convert_amount
     telegram._rpc._fiat_converter.convert_amount = lambda a, b, c: -24.812
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'type': RPCMessageType.SELL_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1340,7 +1340,7 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
     msg_mock.reset_mock()
     telegram.send_msg({
-        'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'type': RPCMessageType.SELL_CANCEL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',
@@ -1357,7 +1357,7 @@ def test_send_msg_status_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     telegram.send_msg({
-        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'type': RPCMessageType.STATUS,
         'status': 'running'
     })
     assert msg_mock.call_args[0][0] == '*Status:* `running`'
@@ -1366,7 +1366,7 @@ def test_send_msg_status_notification(default_conf, mocker) -> None:
 def test_warning_notification(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     telegram.send_msg({
-        'type': RPCMessageType.WARNING_NOTIFICATION,
+        'type': RPCMessageType.WARNING,
         'status': 'message'
     })
     assert msg_mock.call_args[0][0] == '\N{WARNING SIGN} *Warning:* `message`'
@@ -1375,7 +1375,7 @@ def test_warning_notification(default_conf, mocker) -> None:
 def test_startup_notification(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     telegram.send_msg({
-        'type': RPCMessageType.STARTUP_NOTIFICATION,
+        'type': RPCMessageType.STARTUP,
         'status': '*Custom:* `Hello World`'
     })
     assert msg_mock.call_args[0][0] == '*Custom:* `Hello World`'
@@ -1394,7 +1394,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.BUY_NOTIFICATION,
+        'type': RPCMessageType.BUY,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1420,7 +1420,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg({
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'KEY/ETH',

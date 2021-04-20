@@ -68,7 +68,7 @@ def test_send_msg_webhook(default_conf, mocker):
     msg_mock = MagicMock()
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
-        'type': RPCMessageType.BUY_NOTIFICATION,
+        'type': RPCMessageType.BUY,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
@@ -89,7 +89,7 @@ def test_send_msg_webhook(default_conf, mocker):
     msg_mock.reset_mock()
 
     msg = {
-        'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+        'type': RPCMessageType.BUY_CANCEL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
@@ -110,8 +110,8 @@ def test_send_msg_webhook(default_conf, mocker):
     msg_mock.reset_mock()
 
     msg = {
-        'type': RPCMessageType.BUY_FILL_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'type': RPCMessageType.BUY_FILL,
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'open_rate': 0.005,
         'stake_amount': 0.8,
@@ -130,7 +130,7 @@ def test_send_msg_webhook(default_conf, mocker):
     # Test sell
     msg_mock.reset_mock()
     msg = {
-        'type': RPCMessageType.SELL_NOTIFICATION,
+        'type': RPCMessageType.SELL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",
@@ -155,7 +155,7 @@ def test_send_msg_webhook(default_conf, mocker):
     # Test sell cancel
     msg_mock.reset_mock()
     msg = {
-        'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+        'type': RPCMessageType.SELL_CANCEL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",
@@ -180,8 +180,8 @@ def test_send_msg_webhook(default_conf, mocker):
     # Test Sell fill
     msg_mock.reset_mock()
     msg = {
-        'type': RPCMessageType.SELL_FILL_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'type': RPCMessageType.SELL_FILL,
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",
         'close_rate': 0.005,
@@ -203,9 +203,9 @@ def test_send_msg_webhook(default_conf, mocker):
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhooksellfill"]["value3"].format(**msg))
 
-    for msgtype in [RPCMessageType.STATUS_NOTIFICATION,
-                    RPCMessageType.WARNING_NOTIFICATION,
-                    RPCMessageType.STARTUP_NOTIFICATION]:
+    for msgtype in [RPCMessageType.STATUS,
+                    RPCMessageType.WARNING,
+                    RPCMessageType.STARTUP]:
         # Test notification
         msg = {
             'type': msgtype,
@@ -228,8 +228,8 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     del default_conf["webhook"]["webhookbuy"]
 
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
-    webhook.send_msg({'type': RPCMessageType.BUY_NOTIFICATION})
-    assert log_has(f"Message type '{RPCMessageType.BUY_NOTIFICATION}' not configured for webhooks",
+    webhook.send_msg({'type': RPCMessageType.BUY})
+    assert log_has(f"Message type '{RPCMessageType.BUY}' not configured for webhooks",
                    caplog)
 
     default_conf["webhook"] = get_webhook_dict()
@@ -238,7 +238,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     msg = {
-        'type': RPCMessageType.BUY_NOTIFICATION,
+        'type': RPCMessageType.BUY,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
