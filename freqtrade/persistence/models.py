@@ -547,6 +547,8 @@ class LocalTrade():
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
+        if self.open_trade_value == 0.0:
+            return 0.0
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 

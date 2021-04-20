@@ -388,6 +388,9 @@ def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
     # Test with a custom fee rate on the close trade
     assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
 
+    trade.open_trade_value = 0.0
+    assert trade.calc_profit_ratio(fee=0.003) == 0.0
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_clean_dry_run_db(default_conf, fee):
