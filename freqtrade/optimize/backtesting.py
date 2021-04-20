@@ -255,7 +255,7 @@ class Backtesting:
 
         if sell.sell_flag:
             trade.close_date = sell_row[DATE_IDX]
-            trade.sell_reason = sell.sell_type.value
+            trade.sell_reason = sell.sell_reason or sell.sell_type.value
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 

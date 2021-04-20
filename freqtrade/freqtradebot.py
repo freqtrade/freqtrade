@@ -961,7 +961,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_sell.sell_flag:
             logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell.sell_type)
+            self.execute_sell(trade, sell_rate, should_sell.sell_type, should_sell.sell_reason)
             return True
         return False
 
@@ -1150,12 +1150,15 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> bool:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType,
+                     custom_reason: Optional[str] = None) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
-        :param sellreason: Reason the sell was triggered
+        :param sell_reason: Reason the sell was triggered
+        :param custom_reason: A custom sell reason. Provided only if
+        sell_reason == SellType.CUSTOM_SELL,
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
@@ -1213,7 +1216,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.value
+        trade.sell_reason = custom_reason or sell_reason.value
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)

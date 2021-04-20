@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -24,6 +24,7 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+CUSTOM_SELL_MAX_LENGTH = 64
 
 
 class SignalType(Enum):
@@ -45,6 +46,7 @@ class SellType(Enum):
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
     EMERGENCY_SELL = "emergency_sell"
+    CUSTOM_SELL = "custom_sell"
     NONE = ""
 
     def __str__(self):
@@ -58,6 +60,7 @@ class SellCheckTuple(NamedTuple):
     """
     sell_flag: bool
     sell_type: SellType
+    sell_reason: Optional[str] = None
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -286,15 +289,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.stoploss
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, **kwargs) -> bool:
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
-        Custom sell signal logic indicating that specified position should be sold. Returning True
-        from this method is equal to setting sell signal on a candle at specified time.
-        This method is not called when sell signal is set.
+        Custom sell signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting sell signal on a candle at specified
+        time. This method is not called when sell signal is set.
 
         This method should be overridden to create sell signals that depend on trade parameters. For
         example you could implement a stoploss relative to candle when trade was opened, or a custom
         1:2 risk-reward ROI.
+
+        Custom sell reason max length is 64. Exceeding this limit will raise OperationalException.
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
@@ -302,9 +307,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: Whether trade should exit now.
+        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        None or False.
         """
-        return False
+        return None
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -552,17 +558,27 @@ class IStrategy(ABC, HyperStrategyMixin):
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
+        sell_signal = SellType.NONE
+        custom_reason = None
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
-            sell_signal = False
-        elif ask_strategy.get('use_sell_signal', True):
-            sell = sell or strategy_safe_wrapper(self.custom_sell, default_retval=False)(
-                trade.pair, trade, date, current_rate, current_profit)
-            sell_signal = sell and not buy
+            pass
+        elif ask_strategy.get('use_sell_signal', True) and not buy:
+            if sell:
+                sell_signal = SellType.SELL_SIGNAL
+            else:
+                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                    trade.pair, trade, date, current_rate, current_profit)
+                if custom_reason:
+                    sell_signal = SellType.CUSTOM_SELL
+                    if isinstance(custom_reason, bool):
+                        custom_reason = None
+                    elif isinstance(custom_reason, str):
+                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                            raise OperationalException('Custom sell reason returned '
+                                                       'from custom_sell is too long.')
             # TODO: return here if sell-signal should be favored over ROI
-        else:
-            sell_signal = False
 
         # Start evaluations
         # Sequence:
@@ -574,10 +590,10 @@ class IStrategy(ABC, HyperStrategyMixin):
                          f"sell_type=SellType.ROI")
             return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
 
-        if sell_signal:
+        if sell_signal != SellType.NONE:
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
-                         f"sell_type=SellType.SELL_SIGNAL")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+                         f"sell_type={sell_signal}, custom_reason={custom_reason}")
+            return SellCheckTuple(sell_flag=True, sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
 
