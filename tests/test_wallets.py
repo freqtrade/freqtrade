@@ -121,13 +121,14 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
         freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.get_free_open_trades())
 
 
-@pytest.mark.parametrize("balance_ratio,result1", [
-                        (1, 50),
-                        (0.99, 49.5),
-                        (0.50, 25),
+@pytest.mark.parametrize("balance_ratio,result1,result2", [
+                        (1, 50, 66.66666),
+                        (0.99, 49.5, 66.0),
+                        (0.50, 25, 33.3333),
 ])
 def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
-                                                 limit_buy_order_open, fee, mocker) -> None:
+                                                 result2, limit_buy_order_open,
+                                                 fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -150,7 +151,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
     freqtrade.execute_buy('ETH/USDT', result)
 
-    result = freqtrade.wallets.get_trade_stake_amount('LTC/USDDT', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('LTC/USDT', freqtrade.get_free_open_trades())
     assert result == result1
 
     # create 2 trades, order amount should be None
@@ -158,6 +159,12 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
 
     result = freqtrade.wallets.get_trade_stake_amount('XRP/USDT', freqtrade.get_free_open_trades())
     assert result == 0
+
+    freqtrade.config['max_open_trades'] = 3
+    freqtrade.config['dry_run_wallet'] = 200
+    freqtrade.wallets.start_cap = 200
+    result = freqtrade.wallets.get_trade_stake_amount('XRP/USDT', freqtrade.get_free_open_trades())
+    assert round(result, 4) == round(result2, 4)
 
     # set max_open_trades = None, so do not trade
     freqtrade.config['max_open_trades'] = 0
