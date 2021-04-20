@@ -176,6 +176,53 @@ class Telegram(RPCHandler):
         """
         self._updater.stop()
 
+    def _format_buy_msg(self, msg: Dict[str, Any]) -> str:
+        if self._rpc._fiat_converter:
+            msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
+                msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
+        else:
+            msg['stake_amount_fiat'] = 0
+
+        message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
+                   f" (#{msg['trade_id']})\n"
+                   f"*Amount:* `{msg['amount']:.8f}`\n"
+                   f"*Open Rate:* `{msg['limit']:.8f}`\n"
+                   f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+                   f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}")
+
+        if msg.get('fiat_currency', None):
+            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+        message += ")`"
+        return message
+
+    def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
+        msg['amount'] = round(msg['amount'], 8)
+        msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
+        msg['duration'] = msg['close_date'].replace(
+            microsecond=0) - msg['open_date'].replace(microsecond=0)
+        msg['duration_min'] = msg['duration'].total_seconds() / 60
+
+        msg['emoji'] = self._get_sell_emoji(msg)
+
+        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Profit:* `{profit_percent:.2f}%`").format(**msg)
+
+        # Check if all sell properties are available.
+        # This might not be the case if the message origin is triggered by /forcesell
+        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
+                and self._rpc._fiat_converter):
+            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
+                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
+            message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
+                        ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+        return message
+
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
 
@@ -186,67 +233,31 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
-            if self._rpc._fiat_converter:
-                msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
-            else:
-                msg['stake_amount_fiat'] = 0
+        if msg['type'] == RPCMessageType.BUY:
+            message = self._format_buy_msg(msg)
 
-            message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
-                       f" (#{msg['trade_id']})\n"
-                       f"*Amount:* `{msg['amount']:.8f}`\n"
-                       f"*Open Rate:* `{msg['limit']:.8f}`\n"
-                       f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                       f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}")
-
-            if msg.get('fiat_currency', None):
-                message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-            message += ")`"
-
-        elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
+        elif msg['type'] in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
+            msg['message_side'] = 'buy' if msg['type'] == RPCMessageType.BUY_CANCEL else 'sell'
             message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling open buy Order for {pair} (#{trade_id}). "
+                       "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))
 
-        elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
-            msg['amount'] = round(msg['amount'], 8)
-            msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
-            msg['duration'] = msg['close_date'].replace(
-                microsecond=0) - msg['open_date'].replace(microsecond=0)
-            msg['duration_min'] = msg['duration'].total_seconds() / 60
+        elif msg['type'] in (RPCMessageType.BUY_FILL, RPCMessageType.SELL_FILL):
+            msg['message_side'] = 'Buy' if msg['type'] == RPCMessageType.BUY_FILL else 'Sell'
 
-            msg['emoji'] = self._get_sell_emoji(msg)
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Buy order for {pair} (#{trade_id}) filled for {open_rate}.".format(**msg))
 
-            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                       "*Amount:* `{amount:.8f}`\n"
-                       "*Open Rate:* `{open_rate:.8f}`\n"
-                       "*Current Rate:* `{current_rate:.8f}`\n"
-                       "*Close Rate:* `{limit:.8f}`\n"
-                       "*Sell Reason:* `{sell_reason}`\n"
-                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                       "*Profit:* `{profit_percent:.2f}%`").format(**msg)
+        elif msg['type'] == RPCMessageType.SELL:
+            message = self._format_sell_msg(msg)
 
-            # Check if all sell properties are available.
-            # This might not be the case if the message origin is triggered by /forcesell
-            if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-                    and self._rpc._fiat_converter):
-                msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
-                    msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-                message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
-                            ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
-
-        elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
-            message = ("\N{WARNING SIGN} *{exchange}:* Cancelling Open Sell Order "
-                       "for {pair} (#{trade_id}). Reason: {reason}").format(**msg)
-
-        elif msg['type'] == RPCMessageType.STATUS_NOTIFICATION:
+        elif msg['type'] == RPCMessageType.STATUS:
             message = '*Status:* `{status}`'.format(**msg)
 
-        elif msg['type'] == RPCMessageType.WARNING_NOTIFICATION:
+        elif msg['type'] == RPCMessageType.WARNING:
             message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
 
-        elif msg['type'] == RPCMessageType.STARTUP_NOTIFICATION:
+        elif msg['type'] == RPCMessageType.STARTUP:
             message = '{status}'.format(**msg)
 
         else:

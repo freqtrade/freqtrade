@@ -314,7 +314,8 @@ def get_default_conf(testdatadir):
         "telegram": {
             "enabled": True,
             "token": "token",
-            "chat_id": "0"
+            "chat_id": "0",
+            "notification_settings": {},
         },
         "datadir": str(testdatadir),
         "initial_state": "running",

@@ -163,7 +163,9 @@
             "warning": "on",
             "startup": "on",
             "buy": "on",
+            "buy_fill": "on",
             "sell": "on",
+            "sell_fill": "on",
             "buy_cancel": "on",
             "sell_cancel": "on"
         }

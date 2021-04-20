@@ -113,7 +113,7 @@ class FreqtradeBot(LoggingMixin):
         via RPC about changes in the bot status.
         """
         self.rpc.send_msg({
-            'type': RPCMessageType.STATUS_NOTIFICATION,
+            'type': RPCMessageType.STATUS,
             'status': msg
         })
 
@@ -205,7 +205,7 @@ class FreqtradeBot(LoggingMixin):
 
         if len(open_trades) != 0:
             msg = {
-                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'type': RPCMessageType.WARNING,
                 'status':  f"{len(open_trades)} open trades active.\n\n"
                            f"Handle these trades manually on {self.exchange.name}, "
                            f"or '/start' the bot again and use '/stopbuy' "
@@ -634,7 +634,7 @@ class FreqtradeBot(LoggingMixin):
         """
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY_NOTIFICATION,
+            'type': RPCMessageType.BUY,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -658,7 +658,7 @@ class FreqtradeBot(LoggingMixin):
 
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
+            'type': RPCMessageType.BUY_CANCEL,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -673,6 +673,21 @@ class FreqtradeBot(LoggingMixin):
         }
 
         # Send the message
+        self.rpc.send_msg(msg)
+
+    def _notify_buy_fill(self, trade: Trade) -> None:
+        msg = {
+            'trade_id': trade.id,
+            'type': RPCMessageType.BUY_FILL,
+            'exchange': self.exchange.name.capitalize(),
+            'pair': trade.pair,
+            'open_rate': trade.open_rate,
+            'stake_amount': trade.stake_amount,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'amount': trade.amount,
+            'open_date': trade.open_date,
+        }
         self.rpc.send_msg(msg)
 
 #
@@ -1212,19 +1227,20 @@ class FreqtradeBot(LoggingMixin):
 
         return True
 
-    def _notify_sell(self, trade: Trade, order_type: str) -> None:
+    def _notify_sell(self, trade: Trade, order_type: str, fill: bool = False) -> None:
         """
         Sends rpc notification when a sell occured.
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
-        current_rate = self.get_sell_rate(trade.pair, False)
+        current_rate = self.get_sell_rate(trade.pair, False) if not fill else None
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': RPCMessageType.SELL_NOTIFICATION,
+            'type': (RPCMessageType.SELL_FILL if fill
+                     else RPCMessageType.SELL),
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
@@ -1233,6 +1249,7 @@ class FreqtradeBot(LoggingMixin):
             'order_type': order_type,
             'amount': trade.amount,
             'open_rate': trade.open_rate,
+            'close_rate': trade.close_rate,
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
@@ -1267,7 +1284,7 @@ class FreqtradeBot(LoggingMixin):
         gain = "profit" if profit_ratio > 0 else "loss"
 
         msg = {
-            'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
+            'type': RPCMessageType.SELL_CANCEL,
             'trade_id': trade.id,
             'exchange': trade.exchange.capitalize(),
             'pair': trade.pair,
@@ -1344,9 +1361,15 @@ class FreqtradeBot(LoggingMixin):
 
         # Updating wallets when order is closed
         if not trade.is_open:
+            if not stoploss_order and not trade.open_order_id:
+                self._notify_sell(trade, '', True)
             self.protections.stop_per_pair(trade.pair)
             self.protections.global_stop()
             self.wallets.update()
+        elif not trade.open_order_id:
+            # Buy fill
+            self._notify_buy_fill(trade)
+
         return False
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
