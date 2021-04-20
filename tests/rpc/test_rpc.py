@@ -106,7 +106,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -172,7 +172,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
 

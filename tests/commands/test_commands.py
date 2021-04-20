@@ -116,7 +116,7 @@ def test_list_timeframes(mocker, capsys):
                            '1h': 'hour',
                            '1d': 'day',
                            }
-    patch_exchange(mocker, api_mock=api_mock)
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
     args = [
         "list-timeframes",
     ]
@@ -201,7 +201,7 @@ def test_list_markets(mocker, markets, capsys):
 
     api_mock = MagicMock()
     api_mock.markets = markets
-    patch_exchange(mocker, api_mock=api_mock)
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
 
     # Test with no --config
     args = [

@@ -140,7 +140,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
 
     assert telegram_mock.call_count == 3
-    assert "*Exchange:* `bittrex`" in telegram_mock.call_args_list[1][0][0]['status']
+    assert "*Exchange:* `binance`" in telegram_mock.call_args_list[1][0][0]['status']
 
     telegram_mock.reset_mock()
     default_conf['dry_run'] = True

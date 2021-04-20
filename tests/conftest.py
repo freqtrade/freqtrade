@@ -79,7 +79,7 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
+def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -98,7 +98,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+def get_patched_exchange(mocker, config, api_mock=None, id='binance',
                          mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
     config['exchange']['name'] = id
@@ -293,7 +293,7 @@ def get_default_conf(testdatadir):
             "order_book_max": 1
         },
         "exchange": {
-            "name": "bittrex",
+            "name": "binance",
             "enabled": True,
             "key": "key",
             "secret": "secret",
@@ -1765,7 +1765,7 @@ def open_trade():
     return Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee_open=0.0,

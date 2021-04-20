@@ -27,7 +27,7 @@ def generate_mock_trade(pair: str, fee: float, is_open: bool,
         open_rate=open_rate,
         is_open=is_open,
         amount=0.01 / open_rate,
-        exchange='bittrex',
+        exchange='binance',
     )
     trade.recalc_open_trade_value()
     if not is_open:

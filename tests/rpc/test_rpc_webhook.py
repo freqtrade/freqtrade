@@ -59,7 +59,7 @@ def test_send_msg(default_conf, mocker):
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
         'stake_amount': 0.8,
@@ -80,7 +80,7 @@ def test_send_msg(default_conf, mocker):
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
         'type': RPCMessageType.BUY_CANCEL_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
         'stake_amount': 0.8,
@@ -101,7 +101,7 @@ def test_send_msg(default_conf, mocker):
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
         'type': RPCMessageType.SELL_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",
         'limit': 0.005,
@@ -127,7 +127,7 @@ def test_send_msg(default_conf, mocker):
     mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
     msg = {
         'type': RPCMessageType.SELL_CANCEL_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'gain': "profit",
         'limit': 0.005,
@@ -184,7 +184,7 @@ def test_exception_send_msg(default_conf, mocker, caplog):
     webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
     msg = {
         'type': RPCMessageType.BUY_NOTIFICATION,
-        'exchange': 'Bittrex',
+        'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 0.005,
         'order_type': 'limit',
