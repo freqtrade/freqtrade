@@ -130,14 +130,13 @@ class Wallets:
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
 
-    def _get_available_stake_amount(self) -> float:
+    def _get_available_stake_amount(self, val_tied_up: float) -> float:
         """
         Return the total currently available balance in stake currency,
         respecting tradable_balance_ratio.
         Calculated as
-        (<open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
+        (<open_trade stakes> + free amount) * tradable_balance_ratio - <open_trade stakes>
         """
-        val_tied_up = Trade.total_open_trades_stakes()
 
         # Ensure <tradable_balance_ratio>% is used from the overall balance
         # Otherwise we'd risk lowering stakes with each open trade.
@@ -151,12 +150,13 @@ class Wallets:
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
         """
-        if not free_open_trades:
+        if not free_open_trades or self._config['max_open_trades'] == 0:
             return 0
 
-        available_amount = self._get_available_stake_amount()
+        val_tied_up = Trade.total_open_trades_stakes()
+        available_amount = self._get_available_stake_amount(val_tied_up)
 
-        return available_amount / free_open_trades
+        return (available_amount + val_tied_up) / self._config['max_open_trades']
 
     def _check_available_stake_amount(self, stake_amount: float) -> float:
         """
@@ -165,7 +165,8 @@ class Wallets:
         :return: float: Stake amount
         :raise: DependencyException if balance is lower than stake-amount
         """
-        available_amount = self._get_available_stake_amount()
+        val_tied_up = Trade.total_open_trades_stakes()
+        available_amount = self._get_available_stake_amount(val_tied_up)
 
         if self._config['amend_last_stake_amount']:
             # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
