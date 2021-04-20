@@ -2263,7 +2263,7 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     # check it does cancel sell orders over the time limit
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 1
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
     # Custom user sell-timeout is never called
     assert freqtrade.strategy.check_sell_timeout.call_count == 0
