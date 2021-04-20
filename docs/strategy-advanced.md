@@ -69,6 +69,20 @@ class AwesomeStrategy(IStrategy):
 
 See `custom_stoploss` examples below on how to access the saved dataframe columns
 
+## Custom sell signal
+
+It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade.
+
+An example of how we can sell trades that were open longer than 1 day:
+
+``` python
+class AwesomeStrategy(IStrategy):
+    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> bool:
+        time_delta = datetime.datetime.utcnow() - trade.open_date_utc
+        return time_delta.days >= 1
+```
+
 ## Custom stoploss
 
 The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
