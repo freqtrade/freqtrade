@@ -463,6 +463,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     default_conf['stake_amount'] = 'unlimited'
+    default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
     pair = 'UNITTEST/BTC'
     row = [
@@ -478,8 +479,14 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert isinstance(trade, LocalTrade)
     assert trade.stake_amount == 495
 
+    # Fake 2 trades, so there's not enough amount for the next trade left.
+    LocalTrade.trades_open.append(trade)
+    LocalTrade.trades_open.append(trade)
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
+    LocalTrade.trades_open.pop()
+    trade = backtesting._enter_trade(pair, row=row)
+    assert trade is not None
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
@@ -487,7 +494,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
 
-    # Stake-amount too high!
+    # Stake-amount throwing error
     mocker.patch("freqtrade.wallets.Wallets.get_trade_stake_amount",
                  side_effect=DependencyException)
 
