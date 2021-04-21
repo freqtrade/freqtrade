@@ -572,12 +572,14 @@ class IStrategy(ABC, HyperStrategyMixin):
                     trade.pair, trade, date, current_rate, current_profit)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
-                    if isinstance(custom_reason, bool):
-                        custom_reason = None
-                    elif isinstance(custom_reason, str):
+                    if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
-                            raise OperationalException('Custom sell reason returned '
-                                                       'from custom_sell is too long.')
+                            logger.warning(f'Custom sell reason returned from custom_sell is too '
+                                           f'long and was trimmed to {CUSTOM_SELL_MAX_LENGTH} '
+                                           f'characters.')
+                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                    else:
+                        custom_reason = None
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
