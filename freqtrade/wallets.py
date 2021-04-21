@@ -145,7 +145,8 @@ class Wallets:
                             self._config['tradable_balance_ratio']) - val_tied_up
         return available_amount
 
-    def _calculate_unlimited_stake_amount(self, free_open_trades: int) -> float:
+    def _calculate_unlimited_stake_amount(self, free_open_trades: int, available_amount: float,
+                                          val_tied_up: float) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
@@ -153,22 +154,17 @@ class Wallets:
         if not free_open_trades or self._config['max_open_trades'] == 0:
             return 0
 
-        val_tied_up = Trade.total_open_trades_stakes()
-        available_amount = self._get_available_stake_amount(val_tied_up)
-
+        possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
         # Theoretical amount can be above available amount - therefore limit to available amount!
-        return min((available_amount + val_tied_up) / self._config['max_open_trades'],
-                   available_amount)
+        return min(possible_stake, available_amount)
 
-    def _check_available_stake_amount(self, stake_amount: float) -> float:
+    def _check_available_stake_amount(self, stake_amount: float, available_amount: float) -> float:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake amount
         :raise: DependencyException if balance is lower than stake-amount
         """
-        val_tied_up = Trade.total_open_trades_stakes()
-        available_amount = self._get_available_stake_amount(val_tied_up)
 
         if self._config['amend_last_stake_amount']:
             # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
@@ -195,17 +191,20 @@ class Wallets:
         stake_amount: float
         # Ensure wallets are uptodate.
         self.update()
+        val_tied_up = Trade.total_open_trades_stakes()
+        available_amount = self._get_available_stake_amount(val_tied_up)
 
         if edge:
             stake_amount = edge.stake_amount(
                 pair,
                 self.get_free(self._config['stake_currency']),
                 self.get_total(self._config['stake_currency']),
-                Trade.total_open_trades_stakes()
+                val_tied_up
             )
         else:
             stake_amount = self._config['stake_amount']
             if stake_amount == UNLIMITED_STAKE_AMOUNT:
-                stake_amount = self._calculate_unlimited_stake_amount(free_open_trades)
+                stake_amount = self._calculate_unlimited_stake_amount(
+                    free_open_trades, available_amount, val_tied_up)
 
-        return self._check_available_stake_amount(stake_amount)
+        return self._check_available_stake_amount(stake_amount, available_amount)
