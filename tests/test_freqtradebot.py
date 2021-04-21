@@ -160,8 +160,7 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
 
     freqtrade = FreqtradeBot(default_conf)
 
-    result = freqtrade.wallets.get_trade_stake_amount(
-        'ETH/BTC', freqtrade.get_free_open_trades())
+    result = freqtrade.wallets.get_trade_stake_amount('ETH/BTC')
     assert result == default_conf['stake_amount']
 
 
@@ -197,14 +196,12 @@ def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_b
 
         if expected[i] is not None:
             limit_buy_order_open['id'] = str(i)
-            result = freqtrade.wallets.get_trade_stake_amount('ETH/BTC',
-                                                              freqtrade.get_free_open_trades())
+            result = freqtrade.wallets.get_trade_stake_amount('ETH/BTC')
             assert pytest.approx(result) == expected[i]
             freqtrade.execute_buy('ETH/BTC', result)
         else:
             with pytest.raises(DependencyException):
-                freqtrade.wallets.get_trade_stake_amount('ETH/BTC',
-                                                         freqtrade.get_free_open_trades())
+                freqtrade.wallets.get_trade_stake_amount('ETH/BTC')
 
 
 def test_edge_called_in_process(mocker, edge_conf) -> None:
@@ -230,9 +227,9 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
     freqtrade = FreqtradeBot(edge_conf)
 
     assert freqtrade.wallets.get_trade_stake_amount(
-        'NEO/BTC', freqtrade.get_free_open_trades(), freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.20
+        'NEO/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.20
     assert freqtrade.wallets.get_trade_stake_amount(
-        'LTC/BTC', freqtrade.get_free_open_trades(), freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
+        'LTC/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
 
 
 def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf) -> None:
@@ -448,8 +445,7 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order_open,
     patch_get_signal(freqtrade)
 
     assert not freqtrade.create_trade('ETH/BTC')
-    assert freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.get_free_open_trades(),
-                                                    freqtrade.edge) == 0
+    assert freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.edge) == 0
 
 
 def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order_open, fee,

@@ -145,13 +145,13 @@ class Wallets:
                             self._config['tradable_balance_ratio']) - val_tied_up
         return available_amount
 
-    def _calculate_unlimited_stake_amount(self, free_open_trades: int, available_amount: float,
+    def _calculate_unlimited_stake_amount(self, available_amount: float,
                                           val_tied_up: float) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
         """
-        if not free_open_trades or self._config['max_open_trades'] == 0:
+        if self._config['max_open_trades'] == 0:
             return 0
 
         possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
@@ -182,7 +182,7 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, free_open_trades: int, edge=None) -> float:
+    def get_trade_stake_amount(self, pair: str, edge=None) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -205,6 +205,6 @@ class Wallets:
             stake_amount = self._config['stake_amount']
             if stake_amount == UNLIMITED_STAKE_AMOUNT:
                 stake_amount = self._calculate_unlimited_stake_amount(
-                    free_open_trades, available_amount, val_tied_up)
+                    available_amount, val_tied_up)
 
         return self._check_available_stake_amount(stake_amount, available_amount)

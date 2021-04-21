@@ -457,7 +457,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
         Backtesting(default_conf)
 
 
-def test_backtest__enter_trade(default_conf, fee, mocker, testdatadir) -> None:
+def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     default_conf['ask_strategy']['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
@@ -474,24 +474,24 @@ def test_backtest__enter_trade(default_conf, fee, mocker, testdatadir) -> None:
         0.00099,  # Low
         0.0012,  # High
     ]
-    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    trade = backtesting._enter_trade(pair, row=row)
     assert isinstance(trade, LocalTrade)
     assert trade.stake_amount == 495
 
-    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=2)
+    trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
-    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
 
     # Stake-amount too high!
     mocker.patch("freqtrade.wallets.Wallets.get_trade_stake_amount",
                  side_effect=DependencyException)
 
-    trade = backtesting._enter_trade(pair, row=row, max_open_trades=2, open_trade_count=0)
+    trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
 
 

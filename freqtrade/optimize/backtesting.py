@@ -273,11 +273,9 @@ class Backtesting:
 
         return None
 
-    def _enter_trade(self, pair: str, row: List, max_open_trades: int,
-                     open_trade_count: int) -> Optional[LocalTrade]:
+    def _enter_trade(self, pair: str, row: List) -> Optional[LocalTrade]:
         try:
-            stake_amount = self.wallets.get_trade_stake_amount(
-                pair, max_open_trades - open_trade_count, None)
+            stake_amount = self.wallets.get_trade_stake_amount(pair, None)
         except DependencyException:
             return None
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05)
@@ -388,7 +386,7 @@ class Backtesting:
                         and tmp != end_date
                         and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
                         and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
-                    trade = self._enter_trade(pair, row, max_open_trades, open_trade_count_start)
+                    trade = self._enter_trade(pair, row)
                     if trade:
                         # TODO: hacky workaround to avoid opening > max_open_trades
                         # This emulates previous behaviour - not sure if this is correct
