@@ -156,7 +156,9 @@ class Wallets:
         val_tied_up = Trade.total_open_trades_stakes()
         available_amount = self._get_available_stake_amount(val_tied_up)
 
-        return (available_amount + val_tied_up) / self._config['max_open_trades']
+        # Theoretical amount can be above available amount - therefore limit to available amount!
+        return min((available_amount + val_tied_up) / self._config['max_open_trades'],
+                   available_amount)
 
     def _check_available_stake_amount(self, stake_amount: float) -> float:
         """
