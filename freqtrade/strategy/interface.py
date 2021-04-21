@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -54,13 +54,18 @@ class SellType(Enum):
         return self.value
 
 
-class SellCheckTuple(NamedTuple):
+class SellCheckTuple(object):
     """
     NamedTuple for Sell type + reason
     """
-    sell_flag: bool
+    sell_flag: bool     # TODO: Remove?
     sell_type: SellType
-    sell_reason: Optional[str] = None
+    sell_reason: Optional[str]
+
+    def __init__(self, sell_flag: bool, sell_type: SellType, sell_reason: Optional[str] = None):
+        self.sell_flag = sell_flag
+        self.sell_type = sell_type
+        self.sell_reason = sell_reason or sell_type.value
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -594,7 +599,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         if sell_signal != SellType.NONE:
             logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
-                         f"sell_type={sell_signal}, custom_reason={custom_reason}")
+                         f"sell_type=SellType.{sell_signal.name}" +
+                         (f", custom_reason={custom_reason}" if custom_reason else ""))
             return SellCheckTuple(sell_flag=True, sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:

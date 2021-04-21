@@ -28,7 +28,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
-from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -850,7 +850,8 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Selling the trade forcefully')
-            self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
+            self.execute_sell(trade, trade.stop_loss, sell_reason=SellCheckTuple(
+                sell_flag=True, sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -961,7 +962,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_sell.sell_flag:
             logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell.sell_type, should_sell.sell_reason)
+            self.execute_sell(trade, sell_rate, should_sell)
             return True
         return False
 
@@ -1150,8 +1151,7 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType,
-                     custom_reason: Optional[str] = None) -> bool:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
@@ -1162,7 +1162,7 @@ class FreqtradeBot(LoggingMixin):
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
-        if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
@@ -1179,10 +1179,10 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = self.strategy.order_types[sell_type]
-        if sell_reason == SellType.EMERGENCY_SELL:
+        if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if sell_reason == SellType.FORCE_SELL:
+        if sell_reason.sell_type == SellType.FORCE_SELL:
             # Force sells (default to the sell_type defined in the strategy,
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
@@ -1193,7 +1193,7 @@ class FreqtradeBot(LoggingMixin):
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force,
-                sell_reason=sell_reason.value):
+                sell_reason=sell_reason.sell_type.value):
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 
@@ -1216,7 +1216,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = custom_reason or sell_reason.value
+        trade.sell_reason = sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)

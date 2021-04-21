@@ -24,7 +24,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType
+from freqtrade.strategy.interface import SellCheckTuple, SellType
 
 
 logger = logging.getLogger(__name__)
@@ -554,7 +554,8 @@ class RPC:
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
+                sell_reason = SellCheckTuple(sell_flag=True, sell_type=SellType.FORCE_SELL)
+                self._freqtrade.execute_sell(trade, current_rate, sell_reason)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
