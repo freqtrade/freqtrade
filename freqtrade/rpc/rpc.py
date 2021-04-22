@@ -554,7 +554,7 @@ class RPC:
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                sell_reason = SellCheckTuple(sell_flag=True, sell_type=SellType.FORCE_SELL)
+                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 self._freqtrade.execute_sell(trade, current_rate, sell_reason)
         # ---- EOF def _exec_forcesell ----
 
