@@ -246,7 +246,8 @@ class Telegram(RPCHandler):
             msg['message_side'] = 'Buy' if msg['type'] == RPCMessageType.BUY_FILL else 'Sell'
 
             message = ("\N{LARGE CIRCLE} *{exchange}:* "
-                       "Buy order for {pair} (#{trade_id}) filled for {open_rate}.".format(**msg))
+                       "{message_side} order for {pair} (#{trade_id}) filled "
+                       "for {open_rate}.".format(**msg))
 
         elif msg['type'] == RPCMessageType.SELL:
             message = self._format_sell_msg(msg)
