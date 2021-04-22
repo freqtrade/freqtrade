@@ -86,7 +86,7 @@ def status(rpc: RPC = Depends(get_rpc)):
 # on big databases. Correct response model: response_model=TradeResponse,
 @router.get('/trades', tags=['info', 'trading'])
 def trades(limit: int = 500, offset: int = 0, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_trade_history(min(limit, 500), offset=offset, order_by_id=True)
+    return rpc._rpc_trade_history(limit, offset=offset, order_by_id=True)
 
 
 @router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
