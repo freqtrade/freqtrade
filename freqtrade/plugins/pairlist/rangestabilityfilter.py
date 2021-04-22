@@ -28,7 +28,7 @@ class RangeStabilityFilter(IPairList):
         self._min_rate_of_change = pairlistconfig.get('min_rate_of_change', 0.01)
         self._refresh_period = pairlistconfig.get('refresh_period', 1440)
 
-        self._pair_cache: TTLCache = TTLCache(maxsize=100, ttl=self._refresh_period)
+        self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
         if self._days < 1:
             raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
@@ -87,8 +87,9 @@ class RangeStabilityFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
-        if pair in self._pair_cache:
-            return self._pair_cache[pair]
+        cached_res = self._pair_cache.get(pair, None)
+        if cached_res is not None:
+            return cached_res
 
         result = False
         if daily_candles is not None and not daily_candles.empty:

@@ -73,9 +73,13 @@ def test_PairLocks(use_db):
     assert PairLocks.is_pair_locked('XRP/USDT', lock_time + timedelta(minutes=-50))
 
     if use_db:
-        assert len(PairLock.query.all()) > 0
+        locks = PairLocks.get_all_locks()
+        locks_db = PairLock.query.all()
+        assert len(locks) == len(locks_db)
+        assert len(locks_db) > 0
     else:
         # Nothing was pushed to the database
+        assert len(PairLocks.get_all_locks()) > 0
         assert len(PairLock.query.all()) == 0
     # Reset use-db variable
     PairLocks.reset_locks()

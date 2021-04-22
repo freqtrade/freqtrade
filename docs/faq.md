@@ -1,5 +1,19 @@
 # Freqtrade FAQ
 
+## Supported Markets
+
+Freqtrade supports spot trading only.
+
+### Can I open short positions?
+
+No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+
+In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+
+### Can I trade options or futures?
+
+No, options and futures trading are not supported.
+
 ## Beginner Tips & Tricks
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
@@ -142,7 +156,7 @@ freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossD
 
 ### Why does it take a long time to run hyperopt?
 
-* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
+* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) - or the Freqtrade [discord community](https://discord.gg/MA9v74M). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
 * If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:
 

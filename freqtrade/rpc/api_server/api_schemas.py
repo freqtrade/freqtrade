@@ -62,14 +62,12 @@ class PerformanceEntry(BaseModel):
 
 class Profit(BaseModel):
     profit_closed_coin: float
-    profit_closed_percent: float
     profit_closed_percent_mean: float
     profit_closed_ratio_mean: float
     profit_closed_percent_sum: float
     profit_closed_ratio_sum: float
     profit_closed_fiat: float
     profit_all_coin: float
-    profit_all_percent: float
     profit_all_percent_mean: float
     profit_all_ratio_mean: float
     profit_all_percent_sum: float
@@ -153,13 +151,11 @@ class TradeSchema(BaseModel):
     fee_close: Optional[float]
     fee_close_cost: Optional[float]
     fee_close_currency: Optional[str]
-    open_date_hum: str
     open_date: str
     open_timestamp: int
     open_rate: float
     open_rate_requested: Optional[float]
     open_trade_value: float
-    close_date_hum: Optional[str]
     close_date: Optional[str]
     close_timestamp: Optional[int]
     close_rate: Optional[float]
@@ -170,6 +166,7 @@ class TradeSchema(BaseModel):
     profit_ratio: Optional[float]
     profit_pct: Optional[float]
     profit_abs: Optional[float]
+    profit_fiat: Optional[float]
     sell_reason: Optional[str]
     sell_order_status: Optional[str]
     stop_loss_abs: Optional[float]
@@ -192,7 +189,6 @@ class OpenTradeSchema(TradeSchema):
     stoploss_current_dist_ratio: Optional[float]
     stoploss_entry_dist: Optional[float]
     stoploss_entry_dist_ratio: Optional[float]
-    base_currency: str
     current_profit: float
     current_profit_abs: float
     current_profit_pct: float
@@ -210,6 +206,7 @@ class ForceBuyResponse(BaseModel):
 
 
 class LockModel(BaseModel):
+    id: int
     active: bool
     lock_end_time: str
     lock_end_timestamp: int
@@ -222,6 +219,11 @@ class LockModel(BaseModel):
 class Locks(BaseModel):
     lock_count: int
     locks: List[LockModel]
+
+
+class DeleteLockRequest(BaseModel):
+    pair: Optional[str]
+    lockid: Optional[int]
 
 
 class Logs(BaseModel):

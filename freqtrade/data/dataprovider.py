@@ -170,6 +170,6 @@ class DataProvider:
         """
 
         if self._pairlists:
-            return self._pairlists.whitelist
+            return self._pairlists.whitelist.copy()
         else:
             raise OperationalException("Dataprovider was not initialized with a pairlist provider.")

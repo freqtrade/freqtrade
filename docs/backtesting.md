@@ -15,15 +15,16 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--data-format-ohlcv {json,jsongz,hdf5}]
                              [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [--eps] [--dmmp] [--enable-protections]
+                             [-p PAIRS [PAIRS ...]] [--eps] [--dmmp]
+                             [--enable-protections]
+                             [--dry-run-wallet DRY_RUN_WALLET]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --data-format-ohlcv {json,jsongz,hdf5}
@@ -37,6 +38,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -48,6 +52,9 @@ optional arguments:
                         Enable protections for backtesting.Will slow
                         backtesting down by a considerable amount, but will
                         include configured protections
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
+                        Starting balance, used for backtesting / hyperopt and
+                        dry-runs.
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest. Please note that ticker-interval needs to be
@@ -91,14 +98,15 @@ Strategy arguments:
 ## Test your strategy with Backtesting
 
 Now you have good Buy and Sell strategies and some historic data, you want to test it against
-real data. This is what we call
-[backtesting](https://en.wikipedia.org/wiki/Backtesting).
+real data. This is what we call [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
 Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
 The result of backtesting will confirm if your bot has better odds of making a profit than a loss.
+
+All profit calculations include fees, and freqtrade will use the exchange's default fees for the calculation.
 
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
@@ -107,38 +115,56 @@ The result of backtesting will confirm if your bot has better odds of making a p
 
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
 
-### Run a backtesting against the currencies listed in your config file
+### Starting balance
 
-#### With 5 min candle (OHLCV) data (per default)
+Backtesting will require a starting balance, which can be provided as `--dry-run-wallet <balance>` or `--starting-balance <balance>` command line argument, or via `dry_run_wallet` configuration setting.
+This amount must be higher than `stake_amount`, otherwise the bot will not be able to simulate any trade.
+
+### Dynamic stake amount
+
+Backtesting supports [dynamic stake amount](configuration.md#dynamic-stake-amount) by configuring `stake_amount` as `"unlimited"`, which will split the starting balance into `max_open_trades` pieces.
+Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period.
+
+### Example backtesting commands
+
+With 5 min candle (OHLCV) data (per default)
 
 ```bash
-freqtrade backtesting
+freqtrade backtesting --strategy AwesomeStrategy
 ```
 
-#### With 1 min candle (OHLCV) data
+Where `--strategy AwesomeStrategy` / `-s AwesomeStrategy` refers to the class name of the strategy, which is within a python file in the `user_data/strategies` directory.
+
+---
+
+With 1 min candle (OHLCV) data
 
 ```bash
-freqtrade backtesting --timeframe 1m
+freqtrade backtesting --strategy AwesomeStrategy --timeframe 1m
 ```
 
-#### Using a different on-disk historical candle (OHLCV) data source
+---
+
+Providing a custom starting balance of 1000 (in stake currency)
+
+```bash
+freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000
+```
+
+---
+
+Using a different on-disk historical candle (OHLCV) data source
 
 Assume you downloaded the history data from the Bittrex exchange and kept it in the `user_data/data/bittrex-20180101` directory. 
 You can then use this data for backtesting as follows:
 
 ```bash
-freqtrade --datadir user_data/data/bittrex-20180101 backtesting
+freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/bittrex-20180101 
 ```
 
-#### With a (custom) strategy file
+---
 
-```bash
-freqtrade backtesting -s SampleStrategy
-```
-
-Where `-s SampleStrategy` refers to the class name within the strategy file `sample_strategy.py` found in the `freqtrade/user_data/strategies` directory.
-
-#### Comparing multiple Strategies
+Comparing multiple Strategies
 
 ```bash
 freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m
@@ -146,23 +172,29 @@ freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timefram
 
 Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies.
 
-#### Exporting trades to file
+---
+
+Exporting trades to file
 
 ```bash
-freqtrade backtesting --export trades --config config.json --strategy SampleStrategy
+freqtrade backtesting --strategy backtesting --export trades --config config.json 
 ```
 
 The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
 
-#### Exporting trades to file specifying a custom filename
+---
+
+Exporting trades to file specifying a custom filename
 
 ```bash
-freqtrade backtesting --export trades --export-filename=backtest_samplestrategy.json
+freqtrade backtesting --strategy backtesting --export trades --export-filename=backtest_samplestrategy.json
 ```
 
 Please also read about the [strategy startup period](strategy-customization.md#strategy-startup-period).
 
-#### Supplying custom fee value
+---
+
+Supplying custom fee value
 
 Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
 To account for this in backtesting, you can use the `--fee` command line option to supply this value to backtesting.
@@ -177,26 +209,26 @@ freqtrade backtesting --fee 0.001
 !!! Note
     Only supply this option (or the corresponding configuration parameter) if you want to experiment with different fee values. By default, Backtesting fetches the default fee from the exchange pair/market info.
 
-#### Running backtest with smaller testset by using timerange
+---
 
-Use the `--timerange` argument to change how much of the testset you want to use.
+Running backtest with smaller test-set by using timerange
 
+Use the `--timerange` argument to change how much of the test-set you want to use.
 
-For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your inputdata.
+For example, running backtesting with the `--timerange=20190501-` option will use all available data starting with May 1st, 2019 from your input data.
 
 ```bash
 freqtrade backtesting --timerange=20190501-
 ```
 
-You can also specify particular dates or a range span indexed by start and stop.
+You can also specify particular date ranges.
 
 The full timerange specification:
 
-- Use tickframes till 2018/01/31: `--timerange=-20180131`
-- Use tickframes since 2018/01/31: `--timerange=20180131-`
-- Use tickframes since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
-- Use tickframes between POSIX timestamps 1527595200 1527618600:
-                                                `--timerange=1527595200-1527618600`
+- Use data until 2018/01/31: `--timerange=-20180131`
+- Use data since 2018/01/31: `--timerange=20180131-`
+- Use data since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
+- Use data between POSIX / epoch timestamps 1527595200 1527618600: `--timerange=1527595200-1527618600`
 
 ## Understand the backtesting result
 
@@ -248,19 +280,30 @@ A backtesting result will look like that:
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| Total Profit %        | 152.41%             |
+| Starting balance      | 0.01000000 BTC      |
+| Final balance         | 0.01762792 BTC      |
+| Absolute profit       | 0.00762792 BTC      |
+| Total profit %        | 76.2%               |
 | Trades per day        | 3.575               |
+| Avg. stake amount     | 0.001      BTC      |
+| Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
 | Worst Pair            | ZEC/BTC -10.18%     |
 | Best Trade            | LSK/BTC 4.25%       |
 | Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 25.27%              |
-| Worst day             | -30.67%             |
+| Best day              | 0.00076 BTC         |
+| Worst day             | -0.00036 BTC        |
+| Days win/draw/lose    | 12 / 82 / 25        |
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 |                       |                     |
-| Max Drawdown          | 50.63%              |
+| Min balance           | 0.00945123 BTC      |
+| Max balance           | 0.01846651 BTC      |
+| Drawdown              | 50.63%              |
+| Drawdown              | 0.0015 BTC          |
+| Drawdown high         | 0.0013 BTC          |
+| Drawdown low          | -0.0002 BTC         |
 | Drawdown Start        | 2019-02-15 14:10:00 |
 | Drawdown End          | 2019-04-11 18:15:00 |
 | Market change         | -5.88%              |
@@ -281,9 +324,9 @@ here:
 The bot has made `429` trades for an average duration of `4:12:00`, with a performance of `76.20%` (profit), that means it has
 earned a total of `0.00762792 BTC` starting with a capital of 0.01 BTC.
 
-The column `avg profit %` shows the average profit for all trades made while the column `cum profit %` sums up all the profits/losses.
-The column `tot profit %` shows instead the total profit % in relation to allocated capital (`max_open_trades * stake_amount`).
-In the above results we have `max_open_trades=2` and `stake_amount=0.005` in config  so `tot_profit %` will be `(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC`.
+The column `Avg Profit %` shows the average profit for all trades made while the column `Cum Profit %` sums up all the profits/losses.
+The column `Tot Profit %` shows instead the total profit % in relation to the starting balance.
+In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the `Tot Profit %` will be `(0.00762792 / 0.01) * 100 ~= 76.2%`.
 
 Your strategy performance is influenced by your buy strategy, your sell strategy, and also by the `minimal_roi` and `stop_loss` you have set.
 
@@ -324,19 +367,30 @@ It contains some useful key metrics about performance of your strategy on backte
 | Max open trades       | 3                   |
 |                       |                     |
 | Total trades          | 429                 |
-| Total Profit %        | 152.41%             |
+| Starting balance      | 0.01000000 BTC      |
+| Final balance         | 0.01762792 BTC      |
+| Absolute profit       | 0.00762792 BTC      |
+| Total profit %        | 76.2%               |
 | Trades per day        | 3.575               |
+| Avg. stake amount     | 0.001      BTC      |
+| Total trade volume    | 0.429      BTC      |
 |                       |                     |
 | Best Pair             | LSK/BTC 26.26%      |
 | Worst Pair            | ZEC/BTC -10.18%     |
 | Best Trade            | LSK/BTC 4.25%       |
 | Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 25.27%              |
-| Worst day             | -30.67%             |
+| Best day              | 0.00076 BTC         |
+| Worst day             | -0.00036 BTC        |
+| Days win/draw/lose    | 12 / 82 / 25        |
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 |                       |                     |
-| Max Drawdown          | 50.63%              |
+| Min balance           | 0.00945123 BTC      |
+| Max balance           | 0.01846651 BTC      |
+| Drawdown              | 50.63%              |
+| Drawdown              | 0.0015 BTC          |
+| Drawdown high         | 0.0013 BTC          |
+| Drawdown low          | -0.0002 BTC         |
 | Drawdown Start        | 2019-02-15 14:10:00 |
 | Drawdown End          | 2019-04-11 18:15:00 |
 | Market change         | -5.88%              |
@@ -347,13 +401,21 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
 - `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - or number of pairs in the pairlist (whatever is lower).
 - `Total trades`: Identical to the total trades of the backtest output table.
-- `Total Profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table.
+- `Starting balance`: Start balance - as given by dry-run-wallet (config or command line).
+- `Final balance`: Final balance - starting balance + absolute profit.
+- `Absolute profit`: Profit made in stake currency.
+- `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
+- `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
+- `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.
-- `Best Trade` / `Worst Trade`: Biggest winning trade and biggest losing trade
+- `Best Trade` / `Worst Trade`: Biggest single winning trade and biggest single losing trade.
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
+- `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
-- `Max Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
+- `Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
 
@@ -362,6 +424,7 @@ It contains some useful key metrics about performance of your strategy on backte
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
+- All orders are filled at the requested price (no slippage, no unfilled orders)
 - Sell-signal sells happen at open-price of the consecutive candle
 - Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI
@@ -418,6 +481,5 @@ Detailed output for all strategies one after the other will be available, so mak
 
 ## Next step
 
-Great, your strategy is profitable. What if the bot can give your the
-optimal parameters to use for your strategy?
+Great, your strategy is profitable. What if the bot can give your the optimal parameters to use for your strategy?
 Your next step is to learn [how to find optimal parameters with Hyperopt](hyperopt.md)

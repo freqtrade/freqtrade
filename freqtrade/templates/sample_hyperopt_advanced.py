@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
-from skopt.space import Categorical, Dimension, Integer, Real  # noqa
+from freqtrade.optimize.space import Categorical, Dimension, Integer, SKDecimal, Real  # noqa
 
 from freqtrade.optimize.hyperopt_interface import IHyperOpt
 
@@ -61,6 +61,23 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         return dataframe
 
     @staticmethod
+    def indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching buy strategy parameters.
+        """
+        return [
+            Integer(10, 25, name='mfi-value'),
+            Integer(15, 45, name='fastd-value'),
+            Integer(20, 50, name='adx-value'),
+            Integer(20, 40, name='rsi-value'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='fastd-enabled'),
+            Categorical([True, False], name='adx-enabled'),
+            Categorical([True, False], name='rsi-enabled'),
+            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+        ]
+
+    @staticmethod
     def buy_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Define the buy strategy parameters to be used by hyperopt
@@ -106,20 +123,22 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         return populate_buy_trend
 
     @staticmethod
-    def indicator_space() -> List[Dimension]:
+    def sell_indicator_space() -> List[Dimension]:
         """
-        Define your Hyperopt space for searching strategy parameters
+        Define your Hyperopt space for searching sell strategy parameters.
         """
         return [
-            Integer(10, 25, name='mfi-value'),
-            Integer(15, 45, name='fastd-value'),
-            Integer(20, 50, name='adx-value'),
-            Integer(20, 40, name='rsi-value'),
-            Categorical([True, False], name='mfi-enabled'),
-            Categorical([True, False], name='fastd-enabled'),
-            Categorical([True, False], name='adx-enabled'),
-            Categorical([True, False], name='rsi-enabled'),
-            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+            Integer(75, 100, name='sell-mfi-value'),
+            Integer(50, 100, name='sell-fastd-value'),
+            Integer(50, 100, name='sell-adx-value'),
+            Integer(60, 100, name='sell-rsi-value'),
+            Categorical([True, False], name='sell-mfi-enabled'),
+            Categorical([True, False], name='sell-fastd-enabled'),
+            Categorical([True, False], name='sell-adx-enabled'),
+            Categorical([True, False], name='sell-rsi-enabled'),
+            Categorical(['sell-bb_upper',
+                         'sell-macd_cross_signal',
+                         'sell-sar_reversal'], name='sell-trigger')
         ]
 
     @staticmethod
@@ -169,25 +188,6 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         return populate_sell_trend
 
     @staticmethod
-    def sell_indicator_space() -> List[Dimension]:
-        """
-        Define your Hyperopt space for searching sell strategy parameters
-        """
-        return [
-            Integer(75, 100, name='sell-mfi-value'),
-            Integer(50, 100, name='sell-fastd-value'),
-            Integer(50, 100, name='sell-adx-value'),
-            Integer(60, 100, name='sell-rsi-value'),
-            Categorical([True, False], name='sell-mfi-enabled'),
-            Categorical([True, False], name='sell-fastd-enabled'),
-            Categorical([True, False], name='sell-adx-enabled'),
-            Categorical([True, False], name='sell-rsi-enabled'),
-            Categorical(['sell-bb_upper',
-                         'sell-macd_cross_signal',
-                         'sell-sar_reversal'], name='sell-trigger')
-        ]
-
-    @staticmethod
     def generate_roi_table(params: Dict) -> Dict[int, float]:
         """
         Generate the ROI table that will be used by Hyperopt
@@ -223,9 +223,9 @@ class AdvancedSampleHyperOpt(IHyperOpt):
             Integer(10, 120, name='roi_t1'),
             Integer(10, 60, name='roi_t2'),
             Integer(10, 40, name='roi_t3'),
-            Real(0.01, 0.04, name='roi_p1'),
-            Real(0.01, 0.07, name='roi_p2'),
-            Real(0.01, 0.20, name='roi_p3'),
+            SKDecimal(0.01, 0.04, decimals=3, name='roi_p1'),
+            SKDecimal(0.01, 0.07, decimals=3, name='roi_p2'),
+            SKDecimal(0.01, 0.20, decimals=3, name='roi_p3'),
         ]
 
     @staticmethod
@@ -237,7 +237,7 @@ class AdvancedSampleHyperOpt(IHyperOpt):
         'stoploss' optimization hyperspace.
         """
         return [
-            Real(-0.35, -0.02, name='stoploss'),
+            SKDecimal(-0.35, -0.02, decimals=3, name='stoploss'),
         ]
 
     @staticmethod
@@ -256,51 +256,14 @@ class AdvancedSampleHyperOpt(IHyperOpt):
             # other 'trailing' hyperspace parameters.
             Categorical([True], name='trailing_stop'),
 
-            Real(0.01, 0.35, name='trailing_stop_positive'),
+            SKDecimal(0.01, 0.35, decimals=3, name='trailing_stop_positive'),
 
             # 'trailing_stop_positive_offset' should be greater than 'trailing_stop_positive',
             # so this intermediate parameter is used as the value of the difference between
             # them. The value of the 'trailing_stop_positive_offset' is constructed in the
             # generate_trailing_params() method.
             # This is similar to the hyperspace dimensions used for constructing the ROI tables.
-            Real(0.001, 0.1, name='trailing_stop_positive_offset_p1'),
+            SKDecimal(0.001, 0.1, decimals=3, name='trailing_stop_positive_offset_p1'),
 
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
-
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators.
-        Can be a copy of the corresponding method from the strategy,
-        or will be loaded from the strategy.
-        Must align to populate_indicators used (either from this File, or from the strategy)
-        Only used when --spaces does not include buy
-        """
-        dataframe.loc[
-            (
-                (dataframe['close'] < dataframe['bb_lowerband']) &
-                (dataframe['mfi'] < 16) &
-                (dataframe['adx'] > 25) &
-                (dataframe['rsi'] < 21)
-            ),
-            'buy'] = 1
-
-        return dataframe
-
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators.
-        Can be a copy of the corresponding method from the strategy,
-        or will be loaded from the strategy.
-        Must align to populate_indicators used (either from this File, or from the strategy)
-        Only used when --spaces does not include sell
-        """
-        dataframe.loc[
-            (
-                (qtpylib.crossed_above(
-                    dataframe['macdsignal'], dataframe['macd']
-                )) &
-                (dataframe['fastd'] > 54)
-            ),
-            'sell'] = 1
-        return dataframe

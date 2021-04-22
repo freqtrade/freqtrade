@@ -18,84 +18,37 @@ BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
     "bitstamp": "Does not provide history. "
                 "Details in https://github.com/freqtrade/freqtrade/issues/1983",
-    "hitbtc": "This API cannot be used with Freqtrade. "
-              "Use `hitbtc2` exchange id to access this exchange.",
     "phemex": "Does not provide history. ",
     "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
-    **dict.fromkeys([
-        'adara',
-        'anxpro',
-        'bigone',
-        'coinbase',
-        'coinexchange',
-        'coinmarketcap',
-        'lykke',
-        'xbtce',
-    ], "Does not provide timeframes. ccxt fetchOHLCV: False"),
-    **dict.fromkeys([
-        'bcex',
-        'bit2c',
-        'bitbay',
-        'bitflyer',
-        'bitforex',
-        'bithumb',
-        'bitso',
-        'bitstamp1',
-        'bl3p',
-        'braziliex',
-        'btcbox',
-        'btcchina',
-        'btctradeim',
-        'btctradeua',
-        'bxinth',
-        'chilebit',
-        'coincheck',
-        'coinegg',
-        'coinfalcon',
-        'coinfloor',
-        'coingi',
-        'coinmate',
-        'coinone',
-        'coinspot',
-        'coolcoin',
-        'crypton',
-        'deribit',
-        'exmo',
-        'exx',
-        'flowbtc',
-        'foxbit',
-        'fybse',
-        # 'hitbtc',
-        'ice3x',
-        'independentreserve',
-        'indodax',
-        'itbit',
-        'lakebtc',
-        'latoken',
-        'liquid',
-        'livecoin',
-        'luno',
-        'mixcoins',
-        'negociecoins',
-        'nova',
-        'paymium',
-        'southxchange',
-        'stronghold',
-        'surbitcoin',
-        'therock',
-        'tidex',
-        'vaultoro',
-        'vbtc',
-        'virwox',
-        'yobit',
-        'zaif',
-    ], "Does not provide timeframes. ccxt fetchOHLCV: emulated"),
 }
 
 MAP_EXCHANGE_CHILDCLASS = {
     'binanceus': 'binance',
     'binanceje': 'binance',
 }
+
+
+EXCHANGE_HAS_REQUIRED = [
+    # Required / private
+    'fetchOrder',
+    'cancelOrder',
+    'createOrder',
+    # 'createLimitOrder', 'createMarketOrder',
+    'fetchBalance',
+
+    # Public endpoints
+    'loadMarkets',
+    'fetchOHLCV',
+]
+
+EXCHANGE_HAS_OPTIONAL = [
+    # Private
+    'fetchMyTrades',  # Trades for order - fee detection
+    # Public
+    'fetchOrderBook', 'fetchL2OrderBook', 'fetchTicker',  # OR for pricing
+    'fetchTickers',  # For volumepairlist?
+    'fetchTrades',  # Downloading trades data
+]
 
 
 def calculate_backoff(retrycount, max_retries):
@@ -140,7 +93,7 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                     logger.warning('retrying %s() still for %s times', f.__name__, count)
                     count -= 1
                     kwargs.update({'count': count})
-                    if isinstance(ex, DDosProtection) or isinstance(ex, RetryableOrderError):
+                    if isinstance(ex, (DDosProtection, RetryableOrderError)):
                         # increasing backoff
                         backoff_delay = calculate_backoff(count + 1, retries)
                         logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")

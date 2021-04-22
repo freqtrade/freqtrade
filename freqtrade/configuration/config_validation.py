@@ -47,6 +47,8 @@ def validate_config_schema(conf: Dict[str, Any]) -> Dict[str, Any]:
     conf_schema = deepcopy(constants.CONF_SCHEMA)
     if conf.get('runmode', RunMode.OTHER) in (RunMode.DRY_RUN, RunMode.LIVE):
         conf_schema['required'] = constants.SCHEMA_TRADE_REQUIRED
+    elif conf.get('runmode', RunMode.OTHER) in (RunMode.BACKTEST, RunMode.HYPEROPT):
+        conf_schema['required'] = constants.SCHEMA_BACKTEST_REQUIRED
     else:
         conf_schema['required'] = constants.SCHEMA_MINIMAL_REQUIRED
     try:
@@ -72,6 +74,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
 
     # validating trailing stoploss
     _validate_trailing_stoploss(conf)
+    _validate_price_config(conf)
     _validate_edge(conf)
     _validate_whitelist(conf)
     _validate_protections(conf)
@@ -91,6 +94,19 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
        and conf.get('max_open_trades') == float('inf')
        and conf.get('stake_amount') == constants.UNLIMITED_STAKE_AMOUNT):
         raise OperationalException("`max_open_trades` and `stake_amount` cannot both be unlimited.")
+
+
+def _validate_price_config(conf: Dict[str, Any]) -> None:
+    """
+    When using market orders, price sides must be using the "other" side of the price
+    """
+    if (conf.get('order_types', {}).get('buy') == 'market'
+            and conf.get('bid_strategy', {}).get('price_side') != 'ask'):
+        raise OperationalException('Market buy orders require bid_strategy.price_side = "ask".')
+
+    if (conf.get('order_types', {}).get('sell') == 'market'
+            and conf.get('ask_strategy', {}).get('price_side') != 'bid'):
+        raise OperationalException('Market sell orders require ask_strategy.price_side = "bid".')
 
 
 def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
@@ -133,11 +149,6 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if conf.get('pairlist', {}).get('method') == 'VolumePairList':
-        raise OperationalException(
-            "Edge and VolumePairList are incompatible, "
-            "Edge will override whatever pairs VolumePairlist selects."
-        )
     if not conf.get('ask_strategy', {}).get('use_sell_signal', True):
         raise OperationalException(
             "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."

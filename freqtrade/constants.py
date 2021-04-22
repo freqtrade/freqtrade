@@ -26,7 +26,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
                        'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
-                       'SpreadFilter']
+                       'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
@@ -165,12 +165,18 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'price_side': {'type': 'string', 'enum': ORDERBOOK_SIDES, 'default': 'ask'},
+                'bid_last_balance': {
+                    'type': 'number',
+                    'minimum': 0,
+                    'maximum': 1,
+                    'exclusiveMaximum': False,
+                },
                 'use_order_book': {'type': 'boolean'},
                 'order_book_min': {'type': 'integer', 'minimum': 1},
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                'sell_profit_offset': {'type': 'number', 'minimum': 0.0},
+                'sell_profit_offset': {'type': 'number'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
             }
         },
@@ -179,6 +185,8 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
@@ -238,14 +246,24 @@ CONF_SCHEMA = {
                 'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
+                    'default': {},
                     'properties': {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS}
+                        'buy_fill': {'type': 'string',
+                                     'enum': TELEGRAM_SETTING_OPTIONS,
+                                     'default': 'off'
+                                     },
+                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_fill': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                            },
                     }
                 }
             },
@@ -372,6 +390,16 @@ SCHEMA_TRADE_REQUIRED = [
     'stoploss',
     'minimal_roi',
     'internals',
+    'dataformat_ohlcv',
+    'dataformat_trades',
+]
+
+SCHEMA_BACKTEST_REQUIRED = [
+    'exchange',
+    'max_open_trades',
+    'stake_currency',
+    'stake_amount',
+    'dry_run_wallet',
     'dataformat_ohlcv',
     'dataformat_trades',
 ]

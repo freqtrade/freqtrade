@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import plural
 from freqtrade.mixins import LoggingMixin
-from freqtrade.persistence import Trade
+from freqtrade.persistence import LocalTrade
 
 
 logger = logging.getLogger(__name__)
@@ -93,11 +93,11 @@ class IProtection(LoggingMixin, ABC):
         """
 
     @staticmethod
-    def calculate_lock_end(trades: List[Trade], stop_minutes: int) -> datetime:
+    def calculate_lock_end(trades: List[LocalTrade], stop_minutes: int) -> datetime:
         """
         Get lock end time
         """
-        max_date: datetime = max([trade.close_date for trade in trades])
+        max_date: datetime = max([trade.close_date for trade in trades if trade.close_date])
         # comming from Database, tzinfo is not set.
         if max_date.tzinfo is None:
             max_date = max_date.replace(tzinfo=timezone.utc)

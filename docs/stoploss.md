@@ -55,6 +55,10 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 
 `forcesell` is an optional value, which defaults to the same value as `sell` and is used when sending a `/forcesell` command from Telegram or from the Rest API.
 
+### forcebuy
+
+`forcebuy` is an optional value, which defaults to the same value as `buy` and is used when sending a `/forcebuy` command from Telegram or from the Rest API.
+
 ### emergencysell
 
 `emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.

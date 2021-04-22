@@ -11,14 +11,73 @@ If you're just getting started, please be familiar with the methods described in
 !!! Tip
     You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
+## Storing information
+
+Storing information can be accomplished by creating a new dictionary within the strategy class.
+
+The name of the variable can be chosen at will, but should be prefixed with `cust_` to avoid naming collisions with predefined strategy variables.
+
+```python
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # Check if the entry already exists
+        if not metadata["pair"] in self.custom_info:
+            # Create empty entry for this pair
+            self.custom_info[metadata["pair"]] = {}
+
+        if "crosstime" in self.custom_info[metadata["pair"]]:
+            self.custom_info[metadata["pair"]]["crosstime"] += 1
+        else:
+            self.custom_info[metadata["pair"]]["crosstime"] = 1
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+***
+
+### Storing custom information using DatetimeIndex from `dataframe`
+
+Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
+
+```python
+import talib.abstract as ta
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # using "ATR" here as example
+        dataframe['atr'] = ta.ATR(dataframe)
+        if self.dp.runmode.value in ('backtest', 'hyperopt'):
+          # add indicator mapped to correct DatetimeIndex to custom_info
+          self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].set_index('date')
+        return dataframe
+```
+
+!!! Warning
+    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
+
+!!! Note
+    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
+
+See `custom_stoploss` examples below on how to access the saved dataframe columns
+
 ## Custom stoploss
 
-A stoploss can only ever move upwards - so if you set it to an absolute profit of 2%, you can never move it below this price.
-Also, the traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
-The method must return a stoploss value (float / number) with a relative ratio below the current price.
-E.g. `current_profit = 0.05` (5% profit) - stoploss returns `0.02` - then you "locked in" a profit of 3% (`0.05 - 0.02 = 0.03`).
+The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
+
+The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 
 To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:
 
@@ -87,9 +146,9 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
-        if current_time - timedelta(minutes=120) > trade.open_date:
+        if current_time - timedelta(minutes=120) > trade.open_date_utc:
             return -0.05
-        elif current_time - timedelta(minutes=60) > trade.open_date:
+        elif current_time - timedelta(minutes=60) > trade.open_date_utc:
             return -0.10
         return 1
 ```
@@ -142,24 +201,32 @@ class AwesomeStrategy(IStrategy):
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
-        desired_stoploss = current_profit / 2 
+        desired_stoploss = current_profit / 2
 
         # Use a minimum of 2.5% and a maximum of 5%
         return max(min(desired_stoploss, 0.05), 0.025)
 ```
 
-#### Absolute stoploss
+#### Calculating stoploss relative to open price
 
-The below example sets absolute profit levels based on the current profit.
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
+
+#### Stepped stoploss
+
+Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.
 
 * Use the regular stoploss until 20% profit is reached
-* Once profit is > 40%, stoploss will be at 25%, locking in at least 25% of the profit.
-* Once profit is > 25% - stoploss will be 15%.
-* Once profit is > 20% - stoploss will be set to 7%.
+* Once profit is > 20% - set stoploss to 7% above open price.
+* Once profit is > 25% - set stoploss to 15% above open price.
+* Once profit is > 40% - set stoploss to 25% above open price.
+
 
 ``` python
 from datetime import datetime
 from freqtrade.persistence import Trade
+from freqtrade.strategy import stoploss_from_open
 
 class AwesomeStrategy(IStrategy):
 
@@ -170,14 +237,65 @@ class AwesomeStrategy(IStrategy):
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
-        # Calculate as `-desired_stop_from_open + current_profit` to get the distance between current_profit and initial price
+        # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
-            return (-0.25 + current_profit)
-        if current_profit > 0.25:
-            return (-0.15 + current_profit)
-        if current_profit > 0.20:
-            return (-0.07 + current_profit)
+            return stoploss_from_open(0.25, current_profit)
+        elif current_profit > 0.25:
+            return stoploss_from_open(0.15, current_profit)
+        elif current_profit > 0.20:
+            return stoploss_from_open(0.07, current_profit)
+
+        # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
+```
+#### Custom stoploss using an indicator from dataframe example
+
+Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
+
+See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
+
+!!! Warning
+    only use .iat[-1] in live mode, not in backtesting/hyperopt
+    otherwise you will look into the future
+    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
+
+``` python
+from freqtrade.persistence import Trade
+from freqtrade.state import RunMode
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        result = 1
+        if self.custom_info and pair in self.custom_info and trade:
+            # using current_time directly (like below) will only work in backtesting.
+            # so check "runmode" to make sure that it's only used in backtesting/hyperopt
+            if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
+              relative_sl = self.custom_info[pair].loc[current_time]['atr']
+            # in live / dry-run, it'll be really the current time
+            else:
+              # but we can just use the last entry from an already analyzed dataframe instead
+              dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                       timeframe=self.timeframe)
+              # WARNING
+              # only use .iat[-1] in live mode, not in backtesting/hyperopt
+              # otherwise you will look into the future
+              # see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
+              relative_sl = dataframe['atr'].iat[-1]
+
+            if (relative_sl is not None):
+                # new stoploss relative to current_rate
+                new_stoploss = (current_rate-relative_sl)/current_rate
+                # turn into relative negative offset required by `custom_stoploss` return implementation
+                result = new_stoploss - 1
+
+        return result
 ```
 
 ---
@@ -199,7 +317,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from freqtrade.persistence import Trade
 
 class AwesomeStrategy(IStrategy):
@@ -213,21 +331,21 @@ class AwesomeStrategy(IStrategy):
     }
 
     def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 
 
     def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date < datetime.utcnow() - timedelta(minutes=5):
+        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date < datetime.utcnow() - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date < datetime.utcnow() - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
            return True
         return False
 ```

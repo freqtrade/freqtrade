@@ -12,11 +12,13 @@ import pytest
 from arrow import Arrow
 from filelock import Timeout
 
-from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt_auto import HyperOptAuto
+from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.space import SKDecimal
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
@@ -130,8 +132,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     assert log_has('Parameter --print-all detected ...', caplog)
 
 
-def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_conf) -> None:
-    default_conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
+def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None:
 
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -139,9 +140,20 @@ def test_setup_hyperopt_configuration_unlimited_stake_amount(mocker, default_con
         'hyperopt',
         '--config', 'config.json',
         '--hyperopt', 'DefaultHyperOpt',
+        '--stake-amount', '1',
+        '--starting-balance', '2'
     ]
+    conf = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
+    assert isinstance(conf, dict)
 
-    with pytest.raises(DependencyException, match=r'.`stake_amount`.*'):
+    args = [
+        'hyperopt',
+        '--config', 'config.json',
+        '--strategy', 'DefaultStrategy',
+        '--stake-amount', '1',
+        '--starting-balance', '0.5'
+    ]
+    with pytest.raises(OperationalException, match=r"Starting balance .* smaller .*"):
         setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
 
 
@@ -327,9 +339,9 @@ def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> Non
 
 def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
-    hyperopt_epochs = hyperopt._read_results(results_file)
+    hyperopt_epochs = HyperoptTools._read_results(results_file)
     assert log_has(f"Reading epochs from '{results_file}'", caplog)
     assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
@@ -337,7 +349,7 @@ def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> N
 
 def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
     mocker.patch.object(Path, 'is_file', MagicMock(return_value=True))
     statmock = MagicMock()
     statmock.st_size = 5
@@ -345,16 +357,16 @@ def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
 
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
 
-    hyperopt_epochs = hyperopt.load_previous_results(results_file)
+    hyperopt_epochs = HyperoptTools.load_previous_results(results_file)
 
     assert hyperopt_epochs == epochs
     mock_load.assert_called_once()
 
     del epochs[0]['is_best']
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt.load', return_value=epochs)
+    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
 
     with pytest.raises(OperationalException):
-        hyperopt.load_previous_results(results_file)
+        HyperoptTools.load_previous_results(results_file)
 
 
 def test_roi_table_generation(hyperopt) -> None:
@@ -444,7 +456,7 @@ def test_format_results(hyperopt):
         'is_initial_point': True,
     }
 
-    result = hyperopt._format_explanation_string(results, 1)
+    result = HyperoptTools._format_explanation_string(results, 1)
     assert result.find(' 66.67%')
     assert result.find('Total profit 1.00000000 BTC')
     assert result.find('2.0000Σ %')
@@ -458,7 +470,7 @@ def test_format_results(hyperopt):
     df = pd.DataFrame.from_records(trades, columns=labels)
     results_metrics = hyperopt._calculate_results_metrics(df)
     results['total_profit'] = results_metrics['total_profit']
-    result = hyperopt._format_explanation_string(results, 1)
+    result = HyperoptTools._format_explanation_string(results, 1)
     assert result.find('Total profit 1.00000000 EUR')
 
 
@@ -1067,7 +1079,7 @@ def test_print_epoch_details(capsys):
         'is_best': True
     }
 
-    Hyperopt.print_epoch_details(test_result, 5, False, no_header=True)
+    HyperoptTools.print_epoch_details(test_result, 5, False, no_header=True)
     captured = capsys.readouterr()
     assert '# Trailing stop:' in captured.out
     # re.match(r"Pairs for .*", captured.out)
@@ -1079,3 +1091,34 @@ def test_print_epoch_details(capsys):
     assert '# ROI table:' in captured.out
     assert re.search(r'^\s+minimal_roi = \{$', captured.out, re.MULTILINE)
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
+
+
+def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir) -> None:
+    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    # No hyperopt needed
+    del hyperopt_conf['hyperopt']
+    hyperopt_conf.update({
+        'strategy': 'HyperoptableStrategy',
+        'user_data_dir': Path(tmpdir),
+    })
+    hyperopt = Hyperopt(hyperopt_conf)
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+
+    hyperopt.start()
+
+
+def test_SKDecimal():
+    space = SKDecimal(1, 2, decimals=2)
+    assert 1.5 in space
+    assert 2.5 not in space
+    assert space.low == 100
+    assert space.high == 200
+
+    assert space.inverse_transform([200]) == [2.0]
+    assert space.inverse_transform([100]) == [1.0]
+    assert space.inverse_transform([150, 160]) == [1.5, 1.6]
+
+    assert space.transform([1.5]) == [150]
+    assert space.transform([2.0]) == [200]
+    assert space.transform([1.0]) == [100]
+    assert space.transform([1.5, 1.6]) == [150, 160]

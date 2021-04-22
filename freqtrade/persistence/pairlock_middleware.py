@@ -48,8 +48,8 @@ class PairLocks():
             active=True
         )
         if PairLocks.use_db:
-            PairLock.session.add(lock)
-            PairLock.session.flush()
+            PairLock.query.session.add(lock)
+            PairLock.query.session.flush()
         else:
             PairLocks.locks.append(lock)
 
@@ -99,7 +99,7 @@ class PairLocks():
         for lock in locks:
             lock.active = False
         if PairLocks.use_db:
-            PairLock.session.flush()
+            PairLock.query.session.flush()
 
     @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:
@@ -123,3 +123,11 @@ class PairLocks():
             now = datetime.now(timezone.utc)
 
         return len(PairLocks.get_pair_locks(pair, now)) > 0 or PairLocks.is_global_lock(now)
+
+    @staticmethod
+    def get_all_locks() -> List[PairLock]:
+
+        if PairLocks.use_db:
+            return PairLock.query.all()
+        else:
+            return PairLocks.locks

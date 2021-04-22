@@ -11,13 +11,13 @@ from freqtrade.data.history import get_datahandler
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
-                                                  BlacklistResponse, Count, Daily, DeleteTrade,
-                                                  ForceBuyPayload, ForceBuyResponse,
-                                                  ForceSellPayload, Locks, Logs, OpenTradeSchema,
-                                                  PairHistory, PerformanceEntry, Ping, PlotConfig,
-                                                  Profit, ResultMsg, ShowConfig, Stats, StatusMsg,
-                                                  StrategyListResponse, StrategyResponse,
-                                                  TradeResponse, Version, WhitelistResponse)
+                                                  BlacklistResponse, Count, Daily,
+                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
+                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
+                                                  OpenTradeSchema, PairHistory, PerformanceEntry,
+                                                  Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
+                                                  Stats, StatusMsg, StrategyListResponse,
+                                                  StrategyResponse, Version, WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -82,9 +82,19 @@ def status(rpc: RPC = Depends(get_rpc)):
         return []
 
 
-@router.get('/trades', response_model=TradeResponse, tags=['info', 'trading'])
+# Using the responsemodel here will cause a ~100% increase in response time (from 1s to 2s)
+# on big databases. Correct response model: response_model=TradeResponse,
+@router.get('/trades', tags=['info', 'trading'])
 def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_trade_history(limit)
+
+
+@router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
+def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_trade_status([tradeid])[0]
+    except (RPCException, KeyError):
+        raise HTTPException(status_code=404, detail='Trade not found.')
 
 
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
@@ -136,9 +146,19 @@ def whitelist(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_whitelist()
 
 
-@router.get('/locks', response_model=Locks, tags=['info'])
+@router.get('/locks', response_model=Locks, tags=['info', 'locks'])
 def locks(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_locks()
+
+
+@router.delete('/locks/{lockid}', response_model=Locks, tags=['info', 'locks'])
+def delete_lock(lockid: int, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=lockid)
+
+
+@router.post('/locks/delete', response_model=Locks, tags=['info', 'locks'])
+def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_delete_lock(lockid=payload.lockid, pair=payload.pair)
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])

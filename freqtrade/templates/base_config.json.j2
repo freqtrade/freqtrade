@@ -54,15 +54,15 @@
         "chat_id": "{{ telegram_chat_id }}"
     },
     "api_server": {
-        "enabled": false,
-        "listen_ip_address": "127.0.0.1",
+        "enabled": {{ api_server | lower }},
+        "listen_ip_address": "{{ api_server_listen_addr | default("127.0.0.1", true) }}",
         "listen_port": 8080,
         "verbosity": "error",
         "enable_openapi": false,
-        "jwt_secret_key": "somethingrandom",
+        "jwt_secret_key": "{{ api_server_jwt_key }}",
         "CORS_origins": [],
-        "username": "",
-        "password": ""
+        "username": "{{ api_server_username }}",
+        "password": "{{ api_server_password }}"
     },
     "bot_name": "freqtrade",
     "initial_state": "running",

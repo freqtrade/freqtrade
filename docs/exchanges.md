@@ -7,10 +7,10 @@ This page combines common gotchas and informations which are exchange-specific a
 !!! Tip "Stoploss on Exchange"
     Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
-### Blacklists
+### Binance Blacklist
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
-Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
+Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
 ### Binance sites
 
@@ -43,6 +43,10 @@ Due to the heavy rate-limiting applied by Kraken, the following configuration se
 !!! Warning "Downloading data from kraken"
     Downloading kraken data will require significantly more memory (RAM) than any other exchange, as the trades-data needs to be converted into candles on your machine.
     It will also take a long time, as freqtrade will need to download every single trade that happened on the exchange for the pair / timerange combination, therefore please be patient.
+
+!!! Warning "rateLimit tuning"
+    Please pay attention that rateLimit configuration entry holds delay in milliseconds between requests, NOT requests\sec rate.
+    So, in order to mitigate Kraken API "Rate limit exceeded" exception, this configuration should be increased, NOT decreased.
 
 ## Bittrex
 
@@ -96,6 +100,23 @@ To use subaccounts with FTX, you need to edit the configuration and add the foll
 }
 ```
 
+## Kucoin
+
+Kucoin requries a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+
+```json
+"exchange": {
+    "name": "kucoin",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+```
+
+### Kucoin Blacklists
+
+For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
+Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
@@ -118,3 +139,23 @@ Whether your exchange returns incomplete candles or not can be checked using [th
 Due to the danger of repainting, Freqtrade does not allow you to use this incomplete candle.
 
 However, if it is based on the need for the latest price for your strategy - then this requirement can be acquired using the [data provider](strategy-customization.md#possible-options-for-dataprovider) from within the strategy.
+
+### Advanced Freqtrade Exchange configuration
+
+Advanced options can be configured using the `_ft_has_params` setting, which will override Defaults and exchange-specific behavior.
+
+Available options are listed in the exchange-class as `_ft_has_default`.
+
+For example, to test the order type `FOK` with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):
+
+```json
+"exchange": {
+    "name": "kraken",
+    "_ft_has_params": {
+        "order_time_in_force": ["gtc", "fok"],
+        "ohlcv_candle_limit": 200
+        }
+```
+
+!!! Warning
+    Please make sure to fully understand the impacts of these settings before modifying them.

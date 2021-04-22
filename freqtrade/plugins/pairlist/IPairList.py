@@ -85,7 +85,7 @@ class IPairList(LoggingMixin, ABC):
         position in the chain.
 
         :param cached_pairlist: Previously generated pairlist (cached)
-        :param tickers: Tickers (from exchange.get_tickers()).
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
         """
         raise OperationalException("This Pairlist Handler should not be used "

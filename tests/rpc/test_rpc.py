@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 # pragma pylint: disable=invalid-sequence-index, invalid-name, too-many-arguments
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
@@ -10,6 +10,7 @@ from numpy import isnan
 from freqtrade.edge import PairInfo
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
+from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
@@ -52,7 +53,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
         'open_date': ANY,
-        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
@@ -72,7 +72,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'timeframe': 5,
         'open_order_id': ANY,
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
         'close_rate': None,
@@ -91,6 +90,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': -0.00408133,
         'profit_pct': -0.41,
         'profit_abs': -4.09e-06,
+        'profit_fiat': ANY,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
@@ -106,7 +106,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -119,7 +119,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
         'open_date': ANY,
-        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
@@ -139,7 +138,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
         'close_rate': None,
@@ -158,6 +156,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': ANY,
         'profit_pct': ANY,
         'profit_abs': ANY,
+        'profit_fiat': ANY,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
@@ -173,7 +172,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
 
@@ -412,10 +411,10 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert prec_satoshi(stats['profit_closed_coin'], 6.217e-05)
-    assert prec_satoshi(stats['profit_closed_percent'], 6.2)
+    assert prec_satoshi(stats['profit_closed_percent_mean'], 6.2)
     assert prec_satoshi(stats['profit_closed_fiat'], 0.93255)
     assert prec_satoshi(stats['profit_all_coin'], 5.802e-05)
-    assert prec_satoshi(stats['profit_all_percent'], 2.89)
+    assert prec_satoshi(stats['profit_all_percent_mean'], 2.89)
     assert prec_satoshi(stats['profit_all_fiat'], 0.8703)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
@@ -481,10 +480,10 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert prec_satoshi(stats['profit_closed_coin'], 0)
-    assert prec_satoshi(stats['profit_closed_percent'], 0)
+    assert prec_satoshi(stats['profit_closed_percent_mean'], 0)
     assert prec_satoshi(stats['profit_closed_fiat'], 0)
     assert prec_satoshi(stats['profit_all_coin'], 0)
-    assert prec_satoshi(stats['profit_all_percent'], 0)
+    assert prec_satoshi(stats['profit_all_percent_mean'], 0)
     assert prec_satoshi(stats['profit_all_fiat'], 0)
     assert stats['trade_count'] == 1
     assert stats['first_trade_date'] == 'just now'
@@ -570,6 +569,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
     assert prec_satoshi(result['total'], 12.309096315)
     assert prec_satoshi(result['value'], 184636.44472997)
+    assert tickers.call_count == 1
+    assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',
@@ -909,6 +910,24 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):
         rpc._rpc_forcebuy(pair, None)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_rpc_delete_lock(mocker, default_conf):
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
+    pair = 'ETH/BTC'
+
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=4))
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=5))
+    PairLocks.lock_pair(pair, datetime.now(timezone.utc) + timedelta(minutes=10))
+    locks = rpc._rpc_locks()
+    assert locks['lock_count'] == 3
+    locks1 = rpc._rpc_delete_lock(lockid=locks['locks'][0]['id'])
+    assert locks1['lock_count'] == 2
+
+    locks2 = rpc._rpc_delete_lock(pair=pair)
+    assert locks2['lock_count'] == 0
 
 
 def test_rpc_whitelist(mocker, default_conf) -> None:

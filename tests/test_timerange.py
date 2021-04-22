@@ -3,6 +3,7 @@ import arrow
 import pytest
 
 from freqtrade.configuration import TimeRange
+from freqtrade.exceptions import OperationalException
 
 
 def test_parse_timerange_incorrect():
@@ -27,8 +28,12 @@ def test_parse_timerange_incorrect():
     timerange = TimeRange.parse_timerange('-1231006505000')
     assert TimeRange(None, 'date', 0, 1231006505) == timerange
 
-    with pytest.raises(Exception, match=r'Incorrect syntax.*'):
+    with pytest.raises(OperationalException, match=r'Incorrect syntax.*'):
         TimeRange.parse_timerange('-')
+
+    with pytest.raises(OperationalException,
+                       match=r'Start date is after stop date for timerange.*'):
+        TimeRange.parse_timerange('20100523-20100522')
 
 
 def test_subtract_start():

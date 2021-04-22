@@ -18,6 +18,7 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -59,7 +60,7 @@ class SellCheckTuple(NamedTuple):
     sell_type: SellType
 
 
-class IStrategy(ABC):
+class IStrategy(ABC, HyperStrategyMixin):
     """
     Interface for freqtrade strategies
     Defines the mandatory structure must follow any custom strategies
@@ -140,6 +141,7 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        super().__init__(config)
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -649,7 +651,7 @@ class IStrategy(ABC):
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
-        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
         _, roi = self.min_roi_reached_entry(trade_dur)
         if roi is None:
             return False

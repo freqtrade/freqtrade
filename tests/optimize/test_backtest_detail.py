@@ -1,6 +1,5 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, C0330, unused-argument
 import logging
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -269,7 +268,7 @@ tc16 = BTContainer(data=[
 # Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
-# Uses open as sell-rate (special case) - since the roi-time is a multiple of the ticker interval.
+# Uses open as sell-rate (special case) - since the roi-time is a multiple of the timeframe.
 tc17 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
@@ -489,7 +488,8 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
     default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
 
-    mocker.patch("freqtrade.exchange.Exchange.get_fee", MagicMock(return_value=0.0))
+    mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
@@ -503,7 +503,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     min_date, max_date = get_timerange({pair: frame})
     results = backtesting.backtest(
         processed=data_processed,
-        stake_amount=default_conf['stake_amount'],
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
@@ -514,6 +513,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
-        assert res.sell_reason == trade.sell_reason
+        assert res.sell_reason == trade.sell_reason.value
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)

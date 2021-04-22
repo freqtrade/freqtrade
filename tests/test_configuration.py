@@ -430,7 +430,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo'
+        '--export', '/bar/foo',
+        '--stake-amount', 'unlimited'
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -463,6 +464,8 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
 
     assert 'export' in config
     assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
+    assert 'stake_amount' in config
+    assert config['stake_amount'] == 'unlimited'
 
 
 def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> None:
@@ -562,7 +565,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
     with pytest.raises(OperationalException,
-                       match=r"Exchange .* is known to not work with the bot yet.*"):
+                       match=r"Exchange .* will not work with Freqtrade\..*"):
         check_exchange(default_conf)
     caplog.clear()
 
@@ -787,6 +790,38 @@ def test_validate_max_open_trades(default_conf):
         validate_config_consistency(default_conf)
 
 
+def test_validate_price_side(default_conf):
+    default_conf['order_types'] = {
+        "buy": "limit",
+        "sell": "limit",
+        "stoploss": "limit",
+        "stoploss_on_exchange": False,
+    }
+    # Default should pass
+    validate_config_consistency(default_conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['buy'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market buy orders require bid_strategy.price_side = "ask".'):
+        validate_config_consistency(conf)
+
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    with pytest.raises(OperationalException,
+                       match='Market sell orders require ask_strategy.price_side = "bid".'):
+        validate_config_consistency(conf)
+
+    # Validate inversed case
+    conf = deepcopy(default_conf)
+    conf['order_types']['sell'] = 'market'
+    conf['order_types']['buy'] = 'market'
+    conf['ask_strategy']['price_side'] = 'bid'
+    conf['bid_strategy']['price_side'] = 'ask'
+
+    validate_config_consistency(conf)
+
+
 def test_validate_tsl(default_conf):
     default_conf['stoploss'] = 0.0
     with pytest.raises(OperationalException, match='The config stoploss needs to be different '
@@ -823,22 +858,6 @@ def test_validate_tsl(default_conf):
                        match='The config trailing_stop_positive needs to be different from 0 '
                        'to avoid problems with sell orders'):
         validate_config_consistency(default_conf)
-
-
-def test_validate_edge(edge_conf):
-    edge_conf.update({"pairlist": {
-        "method": "VolumePairList",
-    }})
-
-    with pytest.raises(OperationalException,
-                       match="Edge and VolumePairList are incompatible, "
-                       "Edge will override whatever pairs VolumePairlist selects."):
-        validate_config_consistency(edge_conf)
-
-    edge_conf.update({"pairlist": {
-        "method": "StaticPairList",
-    }})
-    validate_config_consistency(edge_conf)
 
 
 def test_validate_edge2(edge_conf):
@@ -983,6 +1002,7 @@ def test_pairlist_resolving():
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['pair_whitelist'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
 
 
@@ -1019,37 +1039,30 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
 
 def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
-                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
-
-    assert load_mock.call_count == 1
-    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert len(config['pairs']) == 23
+    assert 'ETH/BTC' in config['pairs']
+    assert 'XRP/BTC' in config['pairs']
     assert config['exchange']['name'] == default_conf['exchange']['name']
 
 
 def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch("freqtrade.configuration.configuration.json_load",
-                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs_doesnotexist.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -1062,7 +1075,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
 def test_pairlist_resolving_fallback(mocker):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
-    mocker.patch("freqtrade.configuration.configuration.json_load",
+    mocker.patch("freqtrade.configuration.configuration.load_file",
                  MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
     arglist = [
         'download-data',

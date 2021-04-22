@@ -11,10 +11,10 @@ from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
-from freqtrade.configuration.load_config import load_config_file
+from freqtrade.configuration.load_config import load_config_file, load_file
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
-from freqtrade.misc import deep_merge_dicts, json_load
+from freqtrade.misc import deep_merge_dicts
 from freqtrade.state import NON_UTIL_MODES, TRADING_MODES, RunMode
 
 
@@ -214,9 +214,6 @@ class Configuration:
         self._args_to_config(
             config, argname='enable_protections',
             logstring='Parameter --enable-protections detected, enabling Protections. ...')
-        # Setting max_open_trades to infinite if -1
-        if config.get('max_open_trades') == -1:
-            config['max_open_trades'] = float('inf')
 
         if 'use_max_market_positions' in self.args and not self.args["use_max_market_positions"]:
             config.update({'use_max_market_positions': False})
@@ -228,11 +225,23 @@ class Configuration:
                         'overriding max_open_trades to: %s ...', config.get('max_open_trades'))
         elif config['runmode'] in NON_UTIL_MODES:
             logger.info('Using max_open_trades: %s ...', config.get('max_open_trades'))
+        # Setting max_open_trades to infinite if -1
+        if config.get('max_open_trades') == -1:
+            config['max_open_trades'] = float('inf')
+
+        if self.args.get('stake_amount', None):
+            # Convert explicitly to float to support CLI argument for both unlimited and value
+            try:
+                self.args['stake_amount'] = float(self.args['stake_amount'])
+            except ValueError:
+                pass
 
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
-
+        self._args_to_config(config, argname='dry_run_wallet',
+                             logstring='Parameter --dry-run-wallet detected, '
+                             'overriding dry_run_wallet to: {} ...')
         self._args_to_config(config, argname='fee',
                              logstring='Parameter --fee detected, '
                              'setting fee to: {} ...')
@@ -436,6 +445,7 @@ class Configuration:
         """
 
         if "pairs" in config:
+            config['exchange']['pair_whitelist'] = config['pairs']
             return
 
         if "pairs_file" in self.args and self.args["pairs_file"]:
@@ -445,9 +455,8 @@ class Configuration:
             # or if pairs file is specified explicitely
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
-            with pairs_file.open('r') as f:
-                config['pairs'] = json_load(f)
-                config['pairs'].sort()
+            config['pairs'] = load_file(pairs_file)
+            config['pairs'].sort()
             return
 
         if 'config' in self.args and self.args['config']:
@@ -457,7 +466,6 @@ class Configuration:
             # Fall back to /dl_path/pairs.json
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
-                with pairs_file.open('r') as f:
-                    config['pairs'] = json_load(f)
+                config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config:
                     config['pairs'].sort()

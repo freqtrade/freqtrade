@@ -7,6 +7,8 @@ from typing import Optional
 
 import arrow
 
+from freqtrade.exceptions import OperationalException
+
 
 logger = logging.getLogger(__name__)
 
@@ -103,5 +105,8 @@ class TimeRange:
                         stop = int(stops) // 1000
                     else:
                         stop = int(stops)
+                if start > stop > 0:
+                    raise OperationalException(
+                        f'Start date is after stop date for timerange "{text}"')
                 return TimeRange(stype[0], stype[1], start, stop)
-        raise Exception('Incorrect syntax for timerange "%s"' % text)
+        raise OperationalException(f'Incorrect syntax for timerange "{text}"')

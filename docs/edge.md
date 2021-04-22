@@ -1,9 +1,9 @@
 # Edge positioning
 
-The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss. 
+The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss.
 
 !!! Warning
-    `Edge positioning` is not compatible with dynamic (volume-based) whitelist.
+    WHen using `Edge positioning` with a dynamic whitelist (VolumePairList), make sure to also use `AgeFilter` and set it to at least `calculate_since_number_of_days` to avoid problems with missing data.
 
 !!! Note
     `Edge Positioning` only considers *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
@@ -14,7 +14,7 @@ The `Edge Positioning` module uses probability to calculate your win rate and ri
 
 Trading strategies are not perfect. They are frameworks that are susceptible to the market and its indicators. Because the market is not at all predictable, sometimes a strategy will win and sometimes the same strategy will lose.
 
-To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about *how often* the strategy makes or loses money. 
+To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about *how often* the strategy makes or loses money.
 
 !!! tip "It doesn't matter how often, but how much!"
     A bad strategy might make 1 penny in *ten* transactions but lose 1 dollar in *one* transaction. If one only checks the number of winning trades, it would be misleading to think that the strategy is actually making a profit.
@@ -215,16 +215,20 @@ Let's say the stake currency is **ETH** and there is $10$ **ETH** on the wallet.
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
                       [-i TIMEFRAME] [--timerange TIMERANGE]
+                      [--data-format-ohlcv {json,jsongz,hdf5}]
                       [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
-                      [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
+                      [--fee FLOAT] [-p PAIRS [PAIRS ...]]
+                      [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -233,6 +237,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --stoplosses STOPLOSS_RANGE
                         Defines a range of stoploss values against which edge
                         will assess the strategy. The format is "min,max,step"

@@ -82,11 +82,18 @@ Example configuration showing the different settings:
          "buy": "silent",
          "sell": "on",
          "buy_cancel": "silent",
-         "sell_cancel": "on"
+         "sell_cancel": "on",
+         "buy_fill": "off",
+         "sell_fill": "off"
       },
       "balance_dust_level": 0.01
    },
 ```
+
+`buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
+`sell` notifications are sent when the order is placed, while `sell_fill` notifications are sent when the order is filled on the exchange.
+`*_fill` notifications are off by default and must be explicitly enabled.
+
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 
@@ -146,6 +153,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
+| `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
 | `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).

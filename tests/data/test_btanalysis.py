@@ -274,15 +274,17 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
-    drawdown, h, low = calculate_max_drawdown(bt_data)
+    drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(bt_data)
     assert isinstance(drawdown, float)
     assert pytest.approx(drawdown) == 0.21142322
-    assert isinstance(h, Timestamp)
-    assert isinstance(low, Timestamp)
-    assert h == Timestamp('2018-01-24 14:25:00', tz='UTC')
-    assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    assert isinstance(hdate, Timestamp)
+    assert isinstance(lowdate, Timestamp)
+    assert isinstance(hval, float)
+    assert isinstance(lval, float)
+    assert hdate == Timestamp('2018-01-24 14:25:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
-        drawdown, h, low = calculate_max_drawdown(DataFrame())
+        drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(DataFrame())
 
 
 def test_calculate_csum(testdatadir):
@@ -294,6 +296,10 @@ def test_calculate_csum(testdatadir):
     assert isinstance(csum_max, float)
     assert csum_min < 0.01
     assert csum_max > 0.02
+    csum_min1, csum_max1 = calculate_csum(bt_data, 5)
+
+    assert csum_min1 == csum_min + 5
+    assert csum_max1 == csum_max + 5
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         csum_min, csum_max = calculate_csum(DataFrame())
@@ -310,13 +316,16 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
     df1 = df.copy()
-    drawdown, h, low = calculate_max_drawdown(df, date_col='open_date', value_col='profit')
+    drawdown, hdate, ldate, hval, lval = calculate_max_drawdown(
+        df, date_col='open_date', value_col='profit')
     # Ensure df has not been altered.
     assert df.equals(df1)
 
     assert isinstance(drawdown, float)
     # High must be before low
-    assert h < low
+    assert hdate < ldate
+    # High value must be higher than low value
+    assert hval > lval
     assert drawdown == 0.091755
 
     df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])

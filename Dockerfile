@@ -1,14 +1,23 @@
-FROM python:3.9.2-slim-buster as base
+FROM python:3.9.4-slim-buster as base
 
 # Setup env
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONFAULTHANDLER 1
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/ftuser/.local/bin:$PATH
+ENV FT_APP_ENV="docker"
 
 # Prepare environment
-RUN mkdir /freqtrade
+RUN mkdir /freqtrade \
+  && apt update \
+  && apt install -y sudo \
+  && apt-get clean \
+  && useradd -u 1000 -G sudo -U -m ftuser \
+  && chown ftuser:ftuser /freqtrade \
+  # Allow sudoers
+  && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers
+
 WORKDIR /freqtrade
 
 # Install dependencies
@@ -24,7 +33,8 @@ RUN cd /tmp && /tmp/install_ta-lib.sh && rm -r /tmp/*ta-lib*
 ENV LD_LIBRARY_PATH /usr/local/lib
 
 # Install dependencies
-COPY requirements.txt requirements-hyperopt.txt /freqtrade/
+COPY --chown=ftuser:ftuser requirements.txt requirements-hyperopt.txt /freqtrade/
+USER ftuser
 RUN  pip install --user --no-cache-dir numpy \
   && pip install --user --no-cache-dir -r requirements-hyperopt.txt
 
@@ -33,13 +43,13 @@ FROM base as runtime-image
 COPY --from=python-deps /usr/local/lib /usr/local/lib
 ENV LD_LIBRARY_PATH /usr/local/lib
 
-COPY --from=python-deps /root/.local /root/.local
+COPY --from=python-deps --chown=ftuser:ftuser /home/ftuser/.local /home/ftuser/.local
 
-
-
+USER ftuser
 # Install and execute
-COPY . /freqtrade/
-RUN pip install -e . --no-cache-dir \
+COPY --chown=ftuser:ftuser . /freqtrade/
+
+RUN pip install -e . --user --no-cache-dir \
   && mkdir /freqtrade/user_data/ \
   && freqtrade install-ui
 
