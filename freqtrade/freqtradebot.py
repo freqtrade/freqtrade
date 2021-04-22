@@ -456,7 +456,8 @@ class FreqtradeBot(LoggingMixin):
             lock = PairLocks.get_pair_longest_lock(pair, nowtime)
             if lock:
                 self.log_once(f"Pair {pair} is still locked until "
-                              f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)}.",
+                              f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
+                              f"due to {lock.reason}.",
                               logger.info)
             else:
                 self.log_once(f"Pair {pair} is still locked.", logger.info)
