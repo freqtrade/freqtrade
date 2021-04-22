@@ -11,8 +11,9 @@ Otherwise `--exchange` becomes mandatory.
 You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101-`). For incremental downloads, the relative approach should be used.
 
 !!! Tip "Tip: Updating existing data"
-    If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
-    Be careful though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
+    If you already have backtesting data available in your data-directory and would like to refresh this data up to today, do not use `--days` or `--timerange` parameters. Freqtrade will keep the available data and only download the missing data.
+    If you are updating existing data after inserting new pairs that you have no data for, use `--new-pairs-days xx` parameter. Specified number of days will be downloaded for new pairs while old pairs will be updated with missing data only.
+    If you use `--days xx` parameter alone - data for specified number of days will be downloaded for _all_ pairs. Be careful, if specified number of days is smaller than gap between now and last downloaded candle - freqtrade will delete all existing data to avoid gaps in candle data.
 
 ### Usage
 
@@ -34,6 +35,7 @@ optional arguments:
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
+  --new-pairs-days INT  Download data of new pairs for given number of days. Default: `30`.
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
