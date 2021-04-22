@@ -350,7 +350,6 @@ AVAILABLE_CLI_OPTIONS = {
         help='Download data of new pairs for given number of days. Default: `%(default)s`.',
         type=check_int_positive,
         metavar='INT',
-        default=30,
     ),
     "download_trades": Arg(
         '--dl-trades',
