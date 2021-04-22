@@ -96,6 +96,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
+        'new_pairs_days': {'type': 'integer', 'default': 30},
         'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {

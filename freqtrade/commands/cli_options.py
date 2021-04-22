@@ -345,6 +345,12 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
+    "new_pairs_days": Arg(
+        '--new-pairs-days',
+        help='Download data of new pairs for given number of days. Default: `%(default)s`.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
     "download_trades": Arg(
         '--dl-trades',
         help='Download trades instead of OHLCV data. The bot will resample trades to the '

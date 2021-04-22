@@ -60,8 +60,9 @@ ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "timerange", "download_trades", "exchange",
-                      "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "timerange",
+                      "download_trades", "exchange", "timeframes", "erase", "dataformat_ohlcv",
+                      "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
