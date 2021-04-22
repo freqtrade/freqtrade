@@ -11,7 +11,6 @@ DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
-NEW_PAIRS_DAYS = 30
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
@@ -97,7 +96,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
-        'new_pairs_days': {'type': 'integer', 'default': NEW_PAIRS_DAYS},
+        'new_pairs_days': {'type': 'integer', 'default': 30},
         'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {

@@ -21,8 +21,9 @@ You can use a relative timerange (`--days 20`) or an absolute starting point (`-
 usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH]
                                [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
-                               [--days INT] [--timerange TIMERANGE]
-                               [--dl-trades] [--exchange EXCHANGE]
+                               [--days INT] [--new-pairs-days INT]
+                               [--timerange TIMERANGE] [--dl-trades]
+                               [--exchange EXCHANGE]
                                [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
@@ -35,7 +36,8 @@ optional arguments:
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
-  --new-pairs-days INT  Download data of new pairs for given number of days. Default: `30`.
+  --new-pairs-days INT  Download data of new pairs for given number of days.
+                        Default: `None`.
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
