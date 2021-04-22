@@ -1372,6 +1372,35 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
+def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
+
+    default_conf['telegram']['notification_settings']['sell_fill'] = 'on'
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+
+    telegram.send_msg({
+        'type': RPCMessageType.SELL_FILL,
+        'trade_id': 1,
+        'exchange': 'Binance',
+        'pair': 'ETH/USDT',
+        'gain': 'loss',
+        'limit': 3.201e-05,
+        'amount': 0.1,
+        'order_type': 'market',
+        'open_rate': 500,
+        'close_rate': 550,
+        'current_rate': 3.201e-05,
+        'profit_amount': -0.05746268,
+        'profit_ratio': -0.57405275,
+        'stake_currency': 'ETH',
+        'fiat_currency': 'USD',
+        'sell_reason': SellType.STOP_LOSS.value,
+        'open_date': arrow.utcnow().shift(hours=-1),
+        'close_date': arrow.utcnow(),
+    })
+    assert msg_mock.call_args[0][0] \
+        == ('\N{LARGE CIRCLE} *Binance:* Sell order for ETH/USDT (#1) filled for 550.')
+
+
 def test_send_msg_status_notification(default_conf, mocker) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)

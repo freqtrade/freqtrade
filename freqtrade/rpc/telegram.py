@@ -242,13 +242,14 @@ class Telegram(RPCHandler):
                        "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))
 
-        elif msg['type'] in (RPCMessageType.BUY_FILL, RPCMessageType.SELL_FILL):
-            msg['message_side'] = 'Buy' if msg['type'] == RPCMessageType.BUY_FILL else 'Sell'
-
+        elif msg['type'] == RPCMessageType.BUY_FILL:
             message = ("\N{LARGE CIRCLE} *{exchange}:* "
-                       "{message_side} order for {pair} (#{trade_id}) filled "
+                       "Buy order for {pair} (#{trade_id}) filled "
                        "for {open_rate}.".format(**msg))
-
+        elif msg['type'] == RPCMessageType.SELL_FILL:
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Sell order for {pair} (#{trade_id}) filled "
+                       "for {close_rate}.".format(**msg))
         elif msg['type'] == RPCMessageType.SELL:
             message = self._format_sell_msg(msg)
 
