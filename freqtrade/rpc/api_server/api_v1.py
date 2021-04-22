@@ -85,8 +85,8 @@ def status(rpc: RPC = Depends(get_rpc)):
 # Using the responsemodel here will cause a ~100% increase in response time (from 1s to 2s)
 # on big databases. Correct response model: response_model=TradeResponse,
 @router.get('/trades', tags=['info', 'trading'])
-def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_trade_history(limit)
+def trades(limit: int = 500, offset: int = 0, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_trade_history(limit, offset=offset, order_by_id=True)
 
 
 @router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
