@@ -478,6 +478,7 @@ class Backtesting:
         data: Dict[str, Any] = {}
 
         data, timerange = self.load_bt_data()
+        logger.info("Dataload complete. Calculating indicators")
 
         for strat in self.strategylist:
             min_date, max_date = self.backtest_one_strategy(strat, data, timerange)

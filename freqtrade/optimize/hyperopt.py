@@ -379,7 +379,7 @@ class Hyperopt:
         logger.info(f"Using optimizer random state: {self.random_state}")
         self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
-
+        logger.info("Dataload complete. Calculating indicators")
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
