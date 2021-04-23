@@ -260,12 +260,15 @@ class HyperStrategyMixin(object):
         :param params: Dictionary with new parameter values.
         """
         if not params:
-            return
+            logger.info(f"No params for {space} found, using default values.")
+
         for attr_name, attr in self.enumerate_parameters():
-            if attr_name in params:
+            if params and attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
                     logger.info(f'Strategy Parameter: {attr_name} = {attr.value}')
                 else:
                     logger.warning(f'Parameter "{attr_name}" exists, but is disabled. '
                                    f'Default value "{attr.value}" used.')
+            else:
+                logger.info(f'Strategy Parameter(default): {attr_name} = {attr.value}')
