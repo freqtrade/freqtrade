@@ -874,8 +874,15 @@ class Exchange:
                 "Fetching pair %s, interval %s, since %s %s...",
                 pair, timeframe, since_ms, s
             )
-
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
+			#fixing support for HitBTC #4778
+            if self.name== 'HitBTC':
+                data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
+                                                        since=since_ms,
+                                                        limit=self.ohlcv_candle_limit(timeframe),
+                                                        params={"sort": "DESC"}
+                                                         )
+            else:
+                data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
                                                      limit=self.ohlcv_candle_limit(timeframe))
 
