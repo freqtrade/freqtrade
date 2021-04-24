@@ -11,7 +11,16 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command line option.
 
-In some advanced use cases, multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
+Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
+
+!!! Tip "Use multiple configuration files to keep secrets secret"
+    You can use a 2nd configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+
+    ``` bash
+    freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>
+    ```
+    The 2nd file should only specify what you intend to override.
+    If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
 
 If you used the [Quick start](installation.md/#quick-start) method for installing 
 the bot, the installation script should have already created the default configuration file (`config.json`) for you.
@@ -518,15 +527,26 @@ API Keys are usually only required for live trading (trading for real money, bot
 **Insert your Exchange API key (change them by fake api keys):**
 
 ```json
-"exchange": {
+{
+    "exchange": {
         "name": "bittrex",
         "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
-        ...
+        //"password": "", // Optional, not needed by all exchanges)
+        // ...
+    }
+    //...
 }
 ```
 
 You should also make sure to read the [Exchanges](exchanges.md) section of the documentation to be aware of potential configuration details specific to your exchange.
+
+!!! Hint "Keep your secrets secret"
+    To keep your secrets secret, we recommend to use a 2nd configuration for your API keys.
+    Simply use the above snippet in a new configuration file (e.g. `config-private.json`) and keep your settings in this file.
+    You can then start the bot with `freqtrade trade --config user_data/config.json --config user_data/config-private.json <...>` to have your keys loaded.
+
+    **NEVER** share your private configuration file or your exchange keys with anyone!
 
 ### Using proxy with Freqtrade
 
