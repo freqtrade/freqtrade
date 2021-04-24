@@ -352,7 +352,7 @@ class Backtesting:
         data: Dict = self._get_ohlcv_as_lists(processed)
 
         # Indexes per pair, so some pairs are allowed to have a missing start.
-        indexes: Dict = {}
+        indexes: Dict = defaultdict(int)
         tmp = start_date + timedelta(minutes=self.timeframe_min)
 
         open_trades: Dict[str, List[LocalTrade]] = defaultdict(list)
@@ -363,9 +363,6 @@ class Backtesting:
             open_trade_count_start = open_trade_count
 
             for i, pair in enumerate(data):
-                if pair not in indexes:
-                    indexes[pair] = 0
-
                 try:
                     row = data[pair][indexes[pair]]
                 except IndexError:
