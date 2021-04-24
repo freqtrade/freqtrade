@@ -79,8 +79,30 @@ class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
         # Define a custom stoploss space.
         def stoploss_space(self):
-            return [Real(-0.05, -0.01, name='stoploss')]
+            return [SKDecimal(-0.05, -0.01, decimals=3, name='stoploss')]
 ```
+
+## Space options
+
+For the additional spaces, scikit-optimize (in combination with Freqtrade) provides the following space types:
+
+* `Categorical` - Pick from a list of categories (e.g. `Categorical(['a', 'b', 'c'], name="cat")`)
+* `Integer` - Pick from a range of whole numbers (e.g. `Integer(1, 10, name='rsi')`)
+* `SKDecimal` - Pick from a range of decimal numbers with limited precision (e.g. `SKDecimal(0.1, 0.5, decimals=3, name='adx')`). *Available only with freqtrade*.
+* `Real` - Pick from a range of decimal numbers with full precision (e.g. `Real(0.1, 0.5, name='adx')`
+
+You can import all of these from `freqtrade.optimize.space`, although `Categorical`, `Integer` and `Real` are only aliases for their corresponding scikit-optimize Spaces. `SKDecimal` is provided by freqtrade for faster optimizations.
+
+``` python
+from freqtrade.optimize.space import Categorical, Dimension, Integer, SKDecimal, Real  # noqa
+```
+
+!!! Hint "SKDecimal vs. Real"
+    We recommend to use `SKDecimal` instead of the `Real` space in almost all cases. While the Real space provides full accuracy (up to ~16 decimal places) - this precision is rarely needed, and leads to unnecessary long hyperopt times.
+
+    Assuming the definition of a rather small space (`SKDecimal(0.10, 0.15, decimals=2, name='xxx')`) - SKDecimal will have 5 possibilities (`[0.10, 0.11, 0.12, 0.13, 0.14, 0.15]`).
+
+    A corresponding real space `Real(0.10, 0.15 name='xxx')`  on the other hand has an almost unlimited number of possibilities (`[0.10, 0.010000000001, 0.010000000002, ... 0.014999999999, 0.01500000000]`).
 
 ---
 

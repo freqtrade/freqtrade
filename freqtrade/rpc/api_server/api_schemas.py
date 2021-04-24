@@ -189,7 +189,6 @@ class OpenTradeSchema(TradeSchema):
     stoploss_current_dist_ratio: Optional[float]
     stoploss_entry_dist: Optional[float]
     stoploss_entry_dist_ratio: Optional[float]
-    base_currency: str
     current_profit: float
     current_profit_abs: float
     current_profit_pct: float
@@ -200,6 +199,7 @@ class OpenTradeSchema(TradeSchema):
 class TradeResponse(BaseModel):
     trades: List[TradeSchema]
     trades_count: int
+    total_trades: int
 
 
 class ForceBuyResponse(BaseModel):

@@ -14,7 +14,7 @@ To simplify running freqtrade, please install [`docker-compose`](https://docs.do
 
 ## Freqtrade with docker-compose
 
-Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/), as well as a [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) ready for usage.
+Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.com/r/freqtradeorg/freqtrade/), as well as a [docker-compose file](https://github.com/freqtrade/freqtrade/blob/stable/docker-compose.yml) ready for usage.
 
 !!! Note
     - The following section assumes that `docker` and `docker-compose` are installed and available to the logged in user.
@@ -22,7 +22,7 @@ Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.co
 
 ### Docker quick start
 
-Create a new directory and place the [docker-compose file](https://github.com/freqtrade/freqtrade/blob/develop/docker-compose.yml) in this directory.
+Create a new directory and place the [docker-compose file](https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml) in this directory.
 
 === "PC/MAC/Linux"
     ``` bash

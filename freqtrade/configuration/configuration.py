@@ -108,6 +108,8 @@ class Configuration:
 
         self._process_plot_options(config)
 
+        self._process_data_options(config)
+
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
 
@@ -399,6 +401,11 @@ class Configuration:
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
 
+    def _process_data_options(self, config: Dict[str, Any]) -> None:
+
+        self._args_to_config(config, argname='new_pairs_days',
+                             logstring='Detected --new-pairs-days: {}')
+
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='dry_run',
@@ -445,6 +452,7 @@ class Configuration:
         """
 
         if "pairs" in config:
+            config['exchange']['pair_whitelist'] = config['pairs']
             return
 
         if "pairs_file" in self.args and self.args["pairs_file"]:

@@ -219,7 +219,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -258,7 +258,7 @@ def test_min_roi_reached2(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -293,7 +293,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
 
@@ -346,7 +346,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
     trade.adjust_min_max_rates(trade.open_rate)

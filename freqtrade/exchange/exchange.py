@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from cachetools import TTLCache
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from pandas import DataFrame
@@ -63,6 +64,7 @@ class Exchange:
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
+        "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
 
@@ -82,6 +84,9 @@ class Exchange:
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
+
+        # Cache for 10 minutes ...
+        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -534,7 +539,9 @@ class Exchange:
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += abs(stoploss)
+        amount_reserve_percent = (
+          amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+        )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
 
@@ -692,9 +699,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self) -> Dict:
+    def get_tickers(self, cached: bool = False) -> Dict:
+        """
+        :param cached: Allow cached result
+        :return: fetch_tickers result
+        """
+        if cached:
+            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            if tickers:
+                return tickers
         try:
-            return self._api.fetch_tickers()
+            tickers = self._api.fetch_tickers()
+            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
@@ -1154,14 +1171,20 @@ class Exchange:
         return self.fetch_order(order_id, pair)
 
     @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
         """
         Get next greater value in the list.
         Used by fetch_l2_order_book if the api only supports a limited range
         """
         if not limit_range:
             return limit
-        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -1171,7 +1194,8 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
         try:
 
             return self._api.fetch_l2_order_book(pair, limit1)

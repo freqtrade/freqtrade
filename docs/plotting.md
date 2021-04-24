@@ -37,7 +37,7 @@ usage: freqtrade plot-dataframe [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --indicators1 INDICATORS1 [INDICATORS1 ...]
                         Set indicators from your strategy you want in the
@@ -90,6 +90,7 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 Example:
@@ -244,7 +245,7 @@ usage: freqtrade plot-profit [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --timerange TIMERANGE
                         Specify what timerange of data to use.
@@ -286,6 +287,7 @@ Strategy arguments:
                         Specify strategy class name which will be used by the
                         bot.
   --strategy-path PATH  Specify additional strategy lookup path.
+
 ```
 
 The `-p/--pairs`  argument, can be used to limit the pairs that are considered for this calculation.

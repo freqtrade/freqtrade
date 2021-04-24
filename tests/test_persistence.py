@@ -64,7 +64,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
+def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     """
     On this test we will buy and sell a crypto currency.
 
@@ -102,7 +102,7 @@ def test_update_with_bittrex(limit_buy_order, limit_sell_order, fee, caplog):
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -142,7 +142,7 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().datetime,
-        exchange='bittrex',
+        exchange='binance',
     )
 
     trade.open_order_id = 'something'
@@ -177,7 +177,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
         amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
 
     trade.open_order_id = 'something'
@@ -205,7 +205,7 @@ def test_trade_close(limit_buy_order, limit_sell_order, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=arrow.Arrow(2020, 2, 1, 15, 5, 1).datetime,
-        exchange='bittrex',
+        exchange='binance',
     )
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -233,7 +233,7 @@ def test_calc_close_trade_price_exception(limit_buy_order, fee):
         amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
 
     trade.open_order_id = 'something'
@@ -250,7 +250,7 @@ def test_update_open_order(limit_buy_order):
         amount=5,
         fee_open=0.1,
         fee_close=0.1,
-        exchange='bittrex',
+        exchange='binance',
     )
 
     assert trade.open_order_id is None
@@ -274,7 +274,7 @@ def test_update_invalid_order(limit_buy_order):
         open_rate=0.001,
         fee_open=0.1,
         fee_close=0.1,
-        exchange='bittrex',
+        exchange='binance',
     )
     limit_buy_order['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
@@ -290,7 +290,7 @@ def test_calc_open_trade_value(limit_buy_order, fee):
         open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
     trade.open_order_id = 'open_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -311,7 +311,7 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
         open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
     trade.open_order_id = 'close_trade'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -336,7 +336,7 @@ def test_calc_profit(limit_buy_order, limit_sell_order, fee):
         open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
     trade.open_order_id = 'something'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -370,7 +370,7 @@ def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
         open_rate=0.00001099,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
     )
     trade.open_order_id = 'something'
     trade.update(limit_buy_order)  # Buy @ 0.00001099
@@ -388,6 +388,9 @@ def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
     # Test with a custom fee rate on the close trade
     assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
 
+    trade.open_trade_value = 0.0
+    assert trade.calc_profit_ratio(fee=0.003) == 0.0
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_clean_dry_run_db(default_conf, fee):
@@ -400,7 +403,7 @@ def test_clean_dry_run_db(default_conf, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='dry_run_buy_12345'
     )
     Trade.query.session.add(trade)
@@ -412,7 +415,7 @@ def test_clean_dry_run_db(default_conf, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='dry_run_sell_12345'
     )
     Trade.query.session.add(trade)
@@ -425,7 +428,7 @@ def test_clean_dry_run_db(default_conf, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='prod_buy_12345'
     )
     Trade.query.session.add(trade)
@@ -463,7 +466,7 @@ def test_migrate_old(mocker, default_conf, fee):
                                 );"""
     insert_table_old = """INSERT INTO trades (exchange, pair, is_open, open_order_id, fee,
                           open_rate, stake_amount, amount, open_date)
-                          VALUES ('BITTREX', 'BTC_ETC', 1, '123123', {fee},
+                          VALUES ('binance', 'BTC_ETC', 1, '123123', {fee},
                           0.00258580, {stake}, {amount},
                           '2017-11-28 12:44:24.000000')
                           """.format(fee=fee.return_value,
@@ -472,7 +475,7 @@ def test_migrate_old(mocker, default_conf, fee):
                                      )
     insert_table_old2 = """INSERT INTO trades (exchange, pair, is_open, fee,
                           open_rate, close_rate, stake_amount, amount, open_date)
-                          VALUES ('BITTREX', 'BTC_ETC', 0, {fee},
+                          VALUES ('binance', 'BTC_ETC', 0, {fee},
                           0.00258580, 0.00268580, {stake}, {amount},
                           '2017-11-28 12:44:24.000000')
                           """.format(fee=fee.return_value,
@@ -500,7 +503,7 @@ def test_migrate_old(mocker, default_conf, fee):
     assert trade.amount_requested == amount
     assert trade.stake_amount == default_conf.get("stake_amount")
     assert trade.pair == "ETC/BTC"
-    assert trade.exchange == "bittrex"
+    assert trade.exchange == "binance"
     assert trade.max_rate == 0.0
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
@@ -694,7 +697,7 @@ def test_adjust_stop_loss(fee):
         amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
         max_rate=1,
     )
@@ -746,7 +749,7 @@ def test_adjust_min_max_rates(fee):
         amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
 
@@ -790,7 +793,7 @@ def test_to_json(default_conf, fee):
         fee_close=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='dry_run_buy_12345'
     )
     result = trade.to_json()
@@ -841,7 +844,7 @@ def test_to_json(default_conf, fee):
                       'max_rate': None,
                       'strategy': None,
                       'timeframe': None,
-                      'exchange': 'bittrex',
+                      'exchange': 'binance',
                       }
 
     # Simulate dry_run entries
@@ -856,7 +859,7 @@ def test_to_json(default_conf, fee):
         close_date=arrow.utcnow().shift(hours=-1).datetime,
         open_rate=0.123,
         close_rate=0.125,
-        exchange='bittrex',
+        exchange='binance',
     )
     result = trade.to_json()
     assert isinstance(result, dict)
@@ -906,7 +909,7 @@ def test_to_json(default_conf, fee):
                       'sell_order_status': None,
                       'strategy': None,
                       'timeframe': None,
-                      'exchange': 'bittrex',
+                      'exchange': 'binance',
                       }
 
 
@@ -919,7 +922,7 @@ def test_stoploss_reinitialization(default_conf, fee):
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         amount=10,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
         max_rate=1,
     )
@@ -978,7 +981,7 @@ def test_update_fee(fee):
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         amount=10,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
         max_rate=1,
     )
@@ -1017,7 +1020,7 @@ def test_fee_updated(fee):
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         amount=10,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
         max_rate=1,
     )

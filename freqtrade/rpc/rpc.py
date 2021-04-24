@@ -31,13 +31,15 @@ logger = logging.getLogger(__name__)
 
 
 class RPCMessageType(Enum):
-    STATUS_NOTIFICATION = 'status'
-    WARNING_NOTIFICATION = 'warning'
-    STARTUP_NOTIFICATION = 'startup'
-    BUY_NOTIFICATION = 'buy'
-    BUY_CANCEL_NOTIFICATION = 'buy_cancel'
-    SELL_NOTIFICATION = 'sell'
-    SELL_CANCEL_NOTIFICATION = 'sell_cancel'
+    STATUS = 'status'
+    WARNING = 'warning'
+    STARTUP = 'startup'
+    BUY = 'buy'
+    BUY_FILL = 'buy_fill'
+    BUY_CANCEL = 'buy_cancel'
+    SELL = 'sell'
+    SELL_FILL = 'sell_fill'
+    SELL_CANCEL = 'sell_cancel'
 
     def __repr__(self):
         return self.value
@@ -167,10 +169,13 @@ class RPC:
                 if trade.open_order_id:
                     order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
                 # calculate profit and send message to user
-                try:
-                    current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                except (ExchangeError, PricingError):
-                    current_rate = NAN
+                if trade.is_open:
+                    try:
+                        current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
+                    except (ExchangeError, PricingError):
+                        current_rate = NAN
+                else:
+                    current_rate = trade.close_rate
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
 
@@ -295,11 +300,12 @@ class RPC:
             'data': data
         }
 
-    def _rpc_trade_history(self, limit: int) -> Dict:
+    def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
         """ Returns the X last trades """
-        if limit > 0:
+        order_by = Trade.id if order_by_id else Trade.close_date.desc()
+        if limit:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
-                Trade.close_date.desc()).limit(limit)
+                order_by).limit(limit).offset(offset)
         else:
             trades = Trade.get_trades([Trade.is_open.is_(False)]).order_by(
                 Trade.close_date.desc()).all()
@@ -308,7 +314,8 @@ class RPC:
 
         return {
             "trades": output,
-            "trades_count": len(output)
+            "trades_count": len(output),
+            "total_trades": Trade.get_trades([Trade.is_open.is_(False)]).count(),
         }
 
     def _rpc_stats(self) -> Dict[str, Any]:
@@ -442,7 +449,7 @@ class RPC:
         output = []
         total = 0.0
         try:
-            tickers = self._freqtrade.exchange.get_tickers()
+            tickers = self._freqtrade.exchange.get_tickers(cached=True)
         except (ExchangeError):
             raise RPCException('Error getting current tickers.')
 

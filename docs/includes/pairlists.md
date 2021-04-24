@@ -60,6 +60,8 @@ When used in the chain of Pairlist Handlers in a non-leading position (after Sta
 When used on the leading position of the chain of Pairlist Handlers, it does not consider `pair_whitelist` configuration setting, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
 
 The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+The pairlist cache (`refresh_period`) on `VolumePairList` is only applicable to generating pairlists.
+Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.
 
 `VolumePairList` is based on the ticker data from exchange, as reported by the ccxt library:
 
@@ -90,6 +92,7 @@ This filter allows freqtrade to ignore pairs until they have been listed for at 
 #### PerformanceFilter
 
 Sorts pairs by past trade performance, as follows:
+
 1. Positive performance.
 2. No closed trades yet.
 3. Negative performance.

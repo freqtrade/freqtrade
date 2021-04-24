@@ -15,3 +15,4 @@ from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges,
                                          validate_exchanges)
 from freqtrade.exchange.ftx import Ftx
 from freqtrade.exchange.kraken import Kraken
+from freqtrade.exchange.kucoin import Kucoin

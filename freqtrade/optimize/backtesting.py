@@ -239,7 +239,7 @@ class Backtesting:
                 # Use the maximum between close_rate and low as we
                 # cannot sell outside of a candle.
                 # Applies when a new ROI setting comes in place and the whole candle is above that.
-                return max(close_rate, sell_row[LOW_IDX])
+                return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
             else:
                 # This should not be reached...
@@ -478,6 +478,7 @@ class Backtesting:
         data: Dict[str, Any] = {}
 
         data, timerange = self.load_bt_data()
+        logger.info("Dataload complete. Calculating indicators")
 
         for strat in self.strategylist:
             min_date, max_date = self.backtest_one_strategy(strat, data, timerange)

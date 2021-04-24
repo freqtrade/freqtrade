@@ -71,7 +71,7 @@ def test_send_msg_telegram_disabled(mocker, default_conf, caplog) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg({
-        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'type': RPCMessageType.STATUS,
         'status': 'test'
     })
 
@@ -86,7 +86,7 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg({
-        'type': RPCMessageType.STATUS_NOTIFICATION,
+        'type': RPCMessageType.STATUS,
         'status': 'test'
     })
 
@@ -124,7 +124,7 @@ def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> Non
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     assert 'webhook' in [mod.name for mod in rpc_manager.registered_modules]
-    rpc_manager.send_msg({'type': RPCMessageType.STARTUP_NOTIFICATION,
+    rpc_manager.send_msg({'type': RPCMessageType.STARTUP,
                           'status': 'TestMessage'})
     assert log_has(
         "Message type 'startup' not implemented by handler webhook.",
@@ -140,7 +140,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf, caplog) -> None:
     rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
 
     assert telegram_mock.call_count == 3
-    assert "*Exchange:* `bittrex`" in telegram_mock.call_args_list[1][0][0]['status']
+    assert "*Exchange:* `binance`" in telegram_mock.call_args_list[1][0][0]['status']
 
     telegram_mock.reset_mock()
     default_conf['dry_run'] = True

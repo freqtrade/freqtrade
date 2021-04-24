@@ -468,7 +468,7 @@ def test_api_show_config(botclient, mocker):
     rc = client_get(client, f"{BASE_URI}/show_config")
     assert_response(rc)
     assert 'dry_run' in rc.json()
-    assert rc.json()['exchange'] == 'bittrex'
+    assert rc.json()['exchange'] == 'binance'
     assert rc.json()['timeframe'] == '5m'
     assert rc.json()['timeframe_ms'] == 300000
     assert rc.json()['timeframe_min'] == 5
@@ -506,8 +506,9 @@ def test_api_trades(botclient, mocker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json()) == 2
+    assert len(rc.json()) == 3
     assert rc.json()['trades_count'] == 0
+    assert rc.json()['total_trades'] == 0
 
     create_mock_trades(fee)
     Trade.query.session.flush()
@@ -516,10 +517,32 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert_response(rc)
     assert len(rc.json()['trades']) == 2
     assert rc.json()['trades_count'] == 2
+    assert rc.json()['total_trades'] == 2
     rc = client_get(client, f"{BASE_URI}/trades?limit=1")
     assert_response(rc)
     assert len(rc.json()['trades']) == 1
     assert rc.json()['trades_count'] == 1
+    assert rc.json()['total_trades'] == 2
+
+
+def test_api_trade_single(botclient, mocker, fee, ticker, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+    )
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Trade not found.'
+
+    create_mock_trades(fee)
+    Trade.query.session.flush()
+
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc)
+    assert rc.json()['trade_id'] == 3
 
 
 def test_api_delete_trade(botclient, mocker, fee, markets):
@@ -753,7 +776,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert rc.json()[0] == {
         'amount': 123.0,
         'amount_requested': 123.0,
-        'base_currency': 'BTC',
         'close_date': None,
         'close_timestamp': None,
         'close_profit': None,
@@ -806,7 +828,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -897,7 +919,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         pair='ETH/ETH',
         amount=1,
         amount_requested=1,
-        exchange='bittrex',
+        exchange='binance',
         stake_amount=1,
         open_rate=0.245441,
         open_order_id="123456",
@@ -960,7 +982,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
         }
 
 

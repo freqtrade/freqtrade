@@ -371,7 +371,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert isclose(result, 2 * 1.1)
+    assert isclose(result, 2 * (1+0.05) / (1-abs(stoploss)))
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -383,7 +383,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, 2 * 2 * 1.1)
+    assert isclose(result, 2 * 2 * (1+0.05) / (1-abs(stoploss)))
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -395,7 +395,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(2, 2 * 2) * 1.1)
+    assert isclose(result, max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -407,10 +407,10 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(8, 2 * 2) * 1.1)
+    assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * 1.45)
+    assert isclose(result, max(8, 2 * 2) * 1.5)
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
@@ -432,7 +432,10 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * 1.1, 8)
+    assert round(result, 8) == round(
+        max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
+        8
+    )
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -1319,6 +1322,16 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     assert tickers['ETH/BTC']['ask'] == 1
     assert tickers['BCH/BTC']['bid'] == 0.6
     assert tickers['BCH/BTC']['ask'] == 0.5
+    assert api_mock.fetch_tickers.call_count == 1
+
+    api_mock.fetch_tickers.reset_mock()
+
+    # Cached ticker should not call api again
+    tickers2 = exchange.get_tickers(cached=True)
+    assert tickers2 == tickers
+    assert api_mock.fetch_tickers.call_count == 0
+    tickers2 = exchange.get_tickers(cached=False)
+    assert api_mock.fetch_tickers.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "get_tickers", "fetch_tickers")
@@ -1641,6 +1654,9 @@ def test_get_next_limit_in_list():
     # Going over the limit ...
     assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
     assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
+    # Without required range
+    assert Exchange.get_next_limit_in_list(2000, limit_range, False) is None
+    assert Exchange.get_next_limit_in_list(15, limit_range, False) == 20
 
     assert Exchange.get_next_limit_in_list(21, None) == 21
     assert Exchange.get_next_limit_in_list(100, None) == 100

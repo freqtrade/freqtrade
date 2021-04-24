@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
@@ -160,8 +159,8 @@ class Order(_DECL_BASE):
         if self.status in ('closed', 'canceled', 'cancelled'):
             self.ft_is_open = False
             if order.get('filled', 0) > 0:
-                self.order_filled_date = arrow.utcnow().datetime
-        self.order_update_date = arrow.utcnow().datetime
+                self.order_filled_date = datetime.now(timezone.utc)
+        self.order_update_date = datetime.now(timezone.utc)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -548,6 +547,8 @@ class LocalTrade():
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
+        if self.open_trade_value == 0.0:
+            return 0.0
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
