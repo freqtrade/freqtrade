@@ -452,12 +452,19 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
+        trades = DataFrame(strat_results['trades'])
+        wins = len(trades[trades['profit_ratio'] >0])
+        losses = len(trades[trades['profit_ratio'] <0])
+        win_rate = wins/(wins+losses)*100
+        profit_mean_pct = round(trades['profit_ratio'].mean() *
+                                100.0, 2) if len(trades) > 0 else 0.0
+        profit_median_pct = round(trades['profit_ratio'].median() *
+                                100.0, 2) if len(trades) > 0 else 0.0
         metrics = [
             ('Backtesting from', strat_results['backtest_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Backtesting to', strat_results['backtest_end'].strftime(DATETIME_PRINT_FORMAT)),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
-            ('Total trades', strat_results['total_trades']),
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],
@@ -486,8 +493,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                            strat_results['stake_currency'])),
             ('Days win/draw/lose', f"{strat_results['winning_days']} / "
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
-            ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
-            ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
@@ -504,7 +509,20 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                               strat_results['stake_currency'])),
             ('Drawdown Start', strat_results['drawdown_start'].strftime(DATETIME_PRINT_FORMAT)),
             ('Drawdown End', strat_results['drawdown_end'].strftime(DATETIME_PRINT_FORMAT)),
+            ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
+            ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
+            ('', ''),  # Empty line to improve readability
+            ('', ''),  # Empty line to improve readability
+            ('Trades per day', strat_results['trades_per_day']),
+            ('Final balance', round_coin_value(strat_results['final_balance'],
+                                               strat_results['stake_currency'])),
+            ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
+                                                  strat_results['stake_currency'])),
             ('Market change', f"{round(strat_results['market_change'] * 100, 2)}%"),
+            ('Win Rate', f'{round(win_rate)}% ' + 'Wins {}:{}'.format(wins,losses),
+            ('Total trades', strat_results['total_trades']),
+            ('Total profit %', f'{round(strat_results["profit_total"] * 100, 2)}%'),
+            ('Avg. / Median profit per Trade', f'{profit_mean_pct}% / {profit_median_pct}%')
         ]
 
         return tabulate(metrics, headers=["Metric", "Value"], tablefmt="orgtbl")
