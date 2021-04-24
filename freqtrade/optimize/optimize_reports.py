@@ -519,7 +519,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
             ('Market change', f"{round(strat_results['market_change'] * 100, 2)}%"),
-            ('Win Rate', f'{round(win_rate)}% ' + 'Wins {}:{}'.format(wins,losses),
+            ('Win Rate', f'{round(win_rate)}% ' + 'Wins {}:{}'.format(wins,losses)),
             ('Total trades', strat_results['total_trades']),
             ('Total profit %', f'{round(strat_results["profit_total"] * 100, 2)}%'),
             ('Avg. / Median profit per Trade', f'{profit_mean_pct}% / {profit_median_pct}%')
