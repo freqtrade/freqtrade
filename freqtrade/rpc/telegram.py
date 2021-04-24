@@ -20,7 +20,7 @@ from telegram.utils.helpers import escape_markdown
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import round_coin_value
+from freqtrade.misc import chunks, round_coin_value
 from freqtrade.rpc import RPC, RPCException, RPCHandler, RPCMessageType
 
 
@@ -750,17 +750,18 @@ class Telegram(RPCHandler):
         Handler for /locks.
         Returns the currently active locks
         """
-        locks = self._rpc._rpc_locks()
-        message = tabulate([[
-            lock['id'],
-            lock['pair'],
-            lock['lock_end_time'],
-            lock['reason']] for lock in locks['locks']],
-            headers=['ID', 'Pair', 'Until', 'Reason'],
-            tablefmt='simple')
-        message = f"<pre>{escape(message)}</pre>"
-        logger.debug(message)
-        self._send_msg(message, parse_mode=ParseMode.HTML)
+        rpc_locks = self._rpc._rpc_locks()
+        for locks in chunks(rpc_locks['locks'], 25):
+            message = tabulate([[
+                lock['id'],
+                lock['pair'],
+                lock['lock_end_time'],
+                lock['reason']] for lock in locks],
+                headers=['ID', 'Pair', 'Until', 'Reason'],
+                tablefmt='simple')
+            message = f"<pre>{escape(message)}</pre>"
+            logger.debug(message)
+            self._send_msg(message, parse_mode=ParseMode.HTML)
 
     @authorized_only
     def _delete_locks(self, update: Update, context: CallbackContext) -> None:
