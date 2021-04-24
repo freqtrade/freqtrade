@@ -5,7 +5,7 @@ This module defines a base class for auto-hyperoptable strategies.
 import logging
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Any, Iterator, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
 
 
 with suppress(ImportError):
@@ -13,6 +13,7 @@ with suppress(ImportError):
     from freqtrade.optimize.space import SKDecimal
 
 from freqtrade.exceptions import OperationalException
+from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class BaseParameter(ABC):
     category: Optional[str]
     default: Any
     value: Any
+    hyperopt: bool = False
 
     def __init__(self, *, default: Any, space: Optional[str] = None,
                  optimize: bool = True, load: bool = True, **kwargs):
@@ -120,6 +122,20 @@ class IntParameter(NumericParameter):
         :param name: A name of parameter field.
         """
         return Integer(low=self.low, high=self.high, name=name, **self._space_params)
+
+    @property
+    def range(self):
+        """
+        Get each value in this space as list.
+        Returns a List from low to high (inclusive) in Hyperopt mode.
+        Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
+        calculating 100ds of indicators.
+        """
+        if self.hyperopt:
+            # Scikit-optimize ranges are "inclusive", while python's "range" is exclusive
+            return range(self.low, self.high + 1)
+        else:
+            return range(self.value, self.value + 1)
 
 
 class RealParameter(NumericParameter):
@@ -227,12 +243,11 @@ class HyperStrategyMixin(object):
      strategy logic.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config: Dict[str, Any], *args, **kwargs):
         """
         Initialize hyperoptable strategy mixin.
         """
-        self._load_params(getattr(self, 'buy_params', None))
-        self._load_params(getattr(self, 'sell_params', None))
+        self._load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
@@ -254,7 +269,14 @@ class HyperStrategyMixin(object):
                             (attr_name.startswith(category + '_') and attr.category is None)):
                         yield attr_name, attr
 
-    def _load_params(self, params: dict) -> None:
+    def _load_hyper_params(self, hyperopt: bool = False) -> None:
+        """
+        Load Hyperoptable parameters
+        """
+        self._load_params(getattr(self, 'buy_params', None), 'buy', hyperopt)
+        self._load_params(getattr(self, 'sell_params', None), 'sell', hyperopt)
+
+    def _load_params(self, params: dict, space: str, hyperopt: bool = False) -> None:
         """
         Set optimizeable parameter values.
         :param params: Dictionary with new parameter values.
@@ -263,6 +285,7 @@ class HyperStrategyMixin(object):
             logger.info(f"No params for {space} found, using default values.")
 
         for attr_name, attr in self.enumerate_parameters():
+            attr.hyperopt = hyperopt
             if params and attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
