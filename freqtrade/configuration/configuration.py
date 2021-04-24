@@ -75,8 +75,6 @@ class Configuration:
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
-        # TODO: This can be deleted along with removal of deprecated
-        # experimental settings
         if 'ask_strategy' not in config:
             config['ask_strategy'] = {}
 
