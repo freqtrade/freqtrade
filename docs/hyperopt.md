@@ -198,8 +198,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
     However, this guide will make this distinction to make it clear that signals should not be "sticking".
     Sticking signals are signals that are active for multiple candles. This can lead into buying a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).
 
-Hyper-optimization will, for each epoch round, pick one trigger and possibly
-multiple guards.
+Hyper-optimization will, for each epoch round, pick one trigger and possibly multiple guards.
 
 #### Sell optimization
 
@@ -266,8 +265,6 @@ The last one we call `trigger` and use it to decide which buy trigger we want to
 So let's write the buy strategy using these values:
 
 ```python
-
-
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         conditions = []
         # GUARDS AND TRENDS
@@ -327,6 +324,9 @@ There are four parameter types each suited for different purposes.
 Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
 
 ``` python
+from pandas import DataFrame
+from functools import reduce
+
 import talib.abstract as ta
 
 from freqtrade.strategy import IStrategy
@@ -334,7 +334,7 @@ from freqtrade.strategy import CategoricalParameter, DecimalParameter, IntParame
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class MyAwesomeStrategy(IStrategy):
-    stoploss = 0.5
+    stoploss = -0.05
     timeframe = '15m'
     # Define the parameter spaces
     buy_ema_short = IntParameter(3, 50, default=5)
