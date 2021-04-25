@@ -153,7 +153,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
     return tabular_data
 
 
-def generate_strategy_metrics(all_results: Dict) -> List[Dict]:
+def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
     """
     Generate summary per strategy
     :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
@@ -370,7 +370,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                 'csum_max': 0
             })
 
-    strategy_results = generate_strategy_metrics(all_results=all_results)
+    strategy_results = generate_strategy_comparison(all_results=all_results)
 
     result['strategy_comparison'] = strategy_results
 

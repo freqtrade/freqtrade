@@ -14,7 +14,7 @@ from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
                                                  generate_edge_table, generate_pair_metrics,
                                                  generate_sell_reason_stats,
-                                                 generate_strategy_metrics, store_backtest_stats,
+                                                 generate_strategy_comparison, store_backtest_stats,
                                                  text_table_bt_results, text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -345,7 +345,7 @@ def test_text_table_strategy(default_conf):
         '          43.33 |        0:20:00 |      3 |       0 |        0 |'
     )
 
-    strategy_results = generate_strategy_metrics(all_results=results)
+    strategy_results = generate_strategy_comparison(all_results=results)
 
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
