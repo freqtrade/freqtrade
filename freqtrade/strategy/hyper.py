@@ -284,7 +284,7 @@ class HyperStrategyMixin(object):
         if not params:
             logger.info(f"No params for {space} found, using default values.")
 
-        for attr_name, attr in self.enumerate_parameters():
+        for attr_name, attr in self.enumerate_parameters(space):
             attr.hyperopt = hyperopt
             if params and attr_name in params:
                 if attr.load:
