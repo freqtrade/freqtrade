@@ -83,7 +83,7 @@ class PairListManager():
         pairlist = self._prepare_whitelist(self._whitelist.copy(), tickers)
 
         # Generate the pairlist with first Pairlist Handler in the chain
-        pairlist = self._pairlist_handlers[0].gen_pairlist(self._whitelist, tickers)
+        pairlist = self._pairlist_handlers[0].gen_pairlist(pairlist, tickers)
 
         # Process all Pairlist Handlers in the chain
         for pairlist_handler in self._pairlist_handlers:

@@ -581,6 +581,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
-                                trades, config.get('timeframe', '5m'), config.get('stake_currency'))
+                                trades, config.get('timeframe', '5m'),
+                                config.get('stake_currency', ''))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot', auto_open=True)
