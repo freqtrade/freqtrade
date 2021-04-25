@@ -247,9 +247,10 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
+    def _get_sell_trade_entry(self, dataframe: DataFrame, trade: LocalTrade,
+                              sell_row: Tuple) -> Optional[LocalTrade]:
 
-        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
+        sell = self.strategy.should_sell(dataframe, trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
@@ -396,7 +397,7 @@ class Backtesting:
 
                 for trade in open_trades[pair]:
                     # also check the buying candle for sell conditions.
-                    trade_entry = self._get_sell_trade_entry(trade, row)
+                    trade_entry = self._get_sell_trade_entry(processed[pair], trade, row)
                     # Sell occured
                     if trade_entry:
                         # logger.debug(f"{pair} - Backtesting sell {trade}")

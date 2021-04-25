@@ -360,7 +360,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
                                          current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None)
+                                         force_stoploss=0, high=None, dataframe=None)
     assert isinstance(sl_flag, SellCheckTuple)
     assert sl_flag.sell_type == expected
     if expected == SellType.NONE:
@@ -371,7 +371,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
                                          current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None)
+                                         force_stoploss=0, high=None, dataframe=None)
     assert sl_flag.sell_type == expected2
     if expected2 == SellType.NONE:
         assert sl_flag.sell_flag is False
