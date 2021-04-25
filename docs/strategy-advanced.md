@@ -46,15 +46,30 @@ class AwesomeStrategy(IStrategy):
 
 It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade.
 
-An example of how we can sell trades that were open longer than 1 day:
+An example of how we can set stop-loss and take-profit targets in the dataframe and also sell trades that were open longer than 1 day:
 
 ``` python
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, **kwargs) -> bool:
-        time_delta = datetime.datetime.utcnow() - trade.open_date_utc
-        return time_delta.days >= 1
+                    current_profit: float, dataframe: Dataframe, **kwargs) -> bool:
+        trade_row = dataframe.loc[timeframe_to_prev_date(trade.open_date_utc)]
+        
+        # Sell when price falls below value in stoploss column of taken buy signal.
+        if 'stop_loss' in trade_row:
+            if current_rate <= trade_row['stop_loss'] < trade.open_rate:
+                return 'stop_loss'
+
+        # Sell when price reaches value in take_profit column of taken buy signal.
+        if 'take_profit' in trade_row:
+            if trade.open_rate < trade_row['take_profit'] <= current_rate:
+                return 'take_profit'
+
+        # Sell any positions at a loss if they are helpd for more than two days.
+        if current_profit < 0 and (current_time.replace(tzinfo=trade.open_date_utc.tzinfo) - trade.open_date_utc).days >= 1:
+            return 'unclog'
 ```
+
+See [Custom stoploss using an indicator from dataframe example](strategy-customization.md#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter. 
 
 ## Custom stoploss
 
