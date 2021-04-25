@@ -361,7 +361,7 @@ class SampleStrategy(IStrategy):
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame populated with indicators
         :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with buy column
+        :return: DataFrame with sell column
         """
         dataframe.loc[
             (
