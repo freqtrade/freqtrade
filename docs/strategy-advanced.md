@@ -52,8 +52,8 @@ An example of how we can set stop-loss and take-profit targets in the dataframe 
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, dataframe: Dataframe, **kwargs) -> bool:
-        trade_row = dataframe.loc[timeframe_to_prev_date(trade.open_date_utc)]
-        
+        trade_row = dataframe.loc[dataframe['date'] == timeframe_to_prev_date(trade.open_date_utc)].squeeze()
+
         # Sell when price falls below value in stoploss column of taken buy signal.
         if 'stop_loss' in trade_row:
             if current_rate <= trade_row['stop_loss'] < trade.open_rate:
@@ -292,7 +292,7 @@ class AwesomeStrategy(IStrategy):
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
             current_time = timeframe_to_prev_date(self.timeframe, current_time)
-            current_row = dataframe.loc[current_time]
+            current_row = dataframe.loc[dataframe['date'] == current_time].squeeze()
             if 'atr' in current_row:
                 # new stoploss relative to current_rate
                 new_stoploss = (current_rate - current_row['atr']) / current_rate
