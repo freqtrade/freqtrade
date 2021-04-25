@@ -194,7 +194,37 @@ def generate_edge_table(results: dict) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
+def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
+    """ Generate overall trade statistics """
+    if len(results) == 0:
+        return {
+            'wins': 0,
+            'losses': 0,
+            'draws': 0,
+            'holding_avg': timedelta(),
+            'winner_holding_avg': timedelta(),
+            'loser_holding_avg': timedelta(),
+        }
+
+    winning_trades = results.loc[results['profit_ratio'] > 0]
+    draw_trades = results.loc[results['profit_ratio'] == 0]
+    losing_trades = results.loc[results['profit_ratio'] < 0]
+
+    return {
+        'wins': len(winning_trades),
+        'losses': len(losing_trades),
+        'draws': len(draw_trades),
+        'holding_avg': (timedelta(minutes=round(results['trade_duration'].mean()))
+                        if not results.empty else timedelta()),
+        'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
+                               if not winning_trades.empty else timedelta()),
+        'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
+                              if not losing_trades.empty else timedelta()),
+    }
+
+
 def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
+    """ Generate daily statistics """
     if len(results) == 0:
         return {
             'backtest_best_day': 0,
@@ -204,8 +234,6 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
             'winning_days': 0,
             'draw_days': 0,
             'losing_days': 0,
-            'winner_holding_avg': timedelta(),
-            'loser_holding_avg': timedelta(),
         }
     daily_profit_rel = results.resample('1d', on='close_date')['profit_ratio'].sum()
     daily_profit = results.resample('1d', on='close_date')['profit_abs'].sum().round(10)
@@ -217,9 +245,6 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
 
-    winning_trades = results.loc[results['profit_ratio'] > 0]
-    losing_trades = results.loc[results['profit_ratio'] < 0]
-
     return {
         'backtest_best_day': best_rel,
         'backtest_worst_day': worst_rel,
@@ -228,10 +253,6 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
         'winning_days': winning_days,
         'draw_days': draw_days,
         'losing_days': losing_days,
-        'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
-                               if not winning_trades.empty else timedelta()),
-        'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
-                              if not losing_trades.empty else timedelta()),
     }
 
 
@@ -269,6 +290,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
                                               results=results.loc[results['is_open']],
                                               skip_nan=True)
     daily_stats = generate_daily_stats(results)
+    trade_stats = generate_trading_stats(results)
     best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
@@ -289,6 +311,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'total_volume': float(results['stake_amount'].sum()),
         'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
         'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
+        'profit_median': results['profit_ratio'].median() if len(results) > 0 else 0,
         'profit_total': results['profit_abs'].sum() / starting_balance,
         'profit_total_abs': results['profit_abs'].sum(),
         'backtest_start': min_date.datetime,
@@ -329,6 +352,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'sell_profit_offset': config['ask_strategy']['sell_profit_offset'],
         'ignore_roi_if_buy_signal': config['ask_strategy']['ignore_roi_if_buy_signal'],
         **daily_stats,
+        **trade_stats
     }
 
     try:
