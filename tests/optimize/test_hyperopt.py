@@ -1094,7 +1094,9 @@ def test_print_epoch_details(capsys):
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
 
 
-def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir) -> None:
+def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
     # No hyperopt needed
     del hyperopt_conf['hyperopt']
