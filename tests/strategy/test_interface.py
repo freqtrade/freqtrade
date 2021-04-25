@@ -588,6 +588,14 @@ def test_hyperopt_parameters():
     intpar = IntParameter(low=0, high=5, default=1, space='buy')
     assert intpar.value == 1
     assert isinstance(intpar.get_space(''), Integer)
+    assert isinstance(intpar.range, range)
+    assert len(list(intpar.range)) == 1
+    # Range contains ONLY the default / value.
+    assert list(intpar.range) == [intpar.value]
+    intpar.hyperopt = True
+
+    assert len(list(intpar.range)) == 6
+    assert list(intpar.range) == [0, 1, 2, 3, 4, 5]
 
     fltpar = RealParameter(low=0.0, high=5.5, default=1.0, space='buy')
     assert isinstance(fltpar.get_space(''), Real)
