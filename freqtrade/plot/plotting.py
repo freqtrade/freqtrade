@@ -441,7 +441,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame, timeframe: str) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str, stake_currency: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_dataframes_with_mean(data, "close")
 
@@ -466,8 +466,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                         subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
-    fig['layout']['yaxis2'].update(title='Profit')
-    fig['layout']['yaxis3'].update(title='Profit')
+    fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
+    fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
 
     fig.add_trace(avgclose, 1, 1)
@@ -581,6 +581,6 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
-                                trades, config.get('timeframe', '5m'))
+                                trades, config.get('timeframe', '5m'), config.get('stake_currency'))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot', auto_open=True)
