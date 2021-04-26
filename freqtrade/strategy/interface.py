@@ -59,9 +59,9 @@ class SellCheckTuple(object):
     NamedTuple for Sell type + reason
     """
     sell_type: SellType
-    sell_reason: Optional[str]
+    sell_reason: str = ''
 
-    def __init__(self, sell_type: SellType, sell_reason: Optional[str] = None):
+    def __init__(self, sell_type: SellType, sell_reason: str = ''):
         self.sell_type = sell_type
         self.sell_reason = sell_reason or sell_type.value
 
@@ -568,7 +568,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                 current_time=date))
 
         sell_signal = SellType.NONE
-        custom_reason = None
+        custom_reason = ''
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
