@@ -49,10 +49,13 @@ It is possible to define custom sell signals. This is very useful when we need t
 An example of how we can set stop-loss and take-profit targets in the dataframe and also sell trades that were open longer than 1 day:
 
 ``` python
+from freqtrade.strategy import IStrategy, timeframe_to_prev_date
+
 class AwesomeStrategy(IStrategy):
-    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, dataframe: Dataframe, **kwargs) -> bool:
-        trade_row = dataframe.loc[dataframe['date'] == timeframe_to_prev_date(trade.open_date_utc)].squeeze()
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, dataframe: DataFrame, **kwargs):
+        trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+        trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
         # Sell when price falls below value in stoploss column of taken buy signal.
         if 'stop_loss' in trade_row:
@@ -64,12 +67,12 @@ class AwesomeStrategy(IStrategy):
             if trade.open_rate < trade_row['take_profit'] <= current_rate:
                 return 'take_profit'
 
-        # Sell any positions at a loss if they are helpd for more than two days.
+        # Sell any positions at a loss if they are held for more than two days.
         if current_profit < 0 and (current_time.replace(tzinfo=trade.open_date_utc.tzinfo) - trade.open_date_utc).days >= 1:
             return 'unclog'
 ```
 
-See [Custom stoploss using an indicator from dataframe example](strategy-customization.md#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter. 
+See [Custom stoploss using an indicator from dataframe example](strategy-customization.md#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
 
 ## Custom stoploss
 
@@ -95,7 +98,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: Dataframe,
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
                         **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
@@ -113,7 +116,7 @@ class AwesomeStrategy(IStrategy):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: New stoploss value, relative to the currentrate
+        :return float: New stoploss value, relative to the current rate
         """
         return -0.04
 ```
@@ -228,7 +231,6 @@ Instead of continuously trailing behind the current price, this example sets fix
 * Once profit is > 25% - set stoploss to 15% above open price.
 * Once profit is > 40% - set stoploss to 25% above open price.
 
-
 ``` python
 from datetime import datetime
 from freqtrade.persistence import Trade
@@ -255,6 +257,7 @@ class AwesomeStrategy(IStrategy):
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
 ```
+
 #### Custom stoploss using an indicator from dataframe example
 
 Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
@@ -266,7 +269,7 @@ Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g
     see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
 
 !!! Note
-    DataFrame is indexed by candle date. During dry/live runs `current_time` and
+    `dataframe` is indexed by candle date. During dry/live runs `current_time` and
     `trade.open_date_utc` will not match candle dates precisely and using them as indices will throw
     an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to previous
     candle before using it as a `dataframe` index.
@@ -286,8 +289,9 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, dataframe: DataFrame,
                         **kwargs) -> float:
 
+        # Default return value
         result = 1
-        if self.custom_info and pair in self.custom_info and trade:
+        if trade:
             # Using current_time directly would only work in backtesting. Live/dry runs need time to
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.

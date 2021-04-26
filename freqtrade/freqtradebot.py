@@ -1158,8 +1158,6 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sell_reason: Reason the sell was triggered
-        :param custom_reason: A custom sell reason. Provided only if
-        sell_reason == SellType.CUSTOM_SELL,
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
