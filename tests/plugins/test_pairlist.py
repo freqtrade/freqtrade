@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import time
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -260,6 +261,8 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     freqtrade.pairlists.refresh_pairlist()
     assert whitelist == freqtrade.pairlists.whitelist
 
+    # Delay to allow 0 TTL cache to expire...
+    time.sleep(1)
     whitelist = ['FUEL/BTC', 'ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']
     tickers_dict['FUEL/BTC']['quoteVolume'] = 10000.0
     freqtrade.pairlists.refresh_pairlist()
@@ -604,17 +607,14 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
                           get_tickers=tickers
                           )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == 0
+    assert len(freqtrade.pairlists._pairlist_handlers[0]._pair_cache) == 0
     assert tickers.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
 
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh != 0
-    lrf = freqtrade.pairlists._pairlist_handlers[0]._last_refresh
+    assert len(freqtrade.pairlists._pairlist_handlers[0]._pair_cache) == 1
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
-    # Time should not be updated.
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
 def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers):
