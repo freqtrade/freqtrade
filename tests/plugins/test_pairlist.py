@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import time
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
@@ -260,6 +261,8 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     freqtrade.pairlists.refresh_pairlist()
     assert whitelist == freqtrade.pairlists.whitelist
 
+    # Delay to allow 0 TTL cache to expire...
+    time.sleep(1)
     whitelist = ['FUEL/BTC', 'ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']
     tickers_dict['FUEL/BTC']['quoteVolume'] = 10000.0
     freqtrade.pairlists.refresh_pairlist()
