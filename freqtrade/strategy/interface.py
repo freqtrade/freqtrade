@@ -579,7 +579,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                 sell_signal = SellType.SELL_SIGNAL
             else:
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
-                    trade.pair, trade, date, current_rate, current_profit, dataframe)
+                    pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
+                    current_profit=current_profit, dataframe=dataframe)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
@@ -598,8 +599,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Sell-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. "
-                         f"sell_type=SellType.ROI")
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
             return SellCheckTuple(sell_type=SellType.ROI)
 
         if sell_signal != SellType.NONE:
@@ -610,8 +610,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         if stoplossflag.sell_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. "
-                         f"sell_type={stoplossflag.sell_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.sell_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
