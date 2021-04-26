@@ -99,12 +99,13 @@ class Wallets:
         balances = self._exchange.get_balances()
 
         for currency in balances:
-            self._wallets[currency] = Wallet(
-                currency,
-                balances[currency].get('free', None),
-                balances[currency].get('used', None),
-                balances[currency].get('total', None)
-            )
+            if isinstance(balances[currency], dict):
+                self._wallets[currency] = Wallet(
+                    currency,
+                    balances[currency].get('free', None),
+                    balances[currency].get('used', None),
+                    balances[currency].get('total', None)
+                )
         # Remove currencies no longer in get_balances output
         for currency in deepcopy(self._wallets):
             if currency not in balances:
