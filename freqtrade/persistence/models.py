@@ -568,23 +568,6 @@ class LocalTrade():
             return None
 
     @staticmethod
-    def get_trades(trade_filter=None) -> Query:
-        """
-        Helper function to query Trades using filters.
-        :param trade_filter: Optional filter to apply to trades
-                             Can be either a Filter object, or a List of filters
-                             e.g. `(trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True),])`
-                             e.g. `(trade_filter=Trade.id == trade_id)`
-        :return: unsorted query object
-        """
-        if trade_filter is not None:
-            if not isinstance(trade_filter, list):
-                trade_filter = [trade_filter]
-            return Trade.query.filter(*trade_filter)
-        else:
-            return Trade.query
-
-    @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
                          ) -> List['LocalTrade']:
@@ -636,83 +619,7 @@ class LocalTrade():
         """
         Query trades from persistence layer
         """
-        return Trade.get_trades(Trade.is_open.is_(True)).all()
-
-    @staticmethod
-    def get_open_order_trades():
-        """
-        Returns all open trades
-        """
-        return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
-
-    @staticmethod
-    def get_open_trades_without_assigned_fees():
-        """
-        Returns all open trades which don't have open fees set correctly
-        """
-        return Trade.get_trades([Trade.fee_open_currency.is_(None),
-                                 Trade.orders.any(),
-                                 Trade.is_open.is_(True),
-                                 ]).all()
-
-    @staticmethod
-    def get_sold_trades_without_assigned_fees():
-        """
-        Returns all closed trades which don't have fees set correctly
-        """
-        return Trade.get_trades([Trade.fee_close_currency.is_(None),
-                                 Trade.orders.any(),
-                                 Trade.is_open.is_(False),
-                                 ]).all()
-
-    @staticmethod
-    def total_open_trades_stakes() -> float:
-        """
-        Calculates total invested amount in open trades
-        in stake currency
-        """
-        if Trade.use_db:
-            total_open_stake_amount = Trade.query.with_entities(
-                func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True)).scalar()
-        else:
-            total_open_stake_amount = sum(
-                t.stake_amount for t in Trade.get_trades_proxy(is_open=True))
-        return total_open_stake_amount or 0
-
-    @staticmethod
-    def get_overall_performance() -> List[Dict[str, Any]]:
-        """
-        Returns List of dicts containing all Trades, including profit and trade count
-        """
-        pair_rates = Trade.query.with_entities(
-            Trade.pair,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .group_by(Trade.pair) \
-            .order_by(desc('profit_sum')) \
-            .all()
-        return [
-            {
-                'pair': pair,
-                'profit': rate,
-                'count': count
-            }
-            for pair, rate, count in pair_rates
-        ]
-
-    @staticmethod
-    def get_best_pair():
-        """
-        Get best pair with closed trade.
-        :returns: Tuple containing (pair, profit_sum)
-        """
-        best_pair = Trade.query.with_entities(
-            Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
-        ).filter(Trade.is_open.is_(False)) \
-            .group_by(Trade.pair) \
-            .order_by(desc('profit_sum')).first()
-        return best_pair
+        return Trade.get_trades_proxy(is_open=True)
 
     @staticmethod
     def stoploss_reinitialization(desired_stoploss):
@@ -810,7 +717,7 @@ class Trade(_DECL_BASE, LocalTrade):
                          open_date: datetime = None, close_date: datetime = None,
                          ) -> List['LocalTrade']:
         """
-        Helper function to query Trades.
+        Helper function to query Trades.j
         Returns a List of trades, filtered on the parameters given.
         In live mode, converts the filter to a database query and returns all rows
         In Backtest mode, uses filters on Trade.trades to get the result.
@@ -834,6 +741,107 @@ class Trade(_DECL_BASE, LocalTrade):
                 open_date=open_date,
                 close_date=close_date
             )
+
+    @staticmethod
+    def get_trades(trade_filter=None) -> Query:
+        """
+        Helper function to query Trades using filters.
+        NOTE: Not supported in Backtesting.
+        :param trade_filter: Optional filter to apply to trades
+                             Can be either a Filter object, or a List of filters
+                             e.g. `(trade_filter=[Trade.id == trade_id, Trade.is_open.is_(True),])`
+                             e.g. `(trade_filter=Trade.id == trade_id)`
+        :return: unsorted query object
+        """
+        if not Trade.use_db:
+            raise NotImplementedError('`Trade.get_trades()` not supported in backtesting mode.')
+        if trade_filter is not None:
+            if not isinstance(trade_filter, list):
+                trade_filter = [trade_filter]
+            return Trade.query.filter(*trade_filter)
+        else:
+            return Trade.query
+
+    @staticmethod
+    def get_open_order_trades():
+        """
+        Returns all open trades
+        NOTE: Not supported in Backtesting.
+        """
+        return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
+
+    @staticmethod
+    def get_open_trades_without_assigned_fees():
+        """
+        Returns all open trades which don't have open fees set correctly
+        NOTE: Not supported in Backtesting.
+        """
+        return Trade.get_trades([Trade.fee_open_currency.is_(None),
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(True),
+                                 ]).all()
+
+    @staticmethod
+    def get_sold_trades_without_assigned_fees():
+        """
+        Returns all closed trades which don't have fees set correctly
+        NOTE: Not supported in Backtesting.
+        """
+        return Trade.get_trades([Trade.fee_close_currency.is_(None),
+                                 Trade.orders.any(),
+                                 Trade.is_open.is_(False),
+                                 ]).all()
+
+    @staticmethod
+    def total_open_trades_stakes() -> float:
+        """
+        Calculates total invested amount in open trades
+        in stake currency
+        """
+        if Trade.use_db:
+            total_open_stake_amount = Trade.query.with_entities(
+                func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True)).scalar()
+        else:
+            total_open_stake_amount = sum(
+                t.stake_amount for t in LocalTrade.get_trades_proxy(is_open=True))
+        return total_open_stake_amount or 0
+
+    @staticmethod
+    def get_overall_performance() -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, including profit and trade count
+        NOTE: Not supported in Backtesting.
+        """
+        pair_rates = Trade.query.with_entities(
+            Trade.pair,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')) \
+            .all()
+        return [
+            {
+                'pair': pair,
+                'profit': rate,
+                'count': count
+            }
+            for pair, rate, count in pair_rates
+        ]
+
+    @staticmethod
+    def get_best_pair():
+        """
+        Get best pair with closed trade.
+        NOTE: Not supported in Backtesting.
+        :returns: Tuple containing (pair, profit_sum)
+        """
+        best_pair = Trade.query.with_entities(
+            Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
+        ).filter(Trade.is_open.is_(False)) \
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum')).first()
+        return best_pair
 
 
 class PairLock(_DECL_BASE):

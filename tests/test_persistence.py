@@ -774,10 +774,15 @@ def test_adjust_min_max_rates(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_get_open(fee):
+@pytest.mark.parametrize('use_db', [True, False])
+def test_get_open(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, use_db)
     assert len(Trade.get_open_trades()) == 4
+
+    Trade.use_db = True
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1083,6 +1088,13 @@ def test_get_trades_proxy(fee, use_db):
     Trade.use_db = True
 
 
+def test_get_trades_backtest():
+    Trade.use_db = False
+    with pytest.raises(NotImplementedError, match=r"`Trade.get_trades\(\)` not .*"):
+        Trade.get_trades([])
+    Trade.use_db = True
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_get_overall_performance(fee):
 
@@ -1216,11 +1228,24 @@ def test_Trade_object_idem():
     trade = vars(Trade)
     localtrade = vars(LocalTrade)
 
+    excludes = (
+        'delete',
+        'session',
+        'query',
+        'open_date',
+        'get_best_pair',
+        'get_overall_performance',
+        'total_open_trades_stakes',
+        'get_sold_trades_without_assigned_fees',
+        'get_open_trades_without_assigned_fees',
+        'get_open_order_trades',
+        'get_trades',
+        )
+
     # Parent (LocalTrade) should have the same attributes
     for item in trade:
         # Exclude private attributes and open_date (as it's not assigned a default)
-        if (not item.startswith('_')
-                and item not in ('delete', 'session', 'query', 'open_date')):
+        if (not item.startswith('_') and item not in excludes):
             assert item in localtrade
 
     # Fails if only a column is added without corresponding parent field
