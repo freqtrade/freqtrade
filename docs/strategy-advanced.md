@@ -270,10 +270,10 @@ Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g
     see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
 
 !!! Note
-    `dataframe` is indexed by candle date. During dry/live runs `current_time` and
-    `trade.open_date_utc` will not match candle dates precisely and using them as indices will throw
-    an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to previous
-    candle before using it as a `dataframe` index.
+    `dataframe['date']` contains the candle's open date. During dry/live runs `current_time` and
+    `trade.open_date_utc` will not match the candle date precisely and using them directly will throw
+    an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to the candle's open date
+    before using it to access `dataframe`.
 
 ``` python
 from freqtrade.exchange import timeframe_to_prev_date
