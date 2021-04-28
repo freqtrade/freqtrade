@@ -8,7 +8,7 @@ import locale
 import logging
 import random
 import warnings
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil
 from operator import itemgetter
 from pathlib import Path
@@ -30,6 +30,8 @@ from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.optimize_reports import generate_strategy_stats
+from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 from freqtrade.strategy import IStrategy
 
@@ -79,9 +81,8 @@ class Hyperopt:
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
         time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         strategy = str(self.config['strategy'])
-        self.results_file = (self.config['user_data_dir'] /
-                             'hyperopt_results' /
-                             f'strategy_{strategy}_hyperopt_results_{time_now}.pickle')
+        self.results_file: Path = (self.config['user_data_dir'] / 'hyperopt_results' /
+                                   f'strategy_{strategy}_hyperopt_results_{time_now}.pickle')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
@@ -246,6 +247,7 @@ class Hyperopt:
         Used Optimize function. Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
+        backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(raw_params)
         params_details = self._get_params_details(params_dict)
 
@@ -284,19 +286,31 @@ class Hyperopt:
             max_open_trades=self.max_open_trades,
             position_stacking=self.position_stacking,
             enable_protections=self.config.get('enable_protections', False),
-
         )
-        return self._get_results_dict(backtesting_results, min_date, max_date,
+        backtest_end_time = datetime.now(timezone.utc)
+
+        bt_result = {
+            'results': backtesting_results,
+            'config': self.backtesting.strategy.config,
+            'locks': PairLocks.get_all_locks(),
+            'final_balance': self.backtesting.wallets.get_total(
+                self.backtesting.strategy.config['stake_currency']),
+            'backtest_start_time': int(backtest_start_time.timestamp()),
+            'backtest_end_time': int(backtest_end_time.timestamp()),
+        }
+        return self._get_results_dict(bt_result, min_date, max_date,
                                       params_dict, params_details,
                                       processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
                           params_dict, params_details, processed: Dict[str, DataFrame]):
-        results_metrics = self._calculate_results_metrics(backtesting_results)
-        results_explanation = self._format_results_explanation_string(results_metrics)
 
-        trade_count = results_metrics['trade_count']
-        total_profit = results_metrics['total_profit']
+        strat_stats = generate_strategy_stats(processed, '', backtesting_results,
+                                              min_date, max_date, market_change=0)
+        results_explanation = self._format_results_explanation_string(strat_stats)
+
+        trade_count = strat_stats['total_trades']
+        total_profit = strat_stats['profit_total']
 
         # If this evaluation contains too short amount of trades to be
         # interesting -- consider it as 'bad' (assigned max. loss value)
@@ -304,33 +318,17 @@ class Hyperopt:
         # path. We do not want to optimize 'hodl' strategies.
         loss: float = MAX_LOSS
         if trade_count >= self.config['hyperopt_min_trades']:
-            loss = self.calculate_loss(results=backtesting_results, trade_count=trade_count,
+            loss = self.calculate_loss(results=backtesting_results['results'],
+                                       trade_count=trade_count,
                                        min_date=min_date.datetime, max_date=max_date.datetime,
                                        config=self.config, processed=processed)
         return {
             'loss': loss,
             'params_dict': params_dict,
             'params_details': params_details,
-            'results_metrics': results_metrics,
+            'results_metrics': strat_stats,
             'results_explanation': results_explanation,
             'total_profit': total_profit,
-        }
-
-    def _calculate_results_metrics(self, backtesting_results: DataFrame) -> Dict:
-        wins = len(backtesting_results[backtesting_results['profit_ratio'] > 0])
-        draws = len(backtesting_results[backtesting_results['profit_ratio'] == 0])
-        losses = len(backtesting_results[backtesting_results['profit_ratio'] < 0])
-        return {
-            'trade_count': len(backtesting_results.index),
-            'wins': wins,
-            'draws': draws,
-            'losses': losses,
-            'winsdrawslosses': f"{wins:>4} {draws:>4} {losses:>4}",
-            'avg_profit': backtesting_results['profit_ratio'].mean() * 100.0,
-            'median_profit': backtesting_results['profit_ratio'].median() * 100.0,
-            'total_profit': backtesting_results['profit_abs'].sum(),
-            'profit': backtesting_results['profit_ratio'].sum() * 100.0,
-            'duration': backtesting_results['trade_duration'].mean(),
         }
 
     def _format_results_explanation_string(self, results_metrics: Dict) -> str:
@@ -338,14 +336,14 @@ class Hyperopt:
         Return the formatted results explanation in a string
         """
         stake_cur = self.config['stake_currency']
-        return (f"{results_metrics['trade_count']:6d} trades. "
+        return (f"{results_metrics['total_trades']:6d} trades. "
                 f"{results_metrics['wins']}/{results_metrics['draws']}"
                 f"/{results_metrics['losses']} Wins/Draws/Losses. "
-                f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
-                f"Median profit {results_metrics['median_profit']: 6.2f}%. "
-                f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
-                f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
-                f"Avg duration {results_metrics['duration']:5.1f} min."
+                f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
+                f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
+                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_cur} "
+                f"({results_metrics['profit_total']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
+                f"Avg duration {results_metrics['holding_avg']} min."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:

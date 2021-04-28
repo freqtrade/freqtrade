@@ -12,7 +12,7 @@ from colorama import Fore, Style
 from pandas import isna, json_normalize
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import round_dict
+from freqtrade.misc import round_coin_value, round_dict
 
 
 logger = logging.getLogger(__name__)
@@ -169,11 +169,24 @@ class HyperoptTools():
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.winsdrawslosses'] = 'N/A'
 
-        trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
-                         'results_metrics.winsdrawslosses',
-                         'results_metrics.avg_profit', 'results_metrics.total_profit',
-                         'results_metrics.profit', 'results_metrics.duration',
-                         'loss', 'is_initial_point', 'is_best']]
+        if 'results_metrics.total_trades' in trials:
+            # New mode, using backtest result for metrics
+            trials['results_metrics.winsdrawslosses'] = trials.apply(
+                lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
+                          f"{x['results_metrics.losses']:>4}", axis=1)
+            trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
+                             'results_metrics.winsdrawslosses',
+                             'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
+                             'results_metrics.profit_total', 'results_metrics.holding_avg',
+                             'loss', 'is_initial_point', 'is_best']]
+        else:
+            # Legacy mode
+            trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                             'results_metrics.winsdrawslosses',
+                             'results_metrics.avg_profit', 'results_metrics.total_profit',
+                             'results_metrics.profit', 'results_metrics.duration',
+                             'loss', 'is_initial_point', 'is_best']]
+
         trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
                           'Total profit', 'Profit', 'Avg duration', 'Objective',
                           'is_initial_point', 'is_best']
@@ -188,21 +201,23 @@ class HyperoptTools():
             lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: '{:,.2f}%'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+            lambda x: f'{x:,.2f}%'.rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: '{:,.1f} m'.format(x).rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+            lambda x: f'{x:,.1f} m'.rjust(7, ' ') if isinstance(x, float) else f"{x}"
+                      if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Objective'] = trials['Objective'].apply(
-            lambda x: '{:,.5f}'.format(x).rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
+            lambda x: f'{x:,.5f}'.rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
         )
 
+        stake_currency = config['stake_currency']
         trials['Profit'] = trials.apply(
-            lambda x: '{:,.8f} {} {}'.format(
-                x['Total profit'], config['stake_currency'],
+            lambda x: '{} {}'.format(
+                round_coin_value(x['Total profit'], stake_currency),
                 '({:,.2f}%)'.format(x['Profit']).rjust(10, ' ')
-            ).rjust(25+len(config['stake_currency']))
-            if x['Total profit'] != 0.0 else '--'.rjust(25+len(config['stake_currency'])),
+            ).rjust(25+len(stake_currency))
+            if x['Total profit'] != 0.0 else '--'.rjust(25+len(stake_currency)),
             axis=1
         )
         trials = trials.drop(columns=['Total profit'])
