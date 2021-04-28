@@ -44,9 +44,9 @@ class AwesomeStrategy(IStrategy):
 
 ## Custom sell signal
 
-It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade.
+It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision.
 
-An example of how we can set stop-loss and take-profit targets in the dataframe and also sell trades that were open longer than 1 day:
+An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than 1 day:
 
 ``` python
 from freqtrade.strategy import IStrategy, timeframe_to_prev_date
@@ -58,21 +58,22 @@ class AwesomeStrategy(IStrategy):
         trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
         # Sell when price falls below value in stoploss column of taken buy signal.
-        if 'stop_loss' in trade_row:
-            if current_rate <= trade_row['stop_loss'] < trade.open_rate:
-                return 'stop_loss'
+        # above 20% profit, sell when rsi < 80
+        if current_profit > 0.2:
+            if trade_row['rsi'] < 80:
+                return 'rsi_below_80'
 
-        # Sell when price reaches value in take_profit column of taken buy signal.
-        if 'take_profit' in trade_row:
-            if trade.open_rate < trade_row['take_profit'] <= current_rate:
-                return 'take_profit'
+        # Between 2% and 10%, sell if EMA-long above EMA-short
+        if 0.02 < current_profit < 0.1:
+            if trade_row['emalong'] > trade_row['emashort']:
+                return 'ema_long_below_80'
 
         # Sell any positions at a loss if they are held for more than two days.
-        if current_profit < 0 and (current_time.replace(tzinfo=trade.open_date_utc.tzinfo) - trade.open_date_utc).days >= 1:
+        if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
             return 'unclog'
 ```
 
-See [Custom stoploss using an indicator from dataframe example](strategy-customization.md#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
+See [Custom stoploss using an indicator from dataframe example](#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
 
 ## Custom stoploss
 

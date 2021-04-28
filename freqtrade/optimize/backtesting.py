@@ -251,7 +251,8 @@ class Backtesting:
                               sell_row: Tuple) -> Optional[LocalTrade]:
 
         sell = self.strategy.should_sell(dataframe, trade, sell_row[OPEN_IDX],  # type: ignore
-                                         sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
+                                         sell_row[DATE_IDX].to_pydatetime(), sell_row[BUY_IDX],
+                                         sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
         if sell.sell_flag:
