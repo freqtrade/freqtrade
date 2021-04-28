@@ -667,17 +667,6 @@ class Exchange:
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
     @retrier
-    def get_balance(self, currency: str) -> float:
-
-        # ccxt exception is already handled by get_balances
-        balances = self.get_balances()
-        balance = balances.get(currency)
-        if balance is None:
-            raise TemporaryError(
-                f'Could not get {currency} balance due to malformed exchange response: {balances}')
-        return balance['free']
-
-    @retrier
     def get_balances(self) -> dict:
 
         try:

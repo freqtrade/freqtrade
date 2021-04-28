@@ -82,10 +82,6 @@ def test_bot_cleanup(mocker, default_conf, caplog) -> None:
 def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
-    )
     conf = default_conf.copy()
     conf['runmode'] = RunMode.DRY_RUN
     conf['order_types'] = {
@@ -117,10 +113,7 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
 def test_order_dict_live(default_conf, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
-    )
+
     conf = default_conf.copy()
     conf['runmode'] = RunMode.LIVE
     conf['order_types'] = {
@@ -153,10 +146,6 @@ def test_order_dict_live(default_conf, mocker, caplog) -> None:
 def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2)
-    )
 
     freqtrade = FreqtradeBot(default_conf)
 
@@ -181,7 +170,6 @@ def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_b
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        get_balance=MagicMock(return_value=default_conf['stake_amount'] * 2),
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee
     )
@@ -435,7 +423,6 @@ def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order_open,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         buy=MagicMock(return_value=limit_buy_order_open),
-        get_balance=MagicMock(return_value=default_conf['stake_amount']),
         get_fee=fee,
     )
     default_conf['max_open_trades'] = 0
@@ -523,7 +510,6 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_balance=MagicMock(return_value=20),
         get_fee=fee,
     )
     default_conf['stake_amount'] = 10

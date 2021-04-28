@@ -1249,29 +1249,6 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_balance_prod(default_conf, mocker, exchange_name):
-    api_mock = MagicMock()
-    api_mock.fetch_balance = MagicMock(return_value={'BTC': {'free': 123.4, 'total': 123.4}})
-    default_conf['dry_run'] = False
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-
-    assert exchange.get_balance(currency='BTC') == 123.4
-
-    with pytest.raises(OperationalException):
-        api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-
-        exchange.get_balance(currency='BTC')
-
-    with pytest.raises(TemporaryError, match=r'.*balance due to malformed exchange response:.*'):
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
-        mocker.patch('freqtrade.exchange.Kraken.get_balances', MagicMock(return_value={}))
-        exchange.get_balance(currency='BTC')
-
-
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_balances_prod(default_conf, mocker, exchange_name):
     balance_item = {
         'free': 10.0,
