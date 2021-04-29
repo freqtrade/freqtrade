@@ -42,32 +42,38 @@ class AwesomeStrategy(IStrategy):
 
 ***
 
-### Storing custom information using DatetimeIndex from `dataframe`
+## Custom sell signal
 
-Imagine you need to store an indicator like `ATR` or `RSI` into `custom_info`. To use this in a meaningful way, you will not only need the raw data of the indicator, but probably also need to keep the right timestamps.
+It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision.
 
-```python
-import talib.abstract as ta
+An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than 1 day:
+
+``` python
+from freqtrade.strategy import IStrategy, timeframe_to_prev_date
+
 class AwesomeStrategy(IStrategy):
-    # Create custom dictionary
-    custom_info = {}
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, dataframe: DataFrame, **kwargs):
+        trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+        trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # using "ATR" here as example
-        dataframe['atr'] = ta.ATR(dataframe)
-        if self.dp.runmode.value in ('backtest', 'hyperopt'):
-          # add indicator mapped to correct DatetimeIndex to custom_info
-          self.custom_info[metadata['pair']] = dataframe[['date', 'atr']].set_index('date')
-        return dataframe
+        # Sell when price falls below value in stoploss column of taken buy signal.
+        # above 20% profit, sell when rsi < 80
+        if current_profit > 0.2:
+            if trade_row['rsi'] < 80:
+                return 'rsi_below_80'
+
+        # Between 2% and 10%, sell if EMA-long above EMA-short
+        if 0.02 < current_profit < 0.1:
+            if trade_row['emalong'] > trade_row['emashort']:
+                return 'ema_long_below_80'
+
+        # Sell any positions at a loss if they are held for more than two days.
+        if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
+            return 'unclog'
 ```
 
-!!! Warning
-    The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.
-
-!!! Note
-    If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
-
-See `custom_stoploss` examples below on how to access the saved dataframe columns
+See [Custom stoploss using an indicator from dataframe example](#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
 
 ## Custom stoploss
 
@@ -93,7 +99,8 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -110,7 +117,7 @@ class AwesomeStrategy(IStrategy):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: New stoploss value, relative to the currentrate
+        :return float: New stoploss value, relative to the current rate
         """
         return -0.04
 ```
@@ -143,7 +150,8 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
         if current_time - timedelta(minutes=120) > trade.open_date_utc:
@@ -169,7 +177,8 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
             return -0.10
@@ -195,7 +204,8 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
 
         if current_profit < 0.04:
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
@@ -222,7 +232,6 @@ Instead of continuously trailing behind the current price, this example sets fix
 * Once profit is > 25% - set stoploss to 15% above open price.
 * Once profit is > 40% - set stoploss to 25% above open price.
 
-
 ``` python
 from datetime import datetime
 from freqtrade.persistence import Trade
@@ -235,7 +244,8 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
@@ -248,18 +258,25 @@ class AwesomeStrategy(IStrategy):
         # return maximum stoploss value, keeping current stoploss price unchanged
         return 1
 ```
+
 #### Custom stoploss using an indicator from dataframe example
 
 Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
 
-See: "Storing custom information using DatetimeIndex from `dataframe`" example above) on how to store the indicator into `custom_info`
-
 !!! Warning
-    only use .iat[-1] in live mode, not in backtesting/hyperopt
-    otherwise you will look into the future
+    Only use `dataframe` values up until and including `current_time` value. Reading past
+    `current_time` you will look into the future, which will produce incorrect backtesting results
+    and throw an exception in dry/live runs.
     see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
 
+!!! Note
+    `dataframe['date']` contains the candle's open date. During dry/live runs `current_time` and
+    `trade.open_date_utc` will not match the candle date precisely and using them directly will throw
+    an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to the candle's open date
+    before using it to access `dataframe`.
+
 ``` python
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.persistence import Trade
 from freqtrade.state import RunMode
 
@@ -270,28 +287,20 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+                        current_rate: float, current_profit: float, dataframe: DataFrame,
+                        **kwargs) -> float:
 
+        # Default return value
         result = 1
-        if self.custom_info and pair in self.custom_info and trade:
-            # using current_time directly (like below) will only work in backtesting.
-            # so check "runmode" to make sure that it's only used in backtesting/hyperopt
-            if self.dp and self.dp.runmode.value in ('backtest', 'hyperopt'):
-              relative_sl = self.custom_info[pair].loc[current_time]['atr']
-            # in live / dry-run, it'll be really the current time
-            else:
-              # but we can just use the last entry from an already analyzed dataframe instead
-              dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
-                                                                       timeframe=self.timeframe)
-              # WARNING
-              # only use .iat[-1] in live mode, not in backtesting/hyperopt
-              # otherwise you will look into the future
-              # see: https://www.freqtrade.io/en/latest/strategy-customization/#common-mistakes-when-developing-strategies
-              relative_sl = dataframe['atr'].iat[-1]
-
-            if (relative_sl is not None):
+        if trade:
+            # Using current_time directly would only work in backtesting. Live/dry runs need time to
+            # be rounded to previous candle to be used as dataframe index. Rounding must also be 
+            # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
+            current_time = timeframe_to_prev_date(self.timeframe, current_time)
+            current_row = dataframe.loc[dataframe['date'] == current_time].squeeze()
+            if 'atr' in current_row:
                 # new stoploss relative to current_rate
-                new_stoploss = (current_rate-relative_sl)/current_rate
+                new_stoploss = (current_rate - current_row['atr']) / current_rate
                 # turn into relative negative offset required by `custom_stoploss` return implementation
                 result = new_stoploss - 1
 

@@ -7,7 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -24,6 +24,7 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+CUSTOM_SELL_MAX_LENGTH = 64
 
 
 class SignalType(Enum):
@@ -45,6 +46,7 @@ class SellType(Enum):
     SELL_SIGNAL = "sell_signal"
     FORCE_SELL = "force_sell"
     EMERGENCY_SELL = "emergency_sell"
+    CUSTOM_SELL = "custom_sell"
     NONE = ""
 
     def __str__(self):
@@ -52,12 +54,20 @@ class SellType(Enum):
         return self.value
 
 
-class SellCheckTuple(NamedTuple):
+class SellCheckTuple(object):
     """
     NamedTuple for Sell type + reason
     """
-    sell_flag: bool
     sell_type: SellType
+    sell_reason: str = ''
+
+    def __init__(self, sell_type: SellType, sell_reason: str = ''):
+        self.sell_type = sell_type
+        self.sell_reason = sell_reason or sell_type.value
+
+    @property
+    def sell_flag(self):
+        return self.sell_type != SellType.NONE
 
 
 class IStrategy(ABC, HyperStrategyMixin):
@@ -264,7 +274,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, **kwargs) -> float:
+                        current_profit: float, dataframe: DataFrame, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -280,10 +290,36 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param dataframe: Analyzed dataframe for this pair. Can contain future data in backtesting.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New stoploss value, relative to the currentrate
         """
         return self.stoploss
+
+    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, dataframe: DataFrame,
+                    **kwargs) -> Optional[Union[str, bool]]:
+        """
+        Custom sell signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting sell signal on a candle at specified
+        time. This method is not called when sell signal is set.
+
+        This method should be overridden to create sell signals that depend on trade parameters. For
+        example you could implement a stoploss relative to candle when trade was opened, or a custom
+        1:2 risk-reward ROI.
+
+        Custom sell reason max length is 64. Exceeding this limit will raise OperationalException.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        None or False.
+        """
+        return None
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -500,8 +536,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return False
 
-    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
+    def should_sell(self, dataframe: DataFrame, trade: Trade, rate: float, date: datetime,
+                    buy: bool, sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
@@ -517,8 +553,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         trade.adjust_min_max_rates(high or current_rate)
 
-        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
-                                              current_time=date, current_profit=current_profit,
+        stoplossflag = self.stop_loss_reached(dataframe=dataframe, current_rate=current_rate,
+                                              trade=trade, current_time=date,
+                                              current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
 
         # Set current rate to high for backtesting sell
@@ -531,12 +568,29 @@ class IStrategy(ABC, HyperStrategyMixin):
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
+        sell_signal = SellType.NONE
+        custom_reason = ''
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
-            sell_signal = False
-        else:
-            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
+            pass
+        elif ask_strategy.get('use_sell_signal', True) and not buy:
+            if sell:
+                sell_signal = SellType.SELL_SIGNAL
+            else:
+                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                    pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
+                    current_profit=current_profit, dataframe=dataframe)
+                if custom_reason:
+                    sell_signal = SellType.CUSTOM_SELL
+                    if isinstance(custom_reason, str):
+                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                            logger.warning(f'Custom sell reason returned from custom_sell is too '
+                                           f'long and was trimmed to {CUSTOM_SELL_MAX_LENGTH} '
+                                           f'characters.')
+                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                    else:
+                        custom_reason = None
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
@@ -545,26 +599,25 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Sell-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
-                         f"sell_type=SellType.ROI")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
+            return SellCheckTuple(sell_type=SellType.ROI)
 
-        if sell_signal:
-            logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
-                         f"sell_type=SellType.SELL_SIGNAL")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+        if sell_signal != SellType.NONE:
+            logger.debug(f"{trade.pair} - Sell signal received. "
+                         f"sell_type=SellType.{sell_signal.name}" +
+                         (f", custom_reason={custom_reason}" if custom_reason else ""))
+            return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
-                         f"sell_type={stoplossflag.sell_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.sell_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        # logger.debug(f"{trade.pair} - No sell signal.")
+        return SellCheckTuple(sell_type=SellType.NONE)
 
-    def stop_loss_reached(self, current_rate: float, trade: Trade,
+    def stop_loss_reached(self, dataframe: DataFrame, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, high: float = None) -> SellCheckTuple:
         """
@@ -582,7 +635,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=current_rate,
-                                                      current_profit=current_profit)
+                                                      current_profit=current_profit,
+                                                      dataframe=dataframe)
             # Sanity check - error cases will return None
             if stop_loss_value:
                 # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
@@ -626,9 +680,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
 
-            return SellCheckTuple(sell_flag=True, sell_type=sell_type)
+            return SellCheckTuple(sell_type=sell_type)
 
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        return SellCheckTuple(sell_type=SellType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """

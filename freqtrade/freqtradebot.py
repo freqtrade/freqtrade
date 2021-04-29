@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
+from pandas import DataFrame
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
@@ -28,7 +29,7 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager, RPCMessageType
 from freqtrade.state import State
-from freqtrade.strategy.interface import IStrategy, SellType
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -783,10 +784,10 @@ class FreqtradeBot(LoggingMixin):
 
         config_ask_strategy = self.config.get('ask_strategy', {})
 
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                  self.strategy.timeframe)
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
-            analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
-                                                                      self.strategy.timeframe)
 
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
@@ -813,13 +814,13 @@ class FreqtradeBot(LoggingMixin):
                 # resulting in outdated RPC messages
                 self._sell_rate_cache[trade.pair] = sell_rate
 
-                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+                if self._check_and_execute_sell(analyzed_df, trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
             sell_rate = self.get_sell_rate(trade.pair, True)
-            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+            if self._check_and_execute_sell(analyzed_df, trade, sell_rate, buy, sell):
                 return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -850,7 +851,8 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Selling the trade forcefully')
-            self.execute_sell(trade, trade.stop_loss, sell_reason=SellType.EMERGENCY_SELL)
+            self.execute_sell(trade, trade.stop_loss, sell_reason=SellCheckTuple(
+                sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -949,19 +951,19 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
+    def _check_and_execute_sell(self, dataframe: DataFrame, trade: Trade, sell_rate: float,
                                 buy: bool, sell: bool) -> bool:
         """
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
+            dataframe, trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:
             logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell.sell_type)
+            self.execute_sell(trade, sell_rate, should_sell)
             return True
         return False
 
@@ -1150,16 +1152,16 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellType) -> bool:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
-        :param sellreason: Reason the sell was triggered
+        :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
-        if sell_reason in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
@@ -1176,10 +1178,10 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = self.strategy.order_types[sell_type]
-        if sell_reason == SellType.EMERGENCY_SELL:
+        if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if sell_reason == SellType.FORCE_SELL:
+        if sell_reason.sell_type == SellType.FORCE_SELL:
             # Force sells (default to the sell_type defined in the strategy,
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
@@ -1190,7 +1192,7 @@ class FreqtradeBot(LoggingMixin):
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force,
-                sell_reason=sell_reason.value):
+                sell_reason=sell_reason.sell_reason):
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 
@@ -1213,7 +1215,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.value
+        trade.sell_reason = sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)

@@ -41,4 +41,5 @@ def test_default_strategy(result, fee):
                                        rate=20000, time_in_force='gtc', sell_reason='roi') is True
 
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
-                                    current_rate=20_000, current_profit=0.05) == strategy.stoploss
+                                    current_rate=20_000, current_profit=0.05, dataframe=None
+                                    ) == strategy.stoploss

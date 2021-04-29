@@ -247,15 +247,17 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
+    def _get_sell_trade_entry(self, dataframe: DataFrame, trade: LocalTrade,
+                              sell_row: Tuple) -> Optional[LocalTrade]:
 
-        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
-                                         sell_row[DATE_IDX], sell_row[BUY_IDX], sell_row[SELL_IDX],
+        sell = self.strategy.should_sell(dataframe, trade, sell_row[OPEN_IDX],  # type: ignore
+                                         sell_row[DATE_IDX].to_pydatetime(), sell_row[BUY_IDX],
+                                         sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
         if sell.sell_flag:
-            trade.close_date = sell_row[DATE_IDX]
-            trade.sell_reason = sell.sell_type.value
+            trade.close_date = sell_row[DATE_IDX].to_pydatetime()
+            trade.sell_reason = sell.sell_reason
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
@@ -265,7 +267,7 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_type.value):
+                    sell_reason=sell.sell_reason):
                 return None
 
             trade.close(closerate, show_msg=False)
@@ -293,7 +295,7 @@ class Backtesting:
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
-                open_date=row[DATE_IDX],
+                open_date=row[DATE_IDX].to_pydatetime(),
                 stake_amount=stake_amount,
                 amount=round(stake_amount / row[OPEN_IDX], 8),
                 fee_open=self.fee,
@@ -315,7 +317,7 @@ class Backtesting:
                 for trade in open_trades[pair]:
                     sell_row = data[pair][-1]
 
-                    trade.close_date = sell_row[DATE_IDX]
+                    trade.close_date = sell_row[DATE_IDX].to_pydatetime()
                     trade.sell_reason = SellType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
@@ -396,7 +398,7 @@ class Backtesting:
 
                 for trade in open_trades[pair]:
                     # also check the buying candle for sell conditions.
-                    trade_entry = self._get_sell_trade_entry(trade, row)
+                    trade_entry = self._get_sell_trade_entry(processed[pair], trade, row)
                     # Sell occured
                     if trade_entry:
                         # logger.debug(f"{pair} - Backtesting sell {trade}")

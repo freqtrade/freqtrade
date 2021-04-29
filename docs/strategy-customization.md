@@ -631,9 +631,10 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
         use_custom_stoploss = True
 
         def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                            current_rate: float, current_profit: float, **kwargs) -> float:
+                            current_rate: float, current_profit: float, dataframe: DataFrame,
+                            **kwargs) -> float:
 
-            # once the profit has risin above 10%, keep the stoploss at 7% above the open price
+            # once the profit has risen above 10%, keep the stoploss at 7% above the open price
             if current_profit > 0.10:
                 return stoploss_from_open(0.07, current_profit)
 

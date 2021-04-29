@@ -360,7 +360,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
                                          current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None)
+                                         force_stoploss=0, high=None, dataframe=None)
     assert isinstance(sl_flag, SellCheckTuple)
     assert sl_flag.sell_type == expected
     if expected == SellType.NONE:
@@ -371,7 +371,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
                                          current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None)
+                                         force_stoploss=0, high=None, dataframe=None)
     assert sl_flag.sell_type == expected2
     if expected2 == SellType.NONE:
         assert sl_flag.sell_flag is False
@@ -380,6 +380,50 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
+
+
+def test_custom_sell(default_conf, fee, caplog) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+
+    now = arrow.utcnow().datetime
+    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+
+    assert res.sell_flag is False
+    assert res.sell_type == SellType.NONE
+
+    strategy.custom_sell = MagicMock(return_value=True)
+    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    assert res.sell_flag is True
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_reason == 'custom_sell'
+
+    strategy.custom_sell = MagicMock(return_value='hello world')
+
+    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'hello world'
+
+    caplog.clear()
+    strategy.custom_sell = MagicMock(return_value='h' * 100)
+    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'h' * 64
+    assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
