@@ -10,7 +10,7 @@ Start by downloading and installing Docker CE for your platform:
 * [Windows](https://docs.docker.com/docker-for-windows/install/)
 * [Linux](https://docs.docker.com/install/)
 
-To simplify running freqtrade, please install [`docker-compose`](https://docs.docker.com/compose/install/) should be installed and available to follow the below [docker quick start guide](#docker-quick-start).
+To simplify running freqtrade, [`docker-compose`](https://docs.docker.com/compose/install/) should be installed and available to follow the below [docker quick start guide](#docker-quick-start).
 
 ## Freqtrade with docker-compose
 
