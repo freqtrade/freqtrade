@@ -46,7 +46,9 @@ class AwesomeStrategy(IStrategy):
 
 It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. 
 
-For example you could implement a stoploss relative to candle when trade was opened, or a custom 1:2 risk-reward ROI.
+For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
+
+You should abstain from using custom_sell() signals in place of stoplosses though. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set. `string` max length is 64 characters. Exceeding this limit will raise `OperationalException`.
 
