@@ -46,7 +46,7 @@ class AwesomeStrategy(IStrategy):
 
 It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision.
 
-An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than 1 day:
+An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
 
 ``` python
 from freqtrade.strategy import IStrategy, timeframe_to_prev_date
@@ -68,7 +68,7 @@ class AwesomeStrategy(IStrategy):
             if trade_row['emalong'] > trade_row['emashort']:
                 return 'ema_long_below_80'
 
-        # Sell any positions at a loss if they are held for more than two days.
+        # Sell any positions at a loss if they are held for more than one day.
         if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
             return 'unclog'
 ```
