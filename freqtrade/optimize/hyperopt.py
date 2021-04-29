@@ -307,7 +307,8 @@ class Hyperopt:
 
         strat_stats = generate_strategy_stats(processed, '', backtesting_results,
                                               min_date, max_date, market_change=0)
-        results_explanation = self._format_results_explanation_string(strat_stats)
+        results_explanation = self._format_results_explanation_string(
+            strat_stats, self.config['stake_currency'])
 
         trade_count = strat_stats['total_trades']
         total_profit = strat_stats['profit_total']
@@ -331,17 +332,16 @@ class Hyperopt:
             'total_profit': total_profit,
         }
 
-    def _format_results_explanation_string(self, results_metrics: Dict) -> str:
+    def _format_results_explanation_string(self, results_metrics: Dict, stake_currency: str) -> str:
         """
         Return the formatted results explanation in a string
         """
-        stake_cur = self.config['stake_currency']
         return (f"{results_metrics['total_trades']:6d} trades. "
                 f"{results_metrics['wins']}/{results_metrics['draws']}"
                 f"/{results_metrics['losses']} Wins/Draws/Losses. "
                 f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
                 f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
-                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_cur} "
+                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_currency} "
                 f"({results_metrics['profit_total']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['holding_avg']} min."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
