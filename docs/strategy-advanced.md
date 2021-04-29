@@ -57,8 +57,7 @@ class AwesomeStrategy(IStrategy):
         trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
         trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
-        # Sell when price falls below value in stoploss column of taken buy signal.
-        # above 20% profit, sell when rsi < 80
+        # Above 20% profit, sell when rsi < 80
         if current_profit > 0.2:
             if trade_row['rsi'] < 80:
                 return 'rsi_below_80'
