@@ -804,6 +804,12 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
+    default_conf['ask_strategy'].update({
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+    })
     patch_exchange(mocker)
     backtestmock = MagicMock(return_value={
         'results': pd.DataFrame(columns=BT_DATA_COLUMNS),
@@ -872,7 +878,12 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdatadir, capsys):
-
+    default_conf['ask_strategy'].update({
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+    })
     patch_exchange(mocker)
     result1 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
                             'profit_ratio': [0.0, 0.0],

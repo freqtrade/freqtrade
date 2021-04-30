@@ -590,26 +590,31 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                           'hyperopt_min_trades': 1,
                           })
 
-    backtest_result = pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
-                                             "UNITTEST/BTC", "UNITTEST/BTC"],
-                                    "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
-                                    "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
-                                    "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
-                                                  Arrow(2017, 11, 14, 21, 36, 00).datetime,
-                                                  Arrow(2017, 11, 14, 22, 12, 00).datetime,
-                                                  Arrow(2017, 11, 14, 22, 44, 00).datetime],
-                                    "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
-                                                   Arrow(2017, 11, 14, 22, 10, 00).datetime,
-                                                   Arrow(2017, 11, 14, 22, 43, 00).datetime,
-                                                   Arrow(2017, 11, 14, 22, 58, 00).datetime],
-                                    "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
-                                    "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
-                                    "trade_duration": [123, 34, 31, 14],
-                                    "is_open": [False, False, False, True],
-                                    "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                    "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
-                                                    SellType.ROI, SellType.FORCE_SELL]
-                                    })
+    backtest_result = {
+        'results': pd.DataFrame({"pair": ["UNITTEST/BTC", "UNITTEST/BTC",
+                                          "UNITTEST/BTC", "UNITTEST/BTC"],
+                                 "profit_ratio": [0.003312, 0.010801, 0.013803, 0.002780],
+                                 "profit_abs": [0.000003, 0.000011, 0.000014, 0.000003],
+                                 "open_date": [Arrow(2017, 11, 14, 19, 32, 00).datetime,
+                                               Arrow(2017, 11, 14, 21, 36, 00).datetime,
+                                               Arrow(2017, 11, 14, 22, 12, 00).datetime,
+                                               Arrow(2017, 11, 14, 22, 44, 00).datetime],
+                                 "close_date": [Arrow(2017, 11, 14, 21, 35, 00).datetime,
+                                                Arrow(2017, 11, 14, 22, 10, 00).datetime,
+                                                Arrow(2017, 11, 14, 22, 43, 00).datetime,
+                                                Arrow(2017, 11, 14, 22, 58, 00).datetime],
+                                 "open_rate": [0.002543, 0.003003, 0.003089, 0.003214],
+                                 "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
+                                 "trade_duration": [123, 34, 31, 14],
+                                 "is_open": [False, False, False, True],
+                                 "stake_amount": [0.01, 0.01, 0.01, 0.01],
+                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                                 SellType.ROI, SellType.FORCE_SELL]
+                                 }),
+        'config': hyperopt_conf,
+        'locks': [],
+        'final_balance': 1000,
+    }
 
     mocker.patch('freqtrade.optimize.hyperopt.Backtesting.backtest', return_value=backtest_result)
     mocker.patch('freqtrade.optimize.hyperopt.get_timerange',

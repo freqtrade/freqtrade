@@ -501,13 +501,14 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     # Dummy data as we mock the analyze functions
     data_processed = {pair: frame.copy()}
     min_date, max_date = get_timerange({pair: frame})
-    results = backtesting.backtest(
+    result = backtesting.backtest(
         processed=data_processed,
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
     )
 
+    results = result['results']
     assert len(results) == len(data.trades)
     assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
