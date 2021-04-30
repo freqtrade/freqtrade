@@ -31,7 +31,6 @@ from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
-from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 from freqtrade.strategy import IStrategy
 
@@ -279,7 +278,7 @@ class Hyperopt:
 
         min_date, max_date = get_timerange(processed)
 
-        backtesting_results = self.backtesting.backtest(
+        bt_results = self.backtesting.backtest(
             processed=processed,
             start_date=min_date.datetime,
             end_date=max_date.datetime,
@@ -288,17 +287,12 @@ class Hyperopt:
             enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
-
-        bt_result = {
-            'results': backtesting_results,
-            'config': self.backtesting.strategy.config,
-            'locks': PairLocks.get_all_locks(),
-            'final_balance': self.backtesting.wallets.get_total(
-                self.backtesting.strategy.config['stake_currency']),
+        bt_results.update({
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
-        }
-        return self._get_results_dict(bt_result, min_date, max_date,
+        })
+
+        return self._get_results_dict(bt_results, min_date, max_date,
                                       params_dict, params_details,
                                       processed=processed)
 

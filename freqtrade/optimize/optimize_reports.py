@@ -274,7 +274,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     """
     results: Dict[str, DataFrame] = content['results']
     if not isinstance(results, DataFrame):
-        return
+        return {}
     config = content['config']
     max_open_trades = min(config['max_open_trades'], len(btdata.keys()))
     starting_balance = config['dry_run_wallet']
