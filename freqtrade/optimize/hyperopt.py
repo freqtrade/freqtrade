@@ -26,6 +26,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.misc import file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
+from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
@@ -61,14 +62,18 @@ class Hyperopt:
     hyperopt = Hyperopt(config)
     hyperopt.start()
     """
+    custom_hyperopt: IHyperOpt
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
 
         self.backtesting = Backtesting(self.config)
 
-        self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
-        self.custom_hyperopt.__class__.strategy = self.backtesting.strategy
+        if not self.config.get('hyperopt'):
+            self.custom_hyperopt = HyperOptAuto(self.config)
+        else:
+            self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
+        self.custom_hyperopt.strategy = self.backtesting.strategy
 
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)
         self.calculate_loss = self.custom_hyperoptloss.hyperopt_loss_function
@@ -374,12 +379,13 @@ class Hyperopt:
         logger.info(f"Using optimizer random state: {self.random_state}")
         self.hyperopt_table_header = -1
         data, timerange = self.backtesting.load_bt_data()
-
+        logger.info("Dataload complete. Calculating indicators")
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
-            preprocessed[pair] = trim_dataframe(df, timerange)
+            preprocessed[pair] = trim_dataframe(df, timerange,
+                                                startup_candles=self.backtesting.required_startup)
         min_date, max_date = get_timerange(preprocessed)
 
         logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '

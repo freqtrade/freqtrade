@@ -331,13 +331,13 @@ def test_generate_profit_graph(testdatadir):
 
     trades = trades[trades['pair'].isin(pairs)]
 
-    fig = generate_profit_graph(pairs, data, trades, timeframe="5m")
+    fig = generate_profit_graph(pairs, data, trades, timeframe="5m", stake_currency='BTC')
     assert isinstance(fig, go.Figure)
 
     assert fig.layout.title.text == "Freqtrade Profit plot"
     assert fig.layout.yaxis.title.text == "Price"
-    assert fig.layout.yaxis2.title.text == "Profit"
-    assert fig.layout.yaxis3.title.text == "Profit"
+    assert fig.layout.yaxis2.title.text == "Profit BTC"
+    assert fig.layout.yaxis3.title.text == "Profit BTC"
 
     figure = fig.layout.figure
     assert len(figure.data) == 5
@@ -356,7 +356,8 @@ def test_generate_profit_graph(testdatadir):
 
     with pytest.raises(OperationalException, match=r"No trades found.*"):
         # Pair cannot be empty - so it's an empty dataframe.
-        generate_profit_graph(pairs, data, trades.loc[trades['pair'].isnull()], timeframe="5m")
+        generate_profit_graph(pairs, data, trades.loc[trades['pair'].isnull()], timeframe="5m",
+                              stake_currency='BTC')
 
 
 def test_start_plot_dataframe(mocker):

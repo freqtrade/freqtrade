@@ -53,7 +53,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
         'open_date': ANY,
-        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
@@ -73,7 +72,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'timeframe': 5,
         'open_order_id': ANY,
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
         'close_rate': None,
@@ -92,6 +90,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': -0.00408133,
         'profit_pct': -0.41,
         'profit_abs': -4.09e-06,
+        'profit_fiat': ANY,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
@@ -107,7 +106,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -120,7 +119,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'pair': 'ETH/BTC',
         'base_currency': 'BTC',
         'open_date': ANY,
-        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'is_open': ANY,
         'fee_open': ANY,
@@ -140,7 +138,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'open_rate': 1.098e-05,
         'close_rate': None,
@@ -159,6 +156,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'profit_ratio': ANY,
         'profit_pct': ANY,
         'profit_abs': ANY,
+        'profit_fiat': ANY,
         'stop_loss_abs': 9.882e-06,
         'stop_loss_pct': -10.0,
         'stop_loss_ratio': -0.1,
@@ -174,7 +172,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist': -0.00010475,
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
 
@@ -571,6 +569,8 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     result = rpc._rpc_balance(default_conf['stake_currency'], default_conf['fiat_display_currency'])
     assert prec_satoshi(result['total'], 12.309096315)
     assert prec_satoshi(result['value'], 184636.44472997)
+    assert tickers.call_count == 1
+    assert tickers.call_args_list[0][1]['cached'] is True
     assert 'USD' == result['symbol']
     assert result['currencies'] == [
         {'currency': 'BTC',

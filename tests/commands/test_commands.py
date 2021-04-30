@@ -66,8 +66,8 @@ def test_list_exchanges(capsys):
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
     assert re.match(r"Exchanges available for Freqtrade.*", captured.out)
-    assert re.match(r".*binance,.*", captured.out)
-    assert re.match(r".*bittrex,.*", captured.out)
+    assert re.search(r".*binance.*", captured.out)
+    assert re.search(r".*bittrex.*", captured.out)
 
     # Test with --one-column
     args = [
@@ -89,9 +89,9 @@ def test_list_exchanges(capsys):
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
     assert re.match(r"All exchanges supported by the ccxt library.*", captured.out)
-    assert re.match(r".*binance,.*", captured.out)
-    assert re.match(r".*bittrex,.*", captured.out)
-    assert re.match(r".*bitmex,.*", captured.out)
+    assert re.search(r".*binance.*", captured.out)
+    assert re.search(r".*bittrex.*", captured.out)
+    assert re.search(r".*bitmex.*", captured.out)
 
     # Test with --one-column --all
     args = [
@@ -116,7 +116,7 @@ def test_list_timeframes(mocker, capsys):
                            '1h': 'hour',
                            '1d': 'day',
                            }
-    patch_exchange(mocker, api_mock=api_mock)
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
     args = [
         "list-timeframes",
     ]
@@ -201,7 +201,7 @@ def test_list_markets(mocker, markets, capsys):
 
     api_mock = MagicMock()
     api_mock.markets = markets
-    patch_exchange(mocker, api_mock=api_mock)
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
 
     # Test with no --config
     args = [

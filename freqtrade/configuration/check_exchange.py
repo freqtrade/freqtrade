@@ -2,8 +2,8 @@ import logging
 from typing import Any, Dict
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason, is_exchange_bad,
-                                is_exchange_known_ccxt, is_exchange_officially_supported)
+from freqtrade.exchange import (available_exchanges, is_exchange_known_ccxt,
+                                is_exchange_officially_supported, validate_exchange)
 from freqtrade.state import RunMode
 
 
@@ -57,9 +57,13 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
                 f'{", ".join(available_exchanges())}'
         )
 
-    if check_for_bad and is_exchange_bad(exchange):
-        raise OperationalException(f'Exchange "{exchange}" is known to not work with the bot yet. '
-                                   f'Reason: {get_exchange_bad_reason(exchange)}')
+    valid, reason = validate_exchange(exchange)
+    if not valid:
+        if check_for_bad:
+            raise OperationalException(f'Exchange "{exchange}"  will not work with Freqtrade. '
+                                       f'Reason: {reason}')
+        else:
+            logger.warning(f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}')
 
     if is_exchange_officially_supported(exchange):
         logger.info(f'Exchange "{exchange}" is officially supported '

@@ -253,18 +253,211 @@ optional arguments:
 * Example: see exchanges available for the bot:
 ```
 $ freqtrade list-exchanges
-Exchanges available for Freqtrade: _1btcxe, acx, allcoin, bequant, bibox, binance, binanceje, binanceus, bitbank, bitfinex, bitfinex2, bitkk, bitlish, bitmart, bittrex, bitz, bleutrade, btcalpha, btcmarkets, btcturk, buda, cex, cobinhood, coinbaseprime, coinbasepro, coinex, cointiger, coss, crex24, digifinex, dsx, dx, ethfinex, fcoin, fcoinjp, gateio, gdax, gemini, hitbtc2, huobipro, huobiru, idex, kkex, kraken, kucoin, kucoin2, kuna, lbank, mandala, mercado, oceanex, okcoincny, okcoinusd, okex, okex3, poloniex, rightbtc, theocean, tidebit, upbit, zb
+Exchanges available for Freqtrade:
+Exchange name    Valid    reason
+---------------  -------  --------------------------------------------
+aax              True
+ascendex         True     missing opt: fetchMyTrades
+bequant          True
+bibox            True
+bigone           True
+binance          True
+binanceus        True
+bitbank          True     missing opt: fetchTickers
+bitcoincom       True
+bitfinex         True
+bitforex         True     missing opt: fetchMyTrades, fetchTickers
+bitget           True
+bithumb          True     missing opt: fetchMyTrades
+bitkk            True     missing opt: fetchMyTrades
+bitmart          True
+bitmax           True     missing opt: fetchMyTrades
+bitpanda         True
+bittrex          True
+bitvavo          True
+bitz             True     missing opt: fetchMyTrades
+btcalpha         True     missing opt: fetchTicker, fetchTickers
+btcmarkets       True     missing opt: fetchTickers
+buda             True     missing opt: fetchMyTrades, fetchTickers
+bw               True     missing opt: fetchMyTrades, fetchL2OrderBook
+bybit            True
+bytetrade        True
+cdax             True
+cex              True     missing opt: fetchMyTrades
+coinbaseprime    True     missing opt: fetchTickers
+coinbasepro      True     missing opt: fetchTickers
+coinex           True
+crex24           True
+deribit          True
+digifinex        True
+equos            True     missing opt: fetchTicker, fetchTickers
+eterbase         True
+fcoin            True     missing opt: fetchMyTrades, fetchTickers
+fcoinjp          True     missing opt: fetchMyTrades, fetchTickers
+ftx              True
+gateio           True
+gemini           True
+gopax            True
+hbtc             True
+hitbtc           True
+huobijp          True
+huobipro         True
+idex             True
+kraken           True
+kucoin           True
+lbank            True     missing opt: fetchMyTrades
+mercado          True     missing opt: fetchTickers
+ndax             True     missing opt: fetchTickers
+novadax          True
+okcoin           True
+okex             True
+probit           True
+qtrade           True
+stex             True
+timex            True
+upbit            True     missing opt: fetchMyTrades
+vcc              True
+zb               True     missing opt: fetchMyTrades
+
 ```
+
+!!! Note "missing opt exchanges"
+    Values with "missing opt:" might need special configuration (e.g. using orderbook if `fetchTickers` is missing) - but should in theory work (although we cannot guarantee they will).
 
 * Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade):
 ```
 $ freqtrade list-exchanges -a
-All exchanges supported by the ccxt library: _1btcxe, acx, adara, allcoin, anxpro, bcex, bequant, bibox, bigone, binance, binanceje, binanceus, bit2c, bitbank, bitbay, bitfinex, bitfinex2, bitflyer, bitforex, bithumb, bitkk, bitlish, bitmart, bitmex, bitso, bitstamp, bitstamp1, bittrex, bitz, bl3p, bleutrade, braziliex, btcalpha, btcbox, btcchina, btcmarkets, btctradeim, btctradeua, btcturk, buda, bxinth, cex, chilebit, cobinhood, coinbase, coinbaseprime, coinbasepro, coincheck, coinegg, coinex, coinexchange, coinfalcon, coinfloor, coingi, coinmarketcap, coinmate, coinone, coinspot, cointiger, coolcoin, coss, crex24, crypton, deribit, digifinex, dsx, dx, ethfinex, exmo, exx, fcoin, fcoinjp, flowbtc, foxbit, fybse, gateio, gdax, gemini, hitbtc, hitbtc2, huobipro, huobiru, ice3x, idex, independentreserve, indodax, itbit, kkex, kraken, kucoin, kucoin2, kuna, lakebtc, latoken, lbank, liquid, livecoin, luno, lykke, mandala, mercado, mixcoins, negociecoins, nova, oceanex, okcoincny, okcoinusd, okex, okex3, paymium, poloniex, rightbtc, southxchange, stronghold, surbitcoin, theocean, therock, tidebit, tidex, upbit, vaultoro, vbtc, virwox, xbtce, yobit, zaif, zb
+All exchanges supported by the ccxt library:
+Exchange name       Valid    reason
+------------------  -------  ---------------------------------------------------------------------------------------
+aax                 True
+aofex               False    missing: fetchOrder
+ascendex            True     missing opt: fetchMyTrades
+bequant             True
+bibox               True
+bigone              True
+binance             True
+binanceus           True
+bit2c               False    missing: fetchOrder, fetchOHLCV
+bitbank             True     missing opt: fetchTickers
+bitbay              False    missing: fetchOrder
+bitcoincom          True
+bitfinex            True
+bitfinex2           False    missing: fetchOrder
+bitflyer            False    missing: fetchOrder, fetchOHLCV
+bitforex            True     missing opt: fetchMyTrades, fetchTickers
+bitget              True
+bithumb             True     missing opt: fetchMyTrades
+bitkk               True     missing opt: fetchMyTrades
+bitmart             True
+bitmax              True     missing opt: fetchMyTrades
+bitmex              False    Various reasons.
+bitpanda            True
+bitso               False    missing: fetchOHLCV
+bitstamp            False    Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983
+bitstamp1           False    missing: fetchOrder, fetchOHLCV
+bittrex             True
+bitvavo             True
+bitz                True     missing opt: fetchMyTrades
+bl3p                False    missing: fetchOrder, fetchOHLCV
+bleutrade           False    missing: fetchOrder
+braziliex           False    missing: fetchOHLCV
+btcalpha            True     missing opt: fetchTicker, fetchTickers
+btcbox              False    missing: fetchOHLCV
+btcmarkets          True     missing opt: fetchTickers
+btctradeua          False    missing: fetchOrder, fetchOHLCV
+btcturk             False    missing: fetchOrder
+buda                True     missing opt: fetchMyTrades, fetchTickers
+bw                  True     missing opt: fetchMyTrades, fetchL2OrderBook
+bybit               True
+bytetrade           True
+cdax                True
+cex                 True     missing opt: fetchMyTrades
+chilebit            False    missing: fetchOrder, fetchOHLCV
+coinbase            False    missing: fetchOrder, cancelOrder, createOrder, fetchOHLCV
+coinbaseprime       True     missing opt: fetchTickers
+coinbasepro         True     missing opt: fetchTickers
+coincheck           False    missing: fetchOrder, fetchOHLCV
+coinegg             False    missing: fetchOHLCV
+coinex              True
+coinfalcon          False    missing: fetchOHLCV
+coinfloor           False    missing: fetchOrder, fetchOHLCV
+coingi              False    missing: fetchOrder, fetchOHLCV
+coinmarketcap       False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance, fetchOHLCV
+coinmate            False    missing: fetchOHLCV
+coinone             False    missing: fetchOHLCV
+coinspot            False    missing: fetchOrder, cancelOrder, fetchOHLCV
+crex24              True
+currencycom         False    missing: fetchOrder
+delta               False    missing: fetchOrder
+deribit             True
+digifinex           True
+equos               True     missing opt: fetchTicker, fetchTickers
+eterbase            True
+exmo                False    missing: fetchOrder
+exx                 False    missing: fetchOHLCV
+fcoin               True     missing opt: fetchMyTrades, fetchTickers
+fcoinjp             True     missing opt: fetchMyTrades, fetchTickers
+flowbtc             False    missing: fetchOrder, fetchOHLCV
+foxbit              False    missing: fetchOrder, fetchOHLCV
+ftx                 True
+gateio              True
+gemini              True
+gopax               True
+hbtc                True
+hitbtc              True
+hollaex             False    missing: fetchOrder
+huobijp             True
+huobipro            True
+idex                True
+independentreserve  False    missing: fetchOHLCV
+indodax             False    missing: fetchOHLCV
+itbit               False    missing: fetchOHLCV
+kraken              True
+kucoin              True
+kuna                False    missing: fetchOHLCV
+lakebtc             False    missing: fetchOrder, fetchOHLCV
+latoken             False    missing: fetchOrder, fetchOHLCV
+lbank               True     missing opt: fetchMyTrades
+liquid              False    missing: fetchOHLCV
+luno                False    missing: fetchOHLCV
+lykke               False    missing: fetchOHLCV
+mercado             True     missing opt: fetchTickers
+mixcoins            False    missing: fetchOrder, fetchOHLCV
+ndax                True     missing opt: fetchTickers
+novadax             True
+oceanex             False    missing: fetchOHLCV
+okcoin              True
+okex                True
+paymium             False    missing: fetchOrder, fetchOHLCV
+phemex              False    Does not provide history.
+poloniex            False    missing: fetchOrder
+probit              True
+qtrade              True
+rightbtc            False    missing: fetchOrder
+ripio               False    missing: fetchOHLCV
+southxchange        False    missing: fetchOrder, fetchOHLCV
+stex                True
+surbitcoin          False    missing: fetchOrder, fetchOHLCV
+therock             False    missing: fetchOHLCV
+tidebit             False    missing: fetchOrder
+tidex               False    missing: fetchOHLCV
+timex               True
+upbit               True     missing opt: fetchMyTrades
+vbtc                False    missing: fetchOrder, fetchOHLCV
+vcc                 True
+wavesexchange       False    missing: fetchOrder
+whitebit            False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance
+xbtce               False    missing: fetchOrder, fetchOHLCV
+xena                False    missing: fetchOrder
+yobit               False    missing: fetchOHLCV
+zaif                False    missing: fetchOrder, fetchOHLCV
+zb                  True     missing opt: fetchMyTrades
 ```
 
 ## List Timeframes
 
-Use the `list-timeframes` subcommand to see the list of timeframes (ticker intervals) available for the exchange.
+Use the `list-timeframes` subcommand to see the list of timeframes available for the exchange.
 
 ```
 usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]

@@ -195,4 +195,18 @@ graph.show(renderer="browser")
 
 ```
 
+## Plot average profit per trade as distribution graph
+
+
+```python
+import plotly.figure_factory as ff
+
+hist_data = [trades.profit_ratio]
+group_labels = ['profit_ratio']  # name of the dataset
+
+fig = ff.create_distplot(hist_data, group_labels,bin_size=0.01)
+fig.show()
+
+```
+
 Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.

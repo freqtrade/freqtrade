@@ -82,11 +82,18 @@ Example configuration showing the different settings:
          "buy": "silent",
          "sell": "on",
          "buy_cancel": "silent",
-         "sell_cancel": "on"
+         "sell_cancel": "on",
+         "buy_fill": "off",
+         "sell_fill": "off"
       },
       "balance_dust_level": 0.01
    },
 ```
+
+`buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
+`sell` notifications are sent when the order is placed, while `sell_fill` notifications are sent when the order is filled on the exchange.
+`*_fill` notifications are off by default and must be explicitly enabled.
+
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 

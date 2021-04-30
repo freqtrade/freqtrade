@@ -148,6 +148,7 @@ jobs:
 
     - name: Installation - macOS
       run: |
+        brew update
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
@@ -300,7 +301,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
-      uses: rokroskar/workflow-run-cleanup-action@v0.2.2
+      uses: rokroskar/workflow-run-cleanup-action@v0.3.2
       if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -310,9 +311,18 @@ jobs:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
     steps:
+
+    - name: Check user permission
+      id: check
+      uses: scherermichael-oss/action-has-permission@1.0.6
+      with:
+        required-permission: write
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Slack Notification
       uses: lazy-actions/slatify@v3.0.0
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      if: always() && steps.check.outputs.has-permission && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI*'

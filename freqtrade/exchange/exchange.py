@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from cachetools import TTLCache
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from pandas import DataFrame
@@ -23,7 +24,8 @@ from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, RetryableOrderError,
                                   TemporaryError)
-from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES, retrier,
+from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
+                                       EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED, retrier,
                                        retrier_async)
 from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -62,6 +64,7 @@ class Exchange:
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
+        "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
 
@@ -81,6 +84,9 @@ class Exchange:
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
+
+        # Cache for 10 minutes ...
+        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -357,7 +363,6 @@ class Exchange:
         invalid_pairs = []
         for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-            # TODO: add a support for having coins in BTC/USDT format
             if self.markets and pair not in self.markets:
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
@@ -533,7 +538,9 @@ class Exchange:
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += abs(stoploss)
+        amount_reserve_percent = (
+          amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+        )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
 
@@ -542,8 +549,8 @@ class Exchange:
         # See also #2575 at github.
         return max(min_stake_amounts) * amount_reserve_percent
 
-    def dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                      rate: float, params: Dict = {}) -> Dict[str, Any]:
+    def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
+                             rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order = {
@@ -617,7 +624,7 @@ class Exchange:
             rate: float, time_in_force: str) -> Dict:
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(pair, ordertype, "buy", amount, rate)
+            dry_order = self.create_dry_run_order(pair, ordertype, "buy", amount, rate)
             return dry_order
 
         params = self._params.copy()
@@ -630,7 +637,7 @@ class Exchange:
              rate: float, time_in_force: str = 'gtc') -> Dict:
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(pair, ordertype, "sell", amount, rate)
+            dry_order = self.create_dry_run_order(pair, ordertype, "sell", amount, rate)
             return dry_order
 
         params = self._params.copy()
@@ -660,22 +667,7 @@ class Exchange:
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
     @retrier
-    def get_balance(self, currency: str) -> float:
-        if self._config['dry_run']:
-            return self._config['dry_run_wallet']
-
-        # ccxt exception is already handled by get_balances
-        balances = self.get_balances()
-        balance = balances.get(currency)
-        if balance is None:
-            raise TemporaryError(
-                f'Could not get {currency} balance due to malformed exchange response: {balances}')
-        return balance['free']
-
-    @retrier
     def get_balances(self) -> dict:
-        if self._config['dry_run']:
-            return {}
 
         try:
             balances = self._api.fetch_balance()
@@ -695,9 +687,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self) -> Dict:
+    def get_tickers(self, cached: bool = False) -> Dict:
+        """
+        :param cached: Allow cached result
+        :return: fetch_tickers result
+        """
+        if cached:
+            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            if tickers:
+                return tickers
         try:
-            return self._api.fetch_tickers()
+            tickers = self._api.fetch_tickers()
+            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
@@ -806,7 +808,7 @@ class Exchange:
 
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if (not ((pair, timeframe) in self._klines)
+            if (((pair, timeframe) not in self._klines)
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 input_coroutines.append(self._async_get_candle_history(pair, timeframe,
                                                                        since_ms=since_ms))
@@ -958,7 +960,7 @@ class Exchange:
         while True:
             t = await self._async_fetch_trades(pair,
                                                params={self._trades_pagination_arg: from_id})
-            if len(t):
+            if t:
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
                 if from_id == t[-1][1] or t[-1][0] > until:
@@ -990,7 +992,7 @@ class Exchange:
         # DEFAULT_TRADES_COLUMNS: 1 -> id
         while True:
             t = await self._async_fetch_trades(pair, since=since)
-            if len(t):
+            if t:
                 since = t[-1][0]
                 trades.extend(t)
                 # Reached the end of the defined-download period
@@ -1157,14 +1159,20 @@ class Exchange:
         return self.fetch_order(order_id, pair)
 
     @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
         """
         Get next greater value in the list.
         Used by fetch_l2_order_book if the api only supports a limited range
         """
         if not limit_range:
             return limit
-        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -1174,7 +1182,8 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
         try:
 
             return self._api.fetch_l2_order_book(pair, limit1)
@@ -1306,14 +1315,6 @@ class Exchange:
                 self.calculate_fee_rate(order))
 
 
-def is_exchange_bad(exchange_name: str) -> bool:
-    return exchange_name in BAD_EXCHANGES
-
-
-def get_exchange_bad_reason(exchange_name: str) -> str:
-    return BAD_EXCHANGES.get(exchange_name, "")
-
-
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 
@@ -1334,7 +1335,36 @@ def available_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
     exchanges = ccxt_exchanges(ccxt_module)
-    return [x for x in exchanges if not is_exchange_bad(x)]
+    return [x for x in exchanges if validate_exchange(x)[0]]
+
+
+def validate_exchange(exchange: str) -> Tuple[bool, str]:
+    ex_mod = getattr(ccxt, exchange.lower())()
+    if not ex_mod or not ex_mod.has:
+        return False, ''
+    missing = [k for k in EXCHANGE_HAS_REQUIRED if ex_mod.has.get(k) is not True]
+    if missing:
+        return False, f"missing: {', '.join(missing)}"
+
+    missing_opt = [k for k in EXCHANGE_HAS_OPTIONAL if not ex_mod.has.get(k)]
+
+    if exchange.lower() in BAD_EXCHANGES:
+        return False, BAD_EXCHANGES.get(exchange.lower(), '')
+    if missing_opt:
+        return True, f"missing opt: {', '.join(missing_opt)}"
+
+    return True, ''
+
+
+def validate_exchanges(all_exchanges: bool) -> List[Tuple[str, bool, str]]:
+    """
+    :return: List of tuples with exchangename, valid, reason.
+    """
+    exchanges = ccxt_exchanges() if all_exchanges else available_exchanges()
+    exchanges_valid = [
+        (e, *validate_exchange(e)) for e in exchanges
+    ]
+    return exchanges_valid
 
 
 def timeframe_to_seconds(timeframe: str) -> int:

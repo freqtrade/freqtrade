@@ -1,9 +1,11 @@
 import logging
+import secrets
 from pathlib import Path
 from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
+from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
@@ -138,12 +140,41 @@ def ask_user_config() -> Dict[str, Any]:
             "message": "Insert Telegram chat id",
             "when": lambda x: x['telegram']
         },
+        {
+            "type": "confirm",
+            "name": "api_server",
+            "message": "Do you want to enable the Rest API (includes FreqUI)?",
+            "default": False,
+        },
+        {
+            "type": "text",
+            "name": "api_server_listen_addr",
+            "message": "Insert Api server Listen Address (best left untouched default!)",
+            "default": "127.0.0.1",
+            "when": lambda x: x['api_server']
+        },
+        {
+            "type": "text",
+            "name": "api_server_username",
+            "message": "Insert api-server username",
+            "default": "freqtrader",
+            "when": lambda x: x['api_server']
+        },
+        {
+            "type": "text",
+            "name": "api_server_password",
+            "message": "Insert api-server password",
+            "when": lambda x: x['api_server']
+        },
     ]
     answers = prompt(questions)
 
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
+
+    # Force JWT token to be a random string
+    answers['api_server_jwt_key'] = secrets.token_hex()
 
     return answers
 
@@ -186,6 +217,7 @@ def start_new_config(args: Dict[str, Any]) -> None:
     """
 
     config_path = Path(args['config'][0])
+    chown_user_directory(config_path.parent)
     if config_path.exists():
         overwrite = ask_user_overwrite(config_path)
         if overwrite:

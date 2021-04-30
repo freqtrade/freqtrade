@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-import arrow
 from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
@@ -59,13 +58,10 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
     # Scoped sessions proxy requests to the appropriate thread-local session.
     # We should use the scoped_session object - not a seperately initialized version
-    Trade.session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
-    Trade.query = Trade.session.query_property()
-    # Copy session attributes to order object too
-    Order.session = Trade.session
-    Order.query = Order.session.query_property()
-    PairLock.session = Trade.session
-    PairLock.query = PairLock.session.query_property()
+    Trade._session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    Trade.query = Trade._session.query_property()
+    Order.query = Trade._session.query_property()
+    PairLock.query = Trade._session.query_property()
 
     previous_tables = inspect(engine).get_table_names()
     _DECL_BASE.metadata.create_all(engine)
@@ -81,7 +77,7 @@ def cleanup_db() -> None:
     Flushes all pending operations to disk.
     :return: None
     """
-    Trade.session.flush()
+    Trade.query.session.flush()
 
 
 def clean_dry_run_db() -> None:
@@ -163,8 +159,8 @@ class Order(_DECL_BASE):
         if self.status in ('closed', 'canceled', 'cancelled'):
             self.ft_is_open = False
             if order.get('filled', 0) > 0:
-                self.order_filled_date = arrow.utcnow().datetime
-        self.order_update_date = arrow.utcnow().datetime
+                self.order_filled_date = datetime.now(timezone.utc)
+        self.order_update_date = datetime.now(timezone.utc)
 
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
@@ -297,15 +293,12 @@ class LocalTrade():
             'fee_close_cost': self.fee_close_cost,
             'fee_close_currency': self.fee_close_currency,
 
-            'open_date_hum': arrow.get(self.open_date).humanize(),
             'open_date': self.open_date.strftime(DATETIME_PRINT_FORMAT),
             'open_timestamp': int(self.open_date.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'open_rate': self.open_rate,
             'open_rate_requested': self.open_rate_requested,
             'open_trade_value': round(self.open_trade_value, 8),
 
-            'close_date_hum': (arrow.get(self.close_date).humanize()
-                               if self.close_date else None),
             'close_date': (self.close_date.strftime(DATETIME_PRINT_FORMAT)
                            if self.close_date else None),
             'close_timestamp': int(self.close_date.replace(
@@ -554,6 +547,8 @@ class LocalTrade():
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
+        if self.open_trade_value == 0.0:
+            return 0.0
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
@@ -611,7 +606,7 @@ class LocalTrade():
 
         else:
             # Not used during backtesting, but might be used by a strategy
-            sel_trades = [trade for trade in LocalTrade.trades + LocalTrade.trades_open]
+            sel_trades = list(LocalTrade.trades + LocalTrade.trades_open)
 
         if pair:
             sel_trades = [trade for trade in sel_trades if trade.pair == pair]
@@ -677,7 +672,7 @@ class LocalTrade():
         in stake currency
         """
         if Trade.use_db:
-            total_open_stake_amount = Trade.session.query(
+            total_open_stake_amount = Trade.query.with_entities(
                 func.sum(Trade.stake_amount)).filter(Trade.is_open.is_(True)).scalar()
         else:
             total_open_stake_amount = sum(
@@ -689,7 +684,7 @@ class LocalTrade():
         """
         Returns List of dicts containing all Trades, including profit and trade count
         """
-        pair_rates = Trade.session.query(
+        pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.count(Trade.pair).label('count')
@@ -712,7 +707,7 @@ class LocalTrade():
         Get best pair with closed trade.
         :returns: Tuple containing (pair, profit_sum)
         """
-        best_pair = Trade.session.query(
+        best_pair = Trade.query.with_entities(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
         ).filter(Trade.is_open.is_(False)) \
             .group_by(Trade.pair) \
@@ -805,10 +800,10 @@ class Trade(_DECL_BASE, LocalTrade):
     def delete(self) -> None:
 
         for order in self.orders:
-            Order.session.delete(order)
+            Order.query.session.delete(order)
 
-        Trade.session.delete(self)
-        Trade.session.flush()
+        Trade.query.session.delete(self)
+        Trade.query.session.flush()
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,

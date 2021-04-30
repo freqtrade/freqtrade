@@ -38,6 +38,15 @@ def log_config_error_range(path: str, errmsg: str) -> str:
     return ''
 
 
+def load_file(path: Path) -> Dict[str, Any]:
+    try:
+        with path.open('r') as file:
+            config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
+    except FileNotFoundError:
+        raise OperationalException(f'File file "{path}" not found!')
+    return config
+
+
 def load_config_file(path: str) -> Dict[str, Any]:
     """
     Loads a config file from the given path

@@ -89,7 +89,6 @@ def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
     freqtrade.strategy.confirm_trade_entry.reset_mock()
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
     wallets_mock.reset_mock()
-    Trade.session = MagicMock()
 
     trades = Trade.query.all()
     # Make sure stoploss-order is open and trade is bought (since we mock update_trade_state)
@@ -178,8 +177,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
 
     trades = Trade.query.all()
     assert len(trades) == 4
-    assert freqtrade.wallets.get_trade_stake_amount(
-        'XRP/BTC', freqtrade.get_free_open_trades()) == result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
 
     rpc._rpc_forcebuy('TKN/BTC', None)
 
@@ -200,8 +198,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     # One trade sold
     assert len(trades) == 4
     # stake-amount should now be reduced, since one trade was sold at a loss.
-    assert freqtrade.wallets.get_trade_stake_amount(
-        'XRP/BTC', freqtrade.get_free_open_trades()) < result1
+    assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') < result1
     # Validate that balance of sold trade is not in dry-run balances anymore.
     bals2 = freqtrade.wallets.get_all_balances()
     assert bals != bals2

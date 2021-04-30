@@ -15,7 +15,8 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--data-format-ohlcv {json,jsongz,hdf5}]
                              [--max-open-trades INT]
                              [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [--eps] [--dmmp] [--enable-protections]
+                             [-p PAIRS [PAIRS ...]] [--eps] [--dmmp]
+                             [--enable-protections]
                              [--dry-run-wallet DRY_RUN_WALLET]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export EXPORT] [--export-filename PATH]
@@ -23,8 +24,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
-                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
-                        `1d`).
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --data-format-ohlcv {json,jsongz,hdf5}
@@ -38,6 +38,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --eps, --enable-position-stacking
                         Allow buying the same pair multiple times (position
                         stacking).
@@ -421,6 +424,7 @@ It contains some useful key metrics about performance of your strategy on backte
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Buys happen at open-price
+- All orders are filled at the requested price (no slippage, no unfilled orders)
 - Sell-signal sells happen at open-price of the consecutive candle
 - Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
 - ROI

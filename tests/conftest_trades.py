@@ -31,7 +31,7 @@ def mock_trade_1(fee):
         is_open=True,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=17),
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='dry_run_buy_12345',
         strategy='DefaultStrategy',
         timeframe=5,
@@ -84,7 +84,7 @@ def mock_trade_2(fee):
         close_rate=0.128,
         close_profit=0.005,
         close_profit_abs=0.000584127,
-        exchange='bittrex',
+        exchange='binance',
         is_open=False,
         open_order_id='dry_run_sell_12345',
         strategy='DefaultStrategy',
@@ -144,7 +144,7 @@ def mock_trade_3(fee):
         close_rate=0.06,
         close_profit=0.01,
         close_profit_abs=0.000155,
-        exchange='bittrex',
+        exchange='binance',
         is_open=False,
         strategy='DefaultStrategy',
         timeframe=5,
@@ -187,7 +187,7 @@ def mock_trade_4(fee):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=14),
         is_open=True,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='prod_buy_12345',
         strategy='DefaultStrategy',
         timeframe=5,
@@ -239,9 +239,10 @@ def mock_trade_5(fee):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=12),
         is_open=True,
         open_rate=0.123,
-        exchange='bittrex',
+        exchange='binance',
         strategy='SampleStrategy',
-        stoploss_order_id='prod_stoploss_3455'
+        stoploss_order_id='prod_stoploss_3455',
+        timeframe=5,
     )
     o = Order.parse_from_ccxt_object(mock_order_5(), 'XRP/BTC', 'buy')
     trade.orders.append(o)
@@ -292,9 +293,10 @@ def mock_trade_6(fee):
         fee_close=fee.return_value,
         is_open=True,
         open_rate=0.15,
-        exchange='bittrex',
+        exchange='binance',
         strategy='SampleStrategy',
         open_order_id="prod_sell_6",
+        timeframe=5,
     )
     o = Order.parse_from_ccxt_object(mock_order_6(), 'LTC/BTC', 'buy')
     trade.orders.append(o)

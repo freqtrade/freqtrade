@@ -124,7 +124,8 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `stop` | Stops the trader.
 | `stopbuy` | Stops the trader from opening new trades. Gracefully closes open trades according to their rules.
 | `reload_config` | Reloads the configuration file.
-| `trades` | List last trades.
+| `trades` | List last trades. Limited to 500 trades per call.
+| `trade/<tradeid>` | Get specific trade.
 | `delete_trade <trade_id>` | Remove trade from the database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `show_config` | Shows part of the current configuration with relevant settings to operation.
 | `logs` | Shows last log messages.
@@ -181,7 +182,7 @@ count
 	Return the amount of open trades.
 
 daily
-	Return the amount of open trades.
+	Return the profits for each day, and amount of trades.
 
 delete_lock
 	Delete (disable) lock from the database.
@@ -214,7 +215,7 @@ locks
 logs
 	Show latest logs.
 
-        :param limit: Limits log messages to the last <limit> logs. No limit to get all the trades.
+        :param limit: Limits log messages to the last <limit> logs. No limit to get the entire log.
 
 pair_candles
 	Return live dataframe for <pair><timeframe>.
@@ -233,6 +234,9 @@ pair_history
 
 performance
 	Return the performance of the different coins.
+
+ping
+	simple ping
 
 plot_config
 	Return plot configuration if the strategy defines one.
@@ -270,17 +274,22 @@ strategy
 
         :param strategy: Strategy class name
 
-trades
-	Return trades history.
+trade
+	Return specific trade
 
-        :param limit: Limits trades to the X last trades. No limit to get all the trades.
+        :param trade_id: Specify which trade to get.
+
+trades
+	Return trades history, sorted by id
+
+        :param limit: Limits trades to the X last trades. Max 500 trades.
+        :param offset: Offset by this amount of trades.
 
 version
 	Return the version of the bot.
 
 whitelist
 	Show the current whitelist.
-
 ```
 
 ### OpenAPI interface

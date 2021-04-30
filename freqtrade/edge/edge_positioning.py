@@ -81,12 +81,16 @@ class Edge:
         if config.get('fee'):
             self.fee = config['fee']
         else:
-            self.fee = self.exchange.get_fee(symbol=expand_pairlist(
-                self.config['exchange']['pair_whitelist'], list(self.exchange.markets))[0])
+            try:
+                self.fee = self.exchange.get_fee(symbol=expand_pairlist(
+                    self.config['exchange']['pair_whitelist'], list(self.exchange.markets))[0])
+            except IndexError:
+                self.fee = None
 
-    def calculate(self) -> bool:
-        pairs = expand_pairlist(self.config['exchange']['pair_whitelist'],
-                                list(self.exchange.markets))
+    def calculate(self, pairs: List[str]) -> bool:
+        if self.fee is None and pairs:
+            self.fee = self.exchange.get_fee(pairs[0])
+
         heartbeat = self.edge_config.get('process_throttle_secs')
 
         if (self._last_updated > 0) and (

@@ -79,7 +79,7 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> None:
+def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -98,7 +98,7 @@ def patch_exchange(mocker, api_mock=None, id='bittrex', mock_markets=True) -> No
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock())
 
 
-def get_patched_exchange(mocker, config, api_mock=None, id='bittrex',
+def get_patched_exchange(mocker, config, api_mock=None, id='binance',
                          mock_markets=True) -> Exchange:
     patch_exchange(mocker, api_mock, id, mock_markets)
     config['exchange']['name'] = id
@@ -197,7 +197,7 @@ def create_mock_trades(fee, use_db: bool = True):
     """
     def add_trade(trade):
         if use_db:
-            Trade.session.add(trade)
+            Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
 
@@ -219,6 +219,9 @@ def create_mock_trades(fee, use_db: bool = True):
 
     trade = mock_trade_6(fee)
     add_trade(trade)
+
+    if use_db:
+        Trade.query.session.flush()
 
 
 @pytest.fixture(autouse=True)
@@ -290,7 +293,7 @@ def get_default_conf(testdatadir):
             "order_book_max": 1
         },
         "exchange": {
-            "name": "bittrex",
+            "name": "binance",
             "enabled": True,
             "key": "key",
             "secret": "secret",
@@ -311,7 +314,8 @@ def get_default_conf(testdatadir):
         "telegram": {
             "enabled": True,
             "token": "token",
-            "chat_id": "0"
+            "chat_id": "0",
+            "notification_settings": {},
         },
         "datadir": str(testdatadir),
         "initial_state": "running",
@@ -1762,7 +1766,7 @@ def open_trade():
     return Trade(
         pair='ETH/BTC',
         open_rate=0.00001099,
-        exchange='bittrex',
+        exchange='binance',
         open_order_id='123456789',
         amount=90.99181073,
         fee_open=0.0,

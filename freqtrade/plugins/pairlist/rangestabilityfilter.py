@@ -87,8 +87,9 @@ class RangeStabilityFilter(IPairList):
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
-        if pair in self._pair_cache:
-            return self._pair_cache[pair]
+        cached_res = self._pair_cache.get(pair, None)
+        if cached_res is not None:
+            return cached_res
 
         result = False
         if daily_candles is not None and not daily_candles.empty:

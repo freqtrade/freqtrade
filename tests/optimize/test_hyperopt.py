@@ -16,9 +16,12 @@ from freqtrade.commands.optimize_commands import setup_optimize_configuration, s
 from freqtrade.data.history import load_data
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.space import SKDecimal
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
 from freqtrade.state import RunMode
+from freqtrade.strategy.hyper import IntParameter
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -1089,3 +1092,44 @@ def test_print_epoch_details(capsys):
     assert '# ROI table:' in captured.out
     assert re.search(r'^\s+minimal_roi = \{$', captured.out, re.MULTILINE)
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
+
+
+def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    (Path(tmpdir) / 'hyperopt_results').mkdir(parents=True)
+    # No hyperopt needed
+    del hyperopt_conf['hyperopt']
+    hyperopt_conf.update({
+        'strategy': 'HyperoptableStrategy',
+        'user_data_dir': Path(tmpdir),
+    })
+    hyperopt = Hyperopt(hyperopt_conf)
+    assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
+    assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
+
+    assert hyperopt.backtesting.strategy.buy_rsi.hyperopt is True
+    assert hyperopt.backtesting.strategy.buy_rsi.value == 35
+    buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
+    assert isinstance(buy_rsi_range, range)
+    # Range from 0 - 50 (inclusive)
+    assert len(list(buy_rsi_range)) == 51
+
+    hyperopt.start()
+
+
+def test_SKDecimal():
+    space = SKDecimal(1, 2, decimals=2)
+    assert 1.5 in space
+    assert 2.5 not in space
+    assert space.low == 100
+    assert space.high == 200
+
+    assert space.inverse_transform([200]) == [2.0]
+    assert space.inverse_transform([100]) == [1.0]
+    assert space.inverse_transform([150, 160]) == [1.5, 1.6]
+
+    assert space.transform([1.5]) == [150]
+    assert space.transform([2.0]) == [200]
+    assert space.transform([1.0]) == [100]
+    assert space.transform([1.5, 1.6]) == [150, 160]

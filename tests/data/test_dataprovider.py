@@ -214,8 +214,8 @@ def test_current_whitelist(mocker, default_conf, tickers):
     pairlist.refresh_pairlist()
 
     assert dp.current_whitelist() == pairlist._whitelist
-    # The identity of the 2 lists should be identical
-    assert dp.current_whitelist() is pairlist._whitelist
+    # The identity of the 2 lists should not be identical, but a copy
+    assert dp.current_whitelist() is not pairlist._whitelist
 
     with pytest.raises(OperationalException):
         dp = DataProvider(default_conf, exchange)

@@ -151,13 +151,11 @@ class TradeSchema(BaseModel):
     fee_close: Optional[float]
     fee_close_cost: Optional[float]
     fee_close_currency: Optional[str]
-    open_date_hum: str
     open_date: str
     open_timestamp: int
     open_rate: float
     open_rate_requested: Optional[float]
     open_trade_value: float
-    close_date_hum: Optional[str]
     close_date: Optional[str]
     close_timestamp: Optional[int]
     close_rate: Optional[float]
@@ -168,6 +166,7 @@ class TradeSchema(BaseModel):
     profit_ratio: Optional[float]
     profit_pct: Optional[float]
     profit_abs: Optional[float]
+    profit_fiat: Optional[float]
     sell_reason: Optional[str]
     sell_order_status: Optional[str]
     stop_loss_abs: Optional[float]
@@ -190,7 +189,6 @@ class OpenTradeSchema(TradeSchema):
     stoploss_current_dist_ratio: Optional[float]
     stoploss_entry_dist: Optional[float]
     stoploss_entry_dist_ratio: Optional[float]
-    base_currency: str
     current_profit: float
     current_profit_abs: float
     current_profit_pct: float
@@ -201,6 +199,7 @@ class OpenTradeSchema(TradeSchema):
 class TradeResponse(BaseModel):
     trades: List[TradeSchema]
     trades_count: int
+    total_trades: int
 
 
 class ForceBuyResponse(BaseModel):
