@@ -71,7 +71,7 @@ class AgeFilter(IPairList):
                 daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
-        logger.info(f"Validated {len(pairlist)} pairs.")
+        self.log_once(f"Validated {len(pairlist)} pairs.", logger.info)
         return pairlist
 
     def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
