@@ -114,7 +114,7 @@ class Hyperopt:
             self.max_open_trades = 0
         self.position_stacking = self.config.get('position_stacking', False)
 
-        if self.has_space('sell'):
+        if HyperoptTools.has_space(self.config, 'sell'):
             # Make sure use_sell_signal is enabled
             if 'ask_strategy' not in self.config:
                 self.config['ask_strategy'] = {}
@@ -175,18 +175,18 @@ class Hyperopt:
         """
         result: Dict = {}
 
-        if self.has_space('buy'):
+        if HyperoptTools.has_space(self.config, 'buy'):
             result['buy'] = {p.name: params.get(p.name)
                              for p in self.hyperopt_space('buy')}
-        if self.has_space('sell'):
+        if HyperoptTools.has_space(self.config, 'sell'):
             result['sell'] = {p.name: params.get(p.name)
                               for p in self.hyperopt_space('sell')}
-        if self.has_space('roi'):
+        if HyperoptTools.has_space(self.config, 'roi'):
             result['roi'] = self.custom_hyperopt.generate_roi_table(params)
-        if self.has_space('stoploss'):
+        if HyperoptTools.has_space(self.config, 'stoploss'):
             result['stoploss'] = {p.name: params.get(p.name)
                                   for p in self.hyperopt_space('stoploss')}
-        if self.has_space('trailing'):
+        if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
         return result
@@ -208,16 +208,6 @@ class Hyperopt:
             )
             self.hyperopt_table_header = 2
 
-    def has_space(self, space: str) -> bool:
-        """
-        Tell if the space value is contained in the configuration
-        """
-        # The 'trailing' space is not included in the 'default' set of spaces
-        if space == 'trailing':
-            return any(s in self.config['spaces'] for s in [space, 'all'])
-        else:
-            return any(s in self.config['spaces'] for s in [space, 'all', 'default'])
-
     def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
         """
         Return the dimensions in the hyperoptimization space.
@@ -227,23 +217,25 @@ class Hyperopt:
         """
         spaces: List[Dimension] = []
 
-        if space == 'buy' or (space is None and self.has_space('buy')):
+        if space == 'buy' or (space is None and HyperoptTools.has_space(self.config, 'buy')):
             logger.debug("Hyperopt has 'buy' space")
             spaces += self.custom_hyperopt.indicator_space()
 
-        if space == 'sell' or (space is None and self.has_space('sell')):
+        if space == 'sell' or (space is None and HyperoptTools.has_space(self.config, 'sell')):
             logger.debug("Hyperopt has 'sell' space")
             spaces += self.custom_hyperopt.sell_indicator_space()
 
-        if space == 'roi' or (space is None and self.has_space('roi')):
+        if space == 'roi' or (space is None and HyperoptTools.has_space(self.config, 'roi')):
             logger.debug("Hyperopt has 'roi' space")
             spaces += self.custom_hyperopt.roi_space()
 
-        if space == 'stoploss' or (space is None and self.has_space('stoploss')):
+        if space == 'stoploss' or (space is None
+                                   and HyperoptTools.has_space(self.config, 'stoploss')):
             logger.debug("Hyperopt has 'stoploss' space")
             spaces += self.custom_hyperopt.stoploss_space()
 
-        if space == 'trailing' or (space is None and self.has_space('trailing')):
+        if space == 'trailing' or (space is None
+                                   and HyperoptTools.has_space(self.config, 'trailing')):
             logger.debug("Hyperopt has 'trailing' space")
             spaces += self.custom_hyperopt.trailing_space()
 
@@ -257,22 +249,22 @@ class Hyperopt:
         params_dict = self._get_params_dict(raw_params)
         params_details = self._get_params_details(params_dict)
 
-        if self.has_space('roi'):
+        if HyperoptTools.has_space(self.config, 'roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore
                 self.custom_hyperopt.generate_roi_table(params_dict))
 
-        if self.has_space('buy'):
+        if HyperoptTools.has_space(self.config, 'buy'):
             self.backtesting.strategy.advise_buy = (  # type: ignore
                 self.custom_hyperopt.buy_strategy_generator(params_dict))
 
-        if self.has_space('sell'):
+        if HyperoptTools.has_space(self.config, 'sell'):
             self.backtesting.strategy.advise_sell = (  # type: ignore
                 self.custom_hyperopt.sell_strategy_generator(params_dict))
 
-        if self.has_space('stoploss'):
+        if HyperoptTools.has_space(self.config, 'stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
 
-        if self.has_space('trailing'):
+        if HyperoptTools.has_space(self.config, 'trailing'):
             d = self.custom_hyperopt.generate_trailing_params(params_dict)
             self.backtesting.strategy.trailing_stop = d['trailing_stop']
             self.backtesting.strategy.trailing_stop_positive = d['trailing_stop_positive']

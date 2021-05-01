@@ -636,7 +636,7 @@ def test_hyperopt_parameters():
     assert len(list(intpar.range)) == 1
     # Range contains ONLY the default / value.
     assert list(intpar.range) == [intpar.value]
-    intpar.hyperopt = True
+    intpar.in_space = True
 
     assert len(list(intpar.range)) == 6
     assert list(intpar.range) == [0, 1, 2, 3, 4, 5]

@@ -503,10 +503,10 @@ def test_format_results(hyperopt):
     (['default', 'buy'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
 ])
-def test_has_space(hyperopt, spaces, expected_results):
+def test_has_space(hyperopt_conf, spaces, expected_results):
     for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
-        hyperopt.config.update({'spaces': spaces})
-        assert hyperopt.has_space(s) == expected_results[s]
+        hyperopt_conf.update({'spaces': spaces})
+        assert HyperoptTools.has_space(hyperopt_conf, s) == expected_results[s]
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
@@ -1108,7 +1108,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
 
-    assert hyperopt.backtesting.strategy.buy_rsi.hyperopt is True
+    assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)
