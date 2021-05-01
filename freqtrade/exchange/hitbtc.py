@@ -1,4 +1,3 @@
-""" hitbtx exchange subclass """
 import logging
 from typing import Dict
 
@@ -21,6 +20,5 @@ class Hitbtc(Exchange):
     # fetchCurrencies API point requires authentication for Hitbtc,
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
-
         "ohlcv_params": {"sort": "DESC"}
     }
