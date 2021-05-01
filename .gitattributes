@@ -1,3 +1,4 @@
-*.py eol=lf
-*.sh eol=lf
-*.ps1 eol=crlf
+*       encoding=UTF-8
+*.py    eol=lf
+*.sh    eol=lf
+*.ps1   eol=crlf

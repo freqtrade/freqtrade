@@ -353,7 +353,7 @@ class Hyperopt:
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
                 f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['duration']:5.1f} min."
-                ).encode('utf-8', 'replace').decode('utf-8')
+                )
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
         return Optimizer(
