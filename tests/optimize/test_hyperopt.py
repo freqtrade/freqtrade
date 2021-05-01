@@ -468,7 +468,7 @@ def test_hyperopt_format_results(hyperopt):
                                               Arrow(2017, 11, 14, 19, 32, 00),
                                               Arrow(2017, 12, 14, 19, 32, 00), market_change=0)
 
-    results_explanation = hyperopt._format_results_explanation_string(results_metrics, 'BTC')
+    results_explanation = HyperoptTools.format_results_explanation_string(results_metrics, 'BTC')
     total_profit = results_metrics['profit_total_abs']
 
     results = {

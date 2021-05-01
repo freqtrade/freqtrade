@@ -1,5 +1,6 @@
 
 import io
+import locale
 import logging
 from collections import OrderedDict
 from pathlib import Path
@@ -144,6 +145,21 @@ class HyperoptTools():
     @staticmethod
     def is_best_loss(results, current_best_loss: float) -> bool:
         return results['loss'] < current_best_loss
+
+    @staticmethod
+    def format_results_explanation_string(results_metrics: Dict, stake_currency: str) -> str:
+        """
+        Return the formatted results explanation in a string
+        """
+        return (f"{results_metrics['total_trades']:6d} trades. "
+                f"{results_metrics['wins']}/{results_metrics['draws']}"
+                f"/{results_metrics['losses']} Wins/Draws/Losses. "
+                f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
+                f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
+                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_currency} "
+                f"({results_metrics['profit_total']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
+                f"Avg duration {results_metrics['holding_avg']} min."
+                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
     @staticmethod
     def _format_explanation_string(results, total_epochs) -> str:
