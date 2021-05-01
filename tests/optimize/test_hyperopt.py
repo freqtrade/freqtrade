@@ -1108,7 +1108,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
     assert isinstance(hyperopt.backtesting.strategy.buy_rsi, IntParameter)
 
-    assert hyperopt.backtesting.strategy.buy_rsi.hyperopt is True
+    assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)

@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
 
+from freqtrade.optimize.hyperopt_tools import HyperoptTools
+
 
 with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
@@ -26,7 +28,7 @@ class BaseParameter(ABC):
     category: Optional[str]
     default: Any
     value: Any
-    hyperopt: bool = False
+    in_space: bool = False
 
     def __init__(self, *, default: Any, space: Optional[str] = None,
                  optimize: bool = True, load: bool = True, **kwargs):
@@ -131,7 +133,7 @@ class IntParameter(NumericParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.hyperopt:
+        if self.in_space and self.optimize:
             # Scikit-optimize ranges are "inclusive", while python's "range" is exclusive
             return range(self.low, self.high + 1)
         else:
@@ -247,6 +249,7 @@ class HyperStrategyMixin(object):
         """
         Initialize hyperoptable strategy mixin.
         """
+        self.config = config
         self._load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
@@ -285,7 +288,7 @@ class HyperStrategyMixin(object):
             logger.info(f"No params for {space} found, using default values.")
 
         for attr_name, attr in self.enumerate_parameters(space):
-            attr.hyperopt = hyperopt
+            attr.in_space = hyperopt and HyperoptTools.has_space(self.config, space)
             if params and attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
