@@ -157,7 +157,7 @@ class HyperoptTools():
                 f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
                 f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
                 f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_currency} "
-                f"({results_metrics['profit_total']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
+                f"({results_metrics['profit_total'] * 100: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
                 f"Avg duration {results_metrics['holding_avg']} min."
                 ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8')
 
@@ -184,8 +184,10 @@ class HyperoptTools():
         if 'results_metrics.winsdrawslosses' not in trials.columns:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.winsdrawslosses'] = 'N/A'
+        legacy_mode = True
 
         if 'results_metrics.total_trades' in trials:
+            legacy_mode = False
             # New mode, using backtest result for metrics
             trials['results_metrics.winsdrawslosses'] = trials.apply(
                 lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
@@ -212,12 +214,12 @@ class HyperoptTools():
         trials.loc[trials['is_initial_point'] & trials['is_best'], 'Best'] = '* Best'
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Trades'] = trials['Trades'].astype(str)
-
+        perc_multi = 1 if legacy_mode else 100
         trials['Epoch'] = trials['Epoch'].apply(
             lambda x: '{}/{}'.format(str(x).rjust(len(str(total_epochs)), ' '), total_epochs)
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: f'{x:,.2f}%'.rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
+            lambda x: f'{x * perc_multi:,.2f}%'.rjust(7, ' ') if not isna(x) else "--".rjust(7, ' ')
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
             lambda x: f'{x:,.1f} m'.rjust(7, ' ') if isinstance(x, float) else f"{x}"
@@ -231,7 +233,7 @@ class HyperoptTools():
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency),
-                '({:,.2f}%)'.format(x['Profit']).rjust(10, ' ')
+                '({:,.2f}%)'.format(x['Profit'] * perc_multi).rjust(10, ' ')
             ).rjust(25+len(stake_currency))
             if x['Total profit'] != 0.0 else '--'.rjust(25+len(stake_currency)),
             axis=1
