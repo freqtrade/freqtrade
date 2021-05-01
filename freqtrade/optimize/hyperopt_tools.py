@@ -4,7 +4,7 @@ import logging
 from collections import OrderedDict
 from pathlib import Path
 from pprint import pformat
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import rapidjson
 import tabulate
@@ -20,6 +20,17 @@ logger = logging.getLogger(__name__)
 
 
 class HyperoptTools():
+
+    @staticmethod
+    def has_space(config: Dict[str, Any], space: str) -> bool:
+        """
+        Tell if the space value is contained in the configuration
+        """
+        # The 'trailing' space is not included in the 'default' set of spaces
+        if space == 'trailing':
+            return any(s in config['spaces'] for s in [space, 'all'])
+        else:
+            return any(s in config['spaces'] for s in [space, 'all', 'default'])
 
     @staticmethod
     def _read_results(results_file: Path) -> List:

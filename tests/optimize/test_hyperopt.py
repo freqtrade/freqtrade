@@ -503,10 +503,10 @@ def test_format_results(hyperopt):
     (['default', 'buy'],
      {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
 ])
-def test_has_space(hyperopt, spaces, expected_results):
+def test_has_space(hyperopt_conf, spaces, expected_results):
     for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
-        hyperopt.config.update({'spaces': spaces})
-        assert hyperopt.has_space(s) == expected_results[s]
+        hyperopt_conf.update({'spaces': spaces})
+        assert HyperoptTools.has_space(hyperopt_conf, s) == expected_results[s]
 
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
