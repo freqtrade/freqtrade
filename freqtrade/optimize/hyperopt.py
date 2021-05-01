@@ -298,8 +298,10 @@ class Hyperopt:
     def _get_results_dict(self, backtesting_results, min_date, max_date,
                           params_dict, params_details, processed: Dict[str, DataFrame]):
 
-        strat_stats = generate_strategy_stats(processed, '', backtesting_results,
-                                              min_date, max_date, market_change=0)
+        strat_stats = generate_strategy_stats(
+            processed, self.backtesting.strategy.get_strategy_name(),
+            backtesting_results, min_date, max_date, market_change=0
+        )
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
 

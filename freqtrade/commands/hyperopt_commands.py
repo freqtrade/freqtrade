@@ -7,6 +7,7 @@ from colorama import init as colorama_init
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.exceptions import OperationalException
+from freqtrade.optimize.optimize_reports import show_backtest_result
 from freqtrade.state import RunMode
 
 
@@ -125,6 +126,12 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     if epochs:
         val = epochs[n]
+
+        metrics = val['results_metrics']
+        if 'strategy_name' in metrics:
+            show_backtest_result(metrics['strategy_name'], metrics,
+                                 metrics['stake_currency'])
+
         HyperoptTools.print_epoch_details(val, total_epochs, print_json, no_header,
                                           header_str="Epoch details")
 
