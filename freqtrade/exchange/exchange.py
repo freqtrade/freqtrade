@@ -59,6 +59,7 @@ class Exchange:
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
@@ -874,17 +875,11 @@ class Exchange:
                 "Fetching pair %s, interval %s, since %s %s...",
                 pair, timeframe, since_ms, s
             )
-			#fixing support for HitBTC #4778
-            if self.name== 'HitBTC':
-                data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
-                                                        since=since_ms,
-                                                        limit=self.ohlcv_candle_limit(timeframe),
-                                                        params={"sort": "DESC"}
-                                                         )
-            else:
-                data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
+            params = self._ft_has.get('ohlcv_params', {})
+            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
-                                                     limit=self.ohlcv_candle_limit(timeframe))
+                                                     limit=self.ohlcv_candle_limit(timeframe),
+                                                     params=params)
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
