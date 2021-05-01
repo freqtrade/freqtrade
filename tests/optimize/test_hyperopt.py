@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import locale
 import logging
 import re
 from datetime import datetime
@@ -631,7 +630,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                 'Avg profit   2.31%. Median profit   2.31%. Total profit  '
                                 '0.00023300 BTC (   2.31\N{GREEK CAPITAL LETTER SIGMA}%). '
                                 'Avg duration 100.0 min.'
-                                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
+                                ),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
                                    'fastd-enabled': True,

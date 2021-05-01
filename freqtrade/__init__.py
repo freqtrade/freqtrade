@@ -1,11 +1,6 @@
 """ Freqtrade bot """
 __version__ = 'develop'
 
-import locale
-def getpreferredencoding(do_setlocale=True):
-    return "utf-8"
-locale.getpreferredencoding = getpreferredencoding
-
 if __version__ == 'develop':
 
     try:
