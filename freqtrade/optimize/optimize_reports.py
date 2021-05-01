@@ -567,37 +567,43 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         return message
 
 
+def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency: str):
+    """
+    Print results for one strategy
+    """
+    # Print results
+    print(f"Result for strategy {strategy}")
+    table = text_table_bt_results(results['results_per_pair'], stake_currency=stake_currency)
+    if isinstance(table, str):
+        print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
+    print(table)
+
+    table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
+                                   stake_currency=stake_currency)
+    if isinstance(table, str) and len(table) > 0:
+        print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
+    print(table)
+
+    table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
+    if isinstance(table, str) and len(table) > 0:
+        print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
+    print(table)
+
+    table = text_table_add_metrics(results)
+    if isinstance(table, str) and len(table) > 0:
+        print(' SUMMARY METRICS '.center(len(table.splitlines()[0]), '='))
+    print(table)
+
+    if isinstance(table, str) and len(table) > 0:
+        print('=' * len(table.splitlines()[0]))
+    print()
+
+
 def show_backtest_results(config: Dict, backtest_stats: Dict):
     stake_currency = config['stake_currency']
 
     for strategy, results in backtest_stats['strategy'].items():
-
-        # Print results
-        print(f"Result for strategy {strategy}")
-        table = text_table_bt_results(results['results_per_pair'], stake_currency=stake_currency)
-        if isinstance(table, str):
-            print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
-        print(table)
-
-        table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
-                                       stake_currency=stake_currency)
-        if isinstance(table, str) and len(table) > 0:
-            print(' SELL REASON STATS '.center(len(table.splitlines()[0]), '='))
-        print(table)
-
-        table = text_table_bt_results(results['left_open_trades'], stake_currency=stake_currency)
-        if isinstance(table, str) and len(table) > 0:
-            print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
-        print(table)
-
-        table = text_table_add_metrics(results)
-        if isinstance(table, str) and len(table) > 0:
-            print(' SUMMARY METRICS '.center(len(table.splitlines()[0]), '='))
-        print(table)
-
-        if isinstance(table, str) and len(table) > 0:
-            print('=' * len(table.splitlines()[0]))
-        print()
+        show_backtest_result(strategy, results, stake_currency)
 
     if len(backtest_stats['strategy']) > 1:
         # Print Strategy summary table
