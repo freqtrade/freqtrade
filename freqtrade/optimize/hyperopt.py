@@ -275,12 +275,10 @@ class Hyperopt:
 
         processed = load(self.data_pickle_file)
 
-        min_date, max_date = get_timerange(processed)
-
         bt_results = self.backtesting.backtest(
             processed=processed,
-            start_date=min_date.datetime,
-            end_date=max_date.datetime,
+            start_date=self.min_date.datetime,
+            end_date=self.max_date.datetime,
             max_open_trades=self.max_open_trades,
             position_stacking=self.position_stacking,
             enable_protections=self.config.get('enable_protections', False),
@@ -291,7 +289,7 @@ class Hyperopt:
             'backtest_end_time': int(backtest_end_time.timestamp()),
         })
 
-        return self._get_results_dict(bt_results, min_date, max_date,
+        return self._get_results_dict(bt_results, self.min_date, self.max_date,
                                       params_dict, params_details,
                                       processed=processed)
 
@@ -357,11 +355,11 @@ class Hyperopt:
         for pair, df in preprocessed.items():
             preprocessed[pair] = trim_dataframe(df, timerange,
                                                 startup_candles=self.backtesting.required_startup)
-        min_date, max_date = get_timerange(preprocessed)
+        self.min_date, self.max_date = get_timerange(preprocessed)
 
-        logger.info(f'Hyperopting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
-                    f'({(max_date - min_date).days} days)..')
+        logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
+                    f'({(self.max_date - self.min_date).days} days)..')
 
         dump(preprocessed, self.data_pickle_file)
 
