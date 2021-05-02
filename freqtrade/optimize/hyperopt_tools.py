@@ -318,11 +318,21 @@ class HyperoptTools():
         trials['Best'] = ''
         trials['Stake currency'] = config['stake_currency']
 
-        base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
-                        'results_metrics.avg_profit', 'results_metrics.median_profit',
-                        'results_metrics.total_profit',
-                        'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
-                        'loss', 'is_initial_point', 'is_best']
+        if 'results_metrics.total_trades' in trials:
+            base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
+                            'results_metrics.profit_mean', 'results_metrics.profit_median',
+                            'results_metrics.profit_total',
+                            'Stake currency',
+                            'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
+                            'loss', 'is_initial_point', 'is_best']
+            perc_multi = 100
+        else:
+            perc_multi = 1
+            base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
+                            'results_metrics.avg_profit', 'results_metrics.median_profit',
+                            'results_metrics.total_profit',
+                            'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
+                            'loss', 'is_initial_point', 'is_best']
         param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
@@ -339,21 +349,24 @@ class HyperoptTools():
         trials.loc[trials['Total profit'] > 0, 'is_profit'] = True
         trials['Epoch'] = trials['Epoch'].astype(str)
         trials['Trades'] = trials['Trades'].astype(str)
+        trials['Median profit'] = trials['Median profit'] * perc_multi
 
         trials['Total profit'] = trials['Total profit'].apply(
-            lambda x: '{:,.8f}'.format(x) if x != 0.0 else ""
+            lambda x: f'{x:,.8f}' if x != 0.0 else ""
         )
         trials['Profit'] = trials['Profit'].apply(
-            lambda x: '{:,.2f}'.format(x) if not isna(x) else ""
+            lambda x: f'{x:,.2f}' if not isna(x) else ""
         )
         trials['Avg profit'] = trials['Avg profit'].apply(
-            lambda x: '{:,.2f}%'.format(x) if not isna(x) else ""
+            lambda x: f'{x * perc_multi:,.2f}%' if not isna(x) else ""
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: '{:,.1f} m'.format(x) if not isna(x) else ""
+            lambda x: f'{x:,.1f} m' if isinstance(
+                x, float) else f"{x.total_seconds() // 60:,.1f} m"
+                      if not isna(x) else ""
         )
         trials['Objective'] = trials['Objective'].apply(
-            lambda x: '{:,.5f}'.format(x) if x != 100000 else ""
+            lambda x: f'{x:,.5f}' if x != 100000 else ""
         )
 
         trials = trials.drop(columns=['is_initial_point', 'is_best', 'is_profit'])
