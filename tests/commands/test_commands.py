@@ -918,10 +918,10 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
                     captured.out)
 
 
-def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
+def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results):
     mocker.patch(
         'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-        MagicMock(return_value=hyperopt_results)
+        MagicMock(return_value=saved_hyperopt_results)
     )
 
     args = [
@@ -1150,10 +1150,10 @@ def test_hyperopt_list(mocker, capsys, caplog, hyperopt_results):
     f.unlink()
 
 
-def test_hyperopt_show(mocker, capsys, hyperopt_results):
+def test_hyperopt_show(mocker, capsys, saved_hyperopt_results):
     mocker.patch(
         'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-        MagicMock(return_value=hyperopt_results)
+        MagicMock(return_value=saved_hyperopt_results)
     )
 
     args = [

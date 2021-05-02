@@ -1778,7 +1778,7 @@ def open_trade():
 
 
 @pytest.fixture
-def hyperopt_results():
+def saved_hyperopt_results():
     return [
         {
             'loss': 0.4366182531161519,
