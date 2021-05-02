@@ -552,7 +552,7 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
-                time_in_force=time_in_force):
+                time_in_force=time_in_force, current_time=datetime.utcnow()):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -1190,8 +1190,8 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force,
-                sell_reason=sell_reason.sell_reason):
+                time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
+                current_time=datetime.utcnow()):
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 
