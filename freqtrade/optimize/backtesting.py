@@ -353,6 +353,7 @@ class Backtesting:
         # Update dataprovider cache
         for pair, dataframe in processed.items():
             self.dataprovider._set_cached_df(pair, self.timeframe, dataframe)
+        self.strategy.dp = self.dataprovider
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
