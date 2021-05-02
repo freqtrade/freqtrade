@@ -60,7 +60,8 @@ from freqtrade.strategy import IStrategy, timeframe_to_prev_date
 
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                    current_profit: float, dataframe: DataFrame, **kwargs):
+                    current_profit: float, **kwargs):
+        dataframe = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
         trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
@@ -105,8 +106,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -156,8 +156,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
         if current_time - timedelta(minutes=120) > trade.open_date_utc:
@@ -183,8 +182,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
             return -0.10
@@ -210,8 +208,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit < 0.04:
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
@@ -250,8 +247,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
@@ -293,8 +289,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         # Default return value
         result = 1
@@ -302,6 +297,7 @@ class AwesomeStrategy(IStrategy):
             # Using current_time directly would only work in backtesting. Live/dry runs need time to
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
+            dataframe = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             current_time = timeframe_to_prev_date(self.timeframe, current_time)
             current_row = dataframe.loc[dataframe['date'] == current_time].squeeze()
             if 'atr' in current_row:
