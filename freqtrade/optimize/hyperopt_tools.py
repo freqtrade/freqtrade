@@ -4,7 +4,6 @@ import locale
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from pprint import pformat
 from typing import Any, Dict, List
 
 import rapidjson
@@ -66,6 +65,7 @@ class HyperoptTools():
         Display details of the hyperopt result
         """
         params = results.get('params_details', {})
+        non_optimized = results.get('params_not_optimized', {})
 
         # Default header string
         if header_str is None:
@@ -82,8 +82,10 @@ class HyperoptTools():
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
         else:
-            HyperoptTools._params_pretty_print(params, 'buy', "Buy hyperspace params:")
-            HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:")
+            HyperoptTools._params_pretty_print(params, 'buy', "Buy hyperspace params:",
+                                               non_optimized)
+            HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:",
+                                               non_optimized)
             HyperoptTools._params_pretty_print(params, 'roi', "ROI table:")
             HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:")
             HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:")
@@ -109,12 +111,12 @@ class HyperoptTools():
                 result_dict.update(space_params)
 
     @staticmethod
-    def _params_pretty_print(params, space: str, header: str) -> None:
-        if space in params:
+    def _params_pretty_print(params, space: str, header: str, non_optimized={}) -> None:
+        if space in params or space in non_optimized:
             space_params = HyperoptTools._space_params(params, space, 5)
-            params_result = f"\n# {header}\n"
+            result = f"\n# {header}\n"
             if space == 'stoploss':
-                params_result += f"stoploss = {space_params.get('stoploss')}"
+                result += f"stoploss = {space_params.get('stoploss')}"
             elif space == 'roi':
                 # TODO: get rid of OrderedDict when support for python 3.6 will be
                 # dropped (dicts keep the order as the language feature)
@@ -123,24 +125,44 @@ class HyperoptTools():
                         (str(k), v) for k, v in space_params.items()
                     ),
                     default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
-                params_result += f"minimal_roi = {minimal_roi_result}"
+                result += f"minimal_roi = {minimal_roi_result}"
             elif space == 'trailing':
 
                 for k, v in space_params.items():
-                    params_result += f'{k} = {v}\n'
+                    result += f'{k} = {v}\n'
 
             else:
-                params_result += f"{space}_params = {pformat(space_params, indent=4)}"
-                params_result = params_result.replace("}", "\n}").replace("{", "{\n ")
+                no_params = HyperoptTools._space_params(non_optimized, space, 5)
 
-            params_result = params_result.replace("\n", "\n    ")
-            print(params_result)
+                result += f"{space}_params = {HyperoptTools._pprint(space_params, no_params)}"
+
+            result = result.replace("\n", "\n    ")
+            print(result)
 
     @staticmethod
     def _space_params(params, space: str, r: int = None) -> Dict:
-        d = params[space]
-        # Round floats to `r` digits after the decimal point if requested
-        return round_dict(d, r) if r else d
+        d = params.get(space)
+        if d:
+            # Round floats to `r` digits after the decimal point if requested
+            return round_dict(d, r) if r else d
+        return {}
+
+    @staticmethod
+    def _pprint(params, non_optimized, indent: int = 4):
+        """
+        Pretty-print hyperopt results (based on 2 dicts - with add. comment)
+        """
+        p = params.copy()
+        p.update(non_optimized)
+        result = '{\n'
+
+        for k, param in p.items():
+            result += " " * indent + f'"{k}": {param},'
+            if k in non_optimized:
+                result += "  # value loaded from strategy"
+            result += "\n"
+        result += '}'
+        return result
 
     @staticmethod
     def is_best_loss(results, current_best_loss: float) -> bool:
