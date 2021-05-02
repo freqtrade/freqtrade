@@ -277,7 +277,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, dataframe: DataFrame, **kwargs) -> float:
+                        current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -300,8 +300,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.stoploss
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, dataframe: DataFrame,
-                    **kwargs) -> Optional[Union[str, bool]]:
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
         Custom sell signal logic indicating that specified position should be sold. Returning a
         string or True from this method is equal to setting sell signal on a candle at specified
@@ -539,8 +538,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return False
 
-    def should_sell(self, dataframe: DataFrame, trade: Trade, rate: float, date: datetime,
-                    buy: bool, sell: bool, low: float = None, high: float = None,
+    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
+                    sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
@@ -556,9 +555,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         trade.adjust_min_max_rates(high or current_rate)
 
-        stoplossflag = self.stop_loss_reached(dataframe=dataframe, current_rate=current_rate,
-                                              trade=trade, current_time=date,
-                                              current_profit=current_profit,
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
 
         # Set current rate to high for backtesting sell
@@ -583,7 +581,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
-                    current_profit=current_profit, dataframe=dataframe)
+                    current_profit=current_profit)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
@@ -620,7 +618,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # logger.debug(f"{trade.pair} - No sell signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
 
-    def stop_loss_reached(self, dataframe: DataFrame, current_rate: float, trade: Trade,
+    def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, high: float = None) -> SellCheckTuple:
         """
@@ -638,8 +636,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=current_rate,
-                                                      current_profit=current_profit,
-                                                      dataframe=dataframe)
+                                                      current_profit=current_profit)
             # Sanity check - error cases will return None
             if stop_loss_value:
                 # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
