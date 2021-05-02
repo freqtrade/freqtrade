@@ -243,7 +243,6 @@ class Hyperopt:
         """
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
-        params_details = self._get_params_details(params_dict)
 
         # Apply parameters
         if HyperoptTools.has_space(self.config, 'roi'):
@@ -287,12 +286,13 @@ class Hyperopt:
         })
 
         return self._get_results_dict(bt_results, self.min_date, self.max_date,
-                                      params_dict, params_details,
+                                      params_dict,
                                       processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
-                          params_dict, params_details, processed: Dict[str, DataFrame]
+                          params_dict, processed: Dict[str, DataFrame]
                           ) -> Dict[str, Any]:
+        params_details = self._get_params_details(params_dict)
 
         strat_stats = generate_strategy_stats(
             processed, self.backtesting.strategy.get_strategy_name(),

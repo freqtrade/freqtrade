@@ -688,6 +688,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                         'trailing_stop_positive': 0.02,
                                         'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
+        'params_not_optimized': {'buy': {}, 'sell': {}},
         'results_metrics': ANY,
         'total_profit': 3.1e-08
     }
