@@ -139,11 +139,13 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
     """
     Filter our items from the list of hyperopt results
+    TODO: after 2021.5 remove all "legacy" mode queries.
     """
     if filteroptions['only_best']:
         epochs = [x for x in epochs if x['is_best']]
     if filteroptions['only_profitable']:
-        epochs = [x for x in epochs if x['results_metrics']['profit'] > 0]
+        epochs = [x for x in epochs if x['results_metrics'].get(
+            'profit', x['results_metrics'].get('profit_total', 0)) > 0]
 
     epochs = _hyperopt_filter_epochs_trade_count(epochs, filteroptions)
 
@@ -160,34 +162,55 @@ def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
     return epochs
 
 
+def _hyperopt_filter_epochs_trade(epochs: List, trade_count: int):
+    """
+    Filter epochs with trade-counts > trades
+    """
+    return [
+        x for x in epochs
+        if x['results_metrics'].get(
+            'trade_count', x['results_metrics'].get('total_trades', 0)
+        ) > trade_count
+    ]
+
+
 def _hyperopt_filter_epochs_trade_count(epochs: List, filteroptions: dict) -> List:
 
     if filteroptions['filter_min_trades'] > 0:
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['trade_count'] > filteroptions['filter_min_trades']
-        ]
+        epochs = _hyperopt_filter_epochs_trade(epochs, filteroptions['filter_min_trades'])
+
     if filteroptions['filter_max_trades'] > 0:
         epochs = [
             x for x in epochs
-            if x['results_metrics']['trade_count'] < filteroptions['filter_max_trades']
+            if x['results_metrics'].get(
+                'trade_count', x['results_metrics'].get('total_trades')
+                ) < filteroptions['filter_max_trades']
         ]
     return epochs
 
 
 def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
 
+    def get_duration_value(x):
+        # Duration in minutes ...
+        if 'duration' in x['results_metrics']:
+            return x['results_metrics']['duration']
+        else:
+            # New mode
+            avg = x['results_metrics']['holding_avg']
+            return avg.total_seconds() // 60
+
     if filteroptions['filter_min_avg_time'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
+            if get_duration_value(x) > filteroptions['filter_min_avg_time']
         ]
     if filteroptions['filter_max_avg_time'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
+            if get_duration_value(x) < filteroptions['filter_max_avg_time']
         ]
 
     return epochs
@@ -196,28 +219,36 @@ def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
 def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
 
     if filteroptions['filter_min_avg_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['avg_profit'] > filteroptions['filter_min_avg_profit']
+            if x['results_metrics'].get(
+                'avg_profit', x['results_metrics'].get('profit_mean', 0)
+            ) > filteroptions['filter_min_avg_profit']
         ]
     if filteroptions['filter_max_avg_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['avg_profit'] < filteroptions['filter_max_avg_profit']
+            if x['results_metrics'].get(
+                'avg_profit', x['results_metrics'].get('profit_mean', 0)
+                ) < filteroptions['filter_max_avg_profit']
         ]
     if filteroptions['filter_min_total_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
+            if x['results_metrics'].get(
+                'profit', x['results_metrics'].get('profit_total', 0)
+                ) > filteroptions['filter_min_total_profit']
         ]
     if filteroptions['filter_max_total_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
             x for x in epochs
-            if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
+            if x['results_metrics'].get(
+                'profit', x['results_metrics'].get('profit_total', 0)
+                ) < filteroptions['filter_max_total_profit']
         ]
     return epochs
 
@@ -225,11 +256,11 @@ def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
 def _hyperopt_filter_epochs_objective(epochs: List, filteroptions: dict) -> List:
 
     if filteroptions['filter_min_objective'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
 
         epochs = [x for x in epochs if x['loss'] < filteroptions['filter_min_objective']]
     if filteroptions['filter_max_objective'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
+        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
 
         epochs = [x for x in epochs if x['loss'] > filteroptions['filter_max_objective']]
 
