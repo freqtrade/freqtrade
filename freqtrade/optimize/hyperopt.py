@@ -301,6 +301,8 @@ class Hyperopt:
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
 
+        not_optimized = self.backtesting.strategy.get_params_dict()
+
         trade_count = strat_stats['total_trades']
         total_profit = strat_stats['profit_total']
 
@@ -318,6 +320,7 @@ class Hyperopt:
             'loss': loss,
             'params_dict': params_dict,
             'params_details': params_details,
+            'params_not_optimized': not_optimized,
             'results_metrics': strat_stats,
             'results_explanation': results_explanation,
             'total_profit': total_profit,
