@@ -399,27 +399,27 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     )
 
     now = arrow.utcnow().datetime
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
 
     assert res.sell_flag is False
     assert res.sell_type == SellType.NONE
 
     strategy.custom_sell = MagicMock(return_value=True)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_flag is True
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
 
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_sell = MagicMock(return_value='h' * 100)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'h' * 64

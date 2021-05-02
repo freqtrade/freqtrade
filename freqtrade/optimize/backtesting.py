@@ -64,8 +64,8 @@ class Backtesting:
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
 
-        dataprovider = DataProvider(self.config, self.exchange)
-        IStrategy.dp = dataprovider
+        self.dataprovider = DataProvider(self.config, self.exchange)
+        IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):
@@ -96,7 +96,7 @@ class Backtesting:
                 "PrecisionFilter not allowed for backtesting multiple strategies."
             )
 
-        dataprovider.add_pairlisthandler(self.pairlists)
+        self.dataprovider.add_pairlisthandler(self.pairlists)
         self.pairlists.refresh_pairlist()
 
         if len(self.pairlists.whitelist) == 0:
@@ -176,6 +176,7 @@ class Backtesting:
         Trade.use_db = False
         PairLocks.reset_locks()
         Trade.reset_trades()
+        self.dataprovider.clear_cache()
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
@@ -266,7 +267,8 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_reason):
+                    sell_reason=sell.sell_reason,
+                    current_time=sell_row[DATE_IDX].to_pydatetime()):
                 return None
 
             trade.close(closerate, show_msg=False)
@@ -286,7 +288,7 @@ class Backtesting:
         # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
-                time_in_force=time_in_force):
+                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
             return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
@@ -347,6 +349,10 @@ class Backtesting:
         """
         trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
+
+        # Update dataprovider cache
+        for pair, dataframe in processed.items():
+            self.dataprovider._set_cached_df(pair, self.timeframe, dataframe)
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)

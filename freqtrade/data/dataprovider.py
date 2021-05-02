@@ -173,3 +173,6 @@ class DataProvider:
             return self._pairlists.whitelist.copy()
         else:
             raise OperationalException("Dataprovider was not initialized with a pairlist provider.")
+
+    def clear_cache(self):
+        self.__cached_pairs = {}
