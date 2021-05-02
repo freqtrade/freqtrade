@@ -340,7 +340,7 @@ def test_save_results_saves_epochs(mocker, hyperopt, testdatadir, caplog) -> Non
 
 def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
+    mock_load = mocker.patch('joblib.load', return_value=epochs)
     results_file = testdatadir / 'optimize' / 'ut_results.pickle'
     hyperopt_epochs = HyperoptTools._read_results(results_file)
     assert log_has(f"Reading epochs from '{results_file}'", caplog)
@@ -350,7 +350,7 @@ def test_read_results_returns_epochs(mocker, hyperopt, testdatadir, caplog) -> N
 
 def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
     epochs = create_results(mocker, hyperopt, testdatadir)
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
+    mock_load = mocker.patch('joblib.load', return_value=epochs)
     mocker.patch.object(Path, 'is_file', MagicMock(return_value=True))
     statmock = MagicMock()
     statmock.st_size = 5
@@ -364,7 +364,7 @@ def test_load_previous_results(mocker, hyperopt, testdatadir, caplog) -> None:
     mock_load.assert_called_once()
 
     del epochs[0]['is_best']
-    mock_load = mocker.patch('freqtrade.optimize.hyperopt_tools.load', return_value=epochs)
+    mock_load = mocker.patch('joblib.load', return_value=epochs)
 
     with pytest.raises(OperationalException):
         HyperoptTools.load_previous_results(results_file)
