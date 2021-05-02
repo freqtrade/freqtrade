@@ -251,9 +251,9 @@ We continue to define hyperoptable parameters:
 class MyAwesomeStrategy(IStrategy):
     buy_adx = IntParameter(20, 40, default=30)
     buy_rsi = IntParameter(20, 40, default=30)
-    buy_adx_enabled = CategoricalParameter([True, False]),
-    buy_rsi_enabled = CategoricalParameter([True, False]),
-    buy_trigger = CategoricalParameter(['bb_lower', 'macd_cross_signal']),
+    buy_adx_enabled = CategoricalParameter([True, False])
+    buy_rsi_enabled = CategoricalParameter([True, False])
+    buy_trigger = CategoricalParameter(['bb_lower', 'macd_cross_signal'])
 ```
 
 Above definition says: I have five parameters I want to randomly combine to find the best combination.
