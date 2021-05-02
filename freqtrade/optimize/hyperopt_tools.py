@@ -9,7 +9,6 @@ from typing import Any, Dict, List
 import rapidjson
 import tabulate
 from colorama import Fore, Style
-from joblib import load
 from pandas import isna, json_normalize
 
 from freqtrade.exceptions import OperationalException
@@ -37,6 +36,8 @@ class HyperoptTools():
         """
         Read hyperopt results from file
         """
+        from joblib import load
+
         logger.info("Reading epochs from '%s'", results_file)
         data = load(results_file)
         return data
