@@ -204,7 +204,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
     {
         "method": "VolumePairList",
         "number_assets": 20,
-        "sort_key": "quoteVolume",
+        "sort_key": "quoteVolume"
     },
     {"method": "AgeFilter", "min_days_listed": 10},
     {"method": "PrecisionFilter"},
