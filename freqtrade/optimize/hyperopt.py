@@ -65,6 +65,13 @@ class Hyperopt:
     custom_hyperopt: IHyperOpt
 
     def __init__(self, config: Dict[str, Any]) -> None:
+        self.buy_space: List[Dimension] = []
+        self.sell_space: List[Dimension] = []
+        self.roi_space: List[Dimension] = []
+        self.stoploss_space: List[Dimension] = []
+        self.trailing_space: List[Dimension] = []
+        self.dimensions: List[Dimension] = []
+
         self.config = config
 
         self.backtesting = Backtesting(self.config)
@@ -139,9 +146,7 @@ class Hyperopt:
                 logger.info(f"Removing `{p}`.")
                 p.unlink()
 
-    def _get_params_dict(self, raw_params: List[Any]) -> Dict:
-
-        dimensions: List[Dimension] = self.dimensions
+    def _get_params_dict(self, dimensions: List[Dimension], raw_params: List[Any]) -> Dict:
 
         # Ensure the number of dimensions match
         # the number of parameters in the list.
@@ -175,16 +180,13 @@ class Hyperopt:
         result: Dict = {}
 
         if HyperoptTools.has_space(self.config, 'buy'):
-            result['buy'] = {p.name: params.get(p.name)
-                             for p in self.hyperopt_space('buy')}
+            result['buy'] = {p.name: params.get(p.name) for p in self.buy_space}
         if HyperoptTools.has_space(self.config, 'sell'):
-            result['sell'] = {p.name: params.get(p.name)
-                              for p in self.hyperopt_space('sell')}
+            result['sell'] = {p.name: params.get(p.name) for p in self.sell_space}
         if HyperoptTools.has_space(self.config, 'roi'):
             result['roi'] = self.custom_hyperopt.generate_roi_table(params)
         if HyperoptTools.has_space(self.config, 'stoploss'):
-            result['stoploss'] = {p.name: params.get(p.name)
-                                  for p in self.hyperopt_space('stoploss')}
+            result['stoploss'] = {p.name: params.get(p.name) for p in self.stoploss_space}
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
@@ -207,38 +209,32 @@ class Hyperopt:
             )
             self.hyperopt_table_header = 2
 
-    def hyperopt_space(self, space: Optional[str] = None) -> List[Dimension]:
+    def init_spaces(self):
         """
-        Return the dimensions in the hyperoptimization space.
-        :param space: Defines hyperspace to return dimensions for.
-        If None, then the self.has_space() will be used to return dimensions
-        for all hyperspaces used.
+        Assign the dimensions in the hyperoptimization space.
         """
-        spaces: List[Dimension] = []
 
-        if space == 'buy' or (space is None and HyperoptTools.has_space(self.config, 'buy')):
+        if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
-            spaces += self.custom_hyperopt.indicator_space()
+            self.buy_space = self.custom_hyperopt.indicator_space()
 
-        if space == 'sell' or (space is None and HyperoptTools.has_space(self.config, 'sell')):
+        if HyperoptTools.has_space(self.config, 'sell'):
             logger.debug("Hyperopt has 'sell' space")
-            spaces += self.custom_hyperopt.sell_indicator_space()
+            self.sell_space = self.custom_hyperopt.sell_indicator_space()
 
-        if space == 'roi' or (space is None and HyperoptTools.has_space(self.config, 'roi')):
+        if HyperoptTools.has_space(self.config, 'roi'):
             logger.debug("Hyperopt has 'roi' space")
-            spaces += self.custom_hyperopt.roi_space()
+            self.roi_space = self.custom_hyperopt.roi_space()
 
-        if space == 'stoploss' or (space is None
-                                   and HyperoptTools.has_space(self.config, 'stoploss')):
+        if HyperoptTools.has_space(self.config, 'stoploss'):
             logger.debug("Hyperopt has 'stoploss' space")
-            spaces += self.custom_hyperopt.stoploss_space()
+            self.stoploss_space = self.custom_hyperopt.stoploss_space()
 
-        if space == 'trailing' or (space is None
-                                   and HyperoptTools.has_space(self.config, 'trailing')):
+        if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
-            spaces += self.custom_hyperopt.trailing_space()
-
-        return spaces
+            self.trailing_space = self.custom_hyperopt.trailing_space()
+        self.dimensions = (self.buy_space + self.sell_space + self.roi_space +
+                           self.stoploss_space + self.trailing_space)
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
@@ -246,9 +242,10 @@ class Hyperopt:
         Keep this function as optimized as possible!
         """
         backtest_start_time = datetime.now(timezone.utc)
-        params_dict = self._get_params_dict(raw_params)
+        params_dict = self._get_params_dict(self.dimensions, raw_params)
         params_details = self._get_params_details(params_dict)
 
+        # Apply parameters
         if HyperoptTools.has_space(self.config, 'roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore
                 self.custom_hyperopt.generate_roi_table(params_dict))
@@ -294,7 +291,8 @@ class Hyperopt:
                                       processed=processed)
 
     def _get_results_dict(self, backtesting_results, min_date, max_date,
-                          params_dict, params_details, processed: Dict[str, DataFrame]):
+                          params_dict, params_details, processed: Dict[str, DataFrame]
+                          ) -> Dict[str, Any]:
 
         strat_stats = generate_strategy_stats(
             processed, self.backtesting.strategy.get_strategy_name(),
@@ -347,6 +345,8 @@ class Hyperopt:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
         logger.info(f"Using optimizer random state: {self.random_state}")
         self.hyperopt_table_header = -1
+        # Initialize spaces ...
+        self.init_spaces()
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
@@ -377,7 +377,6 @@ class Hyperopt:
         config_jobs = self.config.get('hyperopt_jobs', -1)
         logger.info(f'Number of parallel jobs set as: {config_jobs}')
 
-        self.dimensions: List[Dimension] = self.hyperopt_space()
         self.opt = self.get_optimizer(self.dimensions, config_jobs)
 
         if self.print_colorized:
