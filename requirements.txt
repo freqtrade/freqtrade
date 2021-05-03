@@ -14,7 +14,7 @@ urllib3==1.26.4
 wrapt==1.12.1
 jsonschema==3.2.0
 TA-Lib==0.4.19
-technical==1.2.2
+technical==1.3.0
 tabulate==0.8.9
 pycoingecko==2.0.0
 jinja2==2.11.3
