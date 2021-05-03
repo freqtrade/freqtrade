@@ -362,8 +362,7 @@ class HyperoptTools():
         )
         trials['Avg duration'] = trials['Avg duration'].apply(
             lambda x: f'{x:,.1f} m' if isinstance(
-                x, float) else f"{x.total_seconds() // 60:,.1f} m"
-                      if not isna(x) else ""
+                x, float) else f"{x.total_seconds() // 60:,.1f} m" if not isna(x) else ""
         )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: f'{x:,.5f}' if x != 100000 else ""

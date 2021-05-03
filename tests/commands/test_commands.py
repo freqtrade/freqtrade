@@ -918,7 +918,8 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
                     captured.out)
 
 
-def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, saved_hyperopt_results_legacy):
+def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
+                       saved_hyperopt_results_legacy):
     for _ in (saved_hyperopt_results, saved_hyperopt_results_legacy):
         mocker.patch(
             'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
