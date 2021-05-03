@@ -63,9 +63,7 @@ class Backtesting:
         self.all_results: Dict[str, Dict] = {}
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
-
         self.dataprovider = DataProvider(self.config, self.exchange)
-        IStrategy.dp = self.dataprovider
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):
@@ -132,6 +130,7 @@ class Backtesting:
         Load strategy into backtesting
         """
         self.strategy: IStrategy = strategy
+        strategy.dp = self.dataprovider
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
@@ -353,7 +352,6 @@ class Backtesting:
         # Update dataprovider cache
         for pair, dataframe in processed.items():
             self.dataprovider._set_cached_df(pair, self.timeframe, dataframe)
-        self.strategy.dp = self.dataprovider
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
