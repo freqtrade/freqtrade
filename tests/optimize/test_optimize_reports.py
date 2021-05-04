@@ -14,7 +14,8 @@ from freqtrade.edge import PairInfo
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
                                                  generate_edge_table, generate_pair_metrics,
                                                  generate_sell_reason_stats,
-                                                 generate_strategy_metrics, store_backtest_stats,
+                                                 generate_strategy_comparison,
+                                                 generate_trading_stats, store_backtest_stats,
                                                  text_table_bt_results, text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -226,8 +227,6 @@ def test_generate_daily_stats(testdatadir):
     assert res['winning_days'] == 14
     assert res['draw_days'] == 4
     assert res['losing_days'] == 3
-    assert res['winner_holding_avg'] == timedelta(seconds=1440)
-    assert res['loser_holding_avg'] == timedelta(days=1, seconds=21420)
 
     # Select empty dataframe!
     res = generate_daily_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
@@ -236,6 +235,23 @@ def test_generate_daily_stats(testdatadir):
     assert res['winning_days'] == 0
     assert res['draw_days'] == 0
     assert res['losing_days'] == 0
+
+
+def test_generate_trading_stats(testdatadir):
+    filename = testdatadir / "backtest-result_new.json"
+    bt_data = load_backtest_data(filename)
+    res = generate_trading_stats(bt_data)
+    assert isinstance(res, dict)
+    assert res['winner_holding_avg'] == timedelta(seconds=1440)
+    assert res['loser_holding_avg'] == timedelta(days=1, seconds=21420)
+    assert 'wins' in res
+    assert 'losses' in res
+    assert 'draws' in res
+
+    # Select empty dataframe!
+    res = generate_trading_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
+    assert res['wins'] == 0
+    assert res['losses'] == 0
 
 
 def test_text_table_sell_reason():
@@ -345,7 +361,7 @@ def test_text_table_strategy(default_conf):
         '          43.33 |        0:20:00 |      3 |       0 |        0 |'
     )
 
-    strategy_results = generate_strategy_metrics(all_results=results)
+    strategy_results = generate_strategy_comparison(all_results=results)
 
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 

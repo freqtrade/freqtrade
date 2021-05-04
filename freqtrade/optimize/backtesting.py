@@ -330,7 +330,7 @@ class Backtesting:
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
-                 enable_protections: bool = False) -> DataFrame:
+                 enable_protections: bool = False) -> Dict[str, Any]:
         """
         Implement backtesting functionality
 
@@ -417,7 +417,13 @@ class Backtesting:
         trades += self.handle_left_open(open_trades, data=data)
         self.wallets.update()
 
-        return trade_list_to_dataframe(trades)
+        results = trade_list_to_dataframe(trades)
+        return {
+            'results': results,
+            'config': self.strategy.config,
+            'locks': PairLocks.get_all_locks(),
+            'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
+        }
 
     def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
@@ -457,14 +463,12 @@ class Backtesting:
             enable_protections=self.config.get('enable_protections', False),
         )
         backtest_end_time = datetime.now(timezone.utc)
-        self.all_results[self.strategy.get_strategy_name()] = {
-            'results': results,
-            'config': self.strategy.config,
-            'locks': PairLocks.get_all_locks(),
-            'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
+        results.update({
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
-        }
+        })
+        self.all_results[self.strategy.get_strategy_name()] = results
+
         return min_date, max_date
 
     def start(self) -> None:
