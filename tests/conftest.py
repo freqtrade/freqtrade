@@ -21,6 +21,7 @@ from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
+from freqtrade.state import RunMode
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
                                    mock_trade_5, mock_trade_6)
@@ -1677,6 +1678,7 @@ def buy_order_fee():
 @pytest.fixture(scope="function")
 def edge_conf(default_conf):
     conf = deepcopy(default_conf)
+    conf['runmode'] = RunMode.DRY_RUN
     conf['max_open_trades'] = -1
     conf['tradable_balance_ratio'] = 0.5
     conf['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
