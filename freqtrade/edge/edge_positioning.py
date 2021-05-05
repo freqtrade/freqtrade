@@ -1,6 +1,8 @@
 # pragma pylint: disable=W0603
 """ Edge positioning package """
 import logging
+from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Dict, List, NamedTuple
 
 import arrow
@@ -12,8 +14,10 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.history import get_timerange, load_data, refresh_data
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.exchange import timeframe_to_seconds
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
-from freqtrade.strategy.interface import SellType
+from freqtrade.state import RunMode
+from freqtrade.strategy.interface import IStrategy, SellType
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +49,7 @@ class Edge:
 
         self.config = config
         self.exchange = exchange
-        self.strategy = strategy
+        self.strategy: IStrategy = strategy
 
         self.edge_config = self.config.get('edge', {})
         self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
@@ -102,14 +106,33 @@ class Edge:
         logger.info('Using local backtesting data (using whitelist in given config) ...')
 
         if self._refresh_pairs:
+            timerange_startup = deepcopy(self._timerange)
+            timerange_startup.subtract_start(timeframe_to_seconds(
+                self.strategy.timeframe) * self.strategy.startup_candle_count)
             refresh_data(
                 datadir=self.config['datadir'],
                 pairs=pairs,
                 exchange=self.exchange,
                 timeframe=self.strategy.timeframe,
-                timerange=self._timerange,
+                timerange=timerange_startup,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
             )
+            # Download informative pairs too
+            res = defaultdict(list)
+            for p, t in self.strategy.informative_pairs():
+                res[t].append(p)
+            for timeframe, inf_pairs in res.items():
+                timerange_startup = deepcopy(self._timerange)
+                timerange_startup.subtract_start(timeframe_to_seconds(
+                    timeframe) * self.strategy.startup_candle_count)
+                refresh_data(
+                    datadir=self.config['datadir'],
+                    pairs=inf_pairs,
+                    exchange=self.exchange,
+                    timeframe=timeframe,
+                    timerange=timerange_startup,
+                    data_format=self.config.get('dataformat_ohlcv', 'json'),
+                )
 
         data = load_data(
             datadir=self.config['datadir'],
@@ -125,8 +148,11 @@ class Edge:
             self._cached_pairs = {}
             logger.critical("No data found. Edge is stopped ...")
             return False
-
+        # Fake run-mode to Edge
+        prior_rm = self.config['runmode']
+        self.config['runmode'] = RunMode.EDGE
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
+        self.config['runmode'] = prior_rm
 
         # Print timeframe
         min_date, max_date = get_timerange(preprocessed)
