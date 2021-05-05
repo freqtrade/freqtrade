@@ -53,6 +53,8 @@ class Kraken(Exchange):
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:
+                if not isinstance(balances[bal], dict):
+                    continue
                 balances[bal]['used'] = sum(order[1] for order in order_list if order[0] == bal)
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
 
