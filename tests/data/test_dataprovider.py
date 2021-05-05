@@ -246,3 +246,24 @@ def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
     assert dataframe.empty
     assert isinstance(time, datetime)
     assert time == datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def test_no_exchange_mode(default_conf):
+    dp = DataProvider(default_conf, None)
+
+    message = "Exchange is not available to DataProvider."
+
+    with pytest.raises(OperationalException, match=message):
+        dp.refresh([()])
+
+    with pytest.raises(OperationalException, match=message):
+        dp.ohlcv('XRP/USDT', '5m')
+
+    with pytest.raises(OperationalException, match=message):
+        dp.market('XRP/USDT')
+
+    with pytest.raises(OperationalException, match=message):
+        dp.ticker('XRP/USDT')
+
+    with pytest.raises(OperationalException, match=message):
+        dp.orderbook('XRP/USDT', 20)

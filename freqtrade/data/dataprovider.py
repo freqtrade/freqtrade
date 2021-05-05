@@ -19,6 +19,8 @@ from freqtrade.state import RunMode
 
 logger = logging.getLogger(__name__)
 
+NO_EXCHANGE_EXCEPTION = 'Exchange is not available to DataProvider.'
+
 
 class DataProvider:
 
@@ -126,7 +128,7 @@ class DataProvider:
         Refresh data, called with each cycle
         """
         if self._exchange is None:
-            raise OperationalException('Exchange is not available to DataProvider.')
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         if helping_pairs:
             self._exchange.refresh_latest_ohlcv(pairlist + helping_pairs)
         else:
@@ -139,7 +141,7 @@ class DataProvider:
         Should be whitelist + open trades.
         """
         if self._exchange is None:
-            raise OperationalException('Exchange is not available to DataProvider.')
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return list(self._exchange._klines.keys())
 
     def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
@@ -151,6 +153,8 @@ class DataProvider:
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
         """
+        if self._exchange is None:
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             return self._exchange.klines((pair, timeframe or self._config['timeframe']),
                                          copy=copy)
@@ -164,7 +168,7 @@ class DataProvider:
         :return: Market data dict from ccxt or None if market info is not available for the pair
         """
         if self._exchange is None:
-            raise OperationalException('Exchange is not available to DataProvider.')
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return self._exchange.markets.get(pair)
 
     def ticker(self, pair: str):
@@ -174,7 +178,7 @@ class DataProvider:
         :return: Ticker dict from exchange or empty dict if ticker is not available for the pair
         """
         if self._exchange is None:
-            raise OperationalException('Exchange is not available to DataProvider.')
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         try:
             return self._exchange.fetch_ticker(pair)
         except ExchangeError:
@@ -189,5 +193,5 @@ class DataProvider:
         :return: dict including bids/asks with a total of `maximum` entries.
         """
         if self._exchange is None:
-            raise OperationalException('Exchange is not available to DataProvider.')
+            raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return self._exchange.fetch_l2_order_book(pair, maximum)

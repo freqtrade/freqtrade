@@ -31,7 +31,6 @@ from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
-from freqtrade.strategy import IStrategy
 
 
 # Suppress scikit-learn FutureWarnings from skopt
