@@ -367,7 +367,7 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
                 logger.exception(f'Could not convert {pair} to OHLCV.')
 
 
-def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
+def get_timerange(data: Dict[str, DataFrame]) -> Tuple[datetime, datetime]:
     """
     Get the maximum common timerange for the given backtest data.
 
@@ -375,7 +375,7 @@ def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
     :return: tuple containing min_date, max_date
     """
     timeranges = [
-        (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
+        (frame['date'].min().to_pydatetime(), frame['date'].max().to_pydatetime())
         for frame in data.values()
     ]
     return (min(timeranges, key=operator.itemgetter(0))[0],

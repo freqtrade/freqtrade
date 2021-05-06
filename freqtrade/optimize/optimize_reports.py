@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-from arrow import Arrow
 from numpy import int64
 from pandas import DataFrame
 from tabulate import tabulate
@@ -259,7 +258,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
 def generate_strategy_stats(btdata: Dict[str, DataFrame],
                             strategy: str,
                             content: Dict[str, Any],
-                            min_date: Arrow, max_date: Arrow,
+                            min_date: datetime, max_date: datetime,
                             market_change: float
                             ) -> Dict[str, Any]:
     """
@@ -314,10 +313,10 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'profit_median': results['profit_ratio'].median() if len(results) > 0 else 0,
         'profit_total': results['profit_abs'].sum() / starting_balance,
         'profit_total_abs': results['profit_abs'].sum(),
-        'backtest_start': min_date.datetime,
-        'backtest_start_ts': min_date.int_timestamp * 1000,
-        'backtest_end': max_date.datetime,
-        'backtest_end_ts': max_date.int_timestamp * 1000,
+        'backtest_start': min_date,
+        'backtest_start_ts': int(min_date.timestamp() * 1000),
+        'backtest_end': max_date,
+        'backtest_end_ts': int(max_date.timestamp() * 1000),
         'backtest_days': backtest_days,
 
         'backtest_run_start_ts': content['backtest_start_time'],
@@ -397,7 +396,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
 def generate_backtest_stats(btdata: Dict[str, DataFrame],
                             all_results: Dict[str, Dict[str, Union[DataFrame, Dict]]],
-                            min_date: Arrow, max_date: Arrow
+                            min_date: datetime, max_date: datetime
                             ) -> Dict[str, Any]:
     """
     :param btdata: Backtest data

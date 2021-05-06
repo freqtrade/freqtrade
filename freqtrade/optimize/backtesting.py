@@ -456,8 +456,8 @@ class Backtesting:
         # Execute backtest and store results
         results = self.backtest(
             processed=preprocessed,
-            start_date=min_date.datetime,
-            end_date=max_date.datetime,
+            start_date=min_date,
+            end_date=max_date,
             max_open_trades=max_open_trades,
             position_stacking=self.config.get('position_stacking', False),
             enable_protections=self.config.get('enable_protections', False),

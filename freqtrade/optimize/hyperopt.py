@@ -273,8 +273,8 @@ class Hyperopt:
 
         bt_results = self.backtesting.backtest(
             processed=processed,
-            start_date=self.min_date.datetime,
-            end_date=self.max_date.datetime,
+            start_date=self.min_date,
+            end_date=self.max_date,
             max_open_trades=self.max_open_trades,
             position_stacking=self.position_stacking,
             enable_protections=self.config.get('enable_protections', False),
@@ -314,7 +314,7 @@ class Hyperopt:
         if trade_count >= self.config['hyperopt_min_trades']:
             loss = self.calculate_loss(results=backtesting_results['results'],
                                        trade_count=trade_count,
-                                       min_date=min_date.datetime, max_date=max_date.datetime,
+                                       min_date=min_date, max_date=max_date,
                                        config=self.config, processed=processed)
         return {
             'loss': loss,
