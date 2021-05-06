@@ -366,7 +366,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     # check the logs, that will contain the backtest result
     exists = [
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:59:00 (0 days)..'
+        'up to 2017-11-14 22:59:00 (0 days).'
     ]
     for line in exists:
         assert log_has(line, caplog)
@@ -791,9 +791,9 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...'
     ]
 
@@ -864,9 +864,9 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',
@@ -960,9 +960,9 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days)..',
+        'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
         'Running backtesting for Strategy TestStrategyLegacy',
