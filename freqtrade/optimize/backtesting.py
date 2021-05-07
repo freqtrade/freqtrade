@@ -110,8 +110,6 @@ class Backtesting:
         PairLocks.timeframe = self.config['timeframe']
         PairLocks.use_db = False
         PairLocks.reset_locks()
-        if self.config.get('enable_protections', False):
-            self.protections = ProtectionManager(self.config)
 
         self.wallets = Wallets(self.config, self.exchange, log=False)
 
@@ -135,6 +133,12 @@ class Backtesting:
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
+        if self.config.get('enable_protections', False):
+            conf = self.config
+            if hasattr(strategy, 'protections'):
+                conf = deepcopy(conf)
+                conf['protections'] = strategy.protections
+            self.protections = ProtectionManager(conf)
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
         """
