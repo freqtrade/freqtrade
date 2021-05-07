@@ -1156,3 +1156,17 @@ def test_SKDecimal():
     assert space.transform([2.0]) == [200]
     assert space.transform([1.0]) == [100]
     assert space.transform([1.5, 1.6]) == [150, 160]
+
+
+def test___pprint():
+    params = {'buy_std': 1.2, 'buy_rsi': 31, 'buy_enable': True, 'buy_what': 'asdf'}
+    non_params = {'buy_notoptimied': 55}
+
+    x = HyperoptTools._pprint(params, non_params)
+    assert x == """{
+    "buy_std": 1.2,
+    "buy_rsi": 31,
+    "buy_enable": True,
+    "buy_what": "asdf",
+    "buy_notoptimied": 55,  # value loaded from strategy
+}"""

@@ -157,7 +157,8 @@ class HyperoptTools():
         result = '{\n'
 
         for k, param in p.items():
-            result += " " * indent + f'"{k}": {param},'
+            result += " " * indent + f'"{k}": '
+            result += f'"{param}",' if isinstance(param, str) else f'{param},'
             if k in non_optimized:
                 result += "  # value loaded from strategy"
             result += "\n"
