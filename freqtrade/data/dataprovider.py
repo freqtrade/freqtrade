@@ -24,7 +24,7 @@ NO_EXCHANGE_EXCEPTION = 'Exchange is not available to DataProvider.'
 
 class DataProvider:
 
-    def __init__(self, config: dict, exchange: Exchange, pairlists=None) -> None:
+    def __init__(self, config: dict, exchange: Optional[Exchange], pairlists=None) -> None:
         self._config = config
         self._exchange = exchange
         self._pairlists = pairlists
