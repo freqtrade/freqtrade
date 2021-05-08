@@ -48,6 +48,8 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
     # Download the docker-compose file from the repository
     curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
 
+    # Edit the compose file to use an image named `*_pi` (stable_pi or develop_pi)
+
     # Pull the freqtrade image
     docker-compose pull
 
@@ -64,6 +66,30 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
         image: freqtradeorg/freqtrade:stable_pi
         # image: freqtradeorg/freqtrade:develop_pi
         ```
+
+=== "ARM64 (Mac M1)"
+    Make sure that your docker installation is running in native mode
+
+    ``` bash
+    mkdir ft_userdata
+    cd ft_userdata/
+    # Download the docker-compose file from the repository
+    curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
+
+    # Edit the compose file, uncomment the "build" step and use "./docker/Dockerfile.aarch64"
+    # Also, change the image name to something of your liking
+
+    # Build the freqtrade image (this may take a while)
+    docker-compose build
+
+    # Create user directory structure
+    docker-compose run --rm freqtrade create-userdir --userdir user_data
+
+    # Create configuration - Requires answering interactive questions
+    docker-compose run --rm freqtrade new-config --config user_data/config.json
+    ```
+    !!! Warning
+        You should not use the default image name - this can result in conflicting names between local and dockerhub and should therefore be avoided.
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.
 The last 2 steps in the snippet create the directory with `user_data`, as well as (interactively) the default configuration based on your selections.
