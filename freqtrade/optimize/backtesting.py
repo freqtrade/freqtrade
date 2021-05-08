@@ -373,8 +373,9 @@ class Backtesting:
             open_trade_count_start = open_trade_count
 
             for i, pair in enumerate(data):
+                row_index = indexes[pair]
                 try:
-                    row = data[pair][indexes[pair]]
+                    row = data[pair][row_index]
                 except IndexError:
                     # missing Data for one pair at the end.
                     # Warnings for this are shown during data loading
@@ -383,7 +384,10 @@ class Backtesting:
                 # Waits until the time-counter reaches the start of the data for this pair.
                 if row[DATE_IDX] > tmp:
                     continue
-                indexes[pair] += 1
+
+                row_index += 1
+                self.dataprovider._set_dataframe_max_index(row_index)   # noqa
+                indexes[pair] = row_index
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected

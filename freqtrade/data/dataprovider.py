@@ -20,6 +20,7 @@ from freqtrade.state import RunMode
 logger = logging.getLogger(__name__)
 
 NO_EXCHANGE_EXCEPTION = 'Exchange is not available to DataProvider.'
+MAX_DATAFRAME_CANDLES = 1000
 
 
 class DataProvider:
@@ -29,6 +30,14 @@ class DataProvider:
         self._exchange = exchange
         self._pairlists = pairlists
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
+        self.__slice_index = None
+
+    def _set_dataframe_max_index(self, limit_index: int):
+        """
+        Limit analyzed dataframe to max specified index.
+        :param limit_index: dataframe index.
+        """
+        self.__slice_index = limit_index
 
     def _set_cached_df(self, pair: str, timeframe: str, dataframe: DataFrame) -> None:
         """
@@ -85,10 +94,16 @@ class DataProvider:
             combination.
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
-        if (pair, timeframe) in self.__cached_pairs:
-            return self.__cached_pairs[(pair, timeframe)]
+        pair_key = (pair, timeframe)
+        if pair_key in self.__cached_pairs:
+            if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
+                df, date = self.__cached_pairs[pair_key]
+            else:
+                max_index = self.__slice_index
+                df, date = self.__cached_pairs[pair_key]
+                df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
+            return df, date
         else:
-
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))
 
     @property
