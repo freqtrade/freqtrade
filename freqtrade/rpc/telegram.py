@@ -861,9 +861,17 @@ class Telegram(RPCHandler):
         """
         try:
             edge_pairs = self._rpc._rpc_edge()
-            edge_pairs_tab = tabulate(edge_pairs, headers='keys', tablefmt='simple')
-            message = f'<b>Edge only validated following pairs:</b>\n<pre>{edge_pairs_tab}</pre>'
-            self._send_msg(message, parse_mode=ParseMode.HTML)
+            if not edge_pairs:
+                message = '<b>Edge only validated following pairs:</b>'
+                self._send_msg(message, parse_mode=ParseMode.HTML)
+
+            for chunk in chunks(edge_pairs, 25):
+                edge_pairs_tab = tabulate(chunk, headers='keys', tablefmt='simple')
+                message = (f'<b>Edge only validated following pairs:</b>\n'
+                           f'<pre>{edge_pairs_tab}</pre>')
+
+                self._send_msg(message, parse_mode=ParseMode.HTML)
+
         except RPCException as e:
             self._send_msg(str(e))
 

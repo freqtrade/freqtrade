@@ -240,7 +240,7 @@ class Edge:
 
         return self._final_pairs
 
-    def accepted_pairs(self) -> list:
+    def accepted_pairs(self) -> List[Dict[str, Any]]:
         """
         return a list of accepted pairs along with their winrate, expectancy and stoploss
         """

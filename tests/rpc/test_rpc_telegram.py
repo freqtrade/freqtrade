@@ -1102,6 +1102,15 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
     assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
 
+    msg_mock.reset_mock()
+
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={}))
+    telegram._edge(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '<b>Edge only validated following pairs:</b>' in msg_mock.call_args_list[0][0][0]
+    assert 'Winrate' not in msg_mock.call_args_list[0][0][0]
+
 
 def test_telegram_trades(mocker, update, default_conf, fee):
 
