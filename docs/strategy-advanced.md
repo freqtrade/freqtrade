@@ -265,12 +265,6 @@ class AwesomeStrategy(IStrategy):
 
 Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
 
-!!! Warning
-    Only use `dataframe` values up until and including `current_time` value. Reading past
-    `current_time` you will look into the future, which will produce incorrect backtesting results
-    and throw an exception in dry/live runs.
-    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
-
 !!! Note
     `dataframe['date']` contains the candle's open date. During dry/live runs `current_time` and
     `trade.open_date_utc` will not match the candle date precisely and using them directly will throw
@@ -290,7 +284,6 @@ class AwesomeStrategy(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
-
         # Default return value
         result = 1
         if trade:
@@ -298,11 +291,19 @@ class AwesomeStrategy(IStrategy):
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
             dataframe = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            current_time = timeframe_to_prev_date(self.timeframe, current_time)
-            current_row = dataframe.loc[dataframe['date'] == current_time].squeeze()
-            if 'atr' in current_row:
+            current_candle = dataframe.loc[-1].squeeze()
+            if 'atr' in current_candle:
                 # new stoploss relative to current_rate
-                new_stoploss = (current_rate - current_row['atr']) / current_rate
+                new_stoploss = (current_rate - current_candle['atr']) / current_rate
+
+                # Round trade date to it's candle time.
+                trade_date = timeframe_to_prev_date(trade.open_date_utc)
+                trade_candle = dataframe.loc[dataframe['date'] == trade_date]
+                # Just opened trades do not have their candle complete yet therefore trade_candle may be None
+                if trade_candle is not None:
+                    trade_candle = trade_candle.squeeze()
+                    trade_stoploss = (current_rate - trade_candle['atr']) / current_rate
+                    new_stoploss = max(new_stoploss, trade_stoploss)
                 # turn into relative negative offset required by `custom_stoploss` return implementation
                 result = new_stoploss - 1
 
