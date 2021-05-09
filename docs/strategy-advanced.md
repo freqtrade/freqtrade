@@ -61,7 +61,7 @@ from freqtrade.strategy import IStrategy, timeframe_to_prev_date
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
-        dataframe = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
         trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
@@ -290,7 +290,7 @@ class AwesomeStrategy(IStrategy):
             # Using current_time directly would only work in backtesting. Live/dry runs need time to
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
-            dataframe = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             current_candle = dataframe.loc[-1].squeeze()
             if 'atr' in current_candle:
                 # new stoploss relative to current_rate
