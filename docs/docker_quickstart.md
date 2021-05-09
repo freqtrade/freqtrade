@@ -74,7 +74,7 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
     mkdir ft_userdata
     cd ft_userdata/
 
-    # arm64 images are not yer provided via Docker Hub and need to be build locally first. Depending on the device,
+    # arm64 images are not yet provided via Docker Hub and need to be build locally first. Depending on the device,
     # this may take a few minutes (Apple M1) or up to two hours (Raspberry Pi)
     git clone  https://github.com/freqtrade/freqtrade.git
     docker build -f ./freqtrade/docker/Dockerfile.aarch64 -t freqtradeorg/freqtrade:develop_arm64 freqtrade
