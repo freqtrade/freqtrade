@@ -30,7 +30,7 @@ class DataProvider:
         self._exchange = exchange
         self._pairlists = pairlists
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
-        self.__slice_index = None
+        self.__slice_index: Optional[int] = None
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -88,6 +88,8 @@ class DataProvider:
 
     def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
         """
+        Retrieve the analyzed dataframe. Returns the full dataframe in trade mode (live / dry),
+        and the last 1000 candles (up to the time evaluated at this moment) in all other modes.
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         :return: Tuple of (Analyzed Dataframe, lastrefreshed) for the requested pair / timeframe
@@ -99,9 +101,10 @@ class DataProvider:
             if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
                 df, date = self.__cached_pairs[pair_key]
             else:
-                max_index = self.__slice_index
                 df, date = self.__cached_pairs[pair_key]
-                df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
+                if self.__slice_index is not None:
+                    max_index = self.__slice_index
+                    df = df.iloc[max(0, max_index - MAX_DATAFRAME_CANDLES):max_index]
             return df, date
         else:
             return (DataFrame(), datetime.fromtimestamp(0, tz=timezone.utc))

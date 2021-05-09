@@ -386,7 +386,7 @@ class Backtesting:
                     continue
 
                 row_index += 1
-                self.dataprovider._set_dataframe_max_index(row_index)   # noqa
+                self.dataprovider._set_dataframe_max_index(row_index)
                 indexes[pair] = row_index
 
                 # without positionstacking, we can only have one open trade per pair.
