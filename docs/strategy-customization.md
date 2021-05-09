@@ -422,10 +422,6 @@ if self.dp:
     Returns an empty dataframe if the requested pair was not cached.
     This should not happen when using whitelisted pairs.
 
-
-!!! Warning "Warning about backtesting"
-    This method will return an empty dataframe during backtesting.
-
 ### *orderbook(pair, maximum)*
 
 ``` python
