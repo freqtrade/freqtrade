@@ -247,6 +247,25 @@ def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
     assert isinstance(time, datetime)
     assert time == datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+    # Test backtest mode
+    default_conf["runmode"] = RunMode.BACKTEST
+    dp._set_dataframe_max_index(1)
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+
+    assert len(dataframe) == 1
+
+    dp._set_dataframe_max_index(2)
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+    assert len(dataframe) == 2
+
+    dp._set_dataframe_max_index(3)
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+    assert len(dataframe) == 3
+
+    dp._set_dataframe_max_index(500)
+    dataframe, time = dp.get_analyzed_dataframe("XRP/BTC", timeframe)
+    assert len(dataframe) == len(ohlcv_history)
+
 
 def test_no_exchange_mode(default_conf):
     dp = DataProvider(default_conf, None)
@@ -267,3 +286,6 @@ def test_no_exchange_mode(default_conf):
 
     with pytest.raises(OperationalException, match=message):
         dp.orderbook('XRP/USDT', 20)
+
+    with pytest.raises(OperationalException, match=message):
+        dp.available_pairs()
