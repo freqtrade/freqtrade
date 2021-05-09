@@ -67,20 +67,20 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
         # image: freqtradeorg/freqtrade:develop_pi
         ```
 
-=== "ARM64 (Mac M1)"
-    Make sure that your docker installation is running in native mode
+=== "ARM 64 Systenms (Jetson Nano, Mac M1, Raspberry Pi 4 8GB)"
+    In case of a Mac M1, make sure that your docker installation is running in native mode
 
     ``` bash
     mkdir ft_userdata
     cd ft_userdata/
+
+    # arm64 images are not yer provided via Docker Hub and need to be build locally first. Depending on the device,
+    # this may take a few minutes (Apple M1) or up to two hours (Raspberry Pi)
+    git clone  https://github.com/freqtrade/freqtrade.git
+    docker build -f ./freqtrade/docker/Dockerfile.aarch64 -t freqtradeorg/freqtrade:develop_arm64 freqtrade
+
     # Download the docker-compose file from the repository
     curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
-
-    # Edit the compose file, uncomment the "build" step and use "./docker/Dockerfile.aarch64"
-    # Also, change the image name to something of your liking
-
-    # Build the freqtrade image (this may take a while)
-    docker-compose build
 
     # Create user directory structure
     docker-compose run --rm freqtrade create-userdir --userdir user_data
@@ -88,8 +88,12 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
     # Create configuration - Requires answering interactive questions
     docker-compose run --rm freqtrade new-config --config user_data/config.json
     ```
-    !!! Warning
-        You should not use the default image name - this can result in conflicting names between local and dockerhub and should therefore be avoided.
+
+    !!! Note "Change your docker Image"
+        You have to change the docker image in the docker-compose file for your arm64 build to work properly.
+        ``` yml
+        image: freqtradeorg/freqtrade:develop_arm64
+        ```
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.
 The last 2 steps in the snippet create the directory with `user_data`, as well as (interactively) the default configuration based on your selections.
