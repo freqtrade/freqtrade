@@ -360,7 +360,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
                                          current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None, dataframe=None)
+                                         force_stoploss=0, high=None)
     assert isinstance(sl_flag, SellCheckTuple)
     assert sl_flag.sell_type == expected
     if expected == SellType.NONE:
@@ -371,7 +371,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
                                          current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None, dataframe=None)
+                                         force_stoploss=0, high=None)
     assert sl_flag.sell_type == expected2
     if expected2 == SellType.NONE:
         assert sl_flag.sell_flag is False
@@ -399,27 +399,27 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     )
 
     now = arrow.utcnow().datetime
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
 
     assert res.sell_flag is False
     assert res.sell_type == SellType.NONE
 
     strategy.custom_sell = MagicMock(return_value=True)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_flag is True
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
 
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_sell = MagicMock(return_value='h' * 100)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'h' * 64

@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 from cachetools import TTLCache
-from pandas import DataFrame
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
@@ -553,7 +552,7 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
-                time_in_force=time_in_force):
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -784,10 +783,10 @@ class FreqtradeBot(LoggingMixin):
 
         config_ask_strategy = self.config.get('ask_strategy', {})
 
-        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
-                                                                  self.strategy.timeframe)
         if (config_ask_strategy.get('use_sell_signal', True) or
                 config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
+            analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
+                                                                      self.strategy.timeframe)
 
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
@@ -814,13 +813,13 @@ class FreqtradeBot(LoggingMixin):
                 # resulting in outdated RPC messages
                 self._sell_rate_cache[trade.pair] = sell_rate
 
-                if self._check_and_execute_sell(analyzed_df, trade, sell_rate, buy, sell):
+                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
             sell_rate = self.get_sell_rate(trade.pair, True)
-            if self._check_and_execute_sell(analyzed_df, trade, sell_rate, buy, sell):
+            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                 return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -951,13 +950,13 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def _check_and_execute_sell(self, dataframe: DataFrame, trade: Trade, sell_rate: float,
+    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
                                 buy: bool, sell: bool) -> bool:
         """
         Check and execute sell
         """
         should_sell = self.strategy.should_sell(
-            dataframe, trade, sell_rate, datetime.now(timezone.utc), buy, sell,
+            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
@@ -1191,8 +1190,8 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force,
-                sell_reason=sell_reason.sell_reason):
+                time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
+                current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
 

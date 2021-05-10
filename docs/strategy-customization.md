@@ -422,10 +422,6 @@ if self.dp:
     Returns an empty dataframe if the requested pair was not cached.
     This should not happen when using whitelisted pairs.
 
-
-!!! Warning "Warning about backtesting"
-    This method will return an empty dataframe during backtesting.
-
 ### *orderbook(pair, maximum)*
 
 ``` python
@@ -631,8 +627,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
         use_custom_stoploss = True
 
         def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                            current_rate: float, current_profit: float, dataframe: DataFrame,
-                            **kwargs) -> float:
+                            current_rate: float, current_profit: float, **kwargs) -> float:
 
             # once the profit has risen above 10%, keep the stoploss at 7% above the open price
             if current_profit > 0.10:
