@@ -7,7 +7,7 @@ import pytest
 from arrow import Arrow
 
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
 from freqtrade.edge import PairInfo
@@ -97,8 +97,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     assert 'DefStrat' in stats['strategy']
     assert 'strategy_comparison' in stats
     strat_stats = stats['strategy']['DefStrat']
-    assert strat_stats['backtest_start'] == min_date.datetime
-    assert strat_stats['backtest_end'] == max_date.datetime
+    assert strat_stats['backtest_start'] == min_date.strftime(DATETIME_PRINT_FORMAT)
+    assert strat_stats['backtest_end'] == max_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['total_trades'] == len(results['DefStrat']['results'])
     # Above sample had no loosing trade
     assert strat_stats['max_drawdown'] == 0.0
@@ -141,8 +141,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     strat_stats = stats['strategy']['DefStrat']
 
     assert strat_stats['max_drawdown'] == 0.013803
-    assert strat_stats['drawdown_start'] == datetime(2017, 11, 14, 22, 10, tzinfo=timezone.utc)
-    assert strat_stats['drawdown_end'] == datetime(2017, 11, 14, 22, 43, tzinfo=timezone.utc)
+    assert strat_stats['drawdown_start'] == '2017-11-14 22:10:00'
+    assert strat_stats['drawdown_end'] == '2017-11-14 22:43:00'
     assert strat_stats['drawdown_end_ts'] == 1510699380000
     assert strat_stats['drawdown_start_ts'] == 1510697400000
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
