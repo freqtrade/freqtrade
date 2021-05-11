@@ -48,7 +48,7 @@ It is possible to define custom sell signals, indicating that specified position
 
 For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
 
-You should abstain from using custom_sell() signals in place of stoplosses though. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using custom_sell() signals in place of stoplosses though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -62,17 +62,19 @@ class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        
+        # Get the row at trade open
         trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
-        trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
+        trade_open_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
 
         # Above 20% profit, sell when rsi < 80
         if current_profit > 0.2:
-            if trade_row['rsi'] < 80:
+            if trade_open_row['rsi'] < 80:
                 return 'rsi_below_80'
 
         # Between 2% and 10%, sell if EMA-long above EMA-short
         if 0.02 < current_profit < 0.1:
-            if trade_row['emalong'] > trade_row['emashort']:
+            if trade_open_row['emalong'] > trade_open_row['emashort']:
                 return 'ema_long_below_80'
 
         # Sell any positions at a loss if they are held for more than one day.
