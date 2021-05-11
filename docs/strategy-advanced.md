@@ -293,7 +293,7 @@ class AwesomeStrategy(IStrategy):
             # be rounded to previous candle to be used as dataframe index. Rounding must also be 
             # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            current_candle = dataframe.loc[-1].squeeze()
+            current_candle = dataframe.iloc[-1].squeeze()
             if 'atr' in current_candle:
                 # new stoploss relative to current_rate
                 new_stoploss = (current_rate - current_candle['atr']) / current_rate
@@ -311,6 +311,11 @@ class AwesomeStrategy(IStrategy):
 
         return result
 ```
+
+!!! Warning "Using .iloc[-1]"
+    You can use `.iloc[-1]` here because `get_analyzed_dataframe()` only returns candles that backtesting is allowed to see.
+    This will not work in `populate_*` methods, so make sure to not use `.iloc[]` in that area.
+    Also, this will only work starting with version 2021.5.
 
 ---
 
