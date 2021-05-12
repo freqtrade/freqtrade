@@ -5,15 +5,16 @@ This module contains the hyperopt logic
 """
 
 import logging
+import os
 import random
 import warnings
 from datetime import datetime, timezone
 from math import ceil
-from operator import itemgetter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import progressbar
+import rapidjson
 from colorama import Fore, Style
 from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
@@ -86,7 +87,7 @@ class Hyperopt:
         time_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         strategy = str(self.config['strategy'])
         self.results_file: Path = (self.config['user_data_dir'] / 'hyperopt_results' /
-                                   f'strategy_{strategy}_hyperopt_results_{time_now}.pickle')
+                                   f'strategy_{strategy}_hyperopt_results_{time_now}.fthypt')
         self.data_pickle_file = (self.config['user_data_dir'] /
                                  'hyperopt_results' / 'hyperopt_tickerdata.pkl')
         self.total_epochs = config.get('epochs', 0)
@@ -96,9 +97,7 @@ class Hyperopt:
         self.clean_hyperopt()
 
         self.num_epochs_saved = 0
-
-        # Previous evaluations
-        self.epochs: List = []
+        self.current_best_epoch: Optional[Dict[str, Any]] = None
 
         # Populate functions here (hasattr is slow so should not be run during "regular" operations)
         if hasattr(self.custom_hyperopt, 'populate_indicators'):
@@ -156,21 +155,24 @@ class Hyperopt:
         # and the values are taken from the list of parameters.
         return {d.name: v for d, v in zip(dimensions, raw_params)}
 
-    def _save_results(self) -> None:
+    def _save_result(self, epoch: Dict) -> None:
         """
         Save hyperopt results to file
+        Store one line per epoch.
+        While not a valid json object - this allows appending easily.
+        :param epoch: result dictionary for this epoch.
         """
-        num_epochs = len(self.epochs)
-        if num_epochs > self.num_epochs_saved:
-            logger.debug(f"Saving {num_epochs} {plural(num_epochs, 'epoch')}.")
-            dump(self.epochs, self.results_file)
-            self.num_epochs_saved = num_epochs
-            logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
-                         f"saved to '{self.results_file}'.")
-            # Store hyperopt filename
-            latest_filename = Path.joinpath(self.results_file.parent, LAST_BT_RESULT_FN)
-            file_dump_json(latest_filename, {'latest_hyperopt': str(self.results_file.name)},
-                           log=False)
+        with self.results_file.open('a') as f:
+            rapidjson.dump(epoch, f, default=str, number_mode=rapidjson.NM_NATIVE)
+            f.write(os.linesep)
+
+        self.num_epochs_saved += 1
+        logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+                     f"saved to '{self.results_file}'.")
+        # Store hyperopt filename
+        latest_filename = Path.joinpath(self.results_file.parent, LAST_BT_RESULT_FN)
+        file_dump_json(latest_filename, {'latest_hyperopt': str(self.results_file.name)},
+                       log=False)
 
     def _get_params_details(self, params: Dict) -> Dict:
         """
@@ -442,25 +444,21 @@ class Hyperopt:
 
                             if is_best:
                                 self.current_best_loss = val['loss']
-                            self.epochs.append(val)
+                                self.current_best_epoch = val
 
-                            # Save results after each best epoch and every 100 epochs
-                            if is_best or current % 100 == 0:
-                                self._save_results()
+                            self._save_result(val)
 
                             pbar.update(current)
 
         except KeyboardInterrupt:
             print('User interrupted..')
 
-        self._save_results()
         logger.info(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
                     f"saved to '{self.results_file}'.")
 
-        if self.epochs:
-            sorted_epochs = sorted(self.epochs, key=itemgetter('loss'))
-            best_epoch = sorted_epochs[0]
-            HyperoptTools.print_epoch_details(best_epoch, self.total_epochs, self.print_json)
+        if self.current_best_epoch:
+            HyperoptTools.print_epoch_details(self.current_best_epoch, self.total_epochs,
+                                              self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
