@@ -345,12 +345,7 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)
 
-    def start(self) -> None:
-        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
-        logger.info(f"Using optimizer random state: {self.random_state}")
-        self.hyperopt_table_header = -1
-        # Initialize spaces ...
-        self.init_spaces()
+    def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
@@ -366,6 +361,15 @@ class Hyperopt:
                     f'({(self.max_date - self.min_date).days} days)..')
 
         dump(preprocessed, self.data_pickle_file)
+
+    def start(self) -> None:
+        self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
+        logger.info(f"Using optimizer random state: {self.random_state}")
+        self.hyperopt_table_header = -1
+        # Initialize spaces ...
+        self.init_spaces()
+
+        self.prepare_hyperopt_data()
 
         # We don't need exchange instance anymore while running hyperopt
         self.backtesting.exchange.close()
