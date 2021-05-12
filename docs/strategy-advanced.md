@@ -65,7 +65,7 @@ class AwesomeStrategy(IStrategy):
         trade_date = timeframe_to_prev_date(trade.open_date_utc)
         # Look up trade candle.
         trade_candle = dataframe.loc[dataframe['date'] == trade_date]
-        # trade_candle may be None for trades that just opened as it is stil lincomplete.
+        # trade_candle may be None for trades that just opened as it is still incomplete.
         if trade_candle is not None:
             # <...>
 ```
