@@ -40,6 +40,41 @@ class AwesomeStrategy(IStrategy):
 !!! Note
     If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
+
+## Dataframe access
+
+You may access dataframe in various strategy functions by querying it from dataprovider.
+
+``` python
+from freqtrade.exchange import timeframe_to_prev_date
+
+class AwesomeStrategy(IStrategy):
+    def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: 'datetime', **kwargs) -> bool:
+        # Obtain pair dataframe.
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+
+        # Obtain last available candle. Do not use current_time to look up latest candle, because 
+        # current_time points to curret incomplete candle whose data is not available.
+        last_candle = dataframe.iloc[-1].squeeze()
+        # <...>
+
+        # In dry/live runs trade open date will not match candle open date therefore it must be 
+        # rounded.
+        trade_date = timeframe_to_prev_date(trade.open_date_utc)
+        # Look up trade candle.
+        trade_candle = dataframe.loc[dataframe['date'] == trade_date]
+        # trade_candle may be None for trades that just opened as it is still incomplete.
+        if trade_candle is not None:
+            # <...>
+```
+
+!!! Warning "Using .iloc[-1]"
+    You can use `.iloc[-1]` here because `get_analyzed_dataframe()` only returns candles that backtesting is allowed to see.
+    This will not work in `populate_*` methods, so make sure to not use `.iloc[]` in that area.
+    Also, this will only work starting with version 2021.5.
+
 ***
 
 ## Custom sell signal
@@ -62,19 +97,16 @@ class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        
-        # Get the row at trade open
-        trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
-        trade_open_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
+        last_candle = dataframe.iloc[-1].squeeze()
 
         # Above 20% profit, sell when rsi < 80
         if current_profit > 0.2:
-            if trade_open_row['rsi'] < 80:
+            if last_candle['rsi'] < 80:
                 return 'rsi_below_80'
 
         # Between 2% and 10%, sell if EMA-long above EMA-short
         if 0.02 < current_profit < 0.1:
-            if trade_open_row['emalong'] > trade_open_row['emashort']:
+            if last_candle['emalong'] > last_candle['emashort']:
                 return 'ema_long_below_80'
 
         # Sell any positions at a loss if they are held for more than one day.
@@ -82,7 +114,7 @@ class AwesomeStrategy(IStrategy):
             return 'unclog'
 ```
 
-See [Custom stoploss using an indicator from dataframe example](#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
+See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ## Custom stoploss
 
@@ -265,57 +297,35 @@ class AwesomeStrategy(IStrategy):
 
 #### Custom stoploss using an indicator from dataframe example
 
-Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
-
-!!! Note
-    `dataframe['date']` contains the candle's open date. During dry/live runs `current_time` and
-    `trade.open_date_utc` will not match the candle date precisely and using them directly will throw
-    an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to the candle's open date
-    before using it to access `dataframe`.
+Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.
 
 ``` python
-from freqtrade.exchange import timeframe_to_prev_date
-from freqtrade.persistence import Trade
-from freqtrade.state import RunMode
-
 class AwesomeStrategy(IStrategy):
 
-    # ... populate_* methods
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # <...>
+        dataframe['sar'] = ta.SAR(dataframe)
 
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
-        # Default return value
-        result = 1
-        if trade:
-            # Using current_time directly would only work in backtesting. Live/dry runs need time to
-            # be rounded to previous candle to be used as dataframe index. Rounding must also be 
-            # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
-            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            current_candle = dataframe.iloc[-1].squeeze()
-            if 'atr' in current_candle:
-                # new stoploss relative to current_rate
-                new_stoploss = (current_rate - current_candle['atr']) / current_rate
 
-                # Round trade date to it's candle time.
-                trade_date = timeframe_to_prev_date(trade.open_date_utc)
-                trade_candle = dataframe.loc[dataframe['date'] == trade_date]
-                # Just opened trades do not have their candle complete yet therefore trade_candle may be None
-                if trade_candle is not None:
-                    trade_candle = trade_candle.squeeze()
-                    trade_stoploss = (current_rate - trade_candle['atr']) / current_rate
-                    new_stoploss = max(new_stoploss, trade_stoploss)
-                # turn into relative negative offset required by `custom_stoploss` return implementation
-                result = new_stoploss - 1
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
 
-        return result
+        # Use parabolic sar as absolute stoploss price
+        stoploss_price = last_candle['sar']
+
+        # Convert absolute price to percentage relative to current_rate
+        if stoploss_price < current_rate:
+            return (stoploss_price / current_rate) - 1
+
+        # return maximum stoploss value, keeping current stoploss price unchanged
+        return 1
 ```
 
-!!! Warning "Using .iloc[-1]"
-    You can use `.iloc[-1]` here because `get_analyzed_dataframe()` only returns candles that backtesting is allowed to see.
-    This will not work in `populate_*` methods, so make sure to not use `.iloc[]` in that area.
-    Also, this will only work starting with version 2021.5.
+See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ---
 
