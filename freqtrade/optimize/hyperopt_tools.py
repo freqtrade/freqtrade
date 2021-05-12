@@ -182,7 +182,7 @@ class HyperoptTools():
 
     @staticmethod
     def is_best_loss(results, current_best_loss: float) -> bool:
-        return results['loss'] < current_best_loss
+        return bool(results['loss'] < current_best_loss)
 
     @staticmethod
     def format_results_explanation_string(results_metrics: Dict, stake_currency: str) -> str:
