@@ -115,8 +115,6 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
-        # Load one (first) strategy
-        self._set_strategy(self.strategylist[0])
 
     def __del__(self):
         LoggingMixin.show_output = True
