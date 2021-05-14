@@ -154,7 +154,7 @@ You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/
 If you discover a bug in the bot, please
 [search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 first. If it hasn't been reported, please
-[create a new issue](https://github.com/freqtrade/freqtrade/issues/new) and
+[create a new issue](https://github.com/freqtrade/freqtrade/issues/new/choose) and
 ensure you follow the template guide so that our team can assist you as
 quickly as possible.
 
@@ -163,7 +163,7 @@ quickly as possible.
 Have you a great idea to improve the bot you want to share? Please,
 first search if this feature was not [already discussed](https://github.com/freqtrade/freqtrade/labels/enhancement).
 If it hasn't been requested, please
-[create a new request](https://github.com/freqtrade/freqtrade/issues/new)
+[create a new request](https://github.com/freqtrade/freqtrade/issues/new/choose)
 and ensure you follow the template guide so that it does not get lost
 in the bug reports.
 
