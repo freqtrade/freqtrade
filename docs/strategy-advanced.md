@@ -62,7 +62,7 @@ class AwesomeStrategy(IStrategy):
 
         # In dry/live runs trade open date will not match candle open date therefore it must be 
         # rounded.
-        trade_date = timeframe_to_prev_date(trade.open_date_utc)
+        trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
         # Look up trade candle.
         trade_candle = dataframe.loc[dataframe['date'] == trade_date]
         # trade_candle may be None for trades that just opened as it is still incomplete.
@@ -91,8 +91,6 @@ Using custom_sell() signals in place of stoplosses though *is not recommended*. 
 An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
 
 ``` python
-from freqtrade.strategy import IStrategy, timeframe_to_prev_date
-
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
