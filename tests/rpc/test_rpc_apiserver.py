@@ -1142,6 +1142,14 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json() == ftbot.strategy.plot_config
     assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
+
+    ftbot.strategy.plot_config = {'main_plot': {'sma': {}}}
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
+
+    assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
 
 
 def test_api_strategies(botclient):

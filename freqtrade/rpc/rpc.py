@@ -845,5 +845,7 @@ class RPC:
                                               df_analyzed, arrow.Arrow.utcnow().datetime)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
-
+        if (self._freqtrade.strategy.plot_config and
+                'subplots' not in self._freqtrade.strategy.plot_config):
+            self._freqtrade.strategy.plot_config['subplots'] = {}
         return self._freqtrade.strategy.plot_config
