@@ -573,6 +573,10 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         sell_signal = SellType.NONE
         custom_reason = ''
+        # use provided rate in backtesting, not high/low.
+        current_rate = rate
+        current_profit = trade.calc_profit_ratio(current_rate)
+
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
