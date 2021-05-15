@@ -79,6 +79,7 @@ class Hyperopt:
             self.custom_hyperopt = HyperOptAuto(self.config)
         else:
             self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
+        self.backtesting._set_strategy(self.backtesting.strategylist[0])
         self.custom_hyperopt.strategy = self.backtesting.strategy
 
         self.custom_hyperoptloss = HyperOptLossResolver.load_hyperoptloss(self.config)

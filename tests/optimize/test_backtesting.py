@@ -83,6 +83,7 @@ def simple_backtest(config, contour, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     config['timeframe'] = '1m'
     backtesting = Backtesting(config)
+    backtesting._set_strategy(backtesting.strategylist[0])
 
     data = load_data_test(contour, testdatadir)
     processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
@@ -106,6 +107,7 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     data = trim_dictlist(data, -201)
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
     return {
@@ -285,6 +287,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     patch_exchange(mocker)
     get_fee = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     assert backtesting.config == default_conf
     assert backtesting.timeframe == '5m'
     assert callable(backtesting.strategy.ohlcvdata_to_dataframe)
@@ -315,11 +318,13 @@ def test_data_with_fee(default_conf, mocker, testdatadir) -> None:
 
     fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     assert backtesting.fee == 0.1234
     assert fee_mock.call_count == 0
 
     default_conf['fee'] = 0.0
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     assert backtesting.fee == 0.0
     assert fee_mock.call_count == 0
 
@@ -330,6 +335,7 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     data = history.load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                              fill_up_missing=True)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     assert len(processed['UNITTEST/BTC']) == 102
 
@@ -361,6 +367,7 @@ def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     default_conf['timerange'] = '-1510694220'
 
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.bot_loop_start = MagicMock()
     backtesting.start()
     # check the logs, that will contain the backtest result
@@ -393,6 +400,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
     default_conf['timerange'] = '20180101-20180102'
 
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
         backtesting.start()
 
@@ -465,6 +473,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     default_conf['stake_amount'] = 'unlimited'
     default_conf['max_open_trades'] = 2
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'UNITTEST/BTC'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
@@ -508,6 +517,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     pair = 'UNITTEST/BTC'
     timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
@@ -570,6 +580,7 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
 
     # Run a backtesting for an exiting 1min timeframe
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
@@ -591,6 +602,7 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
 def test_processed(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
 
     dict_of_tickerrows = load_data_test('raise', testdatadir)
     dataframes = backtesting.strategy.ohlcvdata_to_dataframe(dict_of_tickerrows)
@@ -661,6 +673,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = fun  # Override
     backtesting.strategy.advise_sell = fun  # Override
     result = backtesting.backtest(**backtest_conf)
@@ -676,6 +689,7 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
 
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = fun  # Override
     backtesting.strategy.advise_sell = fun  # Override
     result = backtesting.backtest(**backtest_conf)
@@ -689,6 +703,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = _trend_alternate  # Override
     backtesting.strategy.advise_sell = _trend_alternate  # Override
     result = backtesting.backtest(**backtest_conf)
@@ -731,6 +746,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     default_conf['timeframe'] = '5m'
 
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
     backtesting.strategy.advise_sell = _trend_alternate_hold  # Override
 

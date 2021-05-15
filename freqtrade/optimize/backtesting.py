@@ -9,7 +9,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame, NaT
+from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
@@ -115,8 +115,6 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
-        # Load one (first) strategy
-        self._set_strategy(self.strategylist[0])
 
     def __del__(self):
         LoggingMixin.show_output = True
@@ -457,13 +455,21 @@ class Backtesting:
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
-        for pair, df in preprocessed.items():
-            preprocessed[pair] = trim_dataframe(df, timerange,
-                                                startup_candles=self.required_startup)
-        min_date, max_date = history.get_timerange(preprocessed)
-        if min_date is NaT or max_date is NaT:
+        for pair in list(preprocessed):
+            df = preprocessed[pair]
+            df = trim_dataframe(df, timerange, startup_candles=self.required_startup)
+            if len(df) > 0:
+                preprocessed[pair] = df
+            else:
+                logger.warning(f'{pair} has no data left after adjusting for startup candles, '
+                               f'skipping.')
+                del preprocessed[pair]
+
+        if not preprocessed:
             raise OperationalException(
-                "No data left after adjusting for startup candles. ")
+                "No data left after adjusting for startup candles.")
+
+        min_date, max_date = history.get_timerange(preprocessed)
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days).')
