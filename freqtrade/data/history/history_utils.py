@@ -267,11 +267,11 @@ def _download_trades_history(exchange: Exchange,
 
         until = None
         if (timerange and timerange.starttype == 'date'):
-          since = timerange.startts * 1000
-          if timerange.stoptype == 'date':
-            until = timerange.stopts * 1000
+            since = timerange.startts * 1000
+            if timerange.stoptype == 'date':
+                until = timerange.stopts * 1000
         else:
-          since = int(arrow.utcnow().shift(days=-new_pairs_days).float_timestamp) * 1000
+            since = int(arrow.utcnow().shift(days=-new_pairs_days).float_timestamp) * 1000
 
         trades = data_handler.trades_load(pair)
 
