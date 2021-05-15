@@ -218,6 +218,12 @@ class Backtesting:
         """
         # Special handling if high or low hit STOP_LOSS or ROI
         if sell.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+            if trade.stop_loss > sell_row[HIGH_IDX]:
+                # our stoploss was already higher than candle high,
+                # possibly due to a cancelled trade exit.
+                # sell at open price.
+                return sell_row[OPEN_IDX]
+
             # Set close_rate to stoploss
             return trade.stop_loss
         elif sell.sell_type == (SellType.ROI):
