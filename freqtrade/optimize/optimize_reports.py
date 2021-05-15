@@ -164,6 +164,17 @@ def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
         tabular_data.append(_generate_result_line(
             results['results'], results['config']['dry_run_wallet'], strategy)
             )
+        try:
+            max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                  value_col='profit_ratio')
+            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                  value_col='profit_abs')
+        except ValueError:
+            max_drawdown_per = 0
+            max_drawdown_abs = 0
+        tabular_data[-1]['max_drawdown_per'] = round(max_drawdown_per * 100, 2)
+        tabular_data[-1]['max_drawdown_abs'] = \
+            round_coin_value(max_drawdown_abs, results['config']['stake_currency'], False)
     return tabular_data
 
 
@@ -485,10 +496,15 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header('Strategy', stake_currency)
+    # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
+    # therefore we slip this column in only for strategy summary here.
+    headers.append(f'Drawdown {stake_currency}')
+    headers.append('Drawdown %')
 
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
-        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
+        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses'],
+        t['max_drawdown_abs'], t['max_drawdown_per']
     ] for t in strategy_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,

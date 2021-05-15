@@ -1,3 +1,4 @@
+import datetime
 import re
 from datetime import timedelta
 from pathlib import Path
@@ -325,9 +326,12 @@ def test_text_table_strategy(default_conf):
     default_conf['max_open_trades'] = 2
     default_conf['dry_run_wallet'] = 3
     results = {}
+    date = datetime.datetime(year=2020, month=1, day=1, hour=12, minute=30)
+    delta = datetime.timedelta(days=1)
     results['TestStrategy1'] = {'results': pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'close_date': [date, date + delta, date + delta * 2],
             'profit_ratio': [0.1, 0.2, 0.3],
             'profit_abs': [0.2, 0.4, 0.5],
             'trade_duration': [10, 30, 10],
@@ -340,6 +344,7 @@ def test_text_table_strategy(default_conf):
     results['TestStrategy2'] = {'results': pd.DataFrame(
         {
             'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
+            'close_date': [date, date + delta, date + delta * 2],
             'profit_ratio': [0.4, 0.2, 0.3],
             'profit_abs': [0.4, 0.4, 0.5],
             'trade_duration': [15, 30, 15],
@@ -351,18 +356,21 @@ def test_text_table_strategy(default_conf):
     ), 'config': default_conf}
 
     result_str = (
-        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot'
-        ' Profit BTC |   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |\n'
-        '|---------------+--------+----------------+----------------+------------------+'
-        '----------------+----------------+--------+---------+----------|\n'
-        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 |'
-        '          36.67 |        0:17:00 |      3 |       0 |        0 |\n'
-        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
-        '          43.33 |        0:20:00 |      3 |       0 |        0 |'
+        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC '
+        '|   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |   Drawdown BTC '
+        '|   Drawdown % |\n'
+        '|---------------+--------+----------------+----------------+------------------'
+        '+----------------+----------------+--------+---------+----------+----------------'
+        '+--------------|\n'
+        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 '
+        '|          36.67 |        0:17:00 |      3 |       0 |        0 |              0 '
+        '|            0 |\n'
+        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 '
+        '|          43.33 |        0:20:00 |      3 |       0 |        0 |              0 '
+        '|            0 |'
     )
 
     strategy_results = generate_strategy_comparison(all_results=results)
-
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 
