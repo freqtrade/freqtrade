@@ -262,11 +262,11 @@ Note that for this to work, `forcebuy_enable` needs to be set to true.
 
 Return the performance of each crypto-currency the bot has sold.
 > Performance:
-> 1. `RCN/BTC 57.77%`  
-> 2. `PAY/BTC 56.91%`  
-> 3. `VIB/BTC 47.07%`  
-> 4. `SALT/BTC 30.24%`  
-> 5. `STORJ/BTC 27.24%`  
+> 1. `RCN/BTC 0.003 BTC (57.77%) (1)`
+> 2. `PAY/BTC 0.0012 BTC (56.91%) (1)`
+> 3. `VIB/BTC 0.0011 BTC (47.07%) (1)`
+> 4. `SALT/BTC 0.0010 BTC (30.24%) (1)`
+> 5. `STORJ/BTC 0.0009 BTC (27.24%) (1)`
 > ...  
 
 ### /balance
