@@ -32,14 +32,26 @@ class HyperoptTools():
             return any(s in config['spaces'] for s in [space, 'all', 'default'])
 
     @staticmethod
+    def _read_results_pickle(results_file: Path) -> List:
+        """
+        Read hyperopt results from pickle file
+        LEGACY method - new files are written as json and cannot be read with this method.
+        """
+        from joblib import load
+
+        logger.info(f"Reading pickled epochs from '{results_file}'")
+        data = load(results_file)
+        return data
+
+    @staticmethod
     def _read_results(results_file: Path) -> List:
         """
         Read hyperopt results from file
         """
-        from joblib import load
-
-        logger.info("Reading epochs from '%s'", results_file)
-        data = load(results_file)
+        import rapidjson
+        logger.info(f"Reading epochs from '{results_file}'")
+        with results_file.open('r') as f:
+            data = [rapidjson.loads(line) for line in f]
         return data
 
     @staticmethod
@@ -49,7 +61,10 @@ class HyperoptTools():
         """
         epochs: List = []
         if results_file.is_file() and results_file.stat().st_size > 0:
-            epochs = HyperoptTools._read_results(results_file)
+            if results_file.suffix == '.pickle':
+                epochs = HyperoptTools._read_results_pickle(results_file)
+            else:
+                epochs = HyperoptTools._read_results(results_file)
             # Detection of some old format, without 'is_best' field saved
             if epochs[0].get('is_best') is None:
                 raise OperationalException(
@@ -167,7 +182,7 @@ class HyperoptTools():
 
     @staticmethod
     def is_best_loss(results, current_best_loss: float) -> bool:
-        return results['loss'] < current_best_loss
+        return bool(results['loss'] < current_best_loss)
 
     @staticmethod
     def format_results_explanation_string(results_metrics: Dict, stake_currency: str) -> str:
