@@ -5,7 +5,6 @@ This module contains the hyperopt logic
 """
 
 import logging
-import os
 import random
 import warnings
 from datetime import datetime, timezone
@@ -164,7 +163,7 @@ class Hyperopt:
         """
         with self.results_file.open('a') as f:
             rapidjson.dump(epoch, f, default=str, number_mode=rapidjson.NM_NATIVE)
-            f.write(os.linesep)
+            f.write("\n")
 
         self.num_epochs_saved += 1
         logger.debug(f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
