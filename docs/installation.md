@@ -269,7 +269,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade      
 ```
 
-#### Freqtrade instal: Conda Environment
+#### Freqtrade install: Conda Environment
 
 Prepare conda-freqtrade environment, using file `environment.yml`, which exist in main freqtrade directory
 
