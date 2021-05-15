@@ -413,6 +413,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Best day` / `Worst day`: Best and worst day based on daily profit.
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
+- `Zero Duration Trades`: A number of trades that completed within same candle as they opened and had `trailing_stop_loss` sell reason. A significant amount of such trades may indicate that strategy is exploiting trailing stoploss behavior in backtesting and produces unrealistic results.
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
 - `Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.

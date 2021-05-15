@@ -208,6 +208,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     winning_trades = results.loc[results['profit_ratio'] > 0]
     draw_trades = results.loc[results['profit_ratio'] == 0]
     losing_trades = results.loc[results['profit_ratio'] < 0]
+    zero_duration_trades = len(results.loc[(results['trade_duration'] == 0) &
+                                           (results['sell_reason'] == 'trailing_stop_loss')])
 
     return {
         'wins': len(winning_trades),
@@ -219,6 +221,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
                                if not winning_trades.empty else timedelta()),
         'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
                               if not losing_trades.empty else timedelta()),
+        'zero_duration_trades': zero_duration_trades,
     }
 
 
@@ -496,6 +499,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
+        zero_duration_trades_percent =\
+            100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
         metrics = [
             ('Backtesting from', strat_results['backtest_start']),
             ('Backtesting to', strat_results['backtest_end']),
@@ -508,7 +513,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                strat_results['stake_currency'])),
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
-            ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
+            ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2):}%"),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
@@ -532,6 +537,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
+            ('Zero Duration Trades', f"{zero_duration_trades_percent:.1f}% "
+                                     f"({strat_results['zero_duration_trades']})"),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
