@@ -929,7 +929,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     telegram._performance(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:

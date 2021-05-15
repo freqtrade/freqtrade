@@ -711,8 +711,11 @@ class Telegram(RPCHandler):
             trades = self._rpc._rpc_performance()
             output = "<b>Performance:</b>\n"
             for i, trade in enumerate(trades):
-                stat_line = (f"{i+1}.\t <code>{trade['pair']}\t{trade['profit']:.2f}% "
-                             f"({trade['count']})</code>\n")
+                stat_line = (
+                    f"{i+1}.\t <code>{trade['pair']}\t"
+                    f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                    f"({trade['profit']:.2f}%) "
+                    f"({trade['count']})</code>\n")
 
                 if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     self._send_msg(output, parse_mode=ParseMode.HTML)
