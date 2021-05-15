@@ -751,6 +751,9 @@ class Telegram(RPCHandler):
         Returns the currently active locks
         """
         rpc_locks = self._rpc._rpc_locks()
+        if not rpc_locks['locks']:
+            self._send_msg('No active locks.', parse_mode=ParseMode.HTML)
+
         for locks in chunks(rpc_locks['locks'], 25):
             message = tabulate([[
                 lock['id'],
