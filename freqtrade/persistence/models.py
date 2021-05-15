@@ -815,18 +815,20 @@ class Trade(_DECL_BASE, LocalTrade):
         pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
         ).filter(Trade.is_open.is_(False))\
             .group_by(Trade.pair) \
-            .order_by(desc('profit_sum')) \
+            .order_by(desc('profit_sum_abs')) \
             .all()
         return [
             {
                 'pair': pair,
-                'profit': rate,
+                'profit': profit,
+                'profit_abs': profit_abs,
                 'count': count
             }
-            for pair, rate, count in pair_rates
+            for pair, profit, profit_abs, count in pair_rates
         ]
 
     @staticmethod

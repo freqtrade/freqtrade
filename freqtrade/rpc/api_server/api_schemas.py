@@ -57,6 +57,7 @@ class Count(BaseModel):
 class PerformanceEntry(BaseModel):
     pair: str
     profit: float
+    profit_abs: float
     count: int
 
 
