@@ -267,7 +267,7 @@ class FreqtradeBot(LoggingMixin):
     def update_closed_trades_without_assigned_fees(self):
         """
         Update closed trades without close fees assigned.
-        Only acts when Orders are in the database, otherwise the last orderid is unknown.
+        Only acts when Orders are in the database, otherwise the last order-id is unknown.
         """
         if self.config['dry_run']:
             # Updating open orders in dry-run does not make sense and will fail.
@@ -1223,7 +1223,7 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, order)
         Trade.query.session.flush()
 
-        # Lock pair for one candle to prevent immediate rebuys
+        # Lock pair for one candle to prevent immediate re-buys
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
@@ -1327,7 +1327,7 @@ class FreqtradeBot(LoggingMixin):
         Handles closing both buy and sell orders.
         :param trade: Trade object of the trade we're analyzing
         :param order_id: Order-id of the order we're analyzing
-        :param action_order: Already aquired order object
+        :param action_order: Already acquired order object
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
         if not order_id:
@@ -1397,7 +1397,7 @@ class FreqtradeBot(LoggingMixin):
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
         Detect and update trade fee.
-        Calls trade.update_fee() uppon correct detection.
+        Calls trade.update_fee() upon correct detection.
         Returns modified amount if the fee was taken from the destination currency.
         Necessary for exchanges which charge fees in base currency (e.g. binance)
         :return: identical (or new) amount for the trade

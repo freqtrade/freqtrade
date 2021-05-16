@@ -2124,7 +2124,6 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
 
-
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True

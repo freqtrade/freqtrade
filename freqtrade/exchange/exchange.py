@@ -466,7 +466,7 @@ class Exchange:
     def amount_to_precision(self, pair: str, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Reimplementation of ccxt internal methods - ensuring we can test the result is correct
+        Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         '''
         if self.markets[pair]['precision']['amount']:
@@ -480,7 +480,7 @@ class Exchange:
     def price_to_precision(self, pair: str, price: float) -> float:
         '''
         Returns the price rounded up to the precision the Exchange accepts.
-        Partial Reimplementation of ccxt internal method decimal_to_precision(),
+        Partial Re-implementation of ccxt internal method decimal_to_precision(),
         which does not support rounding up
         TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
         align with amount_to_precision().
