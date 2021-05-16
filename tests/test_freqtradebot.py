@@ -1371,7 +1371,8 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     }
     mocker.patch('freqtrade.exchange.Binance.cancel_stoploss_order',
                  side_effect=InvalidOrderException())
-    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order', stoploss_order_hanging)
+    mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
+                 return_value=stoploss_order_hanging)
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 

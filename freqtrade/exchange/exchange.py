@@ -1120,6 +1120,27 @@ class Exchange:
 
         return order
 
+    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel stoploss order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: stoploss-order-id to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        corder = self.cancel_stoploss_order(order_id, pair)
+        if self.is_cancel_order_result_suitable(corder):
+            return corder
+        try:
+            order = self.fetch_stoploss_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
