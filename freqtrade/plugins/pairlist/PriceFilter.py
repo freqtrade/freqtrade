@@ -61,7 +61,7 @@ class PriceFilter(IPairList):
         """
         Check if if one price-step (pip) is > than a certain barrier.
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
         if ticker.get('last', None) is None or ticker.get('last') == 0:
