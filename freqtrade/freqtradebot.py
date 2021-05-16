@@ -630,7 +630,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """
-        Sends rpc notification when a buy occured.
+        Sends rpc notification when a buy occurred.
         """
         msg = {
             'trade_id': trade.id,
@@ -652,7 +652,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_buy_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
-        Sends rpc notification when a buy cancel occured.
+        Sends rpc notification when a buy cancel occurred.
         """
         current_rate = self.get_buy_rate(trade.pair, False)
 
@@ -713,7 +713,7 @@ class FreqtradeBot(LoggingMixin):
             except DependencyException as exception:
                 logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
 
-        # Updating wallets if any trade occured
+        # Updating wallets if any trade occurred
         if trades_closed:
             self.wallets.update()
 
@@ -932,7 +932,7 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         if self.exchange.stoploss_adjust(trade.stop_loss, order):
-            # we check if the update is neccesary
+            # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
                 # cancelling the current stoploss on exchange first
@@ -981,7 +981,7 @@ class FreqtradeBot(LoggingMixin):
 
     def check_handle_timedout(self) -> None:
         """
-        Check if any orders are timed out and cancel if neccessary
+        Check if any orders are timed out and cancel if necessary
         :param timeoutvalue: Number of minutes until order is considered timed out
         :return: None
         """
@@ -1230,7 +1230,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_sell(self, trade: Trade, order_type: str, fill: bool = False) -> None:
         """
-        Sends rpc notification when a sell occured.
+        Sends rpc notification when a sell occurred.
         """
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
@@ -1271,7 +1271,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_sell_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
-        Sends rpc notification when a sell cancel occured.
+        Sends rpc notification when a sell cancel occurred.
         """
         if trade.sell_order_status == reason:
             return
