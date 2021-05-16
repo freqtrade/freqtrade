@@ -7,10 +7,11 @@ import pytest
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
+from tests.conftest import get_patched_exchange, get_patched_freqtradebot, log_has, log_has_re
 
 
 @pytest.fixture(scope="function")
@@ -510,6 +511,18 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     with pytest.raises(OperationalException,
                        match=r"PrecisionFilter can only work with stoploss defined\..*"):
         PairListManager(MagicMock, whitelist_conf)
+
+
+def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
+    if hasattr(Trade, 'query'):
+        del Trade.query
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf)
+    pm.refresh_pairlist()
+
+    assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
