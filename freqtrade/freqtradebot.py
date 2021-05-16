@@ -1427,8 +1427,8 @@ class FreqtradeBot(LoggingMixin):
         """
         fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
         """
-        trades = self.exchange.get_trades_for_order(order['id'], trade.pair,
-                                                    trade.open_date)
+        trades = self.exchange.get_trades_for_order(self.exchange.get_order_id_conditional(order),
+                                                    trade.pair, trade.open_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)

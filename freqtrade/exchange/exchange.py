@@ -1239,6 +1239,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        return order['id']
+
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
                 price: float = 1, taker_or_maker: str = 'maker') -> float:
