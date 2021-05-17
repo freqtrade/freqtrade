@@ -27,9 +27,13 @@ class PriceFilter(IPairList):
         self._max_price = pairlistconfig.get('max_price', 0)
         if self._max_price < 0:
             raise OperationalException("PriceFilter requires max_price to be >= 0")
+        self._max_value = pairlistconfig.get('max_value', 0)
+        if self._max_value < 0:
+            raise OperationalException("PriceFilter requires max_value to be >= 0")
         self._enabled = ((self._low_price_ratio > 0) or
                          (self._min_price > 0) or
-                         (self._max_price > 0))
+                         (self._max_price > 0) or
+                         (self._max_value))
 
     @property
     def needstickers(self) -> bool:
@@ -51,6 +55,8 @@ class PriceFilter(IPairList):
             active_price_filters.append(f"below {self._min_price:.8f}")
         if self._max_price != 0:
             active_price_filters.append(f"above {self._max_price:.8f}")
+        if self._max_value != 0:
+            active_price_filters.append(f"Value above {self._max_value:.8f}")
 
         if len(active_price_filters):
             return f"{self.name} - Filtering pairs priced {' or '.join(active_price_filters)}."
@@ -79,6 +85,32 @@ class PriceFilter(IPairList):
                               f"because 1 unit is {changeperc * 100:.3f}%", logger.info)
                 return False
 
+        # Perform low_amount check
+        if self._max_value != 0:
+            price = ticker['last']
+            market = self._exchange.markets[pair]
+            limits = market['limits']
+            if ('amount' in limits and 'min' in limits['amount']
+                    and limits['amount']['min'] is not None):
+                min_amount = limits['amount']['min']
+                min_precision = market['precision']['amount']
+
+                min_value = min_amount * price
+                if self._exchange.precisionMode == 4:
+                    # tick size
+                    next_value = (min_amount + min_precision) * price
+                else:
+                    # Decimal places
+                    min_precision = pow(0.1, min_precision)
+                    next_value = (min_amount + min_precision) * price
+                diff = next_value - min_value
+
+                if diff > self._max_value:
+                    self.log_once(f"Removed {pair} from whitelist, "
+                                  f"because min value change of {diff} > {self._max_value}) ",
+                                  logger.info)
+                    return False
+
         # Perform min_price check.
         if self._min_price != 0:
             if ticker['last'] < self._min_price:
@@ -89,7 +121,7 @@ class PriceFilter(IPairList):
         # Perform max_price check.
         if self._max_price != 0:
             if ticker['last'] > self._max_price:
-                self.log_once(f"Removed {ticker['symbol']} from whitelist, "
+                self.log_once(f"Removed {pair} from whitelist, "
                               f"because last price > {self._max_price:.8f}", logger.info)
                 return False
 

@@ -800,6 +800,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.00002000.'}]",
      None
      ),
+    ({"method": "PriceFilter", "max_value": 0.00002000},
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced Value above 0.00002000.'}]",
+     None
+     ),
     ({"method": "PriceFilter"},
      "[{'PriceFilter': 'PriceFilter - No price filters configured.'}]",
      None
@@ -815,6 +819,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
     ({"method": "PriceFilter", "max_price": -1.00010000},
      None,
      "PriceFilter requires max_price to be >= 0"
+     ),  # OperationalException expected
+    ({"method": "PriceFilter", "max_value": -1.00010000},
+     None,
+     "PriceFilter requires max_value to be >= 0"
      ),  # OperationalException expected
     ({"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
      "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
