@@ -407,6 +407,9 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "PriceFilter", "max_value": 0.000001}],
+        "USDT", ['NANO/USDT']),
     ([{"method": "StaticPairList"},
       {"method": "RangeStabilityFilter", "lookback_days": 10,
        "min_rate_of_change": 0.01, "refresh_period": 1440}],
@@ -489,6 +492,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                                    r'because last price < .*%$', caplog) or
                         log_has_re(r'^Removed .* from whitelist, '
                                    r'because last price > .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because min value change of .*', caplog) or
                         log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] "
                                    r"is empty.*", caplog))
             if pairlist['method'] == 'VolumePairList':

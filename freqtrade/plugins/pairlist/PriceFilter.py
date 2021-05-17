@@ -33,7 +33,7 @@ class PriceFilter(IPairList):
         self._enabled = ((self._low_price_ratio > 0) or
                          (self._min_price > 0) or
                          (self._max_price > 0) or
-                         (self._max_value))
+                         (self._max_value > 0))
 
     @property
     def needstickers(self) -> bool:
