@@ -215,7 +215,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.06)' == result[0][3]
-    assert -0.06 == fiat_profit_sum
+    assert '-0.06' == f'{fiat_profit_sum:.2f}'
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))

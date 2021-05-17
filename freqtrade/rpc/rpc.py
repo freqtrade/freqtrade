@@ -244,7 +244,8 @@ class RPC:
                     )
                     if fiat_profit and not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
-                        fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) else fiat_profit_sum + fiat_profit
+                        fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
+                            else fiat_profit_sum + fiat_profit
                 trades_list.append([
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
