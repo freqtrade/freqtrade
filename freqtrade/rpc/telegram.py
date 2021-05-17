@@ -5,6 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
+import re
 from datetime import timedelta
 from html import escape
 from itertools import chain
@@ -354,19 +355,33 @@ class Telegram(RPCHandler):
         :return: None
         """
         try:
+            fiat_currency = self._config.get('fiat_display_currency', '')
             statlist, head = self._rpc._rpc_status_table(
-                self._config['stake_currency'], self._config.get('fiat_display_currency', ''))
+                self._config['stake_currency'], fiat_currency)
 
+            show_total = fiat_currency != ''
+            total_sum = 0
+            if show_total:
+                total_sum = sum(map(lambda m: float(m[1]) if m else 0, map(lambda trade: re.compile(".*\((-?\d*\.\d*)\)").match(trade[-1]), statlist)))
             max_trades_per_msg = 50
             """
             Calculate the number of messages of 50 trades per message
             0.99 is used to make sure that there are no extra (empty) messages
             As an example with 50 trades, there will be int(50/50 + 0.99) = 1 message
             """
-            for i in range(0, max(int(len(statlist) / max_trades_per_msg + 0.99), 1)):
+            messages_count = max(int(len(statlist) / max_trades_per_msg + 0.99), 1)
+            for i in range(0, messages_count):
+                if show_total and i == messages_count - 1:
+                    # append total line
+                    trades.append(["Total", "", "", f"{total_sum:.2f} {fiat_currency}"])
+
                 message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
                                    headers=head,
                                    tablefmt='simple')
+                if show_total and i == messages_count - 1:
+                    # insert separators line between Total
+                    lines = message.split("\n")
+                    message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
                 self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
