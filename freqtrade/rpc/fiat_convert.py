@@ -54,7 +54,8 @@ class CryptoToFiatConverter:
             self._cryptomap = {x['symbol']: x['id'] for x in coinlistings}
         except RequestException as request_exception:
             if "429" in str(request_exception):
-                logger.warning("Too many requests for Coingecko API, backing off and trying again later.")
+                logger.warning(
+                    "Too many requests for Coingecko API, backing off and trying again later.")
                 # Set backoff timestamp to 60 seconds in the future
                 self._backoff = datetime.datetime.now().timestamp() + 60
         except (Exception) as exception:
