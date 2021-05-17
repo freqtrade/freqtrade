@@ -220,12 +220,13 @@ class RPC:
             return results
 
     def _rpc_status_table(self, stake_currency: str,
-                          fiat_display_currency: str) -> Tuple[List, List]:
+                          fiat_display_currency: str) -> Tuple[List, List, float]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
         else:
             trades_list = []
+            fiat_profit_sum = NAN
             for trade in trades:
                 # calculate profit and send message to user
                 try:
@@ -243,6 +244,7 @@ class RPC:
                     )
                     if fiat_profit and not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
+                        fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) else fiat_profit_sum + fiat_profit
                 trades_list.append([
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
@@ -256,7 +258,7 @@ class RPC:
                 profitcol += " (" + fiat_display_currency + ")"
 
             columns = ['ID', 'Pair', 'Since', profitcol]
-            return trades_list, columns
+            return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
             self, timescale: int,

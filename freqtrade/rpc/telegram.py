@@ -5,10 +5,10 @@ This module manage Telegram communication
 """
 import json
 import logging
-import re
 from datetime import timedelta
 from html import escape
 from itertools import chain
+from math import isnan
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
@@ -356,18 +356,10 @@ class Telegram(RPCHandler):
         """
         try:
             fiat_currency = self._config.get('fiat_display_currency', '')
-            statlist, head = self._rpc._rpc_status_table(
+            statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
                 self._config['stake_currency'], fiat_currency)
 
-            show_total = fiat_currency != ''
-            total_sum = 0.0
-            if show_total:
-                r = re.compile(".*\\((-?\\d*\\.\\d*)\\)")
-                for trade in statlist:
-                    m = r.match(trade[-1])
-                    if m is not None:
-                        total_sum += float(m[1])
-
+            show_total = not isnan(fiat_profit_sum) and len(statlist) > 1
             max_trades_per_msg = 50
             """
             Calculate the number of messages of 50 trades per message
@@ -379,7 +371,7 @@ class Telegram(RPCHandler):
                 trades = statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg]
                 if show_total and i == messages_count - 1:
                     # append total line
-                    trades.append(["Total", "", "", f"{total_sum:.2f} {fiat_currency}"])
+                    trades.append(["Total", "", "", f"{fiat_profit_sum:.2f} {fiat_currency}"])
 
                 message = tabulate(trades,
                                    headers=head,
