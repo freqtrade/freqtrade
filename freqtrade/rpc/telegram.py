@@ -363,7 +363,7 @@ class Telegram(RPCHandler):
             total_sum = 0
             if show_total:
                 total_sum = sum(
-                    map(lambda m: float(m[1]) if m else 0,
+                    map(lambda m: float(m[1]) if m else 0.0,
                         map(lambda trade: re.compile(".*\\((-?\\d*\\.\\d*)\\)").match(trade[-1]),
                             statlist))
                 )
