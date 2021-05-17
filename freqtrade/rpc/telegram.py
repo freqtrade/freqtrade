@@ -371,11 +371,12 @@ class Telegram(RPCHandler):
             """
             messages_count = max(int(len(statlist) / max_trades_per_msg + 0.99), 1)
             for i in range(0, messages_count):
+                trades = statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg]
                 if show_total and i == messages_count - 1:
                     # append total line
                     trades.append(["Total", "", "", f"{total_sum:.2f} {fiat_currency}"])
 
-                message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
+                message = tabulate(trades,
                                    headers=head,
                                    tablefmt='simple')
                 if show_total and i == messages_count - 1:
