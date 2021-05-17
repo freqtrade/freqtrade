@@ -360,13 +360,14 @@ class Telegram(RPCHandler):
                 self._config['stake_currency'], fiat_currency)
 
             show_total = fiat_currency != ''
-            total_sum = 0
+            total_sum = 0.0
             if show_total:
-                total_sum = sum(
-                    map(lambda m: float(m[1]) if m else 0.0,
-                        map(lambda trade: re.compile(".*\\((-?\\d*\\.\\d*)\\)").match(trade[-1]),
-                            statlist))
-                )
+                r = re.compile(".*\\((-?\\d*\\.\\d*)\\)")
+                for trade in statlist:
+                    m = r.match(trade[-1])
+                    if m is not None:
+                        total_sum += float(m[1])
+
             max_trades_per_msg = 50
             """
             Calculate the number of messages of 50 trades per message
