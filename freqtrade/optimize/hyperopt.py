@@ -271,8 +271,8 @@ class Hyperopt:
             self.backtesting.strategy.trailing_only_offset_is_reached = \
                 d['trailing_only_offset_is_reached']
 
-        processed = load(self.data_pickle_file, mmap_mode='r')
-
+        with self.data_pickle_file.open('rb') as f:
+            processed = load(f, mmap_mode='r')
         bt_results = self.backtesting.backtest(
             processed=processed,
             start_date=self.min_date,
