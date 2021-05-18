@@ -47,6 +47,7 @@ class SellType(Enum):
     FORCE_SELL = "force_sell"
     EMERGENCY_SELL = "emergency_sell"
     CUSTOM_SELL = "custom_sell"
+    CUSTOM_STOP_LOSS = "custom_stop_loss"
     NONE = ""
 
     def __str__(self):
@@ -678,6 +679,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
+                if self.use_custom_stoploss :
+                    sell_type = SellType.CUSTOM_STOP_LOSS
+
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at {current_rate:.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
