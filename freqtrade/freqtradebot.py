@@ -974,8 +974,9 @@ class FreqtradeBot(LoggingMixin):
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         ordertime = arrow.get(order['datetime']).datetime
         if timeout is not None:
-            timeout_threshold = arrow.utcnow().shift(minutes=-timeout).datetime
-
+            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
+            timeout_kwargs = {timeout_unit: -timeout}
+            timeout_threshold = arrow.utcnow().shift(**timeout_kwargs).datetime
             return (order['status'] == 'open' and order['side'] == side
                     and ordertime < timeout_threshold)
         return False
