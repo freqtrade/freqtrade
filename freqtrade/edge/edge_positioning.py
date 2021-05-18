@@ -209,7 +209,7 @@ class Edge:
         if pair in self._cached_pairs:
             return self._cached_pairs[pair].stoploss
         else:
-            logger.warning('tried to access stoploss of a non-existing pair, '
+            logger.warning(f'Tried to access stoploss of non-existing pair {pair}, '
                            'strategy stoploss is returned instead.')
             return self.strategy.stoploss
 
