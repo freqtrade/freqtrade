@@ -185,7 +185,7 @@ tc11 = BTContainer(data=[
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
-    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [3, 5000, 5150, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
@@ -440,6 +440,23 @@ tc27 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=4)]
 )
 
+# Test 28: trailing_stop should raise so candle 3 causes a stoploss
+# Same case than tc11 - but candle 3 "gaps down" - the stoploss will be above the candle,
+# therefore "open" will be used
+# stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
+tc28 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.03, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -469,6 +486,7 @@ TESTS = [
     tc25,
     tc26,
     tc27,
+    tc28,
 ]
 
 
