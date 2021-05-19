@@ -5,7 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from html import escape
 from itertools import chain
 from typing import Any, Callable, Dict, List, Union
@@ -425,9 +425,9 @@ class Telegram(RPCHandler):
         start_date = datetime.fromtimestamp(0)
         if context.args:
             if 'day' in context.args:
-                start_date = datetime.utcnow().date()
+                start_date = datetime.combine(date.today(), datetime.min.time())
             elif 'week' in context.args:
-                start_date = datetime.utcnow().date() - timedelta(days=7)
+                start_date = datetime.combine(date.today(), datetime.min.time()) - timedelta(days=7)
 
         stats = self._rpc._rpc_trade_statistics(
             stake_cur,
