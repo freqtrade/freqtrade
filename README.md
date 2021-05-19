@@ -123,7 +123,7 @@ Telegram is not mandatory. However, this is a great way to control your bot. Mor
 - `/stop`: Stops the trader.
 - `/stopbuy`: Stop entering new trades.
 - `/status <trade_id>|[table]`: Lists all or specific open trades.
-- `/profit`: Lists cumulative profit from all finished trades
+- `/profit [day]|[week]`: Lists cumulative profit from all finished trades
 - `/forcesell <trade_id>|all`: Instantly sells the given trade (Ignoring `minimum_roi`).
 - `/performance`: Show performance of each finished trade grouped by pair
 - `/balance`: Show account balance per currency.

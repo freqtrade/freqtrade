@@ -5,7 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from html import escape
 from itertools import chain
 from typing import Any, Callable, Dict, List, Union
@@ -98,7 +98,8 @@ class Telegram(RPCHandler):
         #       this needs refacoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = ['/start', '/stop', '/status', '/status table',
-                                 '/trades', '/profit', '/performance', '/daily',
+                                 '/trades', '/performance', '/daily',
+                                 '/profit', '/profit day', '/profit week',
                                  '/stats', '/count', '/locks', '/balance',
                                  '/stopbuy', '/reload_config', '/show_config',
                                  '/logs', '/whitelist', '/blacklist', '/edge',
@@ -421,9 +422,17 @@ class Telegram(RPCHandler):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
+        start_date = datetime.fromtimestamp(0)
+        if context.args:
+            if 'day' in context.args:
+                start_date = datetime.utcnow().date()
+            elif 'week' in context.args:
+                start_date = datetime.utcnow().date() - timedelta(days=7)
+
         stats = self._rpc._rpc_trade_statistics(
             stake_cur,
-            fiat_disp_cur)
+            fiat_disp_cur,
+            start_date)
         profit_closed_coin = stats['profit_closed_coin']
         profit_closed_percent_mean = stats['profit_closed_percent_mean']
         profit_closed_percent_sum = stats['profit_closed_percent_sum']
@@ -901,7 +910,7 @@ class Telegram(RPCHandler):
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-                   "*/profit:* `Lists cumulative profit from all finished trades`\n"
+                   "*/profit [day]|[week]:* `Lists cumulative profit from all finished trades`\n"
                    "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
                    "regardless of profit`\n"
                    f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
