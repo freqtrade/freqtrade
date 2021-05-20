@@ -349,19 +349,25 @@ class Hyperopt:
     def prepare_hyperopt_data(self) -> None:
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
-        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
 
+        processed: Dict[str, DataFrame] = {}
+        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
         # Trim startup period from analyzed dataframe
         for pair, df in preprocessed.items():
-            preprocessed[pair] = trim_dataframe(df, timerange,
-                                                startup_candles=self.backtesting.required_startup)
-        self.min_date, self.max_date = get_timerange(preprocessed)
+            trimed_df = trim_dataframe(df, timerange,
+                                       startup_candles=self.backtesting.required_startup)
+            if not trimed_df.empty:
+              processed[pair] = trimed_df
+            else:
+              logger.warn(f'Pair {pair} got removed because triming dataframe left nothing')
+
+        self.min_date, self.max_date = get_timerange(processed)
 
         logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(self.max_date - self.min_date).days} days)..')
 
-        dump(preprocessed, self.data_pickle_file)
+        dump(processed, self.data_pickle_file)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
