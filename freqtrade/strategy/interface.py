@@ -679,7 +679,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
-                if self.use_custom_stoploss :
+                if self.use_custom_stoploss:
                     sell_type = SellType.CUSTOM_STOP_LOSS
 
                 logger.debug(
