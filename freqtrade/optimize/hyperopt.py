@@ -357,9 +357,9 @@ class Hyperopt:
             trimed_df = trim_dataframe(df, timerange,
                                        startup_candles=self.backtesting.required_startup)
             if not trimed_df.empty:
-              processed[pair] = trimed_df
+                processed[pair] = trimed_df
             else:
-              logger.warn(f'Pair {pair} got removed because triming dataframe left nothing')
+                logger.warn(f'Pair {pair} got removed because triming dataframe left nothing')
 
         self.min_date, self.max_date = get_timerange(processed)
 
