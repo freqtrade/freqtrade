@@ -23,7 +23,8 @@
     "stoploss": -0.10,
     "unfilledtimeout": {
         "buy": 10,
-        "sell": 30
+        "sell": 30,
+        "unit": "minutes"
     },
     "bid_strategy": {
         "price_side": "bid",
