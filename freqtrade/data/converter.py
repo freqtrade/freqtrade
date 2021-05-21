@@ -10,7 +10,6 @@ from typing import Any, Dict, List
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
-from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
 
 
@@ -146,7 +145,7 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
     return df
 
 
-def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange: TimeRange,
+def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange,
                     startup_candles: int) -> Dict[str, DataFrame]:
     """
     Trim startup period from analyzed dataframes
