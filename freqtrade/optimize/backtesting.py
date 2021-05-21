@@ -191,8 +191,9 @@ class Backtesting:
         data: Dict = {}
         # Create dict with data
         for pair, pair_data in processed.items():
-            pair_data.loc[:, 'buy'] = 0  # cleanup from previous run
-            pair_data.loc[:, 'sell'] = 0  # cleanup from previous run
+            if not pair_data.empty:
+                pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
+                pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
