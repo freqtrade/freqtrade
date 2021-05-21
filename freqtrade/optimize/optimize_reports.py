@@ -43,7 +43,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
     Generate floatformat (goes in line with _generate_result_line())
     """
     return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f',
-            '.2f', 'd', 'd', 'd', 'd']
+            '.2f', 'd', 's', 's']
 
 
 def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
@@ -52,7 +52,11 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
     """
     return [first_column, 'Buys', 'Avg Profit %', 'Cum Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
-            'Wins', 'Draws', 'Losses']
+            'Win Draw Loss']
+
+
+def _generate_wins_draws_losses(wins, draws, losses):
+    return f'{wins:>4} {draws:>4} {losses:>4}'
 
 
 def _generate_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
@@ -451,7 +455,8 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
-        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
+        t['profit_total_pct'], t['duration_avg'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses'])
     ] for t in pair_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,
@@ -468,9 +473,7 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     headers = [
         'Sell Reason',
         'Sells',
-        'Wins',
-        'Draws',
-        'Losses',
+        'Win Draws Loss',
         'Avg Profit %',
         'Cum Profit %',
         f'Tot Profit {stake_currency}',
@@ -478,7 +481,8 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
+        t['sell_reason'], t['trades'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
@@ -498,14 +502,20 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     headers = _get_line_header('Strategy', stake_currency)
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
-    headers.append(f'Drawdown {stake_currency}')
-    headers.append('Drawdown %')
+    headers.append(f'Drawdown')
+
+    # Align drawdown string on the center two space separator.
+    drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]
+    dd_pad_abs = max([len(t['max_drawdown_abs']) for t in strategy_results])
+    dd_pad_per = max([len(dd) for dd in drawdown])
+    drawdown = [f'{t["max_drawdown_abs"]:>{dd_pad_abs}} {stake_currency}  {dd:>{dd_pad_per}}%'
+                for t, dd in zip(strategy_results, drawdown)]
 
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
-        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses'],
-        t['max_drawdown_abs'], t['max_drawdown_per']
-    ] for t in strategy_results]
+        t['profit_total_pct'], t['duration_avg'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']), drawdown]
+        for t, drawdown in zip(strategy_results, drawdown)]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
