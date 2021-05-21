@@ -659,8 +659,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
             CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
             FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
         )
-        """
-    )
+        """)
 
     engine.execute("""
     insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
