@@ -40,7 +40,6 @@ class AwesomeStrategy(IStrategy):
 !!! Note
     If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
-
 ## Dataframe access
 
 You may access dataframe in various strategy functions by querying it from dataprovider.
@@ -67,8 +66,8 @@ class AwesomeStrategy(IStrategy):
         trade_candle = dataframe.loc[dataframe['date'] == trade_date]
         # trade_candle may be empty for trades that just opened as it is still incomplete.
         if trade_candle.empty:
+            trade_candle = trade_candle.squeeze()
             # <...>
-        trade_candle = trade_candle.squeeze()    
 ```
 
 !!! Warning "Using .iloc[-1]"
