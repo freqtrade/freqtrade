@@ -508,7 +508,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     headers = _get_line_header('Strategy', stake_currency)
     # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
     # therefore we slip this column in only for strategy summary here.
-    headers.append(f'Drawdown')
+    headers.append('Drawdown')
 
     # Align drawdown string on the center two space separator.
     drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]

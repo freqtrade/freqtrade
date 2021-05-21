@@ -39,14 +39,14 @@ def test_text_table_bt_results():
     )
 
     result_str = (
-        '|    Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
-        '   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |\n'
-        '|---------+--------+----------------+----------------+------------------+'
-        '----------------+----------------+--------+---------+----------|\n'
-        '| ETH/BTC |      2 |          15.00 |          30.00 |       0.60000000 |'
-        '          15.00 |        0:20:00 |      2 |       0 |        0 |\n'
-        '|   TOTAL |      2 |          15.00 |          30.00 |       0.60000000 |'
-        '          15.00 |        0:20:00 |      2 |       0 |        0 |'
+        '|    Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % |'
+        '   Avg Duration |   Win  Draw  Loss  Win% |\n'
+        '|---------+--------+----------------+----------------+------------------+----------------+'
+        '----------------+-------------------------|\n'
+        '| ETH/BTC |      2 |          15.00 |          30.00 |       0.60000000 |          15.00 |'
+        '        0:20:00 |     2     0     0   100 |\n'
+        '|   TOTAL |      2 |          15.00 |          30.00 |       0.60000000 |          15.00 |'
+        '        0:20:00 |     2     0     0   100 |'
     )
 
     pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
@@ -271,14 +271,14 @@ def test_text_table_sell_reason():
     )
 
     result_str = (
-        '|   Sell Reason |   Sells |   Wins |   Draws |   Losses |'
-        '   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % |\n'
-        '|---------------+---------+--------+---------+----------+'
-        '----------------+----------------+------------------+----------------|\n'
-        '|           roi |       2 |      2 |       0 |        0 |'
-        '             15 |             30 |              0.6 |             15 |\n'
-        '|     stop_loss |       1 |      0 |       0 |        1 |'
-        '            -10 |            -10 |             -0.2 |             -5 |'
+        '|   Sell Reason |   Sells |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
+        '   Tot Profit BTC |   Tot Profit % |\n'
+        '|---------------+---------+--------------------------+----------------+----------------+'
+        '------------------+----------------|\n'
+        '|           roi |       2 |      2     0     0   100 |             15 |             30 |'
+        '              0.6 |             15 |\n'
+        '|     stop_loss |       1 |      0     0     1     0 |            -10 |            -10 |'
+        '             -0.2 |             -5 |'
     )
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
@@ -356,18 +356,14 @@ def test_text_table_strategy(default_conf):
     ), 'config': default_conf}
 
     result_str = (
-        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC '
-        '|   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |   Drawdown BTC '
-        '|   Drawdown % |\n'
-        '|---------------+--------+----------------+----------------+------------------'
-        '+----------------+----------------+--------+---------+----------+----------------'
-        '+--------------|\n'
-        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 '
-        '|          36.67 |        0:17:00 |      3 |       0 |        0 |              0 '
-        '|            0 |\n'
-        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 '
-        '|          43.33 |        0:20:00 |      3 |       0 |        0 |              0 '
-        '|            0 |'
+        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
+        '|---------------+--------+----------------+----------------+------------------+'
+        '----------------+----------------+-------------------------+-----------------------|\n'
+        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 |'
+        '          36.67 |        0:17:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |\n'
+        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
+        '          43.33 |        0:20:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |'
     )
 
     strategy_results = generate_strategy_comparison(all_results=results)
