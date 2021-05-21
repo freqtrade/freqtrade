@@ -107,7 +107,7 @@ class PriceFilter(IPairList):
 
                 if diff > self._max_value:
                     self.log_once(f"Removed {pair} from whitelist, "
-                                  f"because min value change of {diff} > {self._max_value}) ",
+                                  f"because min value change of {diff} > {self._max_value}.",
                                   logger.info)
                     return False
 
