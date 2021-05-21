@@ -15,7 +15,7 @@ from freqtrade.configuration import TimeRange, remove_credentials, validate_conf
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
-from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -462,15 +462,7 @@ class Backtesting:
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
-        for pair in list(preprocessed):
-            df = preprocessed[pair]
-            df = trim_dataframe(df, timerange, startup_candles=self.required_startup)
-            if len(df) > 0:
-                preprocessed[pair] = df
-            else:
-                logger.warning(f'{pair} has no data left after adjusting for startup candles, '
-                               f'skipping.')
-                del preprocessed[pair]
+        preprocessed = trim_dataframes(preprocessed, timerange, self.required_startup)
 
         if not preprocessed:
             raise OperationalException(

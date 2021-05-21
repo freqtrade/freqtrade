@@ -20,7 +20,7 @@ from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_
 from pandas import DataFrame
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
-from freqtrade.data.converter import trim_dataframe
+from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
 from freqtrade.misc import file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
@@ -350,16 +350,10 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
 
-        processed: Dict[str, DataFrame] = {}
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
+
         # Trim startup period from analyzed dataframe
-        for pair, df in preprocessed.items():
-            trimed_df = trim_dataframe(df, timerange,
-                                       startup_candles=self.backtesting.required_startup)
-            if not trimed_df.empty:
-                processed[pair] = trimed_df
-            else:
-                logger.warn(f'Pair {pair} got removed because triming dataframe left nothing')
+        processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
 
         self.min_date, self.max_date = get_timerange(processed)
 

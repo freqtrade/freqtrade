@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import pandas as pd
 from pandas import DataFrame, to_datetime
 
+from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
 
 
@@ -143,6 +144,27 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df[df_date_col] <= stop, :]
     return df
+
+
+def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange: TimeRange,
+                    startup_candles: int) -> Dict[str, DataFrame]:
+    """
+    Trim startup period from analyzed dataframes
+    :param preprocessed: Dict of pair: dataframe
+    :param timerange: timerange (use start and end date if available)
+    :param startup_candles: Startup-candles that should be removed
+    :return: Dict of trimmed dataframes
+    """
+    processed: Dict[str, DataFrame] = {}
+
+    for pair, df in preprocessed.items():
+        trimed_df = trim_dataframe(df, timerange, startup_candles=startup_candles)
+        if not trimed_df.empty:
+            processed[pair] = trimed_df
+        else:
+            logger.warning(f'{pair} has no data left after adjusting for startup candles, '
+                           f'skipping.')
+    return processed
 
 
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
