@@ -629,7 +629,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     caplog.clear()
     # Drop latest column
-    engine.execute("alter table orders drop average")
+    engine.execute("alter table orders drop column average")
     # Run init to test migration
     init_db(default_conf['db_url'], default_conf['dry_run'])
 
