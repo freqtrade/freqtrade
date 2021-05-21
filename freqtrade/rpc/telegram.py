@@ -8,6 +8,7 @@ import logging
 from datetime import timedelta
 from html import escape
 from itertools import chain
+from math import isnan
 from typing import Any, Callable, Dict, List, Union
 
 import arrow
@@ -354,19 +355,31 @@ class Telegram(RPCHandler):
         :return: None
         """
         try:
-            statlist, head = self._rpc._rpc_status_table(
-                self._config['stake_currency'], self._config.get('fiat_display_currency', ''))
+            fiat_currency = self._config.get('fiat_display_currency', '')
+            statlist, head, fiat_profit_sum = self._rpc._rpc_status_table(
+                self._config['stake_currency'], fiat_currency)
 
+            show_total = not isnan(fiat_profit_sum) and len(statlist) > 1
             max_trades_per_msg = 50
             """
             Calculate the number of messages of 50 trades per message
             0.99 is used to make sure that there are no extra (empty) messages
             As an example with 50 trades, there will be int(50/50 + 0.99) = 1 message
             """
-            for i in range(0, max(int(len(statlist) / max_trades_per_msg + 0.99), 1)):
-                message = tabulate(statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg],
+            messages_count = max(int(len(statlist) / max_trades_per_msg + 0.99), 1)
+            for i in range(0, messages_count):
+                trades = statlist[i * max_trades_per_msg:(i + 1) * max_trades_per_msg]
+                if show_total and i == messages_count - 1:
+                    # append total line
+                    trades.append(["Total", "", "", f"{fiat_profit_sum:.2f} {fiat_currency}"])
+
+                message = tabulate(trades,
                                    headers=head,
                                    tablefmt='simple')
+                if show_total and i == messages_count - 1:
+                    # insert separators line between Total
+                    lines = message.split("\n")
+                    message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
                 self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
         except RPCException as e:
             self._send_msg(str(e))
