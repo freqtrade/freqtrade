@@ -627,6 +627,22 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert orders[1].order_id == 'stop_order_id222'
     assert orders[1].ft_order_side == 'stoploss'
 
+    caplog.clear()
+    # Drop latest column
+    engine.execute("alter table orders drop average")
+    # Run init to test migration
+    init_db(default_conf['db_url'], default_conf['dry_run'])
+
+    assert log_has("trying orders_bak0", caplog)
+
+    orders = Order.query.all()
+    assert len(orders) == 2
+    assert orders[0].order_id == 'buy_order'
+    assert orders[0].ft_order_side == 'buy'
+
+    assert orders[1].order_id == 'stop_order_id222'
+    assert orders[1].ft_order_side == 'stoploss'
+
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     """

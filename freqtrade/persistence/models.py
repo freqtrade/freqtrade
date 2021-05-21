@@ -122,6 +122,7 @@ class Order(_DECL_BASE):
     order_type = Column(String, nullable=True)
     side = Column(String, nullable=True)
     price = Column(Float, nullable=True)
+    average = Column(Float, nullable=True)
     amount = Column(Float, nullable=True)
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
@@ -150,6 +151,7 @@ class Order(_DECL_BASE):
         self.price = order.get('price', self.price)
         self.amount = order.get('amount', self.amount)
         self.filled = order.get('filled', self.filled)
+        self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
