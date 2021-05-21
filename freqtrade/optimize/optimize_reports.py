@@ -52,11 +52,17 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
     """
     return [first_column, 'Buys', 'Avg Profit %', 'Cum Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
-            'Win Draw Loss']
+            'Win  Draw  Loss  Win%']
 
 
 def _generate_wins_draws_losses(wins, draws, losses):
-    return f'{wins:>4} {draws:>4} {losses:>4}'
+    if wins > 0 and losses == 0:
+        wl_ratio = '100'
+    elif wins == 0:
+        wl_ratio = '0'
+    else:
+        wl_ratio = f'{100.0 / (wins + draws + losses) * wins:.1f}' if losses > 0 else '100'
+    return f'{wins:>4}  {draws:>4}  {losses:>4}  {wl_ratio:>4}'
 
 
 def _generate_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
@@ -473,7 +479,7 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     headers = [
         'Sell Reason',
         'Sells',
-        'Win Draws Loss',
+        'Win  Draws  Loss  Win%',
         'Avg Profit %',
         'Cum Profit %',
         f'Tot Profit {stake_currency}',
