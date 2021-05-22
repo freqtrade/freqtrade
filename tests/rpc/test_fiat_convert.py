@@ -1,9 +1,9 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors,
 # pragma pylint: disable=protected-access, C0103
 
+import datetime
 from unittest.mock import MagicMock
 
-import datetime
 import pytest
 from requests.exceptions import RequestException
 

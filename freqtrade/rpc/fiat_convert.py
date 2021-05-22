@@ -3,10 +3,10 @@ Module that define classes to convert Crypto-currency to FIAT
 e.g BTC to USD
 """
 
-import logging
 import datetime
-
+import logging
 from typing import Dict
+
 from cachetools.ttl import TTLCache
 from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
@@ -27,7 +27,7 @@ class CryptoToFiatConverter:
     _coingekko: CoinGeckoAPI = None
 
     _cryptomap: Dict = {}
-    _backoff: int = 0
+    _backoff: float = 0.0
 
     def __new__(cls):
         """
