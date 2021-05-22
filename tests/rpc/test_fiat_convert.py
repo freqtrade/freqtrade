@@ -3,6 +3,7 @@
 
 from unittest.mock import MagicMock
 
+import datetime
 import pytest
 from requests.exceptions import RequestException
 
@@ -20,6 +21,12 @@ def test_fiat_convert_is_supported(mocker):
 
 def test_fiat_convert_find_price(mocker):
     fiat_convert = CryptoToFiatConverter()
+
+    fiat_convert._cryptomap = {}
+    fiat_convert._backoff = 0
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._load_cryptomap',
+                 return_value=None)
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 0.0
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
@@ -115,6 +122,24 @@ def test_fiat_convert_without_network(mocker):
     CryptoToFiatConverter._coingekko = cmc_temp
 
 
+def test_fiat_too_many_requests_response(mocker, caplog):
+    # Because CryptoToFiatConverter is a Singleton we reset the listings
+    req_exception = "429 Too Many Requests"
+    listmock = MagicMock(return_value="{}", side_effect=RequestException(req_exception))
+    mocker.patch.multiple(
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_coins_list=listmock,
+    )
+    # with pytest.raises(RequestEsxception):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._cryptomap = {}
+    fiat_convert._load_cryptomap()
+
+    length_cryptomap = len(fiat_convert._cryptomap)
+    assert length_cryptomap == 0
+    assert fiat_convert._backoff > datetime.datetime.now().timestamp()
+    assert log_has('Too many requests for Coingecko API, backing off and trying again later.', caplog)
+
 def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
     listmock = MagicMock(return_value="{'novalidjson':DEADBEEFf}")
@@ -131,7 +156,6 @@ def test_fiat_invalid_response(mocker, caplog):
     assert length_cryptomap == 0
     assert log_has_re('Could not load FIAT Cryptocurrency map for the following problem: .*',
                       caplog)
-
 
 def test_convert_amount(mocker):
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
