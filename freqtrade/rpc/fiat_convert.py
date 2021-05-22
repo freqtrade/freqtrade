@@ -145,6 +145,9 @@ class CryptoToFiatConverter:
 
         if self._cryptomap == {} and self._backoff <= datetime.datetime.now().timestamp():
             self._load_cryptomap()
+            # return 0.0 if we still dont have data to check, no reason to proceed
+            if self._cryptomap == {}:
+                return 0.0
 
         if crypto_symbol not in self._cryptomap:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
