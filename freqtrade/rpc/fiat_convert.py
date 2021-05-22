@@ -58,6 +58,13 @@ class CryptoToFiatConverter:
                     "Too many requests for Coingecko API, backing off and trying again later.")
                 # Set backoff timestamp to 60 seconds in the future
                 self._backoff = datetime.datetime.now().timestamp() + 60
+                return
+            # If the request is not a 429 error we want to raise the normal error
+            logger.error(
+                "Could not load FIAT Cryptocurrency map for the following problem: {}".format(
+                  request_exception
+                )
+            )
         except (Exception) as exception:
             logger.error(
                 f"Could not load FIAT Cryptocurrency map for the following problem: {exception}")
