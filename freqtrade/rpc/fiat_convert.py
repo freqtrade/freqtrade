@@ -143,10 +143,13 @@ class CryptoToFiatConverter:
         if crypto_symbol == fiat_symbol:
             return 1.0
 
-        if self._cryptomap == {} and self._backoff <= datetime.datetime.now().timestamp():
-            self._load_cryptomap()
-            # return 0.0 if we still dont have data to check, no reason to proceed
-            if self._cryptomap == {}:
+        if self._cryptomap == {}:
+            if self._backoff <= datetime.datetime.now().timestamp():
+                self._load_cryptomap()
+                # return 0.0 if we still dont have data to check, no reason to proceed
+                if self._cryptomap == {}:
+                    return 0.0
+            else:
                 return 0.0
 
         if crypto_symbol not in self._cryptomap:
