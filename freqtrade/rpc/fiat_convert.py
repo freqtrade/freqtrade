@@ -27,7 +27,7 @@ class CryptoToFiatConverter:
     _coingekko: CoinGeckoAPI = None
 
     _cryptomap: Dict = {}
-    _backoff = int
+    _backoff: int = 0
 
     def __new__(cls):
         """
