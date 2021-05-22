@@ -2431,13 +2431,22 @@ def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> Non
     freqtrade._notify_buy_cancel = MagicMock()
 
     trade = MagicMock()
-    trade.pair = 'LTC/ETH'
+    trade.pair = 'LTC/USDT'
+    trade.open_rate = 200
     limit_buy_order['filled'] = 0.0
     limit_buy_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
     assert freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
     assert cancel_order_mock.call_count == 1
 
+    cancel_order_mock.reset_mock()
+    caplog.clear()
+    limit_buy_order['filled'] = 0.01
+    assert not freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
+    assert cancel_order_mock.call_count == 0
+    assert log_has_re("Order .* for .* not cancelled, as the filled amount.* unsellable.*", caplog)
+
+    caplog.clear()
     cancel_order_mock.reset_mock()
     limit_buy_order['filled'] = 2
     assert not freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
@@ -2492,7 +2501,8 @@ def test_handle_cancel_buy_corder_empty(mocker, default_conf, limit_buy_order,
     freqtrade._notify_buy_cancel = MagicMock()
 
     trade = MagicMock()
-    trade.pair = 'LTC/ETH'
+    trade.pair = 'LTC/USDT'
+    trade.open_rate = 200
     limit_buy_order['filled'] = 0.0
     limit_buy_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
