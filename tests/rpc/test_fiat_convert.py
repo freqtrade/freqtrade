@@ -138,7 +138,11 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     length_cryptomap = len(fiat_convert._cryptomap)
     assert length_cryptomap == 0
     assert fiat_convert._backoff > datetime.datetime.now().timestamp()
-    assert log_has('Too many requests for Coingecko API, backing off and trying again later.', caplog)
+    assert log_has(
+              'Too many requests for Coingecko API, backing off and trying again later.',
+              caplog
+            )
+
 
 def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
@@ -156,6 +160,7 @@ def test_fiat_invalid_response(mocker, caplog):
     assert length_cryptomap == 0
     assert log_has_re('Could not load FIAT Cryptocurrency map for the following problem: .*',
                       caplog)
+
 
 def test_convert_amount(mocker):
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter.get_price', return_value=12345.0)
