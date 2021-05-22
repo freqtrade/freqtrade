@@ -3,11 +3,13 @@ Module that define classes to convert Crypto-currency to FIAT
 e.g BTC to USD
 """
 
+import datetime
 import logging
 from typing import Dict
 
 from cachetools.ttl import TTLCache
 from pycoingecko import CoinGeckoAPI
+from requests.exceptions import RequestException
 
 from freqtrade.constants import SUPPORTED_FIAT
 
@@ -25,6 +27,7 @@ class CryptoToFiatConverter:
     _coingekko: CoinGeckoAPI = None
 
     _cryptomap: Dict = {}
+    _backoff: float = 0.0
 
     def __new__(cls):
         """
@@ -47,8 +50,21 @@ class CryptoToFiatConverter:
     def _load_cryptomap(self) -> None:
         try:
             coinlistings = self._coingekko.get_coins_list()
-            # Create mapping table from synbol to coingekko_id
+            # Create mapping table from symbol to coingekko_id
             self._cryptomap = {x['symbol']: x['id'] for x in coinlistings}
+        except RequestException as request_exception:
+            if "429" in str(request_exception):
+                logger.warning(
+                    "Too many requests for Coingecko API, backing off and trying again later.")
+                # Set backoff timestamp to 60 seconds in the future
+                self._backoff = datetime.datetime.now().timestamp() + 60
+                return
+            # If the request is not a 429 error we want to raise the normal error
+            logger.error(
+                "Could not load FIAT Cryptocurrency map for the following problem: {}".format(
+                  request_exception
+                )
+            )
         except (Exception) as exception:
             logger.error(
                 f"Could not load FIAT Cryptocurrency map for the following problem: {exception}")
@@ -126,6 +142,15 @@ class CryptoToFiatConverter:
         # No need to convert if both crypto and fiat are the same
         if crypto_symbol == fiat_symbol:
             return 1.0
+
+        if self._cryptomap == {}:
+            if self._backoff <= datetime.datetime.now().timestamp():
+                self._load_cryptomap()
+                # return 0.0 if we still dont have data to check, no reason to proceed
+                if self._cryptomap == {}:
+                    return 0.0
+            else:
+                return 0.0
 
         if crypto_symbol not in self._cryptomap:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
