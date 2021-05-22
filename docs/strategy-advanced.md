@@ -65,7 +65,7 @@ class AwesomeStrategy(IStrategy):
         # Look up trade candle.
         trade_candle = dataframe.loc[dataframe['date'] == trade_date]
         # trade_candle may be empty for trades that just opened as it is still incomplete.
-        if trade_candle.empty:
+        if not trade_candle.empty:
             trade_candle = trade_candle.squeeze()
             # <...>
 ```
