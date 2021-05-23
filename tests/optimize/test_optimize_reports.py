@@ -28,13 +28,10 @@ def test_text_table_bt_results():
 
     results = pd.DataFrame(
         {
-            'pair': ['ETH/BTC', 'ETH/BTC'],
-            'profit_ratio': [0.1, 0.2],
-            'profit_abs': [0.2, 0.4],
-            'trade_duration': [10, 30],
-            'wins': [2, 0],
-            'draws': [0, 0],
-            'losses': [0, 0]
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_ratio': [0.1, 0.2, -0.05],
+            'profit_abs': [0.2, 0.4, -0.1],
+            'trade_duration': [10, 30, 20],
         }
     )
 
@@ -43,10 +40,10 @@ def test_text_table_bt_results():
         '   Avg Duration |   Win  Draw  Loss  Win% |\n'
         '|---------+--------+----------------+----------------+------------------+----------------+'
         '----------------+-------------------------|\n'
-        '| ETH/BTC |      2 |          15.00 |          30.00 |       0.60000000 |          15.00 |'
-        '        0:20:00 |     2     0     0   100 |\n'
-        '|   TOTAL |      2 |          15.00 |          30.00 |       0.60000000 |          15.00 |'
-        '        0:20:00 |     2     0     0   100 |'
+        '| ETH/BTC |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
+        '        0:20:00 |     2     0     1  66.7 |\n'
+        '|   TOTAL |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
+        '        0:20:00 |     2     0     1  66.7 |'
     )
 
     pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
