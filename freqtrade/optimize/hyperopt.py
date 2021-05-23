@@ -163,7 +163,7 @@ class Hyperopt:
         :param epoch: result dictionary for this epoch.
         """
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=str, number_mode=rapidjson.NM_NATIVE)
+            rapidjson.dump(epoch, f, default=str, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 
         self.num_epochs_saved += 1
