@@ -7,10 +7,10 @@ This page combines common gotchas and informations which are exchange-specific a
 !!! Tip "Stoploss on Exchange"
     Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
-### Blacklists
+### Binance Blacklist
 
 For Binance, please add `"BNB/<STAKE>"` to your blacklist to avoid issues.
-Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB order unsellable as the expected amount is not there anymore.
+Accounts having BNB accounts use this to pay for fees - if your first trade happens to be on `BNB`, further trades will consume this position and make the initial BNB trade unsellable as the expected amount is not there anymore.
 
 ### Binance sites
 
@@ -43,6 +43,10 @@ Due to the heavy rate-limiting applied by Kraken, the following configuration se
 !!! Warning "Downloading data from kraken"
     Downloading kraken data will require significantly more memory (RAM) than any other exchange, as the trades-data needs to be converted into candles on your machine.
     It will also take a long time, as freqtrade will need to download every single trade that happened on the exchange for the pair / timerange combination, therefore please be patient.
+
+!!! Warning "rateLimit tuning"
+    Please pay attention that rateLimit configuration entry holds delay in milliseconds between requests, NOT requests\sec rate.
+    So, in order to mitigate Kraken API "Rate limit exceeded" exception, this configuration should be increased, NOT decreased.
 
 ## Bittrex
 
@@ -95,6 +99,23 @@ To use subaccounts with FTX, you need to edit the configuration and add the foll
     },
 }
 ```
+
+## Kucoin
+
+Kucoin requries a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+
+```json
+"exchange": {
+    "name": "kucoin",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+```
+
+### Kucoin Blacklists
+
+For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
+Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
 
 ## All exchanges
 

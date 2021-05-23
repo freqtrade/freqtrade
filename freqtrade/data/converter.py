@@ -110,26 +110,60 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     df.reset_index(inplace=True)
     len_before = len(dataframe)
     len_after = len(df)
+    pct_missing = (len_after - len_before) / len_before if len_before > 0 else 0
     if len_before != len_after:
-        logger.info(f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}")
+        message = (f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}"
+                   f" - {round(pct_missing * 100, 2)}%")
+        if pct_missing > 0.01:
+            logger.info(message)
+        else:
+            # Don't be verbose if only a small amount is missing
+            logger.debug(message)
     return df
 
 
-def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date') -> DataFrame:
+def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
+                   startup_candles: int = 0) -> DataFrame:
     """
     Trim dataframe based on given timerange
     :param df: Dataframe to trim
     :param timerange: timerange (use start and end date if available)
-    :param: df_date_col: Column in the dataframe to use as Date column
+    :param df_date_col: Column in the dataframe to use as Date column
+    :param startup_candles: When not 0, is used instead the timerange start date
     :return: trimmed dataframe
     """
-    if timerange.starttype == 'date':
-        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-        df = df.loc[df[df_date_col] >= start, :]
+    if startup_candles:
+        # Trim candles instead of timeframe in case of given startup_candle count
+        df = df.iloc[startup_candles:, :]
+    else:
+        if timerange.starttype == 'date':
+            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
+            df = df.loc[df[df_date_col] >= start, :]
     if timerange.stoptype == 'date':
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df[df_date_col] <= stop, :]
     return df
+
+
+def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange,
+                    startup_candles: int) -> Dict[str, DataFrame]:
+    """
+    Trim startup period from analyzed dataframes
+    :param preprocessed: Dict of pair: dataframe
+    :param timerange: timerange (use start and end date if available)
+    :param startup_candles: Startup-candles that should be removed
+    :return: Dict of trimmed dataframes
+    """
+    processed: Dict[str, DataFrame] = {}
+
+    for pair, df in preprocessed.items():
+        trimed_df = trim_dataframe(df, timerange, startup_candles=startup_candles)
+        if not trimed_df.empty:
+            processed[pair] = trimed_df
+        else:
+            logger.warning(f'{pair} has no data left after adjusting for startup candles, '
+                           f'skipping.')
+    return processed
 
 
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:

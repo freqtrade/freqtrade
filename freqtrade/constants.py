@@ -11,6 +11,7 @@ DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
+TIMEOUT_UNITS = ['minutes', 'seconds']
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
@@ -26,7 +27,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
                        'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
-                       'SpreadFilter']
+                       'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
@@ -96,6 +97,7 @@ CONF_SCHEMA = {
     'type': 'object',
     'properties': {
         'max_open_trades': {'type': ['integer', 'number'], 'minimum': -1},
+        'new_pairs_days': {'type': 'integer', 'default': 30},
         'timeframe': {'type': 'string'},
         'stake_currency': {'type': 'string'},
         'stake_amount': {
@@ -136,7 +138,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'buy': {'type': 'number', 'minimum': 1},
-                'sell': {'type': 'number', 'minimum': 1}
+                'sell': {'type': 'number', 'minimum': 1},
+                'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },
         'bid_strategy': {
@@ -176,7 +179,7 @@ CONF_SCHEMA = {
                 'order_book_max': {'type': 'integer', 'minimum': 1, 'maximum': 50},
                 'use_sell_signal': {'type': 'boolean'},
                 'sell_profit_only': {'type': 'boolean'},
-                'sell_profit_offset': {'type': 'number', 'minimum': 0.0},
+                'sell_profit_offset': {'type': 'number'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
             }
         },
@@ -246,14 +249,24 @@ CONF_SCHEMA = {
                 'balance_dust_level': {'type': 'number', 'minimum': 0.0},
                 'notification_settings': {
                     'type': 'object',
+                    'default': {},
                     'properties': {
                         'status': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'warning': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'startup': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'buy_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
-                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS}
+                        'buy_fill': {'type': 'string',
+                                     'enum': TELEGRAM_SETTING_OPTIONS,
+                                     'default': 'off'
+                                     },
+                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell_fill': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                            },
                     }
                 }
             },

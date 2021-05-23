@@ -53,6 +53,8 @@ class Kraken(Exchange):
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:
+                if not isinstance(balances[bal], dict):
+                    continue
                 balances[bal]['used'] = sum(order[1] for order in order_list if order[0] == bal)
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
 
@@ -92,7 +94,7 @@ class Kraken(Exchange):
         stop_price = self.price_to_precision(pair, stop_price)
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(
+            dry_order = self.create_dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 

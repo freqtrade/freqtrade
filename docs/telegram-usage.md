@@ -82,11 +82,18 @@ Example configuration showing the different settings:
          "buy": "silent",
          "sell": "on",
          "buy_cancel": "silent",
-         "sell_cancel": "on"
+         "sell_cancel": "on",
+         "buy_fill": "off",
+         "sell_fill": "off"
       },
       "balance_dust_level": 0.01
    },
 ```
+
+`buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
+`sell` notifications are sent when the order is placed, while `sell_fill` notifications are sent when the order is filled on the exchange.
+`*_fill` notifications are off by default and must be explicitly enabled.
+
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 
@@ -258,13 +265,12 @@ Note that for this to work, `forcebuy_enable` needs to be set to true.
 ### /performance
 
 Return the performance of each crypto-currency the bot has sold.
-
 > Performance:  
-> 1. `RCN/BTC 57.77%`  
-> 2. `PAY/BTC 56.91%`  
-> 3. `VIB/BTC 47.07%`  
-> 4. `SALT/BTC 30.24%`  
-> 5. `STORJ/BTC 27.24%`  
+> 1. `RCN/BTC 0.003 BTC (57.77%) (1)`  
+> 2. `PAY/BTC 0.0012 BTC (56.91%) (1)`  
+> 3. `VIB/BTC 0.0011 BTC (47.07%) (1)`  
+> 4. `SALT/BTC 0.0010 BTC (30.24%) (1)`  
+> 5. `STORJ/BTC 0.0009 BTC (27.24%) (1)`  
 > ...  
 
 ### /balance

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.optimize.hyperopt import Hyperopt
+from freqtrade.state import RunMode
 from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 
@@ -14,6 +15,8 @@ from tests.conftest import patch_exchange
 def hyperopt_conf(default_conf):
     hyperconf = deepcopy(default_conf)
     hyperconf.update({
+        'datadir': Path(default_conf['datadir']),
+        'runmode': RunMode.HYPEROPT,
         'hyperopt': 'DefaultHyperOpt',
         'hyperopt_loss': 'ShortTradeDurHyperOptLoss',
                          'hyperopt_path': str(Path(__file__).parent / 'hyperopts'),
@@ -21,6 +24,7 @@ def hyperopt_conf(default_conf):
                          'timerange': None,
                          'spaces': ['default'],
                          'hyperopt_jobs': 1,
+        'hyperopt_min_trades': 1,
     })
     return hyperconf
 

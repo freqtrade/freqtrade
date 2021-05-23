@@ -1,15 +1,17 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import time
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
+from tests.conftest import get_patched_exchange, get_patched_freqtradebot, log_has, log_has_re
 
 
 @pytest.fixture(scope="function")
@@ -260,6 +262,8 @@ def test_refresh_pairlist_dynamic_2(mocker, shitcoinmarkets, tickers, whitelist_
     freqtrade.pairlists.refresh_pairlist()
     assert whitelist == freqtrade.pairlists.whitelist
 
+    # Delay to allow 0 TTL cache to expire...
+    time.sleep(1)
     whitelist = ['FUEL/BTC', 'ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC']
     tickers_dict['FUEL/BTC']['quoteVolume'] = 10000.0
     freqtrade.pairlists.refresh_pairlist()
@@ -403,10 +407,17 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "PriceFilter", "max_value": 0.000001}],
+        "USDT", ['NANO/USDT']),
     ([{"method": "StaticPairList"},
       {"method": "RangeStabilityFilter", "lookback_days": 10,
        "min_rate_of_change": 0.01, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
+    ([{"method": "StaticPairList"},
+      {"method": "VolatilityFilter", "lookback_days": 3,
+       "min_volatility": 0.002, "max_volatility": 0.004, "refresh_period": 1440}],
+     "BTC", ['ETH/BTC', 'TKN/BTC'])
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history, pairlists, base_currency,
@@ -414,12 +425,15 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
 
+    ohlcv_history_high_vola = ohlcv_history.copy()
+    ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
+
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
         ('LTC/BTC', '1d'): ohlcv_history,
         ('XRP/BTC', '1d'): ohlcv_history,
-        ('HOT/BTC', '1d'): ohlcv_history,
+        ('HOT/BTC', '1d'): ohlcv_history_high_vola,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -478,6 +492,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                                    r'because last price < .*%$', caplog) or
                         log_has_re(r'^Removed .* from whitelist, '
                                    r'because last price > .*%$', caplog) or
+                        log_has_re(r'^Removed .* from whitelist, '
+                                   r'because min value change of .*', caplog) or
                         log_has_re(r"^Removed .* from whitelist, because ticker\['last'\] "
                                    r"is empty.*", caplog))
             if pairlist['method'] == 'VolumePairList':
@@ -487,6 +503,8 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                     assert log_has(logmsg, caplog)
                 else:
                     assert not log_has(logmsg, caplog)
+            if pairlist["method"] == 'VolatilityFilter':
+                assert log_has_re(r'^Removed .* from whitelist, because volatility.*$', caplog)
 
 
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
@@ -498,6 +516,18 @@ def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     with pytest.raises(OperationalException,
                        match=r"PrecisionFilter can only work with stoploss defined\..*"):
         PairListManager(MagicMock, whitelist_conf)
+
+
+def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
+    whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PerformanceFilter"}]
+    if hasattr(Trade, 'query'):
+        del Trade.query
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf)
+    pm.refresh_pairlist()
+
+    assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
@@ -595,17 +625,14 @@ def test_volumepairlist_caching(mocker, markets, whitelist_conf, tickers):
                           get_tickers=tickers
                           )
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == 0
+    assert len(freqtrade.pairlists._pairlist_handlers[0]._pair_cache) == 0
     assert tickers.call_count == 0
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
 
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh != 0
-    lrf = freqtrade.pairlists._pairlist_handlers[0]._last_refresh
+    assert len(freqtrade.pairlists._pairlist_handlers[0]._pair_cache) == 1
     freqtrade.pairlists.refresh_pairlist()
     assert tickers.call_count == 1
-    # Time should not be updated.
-    assert freqtrade.pairlists._pairlist_handlers[0]._last_refresh == lrf
 
 
 def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tickers):
@@ -778,6 +805,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.00002000.'}]",
      None
      ),
+    ({"method": "PriceFilter", "max_value": 0.00002000},
+     "[{'PriceFilter': 'PriceFilter - Filtering pairs priced Value above 0.00002000.'}]",
+     None
+     ),
     ({"method": "PriceFilter"},
      "[{'PriceFilter': 'PriceFilter - No price filters configured.'}]",
      None
@@ -793,6 +824,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
     ({"method": "PriceFilter", "max_price": -1.00010000},
      None,
      "PriceFilter requires max_price to be >= 0"
+     ),  # OperationalException expected
+    ({"method": "PriceFilter", "max_value": -1.00010000},
+     None,
+     "PriceFilter requires max_value to be >= 0"
      ),  # OperationalException expected
     ({"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
      "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "

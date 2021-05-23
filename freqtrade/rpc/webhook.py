@@ -45,17 +45,21 @@ class Webhook(RPCHandler):
         """ Send a message to telegram channel """
         try:
 
-            if msg['type'] == RPCMessageType.BUY_NOTIFICATION:
+            if msg['type'] == RPCMessageType.BUY:
                 valuedict = self._config['webhook'].get('webhookbuy', None)
-            elif msg['type'] == RPCMessageType.BUY_CANCEL_NOTIFICATION:
+            elif msg['type'] == RPCMessageType.BUY_CANCEL:
                 valuedict = self._config['webhook'].get('webhookbuycancel', None)
-            elif msg['type'] == RPCMessageType.SELL_NOTIFICATION:
+            elif msg['type'] == RPCMessageType.BUY_FILL:
+                valuedict = self._config['webhook'].get('webhookbuyfill', None)
+            elif msg['type'] == RPCMessageType.SELL:
                 valuedict = self._config['webhook'].get('webhooksell', None)
-            elif msg['type'] == RPCMessageType.SELL_CANCEL_NOTIFICATION:
+            elif msg['type'] == RPCMessageType.SELL_FILL:
+                valuedict = self._config['webhook'].get('webhooksellfill', None)
+            elif msg['type'] == RPCMessageType.SELL_CANCEL:
                 valuedict = self._config['webhook'].get('webhooksellcancel', None)
-            elif msg['type'] in (RPCMessageType.STATUS_NOTIFICATION,
-                                 RPCMessageType.STARTUP_NOTIFICATION,
-                                 RPCMessageType.WARNING_NOTIFICATION):
+            elif msg['type'] in (RPCMessageType.STATUS,
+                                 RPCMessageType.STARTUP,
+                                 RPCMessageType.WARNING):
                 valuedict = self._config['webhook'].get('webhookstatus', None)
             else:
                 raise NotImplementedError('Unknown message type: {}'.format(msg['type']))

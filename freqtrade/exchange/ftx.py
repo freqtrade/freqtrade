@@ -8,6 +8,7 @@ from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, Invali
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class Ftx(Exchange):
         stop_price = self.price_to_precision(pair, stop_price)
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(
+            dry_order = self.create_dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 
@@ -63,10 +64,11 @@ class Ftx(Exchange):
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
 
+            params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
-                                           amount=amount, price=stop_price, params=params)
+                                           amount=amount, params=params)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)
             return order
@@ -134,3 +136,8 @@ class Ftx(Exchange):
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if order['type'] == 'stop':
+            return safe_value_fallback2(order['info'], order, 'orderId', 'id')
+        return order['id']

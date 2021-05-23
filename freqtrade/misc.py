@@ -6,7 +6,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator, List
 from typing.io import IO
 
 import rapidjson
@@ -81,7 +81,7 @@ def json_load(datafile: IO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
-    sete number_mode to "NM_NATIVE" for greatest speed
+    set number_mode to "NM_NATIVE" for greatest speed
     """
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
@@ -202,3 +202,14 @@ def render_template_with_fallback(templatefile: str, templatefallbackfile: str,
         return render_template(templatefile, arguments)
     except TemplateNotFound:
         return render_template(templatefallbackfile, arguments)
+
+
+def chunks(lst: List[Any], n: int) -> Iterator[List[Any]]:
+    """
+    Split lst into chunks of the size n.
+    :param lst: list to split into chunks
+    :param n: number of max elements per chunk
+    :return: None
+    """
+    for chunk in range(0, len(lst), n):
+        yield (lst[chunk:chunk + n])

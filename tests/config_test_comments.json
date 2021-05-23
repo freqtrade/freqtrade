@@ -59,7 +59,7 @@
         }
     },
     "exchange": {
-        "name": "bittrex",
+        "name": "binance",
         "sandbox": false,
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",

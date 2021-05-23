@@ -77,7 +77,8 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         )
     except ValueError as e:
         raise OperationalException(e) from e
-    trades = trim_dataframe(trades, timerange, 'open_date')
+    if not trades.empty:
+        trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
             "trades": trades,
@@ -441,7 +442,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
 
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
-                          trades: pd.DataFrame, timeframe: str) -> go.Figure:
+                          trades: pd.DataFrame, timeframe: str, stake_currency: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
     df_comb = combine_dataframes_with_mean(data, "close")
 
@@ -466,8 +467,8 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                         subplot_titles=["AVG Close Price", "Combined Profit", "Profit per pair"])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
-    fig['layout']['yaxis2'].update(title='Profit')
-    fig['layout']['yaxis3'].update(title='Profit')
+    fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
+    fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
 
     fig.add_trace(avgclose, 1, 1)
@@ -540,8 +541,11 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
         df_analyzed = strategy.analyze_ticker(data, {'pair': pair})
         df_analyzed = trim_dataframe(df_analyzed, timerange)
-        trades_pair = trades.loc[trades['pair'] == pair]
-        trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
+        if not trades.empty:
+            trades_pair = trades.loc[trades['pair'] == pair]
+            trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
+        else:
+            trades_pair = trades
 
         fig = generate_candlestick_graph(
             pair=pair,
@@ -581,6 +585,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
-                                trades, config.get('timeframe', '5m'))
+                                trades, config.get('timeframe', '5m'),
+                                config.get('stake_currency', ''))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot', auto_open=True)

@@ -3,6 +3,7 @@ This module contains the argument manager class
 """
 import logging
 import re
+from datetime import datetime
 from typing import Optional
 
 import arrow
@@ -43,7 +44,7 @@ class TimeRange:
             self.startts = self.startts - seconds
 
     def adjust_start_if_necessary(self, timeframe_secs: int, startup_candles: int,
-                                  min_date: arrow.Arrow) -> None:
+                                  min_date: datetime) -> None:
         """
         Adjust startts by <startup_candles> candles.
         Applies only if no startup-candles have been available.
@@ -54,11 +55,11 @@ class TimeRange:
         :return: None (Modifies the object in place)
         """
         if (not self.starttype or (startup_candles
-                                   and min_date.int_timestamp >= self.startts)):
+                                   and min_date.timestamp() >= self.startts)):
             # If no startts was defined, or backtest-data starts at the defined backtest-date
             logger.warning("Moving start-date by %s candles to account for startup time.",
                            startup_candles)
-            self.startts = (min_date.int_timestamp + timeframe_secs * startup_candles)
+            self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
             self.starttype = 'date'
 
     @staticmethod
