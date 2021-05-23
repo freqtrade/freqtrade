@@ -1,3 +1,4 @@
+import datetime
 import re
 from datetime import timedelta
 from pathlib import Path
@@ -27,25 +28,22 @@ def test_text_table_bt_results():
 
     results = pd.DataFrame(
         {
-            'pair': ['ETH/BTC', 'ETH/BTC'],
-            'profit_ratio': [0.1, 0.2],
-            'profit_abs': [0.2, 0.4],
-            'trade_duration': [10, 30],
-            'wins': [2, 0],
-            'draws': [0, 0],
-            'losses': [0, 0]
+            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'profit_ratio': [0.1, 0.2, -0.05],
+            'profit_abs': [0.2, 0.4, -0.1],
+            'trade_duration': [10, 30, 20],
         }
     )
 
     result_str = (
-        '|    Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
-        '   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |\n'
-        '|---------+--------+----------------+----------------+------------------+'
-        '----------------+----------------+--------+---------+----------|\n'
-        '| ETH/BTC |      2 |          15.00 |          30.00 |       0.60000000 |'
-        '          15.00 |        0:20:00 |      2 |       0 |        0 |\n'
-        '|   TOTAL |      2 |          15.00 |          30.00 |       0.60000000 |'
-        '          15.00 |        0:20:00 |      2 |       0 |        0 |'
+        '|    Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % |'
+        '   Avg Duration |   Win  Draw  Loss  Win% |\n'
+        '|---------+--------+----------------+----------------+------------------+----------------+'
+        '----------------+-------------------------|\n'
+        '| ETH/BTC |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
+        '        0:20:00 |     2     0     1  66.7 |\n'
+        '|   TOTAL |      3 |           8.33 |          25.00 |       0.50000000 |          12.50 |'
+        '        0:20:00 |     2     0     1  66.7 |'
     )
 
     pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
@@ -270,14 +268,14 @@ def test_text_table_sell_reason():
     )
 
     result_str = (
-        '|   Sell Reason |   Sells |   Wins |   Draws |   Losses |'
-        '   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % |\n'
-        '|---------------+---------+--------+---------+----------+'
-        '----------------+----------------+------------------+----------------|\n'
-        '|           roi |       2 |      2 |       0 |        0 |'
-        '             15 |             30 |              0.6 |             15 |\n'
-        '|     stop_loss |       1 |      0 |       0 |        1 |'
-        '            -10 |            -10 |             -0.2 |             -5 |'
+        '|   Sell Reason |   Sells |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |'
+        '   Tot Profit BTC |   Tot Profit % |\n'
+        '|---------------+---------+--------------------------+----------------+----------------+'
+        '------------------+----------------|\n'
+        '|           roi |       2 |      2     0     0   100 |             15 |             30 |'
+        '              0.6 |             15 |\n'
+        '|     stop_loss |       1 |      0     0     1     0 |            -10 |            -10 |'
+        '             -0.2 |             -5 |'
     )
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
@@ -325,9 +323,12 @@ def test_text_table_strategy(default_conf):
     default_conf['max_open_trades'] = 2
     default_conf['dry_run_wallet'] = 3
     results = {}
+    date = datetime.datetime(year=2020, month=1, day=1, hour=12, minute=30)
+    delta = datetime.timedelta(days=1)
     results['TestStrategy1'] = {'results': pd.DataFrame(
         {
             'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
+            'close_date': [date, date + delta, date + delta * 2],
             'profit_ratio': [0.1, 0.2, 0.3],
             'profit_abs': [0.2, 0.4, 0.5],
             'trade_duration': [10, 30, 10],
@@ -340,6 +341,7 @@ def test_text_table_strategy(default_conf):
     results['TestStrategy2'] = {'results': pd.DataFrame(
         {
             'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
+            'close_date': [date, date + delta, date + delta * 2],
             'profit_ratio': [0.4, 0.2, 0.3],
             'profit_abs': [0.4, 0.4, 0.5],
             'trade_duration': [15, 30, 15],
@@ -351,18 +353,17 @@ def test_text_table_strategy(default_conf):
     ), 'config': default_conf}
 
     result_str = (
-        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot'
-        ' Profit BTC |   Tot Profit % |   Avg Duration |   Wins |   Draws |   Losses |\n'
+        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
         '|---------------+--------+----------------+----------------+------------------+'
-        '----------------+----------------+--------+---------+----------|\n'
+        '----------------+----------------+-------------------------+-----------------------|\n'
         '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 |'
-        '          36.67 |        0:17:00 |      3 |       0 |        0 |\n'
+        '          36.67 |        0:17:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |\n'
         '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
-        '          43.33 |        0:20:00 |      3 |       0 |        0 |'
+        '          43.33 |        0:20:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |'
     )
 
     strategy_results = generate_strategy_comparison(all_results=results)
-
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 

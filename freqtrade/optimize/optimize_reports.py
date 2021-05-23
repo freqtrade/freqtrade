@@ -43,7 +43,7 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
     Generate floatformat (goes in line with _generate_result_line())
     """
     return ['s', 'd', '.2f', '.2f', f'.{decimals_per_coin(stake_currency)}f',
-            '.2f', 'd', 'd', 'd', 'd']
+            '.2f', 'd', 's', 's']
 
 
 def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
@@ -52,7 +52,17 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
     """
     return [first_column, 'Buys', 'Avg Profit %', 'Cum Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
-            'Wins', 'Draws', 'Losses']
+            'Win  Draw  Loss  Win%']
+
+
+def _generate_wins_draws_losses(wins, draws, losses):
+    if wins > 0 and losses == 0:
+        wl_ratio = '100'
+    elif wins == 0:
+        wl_ratio = '0'
+    else:
+        wl_ratio = f'{100.0 / (wins + draws + losses) * wins:.1f}' if losses > 0 else '100'
+    return f'{wins:>4}  {draws:>4}  {losses:>4}  {wl_ratio:>4}'
 
 
 def _generate_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
@@ -164,6 +174,17 @@ def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
         tabular_data.append(_generate_result_line(
             results['results'], results['config']['dry_run_wallet'], strategy)
             )
+        try:
+            max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                  value_col='profit_ratio')
+            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                  value_col='profit_abs')
+        except ValueError:
+            max_drawdown_per = 0
+            max_drawdown_abs = 0
+        tabular_data[-1]['max_drawdown_per'] = round(max_drawdown_per * 100, 2)
+        tabular_data[-1]['max_drawdown_abs'] = \
+            round_coin_value(max_drawdown_abs, results['config']['stake_currency'], False)
     return tabular_data
 
 
@@ -208,6 +229,8 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     winning_trades = results.loc[results['profit_ratio'] > 0]
     draw_trades = results.loc[results['profit_ratio'] == 0]
     losing_trades = results.loc[results['profit_ratio'] < 0]
+    zero_duration_trades = len(results.loc[(results['trade_duration'] == 0) &
+                                           (results['sell_reason'] == 'trailing_stop_loss')])
 
     return {
         'wins': len(winning_trades),
@@ -219,6 +242,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
                                if not winning_trades.empty else timedelta()),
         'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
                               if not losing_trades.empty else timedelta()),
+        'zero_duration_trades': zero_duration_trades,
     }
 
 
@@ -437,7 +461,8 @@ def text_table_bt_results(pair_results: List[Dict[str, Any]], stake_currency: st
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
-        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
+        t['profit_total_pct'], t['duration_avg'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses'])
     ] for t in pair_results]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,
@@ -454,9 +479,7 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     headers = [
         'Sell Reason',
         'Sells',
-        'Wins',
-        'Draws',
-        'Losses',
+        'Win  Draws  Loss  Win%',
         'Avg Profit %',
         'Cum Profit %',
         f'Tot Profit {stake_currency}',
@@ -464,7 +487,8 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     ]
 
     output = [[
-        t['sell_reason'], t['trades'], t['wins'], t['draws'], t['losses'],
+        t['sell_reason'], t['trades'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']),
         t['profit_mean_pct'], t['profit_sum_pct'],
         round_coin_value(t['profit_total_abs'], stake_currency, False),
         t['profit_total_pct'],
@@ -482,11 +506,22 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     floatfmt = _get_line_floatfmt(stake_currency)
     headers = _get_line_header('Strategy', stake_currency)
+    # _get_line_header() is also used for per-pair summary. Per-pair drawdown is mostly useless
+    # therefore we slip this column in only for strategy summary here.
+    headers.append('Drawdown')
+
+    # Align drawdown string on the center two space separator.
+    drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]
+    dd_pad_abs = max([len(t['max_drawdown_abs']) for t in strategy_results])
+    dd_pad_per = max([len(dd) for dd in drawdown])
+    drawdown = [f'{t["max_drawdown_abs"]:>{dd_pad_abs}} {stake_currency}  {dd:>{dd_pad_per}}%'
+                for t, dd in zip(strategy_results, drawdown)]
 
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
-        t['profit_total_pct'], t['duration_avg'], t['wins'], t['draws'], t['losses']
-    ] for t in strategy_results]
+        t['profit_total_pct'], t['duration_avg'],
+        _generate_wins_draws_losses(t['wins'], t['draws'], t['losses']), drawdown]
+        for t, drawdown in zip(strategy_results, drawdown)]
     # Ignore type as floatfmt does allow tuples but mypy does not know that
     return tabulate(output, headers=headers,
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
@@ -496,6 +531,18 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
+
+        # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
+        # command stores these results and newer version of freqtrade must be able to handle old
+        # results with missing new fields.
+        zero_duration_trades = '--'
+
+        if 'zero_duration_trades' in strat_results:
+            zero_duration_trades_per = \
+                100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
+            zero_duration_trades = f'{zero_duration_trades_per}% ' \
+                                   f'({strat_results["zero_duration_trades"]})'
+
         metrics = [
             ('Backtesting from', strat_results['backtest_start']),
             ('Backtesting to', strat_results['backtest_end']),
@@ -508,7 +555,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                strat_results['stake_currency'])),
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
-            ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2)}%"),
+            ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2):}%"),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
@@ -532,6 +579,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
+            ('Zero Duration Trades', zero_duration_trades),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
