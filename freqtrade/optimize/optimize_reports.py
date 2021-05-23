@@ -355,7 +355,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'starting_balance': starting_balance,
         'dry_run_wallet': starting_balance,
         'final_balance': content['final_balance'],
-        'rejected_signals': content['rejected'],
+        'rejected_signals': content['rejected_signals'],
         'max_open_trades': max_open_trades,
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
@@ -562,8 +562,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
                                                     strat_results['stake_currency'])),
-            ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
-
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
                           f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
@@ -582,6 +580,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
             ('Zero Duration Trades', zero_duration_trades),
+            ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],

@@ -338,11 +338,8 @@ class Backtesting:
         return trades
 
     def trade_slot_available(self, max_open_trades: int, open_trade_count: int) -> bool:
-        if max_open_trades <= 0:
-            # Always allow trades when max_open_trades is enabled.
-            return True
-        if open_trade_count < max_open_trades:
-
+        # Always allow trades when max_open_trades is enabled.
+        if max_open_trades <= 0 or open_trade_count < max_open_trades:
             return True
         # Rejected trade
         self.rejected_trades += 1
@@ -454,7 +451,7 @@ class Backtesting:
             'results': results,
             'config': self.strategy.config,
             'locks': PairLocks.get_all_locks(),
-            'rejected': self.rejected_trades,
+            'rejected_signals': self.rejected_trades,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 

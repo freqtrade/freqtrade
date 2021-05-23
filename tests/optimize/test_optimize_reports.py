@@ -79,6 +79,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
         'config': default_conf,
         'locks': [],
         'final_balance': 1000.02,
+        'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
         }
@@ -126,6 +127,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
         'config': default_conf,
         'locks': [],
         'final_balance': 1000.02,
+        'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
         }
