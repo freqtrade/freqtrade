@@ -4,6 +4,7 @@
 
 import re
 from datetime import datetime
+from functools import reduce
 from random import choice, randint
 from string import ascii_uppercase
 from unittest.mock import ANY, MagicMock
@@ -52,6 +53,14 @@ class DummyCls(Telegram):
         Fake method that throw an exception
         """
         raise Exception('test')
+
+
+def get_telegram_testobject_with_inline(mocker, default_conf, mock=True, ftbot=None):
+    inline_msg_mock = MagicMock()
+    telegram, ftbot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    mocker.patch('freqtrade.rpc.telegram.Telegram._send_inline_msg', inline_msg_mock)
+
+    return telegram, ftbot, msg_mock, inline_msg_mock
 
 
 def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
@@ -900,6 +909,33 @@ def test_forcebuy_handle_exception(default_conf, update, mocker) -> None:
 
     assert msg_mock.call_count == 1
     assert msg_mock.call_args_list[0][0][0] == 'Forcebuy not enabled.'
+
+
+def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+
+    fbuy_mock = MagicMock(return_value=None)
+    mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
+
+    telegram, freqtradebot, _, inline_msg_mock = get_telegram_testobject_with_inline(mocker,
+                                                                                     default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
+    context = MagicMock()
+    context.args = []
+    telegram._forcebuy(update=update, context=context)
+
+    assert fbuy_mock.call_count == 0
+    assert inline_msg_mock.call_count == 1
+    assert inline_msg_mock.call_args_list[0][0][0] == 'Which pair?'
+    assert inline_msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
+    keyboard = inline_msg_mock.call_args_list[0][1]['keyboard']
+    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
+    update = MagicMock()
+    update.callback_query = MagicMock()
+    update.callback_query.data = 'XRP/USDT'
+    telegram._forcebuy_inline(update, None)
+    assert fbuy_mock.call_count == 1
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
