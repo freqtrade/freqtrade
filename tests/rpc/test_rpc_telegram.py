@@ -930,6 +930,11 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     assert inline_msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
     keyboard = inline_msg_mock.call_args_list[0][1]['keyboard']
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
+    update = MagicMock()
+    update.callback_query = MagicMock()
+    update.callback_query.data = 'XRP/USDT'
+    telegram._forcebuy_inline(update, None)
+    assert fbuy_mock.call_count == 1
 
 
 def test_performance_handle(default_conf, update, ticker, fee,
