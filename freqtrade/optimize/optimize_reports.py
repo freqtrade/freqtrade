@@ -531,8 +531,18 @@ def text_table_add_metrics(strat_results: Dict) -> str:
     if len(strat_results['trades']) > 0:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
-        zero_duration_trades_percent =\
-            100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
+
+        # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
+        # command stores these results and newer version of freqtrade must be able to handle old
+        # results with missing new fields.
+        zero_duration_trades = '--'
+
+        if 'zero_duration_trades' in strat_results:
+            zero_duration_trades_per = \
+                100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
+            zero_duration_trades = f'{zero_duration_trades_per}% ' \
+                                   f'({strat_results["zero_duration_trades"]})'
+
         metrics = [
             ('Backtesting from', strat_results['backtest_start']),
             ('Backtesting to', strat_results['backtest_end']),
@@ -569,8 +579,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
-            ('Zero Duration Trades', f"{zero_duration_trades_percent:.1f}% "
-                                     f"({strat_results['zero_duration_trades']})"),
+            ('Zero Duration Trades', zero_duration_trades),
             ('', ''),  # Empty line to improve readability
 
             ('Min balance', round_coin_value(strat_results['csum_min'],
