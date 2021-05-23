@@ -540,7 +540,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         if 'zero_duration_trades' in strat_results:
             zero_duration_trades_per = \
                 100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
-            zero_duration_trades = f'{zero_duration_trades_per}% ' \
+            zero_duration_trades = f'{zero_duration_trades_per:.2f}% ' \
                                    f'({strat_results["zero_duration_trades"]})'
 
         metrics = [
