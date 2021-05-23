@@ -38,12 +38,14 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
     kwargs = {}
 
-    # Take care of thread ownership if in-memory db
     if db_url == 'sqlite://':
         kwargs.update({
-            'connect_args': {'check_same_thread': False},
             'poolclass': StaticPool,
-            'echo': False,
+        })
+    # Take care of thread ownership
+    if db_url.startswith('sqlite://'):
+        kwargs.update({
+            'connect_args': {'check_same_thread': False},
         })
 
     try:
