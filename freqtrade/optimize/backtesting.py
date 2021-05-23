@@ -177,6 +177,7 @@ class Backtesting:
         Trade.use_db = False
         PairLocks.reset_locks()
         Trade.reset_trades()
+        self.rejected_trades = 0
         self.dataprovider.clear_cache()
 
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
@@ -336,6 +337,14 @@ class Backtesting:
                     trades.append(trade1)
         return trades
 
+    def trade_slot_available(self, max_open_trades: int, open_trade_count: int) -> bool:
+        # Always allow trades when max_open_trades is enabled.
+        if max_open_trades <= 0 or open_trade_count < max_open_trades:
+            return True
+        # Rejected trade
+        self.rejected_trades += 1
+        return False
+
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
                  max_open_trades: int = 0, position_stacking: bool = False,
@@ -397,11 +406,14 @@ class Backtesting:
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
-                if ((position_stacking or len(open_trades[pair]) == 0)
-                        and (max_open_trades <= 0 or open_trade_count_start < max_open_trades)
-                        and tmp != end_date
-                        and row[BUY_IDX] == 1 and row[SELL_IDX] != 1
-                        and not PairLocks.is_pair_locked(pair, row[DATE_IDX])):
+                if (
+                    (position_stacking or len(open_trades[pair]) == 0)
+                    and self.trade_slot_available(max_open_trades, open_trade_count_start)
+                    and tmp != end_date
+                    and row[BUY_IDX] == 1
+                    and row[SELL_IDX] != 1
+                    and not PairLocks.is_pair_locked(pair, row[DATE_IDX])
+                ):
                     trade = self._enter_trade(pair, row)
                     if trade:
                         # TODO: hacky workaround to avoid opening > max_open_trades
@@ -439,6 +451,7 @@ class Backtesting:
             'results': results,
             'config': self.strategy.config,
             'locks': PairLocks.get_all_locks(),
+            'rejected_signals': self.rejected_trades,
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 

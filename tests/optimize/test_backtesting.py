@@ -831,6 +831,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'results': pd.DataFrame(columns=BT_DATA_COLUMNS),
         'config': default_conf,
         'locks': [],
+        'rejected_signals': 20,
         'final_balance': 1000,
         })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
@@ -938,12 +939,14 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
             'results': result1,
             'config': default_conf,
             'locks': [],
+            'rejected_signals': 20,
             'final_balance': 1000,
         },
         {
             'results': result2,
             'config': default_conf,
             'locks': [],
+            'rejected_signals': 20,
             'final_balance': 1000,
         }
     ])

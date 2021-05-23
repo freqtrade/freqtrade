@@ -298,6 +298,7 @@ A backtesting result will look like that:
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 | Zero Duration Trades  | 4.6% (20)           |
+| Rejected Buy signals  | 3089                |
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
@@ -386,6 +387,7 @@ It contains some useful key metrics about performance of your strategy on backte
 | Avg. Duration Winners | 4:23:00             |
 | Avg. Duration Loser   | 6:55:00             |
 | Zero Duration Trades  | 4.6% (20)           |
+| Rejected Buy signals  | 3089                |
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
@@ -416,6 +418,7 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Days win/draw/lose`: Winning / Losing days (draws are usually days without closed trade).
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Zero Duration Trades`: A number of trades that completed within same candle as they opened and had `trailing_stop_loss` sell reason. A significant amount of such trades may indicate that strategy is exploiting trailing stoploss behavior in backtesting and produces unrealistic results.
+- `Rejected Buy signals`: Buy signals that could not be acted upon due to max_open_trades being reached.
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
 - `Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
