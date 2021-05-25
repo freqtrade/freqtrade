@@ -601,6 +601,7 @@ class FreqtradeBot(LoggingMixin):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
+            is_open=True,
             amount_requested=amount_requested,
             fee_open=fee,
             fee_close=fee,
