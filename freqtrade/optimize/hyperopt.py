@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import numpy as np
 
 import progressbar
 import rapidjson
@@ -162,8 +163,13 @@ class Hyperopt:
         While not a valid json object - this allows appending easily.
         :param epoch: result dictionary for this epoch.
         """
+        def default_parser(x):
+            if isinstance(x, np.integer):
+                return int(x)
+            return str(x)
+
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=str,
+            rapidjson.dump(epoch, f, default=default_parser,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 
