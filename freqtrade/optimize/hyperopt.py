@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import numpy as np
 
+import numpy as np
 import progressbar
 import rapidjson
 from colorama import Fore, Style
