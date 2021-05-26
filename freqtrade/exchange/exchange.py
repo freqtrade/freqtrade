@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import arrow
 import ccxt
 import ccxt.async_support as ccxt_async
+from cachetools import TTLCache
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from pandas import DataFrame
@@ -58,11 +59,13 @@ class Exchange:
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
+        "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
 
@@ -82,6 +85,9 @@ class Exchange:
         self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
+
+        # Cache for 10 minutes ...
+        self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -358,7 +364,6 @@ class Exchange:
         invalid_pairs = []
         for pair in extended_pairs:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-            # TODO: add a support for having coins in BTC/USDT format
             if self.markets and pair not in self.markets:
                 raise OperationalException(
                     f'Pair {pair} is not available on {self.name}. '
@@ -461,7 +466,7 @@ class Exchange:
     def amount_to_precision(self, pair: str, amount: float) -> float:
         '''
         Returns the amount to buy or sell to a precision the Exchange accepts
-        Reimplementation of ccxt internal methods - ensuring we can test the result is correct
+        Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         '''
         if self.markets[pair]['precision']['amount']:
@@ -475,7 +480,7 @@ class Exchange:
     def price_to_precision(self, pair: str, price: float) -> float:
         '''
         Returns the price rounded up to the precision the Exchange accepts.
-        Partial Reimplementation of ccxt internal method decimal_to_precision(),
+        Partial Re-implementation of ccxt internal method decimal_to_precision(),
         which does not support rounding up
         TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
         align with amount_to_precision().
@@ -534,7 +539,9 @@ class Exchange:
         # reserve some percent defined in config (5% default) + stoploss
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
-        amount_reserve_percent += abs(stoploss)
+        amount_reserve_percent = (
+          amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+        )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
 
@@ -661,17 +668,6 @@ class Exchange:
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
     @retrier
-    def get_balance(self, currency: str) -> float:
-
-        # ccxt exception is already handled by get_balances
-        balances = self.get_balances()
-        balance = balances.get(currency)
-        if balance is None:
-            raise TemporaryError(
-                f'Could not get {currency} balance due to malformed exchange response: {balances}')
-        return balance['free']
-
-    @retrier
     def get_balances(self) -> dict:
 
         try:
@@ -692,9 +688,19 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def get_tickers(self) -> Dict:
+    def get_tickers(self, cached: bool = False) -> Dict:
+        """
+        :param cached: Allow cached result
+        :return: fetch_tickers result
+        """
+        if cached:
+            tickers = self._fetch_tickers_cache.get('fetch_tickers')
+            if tickers:
+                return tickers
         try:
-            return self._api.fetch_tickers()
+            tickers = self._api.fetch_tickers()
+            self._fetch_tickers_cache['fetch_tickers'] = tickers
+            return tickers
         except ccxt.NotSupported as e:
             raise OperationalException(
                 f'Exchange {self._api.name} does not support fetching tickers in batch. '
@@ -857,10 +863,11 @@ class Exchange:
                 "Fetching pair %s, interval %s, since %s %s...",
                 pair, timeframe, since_ms, s
             )
-
+            params = self._ft_has.get('ohlcv_params', {})
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
-                                                     limit=self.ohlcv_candle_limit(timeframe))
+                                                     limit=self.ohlcv_candle_limit(timeframe),
+                                                     params=params)
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
@@ -1113,6 +1120,27 @@ class Exchange:
 
         return order
 
+    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel stoploss order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: stoploss-order-id to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        corder = self.cancel_stoploss_order(order_id, pair)
+        if self.is_cancel_order_result_suitable(corder):
+            return corder
+        try:
+            order = self.fetch_stoploss_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
@@ -1154,14 +1182,20 @@ class Exchange:
         return self.fetch_order(order_id, pair)
 
     @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]]):
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
         """
         Get next greater value in the list.
         Used by fetch_l2_order_book if the api only supports a limited range
         """
         if not limit_range:
             return limit
-        return min([x for x in limit_range if limit <= x] + [max(limit_range)])
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
 
     @retrier
     def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
@@ -1171,7 +1205,8 @@ class Exchange:
         Returns a dict in the format
         {'asks': [price, volume], 'bids': [price, volume]}
         """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'])
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
         try:
 
             return self._api.fetch_l2_order_book(pair, limit1)
@@ -1224,6 +1259,9 @@ class Exchange:
                 f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        return order['id']
 
     @retrier
     def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,

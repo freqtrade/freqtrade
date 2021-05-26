@@ -219,7 +219,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -258,7 +258,7 @@ def test_min_roi_reached2(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -293,7 +293,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
 
@@ -346,7 +346,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
     trade.adjust_min_max_rates(trade.open_rate)
@@ -380,6 +380,50 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
+
+
+def test_custom_sell(default_conf, fee, caplog) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+
+    now = arrow.utcnow().datetime
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+
+    assert res.sell_flag is False
+    assert res.sell_type == SellType.NONE
+
+    strategy.custom_sell = MagicMock(return_value=True)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_flag is True
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_reason == 'custom_sell'
+
+    strategy.custom_sell = MagicMock(return_value='hello world')
+
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'hello world'
+
+    caplog.clear()
+    strategy.custom_sell = MagicMock(return_value='h' * 100)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'h' * 64
+    assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
@@ -588,6 +632,14 @@ def test_hyperopt_parameters():
     intpar = IntParameter(low=0, high=5, default=1, space='buy')
     assert intpar.value == 1
     assert isinstance(intpar.get_space(''), Integer)
+    assert isinstance(intpar.range, range)
+    assert len(list(intpar.range)) == 1
+    # Range contains ONLY the default / value.
+    assert list(intpar.range) == [intpar.value]
+    intpar.in_space = True
+
+    assert len(list(intpar.range)) == 6
+    assert list(intpar.range) == [0, 1, 2, 3, 4, 5]
 
     fltpar = RealParameter(low=0.0, high=5.5, default=1.0, space='buy')
     assert isinstance(fltpar.get_space(''), Real)
@@ -596,8 +648,6 @@ def test_hyperopt_parameters():
     fltpar = DecimalParameter(low=0.0, high=5.5, default=1.0004, decimals=3, space='buy')
     assert isinstance(fltpar.get_space(''), Integer)
     assert fltpar.value == 1
-    fltpar._set_value(2222)
-    assert fltpar.value == 2.222
 
     catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
                                   default='buy_macd', space='buy')
@@ -621,4 +671,4 @@ def test_auto_hyperopt_interface(default_conf):
     strategy.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
-        [x for x in strategy.enumerate_parameters('sell')]
+        [x for x in strategy._detect_parameters('sell')]

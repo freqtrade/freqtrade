@@ -1,4 +1,5 @@
-# Freqtrade
+![freqtrade](assets/freqtrade_poweredby.svg)
+
 [![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
@@ -39,7 +40,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
 - [X] [Kraken](https://kraken.com/)
-- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+- [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
 

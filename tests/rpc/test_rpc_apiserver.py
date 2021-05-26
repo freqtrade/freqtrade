@@ -468,7 +468,7 @@ def test_api_show_config(botclient, mocker):
     rc = client_get(client, f"{BASE_URI}/show_config")
     assert_response(rc)
     assert 'dry_run' in rc.json()
-    assert rc.json()['exchange'] == 'bittrex'
+    assert rc.json()['exchange'] == 'binance'
     assert rc.json()['timeframe'] == '5m'
     assert rc.json()['timeframe_ms'] == 300000
     assert rc.json()['timeframe_min'] == 5
@@ -506,8 +506,9 @@ def test_api_trades(botclient, mocker, fee, markets):
     )
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
-    assert len(rc.json()) == 2
+    assert len(rc.json()) == 3
     assert rc.json()['trades_count'] == 0
+    assert rc.json()['total_trades'] == 0
 
     create_mock_trades(fee)
     Trade.query.session.flush()
@@ -516,10 +517,32 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert_response(rc)
     assert len(rc.json()['trades']) == 2
     assert rc.json()['trades_count'] == 2
+    assert rc.json()['total_trades'] == 2
     rc = client_get(client, f"{BASE_URI}/trades?limit=1")
     assert_response(rc)
     assert len(rc.json()['trades']) == 1
     assert rc.json()['trades_count'] == 1
+    assert rc.json()['total_trades'] == 2
+
+
+def test_api_trade_single(botclient, mocker, fee, ticker, markets):
+    ftbot, client = botclient
+    patch_get_signal(ftbot, (True, False))
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        markets=PropertyMock(return_value=markets),
+        fetch_ticker=ticker,
+    )
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc, 404)
+    assert rc.json()['detail'] == 'Trade not found.'
+
+    create_mock_trades(fee)
+    Trade.query.session.flush()
+
+    rc = client_get(client, f"{BASE_URI}/trade/3")
+    assert_response(rc)
+    assert rc.json()['trade_id'] == 3
 
 
 def test_api_delete_trade(botclient, mocker, fee, markets):
@@ -687,7 +710,7 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
     assert 'draws' in rc.json()['durations']
 
 
-def test_api_performance(botclient, mocker, ticker, fee):
+def test_api_performance(botclient, fee):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
 
@@ -705,6 +728,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
 
     )
     trade.close_profit = trade.calc_profit_ratio()
+    trade.close_profit_abs = trade.calc_profit()
     Trade.query.session.add(trade)
 
     trade = Trade(
@@ -720,14 +744,16 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.391
     )
     trade.close_profit = trade.calc_profit_ratio()
+    trade.close_profit_abs = trade.calc_profit()
+
     Trade.query.session.add(trade)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
     assert len(rc.json()) == 2
-    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61},
-                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
+    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_abs': 0.01872279},
+                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_abs': -0.1150375}]
 
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
@@ -753,9 +779,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     assert rc.json()[0] == {
         'amount': 123.0,
         'amount_requested': 123.0,
-        'base_currency': 'BTC',
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'close_profit': None,
         'close_profit_pct': None,
@@ -770,7 +794,6 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'profit_fiat': ANY,
         'current_rate': 1.099e-05,
         'open_date': ANY,
-        'open_date_hum': ANY,
         'open_timestamp': ANY,
         'open_order': None,
         'open_rate': 0.123,
@@ -808,7 +831,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
-        'exchange': 'bittrex',
+        'exchange': 'binance',
     }
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
@@ -899,7 +922,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         pair='ETH/ETH',
         amount=1,
         amount_requested=1,
-        exchange='bittrex',
+        exchange='binance',
         stake_amount=1,
         open_rate=0.245441,
         open_order_id="123456",
@@ -922,11 +945,9 @@ def test_api_forcebuy(botclient, mocker, fee):
         'amount_requested': 1,
         'trade_id': 22,
         'close_date': None,
-        'close_date_hum': None,
         'close_timestamp': None,
         'close_rate': 0.265441,
         'open_date': ANY,
-        'open_date_hum': 'just now',
         'open_timestamp': ANY,
         'open_rate': 0.245441,
         'pair': 'ETH/ETH',
@@ -964,9 +985,8 @@ def test_api_forcebuy(botclient, mocker, fee):
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
         'timeframe': 5,
-        'exchange': 'bittrex',
-    }
-
+        'exchange': 'binance',
+        }
 
 def test_api_forcesell(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
@@ -1124,6 +1144,14 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json() == ftbot.strategy.plot_config
     assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
+
+    ftbot.strategy.plot_config = {'main_plot': {'sma': {}}}
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
+
+    assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
 
 
 def test_api_strategies(botclient):

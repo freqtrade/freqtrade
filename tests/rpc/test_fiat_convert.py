@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, too-many-arguments, too-many-ancestors,
 # pragma pylint: disable=protected-access, C0103
 
+import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,6 +21,12 @@ def test_fiat_convert_is_supported(mocker):
 
 def test_fiat_convert_find_price(mocker):
     fiat_convert = CryptoToFiatConverter()
+
+    fiat_convert._cryptomap = {}
+    fiat_convert._backoff = 0
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._load_cryptomap',
+                 return_value=None)
+    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 0.0
 
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
@@ -113,6 +120,28 @@ def test_fiat_convert_without_network(mocker):
     assert fiat_convert._coingekko is None
     assert fiat_convert._find_price(crypto_symbol='btc', fiat_symbol='usd') == 0.0
     CryptoToFiatConverter._coingekko = cmc_temp
+
+
+def test_fiat_too_many_requests_response(mocker, caplog):
+    # Because CryptoToFiatConverter is a Singleton we reset the listings
+    req_exception = "429 Too Many Requests"
+    listmock = MagicMock(return_value="{}", side_effect=RequestException(req_exception))
+    mocker.patch.multiple(
+        'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
+        get_coins_list=listmock,
+    )
+    # with pytest.raises(RequestEsxception):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._cryptomap = {}
+    fiat_convert._load_cryptomap()
+
+    length_cryptomap = len(fiat_convert._cryptomap)
+    assert length_cryptomap == 0
+    assert fiat_convert._backoff > datetime.datetime.now().timestamp()
+    assert log_has(
+              'Too many requests for Coingecko API, backing off and trying again later.',
+              caplog
+            )
 
 
 def test_fiat_invalid_response(mocker, caplog):

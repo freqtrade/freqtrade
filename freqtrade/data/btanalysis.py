@@ -156,33 +156,35 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
 
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
     else:
         # old format - only with lists.
         df = pd.DataFrame(data, columns=BT_DATA_COLUMNS_OLD)
-
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         unit='s',
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          unit='s',
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
-        # Create compatibility with new format
-        df['profit_abs'] = df['close_rate'] - df['open_rate']
-    if 'profit_ratio' not in df.columns:
-        df['profit_ratio'] = df['profit_percent']
-    df = df.sort_values("open_date").reset_index(drop=True)
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             unit='s',
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              unit='s',
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
+            # Create compatibility with new format
+            df['profit_abs'] = df['close_rate'] - df['open_rate']
+    if not df.empty:
+        if 'profit_ratio' not in df.columns:
+            df['profit_ratio'] = df['profit_percent']
+        df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
 
@@ -337,7 +339,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :param col_name: Column name that will be assigned the results
     :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
@@ -349,8 +351,8 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to timeframe to make sure trades match candles
     _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
-                                  )[['profit_ratio']].sum()
-    df.loc[:, col_name] = _trades_sum['profit_ratio'].cumsum()
+                                  )[['profit_abs']].sum()
+    df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous

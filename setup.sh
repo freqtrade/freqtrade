@@ -138,7 +138,7 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git
+    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git libpython3-dev
     install_talib
 }
 

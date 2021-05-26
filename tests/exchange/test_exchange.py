@@ -379,7 +379,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert isclose(result, 2 * 1.1)
+    assert isclose(result, 2 * (1+0.05) / (1-abs(stoploss)))
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -391,7 +391,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, 2 * 2 * 1.1)
+    assert isclose(result, 2 * 2 * (1+0.05) / (1-abs(stoploss)))
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -403,7 +403,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(2, 2 * 2) * 1.1)
+    assert isclose(result, max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -415,10 +415,10 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(8, 2 * 2) * 1.1)
+    assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * 1.45)
+    assert isclose(result, max(8, 2 * 2) * 1.5)
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
@@ -440,7 +440,10 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(max(0.0001, 0.001 * 0.020405) * 1.1, 8)
+    assert round(result, 8) == round(
+        max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
+        8
+    )
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -1254,29 +1257,6 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_balance_prod(default_conf, mocker, exchange_name):
-    api_mock = MagicMock()
-    api_mock.fetch_balance = MagicMock(return_value={'BTC': {'free': 123.4, 'total': 123.4}})
-    default_conf['dry_run'] = False
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-
-    assert exchange.get_balance(currency='BTC') == 123.4
-
-    with pytest.raises(OperationalException):
-        api_mock.fetch_balance = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-
-        exchange.get_balance(currency='BTC')
-
-    with pytest.raises(TemporaryError, match=r'.*balance due to malformed exchange response:.*'):
-        exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        mocker.patch('freqtrade.exchange.Exchange.get_balances', MagicMock(return_value={}))
-        mocker.patch('freqtrade.exchange.Kraken.get_balances', MagicMock(return_value={}))
-        exchange.get_balance(currency='BTC')
-
-
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_balances_prod(default_conf, mocker, exchange_name):
     balance_item = {
         'free': 10.0,
@@ -1327,6 +1307,16 @@ def test_get_tickers(default_conf, mocker, exchange_name):
     assert tickers['ETH/BTC']['ask'] == 1
     assert tickers['BCH/BTC']['bid'] == 0.6
     assert tickers['BCH/BTC']['ask'] == 0.5
+    assert api_mock.fetch_tickers.call_count == 1
+
+    api_mock.fetch_tickers.reset_mock()
+
+    # Cached ticker should not call api again
+    tickers2 = exchange.get_tickers(cached=True)
+    assert tickers2 == tickers
+    assert api_mock.fetch_tickers.call_count == 0
+    tickers2 = exchange.get_tickers(cached=False)
+    assert api_mock.fetch_tickers.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "get_tickers", "fetch_tickers")
@@ -1649,6 +1639,9 @@ def test_get_next_limit_in_list():
     # Going over the limit ...
     assert Exchange.get_next_limit_in_list(1001, limit_range) == 1000
     assert Exchange.get_next_limit_in_list(2000, limit_range) == 1000
+    # Without required range
+    assert Exchange.get_next_limit_in_list(2000, limit_range, False) is None
+    assert Exchange.get_next_limit_in_list(15, limit_range, False) == 20
 
     assert Exchange.get_next_limit_in_list(21, None) == 21
     assert Exchange.get_next_limit_in_list(100, None) == 100
@@ -2097,6 +2090,46 @@ def test_cancel_stoploss_order(default_conf, mocker, exchange_name):
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "cancel_stoploss_order", "cancel_order",
                            order_id='_', pair='TKN/BTC')
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
+    default_conf['dry_run'] = False
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order', return_value={'for': 123})
+    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order', return_value={'for': 123})
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                 return_value={'fee': {}, 'status': 'canceled', 'amount': 1234})
+    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
+                 return_value={'fee': {}, 'status': 'canceled', 'amount': 1234})
+    co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
+    assert co == {'fee': {}, 'status': 'canceled', 'amount': 1234}
+
+    mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                 return_value='canceled')
+    mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
+                 return_value='canceled')
+    # Fall back to fetch_stoploss_order
+    co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
+    assert co == {'for': 123}
+
+    mocker.patch('freqtrade.exchange.Exchange.fetch_stoploss_order',
+                 side_effect=InvalidOrderException(""))
+    mocker.patch('freqtrade.exchange.Ftx.fetch_stoploss_order',
+                 side_effect=InvalidOrderException(""))
+
+    co = exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=555)
+    assert co['amount'] == 555
+    assert co == {'fee': {}, 'status': 'canceled', 'amount': 555, 'info': {}}
+
+    with pytest.raises(InvalidOrderException):
+        mocker.patch('freqtrade.exchange.Exchange.cancel_stoploss_order',
+                     side_effect=InvalidOrderException("Did not find order"))
+        mocker.patch('freqtrade.exchange.Ftx.cancel_stoploss_order',
+                     side_effect=InvalidOrderException("Did not find order"))
+        exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+        exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

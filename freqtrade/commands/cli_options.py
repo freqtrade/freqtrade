@@ -330,7 +330,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are space-separated.',
+        help='Limit command to these pairs. Pairs are space-separated.',
         nargs='+',
     ),
     # Download data
@@ -342,6 +342,12 @@ AVAILABLE_CLI_OPTIONS = {
     "days": Arg(
         '--days',
         help='Download data for given number of days.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "new_pairs_days": Arg(
+        '--new-pairs-days',
+        help='Download data of new pairs for given number of days. Default: `%(default)s`.',
         type=check_int_positive,
         metavar='INT',
     ),

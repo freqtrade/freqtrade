@@ -3,7 +3,7 @@ PairList manager class
 """
 import logging
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from cachetools import TTLCache, cached
 
@@ -79,11 +79,8 @@ class PairListManager():
         if self._tickers_needed:
             tickers = self._get_cached_tickers()
 
-        # Adjust whitelist if filters are using tickers
-        pairlist = self._prepare_whitelist(self._whitelist.copy(), tickers)
-
         # Generate the pairlist with first Pairlist Handler in the chain
-        pairlist = self._pairlist_handlers[0].gen_pairlist(self._whitelist, tickers)
+        pairlist = self._pairlist_handlers[0].gen_pairlist(tickers)
 
         # Process all Pairlist Handlers in the chain
         for pairlist_handler in self._pairlist_handlers:
@@ -94,19 +91,6 @@ class PairListManager():
         pairlist = self.verify_blacklist(pairlist, logger.warning)
 
         self._whitelist = pairlist
-
-    def _prepare_whitelist(self, pairlist: List[str], tickers: Dict[str, Any]) -> List[str]:
-        """
-        Prepare sanitized pairlist for Pairlist Handlers that use tickers data - remove
-        pairs that do not have ticker available
-        """
-        if self._tickers_needed:
-            # Copy list since we're modifying this list
-            for p in deepcopy(pairlist):
-                if p not in tickers:
-                    pairlist.remove(p)
-
-        return pairlist
 
     def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """

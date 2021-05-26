@@ -113,7 +113,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     pct_missing = (len_after - len_before) / len_before if len_before > 0 else 0
     if len_before != len_after:
         message = (f"Missing data fillup for {pair}: before: {len_before} - after: {len_after}"
-                   f" - {round(pct_missing * 100, 2)} %")
+                   f" - {round(pct_missing * 100, 2)}%")
         if pct_missing > 0.01:
             logger.info(message)
         else:
@@ -143,6 +143,27 @@ def trim_dataframe(df: DataFrame, timerange, df_date_col: str = 'date',
         stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
         df = df.loc[df[df_date_col] <= stop, :]
     return df
+
+
+def trim_dataframes(preprocessed: Dict[str, DataFrame], timerange,
+                    startup_candles: int) -> Dict[str, DataFrame]:
+    """
+    Trim startup period from analyzed dataframes
+    :param preprocessed: Dict of pair: dataframe
+    :param timerange: timerange (use start and end date if available)
+    :param startup_candles: Startup-candles that should be removed
+    :return: Dict of trimmed dataframes
+    """
+    processed: Dict[str, DataFrame] = {}
+
+    for pair, df in preprocessed.items():
+        trimed_df = trim_dataframe(df, timerange, startup_candles=startup_candles)
+        if not trimed_df.empty:
+            processed[pair] = trimed_df
+        else:
+            logger.warning(f'{pair} has no data left after adjusting for startup candles, '
+                           f'skipping.')
+    return processed
 
 
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:

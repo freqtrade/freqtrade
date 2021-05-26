@@ -83,7 +83,7 @@ class RangeStabilityFilter(IPairList):
         """
         Validate trading range
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache

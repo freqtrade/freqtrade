@@ -215,8 +215,10 @@ Let's say the stake currency is **ETH** and there is $10$ **ETH** on the wallet.
 usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                       [--userdir PATH] [-s NAME] [--strategy-path PATH]
                       [-i TIMEFRAME] [--timerange TIMERANGE]
+                      [--data-format-ohlcv {json,jsongz,hdf5}]
                       [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
-                      [--fee FLOAT] [--stoplosses STOPLOSS_RANGE]
+                      [--fee FLOAT] [-p PAIRS [PAIRS ...]]
+                      [--stoplosses STOPLOSS_RANGE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -224,6 +226,9 @@ optional arguments:
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --timerange TIMERANGE
                         Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -232,6 +237,9 @@ optional arguments:
                         setting.
   --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
                         entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
   --stoplosses STOPLOSS_RANGE
                         Defines a range of stoploss values against which edge
                         will assess the strategy. The format is "min,max,step"

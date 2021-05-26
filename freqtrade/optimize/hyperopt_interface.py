@@ -7,11 +7,12 @@ import math
 from abc import ABC
 from typing import Any, Callable, Dict, List
 
-from skopt.space import Categorical, Dimension, Integer, Real
+from skopt.space import Categorical, Dimension, Integer
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
+from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy import IStrategy
 
 
@@ -139,7 +140,7 @@ class IHyperOpt(ABC):
             'roi_p2': roi_limits['roi_p2_min'],
             'roi_p3': roi_limits['roi_p3_min'],
         }
-        logger.info(f"Min roi table: {round_dict(self.generate_roi_table(p), 5)}")
+        logger.info(f"Min roi table: {round_dict(self.generate_roi_table(p), 3)}")
         p = {
             'roi_t1': roi_limits['roi_t1_max'],
             'roi_t2': roi_limits['roi_t2_max'],
@@ -148,15 +149,18 @@ class IHyperOpt(ABC):
             'roi_p2': roi_limits['roi_p2_max'],
             'roi_p3': roi_limits['roi_p3_max'],
         }
-        logger.info(f"Max roi table: {round_dict(self.generate_roi_table(p), 5)}")
+        logger.info(f"Max roi table: {round_dict(self.generate_roi_table(p), 3)}")
 
         return [
             Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1'),
             Integer(roi_limits['roi_t2_min'], roi_limits['roi_t2_max'], name='roi_t2'),
             Integer(roi_limits['roi_t3_min'], roi_limits['roi_t3_max'], name='roi_t3'),
-            Real(roi_limits['roi_p1_min'], roi_limits['roi_p1_max'], name='roi_p1'),
-            Real(roi_limits['roi_p2_min'], roi_limits['roi_p2_max'], name='roi_p2'),
-            Real(roi_limits['roi_p3_min'], roi_limits['roi_p3_max'], name='roi_p3'),
+            SKDecimal(roi_limits['roi_p1_min'], roi_limits['roi_p1_max'], decimals=3,
+                      name='roi_p1'),
+            SKDecimal(roi_limits['roi_p2_min'], roi_limits['roi_p2_max'], decimals=3,
+                      name='roi_p2'),
+            SKDecimal(roi_limits['roi_p3_min'], roi_limits['roi_p3_max'], decimals=3,
+                      name='roi_p3'),
         ]
 
     def stoploss_space(self) -> List[Dimension]:
@@ -167,7 +171,7 @@ class IHyperOpt(ABC):
         You may override it in your custom Hyperopt class.
         """
         return [
-            Real(-0.35, -0.02, name='stoploss'),
+            SKDecimal(-0.35, -0.02, decimals=3, name='stoploss'),
         ]
 
     def generate_trailing_params(self, params: Dict) -> Dict:
@@ -197,14 +201,14 @@ class IHyperOpt(ABC):
             # other 'trailing' hyperspace parameters.
             Categorical([True], name='trailing_stop'),
 
-            Real(0.01, 0.35, name='trailing_stop_positive'),
+            SKDecimal(0.01, 0.35, decimals=3, name='trailing_stop_positive'),
 
             # 'trailing_stop_positive_offset' should be greater than 'trailing_stop_positive',
             # so this intermediate parameter is used as the value of the difference between
             # them. The value of the 'trailing_stop_positive_offset' is constructed in the
             # generate_trailing_params() method.
             # This is similar to the hyperspace dimensions used for constructing the ROI tables.
-            Real(0.001, 0.1, name='trailing_stop_positive_offset_p1'),
+            SKDecimal(0.001, 0.1, decimals=3, name='trailing_stop_positive_offset_p1'),
 
             Categorical([True, False], name='trailing_only_offset_is_reached'),
         ]
