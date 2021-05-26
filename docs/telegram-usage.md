@@ -81,14 +81,14 @@ Example configuration showing the different settings:
          "startup": "off",
          "buy": "silent",
          "sell": {
-           "roi": "off",
-           "emergency_sell": "off",
-           "force_sell": "off",
-           "sell_signal": "off",
-           "trailing_stop_loss": "off",
-           "stop_loss": "off",
-           "stoploss_on_exchange": "off",
-           "custom_sell": "off"
+             "roi": "off",
+             "emergency_sell": "off",
+             "force_sell": "off",
+             "sell_signal": "off",
+             "trailing_stop_loss": "off",
+             "stop_loss": "off",
+             "stoploss_on_exchange": "off",
+             "custom_sell": "off"
          },
          "buy_cancel": "silent",
          "sell_cancel": "on",
