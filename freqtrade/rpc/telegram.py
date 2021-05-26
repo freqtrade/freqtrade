@@ -364,7 +364,7 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
-    def _status_table(self, *_) -> None:
+    def _status_table(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /status table.
         Returns the current TradeThread status in table format
