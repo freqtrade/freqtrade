@@ -6,6 +6,7 @@ on:
       - master
       - stable
       - develop
+      - test_multiarch
     tags:
   release:
     types: [published]
@@ -402,7 +403,7 @@ jobs:
     - name: Build Raspberry docker image
       env:
         IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_pi.sh
 
