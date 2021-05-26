@@ -235,17 +235,17 @@ class Telegram(RPCHandler):
 
         default_noti = 'on'
 
-        msg_type = str(msg['type'])
+        msg_type = msg['type']
         noti = ''
         if msg_type == RPCMessageType.SELL:
-          sell_noti = self._config['telegram'].get('notification_settings', {}).get(msg_type, {})
+          sell_noti = self._config['telegram'].get('notification_settings', {}).get(str(msg_type), {})
           # For backward compatibility sell still be string
           if isinstance(noti, str):
             noti = sell_noti
           else:
             noti = sell_noti.get(str(msg['sell_reason']), default_noti)
         else:
-          noti = self._config['telegram'].get('notification_settings', {}).get(msg_type, default_noti)
+          noti = self._config['telegram'].get('notification_settings', {}).get(str(msg_type), default_noti)
 
         if noti == 'off':
             logger.info(f"Notification '{msg_type}' not sent.")
@@ -364,7 +364,7 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
-    def _status_table(self, update: Update, context: CallbackContext) -> None:
+    def _status_table(self, *_) -> None:
         """
         Handler for /status table.
         Returns the current TradeThread status in table format
