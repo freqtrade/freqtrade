@@ -238,14 +238,16 @@ class Telegram(RPCHandler):
         msg_type = msg['type']
         noti = ''
         if msg_type == RPCMessageType.SELL:
-            sell_noti = self._config['telegram'].get('notification_settings', {}).get(str(msg_type), {})
+            sell_noti = self._config['telegram'] \
+              .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still be string
             if isinstance(noti, str):
                 noti = sell_noti
             else:
                 noti = sell_noti.get(str(msg['sell_reason']), default_noti)
         else:
-            noti = self._config['telegram'].get('notification_settings', {}).get(str(msg_type), default_noti)
+            noti = self._config['telegram'] \
+              .get('notification_settings', {}).get(str(msg_type), default_noti)
 
         if noti == 'off':
             logger.info(f"Notification '{msg_type}' not sent.")
