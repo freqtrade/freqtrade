@@ -3,7 +3,9 @@
 # The below assumes a correctly setup docker buildx environment
 
 # Replace / with _ to create a valid tag
-TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+TAG_ORIG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+TAG="${TAG_ORIG}_pi"
+
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
 CACHE_TAG=freqtradeorg/freqtrade_cache:${TAG}_cache
@@ -29,6 +31,13 @@ else
         --platform ${PI_PLATFORM} \
         -t ${IMAGE_NAME}:${TAG} --push .
 fi
+
+docker images
+
+docker manifest create freqtradeorg/freqtrade:${TAG}_multi ${IMAGE_NAME}:${TAG_ORIG} ${IMAGE_NAME}:${TAG}
+docker manifest push freqtradeorg/freqtrade:${TAG}_multi
+
+docker images
 
 if [ $? -ne 0 ]; then
     echo "failed building image"
