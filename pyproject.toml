@@ -1,0 +1,27 @@
+[tool.black]
+line-length = 100
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  # Exclude vendor directory
+  | vendor
+)
+'''
+
+[tool.isort]
+line_length = 100
+
+[build-system]
+requires = ["setuptools >= 46.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
