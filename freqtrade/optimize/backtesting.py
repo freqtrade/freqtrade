@@ -224,6 +224,13 @@ class Backtesting:
                 # sell at open price.
                 return sell_row[OPEN_IDX]
 
+            if sell.sell_type == SellType.TRAILING_STOP_LOSS:
+                # trailing stop could potentially occur at any price between
+                # trade.stop_loss and candle low, so use the mid point
+                # to prevent extremely optimistic results with tight stops
+                stop_price = (trade.stop_loss + sell_row[LOW_IDX]) / 2
+                return stop_price
+
             # Set close_rate to stoploss
             return trade.stop_loss
         elif sell.sell_type == (SellType.ROI):
