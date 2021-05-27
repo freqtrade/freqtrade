@@ -261,7 +261,7 @@ CONF_SCHEMA = {
                                      'default': 'off'
                                      },
                         'sell': {
-                            'type': 'object',
+                            'type': ['string', 'object'],
                             'additionalProperties': {
                                 'type': 'string',
                                 'enum': TELEGRAM_SETTING_OPTIONS
