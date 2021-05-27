@@ -72,22 +72,31 @@ Example configuration showing the different settings:
 
 ``` json
 "telegram": {
-      "enabled": true,
-      "token": "your_telegram_token",
-      "chat_id": "your_telegram_chat_id",
-      "notification_settings": {
-         "status": "silent",
-         "warning": "on",
-         "startup": "off",
-         "buy": "silent",
-         "sell": "on",
-         "buy_cancel": "silent",
-         "sell_cancel": "on",
-         "buy_fill": "off",
-         "sell_fill": "off"
-      },
-      "balance_dust_level": 0.01
-   },
+    "enabled": true,
+    "token": "your_telegram_token",
+    "chat_id": "your_telegram_chat_id",
+    "notification_settings": {
+        "status": "silent",
+        "warning": "on",
+        "startup": "off",
+        "buy": "silent",
+        "sell": {
+            "roi": "silent",
+            "emergency_sell": "on",
+            "force_sell": "on",
+            "sell_signal": "silent",
+            "trailing_stop_loss": "on",
+            "stop_loss": "on",
+            "stoploss_on_exchange": "on",
+            "custom_sell": "silent"
+        },
+        "buy_cancel": "silent",
+        "sell_cancel": "on",
+        "buy_fill": "off",
+        "sell_fill": "off"
+    },
+    "balance_dust_level": 0.01
+},
 ```
 
 `buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.

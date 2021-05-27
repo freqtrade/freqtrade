@@ -260,7 +260,13 @@ CONF_SCHEMA = {
                                      'enum': TELEGRAM_SETTING_OPTIONS,
                                      'default': 'off'
                                      },
-                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell': {
+                            'type': 'object',
+                            'additionalProperties': {
+                                'type': 'string',
+                                'enum': TELEGRAM_SETTING_OPTIONS
+                            }
+                        },
                         'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'sell_fill': {
                             'type': 'string',
