@@ -376,10 +376,11 @@ class HyperoptTools():
         trials['Avg profit'] = trials['Avg profit'].apply(
             lambda x: f'{x * perc_multi:,.2f}%' if not isna(x) else ""
         )
-        trials['Avg duration'] = trials['Avg duration'].apply(
-            lambda x: f'{x:,.1f} m' if isinstance(
-                x, float) else f"{x.total_seconds() // 60:,.1f} m" if not isna(x) else ""
-        )
+        if perc_multi == 1:
+            trials['Avg duration'] = trials['Avg duration'].apply(
+                lambda x: f'{x:,.1f} m' if isinstance(
+                    x, float) else f"{x.total_seconds() // 60:,.1f} m" if not isna(x) else ""
+            )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: f'{x:,.5f}' if x != 100000 else ""
         )
