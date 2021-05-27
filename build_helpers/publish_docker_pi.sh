@@ -7,7 +7,7 @@ TAG_ORIG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
 TAG="${TAG_ORIG}_pi"
 
 PI_PLATFORM="linux/arm/v7"
-echo "Running for ${TAG_ORIG}"
+echo "Running for ${TAG}"
 CACHE_TAG=freqtradeorg/freqtrade_cache:${TAG}_cache
 
 # Add commit and commit_message to docker container
@@ -33,6 +33,10 @@ else
 fi
 
 docker images
+
+# Create multiarch image
+# Make sure that all images contained here are pushed to github first.
+# Otherwise installation might fail.
 
 docker manifest create freqtradeorg/freqtrade:${TAG_ORIG} ${IMAGE_NAME}:${TAG_ORIG} ${IMAGE_NAME}:${TAG}
 docker manifest push freqtradeorg/freqtrade:${TAG_ORIG}

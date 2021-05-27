@@ -11,7 +11,7 @@ ENV FT_APP_ENV="docker"
 # Prepare environment
 RUN mkdir /freqtrade \
   && apt-get update \
-  && apt-get -y install libatlas3-base curl sqlite3 libhdf5-serial-dev sudo \
+  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-serial-dev  \
   && apt-get clean \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
@@ -22,7 +22,8 @@ WORKDIR /freqtrade
 
 # Install dependencies
 FROM base as python-deps
-RUN  apt-get -y install build-essential libssl-dev libffi-dev libgfortran5 \
+RUN  apt-get update \
+  && apt-get -y install build-essential libssl-dev libffi-dev libgfortran5 \
   && apt-get clean \
   && pip install --upgrade pip \
   && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
