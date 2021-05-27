@@ -433,7 +433,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration']  in ('0:00:00', '0:00:01')
+    assert stats['avg_duration'] in ('0:00:00', '0:00:01')
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
     assert isnan(stats['profit_all_coin'])
