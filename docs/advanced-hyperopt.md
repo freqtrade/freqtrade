@@ -289,7 +289,7 @@ Given the following result from hyperopt:
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
 Buy hyperspace params:
 {    'adx-value': 44,
