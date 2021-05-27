@@ -569,7 +569,7 @@ class RPC:
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
                     _exec_forcesell(trade)
-                Trade.query.session.flush()
+                Trade.commit()
                 self._freqtrade.wallets.update()
                 return {'result': 'Created sell orders for all open trades.'}
 
@@ -582,7 +582,7 @@ class RPC:
                 raise RPCException('invalid argument')
 
             _exec_forcesell(trade)
-            Trade.query.session.flush()
+            Trade.commit()
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
@@ -615,6 +615,7 @@ class RPC:
 
         # execute buy
         if self._freqtrade.execute_buy(pair, stakeamount, price, forcebuy=True):
+            Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
         else:
@@ -705,8 +706,7 @@ class RPC:
             lock.active = False
             lock.lock_end_time = datetime.now(timezone.utc)
 
-        # session is always the same
-        PairLock.query.session.flush()
+        PairLock.query.session.commit()
 
         return self._rpc_locks()
 
