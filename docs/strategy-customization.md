@@ -159,7 +159,7 @@ Edit the method `populate_buy_trend()` in your strategy file to update your buy 
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This will method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
+This method will also define a new column, `"buy"`, which needs to contain 1 for buys, and 0 for "no action".
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
@@ -193,7 +193,7 @@ Please note that the sell-signal is only used if `use_sell_signal` is set to tru
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 
-This will method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
+This method will also define a new column, `"sell"`, which needs to contain 1 for sells, and 0 for "no action".
 
 Sample from `user_data/strategies/sample_strategy.py`:
 
@@ -422,10 +422,6 @@ if self.dp:
     Returns an empty dataframe if the requested pair was not cached.
     This should not happen when using whitelisted pairs.
 
-
-!!! Warning "Warning about backtesting"
-    This method will return an empty dataframe during backtesting.
-
 ### *orderbook(pair, maximum)*
 
 ``` python
@@ -631,8 +627,7 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
         use_custom_stoploss = True
 
         def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                            current_rate: float, current_profit: float, dataframe: DataFrame,
-                            **kwargs) -> float:
+                            current_rate: float, current_profit: float, **kwargs) -> float:
 
             # once the profit has risen above 10%, keep the stoploss at 7% above the open price
             if current_profit > 0.10:

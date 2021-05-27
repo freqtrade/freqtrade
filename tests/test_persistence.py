@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -619,6 +619,63 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.close_profit_abs is None
 
     assert log_has("Moving open orders to Orders table.", caplog)
+    orders = Order.query.all()
+    assert len(orders) == 2
+    assert orders[0].order_id == 'buy_order'
+    assert orders[0].ft_order_side == 'buy'
+
+    assert orders[1].order_id == 'stop_order_id222'
+    assert orders[1].ft_order_side == 'stoploss'
+
+    caplog.clear()
+    # Drop latest column
+    engine.execute("alter table orders rename to orders_bak")
+    inspector = inspect(engine)
+
+    for index in inspector.get_indexes('orders_bak'):
+        engine.execute(f"drop index {index['name']}")
+    # Recreate table
+    engine.execute("""
+        CREATE TABLE orders (
+            id INTEGER NOT NULL,
+            ft_trade_id INTEGER,
+            ft_order_side VARCHAR NOT NULL,
+            ft_pair VARCHAR NOT NULL,
+            ft_is_open BOOLEAN NOT NULL,
+            order_id VARCHAR NOT NULL,
+            status VARCHAR,
+            symbol VARCHAR,
+            order_type VARCHAR,
+            side VARCHAR,
+            price FLOAT,
+            amount FLOAT,
+            filled FLOAT,
+            remaining FLOAT,
+            cost FLOAT,
+            order_date DATETIME,
+            order_filled_date DATETIME,
+            order_update_date DATETIME,
+            PRIMARY KEY (id),
+            CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
+            FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
+        )
+        """)
+
+    engine.execute("""
+    insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+        symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
+        order_filled_date, order_update_date)
+        select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+        symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
+        order_filled_date, order_update_date
+        from orders_bak
+    """)
+
+    # Run init to test migration
+    init_db(default_conf['db_url'], default_conf['dry_run'])
+
+    assert log_has("trying orders_bak1", caplog)
+
     orders = Order.query.all()
     assert len(orders) == 2
     assert orders[0].order_id == 'buy_order'

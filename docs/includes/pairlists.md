@@ -112,6 +112,7 @@ The `PriceFilter` allows filtering of pairs by price. Currently the following pr
 
 * `min_price`
 * `max_price`
+* `max_value`
 * `low_price_ratio`
 
 The `min_price` setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
@@ -119,6 +120,11 @@ This option is disabled by default, and will only apply if set to > 0.
 
 The `max_price` setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
 This option is disabled by default, and will only apply if set to > 0.
+
+The `max_value` setting removes pairs where the minimum value change is above a specified value.
+This is useful when an exchange has unbalanced limits. For example, if step-size = 1 (so you can only buy 1, or 2, or 3, but not 1.1 Coins) - and the price is pretty high (like 20$) as the coin has risen sharply since the last limit adaption.
+As a result of the above, you can only buy for 20$, or 40$ - but not for 25$.
+On exchanges that deduct fees from the receiving currency (e.g. FTX) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.
 
 The `low_price_ratio` setting removes pairs where a raise of 1 price unit (pip) is above the `low_price_ratio` ratio.
 This option is disabled by default, and will only apply if set to > 0.
@@ -193,7 +199,7 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
 
 ### Full example of Pairlist Handlers
 
-The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#price-filter), filtering all assets where 1 price unit is > 1%. Then the [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) is applied and pairs are finally shuffled with the random seed set to some predefined value.
+The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, sorting pairs by `quoteVolume` and applies [`PrecisionFilter`](#precisionfilter) and [`PriceFilter`](#pricefilter), filtering all assets where 1 price unit is > 1%. Then the [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) is applied and pairs are finally shuffled with the random seed set to some predefined value.
 
 ```json
 "exchange": {
@@ -204,7 +210,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
     {
         "method": "VolumePairList",
         "number_assets": 20,
-        "sort_key": "quoteVolume",
+        "sort_key": "quoteVolume"
     },
     {"method": "AgeFilter", "min_days_listed": 10},
     {"method": "PrecisionFilter"},

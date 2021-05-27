@@ -48,6 +48,8 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
     # Download the docker-compose file from the repository
     curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
 
+    # Edit the compose file to use an image named `*_pi` (stable_pi or develop_pi)
+
     # Pull the freqtrade image
     docker-compose pull
 
@@ -63,6 +65,40 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
         ``` yml
         image: freqtradeorg/freqtrade:stable_pi
         # image: freqtradeorg/freqtrade:develop_pi
+        ```
+
+=== "ARM 64 Systenms (Mac M1, Raspberry Pi 4, Jetson Nano)"
+    In case of a Mac M1, make sure that your docker installation is running in native mode
+    Arm64 images are not yet provided via Docker Hub and need to be build locally first.
+    Depending on the device, this may take a few minutes (Apple M1) or multiple hours (Raspberry Pi)
+
+    ``` bash
+    # Clone Freqtrade repository
+    git clone  https://github.com/freqtrade/freqtrade.git
+    cd freqtrade
+    # Optionally switch to the stable version
+    git checkout stable   
+
+    # Modify your docker-compose file to enable building and change the image name 
+    # (see the Note Box below for necessary changes)
+
+    # Build image
+    docker-compose build
+    
+    # Create user directory structure
+    docker-compose run --rm freqtrade create-userdir --userdir user_data
+
+    # Create configuration - Requires answering interactive questions
+    docker-compose run --rm freqtrade new-config --config user_data/config.json
+    ```
+
+    !!! Note "Change your docker Image"
+        You have to change the docker image in the docker-compose file for your arm64 build to work properly.
+        ``` yml
+        image: freqtradeorg/freqtrade:custom_arm64
+        build:
+          context: .
+          dockerfile: "./docker/Dockerfile.aarch64"
         ```
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.

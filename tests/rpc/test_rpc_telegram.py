@@ -4,6 +4,7 @@
 
 import re
 from datetime import datetime
+from functools import reduce
 from random import choice, randint
 from string import ascii_uppercase
 from unittest.mock import ANY, MagicMock
@@ -52,6 +53,14 @@ class DummyCls(Telegram):
         Fake method that throw an exception
         """
         raise Exception('test')
+
+
+def get_telegram_testobject_with_inline(mocker, default_conf, mock=True, ftbot=None):
+    inline_msg_mock = MagicMock()
+    telegram, ftbot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    mocker.patch('freqtrade.rpc.telegram.Telegram._send_inline_msg', inline_msg_mock)
+
+    return telegram, ftbot, msg_mock, inline_msg_mock
 
 
 def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
@@ -902,6 +911,33 @@ def test_forcebuy_handle_exception(default_conf, update, mocker) -> None:
     assert msg_mock.call_args_list[0][0][0] == 'Forcebuy not enabled.'
 
 
+def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
+    mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
+
+    fbuy_mock = MagicMock(return_value=None)
+    mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
+
+    telegram, freqtradebot, _, inline_msg_mock = get_telegram_testobject_with_inline(mocker,
+                                                                                     default_conf)
+    patch_get_signal(freqtradebot, (True, False))
+
+    context = MagicMock()
+    context.args = []
+    telegram._forcebuy(update=update, context=context)
+
+    assert fbuy_mock.call_count == 0
+    assert inline_msg_mock.call_count == 1
+    assert inline_msg_mock.call_args_list[0][0][0] == 'Which pair?'
+    assert inline_msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
+    keyboard = inline_msg_mock.call_args_list[0][1]['keyboard']
+    assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
+    update = MagicMock()
+    update.callback_query = MagicMock()
+    update.callback_query.data = 'XRP/USDT'
+    telegram._forcebuy_inline(update, None)
+    assert fbuy_mock.call_count == 1
+
+
 def test_performance_handle(default_conf, update, ticker, fee,
                             limit_buy_order, limit_sell_order, mocker) -> None:
 
@@ -929,7 +965,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     telegram._performance(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
-    assert '<code>ETH/BTC\t6.20% (1)</code>' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -969,6 +1005,11 @@ def test_telegram_lock_handle(default_conf, update, ticker, fee, mocker) -> None
     )
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot, (True, False))
+    telegram._locks(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'No active locks.' in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
 
     PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=4).datetime, 'randreason')
     PairLocks.lock_pair('XRP/BTC', arrow.utcnow().shift(minutes=20).datetime, 'deadbeef')
@@ -1101,6 +1142,15 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert '<b>Edge only validated following pairs:</b>\n<pre>' in msg_mock.call_args_list[0][0][0]
     assert 'Pair      Winrate    Expectancy    Stoploss' in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+
+    mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
+        return_value={}))
+    telegram._edge(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '<b>Edge only validated following pairs:</b>' in msg_mock.call_args_list[0][0][0]
+    assert 'Winrate' not in msg_mock.call_args_list[0][0][0]
 
 
 def test_telegram_trades(mocker, update, default_conf, fee):

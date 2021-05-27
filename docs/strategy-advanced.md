@@ -40,31 +40,71 @@ class AwesomeStrategy(IStrategy):
 !!! Note
     If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.
 
+## Dataframe access
+
+You may access dataframe in various strategy functions by querying it from dataprovider.
+
+``` python
+from freqtrade.exchange import timeframe_to_prev_date
+
+class AwesomeStrategy(IStrategy):
+    def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: 'datetime', **kwargs) -> bool:
+        # Obtain pair dataframe.
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+
+        # Obtain last available candle. Do not use current_time to look up latest candle, because 
+        # current_time points to curret incomplete candle whose data is not available.
+        last_candle = dataframe.iloc[-1].squeeze()
+        # <...>
+
+        # In dry/live runs trade open date will not match candle open date therefore it must be 
+        # rounded.
+        trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+        # Look up trade candle.
+        trade_candle = dataframe.loc[dataframe['date'] == trade_date]
+        # trade_candle may be empty for trades that just opened as it is still incomplete.
+        if not trade_candle.empty:
+            trade_candle = trade_candle.squeeze()
+            # <...>
+```
+
+!!! Warning "Using .iloc[-1]"
+    You can use `.iloc[-1]` here because `get_analyzed_dataframe()` only returns candles that backtesting is allowed to see.
+    This will not work in `populate_*` methods, so make sure to not use `.iloc[]` in that area.
+    Also, this will only work starting with version 2021.5.
+
 ***
 
 ## Custom sell signal
 
-It is possible to define custom sell signals. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision.
+It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. 
+
+For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
+
+Using custom_sell() signals in place of stoplosses though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+
+!!! Note
+    Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
 
 An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
 
 ``` python
-from freqtrade.strategy import IStrategy, timeframe_to_prev_date
-
 class AwesomeStrategy(IStrategy):
     def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                    current_profit: float, dataframe: DataFrame, **kwargs):
-        trade_open_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
-        trade_row = dataframe.loc[dataframe['date'] == trade_open_date].squeeze()
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
 
         # Above 20% profit, sell when rsi < 80
         if current_profit > 0.2:
-            if trade_row['rsi'] < 80:
+            if last_candle['rsi'] < 80:
                 return 'rsi_below_80'
 
         # Between 2% and 10%, sell if EMA-long above EMA-short
         if 0.02 < current_profit < 0.1:
-            if trade_row['emalong'] > trade_row['emashort']:
+            if last_candle['emalong'] > last_candle['emashort']:
                 return 'ema_long_below_80'
 
         # Sell any positions at a loss if they are held for more than one day.
@@ -72,7 +112,7 @@ class AwesomeStrategy(IStrategy):
             return 'unclog'
 ```
 
-See [Custom stoploss using an indicator from dataframe example](#custom-stoploss-using-an-indicator-from-dataframe-example) for explanation on how to use `dataframe` parameter.
+See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ## Custom stoploss
 
@@ -98,8 +138,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -149,8 +188,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
         if current_time - timedelta(minutes=120) > trade.open_date_utc:
@@ -176,8 +214,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         if pair in ('ETH/BTC', 'XRP/BTC'):
             return -0.10
@@ -203,8 +240,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit < 0.04:
             return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
@@ -243,8 +279,7 @@ class AwesomeStrategy(IStrategy):
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
         # evaluate highest to lowest, so that highest possible stop is used
         if current_profit > 0.40:
@@ -260,51 +295,35 @@ class AwesomeStrategy(IStrategy):
 
 #### Custom stoploss using an indicator from dataframe example
 
-Imagine you want to use `custom_stoploss()` to use a trailing indicator like e.g. "ATR"
-
-!!! Warning
-    Only use `dataframe` values up until and including `current_time` value. Reading past
-    `current_time` you will look into the future, which will produce incorrect backtesting results
-    and throw an exception in dry/live runs.
-    see [Common mistakes when developing strategies](strategy-customization.md#common-mistakes-when-developing-strategies) for more info.
-
-!!! Note
-    `dataframe['date']` contains the candle's open date. During dry/live runs `current_time` and
-    `trade.open_date_utc` will not match the candle date precisely and using them directly will throw
-    an error. Use `date = timeframe_to_prev_date(self.timeframe, date)` to round a date to the candle's open date
-    before using it to access `dataframe`.
+Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.
 
 ``` python
-from freqtrade.exchange import timeframe_to_prev_date
-from freqtrade.persistence import Trade
-from freqtrade.state import RunMode
-
 class AwesomeStrategy(IStrategy):
 
-    # ... populate_* methods
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # <...>
+        dataframe['sar'] = ta.SAR(dataframe)
 
     use_custom_stoploss = True
 
     def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
-                        current_rate: float, current_profit: float, dataframe: DataFrame,
-                        **kwargs) -> float:
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
-        # Default return value
-        result = 1
-        if trade:
-            # Using current_time directly would only work in backtesting. Live/dry runs need time to
-            # be rounded to previous candle to be used as dataframe index. Rounding must also be 
-            # applied to `trade.open_date(_utc)` if it is used for `dataframe` indexing.
-            current_time = timeframe_to_prev_date(self.timeframe, current_time)
-            current_row = dataframe.loc[dataframe['date'] == current_time].squeeze()
-            if 'atr' in current_row:
-                # new stoploss relative to current_rate
-                new_stoploss = (current_rate - current_row['atr']) / current_rate
-                # turn into relative negative offset required by `custom_stoploss` return implementation
-                result = new_stoploss - 1
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
 
-        return result
+        # Use parabolic sar as absolute stoploss price
+        stoploss_price = last_candle['sar']
+
+        # Convert absolute price to percentage relative to current_rate
+        if stoploss_price < current_rate:
+            return (stoploss_price / current_rate) - 1
+
+        # return maximum stoploss value, keeping current stoploss price unchanged
+        return 1
 ```
+
+See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ---
 
@@ -312,7 +331,7 @@ class AwesomeStrategy(IStrategy):
 
 Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
-However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if a order did time out or not.
+However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.
 
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
@@ -538,7 +557,7 @@ Both attributes and methods may be overridden, altering behavior of the original
 
 ## Embedding Strategies
 
-Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
+Freqtrade provides you with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 

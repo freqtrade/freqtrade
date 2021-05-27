@@ -156,33 +156,35 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
 
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
     else:
         # old format - only with lists.
         df = pd.DataFrame(data, columns=BT_DATA_COLUMNS_OLD)
-
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         unit='s',
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          unit='s',
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
-        # Create compatibility with new format
-        df['profit_abs'] = df['close_rate'] - df['open_rate']
-    if 'profit_ratio' not in df.columns:
-        df['profit_ratio'] = df['profit_percent']
-    df = df.sort_values("open_date").reset_index(drop=True)
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             unit='s',
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              unit='s',
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
+            # Create compatibility with new format
+            df['profit_abs'] = df['close_rate'] - df['open_rate']
+    if not df.empty:
+        if 'profit_ratio' not in df.columns:
+            df['profit_ratio'] = df['profit_percent']
+        df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
 

@@ -71,7 +71,10 @@ If you run your bot using docker, you'll need to have the bot listen to incoming
     "api_server": {
         "enabled": true,
         "listen_ip_address": "0.0.0.0",
-        "listen_port": 8080
+        "listen_port": 8080,
+        "username": "Freqtrader",
+        "password": "SuperSecret1!",
+        //...
     },
 ```
 
@@ -106,7 +109,10 @@ By default, the script assumes `127.0.0.1` (localhost) and port `8080` to be use
     "api_server": {
         "enabled": true,
         "listen_ip_address": "0.0.0.0",
-        "listen_port": 8080
+        "listen_port": 8080,
+        "username": "Freqtrader",
+        "password": "SuperSecret1!",
+        //...
     }
 }
 ```

@@ -60,7 +60,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     sudo apt-get update
 
     # install packages
-    sudo apt install -y python3-pip python3-venv python3-pandas python3-pip git
+    sudo apt install -y python3-pip python3-venv python3-pandas git
     ```
 
 === "RaspberryPi/Raspbian"
@@ -269,7 +269,7 @@ git clone https://github.com/freqtrade/freqtrade.git
 cd freqtrade      
 ```
 
-#### Freqtrade instal: Conda Environment
+#### Freqtrade install: Conda Environment
 
 Prepare conda-freqtrade environment, using file `environment.yml`, which exist in main freqtrade directory
 

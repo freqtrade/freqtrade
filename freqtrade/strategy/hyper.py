@@ -5,7 +5,9 @@ This module defines a base class for auto-hyperoptable strategies.
 import logging
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+
+from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
 
 with suppress(ImportError):
@@ -26,7 +28,8 @@ class BaseParameter(ABC):
     category: Optional[str]
     default: Any
     value: Any
-    hyperopt: bool = False
+    in_space: bool = False
+    name: str
 
     def __init__(self, *, default: Any, space: Optional[str] = None,
                  optimize: bool = True, load: bool = True, **kwargs):
@@ -131,7 +134,7 @@ class IntParameter(NumericParameter):
         Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
         calculating 100ds of indicators.
         """
-        if self.hyperopt:
+        if self.in_space and self.optimize:
             # Scikit-optimize ranges are "inclusive", while python's "range" is exclusive
             return range(self.low, self.high + 1)
         else:
@@ -247,6 +250,10 @@ class HyperStrategyMixin(object):
         """
         Initialize hyperoptable strategy mixin.
         """
+        self.config = config
+        self.ft_buy_params: List[BaseParameter] = []
+        self.ft_sell_params: List[BaseParameter] = []
+
         self._load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
@@ -257,15 +264,26 @@ class HyperStrategyMixin(object):
         """
         if category not in ('buy', 'sell', None):
             raise OperationalException('Category must be one of: "buy", "sell", None.')
+
+        if category is None:
+            params = self.ft_buy_params + self.ft_sell_params
+        else:
+            params = getattr(self, f"ft_{category}_params")
+
+        for par in params:
+            yield par.name, par
+
+    def _detect_parameters(self, category: str) -> Iterator[Tuple[str, BaseParameter]]:
+        """ Detect all parameters for 'category' """
         for attr_name in dir(self):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
                 attr = getattr(self, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
-                    if (category and attr_name.startswith(category + '_')
+                    if (attr_name.startswith(category + '_')
                             and attr.category is not None and attr.category != category):
                         raise OperationalException(
                             f'Inconclusive parameter name {attr_name}, category: {attr.category}.')
-                    if (category is None or category == attr.category or
+                    if (category == attr.category or
                             (attr_name.startswith(category + '_') and attr.category is None)):
                         yield attr_name, attr
 
@@ -283,9 +301,16 @@ class HyperStrategyMixin(object):
         """
         if not params:
             logger.info(f"No params for {space} found, using default values.")
+        param_container: List[BaseParameter] = getattr(self, f"ft_{space}_params")
 
-        for attr_name, attr in self.enumerate_parameters():
-            attr.hyperopt = hyperopt
+        for attr_name, attr in self._detect_parameters(space):
+            attr.name = attr_name
+            attr.in_space = hyperopt and HyperoptTools.has_space(self.config, space)
+            if not attr.category:
+                attr.category = space
+
+            param_container.append(attr)
+
             if params and attr_name in params:
                 if attr.load:
                     attr.value = params[attr_name]
@@ -295,3 +320,16 @@ class HyperStrategyMixin(object):
                                    f'Default value "{attr.value}" used.')
             else:
                 logger.info(f'Strategy Parameter(default): {attr_name} = {attr.value}')
+
+    def get_params_dict(self):
+        """
+        Returns list of Parameters that are not part of the current optimize job
+        """
+        params = {
+            'buy': {},
+            'sell': {}
+        }
+        for name, p in self.enumerate_parameters():
+            if not p.optimize or not p.in_space:
+                params[p.category][name] = p.value
+        return params

@@ -710,7 +710,7 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
     assert 'draws' in rc.json()['durations']
 
 
-def test_api_performance(botclient, mocker, ticker, fee):
+def test_api_performance(botclient, fee):
     ftbot, client = botclient
     patch_get_signal(ftbot, (True, False))
 
@@ -728,6 +728,7 @@ def test_api_performance(botclient, mocker, ticker, fee):
 
     )
     trade.close_profit = trade.calc_profit_ratio()
+    trade.close_profit_abs = trade.calc_profit()
     Trade.query.session.add(trade)
 
     trade = Trade(
@@ -743,14 +744,16 @@ def test_api_performance(botclient, mocker, ticker, fee):
         close_rate=0.391
     )
     trade.close_profit = trade.calc_profit_ratio()
+    trade.close_profit_abs = trade.calc_profit()
+
     Trade.query.session.add(trade)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
     assert len(rc.json()) == 2
-    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61},
-                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57}]
+    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_abs': 0.01872279},
+                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_abs': -0.1150375}]
 
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
@@ -1142,6 +1145,14 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json() == ftbot.strategy.plot_config
     assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
+
+    ftbot.strategy.plot_config = {'main_plot': {'sma': {}}}
+    rc = client_get(client, f"{BASE_URI}/plot_config")
+    assert_response(rc)
+
+    assert isinstance(rc.json()['main_plot'], dict)
+    assert isinstance(rc.json()['subplots'], dict)
 
 
 def test_api_strategies(botclient):

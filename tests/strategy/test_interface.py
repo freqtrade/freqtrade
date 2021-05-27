@@ -360,7 +360,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     now = arrow.utcnow().datetime
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
                                          current_time=now, current_profit=profit,
-                                         force_stoploss=0, high=None, dataframe=None)
+                                         force_stoploss=0, high=None)
     assert isinstance(sl_flag, SellCheckTuple)
     assert sl_flag.sell_type == expected
     if expected == SellType.NONE:
@@ -371,7 +371,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
                                          current_time=now, current_profit=profit2,
-                                         force_stoploss=0, high=None, dataframe=None)
+                                         force_stoploss=0, high=None)
     assert sl_flag.sell_type == expected2
     if expected2 == SellType.NONE:
         assert sl_flag.sell_flag is False
@@ -399,27 +399,27 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     )
 
     now = arrow.utcnow().datetime
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
 
     assert res.sell_flag is False
     assert res.sell_type == SellType.NONE
 
     strategy.custom_sell = MagicMock(return_value=True)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_flag is True
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
 
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_sell = MagicMock(return_value='h' * 100)
-    res = strategy.should_sell(None, trade, 1, now, False, False, None, None, 0)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.sell_reason == 'h' * 64
@@ -636,7 +636,7 @@ def test_hyperopt_parameters():
     assert len(list(intpar.range)) == 1
     # Range contains ONLY the default / value.
     assert list(intpar.range) == [intpar.value]
-    intpar.hyperopt = True
+    intpar.in_space = True
 
     assert len(list(intpar.range)) == 6
     assert list(intpar.range) == [0, 1, 2, 3, 4, 5]
@@ -671,4 +671,4 @@ def test_auto_hyperopt_interface(default_conf):
     strategy.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
-        [x for x in strategy.enumerate_parameters('sell')]
+        [x for x in strategy._detect_parameters('sell')]

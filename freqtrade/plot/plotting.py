@@ -77,7 +77,8 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
         )
     except ValueError as e:
         raise OperationalException(e) from e
-    trades = trim_dataframe(trades, timerange, 'open_date')
+    if not trades.empty:
+        trades = trim_dataframe(trades, timerange, 'open_date')
 
     return {"ohlcv": data,
             "trades": trades,
@@ -540,8 +541,11 @@ def load_and_plot_trades(config: Dict[str, Any]):
 
         df_analyzed = strategy.analyze_ticker(data, {'pair': pair})
         df_analyzed = trim_dataframe(df_analyzed, timerange)
-        trades_pair = trades.loc[trades['pair'] == pair]
-        trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
+        if not trades.empty:
+            trades_pair = trades.loc[trades['pair'] == pair]
+            trades_pair = extract_trades_of_period(df_analyzed, trades_pair)
+        else:
+            trades_pair = trades
 
         fig = generate_candlestick_graph(
             pair=pair,

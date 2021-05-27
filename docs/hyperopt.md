@@ -249,18 +249,23 @@ We continue to define hyperoptable parameters:
 
 ```python
 class MyAwesomeStrategy(IStrategy):
-    buy_adx = IntParameter(20, 40, default=30)
-    buy_rsi = IntParameter(20, 40, default=30)
-    buy_adx_enabled = CategoricalParameter([True, False]),
-    buy_rsi_enabled = CategoricalParameter([True, False]),
-    buy_trigger = CategoricalParameter(['bb_lower', 'macd_cross_signal']),
+    buy_adx = DecimalParameter(20, 40, decimals=1, default=30.1, space="buy")
+    buy_rsi = IntParameter(20, 40, default=30, space="buy")
+    buy_adx_enabled = CategoricalParameter([True, False], default=True, space="buy")
+    buy_rsi_enabled = CategoricalParameter([True, False], default=False, space="buy")
+    buy_trigger = CategoricalParameter(["bb_lower", "macd_cross_signal"], default="bb_lower", space="buy")
 ```
 
-Above definition says: I have five parameters I want to randomly combine to find the best combination.
-Two of them are integer values (`buy_adx` and `buy_rsi`) and I want you test in the range of values 20 to 40.  
+The above definition says: I have five parameters I want to randomly combine to find the best combination.  
+`buy_rsi` is an integer parameter, which will be tested between 20 and 40. This space has a size of 20.  
+`buy_adx` is a decimal parameter, which will be evaluated between 20 and 40 with 1 decimal place (so values are 20.1, 20.2, ...). This space has a size of 200.  
 Then we have three category variables. First two are either `True` or `False`.
 We use these to either enable or disable the ADX and RSI guards.
 The last one we call `trigger` and use it to decide which buy trigger we want to use.
+
+!!! Note "Parameter space assignment"
+    Parameters must either be assigned to a variable named `buy_*` or `sell_*` - or contain `space='buy'` | `space='sell'` to be assigned to a space correctly.
+    If no parameter is available for a space, you'll receive the error that no space was found when running hyperopt.
 
 So let's write the buy strategy using these values:
 

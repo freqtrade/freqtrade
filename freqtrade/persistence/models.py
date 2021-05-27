@@ -112,16 +112,17 @@ class Order(_DECL_BASE):
 
     trade = relationship("Trade", back_populates="orders")
 
-    ft_order_side = Column(String, nullable=False)
-    ft_pair = Column(String, nullable=False)
+    ft_order_side = Column(String(25), nullable=False)
+    ft_pair = Column(String(25), nullable=False)
     ft_is_open = Column(Boolean, nullable=False, default=True, index=True)
 
-    order_id = Column(String, nullable=False, index=True)
-    status = Column(String, nullable=True)
-    symbol = Column(String, nullable=True)
-    order_type = Column(String, nullable=True)
-    side = Column(String, nullable=True)
+    order_id = Column(String(255), nullable=False, index=True)
+    status = Column(String(255), nullable=True)
+    symbol = Column(String(25), nullable=True)
+    order_type = Column(String(50), nullable=True)
+    side = Column(String(25), nullable=True)
     price = Column(Float, nullable=True)
+    average = Column(Float, nullable=True)
     amount = Column(Float, nullable=True)
     filled = Column(Float, nullable=True)
     remaining = Column(Float, nullable=True)
@@ -150,6 +151,7 @@ class Order(_DECL_BASE):
         self.price = order.get('price', self.price)
         self.amount = order.get('amount', self.amount)
         self.filled = order.get('filled', self.filled)
+        self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         if 'timestamp' in order and order['timestamp'] is not None:
@@ -656,15 +658,15 @@ class Trade(_DECL_BASE, LocalTrade):
 
     orders = relationship("Order", order_by="Order.id", cascade="all, delete-orphan")
 
-    exchange = Column(String, nullable=False)
-    pair = Column(String, nullable=False, index=True)
+    exchange = Column(String(25), nullable=False)
+    pair = Column(String(25), nullable=False, index=True)
     is_open = Column(Boolean, nullable=False, default=True, index=True)
     fee_open = Column(Float, nullable=False, default=0.0)
     fee_open_cost = Column(Float, nullable=True)
-    fee_open_currency = Column(String, nullable=True)
+    fee_open_currency = Column(String(25), nullable=True)
     fee_close = Column(Float, nullable=False, default=0.0)
     fee_close_cost = Column(Float, nullable=True)
-    fee_close_currency = Column(String, nullable=True)
+    fee_close_currency = Column(String(25), nullable=True)
     open_rate = Column(Float)
     open_rate_requested = Column(Float)
     # open_trade_value - calculated via _calc_open_trade_value
@@ -678,7 +680,7 @@ class Trade(_DECL_BASE, LocalTrade):
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
-    open_order_id = Column(String)
+    open_order_id = Column(String(255))
     # absolute value of the stop loss
     stop_loss = Column(Float, nullable=True, default=0.0)
     # percentage value of the stop loss
@@ -688,16 +690,16 @@ class Trade(_DECL_BASE, LocalTrade):
     # percentage value of the initial stop loss
     initial_stop_loss_pct = Column(Float, nullable=True)
     # stoploss order id which is on exchange
-    stoploss_order_id = Column(String, nullable=True, index=True)
+    stoploss_order_id = Column(String(255), nullable=True, index=True)
     # last update time of the stoploss order on exchange
     stoploss_last_update = Column(DateTime, nullable=True)
     # absolute value of the highest reached price
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String, nullable=True)
-    sell_order_status = Column(String, nullable=True)
-    strategy = Column(String, nullable=True)
+    sell_reason = Column(String(100), nullable=True)
+    sell_order_status = Column(String(100), nullable=True)
+    strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
@@ -815,18 +817,20 @@ class Trade(_DECL_BASE, LocalTrade):
         pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
         ).filter(Trade.is_open.is_(False))\
             .group_by(Trade.pair) \
-            .order_by(desc('profit_sum')) \
+            .order_by(desc('profit_sum_abs')) \
             .all()
         return [
             {
                 'pair': pair,
-                'profit': rate,
+                'profit': profit,
+                'profit_abs': profit_abs,
                 'count': count
             }
-            for pair, rate, count in pair_rates
+            for pair, profit, profit_abs, count in pair_rates
         ]
 
     @staticmethod
@@ -852,8 +856,8 @@ class PairLock(_DECL_BASE):
 
     id = Column(Integer, primary_key=True)
 
-    pair = Column(String, nullable=False, index=True)
-    reason = Column(String, nullable=True)
+    pair = Column(String(25), nullable=False, index=True)
+    reason = Column(String(255), nullable=True)
     # Time the pair was locked (start time)
     lock_time = Column(DateTime, nullable=False)
     # Time until the pair is locked (end time)

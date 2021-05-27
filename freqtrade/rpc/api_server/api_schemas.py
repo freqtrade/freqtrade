@@ -57,6 +57,7 @@ class Count(BaseModel):
 class PerformanceEntry(BaseModel):
     pair: str
     profit: float
+    profit_abs: float
     count: int
 
 
@@ -268,7 +269,7 @@ class DeleteTrade(BaseModel):
 
 class PlotConfig_(BaseModel):
     main_plot: Dict[str, Any]
-    subplots: Optional[Dict[str, Any]]
+    subplots: Dict[str, Any]
 
 
 class PlotConfig(BaseModel):

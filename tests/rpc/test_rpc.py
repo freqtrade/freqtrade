@@ -199,28 +199,31 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.enter_positions()
 
-    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41%' == result[0][3]
+    assert isnan(fiat_profit_sum)
     # Test with fiatconvert
 
     rpc._fiat_converter = CryptoToFiatConverter()
-    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.06)' == result[0][3]
+    assert '-0.06' == f'{fiat_profit_sum:.2f}'
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
-    result, headers = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert 'nan%' == result[0][3]
+    assert isnan(fiat_profit_sum)
 
 
 def test_rpc_daily_profit(default_conf, update, ticker, fee,
@@ -419,7 +422,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] == '0:00:00'
+    assert stats['avg_duration'] in ('0:00:00', '0:00:01')
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
 
@@ -430,7 +433,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] == '0:00:00'
+    assert stats['avg_duration'] in ('0:00:00', '0:00:01')
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
     assert isnan(stats['profit_all_coin'])

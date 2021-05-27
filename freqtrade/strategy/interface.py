@@ -161,6 +161,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        return dataframe
 
     @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -170,6 +171,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        return dataframe
 
     @abstractmethod
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -179,6 +181,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        return dataframe
 
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
@@ -226,7 +229,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pass
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -241,6 +244,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -248,7 +252,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -267,6 +272,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
@@ -274,7 +280,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, dataframe: DataFrame, **kwargs) -> float:
+                        current_profit: float, **kwargs) -> float:
         """
         Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
         e.g. returning -0.05 would create a stoploss 5% below current_rate.
@@ -290,15 +296,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
-        :param dataframe: Analyzed dataframe for this pair. Can contain future data in backtesting.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New stoploss value, relative to the currentrate
         """
         return self.stoploss
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                    current_profit: float, dataframe: DataFrame,
-                    **kwargs) -> Optional[Union[str, bool]]:
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
         Custom sell signal logic indicating that specified position should be sold. Returning a
         string or True from this method is equal to setting sell signal on a candle at specified
@@ -536,8 +540,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return False
 
-    def should_sell(self, dataframe: DataFrame, trade: Trade, rate: float, date: datetime,
-                    buy: bool, sell: bool, low: float = None, high: float = None,
+    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
+                    sell: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
@@ -553,9 +557,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         trade.adjust_min_max_rates(high or current_rate)
 
-        stoplossflag = self.stop_loss_reached(dataframe=dataframe, current_rate=current_rate,
-                                              trade=trade, current_time=date,
-                                              current_profit=current_profit,
+        stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
+                                              current_time=date, current_profit=current_profit,
                                               force_stoploss=force_stoploss, high=high)
 
         # Set current rate to high for backtesting sell
@@ -570,6 +573,10 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         sell_signal = SellType.NONE
         custom_reason = ''
+        # use provided rate in backtesting, not high/low.
+        current_rate = rate
+        current_profit = trade.calc_profit_ratio(current_rate)
+
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
@@ -580,7 +587,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
-                    current_profit=current_profit, dataframe=dataframe)
+                    current_profit=current_profit)
                 if custom_reason:
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
@@ -617,7 +624,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # logger.debug(f"{trade.pair} - No sell signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
 
-    def stop_loss_reached(self, dataframe: DataFrame, current_rate: float, trade: Trade,
+    def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, high: float = None) -> SellCheckTuple:
         """
@@ -635,8 +642,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
                                                       current_rate=current_rate,
-                                                      current_profit=current_profit,
-                                                      dataframe=dataframe)
+                                                      current_profit=current_profit)
             # Sanity check - error cases will return None
             if stop_loss_value:
                 # logger.info(f"{trade.pair} {stop_loss_value=} {current_profit=}")
