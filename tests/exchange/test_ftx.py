@@ -157,3 +157,26 @@ def test_fetch_stoploss_order(default_conf, mocker):
                            'fetch_stoploss_order', 'fetch_orders',
                            retries=API_FETCH_ORDER_RETRY_COUNT + 1,
                            order_id='_', pair='TKN/BTC')
+
+
+def test_get_order_id(mocker, default_conf):
+    exchange = get_patched_exchange(mocker, default_conf, id='ftx')
+    order = {
+        'type': STOPLOSS_ORDERTYPE,
+        'price': 1500,
+        'id': '1111',
+        'info': {
+            'orderId': '1234'
+        }
+    }
+    assert exchange.get_order_id_conditional(order) == '1234'
+
+    order = {
+        'type': 'limit',
+        'price': 1500,
+        'id': '1111',
+        'info': {
+            'orderId': '1234'
+        }
+    }
+    assert exchange.get_order_id_conditional(order) == '1111'

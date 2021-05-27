@@ -24,7 +24,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.state import State
-from freqtrade.strategy.interface import SellType
+from freqtrade.strategy.interface import SellCheckTuple, SellType
 
 
 logger = logging.getLogger(__name__)
@@ -178,7 +178,7 @@ class RPC:
                     current_rate = trade.close_rate
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
-
+                current_profit_fiat: Optional[float] = None
                 # Calculate fiat profit
                 if self._fiat_converter:
                     current_profit_fiat = self._fiat_converter.convert_amount(
@@ -220,12 +220,13 @@ class RPC:
             return results
 
     def _rpc_status_table(self, stake_currency: str,
-                          fiat_display_currency: str) -> Tuple[List, List]:
+                          fiat_display_currency: str) -> Tuple[List, List, float]:
         trades = Trade.get_open_trades()
         if not trades:
             raise RPCException('no active trade')
         else:
             trades_list = []
+            fiat_profit_sum = NAN
             for trade in trades:
                 # calculate profit and send message to user
                 try:
@@ -243,6 +244,8 @@ class RPC:
                     )
                     if fiat_profit and not isnan(fiat_profit):
                         profit_str += f" ({fiat_profit:.2f})"
+                        fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
+                            else fiat_profit_sum + fiat_profit
                 trades_list.append([
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
@@ -256,7 +259,7 @@ class RPC:
                 profitcol += " (" + fiat_display_currency + ")"
 
             columns = ['ID', 'Pair', 'Since', profitcol]
-            return trades_list, columns
+            return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
             self, timescale: int,
@@ -554,7 +557,8 @@ class RPC:
             if not fully_canceled:
                 # Get current rate and execute sell
                 current_rate = self._freqtrade.get_sell_rate(trade.pair, False)
-                self._freqtrade.execute_sell(trade, current_rate, SellType.FORCE_SELL)
+                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                self._freqtrade.execute_sell(trade, current_rate, sell_reason)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -844,5 +848,7 @@ class RPC:
                                               df_analyzed, arrow.Arrow.utcnow().datetime)
 
     def _rpc_plot_config(self) -> Dict[str, Any]:
-
+        if (self._freqtrade.strategy.plot_config and
+                'subplots' not in self._freqtrade.strategy.plot_config):
+            self._freqtrade.strategy.plot_config['subplots'] = {}
         return self._freqtrade.strategy.plot_config

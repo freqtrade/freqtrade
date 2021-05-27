@@ -1,4 +1,4 @@
-""" Bybit exchange subclass """
+""" CoinbasePro exchange subclass """
 import logging
 from typing import Dict
 
@@ -8,9 +8,9 @@ from freqtrade.exchange import Exchange
 logger = logging.getLogger(__name__)
 
 
-class Bybit(Exchange):
+class Coinbasepro(Exchange):
     """
-    Bybit exchange class. Contains adjustments needed for Freqtrade to work
+    CoinbasePro exchange class. Contains adjustments needed for Freqtrade to work
     with this exchange.
 
     Please note that this exchange is not included in the list of exchanges
@@ -19,5 +19,5 @@ class Bybit(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 200,
+        "ohlcv_candle_limit": 300,
     }

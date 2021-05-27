@@ -344,6 +344,8 @@ def test_edge_process_no_trades(mocker, edge_conf, caplog):
 
 def test_edge_process_no_pairs(mocker, edge_conf, caplog):
     edge_conf['exchange']['pair_whitelist'] = []
+    mocker.patch('freqtrade.freqtradebot.validate_config_consistency')
+
     freqtrade = get_patched_freqtradebot(mocker, edge_conf)
     fee_mock = mocker.patch('freqtrade.exchange.Exchange.get_fee', return_value=0.001)
     mocker.patch('freqtrade.edge.edge_positioning.refresh_data')

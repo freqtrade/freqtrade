@@ -123,6 +123,27 @@ def migrate_open_orders_to_trades(engine):
         """)
 
 
+def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, cols: List):
+    # Schema migration necessary
+    engine.execute(f"alter table orders rename to {table_back_name}")
+    # drop indexes on backup table
+    for index in inspector.get_indexes(table_back_name):
+        engine.execute(f"drop index {index['name']}")
+
+    # let SQLAlchemy create the schema as required
+    decl_base.metadata.create_all(engine)
+
+    engine.execute(f"""
+        insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+        symbol, order_type, side, price, amount, filled, average, remaining, cost, order_date,
+        order_filled_date, order_update_date)
+        select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+        symbol, order_type, side, price, amount, filled, null average, remaining, cost, order_date,
+        order_filled_date, order_update_date
+        from {table_back_name}
+        """)
+
+
 def check_migrate(engine, decl_base, previous_tables) -> None:
     """
     Checks if migration is necessary and migrates if necessary
@@ -145,6 +166,11 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
     else:
-        pass
-        # Empty for now - as there is only one iteration of the orders table so far.
-        # table_back_name = get_backup_name(tabs, 'orders_bak')
+        cols_order = inspector.get_columns('orders')
+
+        if not has_column(cols_order, 'average'):
+            tabs = get_table_names_for_table(inspector, 'orders')
+            # Empty for now - as there is only one iteration of the orders table so far.
+            table_back_name = get_backup_name(tabs, 'orders_bak')
+
+            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols)

@@ -90,6 +90,7 @@ def test_get_balances_prod(default_conf, mocker):
         '3ST': balance_item.copy(),
         '4ST': balance_item.copy(),
         'EUR': balance_item.copy(),
+        'timestamp': 123123
     })
     kraken_open_orders = [{'symbol': '1ST/EUR',
                            'type': 'limit',
@@ -138,7 +139,7 @@ def test_get_balances_prod(default_conf, mocker):
     default_conf['dry_run'] = False
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
     balances = exchange.get_balances()
-    assert len(balances) == 5
+    assert len(balances) == 6
 
     assert balances['1ST']['free'] == 9.0
     assert balances['1ST']['total'] == 10.0

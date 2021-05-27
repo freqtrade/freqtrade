@@ -265,9 +265,13 @@ def _download_trades_history(exchange: Exchange,
     """
     try:
 
-        since = timerange.startts * 1000 if \
-            (timerange and timerange.starttype == 'date') else int(arrow.utcnow().shift(
-                days=-new_pairs_days).float_timestamp) * 1000
+        until = None
+        if (timerange and timerange.starttype == 'date'):
+            since = timerange.startts * 1000
+            if timerange.stoptype == 'date':
+                until = timerange.stopts * 1000
+        else:
+            since = int(arrow.utcnow().shift(days=-new_pairs_days).float_timestamp) * 1000
 
         trades = data_handler.trades_load(pair)
 
@@ -295,6 +299,7 @@ def _download_trades_history(exchange: Exchange,
         # Default since_ms to 30 days if nothing is given
         new_trades = exchange.get_historic_trades(pair=pair,
                                                   since=since,
+                                                  until=until,
                                                   from_id=from_id,
                                                   )
         trades.extend(new_trades[1])
@@ -367,7 +372,7 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
                 logger.exception(f'Could not convert {pair} to OHLCV.')
 
 
-def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]:
+def get_timerange(data: Dict[str, DataFrame]) -> Tuple[datetime, datetime]:
     """
     Get the maximum common timerange for the given backtest data.
 
@@ -375,7 +380,7 @@ def get_timerange(data: Dict[str, DataFrame]) -> Tuple[arrow.Arrow, arrow.Arrow]
     :return: tuple containing min_date, max_date
     """
     timeranges = [
-        (arrow.get(frame['date'].min()), arrow.get(frame['date'].max()))
+        (frame['date'].min().to_pydatetime(), frame['date'].max().to_pydatetime())
         for frame in data.values()
     ]
     return (min(timeranges, key=operator.itemgetter(0))[0],
