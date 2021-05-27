@@ -628,7 +628,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'loss': 1.9840569076926293,
         'results_explanation': ('     1 trades. 1/0/0 Wins/Draws/Losses. '
                                 'Avg profit   2.31%. Median profit   2.31%. Total profit  '
-                                '0.00023300 BTC (   2.31\N{GREEK CAPITAL LETTER SIGMA}%). '
+                                '0.00023300 BTC (   2.31%). '
                                 'Avg duration 100.0 min.'
                                 ),
         'params_details': {'buy': {'adx-enabled': False,

@@ -351,7 +351,7 @@ class Hyperopt:
                 f"Avg profit {results_metrics['avg_profit']: 6.2f}%. "
                 f"Median profit {results_metrics['median_profit']: 6.2f}%. "
                 f"Total profit {results_metrics['total_profit']: 11.8f} {stake_cur} "
-                f"({results_metrics['profit']: 7.2f}\N{GREEK CAPITAL LETTER SIGMA}%). "
+                f"({results_metrics['profit']: 7.2f}%). "
                 f"Avg duration {results_metrics['duration']:5.1f} min."
                 )
 

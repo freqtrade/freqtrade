@@ -486,7 +486,7 @@ Given the following result from hyperopt:
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # Buy hyperspace params:
     buy_params = {
@@ -527,7 +527,7 @@ If you are optimizing ROI (i.e. if optimization search-space contains 'all', 'de
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # ROI table:
     minimal_roi = {
@@ -582,7 +582,7 @@ If you are optimizing stoploss values (i.e. if optimization search-space contain
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # Buy hyperspace params:
     buy_params = {
@@ -624,7 +624,7 @@ If you are optimizing trailing stop values (i.e. if optimization search-space co
 ```
 Best result:
 
-    45/100:    606 trades. Avg profit  1.04%. Total profit  0.31555614 BTC ( 630.48Σ%). Avg duration 150.3 mins. Objective: -1.10161
+    45/100:    606 trades. Avg profit  1.04%. Total profit  0.31555614 BTC ( 630.48%). Avg duration 150.3 mins. Objective: -1.10161
 
     # Trailing stop:
     trailing_stop = True
