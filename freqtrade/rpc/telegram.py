@@ -206,13 +206,14 @@ class Telegram(RPCHandler):
         msg['emoji'] = self._get_sell_emoji(msg)
 
         message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                    "*Amount:* `{amount:.8f}`\n"
                    "*Open Rate:* `{open_rate:.8f}`\n"
                    "*Current Rate:* `{current_rate:.8f}`\n"
-                   "*Close Rate:* `{limit:.8f}`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Profit:* `{profit_percent:.2f}%`").format(**msg)
+                   "*Close Rate:* `{limit:.8f}`"
+                   ).format(**msg)
 
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
@@ -423,11 +424,11 @@ class Telegram(RPCHandler):
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
         start_date = datetime.fromtimestamp(0)
-        if context.args:
-            if 'day' in context.args:
-                start_date = datetime.combine(date.today(), datetime.min.time())
-            elif 'week' in context.args:
-                start_date = datetime.combine(date.today(), datetime.min.time()) - timedelta(days=7)
+        try:
+            timescale = int(context.args[0]) if context.args else None
+            start_date = datetime.combine(date.today(), datetime.min.time()) - timedelta(days=timescale)
+        except (TypeError, ValueError, IndexError):
+            pass
 
         stats = self._rpc._rpc_trade_statistics(
             stake_cur,
