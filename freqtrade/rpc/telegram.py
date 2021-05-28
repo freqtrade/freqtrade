@@ -425,7 +425,8 @@ class Telegram(RPCHandler):
         start_date = datetime.fromtimestamp(0)
         try:
             timescale = int(context.args[0]) if context.args else None
-            start_date = datetime.combine(date.today(), datetime.min.time()) - timedelta(days=timescale)
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            start_date = today_start - timedelta(days=timescale)
         except (TypeError, ValueError, IndexError):
             pass
 
@@ -910,7 +911,8 @@ class Telegram(RPCHandler):
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-                   "*/profit [<n>]:* `Lists cumulative profit from all finished trades, over the last n days`\n"
+                   "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
+                   "over the last n days`\n"
                    "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
                    "regardless of profit`\n"
                    f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
