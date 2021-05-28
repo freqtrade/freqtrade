@@ -206,14 +206,13 @@ class Telegram(RPCHandler):
         msg['emoji'] = self._get_sell_emoji(msg)
 
         message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                   "*Profit:* `{profit_percent:.2f}%`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                    "*Amount:* `{amount:.8f}`\n"
                    "*Open Rate:* `{open_rate:.8f}`\n"
                    "*Current Rate:* `{current_rate:.8f}`\n"
-                   "*Close Rate:* `{limit:.8f}`"
-                   ).format(**msg)
+                   "*Close Rate:* `{limit:.8f}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Profit:* `{profit_percent:.2f}%`").format(**msg)
 
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
