@@ -14,11 +14,10 @@ Accounts having BNB accounts use this to pay for fees - if your first trade happ
 
 ### Binance sites
 
-Binance has been split into 3, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
+Binance has been split into 2, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
 
 * [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance`.
 * [binance.us](https://www.binance.us/) - US based users. Use exchange id: `binanceus`.
-* [binance.je](https://www.binance.je/) - Binance Jersey, trading fiat currencies. Use exchange id: `binanceje`.
 
 ## Kraken
 
