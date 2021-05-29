@@ -1,6 +1,7 @@
 
 import io
 import logging
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -9,14 +10,43 @@ import tabulate
 from colorama import Fore, Style
 from pandas import isna, json_normalize
 
+from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import round_coin_value, round_dict
+from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict
 
 
 logger = logging.getLogger(__name__)
 
 
 class HyperoptTools():
+
+    @staticmethod
+    def get_strategy_filename(config: Dict, strategy_name: str) -> Path:
+        """
+        Get Strategy-location (filename) from strategy_name
+        """
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
+        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategy = [s for s in strategy_objs if s['name'] == strategy_name]
+        if strategy:
+            strategy = strategy[0]
+
+            return Path(strategy['location'])
+
+    @staticmethod
+    def export_params(params, strategy_name: str, filename: Path):
+        """
+        Generate files
+        """
+        final_params = deepcopy(params['params_not_optimized'])
+        final_params = deep_merge_dicts(params['params_details'], final_params)
+        final_params = {
+            'strategy_name': strategy_name,
+            'params': final_params
+        }
+        logger.info(f"Dumping parameters to {filename}")
+        rapidjson.dump(final_params, filename.open('w'), indent=2)
 
     @staticmethod
     def has_space(config: Dict[str, Any], space: str) -> bool:

@@ -129,8 +129,14 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
         metrics = val['results_metrics']
         if 'strategy_name' in metrics:
-            show_backtest_result(metrics['strategy_name'], metrics,
+            strategy_name = metrics['strategy_name']
+            show_backtest_result(strategy_name, metrics,
                                  metrics['stake_currency'])
+
+            # Export parameters ...
+            # TODO: make this optional? otherwise it'll overwrite previous parameters ...
+            fn = HyperoptTools.get_strategy_filename(config, strategy_name)
+            HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
 
         HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
                                          header_str="Epoch details")
