@@ -3,7 +3,9 @@
 # The below assumes a correctly setup docker buildx environment
 
 # Replace / with _ to create a valid tag
-TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+TAG_ORIG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+TAG="${TAG_ORIG}_pi"
+
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
 CACHE_TAG=freqtradeorg/freqtrade_cache:${TAG}_cache
@@ -15,7 +17,7 @@ if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
     echo "event ${GITHUB_EVENT_NAME}: full rebuild - skipping cache"
     docker buildx build \
         --cache-to=type=registry,ref=${CACHE_TAG} \
-        -f Dockerfile.armhf \
+        -f docker/Dockerfile.armhf \
         --platform ${PI_PLATFORM} \
         -t ${IMAGE_NAME}:${TAG} --push .
 else
@@ -25,10 +27,21 @@ else
     docker buildx build \
         --cache-from=type=registry,ref=${CACHE_TAG} \
         --cache-to=type=registry,ref=${CACHE_TAG} \
-        -f Dockerfile.armhf \
+        -f docker/Dockerfile.armhf \
         --platform ${PI_PLATFORM} \
         -t ${IMAGE_NAME}:${TAG} --push .
 fi
+
+docker images
+
+# Create multiarch image
+# Make sure that all images contained here are pushed to github first.
+# Otherwise installation might fail.
+
+docker manifest create freqtradeorg/freqtrade:${TAG_ORIG} ${IMAGE_NAME}:${TAG_ORIG} ${IMAGE_NAME}:${TAG}
+docker manifest push freqtradeorg/freqtrade:${TAG_ORIG}
+
+docker images
 
 if [ $? -ne 0 ]; then
     echo "failed building image"

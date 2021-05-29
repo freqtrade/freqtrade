@@ -374,13 +374,6 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-    - name: Build and test and push docker image
-      env:
-        IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
-      run: |
-        build_helpers/publish_docker.sh
-
     # We need docker experimental to pull the ARM image.
     - name: Switch docker to experimental
       run: |
@@ -399,10 +392,17 @@ jobs:
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
 
+    - name: Build and test and push docker image
+      env:
+        IMAGE_NAME: freqtradeorg/freqtrade
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+      run: |
+        build_helpers/publish_docker.sh
+
     - name: Build Raspberry docker image
       env:
         IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
         build_helpers/publish_docker_pi.sh
 
