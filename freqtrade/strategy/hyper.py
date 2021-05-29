@@ -5,8 +5,10 @@ This module defines a base class for auto-hyperoptable strategies.
 import logging
 from abc import ABC, abstractmethod
 from contextlib import suppress
+from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
+from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
 
@@ -305,10 +307,31 @@ class HyperStrategyMixin(object):
         """
         Load Hyperoptable parameters
         """
-        self._load_params(getattr(self, 'buy_params', None), 'buy', hyperopt)
-        self._load_params(getattr(self, 'sell_params', None), 'sell', hyperopt)
+        params = self.load_params_from_file()
+        params = params.get('params', {})
+        buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', None))
+        sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', None))
 
-    def _load_params(self, params: dict, space: str, hyperopt: bool = False) -> None:
+        self._load_params(buy_params, 'buy', hyperopt)
+        self._load_params(sell_params, 'sell', hyperopt)
+
+    def load_params_from_file(self) -> Dict:
+        filename_str = getattr(self, '__file__', '')
+        if not filename_str:
+            return {}
+        filename = Path(filename_str).with_suffix('.json')
+
+        if filename.is_file():
+            logger.info(f"Loading parameters from file {filename}")
+            params = json_load(filename.open('r'))
+            if params.get('strategy_name') != self.get_strategy_name():
+                raise OperationalException('Invalid parameter file provided')
+            return params
+        logger.info("Found no parameter file.")
+
+        return {}
+
+    def _load_params(self, params: Dict, space: str, hyperopt: bool = False) -> None:
         """
         Set optimizable parameter values.
         :param params: Dictionary with new parameter values.

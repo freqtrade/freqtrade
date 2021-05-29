@@ -686,6 +686,8 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
 def test_clean_hyperopt(mocker, hyperopt_conf, caplog):
     patch_exchange(mocker)
 
+    mocker.patch("freqtrade.strategy.hyper.HyperStrategyMixin.load_params_from_file",
+                 MagicMock(return_value={}))
     mocker.patch("freqtrade.optimize.hyperopt.Path.is_file", MagicMock(return_value=True))
     unlinkmock = mocker.patch("freqtrade.optimize.hyperopt.Path.unlink", MagicMock())
     h = Hyperopt(hyperopt_conf)
