@@ -5,6 +5,7 @@ This module manage Telegram communication
 """
 import json
 import logging
+import re
 from datetime import date, datetime, timedelta
 from html import escape
 from itertools import chain
@@ -97,24 +98,27 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refacoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = ['/start', '/stop', '/status', '/status table',
-                                 '/trades', '/performance', '/daily',
-                                 '/profit', '/profit day', '/profit week',
-                                 '/stats', '/count', '/locks', '/balance',
-                                 '/stopbuy', '/reload_config', '/show_config',
-                                 '/logs', '/whitelist', '/blacklist', '/edge',
-                                 '/help', '/version']
+        valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
+                                 r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
+                                 r'/profit$', r'/profit \d+',
+                                 r'/stats$', r'/count$', r'/locks$', r'/balance$',
+                                 r'/stopbuy$', r'/reload_config$', r'/show_config$',
+                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/forcebuy$', r'/help$', r'/version$']
+        # Create keys for generation
+        valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
         # custom keyboard specified in config.json
         cust_keyboard = self._config['telegram'].get('keyboard', [])
         if cust_keyboard:
+            combined = "(" + ")|(".join(valid_keys) + ")"
             # check for valid shortcuts
             invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
-                            if b not in valid_keys]
+                            if not re.match(combined, b)]
             if len(invalid_keys):
                 err_msg = ('config.telegram.keyboard: Invalid commands for '
                            f'custom Telegram keyboard: {invalid_keys}'
-                           f'\nvalid commands are: {valid_keys}')
+                           f'\nvalid commands are: {valid_keys_print}')
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
