@@ -136,7 +136,10 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
             # Export parameters ...
             # TODO: make this optional? otherwise it'll overwrite previous parameters ...
             fn = HyperoptTools.get_strategy_filename(config, strategy_name)
-            HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
+            if fn:
+                HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
+            else:
+                logger.warn("Strategy not found, not exporting parameter file.")
 
         HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
                                          header_str="Epoch details")

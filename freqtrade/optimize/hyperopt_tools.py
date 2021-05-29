@@ -3,7 +3,7 @@ import io
 import logging
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import rapidjson
 import tabulate
@@ -21,18 +21,19 @@ logger = logging.getLogger(__name__)
 class HyperoptTools():
 
     @staticmethod
-    def get_strategy_filename(config: Dict, strategy_name: str) -> Path:
+    def get_strategy_filename(config: Dict, strategy_name: str) -> Optional[Path]:
         """
         Get Strategy-location (filename) from strategy_name
         """
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
         strategy_objs = StrategyResolver.search_all_objects(directory, False)
-        strategy = [s for s in strategy_objs if s['name'] == strategy_name]
-        if strategy:
-            strategy = strategy[0]
+        strategies = [s for s in strategy_objs if s['name'] == strategy_name]
+        if strategies:
+            strategy = strategies[0]
 
             return Path(strategy['location'])
+        return None
 
     @staticmethod
     def export_params(params, strategy_name: str, filename: Path):
