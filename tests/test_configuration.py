@@ -88,6 +88,18 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
             '"stake_amount": .001, "fiat_display_currency": "USD", '
             '"timeframe": "5m", "dry_run": true, "cance')
 
+    filedata = json.dumps(default_conf, indent=2).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    x = log_config_error_range('somefile', 'Parse error at offset 4: Invalid value.')
+    assert isinstance(x, str)
+    assert (x == '  "max_open_trades": 1,\n  "stake_currency": "BTC",\n'
+            '  "stake_amount": .001,')
+
+    x = log_config_error_range('-', '')
+    assert x == ''
+
 
 def test__args_to_config(caplog):
 
