@@ -18,7 +18,7 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file, log_config_error_range
+from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
@@ -99,6 +99,12 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
 
     x = log_config_error_range('-', '')
     assert x == ''
+
+
+def test_load_file_error(tmpdir):
+    testpath = Path(tmpdir) / 'config.json'
+    with pytest.raises(OperationalException, match=r"File .* not found!"):
+        load_file(testpath)
 
 
 def test__args_to_config(caplog):
