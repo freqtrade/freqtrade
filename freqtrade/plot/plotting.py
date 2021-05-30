@@ -118,7 +118,7 @@ def add_indicators(fig, row, indicators: Dict[str, Dict], data: pd.DataFrame) ->
                     kwargs.update({'line': {'color': color}})
                 kwargs['mode'] = 'lines'
                 if plot_type != 'scatter':
-                    logger.warning(f'Indicator {indicator} has hnknown plot trace kind {plot_type}'
+                    logger.warning(f'Indicator {indicator} has unknown plot trace kind {plot_type}'
                                    f', assuming "scatter".')
 
             kwargs.update(conf.get('plotly', {}))
