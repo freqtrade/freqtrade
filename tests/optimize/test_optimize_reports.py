@@ -51,7 +51,7 @@ def test_text_table_bt_results():
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
 
-def test_generate_backtest_stats(default_conf, testdatadir):
+def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     default_conf.update({'strategy': 'DefaultStrategy'})
     StrategyResolver.load_strategy(default_conf)
 
@@ -148,8 +148,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
 
     # Test storing stats
-    filename = Path(testdatadir / 'btresult.json')
-    filename_last = Path(testdatadir / LAST_BT_RESULT_FN)
+    filename = Path(tmpdir / 'btresult.json')
+    filename_last = Path(tmpdir / LAST_BT_RESULT_FN)
     _backup_file(filename_last, copy_file=True)
     assert not filename.is_file()
 
@@ -159,7 +159,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     last_fn = get_latest_backtest_filename(filename_last.parent)
     assert re.match(r"btresult-.*\.json", last_fn)
 
-    filename1 = (testdatadir / last_fn)
+    filename1 = Path(tmpdir / last_fn)
     assert filename1.is_file()
     content = filename1.read_text()
     assert 'max_drawdown' in content
