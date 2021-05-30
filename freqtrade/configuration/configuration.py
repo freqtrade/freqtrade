@@ -375,6 +375,9 @@ class Configuration:
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
 
+        self._args_to_config(config, argname='plot_auto_open',
+                             logstring='Parameter --auto-open detected.')
+
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
 

@@ -433,6 +433,11 @@ AVAILABLE_CLI_OPTIONS = {
         metavar='INT',
         default=750,
     ),
+    "plot_auto_open": Arg(
+        '--auto-open',
+        help='Automatically open generated plot.',
+        action='store_true',
+    ),
     "no_trades": Arg(
         '--no-trades',
         help='Skip using trades from backtesting file and DB.',
