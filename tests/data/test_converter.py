@@ -262,7 +262,6 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
              ]
     for file in files:
         copyfile(testdatadir / file['old'].name, file['old'])
-        # _backup_file(file['old'], copy_file=True)
         assert not file['new'].exists()
 
     default_conf['datadir'] = tmpdir1
