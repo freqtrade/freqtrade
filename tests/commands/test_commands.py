@@ -921,10 +921,10 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
                        saved_hyperopt_results_legacy, tmpdir):
     csv_file = Path(tmpdir) / "test.csv"
-    for _ in (saved_hyperopt_results, saved_hyperopt_results_legacy):
+    for res in (saved_hyperopt_results, saved_hyperopt_results_legacy):
         mocker.patch(
             'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-            MagicMock(return_value=saved_hyperopt_results_legacy)
+            MagicMock(return_value=res)
         )
 
         args = [
@@ -1148,9 +1148,10 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
         start_hyperopt_list(pargs)
         captured = capsys.readouterr()
         log_has("CSV file created: test_file.csv", caplog)
-        assert ('Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,"3,930.0 m",0.43662'
-                in csv_file.read_text())
         assert csv_file.is_file()
+        line = csv_file.read_text()
+        assert ('Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,"3,930.0 m",0.43662' in line
+                or "Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,2 days 17:30:00,0.43662" in line)
         csv_file.unlink()
 
 

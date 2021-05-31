@@ -197,8 +197,12 @@ def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
             return x['results_metrics']['duration']
         else:
             # New mode
-            avg = x['results_metrics']['holding_avg']
-            return avg.total_seconds() // 60
+            if 'holding_avg_s' in x['results_metrics']:
+                avg = x['results_metrics']['holding_avg_s']
+                return avg // 60
+            raise OperationalException(
+                "Holding-average not available. Please omit the filter on average time, "
+                "or rerun hyperopt with this version")
 
     if filteroptions['filter_min_avg_time'] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)

@@ -1913,7 +1913,7 @@ def saved_hyperopt_results_legacy():
 
 @pytest.fixture
 def saved_hyperopt_results():
-    return [
+    hyperopt_res = [
         {
             'loss': 0.4366182531161519,
             'params_dict': {
@@ -2042,3 +2042,9 @@ def saved_hyperopt_results():
             'is_best': False
             }
     ]
+
+    for res in hyperopt_res:
+        res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
+                                                                         ].total_seconds()
+
+    return hyperopt_res

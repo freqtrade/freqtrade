@@ -232,16 +232,23 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     zero_duration_trades = len(results.loc[(results['trade_duration'] == 0) &
                                            (results['sell_reason'] == 'trailing_stop_loss')])
 
+    holding_avg = (timedelta(minutes=round(results['trade_duration'].mean()))
+                   if not results.empty else timedelta())
+    winner_holding_avg = (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
+                          if not winning_trades.empty else timedelta())
+    loser_holding_avg = (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
+                         if not losing_trades.empty else timedelta())
+
     return {
         'wins': len(winning_trades),
         'losses': len(losing_trades),
         'draws': len(draw_trades),
-        'holding_avg': (timedelta(minutes=round(results['trade_duration'].mean()))
-                        if not results.empty else timedelta()),
-        'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
-                               if not winning_trades.empty else timedelta()),
-        'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
-                              if not losing_trades.empty else timedelta()),
+        'holding_avg': holding_avg,
+        'holding_avg_s': holding_avg.total_seconds(),
+        'winner_holding_avg': winner_holding_avg,
+        'winner_holding_avg_s': winner_holding_avg.total_seconds(),
+        'loser_holding_avg': loser_holding_avg,
+        'loser_holding_avg_s': loser_holding_avg.total_seconds(),
         'zero_duration_trades': zero_duration_trades,
     }
 
