@@ -53,6 +53,9 @@ Due to the heavy rate-limiting applied by Kraken, the following configuration se
 
 Bittrex does not support market orders. If you have a message at the bot startup about this, you should change order type values set in your configuration and/or in the strategy from `"market"` to `"limit"`. See some more details on this [here in the FAQ](faq.md#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy).
 
+Bittrex also does not support `VolumePairlist` due to limited / split API constellation at the moment.
+Please use `StaticPairlist`. Other pairlists (other than `VolumePairlist`) should not be affected.
+
 ### Restricted markets
 
 Bittrex split its exchange into US and International versions.
