@@ -854,7 +854,7 @@ class Telegram(RPCHandler):
             message = f"Using whitelist `{whitelist['method']}` with {whitelist['length']} pairs\n"
             message += f"`{', '.join(whitelist['whitelist'])}`"
             if whitelist['pairlistsWhitelist']:
-                message += f"`from current pairlists whitelist {', '.join(whitelist['pairlistsWhitelist'])}`"
+                message += f"`\nfrom current pairlists whitelist {', '.join(whitelist['pairlistsWhitelist'])}`"
 
             logger.debug(message)
             self._send_msg(message)
