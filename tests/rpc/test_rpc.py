@@ -959,6 +959,9 @@ def test_rpc_whitelist_dynamic(mocker, default_conf) -> None:
     assert ret['length'] == 4
     assert ret['whitelist'] == default_conf['exchange']['pair_whitelist']
 
+    api_whitelist = ['ETH/BTC', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
+    assert api_whitelist == ret['pairlistsWhitelist']
+
 
 def test_rpc_blacklist(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())

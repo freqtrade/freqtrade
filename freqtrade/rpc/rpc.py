@@ -716,6 +716,8 @@ class RPC:
                'length': len(self._freqtrade.active_pair_whitelist),
                'whitelist': self._freqtrade.active_pair_whitelist
                }
+        if self._freqtrade.pairlists.whitelist:
+            res['pairlistsWhitelist'] = self._freqtrade.pairlists.whitelist
         return res
 
     def _rpc_blacklist(self, add: List[str] = None) -> Dict:
