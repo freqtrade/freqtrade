@@ -10,7 +10,7 @@ python-telegram-bot==13.5
 arrow==1.1.0
 cachetools==4.2.2
 requests==2.25.1
-urllib3==1.26.4
+urllib3==1.26.5
 wrapt==1.12.1
 jsonschema==3.2.0
 TA-Lib==0.4.20
