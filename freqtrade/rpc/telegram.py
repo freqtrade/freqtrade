@@ -218,7 +218,7 @@ class Telegram(RPCHandler):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
             msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
-                        ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
+                                   ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
         else:
             msg['profit_extra'] = ''
 
