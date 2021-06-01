@@ -211,23 +211,26 @@ class Telegram(RPCHandler):
 
         msg['emoji'] = self._get_sell_emoji(msg)
 
-        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                   "*Amount:* `{amount:.8f}`\n"
-                   "*Open Rate:* `{open_rate:.8f}`\n"
-                   "*Current Rate:* `{current_rate:.8f}`\n"
-                   "*Close Rate:* `{limit:.8f}`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Profit:* `{profit_percent:.2f}%`").format(**msg)
-
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
         if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
-                        ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+            msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
+                        ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
+        else:
+            msg['profit_extra'] = ''
+
+        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
