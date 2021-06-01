@@ -22,6 +22,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`MarketCapPairList`](#market-capitalization-pair-list)
 * [`AgeFilter`](#agefilter)
 * [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
@@ -78,6 +79,31 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 !!! Note
     `VolumePairList` does not support backtesting mode.
+
+#### Market Capitalization Pair List
+
+`MarketCapPairList` employs sorting/filtering of pairs by their market capitalization. It selects `number_assets` top pairs
+
+When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `MarketCapPairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the market capitalization.
+
+When used on the leading position of the chain of Pairlist Handlers, it does not consider `pair_whitelist` configuration setting, but selects the top pairs based on market capitalization with matching stake-currency on the exchange.
+
+The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 21600s (6 hours).
+The pairlist cache (`refresh_period`) on `MarketCapPairList` is only applicable to generating pairlists.
+Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.
+
+`MarketCapPairList` is based on the data from `coingecko.com`.
+
+```json
+"pairlists": [{
+        "method": "MarketCapPairList",
+        "number_assets": 20,
+        "refresh_period": 1800
+}],
+```
+
+!!! Note
+    `MarketCapPairList` does not support backtesting mode.
 
 #### AgeFilter
 

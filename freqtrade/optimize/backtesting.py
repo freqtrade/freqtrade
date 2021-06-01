@@ -84,6 +84,8 @@ class Backtesting:
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
 
         self.pairlists = PairListManager(self.exchange, self.config)
+        if 'MarketCapPairList' in self.pairlists.name_list:
+            raise OperationalException("MarketCapPairList not allowed for backtesting.")
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting.")
         if 'PerformanceFilter' in self.pairlists.name_list:
