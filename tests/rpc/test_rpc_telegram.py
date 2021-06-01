@@ -1350,13 +1350,14 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+            '*Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1:00:00 (60.0 min)`\n'
-            '*Profit:* `-57.41%` `(loss: -0.05746268 ETH / -24.812 USD)`')
+            '*Close Rate:* `0.00003201`'
+            )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1379,13 +1380,14 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+            '*Profit:* `-57.41%`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
-            '*Profit:* `-57.41%`')
+            '*Close Rate:* `0.00003201`'
+            )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -1537,13 +1539,14 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+                                        '*Profit:* `-57.41%`\n'
+                                        '*Sell Reason:* `stop_loss`\n'
+                                        '*Duration:* `2:35:03 (155.1 min)`\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00007500`\n'
                                         '*Current Rate:* `0.00003201`\n'
-                                        '*Close Rate:* `0.00003201`\n'
-                                        '*Sell Reason:* `stop_loss`\n'
-                                        '*Duration:* `2:35:03 (155.1 min)`\n'
-                                        '*Profit:* `-57.41%`')
+                                        '*Close Rate:* `0.00003201`'
+                                        )
 
 
 @pytest.mark.parametrize('msg,expected', [
