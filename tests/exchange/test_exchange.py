@@ -1684,6 +1684,50 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
         exchange.fetch_l2_order_book(pair='ETH/BTC', limit=50)
 
 
+@pytest.mark.parametrize("side,ask,bid,last,last_ab,expected", [
+    ('ask', 20, 19, 10, 0.0, 20),  # Full ask side
+    ('ask', 20, 19, 10, 1.0, 10),  # Full last side
+    ('ask', 20, 19, 10, 0.5, 15),  # Between ask and last
+    ('ask', 20, 19, 10, 0.7, 13),  # Between ask and last
+    ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
+    ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
+    ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
+    ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
+    ('ask', 4, 5, None, 0, 4),  # last not available - uses ask
+    ('bid', 21, 20, 10, 0.0, 20),  # Full bid side
+    ('bid', 21, 20, 10, 1.0, 10),  # Full last side
+    ('bid', 21, 20, 10, 0.5, 15),  # Between bid and last
+    ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
+    ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
+    ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
+    ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
+    ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 1, 5),  # last not available - uses bid
+    ('bid', 6, 5, None, 0, 5),  # last not available - uses bid
+])
+def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
+                      last, last_ab, expected) -> None:
+    caplog.set_level(logging.DEBUG)
+    default_conf['bid_strategy']['ask_last_balance'] = last_ab
+    default_conf['bid_strategy']['price_side'] = side
+    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
+
+    assert exchange.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+    assert exchange.get_buy_rate('ETH/BTC', False) == expected
+    assert log_has("Using cached buy rate for ETH/BTC.", caplog)
+    # Running a 2nd time with Refresh on!
+    caplog.clear()
+    assert exchange.get_buy_rate('ETH/BTC', True) == expected
+    assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
+
+
 def make_fetch_ohlcv_mock(data):
     def fetch_ohlcv_mock(pair, timeframe, since):
         if since:
