@@ -911,6 +911,128 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    # Fee handling
+
+    @retrier
+    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+        """
+        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
+        The "since" argument passed in is coming from the database and is in UTC,
+        as timezone-native datetime object.
+        From the python documentation:
+            > Naive datetime instances are assumed to represent local time
+        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
+        transformation from local timezone to UTC.
+        This works for timezones UTC+ since then the result will contain trades from a few hours
+        instead of from the last 5 seconds, however fails for UTC- timezones,
+        since we're then asking for trades with a "since" argument in the future.
+
+        :param order_id order_id: Order-id as given when creating the order
+        :param pair: Pair the order is for
+        :param since: datetime object of the order creation time. Assumes object is in UTC.
+        """
+        if self._config['dry_run']:
+            return []
+        if not self.exchange_has('fetchMyTrades'):
+            return []
+        try:
+            # Allow 5s offset to catch slight time offsets (discovered in #1185)
+            # since needs to be int in milliseconds
+            my_trades = self._api.fetch_my_trades(
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
+            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
+
+            return matched_trades
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        return order['id']
+
+    @retrier
+    def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
+                price: float = 1, taker_or_maker: str = 'maker') -> float:
+        try:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+                return self._config['fee']
+            # validate that markets are loaded before trying to get fee
+            if self._api.markets is None or len(self._api.markets) == 0:
+                self._api.load_markets()
+
+            return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+                                           price=price, takerOrMaker=taker_or_maker)['rate']
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @staticmethod
+    def order_has_fee(order: Dict) -> bool:
+        """
+        Verifies if the passed in order dict has the needed keys to extract fees,
+        and that these keys (currency, cost) are not empty.
+        :param order: Order or trade (one trade) dict
+        :return: True if the fee substructure contains currency and cost, false otherwise
+        """
+        if not isinstance(order, dict):
+            return False
+        return ('fee' in order and order['fee'] is not None
+                and (order['fee'].keys() >= {'currency', 'cost'})
+                and order['fee']['currency'] is not None
+                and order['fee']['cost'] is not None
+                )
+
+    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+        """
+        Calculate fee rate if it's not given by the exchange.
+        :param order: Order or trade (one trade) dict
+        """
+        if order['fee'].get('rate') is not None:
+            return order['fee'].get('rate')
+        fee_curr = order['fee']['currency']
+        # Calculate fee based on order details
+        if fee_curr in self.get_pair_base_currency(order['symbol']):
+            # Base currency - divide by amount
+            return round(
+                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
+        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            # Quote currency - divide by cost
+            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
+        else:
+            # If Fee currency is a different currency
+            if not order['cost']:
+                # If cost is None or 0.0 -> falsy, return None
+                return None
+            try:
+                comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
+                tick = self.fetch_ticker(comb)
+
+                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
+                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
+            except ExchangeError:
+                return None
+
+    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+        """
+        Extract tuple of cost, currency, rate.
+        Requires order_has_fee to run first!
+        :param order: Order or trade (one trade) dict
+        :return: Tuple with cost, currency, rate of the given fee dict
+        """
+        return (order['fee']['cost'],
+                order['fee']['currency'],
+                self.calculate_fee_rate(order))
+
+    # Historic data
+
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:
         """
@@ -1078,6 +1200,8 @@ class Exchange:
             raise OperationalException(f'Could not fetch historical candle (OHLCV) data '
                                        f'for pair {pair}. Message: {e}') from e
 
+    # Fetch historic trades
+
     @retrier_async
     async def _async_fetch_trades(self, pair: str,
                                   since: Optional[int] = None,
@@ -1235,124 +1359,6 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
-
-    @retrier
-    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
-        """
-        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
-        The "since" argument passed in is coming from the database and is in UTC,
-        as timezone-native datetime object.
-        From the python documentation:
-            > Naive datetime instances are assumed to represent local time
-        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
-        transformation from local timezone to UTC.
-        This works for timezones UTC+ since then the result will contain trades from a few hours
-        instead of from the last 5 seconds, however fails for UTC- timezones,
-        since we're then asking for trades with a "since" argument in the future.
-
-        :param order_id order_id: Order-id as given when creating the order
-        :param pair: Pair the order is for
-        :param since: datetime object of the order creation time. Assumes object is in UTC.
-        """
-        if self._config['dry_run']:
-            return []
-        if not self.exchange_has('fetchMyTrades'):
-            return []
-        try:
-            # Allow 5s offset to catch slight time offsets (discovered in #1185)
-            # since needs to be int in milliseconds
-            my_trades = self._api.fetch_my_trades(
-                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
-            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
-
-            return matched_trades
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
-        return order['id']
-
-    @retrier
-    def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
-        try:
-            if self._config['dry_run'] and self._config.get('fee', None) is not None:
-                return self._config['fee']
-            # validate that markets are loaded before trying to get fee
-            if self._api.markets is None or len(self._api.markets) == 0:
-                self._api.load_markets()
-
-            return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
-                                           price=price, takerOrMaker=taker_or_maker)['rate']
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    @staticmethod
-    def order_has_fee(order: Dict) -> bool:
-        """
-        Verifies if the passed in order dict has the needed keys to extract fees,
-        and that these keys (currency, cost) are not empty.
-        :param order: Order or trade (one trade) dict
-        :return: True if the fee substructure contains currency and cost, false otherwise
-        """
-        if not isinstance(order, dict):
-            return False
-        return ('fee' in order and order['fee'] is not None
-                and (order['fee'].keys() >= {'currency', 'cost'})
-                and order['fee']['currency'] is not None
-                and order['fee']['cost'] is not None
-                )
-
-    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
-        """
-        Calculate fee rate if it's not given by the exchange.
-        :param order: Order or trade (one trade) dict
-        """
-        if order['fee'].get('rate') is not None:
-            return order['fee'].get('rate')
-        fee_curr = order['fee']['currency']
-        # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(order['symbol']):
-            # Base currency - divide by amount
-            return round(
-                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
-        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
-            # Quote currency - divide by cost
-            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
-        else:
-            # If Fee currency is a different currency
-            if not order['cost']:
-                # If cost is None or 0.0 -> falsy, return None
-                return None
-            try:
-                comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
-                tick = self.fetch_ticker(comb)
-
-                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
-            except ExchangeError:
-                return None
-
-    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
-        """
-        Extract tuple of cost, currency, rate.
-        Requires order_has_fee to run first!
-        :param order: Order or trade (one trade) dict
-        :return: Tuple with cost, currency, rate of the given fee dict
-        """
-        return (order['fee']['cost'],
-                order['fee']['currency'],
-                self.calculate_fee_rate(order))
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
