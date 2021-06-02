@@ -48,6 +48,7 @@ class FreqtradeBot(LoggingMixin):
         :param config: configuration dict, you can use Configuration.get_config()
         to get the config dict.
         """
+        self.active_pair_whitelist: List[str] = []
 
         logger.info('Starting freqtrade %s', __version__)
 
@@ -76,11 +77,18 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
+        self.protections = ProtectionManager(self.config)
+
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPCManager = RPCManager(self)
+
         self.pairlists = PairListManager(self.exchange, self.config)
 
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
-
-        self.protections = ProtectionManager(self.config)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
@@ -97,12 +105,6 @@ class FreqtradeBot(LoggingMixin):
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
-        # RPC runs in separate threads, can start handling external commands just after
-        # initialization, even before Freqtradebot has a chance to start its throttling,
-        # so anything in the Freqtradebot instance should be ready (initialized), including
-        # the initial state of the bot.
-        # Keep this at the end of this initialization method.
-        self.rpc: RPCManager = RPCManager(self)
         # Protect sell-logic from forcesell and viceversa
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
