@@ -22,8 +22,8 @@ from pandas import DataFrame
 from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
-                                  InvalidOrderException, OperationalException, RetryableOrderError,
-                                  TemporaryError)
+                                  InvalidOrderException, OperationalException, PricingError,
+                                  RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED, retrier,
                                        retrier_async)
@@ -88,6 +88,11 @@ class Exchange:
 
         # Cache for 10 minutes ...
         self._fetch_tickers_cache: TTLCache = TTLCache(maxsize=1, ttl=60 * 10)
+        # Cache values for 1800 to avoid frequent polling of the exchange for prices
+        # Caching only applies to RPC methods, so prices for open trades are still
+        # refreshed once every iteration.
+        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
+        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         # Holds candles
         self._klines: Dict[Tuple[str, str], DataFrame] = {}
@@ -550,6 +555,8 @@ class Exchange:
         # See also #2575 at github.
         return max(min_stake_amounts) * amount_reserve_percent
 
+    # Dry-run methods
+
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
@@ -590,6 +597,21 @@ class Exchange:
         if closed_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
+
+    def fetch_dry_run_order(self, order_id) -> Dict[str, Any]:
+        """
+        Return dry-run order
+        Only call if running in dry-run mode.
+        """
+        try:
+            order = self._dry_run_open_orders[order_id]
+            return order
+        except KeyError as e:
+            # Gracefully handle errors with dry-run orders.
+            raise InvalidOrderException(
+                f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+
+    # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
@@ -667,6 +689,128 @@ class Exchange:
 
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
+    def fetch_order(self, order_id: str, pair: str) -> Dict:
+        if self._config['dry_run']:
+            return self.fetch_dry_run_order(order_id)
+        try:
+            return self._api.fetch_order(order_id, pair)
+        except ccxt.OrderNotFound as e:
+            raise RetryableOrderError(
+                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
+    fetch_stoploss_order = fetch_order
+
+    def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
+                                      stoploss_order: bool = False) -> Dict:
+        """
+        Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
+        the stoploss_order parameter
+        :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
+        """
+        if stoploss_order:
+            return self.fetch_stoploss_order(order_id, pair)
+        return self.fetch_order(order_id, pair)
+
+    def check_order_canceled_empty(self, order: Dict) -> bool:
+        """
+        Verify if an order has been cancelled without being partially filled
+        :param order: Order dict as returned from fetch_order()
+        :return: True if order has been cancelled without being filled, False otherwise.
+        """
+        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+                and order.get('filled') == 0.0)
+
+    @retrier
+    def cancel_order(self, order_id: str, pair: str) -> Dict:
+        if self._config['dry_run']:
+            try:
+                order = self.fetch_dry_run_order(order_id)
+
+                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
+                return order
+            except InvalidOrderException:
+                return {}
+
+        try:
+            return self._api.cancel_order(order_id, pair)
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
+    cancel_stoploss_order = cancel_order
+
+    def is_cancel_order_result_suitable(self, corder) -> bool:
+        if not isinstance(corder, dict):
+            return False
+
+        required = ('fee', 'status', 'amount')
+        return all(k in corder for k in required)
+
+    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: Orderid to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        try:
+            corder = self.cancel_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel order {order_id} for {pair}.")
+        try:
+            order = self.fetch_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
+    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel stoploss order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: stoploss-order-id to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        corder = self.cancel_stoploss_order(order_id, pair)
+        if self.is_cancel_order_result_suitable(corder):
+            return corder
+        try:
+            order = self.fetch_stoploss_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
     @retrier
     def get_balances(self) -> dict:
 
@@ -713,6 +857,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    # Pricing info
+
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
@@ -728,6 +874,264 @@ class Exchange:
                 f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    @staticmethod
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
+        """
+        Get next greater value in the list.
+        Used by fetch_l2_order_book if the api only supports a limited range
+        """
+        if not limit_range:
+            return limit
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
+
+    @retrier
+    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
+        """
+        Get L2 order book from exchange.
+        Can be limited to a certain amount (if supported).
+        Returns a dict in the format
+        {'asks': [price, volume], 'bids': [price, volume]}
+        """
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
+        try:
+
+            return self._api.fetch_l2_order_book(pair, limit1)
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching order book.'
+                f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def _order_book_gen(self, pair: str, side: str, order_book_max: int = 1,
+                        order_book_min: int = 1):
+        """
+        Helper generator to query orderbook in loop (used for early sell-order placing)
+        """
+        order_book = self.fetch_l2_order_book(pair, order_book_max)
+        for i in range(order_book_min, order_book_max + 1):
+            yield order_book[side][i - 1][0]
+
+    def get_buy_rate(self, pair: str, refresh: bool) -> float:
+        """
+        Calculates bid target between current ask price and last price
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
+        :return: float: Price
+        :raises PricingError if orderbook price could not be determined.
+        """
+        if not refresh:
+            rate = self._buy_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.debug(f"Using cached buy rate for {pair}.")
+                return rate
+
+        bid_strategy = self._config.get('bid_strategy', {})
+        if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
+
+            order_book_top = bid_strategy.get('order_book_top', 1)
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
+            logger.debug('order_book %s', order_book)
+            # top 1 = index 0
+            try:
+                rate_from_l2 = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
+            except (IndexError, KeyError) as e:
+                logger.warning(
+                    "Buy Price from orderbook could not be determined."
+                    f"Orderbook: {order_book}"
+                 )
+                raise PricingError from e
+            logger.info(f"Buy price from orderbook {bid_strategy['price_side'].capitalize()} side "
+                        f"- top {order_book_top} order book buy rate {rate_from_l2:.8f}")
+            used_rate = rate_from_l2
+        else:
+            logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
+            ticker = self.fetch_ticker(pair)
+            ticker_rate = ticker[bid_strategy['price_side']]
+            if ticker['last'] and ticker_rate > ticker['last']:
+                balance = bid_strategy['ask_last_balance']
+                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
+            used_rate = ticker_rate
+
+        self._buy_rate_cache[pair] = used_rate
+
+        return used_rate
+
+    def get_sell_rate(self, pair: str, refresh: bool) -> float:
+        """
+        Get sell rate - either using ticker bid or first bid based on orderbook
+        or remain static in any other case since it's not updating.
+        :param pair: Pair to get rate for
+        :param refresh: allow cached data
+        :return: Bid rate
+        :raises PricingError if price could not be determined.
+        """
+        if not refresh:
+            rate = self._sell_rate_cache.get(pair)
+            # Check if cache has been invalidated
+            if rate:
+                logger.debug(f"Using cached sell rate for {pair}.")
+                return rate
+
+        ask_strategy = self._config.get('ask_strategy', {})
+        if ask_strategy.get('use_order_book', False):
+            # This code is only used for notifications, selling uses the generator directly
+            logger.info(
+                f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
+            )
+            try:
+                rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
+            except (IndexError, KeyError) as e:
+                logger.warning("Sell Price at location from orderbook could not be determined.")
+                raise PricingError from e
+        else:
+            ticker = self.fetch_ticker(pair)
+            ticker_rate = ticker[ask_strategy['price_side']]
+            if ticker['last'] and ticker_rate < ticker['last']:
+                balance = ask_strategy.get('bid_last_balance', 0.0)
+                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
+            rate = ticker_rate
+
+        if rate is None:
+            raise PricingError(f"Sell-Rate for {pair} was empty.")
+        self._sell_rate_cache[pair] = rate
+        return rate
+
+    # Fee handling
+
+    @retrier
+    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+        """
+        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
+        The "since" argument passed in is coming from the database and is in UTC,
+        as timezone-native datetime object.
+        From the python documentation:
+            > Naive datetime instances are assumed to represent local time
+        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
+        transformation from local timezone to UTC.
+        This works for timezones UTC+ since then the result will contain trades from a few hours
+        instead of from the last 5 seconds, however fails for UTC- timezones,
+        since we're then asking for trades with a "since" argument in the future.
+
+        :param order_id order_id: Order-id as given when creating the order
+        :param pair: Pair the order is for
+        :param since: datetime object of the order creation time. Assumes object is in UTC.
+        """
+        if self._config['dry_run']:
+            return []
+        if not self.exchange_has('fetchMyTrades'):
+            return []
+        try:
+            # Allow 5s offset to catch slight time offsets (discovered in #1185)
+            # since needs to be int in milliseconds
+            my_trades = self._api.fetch_my_trades(
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
+            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
+
+            return matched_trades
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        return order['id']
+
+    @retrier
+    def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
+                price: float = 1, taker_or_maker: str = 'maker') -> float:
+        try:
+            if self._config['dry_run'] and self._config.get('fee', None) is not None:
+                return self._config['fee']
+            # validate that markets are loaded before trying to get fee
+            if self._api.markets is None or len(self._api.markets) == 0:
+                self._api.load_markets()
+
+            return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
+                                           price=price, takerOrMaker=taker_or_maker)['rate']
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @staticmethod
+    def order_has_fee(order: Dict) -> bool:
+        """
+        Verifies if the passed in order dict has the needed keys to extract fees,
+        and that these keys (currency, cost) are not empty.
+        :param order: Order or trade (one trade) dict
+        :return: True if the fee substructure contains currency and cost, false otherwise
+        """
+        if not isinstance(order, dict):
+            return False
+        return ('fee' in order and order['fee'] is not None
+                and (order['fee'].keys() >= {'currency', 'cost'})
+                and order['fee']['currency'] is not None
+                and order['fee']['cost'] is not None
+                )
+
+    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
+        """
+        Calculate fee rate if it's not given by the exchange.
+        :param order: Order or trade (one trade) dict
+        """
+        if order['fee'].get('rate') is not None:
+            return order['fee'].get('rate')
+        fee_curr = order['fee']['currency']
+        # Calculate fee based on order details
+        if fee_curr in self.get_pair_base_currency(order['symbol']):
+            # Base currency - divide by amount
+            return round(
+                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
+        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
+            # Quote currency - divide by cost
+            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
+        else:
+            # If Fee currency is a different currency
+            if not order['cost']:
+                # If cost is None or 0.0 -> falsy, return None
+                return None
+            try:
+                comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
+                tick = self.fetch_ticker(comb)
+
+                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
+                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
+            except ExchangeError:
+                return None
+
+    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
+        """
+        Extract tuple of cost, currency, rate.
+        Requires order_has_fee to run first!
+        :param order: Order or trade (one trade) dict
+        :return: Tuple with cost, currency, rate of the given fee dict
+        """
+        return (order['fee']['cost'],
+                order['fee']['currency'],
+                self.calculate_fee_rate(order))
+
+    # Historic data
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int) -> List:
@@ -896,6 +1300,8 @@ class Exchange:
             raise OperationalException(f'Could not fetch historical candle (OHLCV) data '
                                        f'for pair {pair}. Message: {e}') from e
 
+    # Fetch historic trades
+
     @retrier_async
     async def _async_fetch_trades(self, pair: str,
                                   since: Optional[int] = None,
@@ -1053,292 +1459,6 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
-
-    def check_order_canceled_empty(self, order: Dict) -> bool:
-        """
-        Verify if an order has been cancelled without being partially filled
-        :param order: Order dict as returned from fetch_order()
-        :return: True if order has been cancelled without being filled, False otherwise.
-        """
-        return (order.get('status') in ('closed', 'canceled', 'cancelled')
-                and order.get('filled') == 0.0)
-
-    @retrier
-    def cancel_order(self, order_id: str, pair: str) -> Dict:
-        if self._config['dry_run']:
-            order = self._dry_run_open_orders.get(order_id)
-            if order:
-                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
-                return order
-            else:
-                return {}
-
-        try:
-            return self._api.cancel_order(order_id, pair)
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Could not cancel order. Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
-    cancel_stoploss_order = cancel_order
-
-    def is_cancel_order_result_suitable(self, corder) -> bool:
-        if not isinstance(corder, dict):
-            return False
-
-        required = ('fee', 'status', 'amount')
-        return all(k in corder for k in required)
-
-    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
-        """
-        Cancel order returning a result.
-        Creates a fake result if cancel order returns a non-usable result
-        and fetch_order does not work (certain exchanges don't return cancelled orders)
-        :param order_id: Orderid to cancel
-        :param pair: Pair corresponding to order_id
-        :param amount: Amount to use for fake response
-        :return: Result from either cancel_order if usable, or fetch_order
-        """
-        try:
-            corder = self.cancel_order(order_id, pair)
-            if self.is_cancel_order_result_suitable(corder):
-                return corder
-        except InvalidOrderException:
-            logger.warning(f"Could not cancel order {order_id} for {pair}.")
-        try:
-            order = self.fetch_order(order_id, pair)
-        except InvalidOrderException:
-            logger.warning(f"Could not fetch cancelled order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
-
-        return order
-
-    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
-        """
-        Cancel stoploss order returning a result.
-        Creates a fake result if cancel order returns a non-usable result
-        and fetch_order does not work (certain exchanges don't return cancelled orders)
-        :param order_id: stoploss-order-id to cancel
-        :param pair: Pair corresponding to order_id
-        :param amount: Amount to use for fake response
-        :return: Result from either cancel_order if usable, or fetch_order
-        """
-        corder = self.cancel_stoploss_order(order_id, pair)
-        if self.is_cancel_order_result_suitable(corder):
-            return corder
-        try:
-            order = self.fetch_stoploss_order(order_id, pair)
-        except InvalidOrderException:
-            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
-
-        return order
-
-    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str) -> Dict:
-        if self._config['dry_run']:
-            try:
-                order = self._dry_run_open_orders[order_id]
-                return order
-            except KeyError as e:
-                # Gracefully handle errors with dry-run orders.
-                raise InvalidOrderException(
-                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
-        try:
-            return self._api.fetch_order(order_id, pair)
-        except ccxt.OrderNotFound as e:
-            raise RetryableOrderError(
-                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
-    fetch_stoploss_order = fetch_order
-
-    def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
-                                      stoploss_order: bool = False) -> Dict:
-        """
-        Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
-        the stoploss_order parameter
-        :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
-        """
-        if stoploss_order:
-            return self.fetch_stoploss_order(order_id, pair)
-        return self.fetch_order(order_id, pair)
-
-    @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
-                               range_required: bool = True):
-        """
-        Get next greater value in the list.
-        Used by fetch_l2_order_book if the api only supports a limited range
-        """
-        if not limit_range:
-            return limit
-
-        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
-        if not range_required and limit > result:
-            # Range is not required - we can use None as parameter.
-            return None
-        return result
-
-    @retrier
-    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
-        """
-        Get L2 order book from exchange.
-        Can be limited to a certain amount (if supported).
-        Returns a dict in the format
-        {'asks': [price, volume], 'bids': [price, volume]}
-        """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
-                                             self._ft_has['l2_limit_range_required'])
-        try:
-
-            return self._api.fetch_l2_order_book(pair, limit1)
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching order book.'
-                f'Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    @retrier
-    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
-        """
-        Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
-        The "since" argument passed in is coming from the database and is in UTC,
-        as timezone-native datetime object.
-        From the python documentation:
-            > Naive datetime instances are assumed to represent local time
-        Therefore, calling "since.timestamp()" will get the UTC timestamp, after applying the
-        transformation from local timezone to UTC.
-        This works for timezones UTC+ since then the result will contain trades from a few hours
-        instead of from the last 5 seconds, however fails for UTC- timezones,
-        since we're then asking for trades with a "since" argument in the future.
-
-        :param order_id order_id: Order-id as given when creating the order
-        :param pair: Pair the order is for
-        :param since: datetime object of the order creation time. Assumes object is in UTC.
-        """
-        if self._config['dry_run']:
-            return []
-        if not self.exchange_has('fetchMyTrades'):
-            return []
-        try:
-            # Allow 5s offset to catch slight time offsets (discovered in #1185)
-            # since needs to be int in milliseconds
-            my_trades = self._api.fetch_my_trades(
-                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
-            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
-
-            return matched_trades
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get trades due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
-        return order['id']
-
-    @retrier
-    def get_fee(self, symbol: str, type: str = '', side: str = '', amount: float = 1,
-                price: float = 1, taker_or_maker: str = 'maker') -> float:
-        try:
-            if self._config['dry_run'] and self._config.get('fee', None) is not None:
-                return self._config['fee']
-            # validate that markets are loaded before trying to get fee
-            if self._api.markets is None or len(self._api.markets) == 0:
-                self._api.load_markets()
-
-            return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
-                                           price=price, takerOrMaker=taker_or_maker)['rate']
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get fee info due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    @staticmethod
-    def order_has_fee(order: Dict) -> bool:
-        """
-        Verifies if the passed in order dict has the needed keys to extract fees,
-        and that these keys (currency, cost) are not empty.
-        :param order: Order or trade (one trade) dict
-        :return: True if the fee substructure contains currency and cost, false otherwise
-        """
-        if not isinstance(order, dict):
-            return False
-        return ('fee' in order and order['fee'] is not None
-                and (order['fee'].keys() >= {'currency', 'cost'})
-                and order['fee']['currency'] is not None
-                and order['fee']['cost'] is not None
-                )
-
-    def calculate_fee_rate(self, order: Dict) -> Optional[float]:
-        """
-        Calculate fee rate if it's not given by the exchange.
-        :param order: Order or trade (one trade) dict
-        """
-        if order['fee'].get('rate') is not None:
-            return order['fee'].get('rate')
-        fee_curr = order['fee']['currency']
-        # Calculate fee based on order details
-        if fee_curr in self.get_pair_base_currency(order['symbol']):
-            # Base currency - divide by amount
-            return round(
-                order['fee']['cost'] / safe_value_fallback2(order, order, 'filled', 'amount'), 8)
-        elif fee_curr in self.get_pair_quote_currency(order['symbol']):
-            # Quote currency - divide by cost
-            return round(order['fee']['cost'] / order['cost'], 8) if order['cost'] else None
-        else:
-            # If Fee currency is a different currency
-            if not order['cost']:
-                # If cost is None or 0.0 -> falsy, return None
-                return None
-            try:
-                comb = self.get_valid_pair_combination(fee_curr, self._config['stake_currency'])
-                tick = self.fetch_ticker(comb)
-
-                fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
-            except ExchangeError:
-                return None
-
-    def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
-        """
-        Extract tuple of cost, currency, rate.
-        Requires order_has_fee to run first!
-        :param order: Order or trade (one trade) dict
-        :return: Tuple with cost, currency, rate of the given fee dict
-        """
-        return (order['fee']['cost'],
-                order['fee']['currency'],
-                self.calculate_fee_rate(order))
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
