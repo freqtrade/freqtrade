@@ -591,6 +591,19 @@ class Exchange:
             closed_order["info"].update({"stopPrice": closed_order["price"]})
         self._dry_run_open_orders[closed_order["id"]] = closed_order
 
+    def fetch_dry_run_order(self, order_id) -> Dict[str, Any]:
+        """
+        Return dry-run order
+        Only call if running in dry-run mode.
+        """
+        try:
+            order = self._dry_run_open_orders[order_id]
+            return order
+        except KeyError as e:
+            # Gracefully handle errors with dry-run orders.
+            raise InvalidOrderException(
+                f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
         try:
@@ -1066,11 +1079,12 @@ class Exchange:
     @retrier
     def cancel_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            order = self._dry_run_open_orders.get(order_id)
-            if order:
+            try:
+                order = self.fetch_dry_run_order(order_id)
+
                 order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
                 return order
-            else:
+            except InvalidOrderException:
                 return {}
 
         try:
@@ -1144,13 +1158,7 @@ class Exchange:
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            try:
-                order = self._dry_run_open_orders[order_id]
-                return order
-            except KeyError as e:
-                # Gracefully handle errors with dry-run orders.
-                raise InvalidOrderException(
-                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+            return self.fetch_dry_run_order(order_id)
         try:
             return self._api.fetch_order(order_id, pair)
         except ccxt.OrderNotFound as e:

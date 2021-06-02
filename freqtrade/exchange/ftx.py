@@ -93,13 +93,8 @@ class Ftx(Exchange):
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            try:
-                order = self._dry_run_open_orders[order_id]
-                return order
-            except KeyError as e:
-                # Gracefully handle errors with dry-run orders.
-                raise InvalidOrderException(
-                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+            return self.fetch_dry_run_order(order_id)
+
         try:
             orders = self._api.fetch_orders(pair, None, params={'type': 'stop'})
 
