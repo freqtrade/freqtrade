@@ -759,13 +759,10 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     stake_amount = 2
     bid = 0.11
     buy_rate_mock = MagicMock(return_value=bid)
-    mocker.patch.multiple(
-        'freqtrade.freqtradebot.FreqtradeBot',
-        get_buy_rate=buy_rate_mock,
-    )
     buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
+        get_buy_rate=buy_rate_mock,
         fetch_ticker=MagicMock(return_value={
             'bid': 0.00001172,
             'ask': 0.00001173,
@@ -856,7 +853,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert not freqtrade.execute_buy(pair, stake_amount)
 
     # Fail to get price...
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_buy_rate', MagicMock(return_value=0.0))
+    mocker.patch('freqtrade.exchange.Exchange.get_buy_rate', MagicMock(return_value=0.0))
 
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
@@ -865,10 +862,6 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch.multiple(
-        'freqtrade.freqtradebot.FreqtradeBot',
-        get_buy_rate=MagicMock(return_value=0.11),
-    )
-    mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
             'bid': 0.00001172,
@@ -876,6 +869,7 @@ def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -
             'last': 0.00001172
         }),
         buy=MagicMock(return_value=limit_buy_order),
+        get_buy_rate=MagicMock(return_value=0.11),
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
     )
@@ -3934,7 +3928,7 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.get_buy_rate('ETH/BTC', True) == 0.043935
+    assert freqtrade.exchange.get_buy_rate('ETH/BTC', True) == 0.043935
     assert ticker_mock.call_count == 0
 
 
@@ -3956,7 +3950,7 @@ def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
     with pytest.raises(PricingError):
-        freqtrade.get_buy_rate('ETH/BTC', refresh=True)
+        freqtrade.exchange.get_buy_rate('ETH/BTC', refresh=True)
     assert log_has_re(r'Buy Price from orderbook could not be determined.', caplog)
 
 
