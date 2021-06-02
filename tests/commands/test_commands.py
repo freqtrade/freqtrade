@@ -1,3 +1,4 @@
+import json
 import re
 from io import BytesIO
 from pathlib import Path
@@ -914,8 +915,15 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     ]
     start_test_pairlist(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r'Pairs for BTC: \n\["ETH/BTC","TKN/BTC","BLK/BTC","LTC/BTC","XRP/BTC"\]\n',
-                    captured.out)
+    try:
+        json_pairs = json.loads(captured.out)
+        assert 'ETH/BTC' in json_pairs
+        assert 'TKN/BTC' in json_pairs
+        assert 'BLK/BTC' in json_pairs
+        assert 'LTC/BTC' in json_pairs
+        assert 'XRP/BTC' in json_pairs
+    except json.decoder.JSONDecodeError:
+        pytest.fail(f'Expected well formed JSON, but failed to parse: {captured.out}')
 
 
 def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
