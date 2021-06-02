@@ -550,6 +550,8 @@ class Exchange:
         # See also #2575 at github.
         return max(min_stake_amounts) * amount_reserve_percent
 
+    # Dry-run methods
+
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
@@ -603,6 +605,8 @@ class Exchange:
             # Gracefully handle errors with dry-run orders.
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+
+    # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, params: Dict = {}) -> Dict:
@@ -680,6 +684,128 @@ class Exchange:
 
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
+    def fetch_order(self, order_id: str, pair: str) -> Dict:
+        if self._config['dry_run']:
+            return self.fetch_dry_run_order(order_id)
+        try:
+            return self._api.fetch_order(order_id, pair)
+        except ccxt.OrderNotFound as e:
+            raise RetryableOrderError(
+                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
+    fetch_stoploss_order = fetch_order
+
+    def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
+                                      stoploss_order: bool = False) -> Dict:
+        """
+        Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
+        the stoploss_order parameter
+        :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
+        """
+        if stoploss_order:
+            return self.fetch_stoploss_order(order_id, pair)
+        return self.fetch_order(order_id, pair)
+
+    def check_order_canceled_empty(self, order: Dict) -> bool:
+        """
+        Verify if an order has been cancelled without being partially filled
+        :param order: Order dict as returned from fetch_order()
+        :return: True if order has been cancelled without being filled, False otherwise.
+        """
+        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+                and order.get('filled') == 0.0)
+
+    @retrier
+    def cancel_order(self, order_id: str, pair: str) -> Dict:
+        if self._config['dry_run']:
+            try:
+                order = self.fetch_dry_run_order(order_id)
+
+                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
+                return order
+            except InvalidOrderException:
+                return {}
+
+        try:
+            return self._api.cancel_order(order_id, pair)
+        except ccxt.InvalidOrder as e:
+            raise InvalidOrderException(
+                f'Could not cancel order. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
+    cancel_stoploss_order = cancel_order
+
+    def is_cancel_order_result_suitable(self, corder) -> bool:
+        if not isinstance(corder, dict):
+            return False
+
+        required = ('fee', 'status', 'amount')
+        return all(k in corder for k in required)
+
+    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: Orderid to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        try:
+            corder = self.cancel_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel order {order_id} for {pair}.")
+        try:
+            order = self.fetch_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
+    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
+        """
+        Cancel stoploss order returning a result.
+        Creates a fake result if cancel order returns a non-usable result
+        and fetch_order does not work (certain exchanges don't return cancelled orders)
+        :param order_id: stoploss-order-id to cancel
+        :param pair: Pair corresponding to order_id
+        :param amount: Amount to use for fake response
+        :return: Result from either cancel_order if usable, or fetch_order
+        """
+        corder = self.cancel_stoploss_order(order_id, pair)
+        if self.is_cancel_order_result_suitable(corder):
+            return corder
+        try:
+            order = self.fetch_stoploss_order(order_id, pair)
+        except InvalidOrderException:
+            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
+            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
+
+        return order
+
     @retrier
     def get_balances(self) -> dict:
 
@@ -726,6 +852,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    # Pricing info
+
     @retrier
     def fetch_ticker(self, pair: str) -> dict:
         try:
@@ -739,6 +867,47 @@ class Exchange:
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
                 f'Could not load ticker due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @staticmethod
+    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
+                               range_required: bool = True):
+        """
+        Get next greater value in the list.
+        Used by fetch_l2_order_book if the api only supports a limited range
+        """
+        if not limit_range:
+            return limit
+
+        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
+        if not range_required and limit > result:
+            # Range is not required - we can use None as parameter.
+            return None
+        return result
+
+    @retrier
+    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
+        """
+        Get L2 order book from exchange.
+        Can be limited to a certain amount (if supported).
+        Returns a dict in the format
+        {'asks': [price, volume], 'bids': [price, volume]}
+        """
+        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
+                                             self._ft_has['l2_limit_range_required'])
+        try:
+
+            return self._api.fetch_l2_order_book(pair, limit1)
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching order book.'
+                f'Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
@@ -1066,169 +1235,6 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
-
-    def check_order_canceled_empty(self, order: Dict) -> bool:
-        """
-        Verify if an order has been cancelled without being partially filled
-        :param order: Order dict as returned from fetch_order()
-        :return: True if order has been cancelled without being filled, False otherwise.
-        """
-        return (order.get('status') in ('closed', 'canceled', 'cancelled')
-                and order.get('filled') == 0.0)
-
-    @retrier
-    def cancel_order(self, order_id: str, pair: str) -> Dict:
-        if self._config['dry_run']:
-            try:
-                order = self.fetch_dry_run_order(order_id)
-
-                order.update({'status': 'canceled', 'filled': 0.0, 'remaining': order['amount']})
-                return order
-            except InvalidOrderException:
-                return {}
-
-        try:
-            return self._api.cancel_order(order_id, pair)
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Could not cancel order. Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    # Assign method to cancel_stoploss_order to allow easy overriding in other classes
-    cancel_stoploss_order = cancel_order
-
-    def is_cancel_order_result_suitable(self, corder) -> bool:
-        if not isinstance(corder, dict):
-            return False
-
-        required = ('fee', 'status', 'amount')
-        return all(k in corder for k in required)
-
-    def cancel_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
-        """
-        Cancel order returning a result.
-        Creates a fake result if cancel order returns a non-usable result
-        and fetch_order does not work (certain exchanges don't return cancelled orders)
-        :param order_id: Orderid to cancel
-        :param pair: Pair corresponding to order_id
-        :param amount: Amount to use for fake response
-        :return: Result from either cancel_order if usable, or fetch_order
-        """
-        try:
-            corder = self.cancel_order(order_id, pair)
-            if self.is_cancel_order_result_suitable(corder):
-                return corder
-        except InvalidOrderException:
-            logger.warning(f"Could not cancel order {order_id} for {pair}.")
-        try:
-            order = self.fetch_order(order_id, pair)
-        except InvalidOrderException:
-            logger.warning(f"Could not fetch cancelled order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
-
-        return order
-
-    def cancel_stoploss_order_with_result(self, order_id: str, pair: str, amount: float) -> Dict:
-        """
-        Cancel stoploss order returning a result.
-        Creates a fake result if cancel order returns a non-usable result
-        and fetch_order does not work (certain exchanges don't return cancelled orders)
-        :param order_id: stoploss-order-id to cancel
-        :param pair: Pair corresponding to order_id
-        :param amount: Amount to use for fake response
-        :return: Result from either cancel_order if usable, or fetch_order
-        """
-        corder = self.cancel_stoploss_order(order_id, pair)
-        if self.is_cancel_order_result_suitable(corder):
-            return corder
-        try:
-            order = self.fetch_stoploss_order(order_id, pair)
-        except InvalidOrderException:
-            logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
-            order = {'fee': {}, 'status': 'canceled', 'amount': amount, 'info': {}}
-
-        return order
-
-    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
-    def fetch_order(self, order_id: str, pair: str) -> Dict:
-        if self._config['dry_run']:
-            return self.fetch_dry_run_order(order_id)
-        try:
-            return self._api.fetch_order(order_id, pair)
-        except ccxt.OrderNotFound as e:
-            raise RetryableOrderError(
-                f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
-        except ccxt.InvalidOrder as e:
-            raise InvalidOrderException(
-                f'Tried to get an invalid order (pair: {pair} id: {order_id}). Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get order due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    # Assign method to fetch_stoploss_order to allow easy overriding in other classes
-    fetch_stoploss_order = fetch_order
-
-    def fetch_order_or_stoploss_order(self, order_id: str, pair: str,
-                                      stoploss_order: bool = False) -> Dict:
-        """
-        Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
-        the stoploss_order parameter
-        :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
-        """
-        if stoploss_order:
-            return self.fetch_stoploss_order(order_id, pair)
-        return self.fetch_order(order_id, pair)
-
-    @staticmethod
-    def get_next_limit_in_list(limit: int, limit_range: Optional[List[int]],
-                               range_required: bool = True):
-        """
-        Get next greater value in the list.
-        Used by fetch_l2_order_book if the api only supports a limited range
-        """
-        if not limit_range:
-            return limit
-
-        result = min([x for x in limit_range if limit <= x] + [max(limit_range)])
-        if not range_required and limit > result:
-            # Range is not required - we can use None as parameter.
-            return None
-        return result
-
-    @retrier
-    def fetch_l2_order_book(self, pair: str, limit: int = 100) -> dict:
-        """
-        Get L2 order book from exchange.
-        Can be limited to a certain amount (if supported).
-        Returns a dict in the format
-        {'asks': [price, volume], 'bids': [price, volume]}
-        """
-        limit1 = self.get_next_limit_in_list(limit, self._ft_has['l2_limit_range'],
-                                             self._ft_has['l2_limit_range_required'])
-        try:
-
-            return self._api.fetch_l2_order_book(pair, limit1)
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching order book.'
-                f'Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not get order book due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
 
     @retrier
     def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
