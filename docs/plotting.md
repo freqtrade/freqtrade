@@ -275,6 +275,7 @@ optional arguments:
                         (backtest file)) Default: file
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
+  --auto-open           Automatically open generated plot.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

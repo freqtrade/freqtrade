@@ -602,4 +602,5 @@ def plot_profit(config: Dict[str, Any]) -> None:
                                 trades, config.get('timeframe', '5m'),
                                 config.get('stake_currency', ''))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
-                    directory=config['user_data_dir'] / 'plot', auto_open=True)
+                    directory=config['user_data_dir'] / 'plot',
+                    auto_open=config.get('plot_auto_open', False))
