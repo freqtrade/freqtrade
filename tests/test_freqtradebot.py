@@ -2750,6 +2750,7 @@ def test_execute_sell_with_stoploss_on_exchange(default_conf, ticker, fee, ticke
         price_to_precision=lambda s, x, y: y,
         stoploss=stoploss,
         cancel_stoploss_order=cancel_order,
+        dry_limit_order_filled=MagicMock(return_value=True),
     )
 
     freqtrade = FreqtradeBot(default_conf)
@@ -2792,6 +2793,7 @@ def test_may_execute_sell_after_stoploss_on_exchange_hit(default_conf, ticker, f
         get_fee=fee,
         amount_to_precision=lambda s, x, y: y,
         price_to_precision=lambda s, x, y: y,
+        dry_limit_order_filled=MagicMock(return_value=True),
     )
 
     stoploss = MagicMock(return_value={

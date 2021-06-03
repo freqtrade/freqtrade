@@ -561,7 +561,7 @@ class Exchange:
                              rate: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
-        dry_order = {
+        dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
             'price': rate,
@@ -577,26 +577,73 @@ class Exchange:
             'fee': None,
             'info': {}
         }
-        self._store_dry_order(dry_order, pair)
+        if dry_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
+            dry_order["info"] = {"stopPrice": dry_order["price"]}
+
+        if dry_order["type"] == "market":
+            # Update market order pricing
+            average = self.get_dry_market_fill_price(pair, side, amount, rate)
+            dry_order.update({
+                'average': average,
+                'cost': dry_order['amount'] * average,
+            })
+            self.add_dry_order_fee(pair, dry_order)
+
+        self._dry_run_open_orders[dry_order["id"]] = dry_order
         # Copy order and close it - so the returned order is open unless it's a market order
         return dry_order
 
-    def _store_dry_order(self, dry_order: Dict, pair: str) -> None:
-        closed_order = dry_order.copy()
-        if closed_order['type'] in ["market", "limit"]:
-            closed_order.update({
-                'status': 'closed',
-                'filled': closed_order['amount'],
-                'remaining': 0,
-                'fee': {
-                    'currency': self.get_pair_quote_currency(pair),
-                    'cost': dry_order['cost'] * self.get_fee(pair),
-                    'rate': self.get_fee(pair)
-                }
-            })
-        if closed_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
-            closed_order["info"].update({"stopPrice": closed_order["price"]})
-        self._dry_run_open_orders[closed_order["id"]] = closed_order
+    def add_dry_order_fee(self, pair: str, dry_order: Dict[str, Any]):
+        dry_order.update({
+            'fee': {
+                'currency': self.get_pair_quote_currency(pair),
+                'cost': dry_order['cost'] * self.get_fee(pair),
+                'rate': self.get_fee(pair)
+            }
+        })
+
+    def get_dry_market_fill_price(self, pair: str, side: str, amount: float, rate: float) -> float:
+        """
+        Get the market order fill price based on orderbook interpolation
+        """
+        if self.exchange_has('fetchL2OrderBook'):
+            ob = self.fetch_l2_order_book(pair, 20)
+            book_entry_type = 'asks' if side == 'buy' else 'bids'
+
+            remaining_amount = amount
+            filled_amount = 0
+            for book_entry in ob[book_entry_type]:
+                book_entry_price = book_entry[0]
+                book_entry_coin_volume = book_entry[1]
+                book_entry_ref_currency_volume = book_entry_price * book_entry_coin_volume
+                if remaining_amount > 0:
+                    if remaining_amount < book_entry_ref_currency_volume:
+                        filled_amount += remaining_amount * book_entry_price
+                    else:
+                        filled_amount += book_entry_ref_currency_volume * book_entry_price
+                    remaining_amount -= book_entry_ref_currency_volume
+                else:
+                    break
+            forecast_avg_filled_price = filled_amount / amount
+            return self.price_to_precision(pair, forecast_avg_filled_price)
+
+        return rate
+
+    def dry_limit_order_filled(self, pair: str, side: str, limit: float) -> bool:
+        if not self.exchange_has('fetchL2OrderBook'):
+            return True
+        ob = self.fetch_l2_order_book(pair, 1)
+        if side == 'buy':
+            price = ob['asks'][0][0]
+            logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
+            if limit >= price:
+                return True
+        else:
+            price = ob['bids'][0][0]
+            logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
+            if limit <= price:
+                return True
+        return False
 
     def fetch_dry_run_order(self, order_id) -> Dict[str, Any]:
         """
@@ -605,6 +652,16 @@ class Exchange:
         """
         try:
             order = self._dry_run_open_orders[order_id]
+            pair = order['symbol']
+            if order['status'] != "closed" and order['type'] in ["limit"]:
+                if self.dry_limit_order_filled(pair, order['side'], order['price']):
+                    order.update({
+                        'status': 'closed',
+                        'filled': order['amount'],
+                        'remaining': 0,
+                    })
+                    self.add_dry_order_fee(pair, order)
+
             return order
         except KeyError as e:
             # Gracefully handle errors with dry-run orders.
