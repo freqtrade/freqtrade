@@ -608,22 +608,24 @@ class Exchange:
         """
         if self.exchange_has('fetchL2OrderBook'):
             ob = self.fetch_l2_order_book(pair, 20)
-            book_entry_type = 'asks' if side == 'buy' else 'bids'
+            ob_type = 'asks' if side == 'buy' else 'bids'
 
             remaining_amount = amount
             filled_amount = 0
-            for book_entry in ob[book_entry_type]:
+            for book_entry in ob[ob_type]:
                 book_entry_price = book_entry[0]
                 book_entry_coin_volume = book_entry[1]
-                book_entry_ref_currency_volume = book_entry_price * book_entry_coin_volume
                 if remaining_amount > 0:
-                    if remaining_amount < book_entry_ref_currency_volume:
+                    if remaining_amount < book_entry_coin_volume:
                         filled_amount += remaining_amount * book_entry_price
                     else:
-                        filled_amount += book_entry_ref_currency_volume * book_entry_price
-                    remaining_amount -= book_entry_ref_currency_volume
+                        filled_amount += book_entry_coin_volume * book_entry_price
+                    remaining_amount -= book_entry_coin_volume
                 else:
                     break
+            else:
+                # If remaining_amount wasn't consumed completely (break was not called)
+                filled_amount += remaining_amount * book_entry_price
             forecast_avg_filled_price = filled_amount / amount
             return self.price_to_precision(pair, forecast_avg_filled_price)
 

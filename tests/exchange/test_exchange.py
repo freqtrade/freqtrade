@@ -947,6 +947,70 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
     assert order["symbol"] == "ETH/BTC"
 
 
+@pytest.mark.parametrize("side,startprice,endprice", [
+    ("buy", 25.563, 25.566),
+    ("sell", 25.566, 25.563)
+])
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice, endprice,
+                                         exchange_name, order_book_l2_usd):
+    default_conf['dry_run'] = True
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          exchange_has=MagicMock(return_value=True),
+                          fetch_l2_order_book=order_book_l2_usd,
+                          )
+
+    order = exchange.create_dry_run_order(
+        pair='LTC/USDT', ordertype='limit', side=side, amount=1, rate=startprice)
+    assert 'id' in order
+    assert f'dry_run_{side}_' in order["id"]
+    assert order["side"] == side
+    assert order["type"] == "limit"
+    assert order["symbol"] == "LTC/USDT"
+
+    order_closed = exchange.fetch_dry_run_order(order['id'])
+    assert order_book_l2_usd.call_count == 1
+    assert order_closed['status'] == 'open'
+    assert not order['fee']
+
+    order_book_l2_usd.reset_mock()
+    order_closed['price'] = endprice
+
+    order_closed = exchange.fetch_dry_run_order(order['id'])
+    assert order_closed['status'] == 'closed'
+    assert order['fee']
+
+
+@pytest.mark.parametrize("side,amount,endprice", [
+    ("buy", 1, 25.566),
+    ("buy", 100, 25.5672),  # Requires interpolation
+    ("buy", 1000, 25.575),  # More than orderbook return
+    ("sell", 1, 25.563),
+    ("sell", 100, 25.5625),  # Requires interpolation
+    ("sell", 1000, 25.5555),  # More than orderbook return
+])
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test_create_dry_run_order_market_fill(default_conf, mocker, side, amount, endprice,
+                                          exchange_name, order_book_l2_usd):
+    default_conf['dry_run'] = True
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          exchange_has=MagicMock(return_value=True),
+                          fetch_l2_order_book=order_book_l2_usd,
+                          )
+
+    order = exchange.create_dry_run_order(
+        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=25.5)
+    assert 'id' in order
+    assert f'dry_run_{side}_' in order["id"]
+    assert order["side"] == side
+    assert order["type"] == "market"
+    assert order["symbol"] == "LTC/USDT"
+    assert order['status'] == 'closed'
+    assert round(order["average"], 4) == round(endprice, 4)
+
+
 @pytest.mark.parametrize("side", [
     ("buy"),
     ("sell")
