@@ -997,7 +997,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
         fetch_ticker=ticker,
         get_fee=fee,
         markets=PropertyMock(return_value=markets),
-        dry_limit_order_filled=MagicMock(return_value=True),
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     patch_get_signal(ftbot, (True, False))
 

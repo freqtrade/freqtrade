@@ -963,11 +963,13 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
 
     order = exchange.create_dry_run_order(
         pair='LTC/USDT', ordertype='limit', side=side, amount=1, rate=startprice)
+    assert order_book_l2_usd.call_count == 1
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
     assert order["type"] == "limit"
     assert order["symbol"] == "LTC/USDT"
+    order_book_l2_usd.reset_mock()
 
     order_closed = exchange.fetch_dry_run_order(order['id'])
     assert order_book_l2_usd.call_count == 1
@@ -2181,7 +2183,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
 def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    mocker.patch('freqtrade.exchange.Exchange.dry_limit_order_filled', return_value=True)
+    mocker.patch('freqtrade.exchange.Exchange._is_dry_limit_order_filled', return_value=True)
     assert exchange.cancel_order(order_id='123', pair='TKN/BTC') == {}
     assert exchange.cancel_stoploss_order(order_id='123', pair='TKN/BTC') == {}
 
