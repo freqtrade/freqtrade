@@ -76,7 +76,7 @@ Alternatively
 
 For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
 
-Please check out our [discord server](https://discord.gg/MA9v74M).
+Please check out our [discord server](https://discord.gg/p7nuUNVfP7).
 
 You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
 
