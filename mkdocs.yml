@@ -1,5 +1,7 @@
 site_name: Freqtrade
+site_url: https://www.freqtrade.io/
 repo_url: https://github.com/freqtrade/freqtrade
+use_directory_urls: True
 nav:
     - Home: index.md
     - Quickstart with Docker: docker_quickstart.md
