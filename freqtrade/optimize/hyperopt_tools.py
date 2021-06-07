@@ -279,7 +279,6 @@ class HyperoptTools():
         )
         trials = trials.drop(columns=['max_drawdown_abs'])
 
-
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency),
