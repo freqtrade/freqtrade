@@ -233,16 +233,15 @@ class HyperoptTools():
                              'results_metrics.winsdrawslosses',
                              'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
                              'results_metrics.profit_total', 'results_metrics.holding_avg',
-                             'loss', 'is_initial_point', 'is_best', 'results_metrics.max_drawdown',
-                             'results_metrics.max_drawdown_abs']]
+                             'results_metrics.max_drawdown', 'results_metrics.max_drawdown_abs',
+                             'loss', 'is_initial_point', 'is_best']]
         else:
             # Legacy mode
             trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
                              'results_metrics.winsdrawslosses',
                              'results_metrics.avg_profit', 'results_metrics.total_profit',
-                             'results_metrics.profit', 'results_metrics.duration',
-                             'loss', 'is_initial_point', 'is_best', 'results_metrics.max_drawdown',
-                             'results_metrics.max_drawdown_abs']]
+                             'results_metrics.profit', 'results_metrics.duration', 'results_metrics.max_drawdown',
+                             'results_metrics.max_drawdown_abs', 'loss', 'is_initial_point', 'is_best']]
 
         trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
                           'Total profit', 'Profit', 'Avg duration', 'Max Drawdown', 'max_drawdown_abs',
@@ -268,6 +267,8 @@ class HyperoptTools():
             lambda x: f'{x:,.5f}'.rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
         )
 
+        stake_currency = config['stake_currency']
+
         trials['Max Drawdown'] = trials.apply(
             lambda x: '{} {}'.format(
                 round_coin_value(x['max_drawdown_abs'], stake_currency),
@@ -278,7 +279,7 @@ class HyperoptTools():
         )
         trials = trials.drop(columns=['max_drawdown_abs'])
 
-        stake_currency = config['stake_currency']
+
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency),
