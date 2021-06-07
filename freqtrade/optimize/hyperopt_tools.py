@@ -233,18 +233,20 @@ class HyperoptTools():
                              'results_metrics.winsdrawslosses',
                              'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
                              'results_metrics.profit_total', 'results_metrics.holding_avg',
-                             'loss', 'is_initial_point', 'is_best']]
+                             'loss', 'is_initial_point', 'is_best', 'results_metrics.max_drawdown',
+                             'results_metrics.max_drawdown_abs']]
         else:
             # Legacy mode
             trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
                              'results_metrics.winsdrawslosses',
                              'results_metrics.avg_profit', 'results_metrics.total_profit',
                              'results_metrics.profit', 'results_metrics.duration',
-                             'loss', 'is_initial_point', 'is_best']]
+                             'loss', 'is_initial_point', 'is_best', 'results_metrics.max_drawdown',
+                             'results_metrics.max_drawdown_abs']]
 
         trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
-                          'Total profit', 'Profit', 'Avg duration', 'Objective',
-                          'is_initial_point', 'is_best']
+                          'Total profit', 'Profit', 'Avg duration', 'Max Drawdown', 'max_drawdown_abs',
+                          'Objective', 'is_initial_point', 'is_best']
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
@@ -265,6 +267,16 @@ class HyperoptTools():
         trials['Objective'] = trials['Objective'].apply(
             lambda x: f'{x:,.5f}'.rjust(8, ' ') if x != 100000 else "N/A".rjust(8, ' ')
         )
+
+        trials['Max Drawdown'] = trials.apply(
+            lambda x: '{} {}'.format(
+                round_coin_value(x['max_drawdown_abs'], stake_currency),
+                '({:,.2f}%)'.format(x['Max Drawdown'] * perc_multi).rjust(10, ' ')
+            ).rjust(25 + len(stake_currency))
+            if x['Max Drawdown'] != 0.0 else '--'.rjust(25 + len(stake_currency)),
+            axis=1
+        )
+        trials = trials.drop(columns=['max_drawdown_abs'])
 
         stake_currency = config['stake_currency']
         trials['Profit'] = trials.apply(
