@@ -427,6 +427,7 @@ class Telegram(RPCHandler):
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
         start_date = datetime.fromtimestamp(0)
+        timescale = None
         try:
             if context.args:
                 timescale = int(context.args[0])
@@ -466,16 +467,18 @@ class Telegram(RPCHandler):
             else:
                 markdown_msg = "`No closed trade` \n"
 
-            markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
-                             f"({profit_all_percent_mean:.2f}%) "
-                             f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                             f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
-                             f"*Total Trade Count:* `{trade_count}`\n"
-                             f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}\n`"
-                             f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
-                             )
+            markdown_msg += (
+                f"*ROI:* All trades\n"
+                f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
+                f"({profit_all_percent_mean:.2f}%) "
+                f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"*Total Trade Count:* `{trade_count}`\n"
+                f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
+                f"`{first_trade_date}`\n"
+                f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
+                )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
