@@ -14,11 +14,11 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
-from freqtrade.enums import SellType
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets

@@ -11,6 +11,7 @@ import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
+from freqtrade.enums import SellType
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -19,7 +20,7 @@ from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.rpc import RPCMessageType
 from freqtrade.state import RunMode, State
-from freqtrade.strategy.interface import SellCheckTuple, SellType
+from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.worker import Worker
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
                             log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,

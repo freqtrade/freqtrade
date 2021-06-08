@@ -16,12 +16,12 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
+from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.state import RunMode
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 

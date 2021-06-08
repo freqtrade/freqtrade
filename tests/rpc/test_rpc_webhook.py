@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 from requests import RequestException
 
+from freqtrade.enums import SellType
 from freqtrade.rpc import RPC, RPCMessageType
 from freqtrade.rpc.webhook import Webhook
-from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has
 
 
