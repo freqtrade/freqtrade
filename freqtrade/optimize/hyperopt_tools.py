@@ -222,6 +222,11 @@ class HyperoptTools():
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.winsdrawslosses'] = 'N/A'
 
+        if 'results_metrics.max_drawdown_abs' not in trials.columns:
+            # Ensure compatibility with older versions of hyperopt results
+            trials['results_metrics.max_drawdown_abs'] = None
+            trials['results_metrics.max_drawdown'] = None
+
         legacy_mode = True
 
         if 'results_metrics.total_trades' in trials:
@@ -237,20 +242,18 @@ class HyperoptTools():
                              'results_metrics.max_drawdown', 'results_metrics.max_drawdown_abs',
                              'loss', 'is_initial_point', 'is_best']]
 
-            trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
-                              'Total profit', 'Profit', 'Avg duration', 'Max Drawdown',
-                              'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_best']
         else:
             # Legacy mode
             trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
                              'results_metrics.winsdrawslosses', 'results_metrics.avg_profit',
                              'results_metrics.total_profit', 'results_metrics.profit',
-                             'results_metrics.duration', 'loss', 'is_initial_point',
+                             'results_metrics.duration', 'results_metrics.max_drawdown',
+                             'results_metrics.max_drawdown_abs', 'loss', 'is_initial_point',
                              'is_best']]
 
-            trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
-                              'Total profit', 'Profit', 'Avg duration', 'Objective',
-                              'is_initial_point', 'is_best']
+        trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
+                          'Total profit', 'Profit', 'Avg duration', 'Max Drawdown',
+                          'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_best']
 
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
@@ -284,7 +287,10 @@ class HyperoptTools():
                 if x['Max Drawdown'] != 0.0 else '--'.rjust(25 + len(stake_currency)),
                 axis=1
             )
-            trials = trials.drop(columns=['max_drawdown_abs'])
+        else:
+            trials = trials.drop(columns=['Max Drawdown'])
+
+        trials = trials.drop(columns=['max_drawdown_abs'])
 
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
