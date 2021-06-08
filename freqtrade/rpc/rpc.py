@@ -355,9 +355,10 @@ class RPC:
         return {'sell_reasons': sell_reasons, 'durations': durations}
 
     def _rpc_trade_statistics(
-            self, stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
+            self, stake_currency: str, fiat_display_currency: str,
+            start_date: datetime = datetime.fromtimestamp(0)) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
-        trades = Trade.get_trades().order_by(Trade.id).all()
+        trades = Trade.get_trades([Trade.open_date >= start_date]).order_by(Trade.id).all()
 
         profit_all_coin = []
         profit_all_ratio = []

@@ -5,7 +5,8 @@ This module manage Telegram communication
 """
 import json
 import logging
-from datetime import timedelta
+import re
+from datetime import date, datetime, timedelta
 from html import escape
 from itertools import chain
 from math import isnan
@@ -99,23 +100,27 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refacoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = ['/start', '/stop', '/status', '/status table',
-                                 '/trades', '/profit', '/performance', '/daily',
-                                 '/stats', '/count', '/locks', '/balance',
-                                 '/stopbuy', '/reload_config', '/show_config',
-                                 '/logs', '/whitelist', '/blacklist', '/edge',
-                                 '/help', '/version']
+        valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
+                                 r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
+                                 r'/profit$', r'/profit \d+',
+                                 r'/stats$', r'/count$', r'/locks$', r'/balance$',
+                                 r'/stopbuy$', r'/reload_config$', r'/show_config$',
+                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/forcebuy$', r'/help$', r'/version$']
+        # Create keys for generation
+        valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
         # custom keyboard specified in config.json
         cust_keyboard = self._config['telegram'].get('keyboard', [])
         if cust_keyboard:
+            combined = "(" + ")|(".join(valid_keys) + ")"
             # check for valid shortcuts
             invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
-                            if b not in valid_keys]
+                            if not re.match(combined, b)]
             if len(invalid_keys):
                 err_msg = ('config.telegram.keyboard: Invalid commands for '
                            f'custom Telegram keyboard: {invalid_keys}'
-                           f'\nvalid commands are: {valid_keys}')
+                           f'\nvalid commands are: {valid_keys_print}')
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
@@ -457,9 +462,20 @@ class Telegram(RPCHandler):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
+        start_date = datetime.fromtimestamp(0)
+        timescale = None
+        try:
+            if context.args:
+                timescale = int(context.args[0])
+                today_start = datetime.combine(date.today(), datetime.min.time())
+                start_date = today_start - timedelta(days=timescale)
+        except (TypeError, ValueError, IndexError):
+            pass
+
         stats = self._rpc._rpc_trade_statistics(
             stake_cur,
-            fiat_disp_cur)
+            fiat_disp_cur,
+            start_date)
         profit_closed_coin = stats['profit_closed_coin']
         profit_closed_percent_mean = stats['profit_closed_percent_mean']
         profit_closed_percent_sum = stats['profit_closed_percent_sum']
@@ -487,16 +503,18 @@ class Telegram(RPCHandler):
             else:
                 markdown_msg = "`No closed trade` \n"
 
-            markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
-                             f"({profit_all_percent_mean:.2f}%) "
-                             f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                             f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
-                             f"*Total Trade Count:* `{trade_count}`\n"
-                             f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}\n`"
-                             f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
-                             )
+            markdown_msg += (
+                f"*ROI:* All trades\n"
+                f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
+                f"({profit_all_percent_mean:.2f}%) "
+                f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"*Total Trade Count:* `{trade_count}`\n"
+                f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
+                f"`{first_trade_date}`\n"
+                f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
+                )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
@@ -959,7 +977,8 @@ class Telegram(RPCHandler):
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-                   "*/profit:* `Lists cumulative profit from all finished trades`\n"
+                   "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
+                   "over the last n days`\n"
                    "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
                    "regardless of profit`\n"
                    f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
