@@ -14,7 +14,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType
+from freqtrade.enums import SellType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -26,14 +26,6 @@ from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
-
-
-class SignalType(Enum):
-    """
-    Enum to distinguish between buy and sell signals
-    """
-    BUY = "buy"
-    SELL = "sell"
 
 
 class SellCheckTuple(object):
