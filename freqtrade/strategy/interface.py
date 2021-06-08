@@ -18,6 +18,7 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.enums import SellType
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
@@ -33,25 +34,6 @@ class SignalType(Enum):
     """
     BUY = "buy"
     SELL = "sell"
-
-
-class SellType(Enum):
-    """
-    Enum to distinguish between sell reasons
-    """
-    ROI = "roi"
-    STOP_LOSS = "stop_loss"
-    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
-    TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
-    FORCE_SELL = "force_sell"
-    EMERGENCY_SELL = "emergency_sell"
-    CUSTOM_SELL = "custom_sell"
-    NONE = ""
-
-    def __str__(self):
-        # explicitly convert to String to help with exporting data.
-        return self.value
 
 
 class SellCheckTuple(object):
