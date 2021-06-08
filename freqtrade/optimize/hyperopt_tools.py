@@ -222,10 +222,12 @@ class HyperoptTools():
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.winsdrawslosses'] = 'N/A'
 
+        has_drawdown = True
         if 'results_metrics.max_drawdown_abs' not in trials.columns:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.max_drawdown_abs'] = None
             trials['results_metrics.max_drawdown'] = None
+            has_drawdown = False
 
         legacy_mode = True
 
@@ -278,7 +280,7 @@ class HyperoptTools():
 
         stake_currency = config['stake_currency']
 
-        if not legacy_mode:
+        if has_drawdown:
             trials['Max Drawdown'] = trials.apply(
                 lambda x: '{} {}'.format(
                     round_coin_value(x['max_drawdown_abs'], stake_currency),
