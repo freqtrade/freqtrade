@@ -4,8 +4,8 @@ from typing import Any, Dict
 import rapidjson
 
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.enums import RunMode
 from freqtrade.resolvers import ExchangeResolver
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

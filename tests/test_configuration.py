@@ -20,9 +20,9 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_temporary_deprecated_settings)
 from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
-from freqtrade.state import RunMode
 from tests.conftest import log_has, log_has_re, patched_configuration_load_config_file
 
 

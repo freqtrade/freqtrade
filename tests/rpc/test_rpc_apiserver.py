@@ -15,6 +15,7 @@ from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
+from freqtrade.enums import RunMode, State
 from freqtrade.exceptions import ExchangeError
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
@@ -22,7 +23,6 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
-from freqtrade.state import RunMode, State
 from tests.conftest import (create_mock_trades, get_mock_coro, get_patched_freqtradebot, log_has,
                             log_has_re, patch_get_signal)
 

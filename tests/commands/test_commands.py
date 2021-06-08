@@ -17,8 +17,8 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.state import RunMode
 from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
