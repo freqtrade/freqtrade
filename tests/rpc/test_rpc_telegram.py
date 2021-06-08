@@ -451,8 +451,10 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
-
-    telegram._profit(update=update, context=MagicMock())
+    context = MagicMock()
+    # Test with invalid 2nd argument (should silently pass)
+    context.args = ["aaa"]
+    telegram._profit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
