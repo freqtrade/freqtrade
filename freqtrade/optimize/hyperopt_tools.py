@@ -206,33 +206,20 @@ class HyperoptTools():
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                         print_colorized: bool, remove_header: int) -> str:
-        """
-        Log result table
-        """
-        if not results:
-            return ''
+    def prepare_trials_columns(trials, legacy_mode: bool, has_drawdown: bool) -> str:
 
-        tabulate.PRESERVE_WHITESPACE = True
-
-        trials = json_normalize(results, max_level=1)
         trials['Best'] = ''
+
         if 'results_metrics.winsdrawslosses' not in trials.columns:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.winsdrawslosses'] = 'N/A'
 
-        has_drawdown = True
-        if 'results_metrics.max_drawdown_abs' not in trials.columns:
+        if not has_drawdown:
             # Ensure compatibility with older versions of hyperopt results
             trials['results_metrics.max_drawdown_abs'] = None
             trials['results_metrics.max_drawdown'] = None
-            has_drawdown = False
 
-        legacy_mode = True
-
-        if 'results_metrics.total_trades' in trials:
-            legacy_mode = False
+        if not legacy_mode:
             # New mode, using backtest result for metrics
             trials['results_metrics.winsdrawslosses'] = trials.apply(
                 lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
@@ -256,6 +243,25 @@ class HyperoptTools():
         trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
                           'Total profit', 'Profit', 'Avg duration', 'Max Drawdown',
                           'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_best']
+
+        return trials
+
+    @staticmethod
+    def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
+                         print_colorized: bool, remove_header: int) -> str:
+        """
+        Log result table
+        """
+        if not results:
+            return ''
+
+        tabulate.PRESERVE_WHITESPACE = True
+        trials = json_normalize(results, max_level=1)
+
+        legacy_mode = 'results_metrics.total_trades' not in trials
+        has_drawdown = 'results_metrics.max_drawdown_abs' in trials.columns
+
+        trials = HyperoptTools.prepare_trials_columns(trials, legacy_mode, has_drawdown)
 
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
