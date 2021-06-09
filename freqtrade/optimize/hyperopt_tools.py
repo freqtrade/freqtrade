@@ -206,6 +206,47 @@ class HyperoptTools():
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
+    def prepare_trials_columns(trials, legacy_mode: bool, has_drawdown: bool) -> str:
+
+        trials['Best'] = ''
+
+        if 'results_metrics.winsdrawslosses' not in trials.columns:
+            # Ensure compatibility with older versions of hyperopt results
+            trials['results_metrics.winsdrawslosses'] = 'N/A'
+
+        if not has_drawdown:
+            # Ensure compatibility with older versions of hyperopt results
+            trials['results_metrics.max_drawdown_abs'] = None
+            trials['results_metrics.max_drawdown'] = None
+
+        if not legacy_mode:
+            # New mode, using backtest result for metrics
+            trials['results_metrics.winsdrawslosses'] = trials.apply(
+                lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
+                          f"{x['results_metrics.losses']:>4}", axis=1)
+            trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
+                             'results_metrics.winsdrawslosses',
+                             'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
+                             'results_metrics.profit_total', 'results_metrics.holding_avg',
+                             'results_metrics.max_drawdown', 'results_metrics.max_drawdown_abs',
+                             'loss', 'is_initial_point', 'is_best']]
+
+        else:
+            # Legacy mode
+            trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
+                             'results_metrics.winsdrawslosses', 'results_metrics.avg_profit',
+                             'results_metrics.total_profit', 'results_metrics.profit',
+                             'results_metrics.duration', 'results_metrics.max_drawdown',
+                             'results_metrics.max_drawdown_abs', 'loss', 'is_initial_point',
+                             'is_best']]
+
+        trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
+                          'Total profit', 'Profit', 'Avg duration', 'Max Drawdown',
+                          'max_drawdown_abs', 'Objective', 'is_initial_point', 'is_best']
+
+        return trials
+
+    @staticmethod
     def get_result_table(config: dict, results: list, total_epochs: int, highlight_best: bool,
                          print_colorized: bool, remove_header: int) -> str:
         """
@@ -215,36 +256,13 @@ class HyperoptTools():
             return ''
 
         tabulate.PRESERVE_WHITESPACE = True
-
         trials = json_normalize(results, max_level=1)
-        trials['Best'] = ''
-        if 'results_metrics.winsdrawslosses' not in trials.columns:
-            # Ensure compatibility with older versions of hyperopt results
-            trials['results_metrics.winsdrawslosses'] = 'N/A'
-        legacy_mode = True
 
-        if 'results_metrics.total_trades' in trials:
-            legacy_mode = False
-            # New mode, using backtest result for metrics
-            trials['results_metrics.winsdrawslosses'] = trials.apply(
-                lambda x: f"{x['results_metrics.wins']} {x['results_metrics.draws']:>4} "
-                          f"{x['results_metrics.losses']:>4}", axis=1)
-            trials = trials[['Best', 'current_epoch', 'results_metrics.total_trades',
-                             'results_metrics.winsdrawslosses',
-                             'results_metrics.profit_mean', 'results_metrics.profit_total_abs',
-                             'results_metrics.profit_total', 'results_metrics.holding_avg',
-                             'loss', 'is_initial_point', 'is_best']]
-        else:
-            # Legacy mode
-            trials = trials[['Best', 'current_epoch', 'results_metrics.trade_count',
-                             'results_metrics.winsdrawslosses',
-                             'results_metrics.avg_profit', 'results_metrics.total_profit',
-                             'results_metrics.profit', 'results_metrics.duration',
-                             'loss', 'is_initial_point', 'is_best']]
+        legacy_mode = 'results_metrics.total_trades' not in trials
+        has_drawdown = 'results_metrics.max_drawdown_abs' in trials.columns
 
-        trials.columns = ['Best', 'Epoch', 'Trades', ' Win Draw Loss', 'Avg profit',
-                          'Total profit', 'Profit', 'Avg duration', 'Objective',
-                          'is_initial_point', 'is_best']
+        trials = HyperoptTools.prepare_trials_columns(trials, legacy_mode, has_drawdown)
+
         trials['is_profit'] = False
         trials.loc[trials['is_initial_point'], 'Best'] = '*     '
         trials.loc[trials['is_best'], 'Best'] = 'Best'
@@ -267,6 +285,21 @@ class HyperoptTools():
         )
 
         stake_currency = config['stake_currency']
+
+        if has_drawdown:
+            trials['Max Drawdown'] = trials.apply(
+                lambda x: '{} {}'.format(
+                    round_coin_value(x['max_drawdown_abs'], stake_currency),
+                    '({:,.2f}%)'.format(x['Max Drawdown'] * perc_multi).rjust(10, ' ')
+                ).rjust(25 + len(stake_currency))
+                if x['Max Drawdown'] != 0.0 else '--'.rjust(25 + len(stake_currency)),
+                axis=1
+            )
+        else:
+            trials = trials.drop(columns=['Max Drawdown'])
+
+        trials = trials.drop(columns=['max_drawdown_abs'])
+
         trials['Profit'] = trials.apply(
             lambda x: '{} {}'.format(
                 round_coin_value(x['Total profit'], stake_currency),
