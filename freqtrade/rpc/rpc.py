@@ -4,7 +4,6 @@ This module contains class to define a RPC communications
 import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
-from enum import Enum
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -28,24 +27,6 @@ from freqtrade.strategy.interface import SellCheckTuple
 
 
 logger = logging.getLogger(__name__)
-
-
-class RPCMessageType(Enum):
-    STATUS = 'status'
-    WARNING = 'warning'
-    STARTUP = 'startup'
-    BUY = 'buy'
-    BUY_FILL = 'buy_fill'
-    BUY_CANCEL = 'buy_cancel'
-    SELL = 'sell'
-    SELL_FILL = 'sell_fill'
-    SELL_CANCEL = 'sell_cancel'
-
-    def __repr__(self):
-        return self.value
-
-    def __str__(self):
-        return self.value
 
 
 class RPCException(Exception):

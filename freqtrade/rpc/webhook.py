@@ -6,7 +6,8 @@ from typing import Any, Dict
 
 from requests import RequestException, post
 
-from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
+from freqtrade.enums import RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler
 
 
 logger = logging.getLogger(__name__)

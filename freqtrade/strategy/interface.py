@@ -6,7 +6,6 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 import arrow

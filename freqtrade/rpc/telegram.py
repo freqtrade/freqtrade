@@ -22,9 +22,10 @@ from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
+from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, round_coin_value
-from freqtrade.rpc import RPC, RPCException, RPCHandler, RPCMessageType
+from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
 logger = logging.getLogger(__name__)
