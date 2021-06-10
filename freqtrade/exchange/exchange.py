@@ -104,6 +104,7 @@ class Exchange:
             logger.info('Instance is running with dry_run enabled')
         logger.info(f"Using CCXT {ccxt.__version__}")
         exchange_config = config['exchange']
+        self.log_responses = exchange_config.get('log_responses', False)
 
         # Deep merge ft_has with default ft_has options
         self._ft_has = deep_merge_dicts(self._ft_has, deepcopy(self._ft_has_default))
@@ -225,6 +226,11 @@ class Exchange:
     def precisionMode(self) -> str:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
+
+    def _log_exchange_response(self, endpoint, response) -> None:
+        """ Log exchange responses """
+        if self.log_responses:
+            logger.info(f"API {endpoint}: {response}")
 
     def ohlcv_candle_limit(self, timeframe: str) -> int:
         """
@@ -622,8 +628,10 @@ class Exchange:
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
-            return self._api.create_order(pair, ordertype, side,
-                                          amount, rate_for_order, params)
+            order = self._api.create_order(pair, ordertype, side,
+                                           amount, rate_for_order, params)
+            self._log_exchange_response('create_order', order)
+            return order
 
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
@@ -694,7 +702,9 @@ class Exchange:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
-            return self._api.fetch_order(order_id, pair)
+            order = self._api.fetch_order(order_id, pair)
+            self._log_exchange_response('fetch_order', order)
+            return order
         except ccxt.OrderNotFound as e:
             raise RetryableOrderError(
                 f'Order not found (pair: {pair} id: {order_id}). Message: {e}') from e
@@ -744,7 +754,9 @@ class Exchange:
                 return {}
 
         try:
-            return self._api.cancel_order(order_id, pair)
+            order = self._api.cancel_order(order_id, pair)
+            self._log_exchange_response('cancel_order', order)
+            return order
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
                 f'Could not cancel order. Message: {e}') from e
@@ -1042,6 +1054,7 @@ class Exchange:
                 pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
+            self._log_exchange_response('get_trades_for_order', matched_trades)
             return matched_trades
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
