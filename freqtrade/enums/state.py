@@ -1,8 +1,3 @@
-# pragma pylint: disable=too-few-public-methods
-
-"""
-Bot state constant
-"""
 from enum import Enum
 
 
