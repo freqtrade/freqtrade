@@ -6,7 +6,6 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
@@ -14,6 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -25,33 +25,6 @@ from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
-
-
-class SignalType(Enum):
-    """
-    Enum to distinguish between buy and sell signals
-    """
-    BUY = "buy"
-    SELL = "sell"
-
-
-class SellType(Enum):
-    """
-    Enum to distinguish between sell reasons
-    """
-    ROI = "roi"
-    STOP_LOSS = "stop_loss"
-    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
-    TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
-    FORCE_SELL = "force_sell"
-    EMERGENCY_SELL = "emergency_sell"
-    CUSTOM_SELL = "custom_sell"
-    NONE = ""
-
-    def __str__(self):
-        # explicitly convert to String to help with exporting data.
-        return self.value
 
 
 class SellCheckTuple(object):

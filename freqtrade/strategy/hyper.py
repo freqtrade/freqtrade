@@ -14,8 +14,8 @@ with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
     from freqtrade.optimize.space import SKDecimal
 
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

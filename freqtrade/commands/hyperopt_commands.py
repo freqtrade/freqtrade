@@ -6,9 +6,9 @@ from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.optimize_reports import show_backtest_result
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

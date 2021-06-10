@@ -4,8 +4,8 @@ import logging
 import pytest
 
 from freqtrade.data.history import get_timerange
+from freqtrade.enums import SellType
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)

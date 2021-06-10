@@ -16,6 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.enums import RPCMessageType, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -25,9 +26,8 @@ from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.state import State
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.rpc import RPCManager
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -337,7 +337,7 @@ class FreqtradeBot(LoggingMixin):
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
                 if fo:
-                    logger.info(f"Found {order} for trade {trade}.jj")
+                    logger.info(f"Found {order} for trade {trade}.")
                     self.update_trade_state(trade, order.order_id, fo,
                                             stoploss_order=order.ft_order_side == 'stoploss')
 

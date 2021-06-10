@@ -7,10 +7,10 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.commands import Arguments
+from freqtrade.enums import State
 from freqtrade.exceptions import FreqtradeException, OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.main import main
-from freqtrade.state import State
 from freqtrade.worker import Worker
 from tests.conftest import (log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)

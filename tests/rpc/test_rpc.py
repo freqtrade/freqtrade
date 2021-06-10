@@ -8,12 +8,12 @@ import pytest
 from numpy import isnan
 
 from freqtrade.edge import PairInfo
+from freqtrade.enums import State
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.state import State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_get_signal
 
 

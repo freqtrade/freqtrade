@@ -12,6 +12,7 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
 from freqtrade.edge import PairInfo
+from freqtrade.enums import SellType
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
                                                  generate_edge_table, generate_pair_metrics,
                                                  generate_sell_reason_stats,
@@ -20,7 +21,6 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  text_table_bt_results, text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
-from freqtrade.strategy.interface import SellType
 from tests.data.test_history import _backup_file, _clean_test_file
 
 

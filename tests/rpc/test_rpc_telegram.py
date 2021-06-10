@@ -17,14 +17,13 @@ from telegram.error import NetworkError
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
+from freqtrade.enums import RPCMessageType, RunMode, SellType, State
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
-from freqtrade.rpc import RPC, RPCMessageType
+from freqtrade.rpc import RPC
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from freqtrade.state import RunMode, State
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
                             patch_get_signal, patch_whitelist)
 

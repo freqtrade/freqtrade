@@ -13,6 +13,7 @@ from filelock import Timeout
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
+from freqtrade.enums import RunMode, SellType
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
@@ -20,9 +21,7 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
-from freqtrade.state import RunMode
 from freqtrade.strategy.hyper import IntParameter
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
