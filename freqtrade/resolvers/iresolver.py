@@ -91,6 +91,9 @@ class IResolver:
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
                 continue
+            if entry.is_symlink() and not entry.is_file():
+                logger.debug('Ignoring broken symlink %s', entry)
+                continue
             module_path = entry.resolve()
 
             obj = next(cls._get_valid_object(module_path, object_name), None)
