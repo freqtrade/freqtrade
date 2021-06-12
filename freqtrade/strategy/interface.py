@@ -610,7 +610,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if self.use_custom_stoploss:
+        if self.use_custom_stoploss and trade.stop_loss < current_rate:
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
@@ -623,7 +623,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        if self.trailing_stop:
+        if self.trailing_stop and trade.stop_loss < current_rate:
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
