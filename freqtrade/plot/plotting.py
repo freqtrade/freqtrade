@@ -47,7 +47,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
     data = load_data(
         datadir=config.get('datadir'),
         pairs=pairs,
-        timeframe=config.get('timeframe', '5m'),
+        timeframe=config['timeframe'],
         timerange=timerange,
         startup_candles=startup_candles,
         data_format=config.get('dataformat_ohlcv', 'json'),
@@ -56,7 +56,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
     if startup_candles and data:
         min_date, max_date = get_timerange(data)
         logger.info(f"Loading data from {min_date} to {max_date}")
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(config.get('timeframe', '5m')),
+        timerange.adjust_start_if_necessary(timeframe_to_seconds(config['timeframe']),
                                             startup_candles, min_date)
 
     no_trades = False
@@ -583,6 +583,9 @@ def plot_profit(config: Dict[str, Any]) -> None:
     But should be somewhat proportional, and therefor useful
     in helping out to find a good algorithm.
     """
+    if 'timeframe' not in config:
+        raise OperationalException('Timeframe must be set in either config or via --timeframe.')
+
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config)
     plot_elements = init_plotscript(config, list(exchange.markets))
     trades = plot_elements['trades']
@@ -599,7 +602,7 @@ def plot_profit(config: Dict[str, Any]) -> None:
     # Create an average close price of all the pairs that were involved.
     # this could be useful to gauge the overall market trend
     fig = generate_profit_graph(plot_elements['pairs'], plot_elements['ohlcv'],
-                                trades, config.get('timeframe', '5m'),
+                                trades, config['timeframe'],
                                 config.get('stake_currency', ''))
     store_plot_file(fig, filename='freqtrade-profit-plot.html',
                     directory=config['user_data_dir'] / 'plot',
