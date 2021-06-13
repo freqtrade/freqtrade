@@ -421,8 +421,8 @@ class Telegram(RPCHandler):
                     # insert separators line between Total
                     lines = message.split("\n")
                     message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
-                self._send_msg(f"<pre>{message}</pre>", reload_able=True,
-                               callback_path="update_status_table", parse_mode=ParseMode.HTML,
+                self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML,
+                               reload_able=True, callback_path="update_status_table",
                                query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
@@ -461,8 +461,8 @@ class Telegram(RPCHandler):
                 ],
                 tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
-            self._send_msg(message, parse_mode=ParseMode.HTML, callback_path="update_daily",
-                           reload_able=True, query=update.callback_query)
+            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
+                           callback_path="update_daily", query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -534,7 +534,7 @@ class Telegram(RPCHandler):
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
-        self._send_msg(markdown_msg, callback_path="update_profit", reload_able=True,
+        self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
                        query=update.callback_query)
 
     @authorized_only
@@ -622,7 +622,7 @@ class Telegram(RPCHandler):
                        f"\t`{result['stake']}: {result['total']: .8f}`\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`\n")
-            self._send_msg(output, callback_path="update_balance", reload_able=True,
+            self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
@@ -818,7 +818,7 @@ class Telegram(RPCHandler):
                     output += stat_line
 
             self._send_msg(output, parse_mode=ParseMode.HTML,
-                           callback_path="update_performance", reload_able=True,
+                           reload_able=True, callback_path="update_performance",
                            query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
@@ -840,7 +840,7 @@ class Telegram(RPCHandler):
             message = "<pre>{}</pre>".format(message)
             logger.debug(message)
             self._send_msg(message, parse_mode=ParseMode.HTML,
-                           callback_path="update_count", reload_able=True,
+                           reload_able=True, callback_path="update_count",
                            query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
