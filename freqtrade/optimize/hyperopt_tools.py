@@ -1,7 +1,6 @@
 
 import io
 import logging
-from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -111,16 +110,9 @@ class HyperoptTools():
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(space_params)
             elif space == 'roi':
-                # TODO: get rid of OrderedDict when support for python 3.6 will be
-                # dropped (dicts keep the order as the language feature)
-
                 # Convert keys in min_roi dict to strings because
                 # rapidjson cannot dump dicts with integer keys...
-                # OrderedDict is used to keep the numeric order of the items
-                # in the dict.
-                result_dict['minimal_roi'] = OrderedDict(
-                    (str(k), v) for k, v in space_params.items()
-                )
+                result_dict['minimal_roi'] = {str(k): v for k, v in space_params.items()}
             else:  # 'stoploss', 'trailing'
                 result_dict.update(space_params)
 
@@ -132,13 +124,9 @@ class HyperoptTools():
             if space == 'stoploss':
                 result += f"stoploss = {space_params.get('stoploss')}"
             elif space == 'roi':
-                # TODO: get rid of OrderedDict when support for python 3.6 will be
-                # dropped (dicts keep the order as the language feature)
-                minimal_roi_result = rapidjson.dumps(
-                    OrderedDict(
-                        (str(k), v) for k, v in space_params.items()
-                    ),
-                    default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
+                minimal_roi_result = rapidjson.dumps({
+                        str(k): v for k, v in space_params.items()
+                }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
             elif space == 'trailing':
 

@@ -1,7 +1,6 @@
 import csv
 import logging
 import sys
-from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -154,7 +153,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                                      pairs_only=pairs_only,
                                      active_only=active_only)
         # Sort the pairs/markets by symbol
-        pairs = OrderedDict(sorted(pairs.items()))
+        pairs = dict(sorted(pairs.items()))
     except Exception as e:
         raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 
