@@ -10,12 +10,12 @@ from datetime import date, datetime, timedelta
 from html import escape
 from itertools import chain
 from math import isnan
-from typing import Any, Callable, Dict, List, Union, cast
+from typing import Any, Callable, Dict, List, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ParseMode,
-                      ReplyKeyboardMarkup, Update)
+from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+                      ParseMode, ReplyKeyboardMarkup, Update)
 from telegram.error import BadRequest, NetworkError, TelegramError
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
@@ -180,8 +180,8 @@ class Telegram(RPCHandler):
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
 
-        for handle in callbacks:
-            self._updater.dispatcher.add_handler(handle)
+        for callback in callbacks:
+            self._updater.dispatcher.add_handler(callback)
 
         self._updater.start_polling(
             bootstrap_retries=-1,
@@ -422,9 +422,7 @@ class Telegram(RPCHandler):
                     lines = message.split("\n")
                     message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
                 if(messages_count == 1 and update.callback_query):
-                    query = update.callback_query
-                    self._update_msg(chat_id=query.message.chat_id,
-                                     message_id=query.message.message_id,
+                    self._update_msg(query=update.callback_query,
                                      msg=f"<pre>{message}</pre>",
                                      parse_mode=ParseMode.HTML,
                                      callback_path="update_status_table", reload_able=True)
@@ -469,8 +467,7 @@ class Telegram(RPCHandler):
                 tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             if(update.callback_query):
-                query = update.callback_query
-                self._update_msg(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                self._update_msg(query=update.callback_query,
                                  msg=message, parse_mode=ParseMode.HTML,
                                  callback_path="update_daily", reload_able=True)
             else:
@@ -548,8 +545,7 @@ class Telegram(RPCHandler):
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
         if(update.callback_query):
-            query = update.callback_query
-            self._update_msg(chat_id=query.message.chat_id, message_id=query.message.message_id,
+            self._update_msg(query=update.callback_query,
                              msg=markdown_msg, callback_path="update_profit", reload_able=True)
         else:
             self._send_msg(msg=markdown_msg, callback_path="update_profit", reload_able=True)
@@ -640,8 +636,7 @@ class Telegram(RPCHandler):
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`\n")
             if(update.callback_query):
-                query = update.callback_query
-                self._update_msg(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                self._update_msg(query=update.callback_query,
                                  msg=output, callback_path="update_balance", reload_able=True)
             else:
                 self._send_msg(msg=output, callback_path="update_balance", reload_able=True)
@@ -841,8 +836,7 @@ class Telegram(RPCHandler):
                     output += stat_line
 
             if(sent_messages == 0 and update.callback_query):
-                query = update.callback_query
-                self._update_msg(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                self._update_msg(query=update.callback_query,
                                  msg=output, parse_mode=ParseMode.HTML,
                                  callback_path="update_performance", reload_able=True)
             else:
@@ -868,8 +862,7 @@ class Telegram(RPCHandler):
             message = "<pre>{}</pre>".format(message)
             logger.debug(message)
             if(update.callback_query):
-                query = update.callback_query
-                self._update_msg(chat_id=query.message.chat_id, message_id=query.message.message_id,
+                self._update_msg(query=update.callback_query,
                                  msg=message, parse_mode=ParseMode.HTML,
                                  callback_path="update_count", reload_able=True)
             else:
@@ -1106,7 +1099,7 @@ class Telegram(RPCHandler):
             f"*Current state:* `{val['state']}`"
         )
 
-    def _update_msg(self, chat_id: str, message_id: str, msg: str, callback_path: str = "",
+    def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
                     reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
         if reload_able:
             reply_markup = InlineKeyboardMarkup([
@@ -1115,6 +1108,11 @@ class Telegram(RPCHandler):
         else:
             reply_markup = InlineKeyboardMarkup([[]])
         msg += "\nUpdated: {}".format(datetime.now().ctime())
+        if not query.message:
+            return
+        chat_id = query.message.chat_id
+        message_id = query.message.message_id
+
         try:
             try:
                 self._updater.bot.edit_message_text(
