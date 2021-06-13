@@ -437,7 +437,7 @@ class LocalTrade():
             self.close(safe_value_fallback(order, 'average', 'price'))
         else:
             raise ValueError(f'Unknown order type: {order_type}')
-        cleanup_db()
+        Trade.commit()
 
     def close(self, rate: float, *, show_msg: bool = True) -> None:
         """
