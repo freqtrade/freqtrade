@@ -5,10 +5,12 @@ However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
 """
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_default_conf
 
@@ -34,7 +36,12 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-    }
+    },
+    'kucoin': {
+        'pair': 'BTC/USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
@@ -42,6 +49,7 @@ EXCHANGES = {
 def exchange_conf():
     config = get_default_conf((Path(__file__).parent / "testdata").resolve())
     config['exchange']['pair_whitelist'] = []
+    config['dry_run'] = False
     return config
 
 
@@ -97,14 +105,16 @@ class TestCCXTExchange():
         assert 'asks' in l2
         assert 'bids' in l2
         l2_limit_range = exchange._ft_has['l2_limit_range']
+        l2_limit_range_required = exchange._ft_has['l2_limit_range_required']
         for val in [1, 2, 5, 25, 100]:
             l2 = exchange.fetch_l2_order_book(pair, val)
             if not l2_limit_range or val in l2_limit_range:
                 assert len(l2['asks']) == val
                 assert len(l2['bids']) == val
             else:
-                next_limit = exchange.get_next_limit_in_list(val, l2_limit_range)
-                if next_limit > 200:
+                next_limit = exchange.get_next_limit_in_list(
+                    val, l2_limit_range, l2_limit_range_required)
+                if next_limit is None or next_limit > 200:
                     # Large orderbook sizes can be a problem for some exchanges (bitrex ...)
                     assert len(l2['asks']) > 200
                     assert len(l2['asks']) > 200
@@ -122,7 +132,10 @@ class TestCCXTExchange():
         assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
         # assert len(exchange.klines(pair_tf)) > 200
         # Assume 90% uptime ...
-        assert len(exchange.klines(pair_tf)) > exchange._ohlcv_candle_limit * 0.90
+        assert len(exchange.klines(pair_tf)) > exchange.ohlcv_candle_limit(timeframe) * 0.90
+        # Check if last-timeframe is within the last 2 intervals
+        now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
+        assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
     # TODO: tests fetch_trades (?)
 

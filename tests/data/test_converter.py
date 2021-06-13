@@ -1,5 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
+from pathlib import Path
+from shutil import copyfile
 
 import pytest
 
@@ -10,8 +12,8 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
-from tests.conftest import log_has
-from tests.data.test_history import _backup_file, _clean_test_file
+from tests.conftest import log_has, log_has_re
+from tests.data.test_history import _clean_test_file
 
 
 def test_dataframe_correct_columns(result):
@@ -62,8 +64,8 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}", caplog)
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+                      f"{len(data)} - after: {len(data2)}.*", caplog)
 
     # Test fillup actually fixes invalid backtest data
     min_date, max_date = get_timerange({'UNITTEST/BTC': data})
@@ -125,8 +127,8 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     # Column names should not change
     assert (data.columns == data2.columns).all()
 
-    assert log_has(f"Missing data fillup for UNITTEST/BTC: before: "
-                   f"{len(data)} - after: {len(data2)}", caplog)
+    assert log_has_re(f"Missing data fillup for UNITTEST/BTC: before: "
+                      f"{len(data)} - after: {len(data2)}.*", caplog)
 
 
 def test_ohlcv_drop_incomplete(caplog):
@@ -198,6 +200,16 @@ def test_trim_dataframe(testdatadir) -> None:
     assert all(data_modify.iloc[0] == data.iloc[30])
 
     data_modify = data.copy()
+    tr = TimeRange('date', None, min_date + 1800, 0)
+    # Remove first 20 candles - ignores min date
+    data_modify = trim_dataframe(data_modify, tr, startup_candles=20)
+    assert not data_modify.equals(data)
+    assert len(data_modify) < len(data)
+    assert len(data_modify) == len(data) - 20
+    assert all(data_modify.iloc[-1] == data.iloc[-1])
+    assert all(data_modify.iloc[0] == data.iloc[20])
+
+    data_modify = data.copy()
     # Remove last 30 minutes (1800 s)
     tr = TimeRange(None, 'date', 0, max_date - 1800)
     data_modify = trim_dataframe(data_modify, tr)
@@ -241,17 +253,18 @@ def test_trades_dict_to_list(fetch_trades_result):
         assert t[6] == fetch_trades_result[i]['cost']
 
 
-def test_convert_trades_format(mocker, default_conf, testdatadir):
-    files = [{'old': testdatadir / "XRP_ETH-trades.json.gz",
-              'new': testdatadir / "XRP_ETH-trades.json"},
-             {'old': testdatadir / "XRP_OLD-trades.json.gz",
-              'new': testdatadir / "XRP_OLD-trades.json"},
+def test_convert_trades_format(default_conf, testdatadir, tmpdir):
+    tmpdir1 = Path(tmpdir)
+    files = [{'old': tmpdir1 / "XRP_ETH-trades.json.gz",
+              'new': tmpdir1 / "XRP_ETH-trades.json"},
+             {'old': tmpdir1 / "XRP_OLD-trades.json.gz",
+              'new': tmpdir1 / "XRP_OLD-trades.json"},
              ]
     for file in files:
-        _backup_file(file['old'], copy_file=True)
+        copyfile(testdatadir / file['old'].name, file['old'])
         assert not file['new'].exists()
 
-    default_conf['datadir'] = testdatadir
+    default_conf['datadir'] = tmpdir1
 
     convert_trades_format(default_conf, convert_from='jsongz',
                           convert_to='json', erase=False)
@@ -274,14 +287,20 @@ def test_convert_trades_format(mocker, default_conf, testdatadir):
             file['new'].unlink()
 
 
-def test_convert_ohlcv_format(mocker, default_conf, testdatadir):
-    file1 = testdatadir / "XRP_ETH-5m.json"
-    file1_new = testdatadir / "XRP_ETH-5m.json.gz"
-    file2 = testdatadir / "XRP_ETH-1m.json"
-    file2_new = testdatadir / "XRP_ETH-1m.json.gz"
-    _backup_file(file1, copy_file=True)
-    _backup_file(file2, copy_file=True)
-    default_conf['datadir'] = testdatadir
+def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir):
+    tmpdir1 = Path(tmpdir)
+
+    file1_orig = testdatadir / "XRP_ETH-5m.json"
+    file1 = tmpdir1 / "XRP_ETH-5m.json"
+    file1_new = tmpdir1 / "XRP_ETH-5m.json.gz"
+    file2_orig = testdatadir / "XRP_ETH-1m.json"
+    file2 = tmpdir1 / "XRP_ETH-1m.json"
+    file2_new = tmpdir1 / "XRP_ETH-1m.json.gz"
+
+    copyfile(file1_orig, file1)
+    copyfile(file2_orig, file2)
+
+    default_conf['datadir'] = tmpdir1
     default_conf['pairs'] = ['XRP_ETH']
     default_conf['timeframes'] = ['1m', '5m']
 
@@ -307,10 +326,3 @@ def test_convert_ohlcv_format(mocker, default_conf, testdatadir):
     assert file2.exists()
     assert not file1_new.exists()
     assert not file2_new.exists()
-
-    _clean_test_file(file1)
-    _clean_test_file(file2)
-    if file1_new.exists():
-        file1_new.unlink()
-    if file2_new.exists():
-        file2_new.unlink()

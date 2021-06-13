@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 
 logger = logging.getLogger(__name__)
@@ -62,15 +62,17 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
-    engine.execute(f"alter table trades rename to {table_back_name}")
-    # drop indexes on backup table
-    for index in inspector.get_indexes(table_back_name):
-        engine.execute(f"drop index {index['name']}")
+    with engine.begin() as connection:
+        connection.execute(text(f"alter table trades rename to {table_back_name}"))
+        # drop indexes on backup table
+        for index in inspector.get_indexes(table_back_name):
+            connection.execute(text(f"drop index {index['name']}"))
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
 
     # Copy data back - following the correct schema
-    engine.execute(f"""insert into trades
+    with engine.begin() as connection:
+        connection.execute(text(f"""insert into trades
             (id, exchange, pair, is_open,
             fee_open, fee_open_cost, fee_open_currency,
             fee_close, fee_close_cost, fee_open_currency, open_rate,
@@ -104,11 +106,12 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
-            """)
+            """))
 
 
 def migrate_open_orders_to_trades(engine):
-    engine.execute("""
+    with engine.begin() as connection:
+        connection.execute(text("""
         insert into orders (ft_trade_id, ft_pair, order_id, ft_order_side, ft_is_open)
         select id ft_trade_id, pair ft_pair, open_order_id,
             case when close_rate_requested is null then 'buy'
@@ -120,7 +123,30 @@ def migrate_open_orders_to_trades(engine):
             'stoploss' ft_order_side, 1 ft_is_open
         from trades
         where stoploss_order_id is not null
-        """)
+        """))
+
+
+def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, cols: List):
+    # Schema migration necessary
+
+    with engine.begin() as connection:
+        connection.execute(text(f"alter table orders rename to {table_back_name}"))
+        # drop indexes on backup table
+        for index in inspector.get_indexes(table_back_name):
+            connection.execute(text(f"drop index {index['name']}"))
+
+    # let SQLAlchemy create the schema as required
+    decl_base.metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(text(f"""
+            insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
+            status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
+            order_date, order_filled_date, order_update_date)
+            select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
+            status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
+            order_date, order_filled_date, order_update_date
+            from {table_back_name}
+            """))
 
 
 def check_migrate(engine, decl_base, previous_tables) -> None:
@@ -141,10 +167,15 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
 
-    if 'orders' not in previous_tables:
+    if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
     else:
-        pass
-        # Empty for now - as there is only one iteration of the orders table so far.
-        # table_back_name = get_backup_name(tabs, 'orders_bak')
+        cols_order = inspector.get_columns('orders')
+
+        if not has_column(cols_order, 'average'):
+            tabs = get_table_names_for_table(inspector, 'orders')
+            # Empty for now - as there is only one iteration of the orders table so far.
+            table_back_name = get_backup_name(tabs, 'orders_bak')
+
+            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols)

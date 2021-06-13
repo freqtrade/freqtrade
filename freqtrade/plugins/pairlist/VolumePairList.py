@@ -4,8 +4,9 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
-from datetime import datetime
 from typing import Any, Dict, List
+
+from cachetools.ttl import TTLCache
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -33,7 +34,8 @@ class VolumePairList(IPairList):
         self._number_pairs = self._pairlistconfig['number_assets']
         self._sort_key = self._pairlistconfig.get('sort_key', 'quoteVolume')
         self._min_value = self._pairlistconfig.get('min_value', 0)
-        self.refresh_period = self._pairlistconfig.get('refresh_period', 1800)
+        self._refresh_period = self._pairlistconfig.get('refresh_period', 1800)
+        self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
 
         if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -63,17 +65,19 @@ class VolumePairList(IPairList):
         """
         return f"{self.name} - top {self._pairlistconfig['number_assets']} volume pairs."
 
-    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+    def gen_pairlist(self, tickers: Dict) -> List[str]:
         """
         Generate the pairlist
-        :param cached_pairlist: Previously generated pairlist (cached)
-        :param tickers: Tickers (from exchange.get_tickers()).
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
         """
         # Generate dynamic whitelist
         # Must always run if this pairlist is not the first in the list.
-        if self._last_refresh + self.refresh_period < datetime.now().timestamp():
-            self._last_refresh = int(datetime.now().timestamp())
+        pairlist = self._pair_cache.get('pairlist')
+        if pairlist:
+            # Item found - no refresh necessary
+            return pairlist
+        else:
 
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
@@ -82,9 +86,9 @@ class VolumePairList(IPairList):
                     if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
                         and v[self._sort_key] is not None)]
             pairlist = [s['symbol'] for s in filtered_tickers]
-        else:
-            # Use the cached pairlist if it's not time yet to refresh
-            pairlist = cached_pairlist
+
+            pairlist = self.filter_pairlist(pairlist, tickers)
+            self._pair_cache['pairlist'] = pairlist
 
         return pairlist
 

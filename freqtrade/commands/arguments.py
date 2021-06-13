@@ -14,18 +14,18 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_TRADE = ["db_url", "sd_notify", "dry_run"]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
 
 ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
-                        "max_open_trades", "stake_amount", "fee"]
+                        "max_open_trades", "stake_amount", "fee", "pairs"]
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
-                                        "enable_protections",
+                                        "enable_protections", "dry_run_wallet",
                                         "strategy_list", "export", "exportfilename"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "use_max_market_positions",
-                                        "enable_protections",
+                                        "enable_protections", "dry_run_wallet",
                                         "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
@@ -60,15 +60,16 @@ ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "timerange", "download_trades", "exchange",
-                      "timeframes", "erase", "dataformat_ohlcv", "dataformat_trades"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "timerange",
+                      "download_trades", "exchange", "timeframes", "erase", "dataformat_ohlcv",
+                      "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
                        "timerange", "timeframe", "no_trades"]
 
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
-                    "trade_source", "timeframe"]
+                    "trade_source", "timeframe", "plot_auto_open"]
 
 ARGS_INSTALL_UI = ["erase_ui_only"]
 

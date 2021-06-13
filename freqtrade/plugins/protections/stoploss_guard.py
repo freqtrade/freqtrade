@@ -3,9 +3,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
+from freqtrade.enums import SellType
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
-from freqtrade.strategy.interface import SellType
 
 
 logger = logging.getLogger(__name__)
@@ -56,15 +56,15 @@ class StoplossGuard(IProtection):
         trades = [trade for trade in trades1 if (str(trade.sell_reason) in (
                     SellType.TRAILING_STOP_LOSS.value, SellType.STOP_LOSS.value,
                     SellType.STOPLOSS_ON_EXCHANGE.value)
-                      and trade.close_profit < 0)]
+                      and trade.close_profit and trade.close_profit < 0)]
 
-        if len(trades) > self._trade_limit:
-            self.log_once(f"Trading stopped due to {self._trade_limit} "
-                          f"stoplosses within {self._lookback_period} minutes.", logger.info)
-            until = self.calculate_lock_end(trades, self._stop_duration)
-            return True, until, self._reason()
+        if len(trades) < self._trade_limit:
+            return False, None, None
 
-        return False, None, None
+        self.log_once(f"Trading stopped due to {self._trade_limit} "
+                      f"stoplosses within {self._lookback_period} minutes.", logger.info)
+        until = self.calculate_lock_end(trades, self._stop_duration)
+        return True, until, self._reason()
 
     def global_stop(self, date_now: datetime) -> ProtectionReturn:
         """

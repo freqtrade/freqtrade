@@ -28,7 +28,7 @@ class DefaultStrategy(IStrategy):
     # Optimal stoploss designed for the strategy
     stoploss = -0.10
 
-    # Optimal ticker interval for the strategy
+    # Optimal timeframe for the strategy
     timeframe = '5m'
 
     # Optional order type mapping

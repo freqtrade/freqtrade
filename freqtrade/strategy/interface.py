@@ -6,60 +6,44 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SignalType(Enum):
-    """
-    Enum to distinguish between buy and sell signals
-    """
-    BUY = "buy"
-    SELL = "sell"
-
-
-class SellType(Enum):
-    """
-    Enum to distinguish between sell reasons
-    """
-    ROI = "roi"
-    STOP_LOSS = "stop_loss"
-    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
-    TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
-    FORCE_SELL = "force_sell"
-    EMERGENCY_SELL = "emergency_sell"
-    NONE = ""
-
-    def __str__(self):
-        # explicitly convert to String to help with exporting data.
-        return self.value
-
-
-class SellCheckTuple(NamedTuple):
+class SellCheckTuple(object):
     """
     NamedTuple for Sell type + reason
     """
-    sell_flag: bool
     sell_type: SellType
+    sell_reason: str = ''
+
+    def __init__(self, sell_type: SellType, sell_reason: str = ''):
+        self.sell_type = sell_type
+        self.sell_reason = sell_reason or sell_type.value
+
+    @property
+    def sell_flag(self):
+        return self.sell_type != SellType.NONE
 
 
-class IStrategy(ABC):
+class IStrategy(ABC, HyperStrategyMixin):
     """
     Interface for freqtrade strategies
     Defines the mandatory structure must follow any custom strategies
@@ -140,6 +124,7 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        super().__init__(config)
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -149,6 +134,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        return dataframe
 
     @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -158,6 +144,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        return dataframe
 
     @abstractmethod
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -167,6 +154,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        return dataframe
 
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
@@ -214,7 +202,7 @@ class IStrategy(ABC):
         pass
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -229,6 +217,7 @@ class IStrategy(ABC):
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -236,7 +225,8 @@ class IStrategy(ABC):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -255,6 +245,7 @@ class IStrategy(ABC):
         :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
@@ -282,6 +273,30 @@ class IStrategy(ABC):
         :return float: New stoploss value, relative to the currentrate
         """
         return self.stoploss
+
+    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
+        """
+        Custom sell signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting sell signal on a candle at specified
+        time. This method is not called when sell signal is set.
+
+        This method should be overridden to create sell signals that depend on trade parameters. For
+        example you could implement a stoploss relative to candle when trade was opened, or a custom
+        1:2 risk-reward ROI.
+
+        Custom sell reason max length is 64. Exceeding this limit will raise OperationalException.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        None or False.
+        """
+        return None
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -529,12 +544,33 @@ class IStrategy(ABC):
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
+        sell_signal = SellType.NONE
+        custom_reason = ''
+        # use provided rate in backtesting, not high/low.
+        current_rate = rate
+        current_profit = trade.calc_profit_ratio(current_rate)
+
         if (ask_strategy.get('sell_profit_only', False)
                 and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
-            sell_signal = False
-        else:
-            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
+            pass
+        elif ask_strategy.get('use_sell_signal', True) and not buy:
+            if sell:
+                sell_signal = SellType.SELL_SIGNAL
+            else:
+                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                    pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
+                    current_profit=current_profit)
+                if custom_reason:
+                    sell_signal = SellType.CUSTOM_SELL
+                    if isinstance(custom_reason, str):
+                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                            logger.warning(f'Custom sell reason returned from custom_sell is too '
+                                           f'long and was trimmed to {CUSTOM_SELL_MAX_LENGTH} '
+                                           f'characters.')
+                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                    else:
+                        custom_reason = None
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
@@ -543,24 +579,23 @@ class IStrategy(ABC):
         # Sell-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
-                         f"sell_type=SellType.ROI")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
+            return SellCheckTuple(sell_type=SellType.ROI)
 
-        if sell_signal:
-            logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
-                         f"sell_type=SellType.SELL_SIGNAL")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+        if sell_signal != SellType.NONE:
+            logger.debug(f"{trade.pair} - Sell signal received. "
+                         f"sell_type=SellType.{sell_signal.name}" +
+                         (f", custom_reason={custom_reason}" if custom_reason else ""))
+            return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
-                         f"sell_type={stoplossflag.sell_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.sell_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        # logger.debug(f"{trade.pair} - No sell signal.")
+        return SellCheckTuple(sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
@@ -624,9 +659,9 @@ class IStrategy(ABC):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
 
-            return SellCheckTuple(sell_flag=True, sell_type=sell_type)
+            return SellCheckTuple(sell_type=sell_type)
 
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        return SellCheckTuple(sell_type=SellType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
@@ -649,7 +684,7 @@ class IStrategy(ABC):
         :return: True if bot should sell at current rate
         """
         # Check if time matches and current rate is above threshold
-        trade_dur = int((current_time.timestamp() - trade.open_date.timestamp()) // 60)
+        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
         _, roi = self.min_roi_reached_entry(trade_dur)
         if roi is None:
             return False
@@ -659,7 +694,7 @@ class IStrategy(ABC):
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advice_buy or advise_sell!
+        Does not run advise_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when

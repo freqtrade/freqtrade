@@ -1,7 +1,6 @@
 import csv
 import logging
 import sys
-from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -12,11 +11,11 @@ from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import available_exchanges, ccxt_exchanges, market_is_active
+from freqtrade.exchange import market_is_active, validate_exchanges
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -28,14 +27,18 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = ccxt_exchanges() if args['list_exchanges_all'] else available_exchanges()
+    exchanges = validate_exchanges(args['list_exchanges_all'])
+
     if args['print_one_column']:
-        print('\n'.join(exchanges))
+        print('\n'.join([e[0] for e in exchanges]))
     else:
         if args['list_exchanges_all']:
-            print(f"All exchanges supported by the ccxt library: {', '.join(exchanges)}")
+            print("All exchanges supported by the ccxt library:")
         else:
-            print(f"Exchanges available for Freqtrade: {', '.join(exchanges)}")
+            print("Exchanges available for Freqtrade:")
+            exchanges = [e for e in exchanges if e[1] is not False]
+
+        print(tabulate(exchanges, headers=['Exchange name', 'Valid', 'reason']))
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
@@ -50,15 +53,21 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
         reset = ''
 
     names = [s['name'] for s in objs]
-    objss_to_print = [{
+    objs_to_print = [{
         'name': s['name'] if s['name'] else "--",
         'location': s['location'].name,
         'status': (red + "LOAD FAILED" + reset if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
                    else yellow + "DUPLICATE NAME" + reset)
     } for s in objs]
-
-    print(tabulate(objss_to_print, headers='keys', tablefmt='psql', stralign='right'))
+    for idx, s in enumerate(objs):
+        if 'hyperoptable' in s:
+            objs_to_print[idx].update({
+                'hyperoptable': "Yes" if s['hyperoptable']['count'] > 0 else "No",
+                'buy-Params': len(s['hyperoptable'].get('buy', [])),
+                'sell-Params': len(s['hyperoptable'].get('sell', [])),
+            })
+    print(tabulate(objs_to_print, headers='keys', tablefmt='psql', stralign='right'))
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
@@ -71,6 +80,11 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     strategy_objs = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
     strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
+    for obj in strategy_objs:
+        if obj['class']:
+            obj['hyperoptable'] = obj['class'].detect_all_parameters()
+        else:
+            obj['hyperoptable'] = {'count': 0}
 
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategy_objs]))
@@ -99,7 +113,7 @@ def start_list_hyperopts(args: Dict[str, Any]) -> None:
 
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
-    Print ticker intervals (timeframes) available on Exchange
+    Print timeframes available on Exchange
     """
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
     # Do not use timeframe set in the config
@@ -139,7 +153,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                                      pairs_only=pairs_only,
                                      active_only=active_only)
         # Sort the pairs/markets by symbol
-        pairs = OrderedDict(sorted(pairs.items()))
+        pairs = dict(sorted(pairs.items()))
     except Exception as e:
         raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 
@@ -177,7 +191,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             # human-readable formats.
             print()
 
-        if len(pairs):
+        if pairs:
             if args.get('print_list', False):
                 # print data as a list, with human-readable summary
                 print(f"{summary_str}: {', '.join(pairs.keys())}.")

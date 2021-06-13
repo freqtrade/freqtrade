@@ -18,7 +18,6 @@ class Bybit(Exchange):
     may still not work as expected.
     """
 
-    # fetchCurrencies API point requires authentication for Bybit,
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
     }

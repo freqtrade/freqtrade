@@ -10,10 +10,13 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.exceptions import StrategyError
+from freqtrade.enums import SellType
+from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.interface import SellCheckTuple, SellType
+from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
+                                      IntParameter, RealParameter)
+from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
@@ -217,7 +220,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -256,7 +259,7 @@ def test_min_roi_reached2(default_conf, fee) -> None:
             open_date=arrow.utcnow().shift(hours=-1).datetime,
             fee_open=fee.return_value,
             fee_close=fee.return_value,
-            exchange='bittrex',
+            exchange='binance',
             open_rate=1,
         )
 
@@ -291,7 +294,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
 
@@ -344,7 +347,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         open_date=arrow.utcnow().shift(hours=-1).datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='bittrex',
+        exchange='binance',
         open_rate=1,
     )
     trade.adjust_min_max_rates(trade.open_rate)
@@ -378,6 +381,50 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
+
+
+def test_custom_sell(default_conf, fee, caplog) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.01,
+        amount=1,
+        open_date=arrow.utcnow().shift(hours=-1).datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+    )
+
+    now = arrow.utcnow().datetime
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+
+    assert res.sell_flag is False
+    assert res.sell_type == SellType.NONE
+
+    strategy.custom_sell = MagicMock(return_value=True)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_flag is True
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_reason == 'custom_sell'
+
+    strategy.custom_sell = MagicMock(return_value='hello world')
+
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'hello world'
+
+    caplog.clear()
+    strategy.custom_sell = MagicMock(return_value='h' * 100)
+    res = strategy.should_sell(trade, 1, now, False, False, None, None, 0)
+    assert res.sell_type == SellType.CUSTOM_SELL
+    assert res.sell_flag is True
+    assert res.sell_reason == 'h' * 64
+    assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
@@ -552,3 +599,82 @@ def test_strategy_safe_wrapper(value):
 
     assert type(ret) == type(value)
     assert ret == value
+
+
+def test_hyperopt_parameters():
+    from skopt.space import Categorical, Integer, Real
+    with pytest.raises(OperationalException, match=r"Name is determined.*"):
+        IntParameter(low=0, high=5, default=1, name='hello')
+
+    with pytest.raises(OperationalException, match=r"IntParameter space must be.*"):
+        IntParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"RealParameter space must be.*"):
+        RealParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"DecimalParameter space must be.*"):
+        DecimalParameter(low=0, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"IntParameter space invalid\."):
+        IntParameter([0, 10], high=7, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"RealParameter space invalid\."):
+        RealParameter([0, 10], high=7, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"DecimalParameter space invalid\."):
+        DecimalParameter([0, 10], high=7, default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"CategoricalParameter space must.*"):
+        CategoricalParameter(['aa'], default='aa', space='buy')
+
+    with pytest.raises(TypeError):
+        BaseParameter(opt_range=[0, 1], default=1, space='buy')
+
+    intpar = IntParameter(low=0, high=5, default=1, space='buy')
+    assert intpar.value == 1
+    assert isinstance(intpar.get_space(''), Integer)
+    assert isinstance(intpar.range, range)
+    assert len(list(intpar.range)) == 1
+    # Range contains ONLY the default / value.
+    assert list(intpar.range) == [intpar.value]
+    intpar.in_space = True
+
+    assert len(list(intpar.range)) == 6
+    assert list(intpar.range) == [0, 1, 2, 3, 4, 5]
+
+    fltpar = RealParameter(low=0.0, high=5.5, default=1.0, space='buy')
+    assert isinstance(fltpar.get_space(''), Real)
+    assert fltpar.value == 1
+
+    fltpar = DecimalParameter(low=0.0, high=5.5, default=1.0004, decimals=3, space='buy')
+    assert isinstance(fltpar.get_space(''), Integer)
+    assert fltpar.value == 1
+
+    catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
+                                  default='buy_macd', space='buy')
+    assert isinstance(catpar.get_space(''), Categorical)
+    assert catpar.value == 'buy_macd'
+
+
+def test_auto_hyperopt_interface(default_conf):
+    default_conf.update({'strategy': 'HyperoptableStrategy'})
+    PairLocks.timeframe = default_conf['timeframe']
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    assert strategy.buy_rsi.value == strategy.buy_params['buy_rsi']
+    # PlusDI is NOT in the buy-params, so default should be used
+    assert strategy.buy_plusdi.value == 0.5
+    assert strategy.sell_rsi.value == strategy.sell_params['sell_rsi']
+
+    # Parameter is disabled - so value from sell_param dict will NOT be used.
+    assert strategy.sell_minusdi.value == 0.5
+    all_params = strategy.detect_all_parameters()
+    assert isinstance(all_params, dict)
+    assert len(all_params['buy']) == 2
+    assert len(all_params['sell']) == 2
+    assert all_params['count'] == 4
+
+    strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
+
+    with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
+        [x for x in strategy.detect_parameters('sell')]

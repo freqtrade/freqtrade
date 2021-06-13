@@ -110,10 +110,15 @@ AVAILABLE_CLI_OPTIONS = {
         help='Enforce dry-run for trading (removes Exchange secrets and simulates trades).',
         action='store_true',
     ),
+    "dry_run_wallet": Arg(
+        '--dry-run-wallet', '--starting-balance',
+        help='Starting balance, used for backtesting / hyperopt and dry-runs.',
+        type=float,
+    ),
     # Optimize common
     "timeframe": Arg(
         '-i', '--timeframe', '--ticker-interval',
-        help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
+        help='Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
         '--timerange',
@@ -128,7 +133,6 @@ AVAILABLE_CLI_OPTIONS = {
     "stake_amount": Arg(
         '--stake-amount',
         help='Override the value of the `stake_amount` configuration setting.',
-        type=float,
     ),
     # Backtesting
     "position_stacking": Arg(
@@ -191,6 +195,7 @@ AVAILABLE_CLI_OPTIONS = {
         '--hyperopt',
         help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
+        required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
@@ -262,7 +267,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=1,
     ),
     "hyperopt_loss": Arg(
-        '--hyperopt-loss',
+        '--hyperopt-loss', '--hyperoptloss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
@@ -325,7 +330,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are space-separated.',
+        help='Limit command to these pairs. Pairs are space-separated.',
         nargs='+',
     ),
     # Download data
@@ -337,6 +342,12 @@ AVAILABLE_CLI_OPTIONS = {
     "days": Arg(
         '--days',
         help='Download data for given number of days.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "new_pairs_days": Arg(
+        '--new-pairs-days',
+        help='Download data of new pairs for given number of days. Default: `%(default)s`.',
         type=check_int_positive,
         metavar='INT',
     ),
@@ -421,6 +432,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=750,
+    ),
+    "plot_auto_open": Arg(
+        '--auto-open',
+        help='Automatically open generated plot.',
+        action='store_true',
     ),
     "no_trades": Arg(
         '--no-trades',

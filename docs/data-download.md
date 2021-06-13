@@ -11,8 +11,9 @@ Otherwise `--exchange` becomes mandatory.
 You can use a relative timerange (`--days 20`) or an absolute starting point (`--timerange 20200101-`). For incremental downloads, the relative approach should be used.
 
 !!! Tip "Tip: Updating existing data"
-    If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use `--days xx` with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
-    Be careful though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.
+    If you already have backtesting data available in your data-directory and would like to refresh this data up to today, do not use `--days` or `--timerange` parameters. Freqtrade will keep the available data and only download the missing data.
+    If you are updating existing data after inserting new pairs that you have no data for, use `--new-pairs-days xx` parameter. Specified number of days will be downloaded for new pairs while old pairs will be updated with missing data only.
+    If you use `--days xx` parameter alone - data for specified number of days will be downloaded for _all_ pairs. Be careful, if specified number of days is smaller than gap between now and last downloaded candle - freqtrade will delete all existing data to avoid gaps in candle data.
 
 ### Usage
 
@@ -20,8 +21,9 @@ You can use a relative timerange (`--days 20`) or an absolute starting point (`-
 usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH]
                                [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
-                               [--days INT] [--timerange TIMERANGE]
-                               [--dl-trades] [--exchange EXCHANGE]
+                               [--days INT] [--new-pairs-days INT]
+                               [--timerange TIMERANGE] [--dl-trades]
+                               [--exchange EXCHANGE]
                                [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
                                [--erase]
                                [--data-format-ohlcv {json,jsongz,hdf5}]
@@ -30,10 +32,12 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
 optional arguments:
   -h, --help            show this help message and exit
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
-                        Show profits for only these pairs. Pairs are space-
+                        Limit command to these pairs. Pairs are space-
                         separated.
   --pairs-file FILE     File containing a list of pairs to download.
   --days INT            Download data for given number of days.
+  --new-pairs-days INT  Download data of new pairs for given number of days.
+                        Default: `None`.
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
@@ -48,10 +52,10 @@ optional arguments:
                         exchange/pairs/timeframes.
   --data-format-ohlcv {json,jsongz,hdf5}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `json`).
+                        (default: `None`).
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
-                        `jsongz`).
+                        `None`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

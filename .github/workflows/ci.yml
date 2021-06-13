@@ -75,7 +75,7 @@ jobs:
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
       run: |
         # Allow failure for coveralls
-        coveralls -v  || true
+        coveralls || true
 
     - name: Backtesting
       run: |
@@ -102,7 +102,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -148,6 +148,7 @@ jobs:
 
     - name: Installation - macOS
       run: |
+        brew update
         brew install hdf5 c-blosc
         python -m pip install --upgrade pip
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
@@ -194,7 +195,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -257,7 +258,7 @@ jobs:
         mypy freqtrade scripts
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -288,7 +289,7 @@ jobs:
         mkdocs build
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
@@ -300,7 +301,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Cleanup previous runs on this branch
-      uses: rokroskar/workflow-run-cleanup-action@v0.2.2
+      uses: rokroskar/workflow-run-cleanup-action@v0.3.3
       if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/stable' && github.repository == 'freqtrade/freqtrade'"
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -310,9 +311,18 @@ jobs:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
     steps:
+
+    - name: Check user permission
+      id: check
+      uses: scherermichael-oss/action-has-permission@1.0.6
+      with:
+        required-permission: write
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
-      if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      uses: lazy-actions/slatify@v3.0.0
+      if: always() && steps.check.outputs.has-permission && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}
         job_name: '*Freqtrade CI*'
@@ -364,13 +374,6 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-    - name: Build and test and push docker image
-      env:
-        IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
-      run: |
-        build_helpers/publish_docker.sh
-
     # We need docker experimental to pull the ARM image.
     - name: Switch docker to experimental
       run: |
@@ -389,16 +392,16 @@ jobs:
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
 
-    - name: Build Raspberry docker image
+    - name: Build and test and push docker images
       env:
         IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
-        build_helpers/publish_docker_pi.sh
+        build_helpers/publish_docker_multi.sh
 
 
     - name: Slack Notification
-      uses: homoluctus/slatify@v1.8.0
+      uses: lazy-actions/slatify@v3.0.0
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
         type: ${{ job.status }}

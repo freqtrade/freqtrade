@@ -1,16 +1,13 @@
-# Freqtrade
+![freqtrade](assets/freqtrade_poweredby.svg)
+
 [![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
 
 <!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade/freqtrade" data-icon="octicon-star" data-size="large" aria-label="Star freqtrade/freqtrade on GitHub">Star</a>
-<!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade/freqtrade/fork" data-icon="octicon-repo-forked" data-size="large" aria-label="Fork freqtrade/freqtrade on GitHub">Fork</a>
-<!-- Place this tag where you want the button to render. -->
 <a class="github-button" href="https://github.com/freqtrade/freqtrade/archive/stable.zip" data-icon="octicon-cloud-download" data-size="large" aria-label="Download freqtrade/freqtrade on GitHub">Download</a>
-<!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/freqtrade" data-size="large" aria-label="Follow @freqtrade on GitHub">Follow @freqtrade</a>
 
 ## Introduction
 
@@ -34,6 +31,22 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 - Run using Edge (optional module): The concept is to find the best historical [trade expectancy](edge.md#expectancy) by markets based on variation of the stop-loss and then allow/reject markets to trade. The sizing of the trade is based on a risk of a percentage of your capital.
 - Control/Monitor: Use Telegram or a REST API (start/stop the bot, show profit/loss, daily summary, current open trades results, etc.).
 - Analyse: Further analysis can be performed on either Backtesting data or Freqtrade trading history (SQL database), including automated standard plots, and methods to load the data into [interactive environments](data-analysis.md).
+
+## Supported exchange marketplaces
+
+Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
+
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#blacklists))
+- [X] [Bittrex](https://bittrex.com/)
+- [X] [FTX](https://ftx.com)
+- [X] [Kraken](https://kraken.com/)
+- [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+
+### Community tested
+
+Exchanges confirmed working by the community:
+
+- [X] [Bitvavo](https://bitvavo.com/)
 
 ## Requirements
 
@@ -63,9 +76,9 @@ Alternatively
 
 For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
 
-Please check out our [discord server](https://discord.gg/MA9v74M).
+Please check out our [discord server](https://discord.gg/p7nuUNVfP7).
 
-You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-l9d9iqgl-9cVBIeBkCBa8j6upSmd_NA).
+You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
 
 ## Ready to try?
 

@@ -10,7 +10,7 @@ import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.misc import json_load
-from freqtrade.persistence import Trade, init_db
+from freqtrade.persistence import LocalTrade, Trade, init_db
 
 
 logger = logging.getLogger(__name__)
@@ -156,33 +156,35 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
 
         data = data['strategy'][strategy]['trades']
         df = pd.DataFrame(data)
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
     else:
         # old format - only with lists.
         df = pd.DataFrame(data, columns=BT_DATA_COLUMNS_OLD)
-
-        df['open_date'] = pd.to_datetime(df['open_date'],
-                                         unit='s',
-                                         utc=True,
-                                         infer_datetime_format=True
-                                         )
-        df['close_date'] = pd.to_datetime(df['close_date'],
-                                          unit='s',
-                                          utc=True,
-                                          infer_datetime_format=True
-                                          )
-        # Create compatibility with new format
-        df['profit_abs'] = df['close_rate'] - df['open_rate']
-    if 'profit_ratio' not in df.columns:
-        df['profit_ratio'] = df['profit_percent']
-    df = df.sort_values("open_date").reset_index(drop=True)
+        if not df.empty:
+            df['open_date'] = pd.to_datetime(df['open_date'],
+                                             unit='s',
+                                             utc=True,
+                                             infer_datetime_format=True
+                                             )
+            df['close_date'] = pd.to_datetime(df['close_date'],
+                                              unit='s',
+                                              utc=True,
+                                              infer_datetime_format=True
+                                              )
+            # Create compatibility with new format
+            df['profit_abs'] = df['close_rate'] - df['open_rate']
+    if not df.empty:
+        if 'profit_ratio' not in df.columns:
+            df['profit_ratio'] = df['profit_percent']
+        df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
 
@@ -224,7 +226,7 @@ def evaluate_result_multi(results: pd.DataFrame, timeframe: str,
     return df_final[df_final['open_trades'] > max_open_trades]
 
 
-def trade_list_to_dataframe(trades: List[Trade]) -> pd.DataFrame:
+def trade_list_to_dataframe(trades: List[LocalTrade]) -> pd.DataFrame:
     """
     Convert list of Trade objects to pandas Dataframe
     :param trades: List of trade objects
@@ -337,7 +339,7 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     """
     Adds a column `col_name` with the cumulative profit for the given trades array.
     :param df: DataFrame with date index
-    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
     :param col_name: Column name that will be assigned the results
     :param timeframe: Timeframe used during the operations
     :return: Returns df with one additional column, col_name, containing the cumulative profit.
@@ -349,8 +351,8 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     timeframe_minutes = timeframe_to_minutes(timeframe)
     # Resample to timeframe to make sure trades match candles
     _trades_sum = trades.resample(f'{timeframe_minutes}min', on='close_date'
-                                  )[['profit_ratio']].sum()
-    df.loc[:, col_name] = _trades_sum['profit_ratio'].cumsum()
+                                  )[['profit_abs']].sum()
+    df.loc[:, col_name] = _trades_sum['profit_abs'].cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
     # FFill to get continuous
@@ -360,13 +362,14 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
 
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
                            value_col: str = 'profit_ratio'
-                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp]:
+                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float]:
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
     :param value_col: Column in DataFrame to use for values (defaults to 'profit_ratio')
-    :return: Tuple (float, highdate, lowdate) with absolute max drawdown, high and low time
+    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue) with absolute max drawdown,
+             high and low time and high and low value.
     :raise: ValueError if trade-dataframe was found empty.
     """
     if len(trades) == 0:
@@ -382,4 +385,26 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
         raise ValueError("No losing trade, therefore no drawdown.")
     high_date = profit_results.loc[max_drawdown_df.iloc[:idxmin]['high_value'].idxmax(), date_col]
     low_date = profit_results.loc[idxmin, date_col]
-    return abs(min(max_drawdown_df['drawdown'])), high_date, low_date
+    high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
+                                   ['high_value'].idxmax(), 'cumulative']
+    low_val = max_drawdown_df.loc[idxmin, 'cumulative']
+    return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
+
+
+def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
+    """
+    Calculate min/max cumsum of trades, to show if the wallet/stake amount ratio is sane
+    :param trades: DataFrame containing trades (requires columns close_date and profit_percent)
+    :param starting_balance: Add starting balance to results, to show the wallets high / low points
+    :return: Tuple (float, float) with cumsum of profit_abs
+    :raise: ValueError if trade-dataframe was found empty.
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
+
+    csum_df = pd.DataFrame()
+    csum_df['sum'] = trades['profit_abs'].cumsum()
+    csum_min = csum_df['sum'].min() + starting_balance
+    csum_max = csum_df['sum'].max() + starting_balance
+
+    return csum_min, csum_max

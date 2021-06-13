@@ -89,7 +89,7 @@ class HDF5DataHandler(IDataHandler):
             if timerange.starttype == 'date':
                 where.append(f"date >= Timestamp({timerange.startts * 1e9})")
             if timerange.stoptype == 'date':
-                where.append(f"date < Timestamp({timerange.stopts * 1e9})")
+                where.append(f"date <= Timestamp({timerange.stopts * 1e9})")
 
         pairdata = pd.read_hdf(filename, key=key, mode="r", where=where)
 

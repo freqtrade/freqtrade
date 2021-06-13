@@ -30,10 +30,10 @@ class AgeFilter(IPairList):
 
         if self._min_days_listed < 1:
             raise OperationalException("AgeFilter requires min_days_listed to be >= 1")
-        if self._min_days_listed > exchange.ohlcv_candle_limit:
+        if self._min_days_listed > exchange.ohlcv_candle_limit('1d'):
             raise OperationalException("AgeFilter requires min_days_listed to not exceed "
                                        "exchange max request size "
-                                       f"({exchange.ohlcv_candle_limit})")
+                                       f"({exchange.ohlcv_candle_limit('1d')})")
 
     @property
     def needstickers(self) -> bool:
@@ -71,14 +71,14 @@ class AgeFilter(IPairList):
                 daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
-        logger.info(f"Validated {len(pairlist)} pairs.")
+        self.log_once(f"Validated {len(pairlist)} pairs.", logger.info)
         return pairlist
 
     def _validate_pair_loc(self, pair: str, daily_candles: Optional[DataFrame]) -> bool:
         """
         Validate age for the ticker
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
         # Check symbol in cache
@@ -86,7 +86,7 @@ class AgeFilter(IPairList):
             return True
 
         if daily_candles is not None:
-            if len(daily_candles) > self._min_days_listed:
+            if len(daily_candles) >= self._min_days_listed:
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
                 self._symbolsChecked[pair] = int(arrow.utcnow().float_timestamp) * 1000

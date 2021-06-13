@@ -6,7 +6,6 @@ This module load custom strategies
 import logging
 import tempfile
 from base64 import urlsafe_b64decode
-from collections import OrderedDict
 from inspect import getfullargspec
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -139,7 +138,7 @@ class StrategyResolver(IResolver):
 
         # Sort and apply type conversions
         if hasattr(strategy, 'minimal_roi'):
-            strategy.minimal_roi = OrderedDict(sorted(
+            strategy.minimal_roi = dict(sorted(
                 {int(key): value for (key, value) in strategy.minimal_roi.items()}.items(),
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):
@@ -196,9 +195,9 @@ class StrategyResolver(IResolver):
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
             strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-            if any([x == 2 for x in [strategy._populate_fun_len,
-                                     strategy._buy_fun_len,
-                                     strategy._sell_fun_len]]):
+            if any(x == 2 for x in [strategy._populate_fun_len,
+                                    strategy._buy_fun_len,
+                                    strategy._sell_fun_len]):
                 strategy.INTERFACE_VERSION = 1
 
             return strategy

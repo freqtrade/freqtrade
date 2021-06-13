@@ -1,3 +1,4 @@
+from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -8,11 +9,12 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
-                                       analyze_trade_parallelism, calculate_market_change,
-                                       calculate_max_drawdown, combine_dataframes_with_mean,
-                                       create_cum_profit, extract_trades_of_period,
-                                       get_latest_backtest_filename, get_latest_hyperopt_file,
-                                       load_backtest_data, load_trades, load_trades_from_db)
+                                       analyze_trade_parallelism, calculate_csum,
+                                       calculate_market_change, calculate_max_drawdown,
+                                       combine_dataframes_with_mean, create_cum_profit,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
+                                       load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -245,7 +247,7 @@ def test_create_cum_profit(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
 
 def test_create_cum_profit1(testdatadir):
@@ -263,7 +265,7 @@ def test_create_cum_profit1(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],
@@ -273,15 +275,35 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
-    drawdown, h, low = calculate_max_drawdown(bt_data)
+    drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(bt_data)
     assert isinstance(drawdown, float)
     assert pytest.approx(drawdown) == 0.21142322
-    assert isinstance(h, Timestamp)
-    assert isinstance(low, Timestamp)
-    assert h == Timestamp('2018-01-24 14:25:00', tz='UTC')
-    assert low == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    assert isinstance(hdate, Timestamp)
+    assert isinstance(lowdate, Timestamp)
+    assert isinstance(hval, float)
+    assert isinstance(lval, float)
+    assert hdate == Timestamp('2018-01-24 14:25:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
-        drawdown, h, low = calculate_max_drawdown(DataFrame())
+        drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(DataFrame())
+
+
+def test_calculate_csum(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+    csum_min, csum_max = calculate_csum(bt_data)
+
+    assert isinstance(csum_min, float)
+    assert isinstance(csum_max, float)
+    assert csum_min < 0.01
+    assert csum_max > 0.02
+    csum_min1, csum_max1 = calculate_csum(bt_data, 5)
+
+    assert csum_min1 == csum_min + 5
+    assert csum_max1 == csum_max + 5
+
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        csum_min, csum_max = calculate_csum(DataFrame())
 
 
 def test_calculate_max_drawdown2():
@@ -295,13 +317,16 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
     df1 = df.copy()
-    drawdown, h, low = calculate_max_drawdown(df, date_col='open_date', value_col='profit')
+    drawdown, hdate, ldate, hval, lval = calculate_max_drawdown(
+        df, date_col='open_date', value_col='profit')
     # Ensure df has not been altered.
     assert df.equals(df1)
 
     assert isinstance(drawdown, float)
     # High must be before low
-    assert h < low
+    assert hdate < ldate
+    # High value must be higher than low value
+    assert hval > lval
     assert drawdown == 0.091755
 
     df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])

@@ -5,6 +5,7 @@ This module defines the interface for the loss-function for hyperopt
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Dict
 
 from pandas import DataFrame
 
@@ -19,7 +20,9 @@ class IHyperOptLoss(ABC):
     @staticmethod
     @abstractmethod
     def hyperopt_loss_function(results: DataFrame, trade_count: int,
-                               min_date: datetime, max_date: datetime, *args, **kwargs) -> float:
+                               min_date: datetime, max_date: datetime,
+                               config: Dict, processed: Dict[str, DataFrame],
+                               *args, **kwargs) -> float:
         """
         Objective function, returns smaller number for better results
         """

@@ -72,20 +72,39 @@ Example configuration showing the different settings:
 
 ``` json
 "telegram": {
-      "enabled": true,
-      "token": "your_telegram_token",
-      "chat_id": "your_telegram_chat_id",
-      "notification_settings": {
-         "status": "silent",
-         "warning": "on",
-         "startup": "off",
-         "buy": "silent",
-         "sell": "on",
-         "buy_cancel": "silent",
-         "sell_cancel": "on"
-      }
-   },
+    "enabled": true,
+    "token": "your_telegram_token",
+    "chat_id": "your_telegram_chat_id",
+    "notification_settings": {
+        "status": "silent",
+        "warning": "on",
+        "startup": "off",
+        "buy": "silent",
+        "sell": {
+            "roi": "silent",
+            "emergency_sell": "on",
+            "force_sell": "on",
+            "sell_signal": "silent",
+            "trailing_stop_loss": "on",
+            "stop_loss": "on",
+            "stoploss_on_exchange": "on",
+            "custom_sell": "silent"
+        },
+        "buy_cancel": "silent",
+        "sell_cancel": "on",
+        "buy_fill": "off",
+        "sell_fill": "off"
+    },
+    "balance_dust_level": 0.01
+},
 ```
+
+`buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
+`sell` notifications are sent when the order is placed, while `sell_fill` notifications are sent when the order is filled on the exchange.
+`*_fill` notifications are off by default and must be explicitly enabled.
+
+
+`balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
 
 ## Create a custom keyboard (command shortcut buttons)
 
@@ -143,7 +162,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
-| `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
+| `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
 | `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
@@ -239,9 +259,13 @@ Return a summary of your profit/loss and performance.
 
 > **BITTREX:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
 
-### /forcebuy <pair>
+### /forcebuy <pair> [rate]
 
 > **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+
+Omitting the pair will open a query asking for the pair to buy (based on the current whitelist).
+
+![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 
 Note that for this to work, `forcebuy_enable` needs to be set to true.
 
@@ -250,12 +274,12 @@ Note that for this to work, `forcebuy_enable` needs to be set to true.
 ### /performance
 
 Return the performance of each crypto-currency the bot has sold.
-> Performance:
-> 1. `RCN/BTC 57.77%`  
-> 2. `PAY/BTC 56.91%`  
-> 3. `VIB/BTC 47.07%`  
-> 4. `SALT/BTC 30.24%`  
-> 5. `STORJ/BTC 27.24%`  
+> Performance:  
+> 1. `RCN/BTC 0.003 BTC (57.77%) (1)`  
+> 2. `PAY/BTC 0.0012 BTC (56.91%) (1)`  
+> 3. `VIB/BTC 0.0011 BTC (47.07%) (1)`  
+> 4. `SALT/BTC 0.0010 BTC (30.24%) (1)`  
+> 5. `STORJ/BTC 0.0009 BTC (27.24%) (1)`  
 > ...  
 
 ### /balance

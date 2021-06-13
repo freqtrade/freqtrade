@@ -23,7 +23,8 @@
     "stoploss": -0.10,
     "unfilledtimeout": {
         "buy": 10,
-        "sell": 30
+        "sell": 30,
+        "unit": "minutes"
     },
     "bid_strategy": {
         "price_side": "bid",
@@ -49,6 +50,8 @@
         "buy": "limit",
         "sell": "limit",
         "emergencysell": "market",
+        "forcesell": "market",
+        "forcebuy": "market",
         "stoploss": "market",
         "stoploss_on_exchange": false,
         "stoploss_on_exchange_interval": 60
@@ -111,7 +114,7 @@
         "password": "",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
-            "enableRateLimit": false,
+            "enableRateLimit": true,
             "rateLimit": 500,
             "aiohttp_trust_env": false
         },
@@ -161,7 +164,18 @@
             "warning": "on",
             "startup": "on",
             "buy": "on",
-            "sell": "on",
+            "buy_fill": "on",
+            "sell": {
+                "roi": "off",
+                "emergency_sell": "off",
+                "force_sell": "off",
+                "sell_signal": "off",
+                "trailing_stop_loss": "off",
+                "stop_loss": "off",
+                "stoploss_on_exchange": "off",
+                "custom_sell": "off"
+            },
+            "sell_fill": "on",
             "buy_cancel": "on",
             "sell_cancel": "on"
         }

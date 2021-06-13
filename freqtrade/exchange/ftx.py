@@ -8,6 +8,7 @@ from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, Invali
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
+from freqtrade.misc import safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class Ftx(Exchange):
         stop_price = self.price_to_precision(pair, stop_price)
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(
+            dry_order = self.create_dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 
@@ -63,10 +64,11 @@ class Ftx(Exchange):
                 # set orderPrice to place limit order, otherwise it's a market order
                 params['orderPrice'] = limit_rate
 
+            params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
-                                           amount=amount, price=stop_price, params=params)
+                                           amount=amount, params=params)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)
             return order
@@ -91,18 +93,24 @@ class Ftx(Exchange):
     @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_stoploss_order(self, order_id: str, pair: str) -> Dict:
         if self._config['dry_run']:
-            try:
-                order = self._dry_run_open_orders[order_id]
-                return order
-            except KeyError as e:
-                # Gracefully handle errors with dry-run orders.
-                raise InvalidOrderException(
-                    f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
+            return self.fetch_dry_run_order(order_id)
+
         try:
             orders = self._api.fetch_orders(pair, None, params={'type': 'stop'})
 
             order = [order for order in orders if order['id'] == order_id]
             if len(order) == 1:
+                if order[0].get('status') == 'closed':
+                    # Trigger order was triggered ...
+                    real_order_id = order[0].get('info', {}).get('orderId')
+
+                    order1 = self._api.fetch_order(real_order_id, pair)
+                    # Fake type to stop - as this was really a stop order.
+                    order1['id_stop'] = order1['id']
+                    order1['id'] = order_id
+                    order1['type'] = 'stop'
+                    order1['status_stop'] = 'triggered'
+                    return order1
                 return order[0]
             else:
                 raise InvalidOrderException(f"Could not get stoploss order for id {order_id}")
@@ -134,3 +142,8 @@ class Ftx(Exchange):
                 f'Could not cancel order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+        if order['type'] == 'stop':
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
+        return order['id']

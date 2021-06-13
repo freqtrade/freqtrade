@@ -55,13 +55,13 @@ class MaxDrawdown(IProtection):
 
         # Drawdown is always positive
         try:
-            drawdown, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
+            drawdown, _, _, _, _ = calculate_max_drawdown(trades_df, value_col='close_profit')
         except ValueError:
             return False, None, None
 
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
-                f"Trading stopped due to Max Drawdown {drawdown:.2f} < {self._max_allowed_drawdown}"
+                f"Trading stopped due to Max Drawdown {drawdown:.2f} > {self._max_allowed_drawdown}"
                 f" within {self.lookback_period_str}.", logger.info)
             until = self.calculate_lock_end(trades, self._stop_duration)
 

@@ -10,7 +10,12 @@ router_ui = APIRouter()
 
 @router_ui.get('/favicon.ico', include_in_schema=False)
 async def favicon():
-    return FileResponse(Path(__file__).parent / 'ui/favicon.ico')
+    return FileResponse(str(Path(__file__).parent / 'ui/favicon.ico'))
+
+
+@router_ui.get('/fallback_file.html', include_in_schema=False)
+async def fallback():
+    return FileResponse(str(Path(__file__).parent / 'ui/fallback_file.html'))
 
 
 @router_ui.get('/{rest_of_path:path}', include_in_schema=False)

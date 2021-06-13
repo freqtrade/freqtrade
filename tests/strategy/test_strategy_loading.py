@@ -35,7 +35,7 @@ def test_search_all_strategies_no_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=False)
     assert isinstance(strategies, list)
-    assert len(strategies) == 2
+    assert len(strategies) == 3
     assert isinstance(strategies[0], dict)
 
 
@@ -43,10 +43,10 @@ def test_search_all_strategies_with_failed():
     directory = Path(__file__).parent / "strats"
     strategies = StrategyResolver.search_all_objects(directory, enum_failed=True)
     assert isinstance(strategies, list)
-    assert len(strategies) == 3
+    assert len(strategies) == 4
     # with enum_failed=True search_all_objects() shall find 2 good strategies
     # and 1 which fails to load
-    assert len([x for x in strategies if x['class'] is not None]) == 2
+    assert len([x for x in strategies if x['class'] is not None]) == 3
     assert len([x for x in strategies if x['class'] is None]) == 1
 
 
@@ -129,13 +129,16 @@ def test_strategy_override_minimal_roi(caplog, default_conf):
     default_conf.update({
         'strategy': 'DefaultStrategy',
         'minimal_roi': {
+            "20": 0.1,
             "0": 0.5
         }
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
     assert strategy.minimal_roi[0] == 0.5
-    assert log_has("Override strategy 'minimal_roi' with value in config file: {'0': 0.5}.", caplog)
+    assert log_has(
+        "Override strategy 'minimal_roi' with value in config file: {'20': 0.1, '0': 0.5}.",
+        caplog)
 
 
 def test_strategy_override_stoploss(caplog, default_conf):
