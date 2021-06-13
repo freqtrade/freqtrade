@@ -67,7 +67,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     if epochs and not no_details:
         sorted_epochs = sorted(epochs, key=itemgetter('loss'))
         results = sorted_epochs[0]
-        HyperoptTools.print_epoch_details(results, total_epochs, print_json, no_header)
+        HyperoptTools.show_epoch_details(results, total_epochs, print_json, no_header)
 
     if epochs and export_csv:
         HyperoptTools.export_csv_file(
@@ -132,8 +132,8 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
             show_backtest_result(metrics['strategy_name'], metrics,
                                  metrics['stake_currency'])
 
-        HyperoptTools.print_epoch_details(val, total_epochs, print_json, no_header,
-                                          header_str="Epoch details")
+        HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
+                                         header_str="Epoch details")
 
 
 def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:

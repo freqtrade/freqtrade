@@ -73,8 +73,8 @@ class HyperoptTools():
         return epochs
 
     @staticmethod
-    def print_epoch_details(results, total_epochs: int, print_json: bool,
-                            no_header: bool = False, header_str: str = None) -> None:
+    def show_epoch_details(results, total_epochs: int, print_json: bool,
+                           no_header: bool = False, header_str: str = None) -> None:
         """
         Display details of the hyperopt result
         """

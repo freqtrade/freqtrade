@@ -1068,7 +1068,7 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, method, space) -> No
         hyperopt.start()
 
 
-def test_print_epoch_details(capsys):
+def test_show_epoch_details(capsys):
     test_result = {
         'params_details': {
             'trailing': {
@@ -1090,7 +1090,7 @@ def test_print_epoch_details(capsys):
         'is_best': True
     }
 
-    HyperoptTools.print_epoch_details(test_result, 5, False, no_header=True)
+    HyperoptTools.show_epoch_details(test_result, 5, False, no_header=True)
     captured = capsys.readouterr()
     assert '# Trailing stop:' in captured.out
     # re.match(r"Pairs for .*", captured.out)
