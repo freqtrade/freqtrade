@@ -816,8 +816,13 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
-        if stoploss_order and (self.config.get('trailing_stop', False)
-                               or self.config.get('use_custom_stoploss', False)):
+        # Triggered Orders are now real orders - so don't replace stoploss anymore
+        if (
+            stoploss_order
+            and stoploss_order.get('status_stop') != 'triggered'
+            and (self.config.get('trailing_stop', False)
+                 or self.config.get('use_custom_stoploss', False))
+        ):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
             # value immediately

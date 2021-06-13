@@ -100,6 +100,17 @@ class Ftx(Exchange):
 
             order = [order for order in orders if order['id'] == order_id]
             if len(order) == 1:
+                if order[0].get('status') == 'closed':
+                    # Trigger order was triggered ...
+                    real_order_id = order[0].get('info', {}).get('orderId')
+
+                    order1 = self._api.fetch_order(real_order_id, pair)
+                    # Fake type to stop - as this was really a stop order.
+                    order1['id_stop'] = order1['id']
+                    order1['id'] = order_id
+                    order1['type'] = 'stop'
+                    order1['status_stop'] = 'triggered'
+                    return order1
                 return order[0]
             else:
                 raise InvalidOrderException(f"Could not get stoploss order for id {order_id}")
@@ -134,5 +145,5 @@ class Ftx(Exchange):
 
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
         if order['type'] == 'stop':
-            return safe_value_fallback2(order['info'], order, 'orderId', 'id')
+            return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
