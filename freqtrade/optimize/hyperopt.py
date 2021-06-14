@@ -23,7 +23,7 @@ from pandas import DataFrame
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
-from freqtrade.misc import file_dump_json, plural
+from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
@@ -201,6 +201,25 @@ class Hyperopt:
 
         return result
 
+    def _get_no_optimize_details(self) -> Dict[str, Any]:
+        """
+        Get non-optimized parameters
+        """
+        result: Dict[str, Any] = {}
+        strategy = self.backtesting.strategy
+        if not HyperoptTools.has_space(self.config, 'roi'):
+            result['roi'] = strategy.minimal_roi
+        if not HyperoptTools.has_space(self.config, 'stoploss'):
+            result['stoploss'] = strategy.stoploss
+        if not HyperoptTools.has_space(self.config, 'trailing'):
+            result['trailing'] = {
+                'trailing_stop': strategy.trailing_stop,
+                'trailing_stop_positive': strategy.trailing_stop_positive,
+                'trailing_stop_positive_offset': strategy.trailing_stop_positive_offset,
+                'trailing_only_offset_is_reached': strategy.trailing_only_offset_is_reached,
+            }
+        return result
+
     def print_results(self, results) -> None:
         """
         Log results if it is better than any previous evaluation
@@ -311,6 +330,7 @@ class Hyperopt:
             strat_stats, self.config['stake_currency'])
 
         not_optimized = self.backtesting.strategy.get_no_optimize_params()
+        not_optimized = deep_merge_dicts(not_optimized, self._get_no_optimize_details())
 
         trade_count = strat_stats['total_trades']
         total_profit = strat_stats['profit_total']

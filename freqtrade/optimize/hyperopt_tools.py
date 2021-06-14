@@ -130,9 +130,9 @@ class HyperoptTools():
                                                non_optimized)
             HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:",
                                                non_optimized)
-            HyperoptTools._params_pretty_print(params, 'roi', "ROI table:")
-            HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:")
-            HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:")
+            HyperoptTools._params_pretty_print(params, 'roi', "ROI table:", non_optimized)
+            HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:", non_optimized)
+            HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:", non_optimized)
 
     @staticmethod
     def _params_update_for_json(result_dict, params, non_optimized, space: str) -> None:
@@ -159,19 +159,31 @@ class HyperoptTools():
         if space in params or space in non_optimized:
             space_params = HyperoptTools._space_params(params, space, 5)
             result = f"\n# {header}\n"
-            if space == 'stoploss':
-                result += f"stoploss = {space_params.get('stoploss')}"
-            elif space == 'roi':
+            if space == "stoploss":
+                opt = True
+                if not space_params:
+                    space_params = HyperoptTools._space_params(params, space, 5)
+                    opt = False
+                result += (f"stoploss = {space_params.get('stoploss')}"
+                           f"{'  # value loaded from strategy' if not opt else ''}")
+
+            elif space == "roi":
                 minimal_roi_result = rapidjson.dumps({
                         str(k): v for k, v in space_params.items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
-            elif space == 'trailing':
+            elif space == "trailing":
+                opt = True
+                if not space_params:
+                    # Not optimized ...
+                    space_params = HyperoptTools._space_params(non_optimized, space, 5)
+                    opt = False
 
                 for k, v in space_params.items():
-                    result += f'{k} = {v}\n'
+                    result += f"{k} = {v}{'  # value loaded from strategy' if not opt else ''}\n"
 
             else:
+                # Buy / sell parameters
                 no_params = HyperoptTools._space_params(non_optimized, space, 5)
 
                 result += f"{space}_params = {HyperoptTools._pprint(space_params, no_params)}"
