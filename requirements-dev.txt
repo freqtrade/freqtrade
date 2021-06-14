@@ -17,3 +17,9 @@ isort==5.8.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==6.0.7
+
+# mypy types
+types-cachetools==0.1.7
+types-filelock==0.1.3
+types-requests==0.1.11
+types-tabulate==0.1.0
