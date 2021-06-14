@@ -358,7 +358,7 @@ class HyperStrategyMixin(object):
             else:
                 logger.info(f'Strategy Parameter(default): {attr_name} = {attr.value}')
 
-    def get_params_dict(self):
+    def get_no_optimize_params(self):
         """
         Returns list of Parameters that are not part of the current optimize job
         """
