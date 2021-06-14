@@ -155,6 +155,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
         'backtesting',
         '--config', 'config.json',
         '--strategy', 'DefaultStrategy',
+        '--export', 'none'
     ]
 
     config = setup_optimize_configuration(get_args(args), RunMode.BACKTEST)
@@ -172,7 +173,8 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'timerange' not in config
-    assert 'export' not in config
+    assert 'export' in config
+    assert config['export'] == 'none'
     assert 'runmode' in config
     assert config['runmode'] == RunMode.BACKTEST
 
@@ -193,7 +195,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo',
         '--export-filename', 'foo_bar.json',
         '--fee', '0',
     ]
@@ -223,7 +224,6 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     assert log_has('Parameter --timerange detected: {} ...'.format(config['timerange']), caplog)
 
     assert 'export' in config
-    assert log_has('Parameter --export detected: {} ...'.format(config['export']), caplog)
     assert 'exportfilename' in config
     assert isinstance(config['exportfilename'], Path)
     assert log_has('Storing backtest results to {} ...'.format(config['exportfilename']), caplog)
@@ -395,7 +395,7 @@ def test_backtesting_start_no_data(default_conf, mocker, caplog, testdatadir) ->
 
     default_conf['timeframe'] = "1m"
     default_conf['datadir'] = testdatadir
-    default_conf['export'] = None
+    default_conf['export'] = 'none'
     default_conf['timerange'] = '20180101-20180102'
 
     backtesting = Backtesting(default_conf)
@@ -416,7 +416,7 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
 
     default_conf['timeframe'] = "1m"
     default_conf['datadir'] = testdatadir
-    default_conf['export'] = None
+    default_conf['export'] = 'none'
     default_conf['timerange'] = '20180101-20180102'
 
     with pytest.raises(OperationalException, match='No pair in whitelist.'):
@@ -440,7 +440,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
     default_conf['ticker_interval'] = "1m"
     default_conf['datadir'] = testdatadir
-    default_conf['export'] = None
+    default_conf['export'] = 'none'
     # Use stoploss from strategy
     del default_conf['stoploss']
     default_conf['timerange'] = '20180101-20180102'

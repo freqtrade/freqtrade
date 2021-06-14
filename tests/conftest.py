@@ -326,6 +326,7 @@ def get_default_conf(testdatadir):
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy",
         "internals": {},
+        "export": "none",
     }
     return configuration
 

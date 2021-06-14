@@ -19,7 +19,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--enable-protections]
                              [--dry-run-wallet DRY_RUN_WALLET]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                             [--export EXPORT] [--export-filename PATH]
+                             [--export {none,trades}] [--export-filename PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -63,8 +63,8 @@ optional arguments:
                         name is injected into the filename (so `backtest-
                         data.json` becomes `backtest-data-
                         DefaultStrategy.json`
-  --export EXPORT       Export backtest results, argument are: trades.
-                        Example: `--export=trades`
+  --export {none,trades}
+                        Export backtest results (default: trades).
   --export-filename PATH
                         Save backtest results to the file with this filename.
                         Requires `--export` to be set as well. Example:
@@ -100,7 +100,7 @@ Strategy arguments:
 Now you have good Buy and Sell strategies and some historic data, you want to test it against
 real data. This is what we call [backtesting](https://en.wikipedia.org/wiki/Backtesting).
 
-Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHCLV) data from `user_data/data/<exchange>` by default.
+Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHLCV) data from `user_data/data/<exchange>` by default.
 If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using `freqtrade download-data`.
 For details on downloading, please refer to the [Data Downloading](data-download.md) section in the documentation.
 
@@ -110,10 +110,15 @@ All profit calculations include fees, and freqtrade will use the exchange's defa
 
 !!! Warning "Using dynamic pairlists for backtesting"
     Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
-    Also, when using pairlists other than StaticPairlist, reproducability of backtesting-results cannot be guaranteed.
+    Also, when using pairlists other than StaticPairlist, reproducibility of backtesting-results cannot be guaranteed.
     Please read the [pairlists documentation](plugins.md#pairlists) for more information.
 
     To achieve reproducible results, best generate a pairlist via the [`test-pairlist`](utils.md#test-pairlist) command and use that as static pairlist.
+
+!!! Note
+    By default, Freqtrade will export backtesting results to `user_data/backtest_results`.
+    The exported trades can be used for [further analysis](#further-backtest-result-analysis) or can be used by the [plotting sub-command](plotting.md#plot-price-and-indicators) (`freqtrade plot-dataframe`) in the scripts directory.
+
 
 ### Starting balance
 
@@ -174,13 +179,13 @@ Where `SampleStrategy1` and `AwesomeStrategy` refer to class names of strategies
 
 ---
 
-Exporting trades to file
+Prevent exporting trades to file
 
 ```bash
-freqtrade backtesting --strategy backtesting --export trades --config config.json 
+freqtrade backtesting --strategy backtesting --export none --config config.json 
 ```
 
-The exported trades can be used for [further analysis](#further-backtest-result-analysis), or can be used by the plotting script `plot_dataframe.py` in the scripts directory.
+Only use this if you're sure you'll not want to plot or analyze your results further.
 
 ---
 

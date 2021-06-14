@@ -520,7 +520,7 @@ class Backtesting:
             stats = generate_backtest_stats(data, self.all_results,
                                             min_date=min_date, max_date=max_date)
 
-            if self.config.get('export', False):
+            if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], stats)
 
             # Show backtest results

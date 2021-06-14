@@ -425,7 +425,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'timerange' not in config
-    assert 'export' not in config
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
@@ -448,7 +447,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo',
+        '--export', 'trades',
         '--stake-amount', 'unlimited'
     ]
 
@@ -496,7 +495,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--config', 'config.json',
         '--ticker-interval', '1m',
-        '--export', '/bar/foo',
+        '--export', 'trades',
         '--strategy-list',
         'DefaultStrategy',
         'TestStrategy'
