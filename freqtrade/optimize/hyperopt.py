@@ -208,9 +208,9 @@ class Hyperopt:
         result: Dict[str, Any] = {}
         strategy = self.backtesting.strategy
         if not HyperoptTools.has_space(self.config, 'roi'):
-            result['roi'] = strategy.minimal_roi
+            result['roi'] = {str(k): v for k, v in strategy.minimal_roi.items()}
         if not HyperoptTools.has_space(self.config, 'stoploss'):
-            result['stoploss'] = strategy.stoploss
+            result['stoploss'] = {'stoploss': strategy.stoploss}
         if not HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = {
                 'trailing_stop': strategy.trailing_stop,
