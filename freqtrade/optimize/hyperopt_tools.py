@@ -12,10 +12,12 @@ from pandas import isna, json_normalize
 
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict
+from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
+
+NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
 
 
 class HyperoptTools():
@@ -158,33 +160,31 @@ class HyperoptTools():
     def _params_pretty_print(params, space: str, header: str, non_optimized={}) -> None:
         if space in params or space in non_optimized:
             space_params = HyperoptTools._space_params(params, space, 5)
+            no_params = HyperoptTools._space_params(non_optimized, space, 5)
+            if not space_params and not no_params:
+                # No parameters - don't print
+                return
+            if not space_params:
+                # Not optimized parameters - append string
+                non_optimized = NON_OPT_PARAM_APPENDIX
+
             result = f"\n# {header}\n"
             if space == "stoploss":
-                opt = True
-                if not space_params:
-                    space_params = HyperoptTools._space_params(params, space, 5)
-                    opt = False
-                result += (f"stoploss = {space_params.get('stoploss')}"
-                           f"{'  # value loaded from strategy' if not opt else ''}")
+                stoploss = safe_value_fallback2(space_params, no_params, space, space)
+                result += (f"stoploss = {stoploss}{non_optimized}")
 
             elif space == "roi":
+                result = result[:-1] + f'{non_optimized}\n'
                 minimal_roi_result = rapidjson.dumps({
-                        str(k): v for k, v in space_params.items()
+                        str(k): v for k, v in (space_params or no_params).items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
             elif space == "trailing":
-                opt = True
-                if not space_params:
-                    # Not optimized ...
-                    space_params = HyperoptTools._space_params(non_optimized, space, 5)
-                    opt = False
-
-                for k, v in space_params.items():
-                    result += f"{k} = {v}{'  # value loaded from strategy' if not opt else ''}\n"
+                for k, v in (space_params or no_params).items():
+                    result += f"{k} = {v}{non_optimized}\n"
 
             else:
                 # Buy / sell parameters
-                no_params = HyperoptTools._space_params(non_optimized, space, 5)
 
                 result += f"{space}_params = {HyperoptTools.__pprint_dict(space_params, no_params)}"
 
@@ -212,7 +212,7 @@ class HyperoptTools():
             result += " " * indent + f'"{k}": '
             result += f'"{param}",' if isinstance(param, str) else f'{param},'
             if k in non_optimized:
-                result += "  # value loaded from strategy"
+                result += NON_OPT_PARAM_APPENDIX
             result += "\n"
         result += '}'
         return result

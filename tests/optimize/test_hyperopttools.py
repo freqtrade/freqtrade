@@ -199,3 +199,64 @@ def test_export_params(tmpdir):
     assert "roi" in content["params"]
     assert "stoploss" in content["params"]
     assert "trailing" in content["params"]
+
+
+def test_params_print(capsys):
+
+    params = {
+        "buy": {
+            "buy_rsi": 30
+        },
+        "sell": {
+            "sell_rsi": 70
+        },
+    }
+    non_optimized = {
+        "buy": {
+            "buy_adx": 44
+        },
+        "sell": {
+            "sell_adx": 65
+        },
+        "stoploss": {
+            "stoploss": -0.05,
+        },
+        "roi": {
+            "0": 0.05,
+            "20": 0.01,
+        },
+        "trailing": {
+            "trailing_stop": False,
+            "trailing_stop_positive": 0.05,
+            "trailing_stop_positive_offset": 0.1,
+            "trailing_only_offset_is_reached": True
+        },
+
+    }
+    HyperoptTools._params_pretty_print(params, 'buy', 'No header', non_optimized)
+
+    captured = capsys.readouterr()
+    assert re.search("# No header", captured.out)
+    assert re.search('"buy_rsi": 30,\n', captured.out)
+    assert re.search('"buy_adx": 44,  # value loaded.*\n', captured.out)
+    assert not re.search("sell", captured.out)
+
+    HyperoptTools._params_pretty_print(params, 'sell', 'Sell Header', non_optimized)
+    captured = capsys.readouterr()
+    assert re.search("# Sell Header", captured.out)
+    assert re.search('"sell_rsi": 70,\n', captured.out)
+    assert re.search('"sell_adx": 65,  # value loaded.*\n', captured.out)
+
+    HyperoptTools._params_pretty_print(params, 'roi', 'ROI Table:', non_optimized)
+    captured = capsys.readouterr()
+    assert re.search("# ROI Table:  # value loaded.*\n", captured.out)
+    assert re.search('minimal_roi = {\n', captured.out)
+    assert re.search('"20": 0.01\n', captured.out)
+
+    HyperoptTools._params_pretty_print(params, 'trailing', 'Trailing stop:', non_optimized)
+    captured = capsys.readouterr()
+    assert re.search("# Trailing stop:", captured.out)
+    assert re.search('trailing_stop = False  # value loaded.*\n', captured.out)
+    assert re.search('trailing_stop_positive = 0.05  # value loaded.*\n', captured.out)
+    assert re.search('trailing_stop_positive_offset = 0.1  # value loaded.*\n', captured.out)
+    assert re.search('trailing_only_offset_is_reached = True  # value loaded.*\n', captured.out)
