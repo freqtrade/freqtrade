@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import pytest
+import rapidjson
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
@@ -144,3 +145,57 @@ def test___pprint():
     "buy_what": "asdf",
     "buy_notoptimied": 55,  # value loaded from strategy
 }"""
+
+
+def test_get_strategy_filename(default_conf):
+
+    x = HyperoptTools.get_strategy_filename(default_conf, 'DefaultStrategy')
+    assert isinstance(x, Path)
+    assert x == Path(__file__).parents[1] / 'strategy/strats/default_strategy.py'
+
+    x = HyperoptTools.get_strategy_filename(default_conf, 'NonExistingStrategy')
+    assert x is None
+
+
+def test_export_params(tmpdir):
+
+    filename = Path(tmpdir) / "DefaultStrategy.json"
+    assert not filename.is_file()
+    params = {
+        "params_details": {
+            "buy": {
+                "buy_rsi": 30
+            },
+            "sell": {
+                "sell_rsi": 70
+            },
+            "roi": {
+                "0": 0.528,
+                "346": 0.08499999999999999,
+                "507": 0.049,
+                "1595": 0
+            }
+        },
+        "params_not_optimized": {
+            "stoploss": -0.05,
+            "trailing": {
+                "trailing_stop": False,
+                "trailing_stop_positive": 0.05,
+                "trailing_stop_positive_offset": 0.1,
+                "trailing_only_offset_is_reached": True
+            },
+        }
+
+    }
+    HyperoptTools.export_params(params, "DefaultStrategy", filename)
+
+    assert filename.is_file()
+
+    content = rapidjson.load(filename.open('r'))
+    assert content['strategy_name'] == 'DefaultStrategy'
+    assert 'params' in content
+    assert "buy" in content["params"]
+    assert "sell" in content["params"]
+    assert "roi" in content["params"]
+    assert "stoploss" in content["params"]
+    assert "trailing" in content["params"]
