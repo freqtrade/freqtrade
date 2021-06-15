@@ -162,32 +162,33 @@ class HyperoptTools():
         if space in params or space in non_optimized:
             space_params = HyperoptTools._space_params(params, space, 5)
             no_params = HyperoptTools._space_params(non_optimized, space, 5)
+            appendix = ''
             if not space_params and not no_params:
                 # No parameters - don't print
                 return
             if not space_params:
                 # Not optimized parameters - append string
-                non_optimized = NON_OPT_PARAM_APPENDIX
+                appendix = NON_OPT_PARAM_APPENDIX
 
             result = f"\n# {header}\n"
             if space == "stoploss":
                 stoploss = safe_value_fallback2(space_params, no_params, space, space)
-                result += (f"stoploss = {stoploss}{non_optimized}")
+                result += (f"stoploss = {stoploss}{appendix}")
 
             elif space == "roi":
-                result = result[:-1] + f'{non_optimized}\n'
+                result = result[:-1] + f'{appendix}\n'
                 minimal_roi_result = rapidjson.dumps({
                         str(k): v for k, v in (space_params or no_params).items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
             elif space == "trailing":
                 for k, v in (space_params or no_params).items():
-                    result += f"{k} = {v}{non_optimized}\n"
+                    result += f"{k} = {v}{appendix}\n"
 
             else:
                 # Buy / sell parameters
 
-                result += f"{space}_params = {HyperoptTools.__pprint_dict(space_params, no_params)}"
+                result += f"{space}_params = {HyperoptTools._pprint_dict(space_params, no_params)}"
 
             result = result.replace("\n", "\n    ")
             print(result)
@@ -201,7 +202,7 @@ class HyperoptTools():
         return {}
 
     @staticmethod
-    def __pprint_dict(params, non_optimized, indent: int = 4):
+    def _pprint_dict(params, non_optimized, indent: int = 4):
         """
         Pretty-print hyperopt results (based on 2 dicts - with add. comment)
         """

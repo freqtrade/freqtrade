@@ -133,11 +133,11 @@ def test_show_epoch_details(capsys):
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
 
 
-def test___pprint_dict():
+def test__pprint_dict():
     params = {'buy_std': 1.2, 'buy_rsi': 31, 'buy_enable': True, 'buy_what': 'asdf'}
     non_params = {'buy_notoptimied': 55}
 
-    x = HyperoptTools.__pprint_dict(params, non_params)
+    x = HyperoptTools._pprint_dict(params, non_params)
     assert x == """{
     "buy_std": 1.2,
     "buy_rsi": 31,
