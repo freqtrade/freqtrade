@@ -133,11 +133,11 @@ def test_show_epoch_details(capsys):
     assert re.search(r'^\s+\"90\"\:\s0.14,\s*$', captured.out, re.MULTILINE)
 
 
-def test___pprint():
+def test___pprint_dict():
     params = {'buy_std': 1.2, 'buy_rsi': 31, 'buy_enable': True, 'buy_what': 'asdf'}
     non_params = {'buy_notoptimied': 55}
 
-    x = HyperoptTools._pprint(params, non_params)
+    x = HyperoptTools.__pprint_dict(params, non_params)
     assert x == """{
     "buy_std": 1.2,
     "buy_rsi": 31,
@@ -171,7 +171,7 @@ def test_export_params(tmpdir):
             },
             "roi": {
                 "0": 0.528,
-                "346": 0.08499999999999999,
+                "346": 0.08499,
                 "507": 0.049,
                 "1595": 0
             }

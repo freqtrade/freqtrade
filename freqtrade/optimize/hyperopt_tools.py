@@ -186,7 +186,7 @@ class HyperoptTools():
                 # Buy / sell parameters
                 no_params = HyperoptTools._space_params(non_optimized, space, 5)
 
-                result += f"{space}_params = {HyperoptTools._pprint(space_params, no_params)}"
+                result += f"{space}_params = {HyperoptTools.__pprint_dict(space_params, no_params)}"
 
             result = result.replace("\n", "\n    ")
             print(result)
@@ -200,7 +200,7 @@ class HyperoptTools():
         return {}
 
     @staticmethod
-    def _pprint(params, non_optimized, indent: int = 4):
+    def __pprint_dict(params, non_optimized, indent: int = 4):
         """
         Pretty-print hyperopt results (based on 2 dicts - with add. comment)
         """
