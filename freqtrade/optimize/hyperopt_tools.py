@@ -46,7 +46,8 @@ class HyperoptTools():
         final_params = deep_merge_dicts(params['params_details'], final_params)
         final_params = {
             'strategy_name': strategy_name,
-            'params': final_params
+            'params': final_params,
+            'ft_stratparam_v': 1,
         }
         logger.info(f"Dumping parameters to {filename}")
         rapidjson.dump(final_params, filename.open('w'), indent=2)

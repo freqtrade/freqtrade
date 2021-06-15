@@ -20,7 +20,7 @@ from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from pandas import DataFrame
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
 from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
@@ -167,7 +167,7 @@ class Hyperopt:
             if isinstance(x, np.integer):
                 return int(x)
             return str(x)
-
+        epoch[FTHYPT_FILEVERSION] = 2
         with self.results_file.open('a') as f:
             rapidjson.dump(epoch, f, default=default_parser,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)

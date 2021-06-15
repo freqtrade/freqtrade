@@ -40,6 +40,7 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 
 LAST_BT_RESULT_FN = '.last_result.json'
+FTHYPT_FILEVERSION = 'fthypt_fileversion'
 
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
