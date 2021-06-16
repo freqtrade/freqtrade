@@ -284,7 +284,7 @@ A backtesting result will look like that:
 | Backtesting to        | 2019-05-01 00:00:00 |
 | Max open trades       | 3                   |
 |                       |                     |
-| Total trades          | 429                 |
+| Total/Daily Avg Trades| 429 / 3.575         |
 | Starting balance      | 0.01000000 BTC      |
 | Final balance         | 0.01762792 BTC      |
 | Absolute profit       | 0.00762792 BTC      |
@@ -373,12 +373,11 @@ It contains some useful key metrics about performance of your strategy on backte
 | Backtesting to        | 2019-05-01 00:00:00 |
 | Max open trades       | 3                   |
 |                       |                     |
-| Total trades          | 429                 |
+| Total/Daily Avg Trades| 429 / 3.575         |
 | Starting balance      | 0.01000000 BTC      |
 | Final balance         | 0.01762792 BTC      |
 | Absolute profit       | 0.00762792 BTC      |
 | Total profit %        | 76.2%               |
-| Trades per day        | 3.575               |
 | Avg. stake amount     | 0.001      BTC      |
 | Total trade volume    | 0.429      BTC      |
 |                       |                     |
@@ -409,12 +408,11 @@ It contains some useful key metrics about performance of your strategy on backte
 
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
 - `Max open trades`: Setting of `max_open_trades` (or `--max-open-trades`) - or number of pairs in the pairlist (whatever is lower).
-- `Total trades`: Identical to the total trades of the backtest output table.
+- `Total/Daily Avg Trades`: Identical to the total trades of the backtest output table / Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Starting balance`: Start balance - as given by dry-run-wallet (config or command line).
 - `Final balance`: Final balance - starting balance + absolute profit.
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
-- `Trades per day`: Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Best Pair` / `Worst Pair`: Best and worst performing pair, and it's corresponding `Cum Profit %`.

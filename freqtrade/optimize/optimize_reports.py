@@ -556,7 +556,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Backtesting to', strat_results['backtest_end']),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
-            ('Total trades', strat_results['total_trades']),
+            ('Total/Daily Avg Trades', 
+                f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],
@@ -564,7 +565,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2):}%"),
-            ('Trades per day', strat_results['trades_per_day']),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
