@@ -556,7 +556,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Backtesting to', strat_results['backtest_end']),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
-            ('Total/Daily Avg Trades', 
+            ('Total/Daily Avg Trades',
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
