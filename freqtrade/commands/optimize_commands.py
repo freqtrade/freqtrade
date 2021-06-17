@@ -1,3 +1,7 @@
+from freqtrade.data.btanalysis import get_latest_backtest_filename
+import pandas
+from pandas.io import json
+from freqtrade.optimize import backtesting
 import logging
 from typing import Any, Dict
 
@@ -51,6 +55,30 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     # Initialize backtesting object
     backtesting = Backtesting(config)
     backtesting.start()
+
+def start_backtest_filter(args: Dict[str, Any]) -> None:
+    """
+    List backtest pairs previously filtered
+    """
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    no_header = config.get('backtest_show_pair_list', False)
+    results_file = get_latest_backtest_filename(
+        config['user_data_dir'] / 'backtest_results/')
+
+    logger.info("Using Backtesting result {results_file}")
+
+    # load data using Python JSON module
+    with open(config['user_data_dir'] / 'backtest_results/' / results_file,'r') as f:
+        data = json.loads(f.read())
+        strategy = list(data["strategy"])[0]
+        trades = data["strategy"][strategy]
+
+        print(trades)
+
+
+    logger.info("Backtest filtering complete. ")
 
 
 def start_hyperopt(args: Dict[str, Any]) -> None:

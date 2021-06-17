@@ -202,6 +202,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
         metavar='PATH',
     ),
+    "backtest_path": Arg(
+        '--backtest-path',
+        help='Specify lookup file path for backtest filter.',
+        metavar='PATH',
+    ),
     "epochs": Arg(
         '-e', '--epochs',
         help='Specify number of epochs (default: %(default)d).',

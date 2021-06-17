@@ -2,6 +2,7 @@
 This module contains the argument manager class
 """
 import argparse
+from freqtrade.commands.optimize_commands import start_backtest_filter
 from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -36,6 +37,8 @@ ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
+
+ARGS_BACKTEST_FILTER = ["backtest_path"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
@@ -89,7 +92,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
-                    "list-hyperopts", "hyperopt-list", "hyperopt-show",
+                    "list-hyperopts", "hyperopt-list", "backtest-filter", "hyperopt-show",
                     "plot-dataframe", "plot-profit", "show-trades"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-hyperopt", "new-strategy"]
@@ -168,7 +171,7 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
+        from freqtrade.commands import (start_backtesting, start_backtest_filter, start_convert_data, start_create_userdir,
                                         start_download_data, start_edge, start_hyperopt,
                                         start_hyperopt_list, start_hyperopt_show, start_install_ui,
                                         start_list_data, start_list_exchanges, start_list_hyperopts,
@@ -255,6 +258,15 @@ class Arguments:
                                                 parents=[_common_parser, _strategy_parser])
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
+
+        # Add backtest-filter subcommand
+        backtest_filter_cmd = subparsers.add_parser(
+            'backtest-filter',
+            help='Filter Backtest results',
+            parents=[_common_parser],
+        )
+        backtest_filter_cmd.set_defaults(func=start_backtest_filter)
+        self._build_args(optionlist=ARGS_BACKTEST_FILTER, parser=backtest_filter_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
