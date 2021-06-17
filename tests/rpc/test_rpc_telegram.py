@@ -2,6 +2,7 @@
 # pragma pylint: disable=protected-access, unused-argument, invalid-name
 # pragma pylint: disable=too-many-lines, too-many-arguments
 
+import logging
 import re
 from datetime import datetime
 from functools import reduce
@@ -120,7 +121,7 @@ def test_cleanup(default_conf, mocker, ) -> None:
 
 def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
+    caplog.set_level(logging.DEBUG)
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
     rpc = RPC(bot)
@@ -136,6 +137,7 @@ def test_authorized_only(default_conf, mocker, caplog, update) -> None:
 
 def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
+    caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), datetime.utcnow(), chat)
