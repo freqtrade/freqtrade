@@ -60,7 +60,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             )
             return wrapper
 
-        logger.info(
+        logger.debug(
             'Executing handler: %s for chat_id: %s',
             command_handler.__name__,
             chat_id

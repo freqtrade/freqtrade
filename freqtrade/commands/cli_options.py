@@ -167,8 +167,9 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "export": Arg(
         '--export',
-        help='Export backtest results, argument are: trades. '
-        'Example: `--export=trades`',
+        help='Export backtest results (default: trades).',
+        choices=constants.EXPORT_OPTIONS,
+
     ),
     "exportfilename": Arg(
         '--export-filename',

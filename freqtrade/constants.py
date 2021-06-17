@@ -12,6 +12,7 @@ PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 TIMEOUT_UNITS = ['minutes', 'seconds']
+EXPORT_OPTIONS = ['none', 'trades']
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
@@ -308,6 +309,7 @@ CONF_SCHEMA = {
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
         'db_url': {'type': 'string'},
+        'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},

@@ -77,14 +77,13 @@ class Webhook(RPCHandler):
     def _send_msg(self, payload: dict) -> None:
         """do the actual call to the webhook"""
 
-        if self._format == 'form':
-            kwargs = {'data': payload}
-        elif self._format == 'json':
-            kwargs = {'json': payload}
-        else:
-            raise NotImplementedError('Unknown format: {}'.format(self._format))
-
         try:
-            post(self._url, **kwargs)
+            if self._format == 'form':
+                post(self._url, data=payload)
+            elif self._format == 'json':
+                post(self._url, json=payload)
+            else:
+                raise NotImplementedError('Unknown format: {}'.format(self._format))
+
         except RequestException as exc:
             logger.warning("Could not call webhook url. Exception: %s", exc)
