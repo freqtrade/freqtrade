@@ -110,12 +110,9 @@ class HyperoptTools():
             space_non_optimized = HyperoptTools._space_params(non_optimized, space)
             all_space_params = space_params
 
-            # Include non optimized params if there are any
+            # Merge non optimized params if there are any
             if len(space_non_optimized) > 0:
-                for non_optimized_param in space_non_optimized:
-                    if non_optimized_param not in all_space_params:
-                        all_space_params[non_optimized_param] = \
-                            space_non_optimized[non_optimized_param]
+                all_space_params = {**space_non_optimized, **space_params}
 
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(all_space_params)
