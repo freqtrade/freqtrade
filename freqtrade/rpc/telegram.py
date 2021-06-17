@@ -95,7 +95,7 @@ class Telegram(RPCHandler):
         Validates the keyboard configuration from telegram config
         section.
         """
-        self._keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = [
+        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
             ['/daily', '/profit', '/balance'],
             ['/status', '/status table', '/performance'],
             ['/count', '/start', '/stop', '/help']
@@ -1112,7 +1112,7 @@ class Telegram(RPCHandler):
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,
-                  keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = None,
+                  keyboard: List[List[InlineKeyboardButton]] = None,
                   callback_path: str = "",
                   reload_able: bool = False,
                   query: Optional[CallbackQuery] = None) -> None:
@@ -1123,6 +1123,7 @@ class Telegram(RPCHandler):
         :param parse_mode: telegram parse mode
         :return: None
         """
+        reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]
         if query:
             self._update_msg(query=query, msg=msg, parse_mode=parse_mode,
                              callback_path=callback_path, reload_able=reload_able)
