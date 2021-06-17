@@ -137,7 +137,7 @@ class Backtesting:
             if hasattr(strategy, 'protections'):
                 conf = deepcopy(conf)
                 conf['protections'] = strategy.protections
-            self.protections = ProtectionManager(conf)
+            self.protections = ProtectionManager(self.config, strategy.protections)
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
         """

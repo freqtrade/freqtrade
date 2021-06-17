@@ -107,7 +107,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     startup_candle_count: int = 0
 
     # Protections
-    protections: List
+    protections: List = []
 
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
