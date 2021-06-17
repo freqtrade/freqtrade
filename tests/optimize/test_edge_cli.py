@@ -4,8 +4,8 @@
 from unittest.mock import MagicMock
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_edge
+from freqtrade.enums import RunMode
 from freqtrade.optimize.edge_cli import EdgeCli
-from freqtrade.state import RunMode
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 

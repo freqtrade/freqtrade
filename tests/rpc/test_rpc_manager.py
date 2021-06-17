@@ -3,7 +3,8 @@ import logging
 import time
 from unittest.mock import MagicMock
 
-from freqtrade.rpc import RPCManager, RPCMessageType
+from freqtrade.enums import RPCMessageType
+from freqtrade.rpc import RPCManager
 from tests.conftest import get_patched_freqtradebot, log_has
 
 

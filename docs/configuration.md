@@ -304,6 +304,9 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
   },
 ```
 
+!!! Note
+    This setting resets with each new candle, so it will not prevent sticking-signals from executing on the 2nd or 3rd candle they're active. Best use a "trigger" selector for buy signals, which are only active for one candle.
+
 ### Understand order_types
 
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
@@ -403,8 +406,8 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 ```
 
 !!! Warning
-    This is an ongoing work. For now it is supported only for binance and only for buy orders.
-    Please don't change the default value unless you know what you are doing.
+    This is an ongoing work. For now it is supported only for binance.
+    Please don't change the default value unless you know what you are doing and have researched the impact of using different values.
 
 ### Exchange configuration
 

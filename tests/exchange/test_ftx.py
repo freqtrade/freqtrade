@@ -125,7 +125,7 @@ def test_stoploss_adjust_ftx(mocker, default_conf):
     assert not exchange.stoploss_adjust(1501, order)
 
 
-def test_fetch_stoploss_order(default_conf, mocker):
+def test_fetch_stoploss_order(default_conf, mocker, limit_sell_order):
     default_conf['dry_run'] = True
     order = MagicMock()
     order.myid = 123
@@ -147,6 +147,17 @@ def test_fetch_stoploss_order(default_conf, mocker):
     with pytest.raises(InvalidOrderException, match=r"Could not get stoploss order for id X"):
         exchange.fetch_stoploss_order('X', 'TKN/BTC')['status']
 
+    api_mock.fetch_orders = MagicMock(return_value=[{'id': 'X', 'status': 'closed'}])
+    api_mock.fetch_order = MagicMock(return_value=limit_sell_order)
+
+    resp = exchange.fetch_stoploss_order('X', 'TKN/BTC')
+    assert resp
+    assert api_mock.fetch_order.call_count == 1
+    assert resp['id_stop'] == 'mocked_limit_sell'
+    assert resp['id'] == 'X'
+    assert resp['type'] == 'stop'
+    assert resp['status_stop'] == 'triggered'
+
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_orders = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id='ftx')
@@ -165,8 +176,8 @@ def test_get_order_id(mocker, default_conf):
         'type': STOPLOSS_ORDERTYPE,
         'price': 1500,
         'id': '1111',
+        'id_stop': '1234',
         'info': {
-            'orderId': '1234'
         }
     }
     assert exchange.get_order_id_conditional(order) == '1234'
@@ -175,8 +186,8 @@ def test_get_order_id(mocker, default_conf):
         'type': 'limit',
         'price': 1500,
         'id': '1111',
+        'id_stop': '1234',
         'info': {
-            'orderId': '1234'
         }
     }
     assert exchange.get_order_id_conditional(order) == '1111'

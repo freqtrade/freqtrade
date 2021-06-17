@@ -10,8 +10,8 @@ ENV FT_APP_ENV="docker"
 
 # Prepare environment
 RUN mkdir /freqtrade \
-  && apt update \
-  && apt install -y sudo \
+  && apt-get update \
+  && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-serial-dev  \
   && apt-get clean \
   && useradd -u 1000 -G sudo -U -m ftuser \
   && chown ftuser:ftuser /freqtrade \
@@ -22,10 +22,10 @@ WORKDIR /freqtrade
 
 # Install dependencies
 FROM base as python-deps
-RUN apt-get update \
-    && apt-get -y install curl build-essential libssl-dev git \
-    && apt-get clean \
-    && pip install --upgrade pip
+RUN  apt-get update \
+  && apt-get -y install build-essential libssl-dev git libffi-dev libgfortran5 pkg-config cmake gcc \
+  && apt-get clean \
+  && pip install --upgrade pip
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
@@ -49,7 +49,7 @@ USER ftuser
 # Install and execute
 COPY --chown=ftuser:ftuser . /freqtrade/
 
-RUN pip install -e . --user --no-cache-dir \
+RUN pip install -e . --user --no-cache-dir --no-build-isolation \
   && mkdir /freqtrade/user_data/ \
   && freqtrade install-ui
 

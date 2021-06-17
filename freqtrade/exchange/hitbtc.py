@@ -17,7 +17,6 @@ class Hitbtc(Exchange):
     may still not work as expected.
     """
 
-    # fetchCurrencies API point requires authentication for Hitbtc,
     _ft_has: Dict = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_params": {"sort": "DESC"}

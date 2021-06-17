@@ -237,9 +237,9 @@ class MyAwesomeStrategy(IStrategy):
         dataframe['macdhist'] = macd['macdhist']
 
         bollinger = ta.BBANDS(dataframe, timeperiod=20, nbdevup=2.0, nbdevdn=2.0)
-        dataframe['bb_lowerband'] = boll['lowerband']
-        dataframe['bb_middleband'] = boll['middleband']
-        dataframe['bb_upperband'] = boll['upperband']
+        dataframe['bb_lowerband'] = bollinger['lowerband']
+        dataframe['bb_middleband'] = bollinger['middleband']
+        dataframe['bb_upperband'] = bollinger['upperband']
         return dataframe
 ```
 
@@ -249,15 +249,16 @@ We continue to define hyperoptable parameters:
 
 ```python
 class MyAwesomeStrategy(IStrategy):
-    buy_adx = IntParameter(20, 40, default=30, space="buy")
+    buy_adx = DecimalParameter(20, 40, decimals=1, default=30.1, space="buy")
     buy_rsi = IntParameter(20, 40, default=30, space="buy")
-    buy_adx_enabled = CategoricalParameter([True, False], space="buy")
-    buy_rsi_enabled = CategoricalParameter([True, False], space="buy")
-    buy_trigger = CategoricalParameter(['bb_lower', 'macd_cross_signal'], space="buy")
+    buy_adx_enabled = CategoricalParameter([True, False], default=True, space="buy")
+    buy_rsi_enabled = CategoricalParameter([True, False], default=False, space="buy")
+    buy_trigger = CategoricalParameter(["bb_lower", "macd_cross_signal"], default="bb_lower", space="buy")
 ```
 
-Above definition says: I have five parameters I want to randomly combine to find the best combination.
-Two of them are integer values (`buy_adx` and `buy_rsi`) and I want you test in the range of values 20 to 40.  
+The above definition says: I have five parameters I want to randomly combine to find the best combination.  
+`buy_rsi` is an integer parameter, which will be tested between 20 and 40. This space has a size of 20.  
+`buy_adx` is a decimal parameter, which will be evaluated between 20 and 40 with 1 decimal place (so values are 20.1, 20.2, ...). This space has a size of 200.  
 Then we have three category variables. First two are either `True` or `False`.
 We use these to either enable or disable the ADX and RSI guards.
 The last one we call `trigger` and use it to decide which buy trigger we want to use.
@@ -490,7 +491,7 @@ Given the following result from hyperopt:
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # Buy hyperspace params:
     buy_params = {
@@ -531,7 +532,7 @@ If you are optimizing ROI (i.e. if optimization search-space contains 'all', 'de
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # ROI table:
     minimal_roi = {
@@ -586,7 +587,7 @@ If you are optimizing stoploss values (i.e. if optimization search-space contain
 ```
 Best result:
 
-    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722%). Avg duration 180.4 mins. Objective: 1.94367
 
     # Buy hyperspace params:
     buy_params = {
@@ -628,7 +629,7 @@ If you are optimizing trailing stop values (i.e. if optimization search-space co
 ```
 Best result:
 
-    45/100:    606 trades. Avg profit  1.04%. Total profit  0.31555614 BTC ( 630.48Σ%). Avg duration 150.3 mins. Objective: -1.10161
+    45/100:    606 trades. Avg profit  1.04%. Total profit  0.31555614 BTC ( 630.48%). Avg duration 150.3 mins. Objective: -1.10161
 
     # Trailing stop:
     trailing_stop = True

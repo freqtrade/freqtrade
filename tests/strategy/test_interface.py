@@ -10,12 +10,13 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
+from freqtrade.enums import SellType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
                                       IntParameter, RealParameter)
-from freqtrade.strategy.interface import SellCheckTuple, SellType
+from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
@@ -667,8 +668,13 @@ def test_auto_hyperopt_interface(default_conf):
 
     # Parameter is disabled - so value from sell_param dict will NOT be used.
     assert strategy.sell_minusdi.value == 0.5
+    all_params = strategy.detect_all_parameters()
+    assert isinstance(all_params, dict)
+    assert len(all_params['buy']) == 2
+    assert len(all_params['sell']) == 2
+    assert all_params['count'] == 4
 
-    strategy.sell_rsi = IntParameter([0, 10], default=5, space='buy')
+    strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
-        [x for x in strategy._detect_parameters('sell')]
+        [x for x in strategy.detect_parameters('sell')]

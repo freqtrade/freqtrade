@@ -12,9 +12,9 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,8 @@ This module contains class to manage RPC communications (Telegram, Slack, ...)
 import logging
 from typing import Any, Dict, List
 
-from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
+from freqtrade.enums import RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler
 
 
 logger = logging.getLogger(__name__)

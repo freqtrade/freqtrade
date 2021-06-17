@@ -12,10 +12,10 @@ from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.load_config import load_config_file, load_file
+from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts
-from freqtrade.state import NON_UTIL_MODES, TRADING_MODES, RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -374,6 +374,9 @@ class Configuration:
 
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
+
+        self._args_to_config(config, argname='plot_auto_open',
+                             logstring='Parameter --auto-open detected.')
 
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')

@@ -3,9 +3,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
+from freqtrade.enums import SellType
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
-from freqtrade.strategy.interface import SellType
 
 
 logger = logging.getLogger(__name__)

@@ -43,7 +43,7 @@ def load_file(path: Path) -> Dict[str, Any]:
         with path.open('r') as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
     except FileNotFoundError:
-        raise OperationalException(f'File file "{path}" not found!')
+        raise OperationalException(f'File "{path}" not found!')
     return config
 
 
