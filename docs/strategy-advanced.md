@@ -331,7 +331,7 @@ See [Dataframe access](#dataframe-access) for more information about dataframe u
 
 Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
-However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if a order did time out or not.
+However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.
 
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
@@ -557,7 +557,7 @@ Both attributes and methods may be overridden, altering behavior of the original
 
 ## Embedding Strategies
 
-Freqtrade provides you with with an easy way to embed the strategy into your configuration file.
+Freqtrade provides you with an easy way to embed the strategy into your configuration file.
 This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
 in your chosen config file.
 

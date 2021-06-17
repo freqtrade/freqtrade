@@ -49,7 +49,7 @@ class PairLocks():
         )
         if PairLocks.use_db:
             PairLock.query.session.add(lock)
-            PairLock.query.session.flush()
+            PairLock.query.session.commit()
         else:
             PairLocks.locks.append(lock)
 
@@ -99,7 +99,7 @@ class PairLocks():
         for lock in locks:
             lock.active = False
         if PairLocks.use_db:
-            PairLock.query.session.flush()
+            PairLock.query.session.commit()
 
     @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:

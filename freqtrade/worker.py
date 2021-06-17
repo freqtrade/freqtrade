@@ -11,9 +11,9 @@ import sdnotify
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import Configuration
+from freqtrade.enums import State
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.state import State
 
 
 logger = logging.getLogger(__name__)

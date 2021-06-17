@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -486,9 +486,10 @@ def test_migrate_old(mocker, default_conf, fee):
     mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
-    engine.execute(create_table_old)
-    engine.execute(insert_table_old)
-    engine.execute(insert_table_old2)
+    with engine.begin() as connection:
+        connection.execute(text(create_table_old))
+        connection.execute(text(insert_table_old))
+        connection.execute(text(insert_table_old2))
     # Run init to test migration
     init_db(default_conf['db_url'], default_conf['dry_run'])
 
@@ -579,15 +580,16 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
-    engine.execute(create_table_old)
-    engine.execute("create index ix_trades_is_open on trades(is_open)")
-    engine.execute("create index ix_trades_pair on trades(pair)")
-    engine.execute(insert_table_old)
+    with engine.begin() as connection:
+        connection.execute(text(create_table_old))
+        connection.execute(text("create index ix_trades_is_open on trades(is_open)"))
+        connection.execute(text("create index ix_trades_pair on trades(pair)"))
+        connection.execute(text(insert_table_old))
 
-    # fake previous backup
-    engine.execute("create table trades_bak as select * from trades")
+        # fake previous backup
+        connection.execute(text("create table trades_bak as select * from trades"))
 
-    engine.execute("create table trades_bak1 as select * from trades")
+        connection.execute(text("create table trades_bak1 as select * from trades"))
     # Run init to test migration
     init_db(default_conf['db_url'], default_conf['dry_run'])
 
@@ -629,47 +631,49 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     caplog.clear()
     # Drop latest column
-    engine.execute("alter table orders rename to orders_bak")
+    with engine.begin() as connection:
+        connection.execute(text("alter table orders rename to orders_bak"))
     inspector = inspect(engine)
 
-    for index in inspector.get_indexes('orders_bak'):
-        engine.execute(f"drop index {index['name']}")
-    # Recreate table
-    engine.execute("""
-        CREATE TABLE orders (
-            id INTEGER NOT NULL,
-            ft_trade_id INTEGER,
-            ft_order_side VARCHAR NOT NULL,
-            ft_pair VARCHAR NOT NULL,
-            ft_is_open BOOLEAN NOT NULL,
-            order_id VARCHAR NOT NULL,
-            status VARCHAR,
-            symbol VARCHAR,
-            order_type VARCHAR,
-            side VARCHAR,
-            price FLOAT,
-            amount FLOAT,
-            filled FLOAT,
-            remaining FLOAT,
-            cost FLOAT,
-            order_date DATETIME,
-            order_filled_date DATETIME,
-            order_update_date DATETIME,
-            PRIMARY KEY (id),
-            CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
-            FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
-        )
-        """)
+    with engine.begin() as connection:
+        for index in inspector.get_indexes('orders_bak'):
+            connection.execute(text(f"drop index {index['name']}"))
+        # Recreate table
+        connection.execute(text("""
+            CREATE TABLE orders (
+                id INTEGER NOT NULL,
+                ft_trade_id INTEGER,
+                ft_order_side VARCHAR NOT NULL,
+                ft_pair VARCHAR NOT NULL,
+                ft_is_open BOOLEAN NOT NULL,
+                order_id VARCHAR NOT NULL,
+                status VARCHAR,
+                symbol VARCHAR,
+                order_type VARCHAR,
+                side VARCHAR,
+                price FLOAT,
+                amount FLOAT,
+                filled FLOAT,
+                remaining FLOAT,
+                cost FLOAT,
+                order_date DATETIME,
+                order_filled_date DATETIME,
+                order_update_date DATETIME,
+                PRIMARY KEY (id),
+                CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
+                FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
+            )
+            """))
 
-    engine.execute("""
-    insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-        symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-        order_filled_date, order_update_date)
-        select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-        symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-        order_filled_date, order_update_date
-        from orders_bak
-    """)
+        connection.execute(text("""
+        insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
+            order_filled_date, order_update_date)
+            select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
+            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
+            order_filled_date, order_update_date
+            from orders_bak
+        """))
 
     # Run init to test migration
     init_db(default_conf['db_url'], default_conf['dry_run'])
@@ -722,8 +726,9 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     mocker.patch('freqtrade.persistence.models.create_engine', lambda *args, **kwargs: engine)
 
     # Create table using the old format
-    engine.execute(create_table_old)
-    engine.execute(insert_table_old)
+    with engine.begin() as connection:
+        connection.execute(text(create_table_old))
+        connection.execute(text(insert_table_old))
 
     # Run init to test migration
     init_db(default_conf['db_url'], default_conf['dry_run'])
@@ -1288,6 +1293,7 @@ def test_Trade_object_idem():
     excludes = (
         'delete',
         'session',
+        'commit',
         'query',
         'open_date',
         'get_best_pair',

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import pytest
 
 from freqtrade import constants
+from freqtrade.enums import SellType
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.plugins.protectionmanager import ProtectionManager
-from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 

@@ -12,6 +12,7 @@ from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
 from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
 from freqtrade.edge import PairInfo
+from freqtrade.enums import SellType
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
                                                  generate_edge_table, generate_pair_metrics,
                                                  generate_sell_reason_stats,
@@ -20,7 +21,6 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  text_table_bt_results, text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
-from freqtrade.strategy.interface import SellType
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
@@ -51,7 +51,7 @@ def test_text_table_bt_results():
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
 
-def test_generate_backtest_stats(default_conf, testdatadir):
+def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     default_conf.update({'strategy': 'DefaultStrategy'})
     StrategyResolver.load_strategy(default_conf)
 
@@ -148,8 +148,8 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     assert strat_stats['pairlist'] == ['UNITTEST/BTC']
 
     # Test storing stats
-    filename = Path(testdatadir / 'btresult.json')
-    filename_last = Path(testdatadir / LAST_BT_RESULT_FN)
+    filename = Path(tmpdir / 'btresult.json')
+    filename_last = Path(tmpdir / LAST_BT_RESULT_FN)
     _backup_file(filename_last, copy_file=True)
     assert not filename.is_file()
 
@@ -159,7 +159,7 @@ def test_generate_backtest_stats(default_conf, testdatadir):
     last_fn = get_latest_backtest_filename(filename_last.parent)
     assert re.match(r"btresult-.*\.json", last_fn)
 
-    filename1 = (testdatadir / last_fn)
+    filename1 = Path(tmpdir / last_fn)
     assert filename1.is_file()
     content = filename1.read_text()
     assert 'max_drawdown' in content

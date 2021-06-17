@@ -1,3 +1,4 @@
+import json
 import re
 from io import BytesIO
 from pathlib import Path
@@ -16,8 +17,8 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.state import RunMode
 from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -914,16 +915,24 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     ]
     start_test_pairlist(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r'Pairs for BTC: \n\["ETH/BTC","TKN/BTC","BLK/BTC","LTC/BTC","XRP/BTC"\]\n',
-                    captured.out)
+    try:
+        json_pairs = json.loads(captured.out)
+        assert 'ETH/BTC' in json_pairs
+        assert 'TKN/BTC' in json_pairs
+        assert 'BLK/BTC' in json_pairs
+        assert 'LTC/BTC' in json_pairs
+        assert 'XRP/BTC' in json_pairs
+    except json.decoder.JSONDecodeError:
+        pytest.fail(f'Expected well formed JSON, but failed to parse: {captured.out}')
 
 
 def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
-                       saved_hyperopt_results_legacy):
-    for _ in (saved_hyperopt_results, saved_hyperopt_results_legacy):
+                       saved_hyperopt_results_legacy, tmpdir):
+    csv_file = Path(tmpdir) / "test.csv"
+    for res in (saved_hyperopt_results, saved_hyperopt_results_legacy):
         mocker.patch(
             'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-            MagicMock(return_value=saved_hyperopt_results_legacy)
+            MagicMock(return_value=res)
         )
 
         args = [
@@ -1139,17 +1148,19 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results,
             "hyperopt-list",
             "--no-details",
             "--no-color",
-            "--export-csv", "test_file.csv",
+            "--export-csv",
+            str(csv_file),
         ]
         pargs = get_args(args)
         pargs['config'] = None
         start_hyperopt_list(pargs)
         captured = capsys.readouterr()
         log_has("CSV file created: test_file.csv", caplog)
-        f = Path("test_file.csv")
-        assert 'Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,"3,930.0 m",0.43662' in f.read_text()
-        assert f.is_file()
-        f.unlink()
+        assert csv_file.is_file()
+        line = csv_file.read_text()
+        assert ('Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,"3,930.0 m",0.43662' in line
+                or "Best,1,2,-1.25%,-1.2222,-0.00125625,,-2.51,2 days 17:30:00,0.43662" in line)
+        csv_file.unlink()
 
 
 def test_hyperopt_show(mocker, capsys, saved_hyperopt_results):

@@ -10,13 +10,13 @@ from threading import Lock
 from typing import Any, Dict, List, Optional
 
 import arrow
-from cachetools import TTLCache
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
+from freqtrade.enums import RPCMessageType, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -26,9 +26,8 @@ from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.rpc import RPCManager, RPCMessageType
-from freqtrade.state import State
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.rpc import RPCManager
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -48,6 +47,7 @@ class FreqtradeBot(LoggingMixin):
         :param config: configuration dict, you can use Configuration.get_config()
         to get the config dict.
         """
+        self.active_pair_whitelist: List[str] = []
 
         logger.info('Starting freqtrade %s', __version__)
 
@@ -56,12 +56,6 @@ class FreqtradeBot(LoggingMixin):
 
         # Init objects
         self.config = config
-
-        # Cache values for 1800 to avoid frequent polling of the exchange for prices
-        # Caching only applies to RPC methods, so prices for open trades are still
-        # refreshed once every iteration.
-        self._sell_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
-        self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         self.strategy: IStrategy = StrategyResolver.load_strategy(self.config)
 
@@ -76,11 +70,18 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
+        self.protections = ProtectionManager(self.config)
+
+        # RPC runs in separate threads, can start handling external commands just after
+        # initialization, even before Freqtradebot has a chance to start its throttling,
+        # so anything in the Freqtradebot instance should be ready (initialized), including
+        # the initial state of the bot.
+        # Keep this at the end of this initialization method.
+        self.rpc: RPCManager = RPCManager(self)
+
         self.pairlists = PairListManager(self.exchange, self.config)
 
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
-
-        self.protections = ProtectionManager(self.config)
 
         # Attach Dataprovider to Strategy baseclass
         IStrategy.dp = self.dataprovider
@@ -97,12 +98,6 @@ class FreqtradeBot(LoggingMixin):
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
-        # RPC runs in separate threads, can start handling external commands just after
-        # initialization, even before Freqtradebot has a chance to start its throttling,
-        # so anything in the Freqtradebot instance should be ready (initialized), including
-        # the initial state of the bot.
-        # Keep this at the end of this initialization method.
-        self.rpc: RPCManager = RPCManager(self)
         # Protect sell-logic from forcesell and viceversa
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
@@ -187,7 +182,7 @@ class FreqtradeBot(LoggingMixin):
         if self.get_free_open_trades():
             self.enter_positions()
 
-        Trade.query.session.flush()
+        Trade.commit()
 
     def process_stopped(self) -> None:
         """
@@ -342,7 +337,7 @@ class FreqtradeBot(LoggingMixin):
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
                 if fo:
-                    logger.info(f"Found {order} for trade {trade}.jj")
+                    logger.info(f"Found {order} for trade {trade}.")
                     self.update_trade_state(trade, order.order_id, fo,
                                             stoploss_order=order.ft_order_side == 'stoploss')
 
@@ -393,51 +388,6 @@ class FreqtradeBot(LoggingMixin):
             logger.debug("Found no buy signals for whitelisted currencies. Trying again...")
 
         return trades_created
-
-    def get_buy_rate(self, pair: str, refresh: bool) -> float:
-        """
-        Calculates bid target between current ask price and last price
-        :param pair: Pair to get rate for
-        :param refresh: allow cached data
-        :return: float: Price
-        """
-        if not refresh:
-            rate = self._buy_rate_cache.get(pair)
-            # Check if cache has been invalidated
-            if rate:
-                logger.debug(f"Using cached buy rate for {pair}.")
-                return rate
-
-        bid_strategy = self.config.get('bid_strategy', {})
-        if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
-
-            order_book_top = bid_strategy.get('order_book_top', 1)
-            order_book = self.exchange.fetch_l2_order_book(pair, order_book_top)
-            logger.debug('order_book %s', order_book)
-            # top 1 = index 0
-            try:
-                rate_from_l2 = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
-            except (IndexError, KeyError) as e:
-                logger.warning(
-                    "Buy Price from orderbook could not be determined."
-                    f"Orderbook: {order_book}"
-                 )
-                raise PricingError from e
-            logger.info(f"Buy price from orderbook {bid_strategy['price_side'].capitalize()} side "
-                        f"- top {order_book_top} order book buy rate {rate_from_l2:.8f}")
-            used_rate = rate_from_l2
-        else:
-            logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
-            ticker = self.exchange.fetch_ticker(pair)
-            ticker_rate = ticker[bid_strategy['price_side']]
-            if ticker['last'] and ticker_rate > ticker['last']:
-                balance = bid_strategy['ask_last_balance']
-                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
-            used_rate = ticker_rate
-
-        self._buy_rate_cache[pair] = used_rate
-
-        return used_rate
 
     def create_trade(self, pair: str) -> bool:
         """
@@ -530,7 +480,7 @@ class FreqtradeBot(LoggingMixin):
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.get_buy_rate(pair, True)
+            buy_limit_requested = self.exchange.get_buy_rate(pair, True)
 
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
@@ -601,6 +551,7 @@ class FreqtradeBot(LoggingMixin):
             pair=pair,
             stake_amount=stake_amount,
             amount=amount,
+            is_open=True,
             amount_requested=amount_requested,
             fee_open=fee,
             fee_close=fee,
@@ -619,7 +570,7 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, order_id, order)
 
         Trade.query.session.add(trade)
-        Trade.query.session.flush()
+        Trade.commit()
 
         # Updating wallets
         self.wallets.update()
@@ -654,7 +605,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a buy cancel occurred.
         """
-        current_rate = self.get_buy_rate(trade.pair, False)
+        current_rate = self.exchange.get_buy_rate(trade.pair, False)
 
         msg = {
             'trade_id': trade.id,
@@ -705,6 +656,7 @@ class FreqtradeBot(LoggingMixin):
                 if (self.strategy.order_types.get('stoploss_on_exchange') and
                         self.handle_stoploss_on_exchange(trade)):
                     trades_closed += 1
+                    Trade.commit()
                     continue
                 # Check if we can sell our current pair
                 if trade.open_order_id is None and trade.is_open and self.handle_trade(trade):
@@ -718,56 +670,6 @@ class FreqtradeBot(LoggingMixin):
             self.wallets.update()
 
         return trades_closed
-
-    def _order_book_gen(self, pair: str, side: str, order_book_max: int = 1,
-                        order_book_min: int = 1):
-        """
-        Helper generator to query orderbook in loop (used for early sell-order placing)
-        """
-        order_book = self.exchange.fetch_l2_order_book(pair, order_book_max)
-        for i in range(order_book_min, order_book_max + 1):
-            yield order_book[side][i - 1][0]
-
-    def get_sell_rate(self, pair: str, refresh: bool) -> float:
-        """
-        Get sell rate - either using ticker bid or first bid based on orderbook
-        The orderbook portion is only used for rpc messaging, which would otherwise fail
-        for BitMex (has no bid/ask in fetch_ticker)
-        or remain static in any other case since it's not updating.
-        :param pair: Pair to get rate for
-        :param refresh: allow cached data
-        :return: Bid rate
-        """
-        if not refresh:
-            rate = self._sell_rate_cache.get(pair)
-            # Check if cache has been invalidated
-            if rate:
-                logger.debug(f"Using cached sell rate for {pair}.")
-                return rate
-
-        ask_strategy = self.config.get('ask_strategy', {})
-        if ask_strategy.get('use_order_book', False):
-            # This code is only used for notifications, selling uses the generator directly
-            logger.info(
-                f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
-            )
-            try:
-                rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
-            except (IndexError, KeyError) as e:
-                logger.warning("Sell Price at location from orderbook could not be determined.")
-                raise PricingError from e
-        else:
-            ticker = self.exchange.fetch_ticker(pair)
-            ticker_rate = ticker[ask_strategy['price_side']]
-            if ticker['last'] and ticker_rate < ticker['last']:
-                balance = ask_strategy.get('bid_last_balance', 0.0)
-                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
-            rate = ticker_rate
-
-        if rate is None:
-            raise PricingError(f"Sell-Rate for {pair} was empty.")
-        self._sell_rate_cache[pair] = rate
-        return rate
 
     def handle_trade(self, trade: Trade) -> bool:
         """
@@ -796,9 +698,9 @@ class FreqtradeBot(LoggingMixin):
             logger.debug(f'Using order book between {order_book_min} and {order_book_max} '
                          f'for selling {trade.pair}...')
 
-            order_book = self._order_book_gen(trade.pair, f"{config_ask_strategy['price_side']}s",
-                                              order_book_min=order_book_min,
-                                              order_book_max=order_book_max)
+            order_book = self.exchange._order_book_gen(
+                trade.pair, f"{config_ask_strategy['price_side']}s",
+                order_book_min=order_book_min, order_book_max=order_book_max)
             for i in range(order_book_min, order_book_max + 1):
                 try:
                     sell_rate = next(order_book)
@@ -811,14 +713,14 @@ class FreqtradeBot(LoggingMixin):
                              f"{sell_rate:0.8f}")
                 # Assign sell-rate to cache - otherwise sell-rate is never updated in the cache,
                 # resulting in outdated RPC messages
-                self._sell_rate_cache[trade.pair] = sell_rate
+                self.exchange._sell_rate_cache[trade.pair] = sell_rate
 
                 if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                     return True
 
         else:
             logger.debug('checking sell')
-            sell_rate = self.get_sell_rate(trade.pair, True)
+            sell_rate = self.exchange.get_sell_rate(trade.pair, True)
             if self._check_and_execute_sell(trade, sell_rate, buy, sell):
                 return True
 
@@ -914,8 +816,13 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning('Stoploss order was cancelled, but unable to recreate one.')
 
         # Finally we check if stoploss on exchange should be moved up because of trailing.
-        if stoploss_order and (self.config.get('trailing_stop', False)
-                               or self.config.get('use_custom_stoploss', False)):
+        # Triggered Orders are now real orders - so don't replace stoploss anymore
+        if (
+            stoploss_order
+            and stoploss_order.get('status_stop') != 'triggered'
+            and (self.config.get('trailing_stop', False)
+                 or self.config.get('use_custom_stoploss', False))
+        ):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
             # value immediately
@@ -1035,6 +942,7 @@ class FreqtradeBot(LoggingMixin):
 
             elif order['side'] == 'sell':
                 self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+        Trade.commit()
 
     def handle_cancel_buy(self, trade: Trade, order: Dict, reason: str) -> bool:
         """
@@ -1232,7 +1140,7 @@ class FreqtradeBot(LoggingMixin):
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)
-        Trade.query.session.flush()
+        Trade.commit()
 
         # Lock pair for one candle to prevent immediate re-buys
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
@@ -1249,7 +1157,7 @@ class FreqtradeBot(LoggingMixin):
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
-        current_rate = self.get_sell_rate(trade.pair, False) if not fill else None
+        current_rate = self.exchange.get_sell_rate(trade.pair, False) if not fill else None
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1294,7 +1202,7 @@ class FreqtradeBot(LoggingMixin):
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.get_sell_rate(trade.pair, False)
+        current_rate = self.exchange.get_sell_rate(trade.pair, False)
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1373,6 +1281,7 @@ class FreqtradeBot(LoggingMixin):
             # Handling of this will happen in check_handle_timeout.
             return True
         trade.update(order)
+        Trade.commit()
 
         # Updating wallets when order is closed
         if not trade.is_open:

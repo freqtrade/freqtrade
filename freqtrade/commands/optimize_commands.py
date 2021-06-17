@@ -3,9 +3,9 @@ from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

@@ -17,11 +17,11 @@ from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.enums import RunMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
-from freqtrade.state import RunMode
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
                                    mock_trade_5, mock_trade_6)
@@ -326,6 +326,7 @@ def get_default_conf(testdatadir):
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy",
         "internals": {},
+        "export": "none",
     }
     return configuration
 
@@ -1913,7 +1914,7 @@ def saved_hyperopt_results_legacy():
 
 @pytest.fixture
 def saved_hyperopt_results():
-    return [
+    hyperopt_res = [
         {
             'loss': 0.4366182531161519,
             'params_dict': {
@@ -2042,3 +2043,9 @@ def saved_hyperopt_results():
             'is_best': False
             }
     ]
+
+    for res in hyperopt_res:
+        res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
+                                                                         ].total_seconds()
+
+    return hyperopt_res

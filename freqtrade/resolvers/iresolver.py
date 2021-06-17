@@ -58,6 +58,9 @@ class IResolver:
         # Generate spec based on absolute path
         # Pass object_name as first argument to have logging print a reasonable name.
         spec = importlib.util.spec_from_file_location(object_name or "", str(module_path))
+        if not spec:
+            return iter([None])
+
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
@@ -90,6 +93,9 @@ class IResolver:
             # Only consider python files
             if not str(entry).endswith('.py'):
                 logger.debug('Ignoring %s', entry)
+                continue
+            if entry.is_symlink() and not entry.is_file():
+                logger.debug('Ignoring broken symlink %s', entry)
                 continue
             module_path = entry.resolve()
 

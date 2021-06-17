@@ -6,7 +6,6 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
@@ -14,6 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -25,33 +25,6 @@ from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
-
-
-class SignalType(Enum):
-    """
-    Enum to distinguish between buy and sell signals
-    """
-    BUY = "buy"
-    SELL = "sell"
-
-
-class SellType(Enum):
-    """
-    Enum to distinguish between sell reasons
-    """
-    ROI = "roi"
-    STOP_LOSS = "stop_loss"
-    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
-    TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
-    FORCE_SELL = "force_sell"
-    EMERGENCY_SELL = "emergency_sell"
-    CUSTOM_SELL = "custom_sell"
-    NONE = ""
-
-    def __str__(self):
-        # explicitly convert to String to help with exporting data.
-        return self.value
 
 
 class SellCheckTuple(object):
@@ -551,15 +524,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param force_stoploss: Externally provided stoploss
         :return: True if trade should be sold, False otherwise
         """
-        # Set current rate to low for backtesting sell
-        current_rate = low or rate
+        current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
         trade.adjust_min_max_rates(high or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss, high=high)
+                                              force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting sell
         current_rate = high or rate
@@ -626,18 +598,21 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
-                          force_stoploss: float, high: float = None) -> SellCheckTuple:
+                          force_stoploss: float, low: float = None,
+                          high: float = None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
         :param current_profit: current profit as ratio
+        :param low: Low value of this candle, only set in backtesting
+        :param high: High value of this candle, only set in backtesting
         """
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if self.use_custom_stoploss:
+        if self.use_custom_stoploss and trade.stop_loss < (low or current_rate):
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
@@ -650,7 +625,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        if self.trailing_stop:
+        if self.trailing_stop and trade.stop_loss < (low or current_rate):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
@@ -670,7 +645,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        if ((trade.stop_loss >= current_rate) and
+        if ((trade.stop_loss >= (low or current_rate)) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
@@ -679,7 +654,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
                 logger.debug(
-                    f"{trade.pair} - HIT STOP: current price at {current_rate:.6f}, "
+                    f"{trade.pair} - HIT STOP: current price at {(low or current_rate):.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")

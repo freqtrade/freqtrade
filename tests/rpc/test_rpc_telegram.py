@@ -2,6 +2,7 @@
 # pragma pylint: disable=protected-access, unused-argument, invalid-name
 # pragma pylint: disable=too-many-lines, too-many-arguments
 
+import logging
 import re
 from datetime import datetime
 from functools import reduce
@@ -17,14 +18,13 @@ from telegram.error import NetworkError
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
+from freqtrade.enums import RPCMessageType, RunMode, SellType, State
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
-from freqtrade.rpc import RPC, RPCMessageType
+from freqtrade.rpc import RPC
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from freqtrade.state import RunMode, State
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
                             patch_get_signal, patch_whitelist)
 
@@ -121,7 +121,7 @@ def test_cleanup(default_conf, mocker, ) -> None:
 
 def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
-
+    caplog.set_level(logging.DEBUG)
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
     rpc = RPC(bot)
@@ -137,6 +137,7 @@ def test_authorized_only(default_conf, mocker, caplog, update) -> None:
 
 def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     patch_exchange(mocker)
+    caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
     update.message = Message(randint(1, 100), datetime.utcnow(), chat)
@@ -451,8 +452,10 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
 
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
-
-    telegram._profit(update=update, context=MagicMock())
+    context = MagicMock()
+    # Test with invalid 2nd argument (should silently pass)
+    context.args = ["aaa"]
+    telegram._profit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'No closed trade' in msg_mock.call_args_list[-1][0][0]
     assert '*ROI:* All trades' in msg_mock.call_args_list[-1][0][0]
@@ -1350,13 +1353,14 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+            '*Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1:00:00 (60.0 min)`\n'
-            '*Profit:* `-57.41%` `(loss: -0.05746268 ETH / -24.812 USD)`')
+            '*Close Rate:* `0.00003201`'
+            )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1379,13 +1383,14 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+            '*Profit:* `-57.41%`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`\n'
-            '*Sell Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
-            '*Profit:* `-57.41%`')
+            '*Close Rate:* `0.00003201`'
+            )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -1537,13 +1542,14 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
+                                        '*Profit:* `-57.41%`\n'
+                                        '*Sell Reason:* `stop_loss`\n'
+                                        '*Duration:* `2:35:03 (155.1 min)`\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00007500`\n'
                                         '*Current Rate:* `0.00003201`\n'
-                                        '*Close Rate:* `0.00003201`\n'
-                                        '*Sell Reason:* `stop_loss`\n'
-                                        '*Duration:* `2:35:03 (155.1 min)`\n'
-                                        '*Profit:* `-57.41%`')
+                                        '*Close Rate:* `0.00003201`'
+                                        )
 
 
 @pytest.mark.parametrize('msg,expected', [
@@ -1604,7 +1610,7 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
                          ['/count', '/start', '/stop', '/help']]
     default_keyboard = ReplyKeyboardMarkup(default_keys_list)
 
-    custom_keys_list = [['/daily', '/stats', '/balance', '/profit'],
+    custom_keys_list = [['/daily', '/stats', '/balance', '/profit', '/profit 5'],
                         ['/count', '/start', '/reload_config', '/help']]
     custom_keyboard = ReplyKeyboardMarkup(custom_keys_list)
 
@@ -1638,5 +1644,5 @@ def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     used_keyboard = bot.send_message.call_args[1]['reply_markup']
     assert used_keyboard == custom_keyboard
     assert log_has("using custom keyboard from config.json: "
-                   "[['/daily', '/stats', '/balance', '/profit'], ['/count', "
+                   "[['/daily', '/stats', '/balance', '/profit', '/profit 5'], ['/count', "
                    "'/start', '/reload_config', '/help']]", caplog)

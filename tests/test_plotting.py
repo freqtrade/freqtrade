@@ -460,7 +460,11 @@ def test_plot_profit(default_conf, mocker, testdatadir):
     assert store_mock.call_count == 1
 
     assert profit_mock.call_args_list[0][0][0] == default_conf['pairs']
-    assert store_mock.call_args_list[0][1]['auto_open'] is True
+    assert store_mock.call_args_list[0][1]['auto_open'] is False
+
+    del default_conf['timeframe']
+    with pytest.raises(OperationalException, match=r"Timeframe must be set.*--timeframe.*"):
+        plot_profit(default_conf)
 
 
 @pytest.mark.parametrize("ind1,ind2,plot_conf,exp", [

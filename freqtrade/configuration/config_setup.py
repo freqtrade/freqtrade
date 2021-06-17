@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from freqtrade.state import RunMode
+from freqtrade.enums import RunMode
 
 from .check_exchange import remove_credentials
 from .config_validation import validate_config_consistency

@@ -6,9 +6,9 @@ from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.optimize_reports import show_backtest_result
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     if epochs and not no_details:
         sorted_epochs = sorted(epochs, key=itemgetter('loss'))
         results = sorted_epochs[0]
-        HyperoptTools.print_epoch_details(results, total_epochs, print_json, no_header)
+        HyperoptTools.show_epoch_details(results, total_epochs, print_json, no_header)
 
     if epochs and export_csv:
         HyperoptTools.export_csv_file(
@@ -132,8 +132,8 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
             show_backtest_result(metrics['strategy_name'], metrics,
                                  metrics['stake_currency'])
 
-        HyperoptTools.print_epoch_details(val, total_epochs, print_json, no_header,
-                                          header_str="Epoch details")
+        HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
+                                         header_str="Epoch details")
 
 
 def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
@@ -197,8 +197,12 @@ def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
             return x['results_metrics']['duration']
         else:
             # New mode
-            avg = x['results_metrics']['holding_avg']
-            return avg.total_seconds() // 60
+            if 'holding_avg_s' in x['results_metrics']:
+                avg = x['results_metrics']['holding_avg_s']
+                return avg // 60
+            raise OperationalException(
+                "Holding-average not available. Please omit the filter on average time, "
+                "or rerun hyperopt with this version")
 
     if filteroptions['filter_min_avg_time'] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)

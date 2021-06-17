@@ -5,7 +5,8 @@ This module manage Telegram communication
 """
 import json
 import logging
-from datetime import timedelta
+import re
+from datetime import date, datetime, timedelta
 from html import escape
 from itertools import chain
 from math import isnan
@@ -21,9 +22,10 @@ from telegram.utils.helpers import escape_markdown
 
 from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
+from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, round_coin_value
-from freqtrade.rpc import RPC, RPCException, RPCHandler, RPCMessageType
+from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +56,7 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
             )
             return wrapper
 
-        logger.info(
+        logger.debug(
             'Executing handler: %s for chat_id: %s',
             command_handler.__name__,
             chat_id
@@ -99,23 +101,27 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refacoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = ['/start', '/stop', '/status', '/status table',
-                                 '/trades', '/profit', '/performance', '/daily',
-                                 '/stats', '/count', '/locks', '/balance',
-                                 '/stopbuy', '/reload_config', '/show_config',
-                                 '/logs', '/whitelist', '/blacklist', '/edge',
-                                 '/help', '/version']
+        valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
+                                 r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
+                                 r'/profit$', r'/profit \d+',
+                                 r'/stats$', r'/count$', r'/locks$', r'/balance$',
+                                 r'/stopbuy$', r'/reload_config$', r'/show_config$',
+                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/forcebuy$', r'/help$', r'/version$']
+        # Create keys for generation
+        valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
         # custom keyboard specified in config.json
         cust_keyboard = self._config['telegram'].get('keyboard', [])
         if cust_keyboard:
+            combined = "(" + ")|(".join(valid_keys) + ")"
             # check for valid shortcuts
             invalid_keys = [b for b in chain.from_iterable(cust_keyboard)
-                            if b not in valid_keys]
+                            if not re.match(combined, b)]
             if len(invalid_keys):
                 err_msg = ('config.telegram.keyboard: Invalid commands for '
                            f'custom Telegram keyboard: {invalid_keys}'
-                           f'\nvalid commands are: {valid_keys}')
+                           f'\nvalid commands are: {valid_keys_print}')
                 raise OperationalException(err_msg)
             else:
                 self._keyboard = cust_keyboard
@@ -211,66 +217,83 @@ class Telegram(RPCHandler):
 
         msg['emoji'] = self._get_sell_emoji(msg)
 
-        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                   "*Amount:* `{amount:.8f}`\n"
-                   "*Open Rate:* `{open_rate:.8f}`\n"
-                   "*Current Rate:* `{current_rate:.8f}`\n"
-                   "*Close Rate:* `{limit:.8f}`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Profit:* `{profit_percent:.2f}%`").format(**msg)
-
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
         if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            message += (' `({gain}: {profit_amount:.8f} {stake_currency}'
-                        ' / {profit_fiat:.3f} {fiat_currency})`').format(**msg)
+            msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
+                                   ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
+        else:
+            msg['profit_extra'] = ''
+
+        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+
         return message
 
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
 
-        noti = self._config['telegram'].get('notification_settings', {}
-                                            ).get(str(msg['type']), 'on')
+        default_noti = 'on'
+
+        msg_type = msg['type']
+        noti = ''
+        if msg_type == RPCMessageType.SELL:
+            sell_noti = self._config['telegram'] \
+              .get('notification_settings', {}).get(str(msg_type), {})
+            # For backward compatibility sell still can be string
+            if isinstance(sell_noti, str):
+                noti = sell_noti
+            else:
+                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
+        else:
+            noti = self._config['telegram'] \
+              .get('notification_settings', {}).get(str(msg_type), default_noti)
+
         if noti == 'off':
-            logger.info(f"Notification '{msg['type']}' not sent.")
+            logger.info(f"Notification '{msg_type}' not sent.")
             # Notification disabled
             return
 
-        if msg['type'] == RPCMessageType.BUY:
+        if msg_type == RPCMessageType.BUY:
             message = self._format_buy_msg(msg)
 
-        elif msg['type'] in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
-            msg['message_side'] = 'buy' if msg['type'] == RPCMessageType.BUY_CANCEL else 'sell'
+        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
+            msg['message_side'] = 'buy' if msg_type == RPCMessageType.BUY_CANCEL else 'sell'
             message = ("\N{WARNING SIGN} *{exchange}:* "
                        "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))
 
-        elif msg['type'] == RPCMessageType.BUY_FILL:
+        elif msg_type == RPCMessageType.BUY_FILL:
             message = ("\N{LARGE CIRCLE} *{exchange}:* "
                        "Buy order for {pair} (#{trade_id}) filled "
                        "for {open_rate}.".format(**msg))
-        elif msg['type'] == RPCMessageType.SELL_FILL:
+        elif msg_type == RPCMessageType.SELL_FILL:
             message = ("\N{LARGE CIRCLE} *{exchange}:* "
                        "Sell order for {pair} (#{trade_id}) filled "
                        "for {close_rate}.".format(**msg))
-        elif msg['type'] == RPCMessageType.SELL:
+        elif msg_type == RPCMessageType.SELL:
             message = self._format_sell_msg(msg)
 
-        elif msg['type'] == RPCMessageType.STATUS:
+        elif msg_type == RPCMessageType.STATUS:
             message = '*Status:* `{status}`'.format(**msg)
 
-        elif msg['type'] == RPCMessageType.WARNING:
+        elif msg_type == RPCMessageType.WARNING:
             message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
 
-        elif msg['type'] == RPCMessageType.STARTUP:
+        elif msg_type == RPCMessageType.STARTUP:
             message = '{status}'.format(**msg)
 
         else:
-            raise NotImplementedError('Unknown message type: {}'.format(msg['type']))
+            raise NotImplementedError('Unknown message type: {}'.format(msg_type))
 
         self._send_msg(message, disable_notification=(noti == 'silent'))
 
@@ -440,9 +463,20 @@ class Telegram(RPCHandler):
         stake_cur = self._config['stake_currency']
         fiat_disp_cur = self._config.get('fiat_display_currency', '')
 
+        start_date = datetime.fromtimestamp(0)
+        timescale = None
+        try:
+            if context.args:
+                timescale = int(context.args[0])
+                today_start = datetime.combine(date.today(), datetime.min.time())
+                start_date = today_start - timedelta(days=timescale)
+        except (TypeError, ValueError, IndexError):
+            pass
+
         stats = self._rpc._rpc_trade_statistics(
             stake_cur,
-            fiat_disp_cur)
+            fiat_disp_cur,
+            start_date)
         profit_closed_coin = stats['profit_closed_coin']
         profit_closed_percent_mean = stats['profit_closed_percent_mean']
         profit_closed_percent_sum = stats['profit_closed_percent_sum']
@@ -470,16 +504,18 @@ class Telegram(RPCHandler):
             else:
                 markdown_msg = "`No closed trade` \n"
 
-            markdown_msg += (f"*ROI:* All trades\n"
-                             f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
-                             f"({profit_all_percent_mean:.2f}%) "
-                             f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
-                             f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
-                             f"*Total Trade Count:* `{trade_count}`\n"
-                             f"*First Trade opened:* `{first_trade_date}`\n"
-                             f"*Latest Trade opened:* `{latest_trade_date}\n`"
-                             f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
-                             )
+            markdown_msg += (
+                f"*ROI:* All trades\n"
+                f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
+                f"({profit_all_percent_mean:.2f}%) "
+                f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
+                f"*Total Trade Count:* `{trade_count}`\n"
+                f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
+                f"`{first_trade_date}`\n"
+                f"*Latest Trade opened:* `{latest_trade_date}\n`"
+                f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
+                )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
@@ -942,7 +978,8 @@ class Telegram(RPCHandler):
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-                   "*/profit:* `Lists cumulative profit from all finished trades`\n"
+                   "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
+                   "over the last n days`\n"
                    "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
                    "regardless of profit`\n"
                    f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"

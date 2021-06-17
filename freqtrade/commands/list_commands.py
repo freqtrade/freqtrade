@@ -1,7 +1,6 @@
 import csv
 import logging
 import sys
-from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -12,11 +11,11 @@ from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, validate_exchanges
 from freqtrade.misc import plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -54,15 +53,21 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
         reset = ''
 
     names = [s['name'] for s in objs]
-    objss_to_print = [{
+    objs_to_print = [{
         'name': s['name'] if s['name'] else "--",
         'location': s['location'].name,
         'status': (red + "LOAD FAILED" + reset if s['class'] is None
                    else "OK" if names.count(s['name']) == 1
                    else yellow + "DUPLICATE NAME" + reset)
     } for s in objs]
-
-    print(tabulate(objss_to_print, headers='keys', tablefmt='psql', stralign='right'))
+    for idx, s in enumerate(objs):
+        if 'hyperoptable' in s:
+            objs_to_print[idx].update({
+                'hyperoptable': "Yes" if s['hyperoptable']['count'] > 0 else "No",
+                'buy-Params': len(s['hyperoptable'].get('buy', [])),
+                'sell-Params': len(s['hyperoptable'].get('sell', [])),
+            })
+    print(tabulate(objs_to_print, headers='keys', tablefmt='psql', stralign='right'))
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
@@ -75,6 +80,11 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
     strategy_objs = StrategyResolver.search_all_objects(directory, not args['print_one_column'])
     # Sort alphabetically
     strategy_objs = sorted(strategy_objs, key=lambda x: x['name'])
+    for obj in strategy_objs:
+        if obj['class']:
+            obj['hyperoptable'] = obj['class'].detect_all_parameters()
+        else:
+            obj['hyperoptable'] = {'count': 0}
 
     if args['print_one_column']:
         print('\n'.join([s['name'] for s in strategy_objs]))
@@ -143,7 +153,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                                      pairs_only=pairs_only,
                                      active_only=active_only)
         # Sort the pairs/markets by symbol
-        pairs = OrderedDict(sorted(pairs.items()))
+        pairs = dict(sorted(pairs.items()))
     except Exception as e:
         raise OperationalException(f"Cannot get markets. Reason: {e}") from e
 

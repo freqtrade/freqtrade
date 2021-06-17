@@ -4,8 +4,8 @@ import logging
 import pytest
 
 from freqtrade.data.history import get_timerange
+from freqtrade.enums import SellType
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)
@@ -457,6 +457,50 @@ tc28 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
+# Test 29: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
+# high of stoploss candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc29 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle)
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],    # Triggers trailing-stoploss
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.02, trailing_stop=True,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+)
+
+# Test 30: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc30 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_stop_positive=0.01,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+# Test 31: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc31 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -487,6 +531,9 @@ TESTS = [
     tc26,
     tc27,
     tc28,
+    tc29,
+    tc30,
+    tc31,
 ]
 
 

@@ -167,8 +167,9 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "export": Arg(
         '--export',
-        help='Export backtest results, argument are: trades. '
-        'Example: `--export=trades`',
+        help='Export backtest results (default: trades).',
+        choices=constants.EXPORT_OPTIONS,
+
     ),
     "exportfilename": Arg(
         '--export-filename',
@@ -432,6 +433,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=750,
+    ),
+    "plot_auto_open": Arg(
+        '--auto-open',
+        help='Automatically open generated plot.',
+        action='store_true',
     ),
     "no_trades": Arg(
         '--no-trades',

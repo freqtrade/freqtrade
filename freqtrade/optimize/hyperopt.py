@@ -12,6 +12,7 @@ from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import progressbar
 import rapidjson
 from colorama import Fore, Style
@@ -162,8 +163,13 @@ class Hyperopt:
         While not a valid json object - this allows appending easily.
         :param epoch: result dictionary for this epoch.
         """
+        def default_parser(x):
+            if isinstance(x, np.integer):
+                return int(x)
+            return str(x)
+
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=str,
+            rapidjson.dump(epoch, f, default=default_parser,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 
@@ -463,8 +469,8 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
-            HyperoptTools.print_epoch_details(self.current_best_epoch, self.total_epochs,
-                                              self.print_json)
+            HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
+                                             self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
