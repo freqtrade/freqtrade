@@ -105,14 +105,14 @@ class HyperoptTools():
 
     @staticmethod
     def _params_update_for_json(result_dict, params, non_optimized, space: str) -> None:
-        if space in params:
+        if (space in params) or (space in non_optimized):
             space_params = HyperoptTools._space_params(params, space)
             space_non_optimized = HyperoptTools._space_params(non_optimized, space)
             all_space_params = space_params
 
             # Merge non optimized params if there are any
             if len(space_non_optimized) > 0:
-                all_space_params = {**space_non_optimized, **space_params}
+                all_space_params = {**space_params, **space_non_optimized}
 
             if space in ['buy', 'sell']:
                 result_dict.setdefault('params', {}).update(all_space_params)
