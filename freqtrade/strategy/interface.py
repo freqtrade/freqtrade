@@ -453,18 +453,25 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Ensure dataframe (length, last candle) was not modified, and has all elements we need.
         """
+        message_template = "Dataframe returned from strategy has mismatching {}."
         message = ""
-        if df_len != len(dataframe):
-            message = "length"
+        if dataframe is None:
+            message = "No dataframe returned (return statement missing?)."
+        elif 'buy' not in dataframe:
+            message = "Buy column not set."
+        elif 'sell' not in dataframe:
+            message = "Sell column not set."
+        elif df_len != len(dataframe):
+            message = message_template.format("length")
         elif df_close != dataframe["close"].iloc[-1]:
-            message = "last close price"
+            message = message_template.format("last close price")
         elif df_date != dataframe["date"].iloc[-1]:
-            message = "last date"
+            message = message_template.format("last date")
         if message:
             if self.disable_dataframe_checks:
-                logger.warning(f"Dataframe returned from strategy has mismatching {message}.")
+                logger.warning(message)
             else:
-                raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
+                raise StrategyError(message)
 
     def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
         """
