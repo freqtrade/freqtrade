@@ -95,6 +95,7 @@ Example configuration showing the different settings:
         "buy_fill": "off",
         "sell_fill": "off"
     },
+    "reload": true,
     "balance_dust_level": 0.01
 },
 ```
@@ -105,6 +106,7 @@ Example configuration showing the different settings:
 
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
+`reload` allows you to disable reload-buttons on selected messages.
 
 ## Create a custom keyboard (command shortcut buttons)
 

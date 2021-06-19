@@ -10,13 +10,13 @@ from datetime import date, datetime, timedelta
 from html import escape
 from itertools import chain
 from math import isnan
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import arrow
 from tabulate import tabulate
-from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ParseMode,
-                      ReplyKeyboardMarkup, Update)
-from telegram.error import NetworkError, TelegramError
+from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
+                      ParseMode, ReplyKeyboardMarkup, Update)
+from telegram.error import BadRequest, NetworkError, TelegramError
 from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, Updater
 from telegram.utils.helpers import escape_markdown
 
@@ -47,9 +47,13 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
         update = kwargs.get('update') or args[0]
 
         # Reject unauthorized messages
-        chat_id = int(self._config['telegram']['chat_id'])
+        if update.callback_query:
+            cchat_id = int(update.callback_query.message.chat.id)
+        else:
+            cchat_id = int(update.message.chat_id)
 
-        if int(update.message.chat_id) != chat_id:
+        chat_id = int(self._config['telegram']['chat_id'])
+        if cchat_id != chat_id:
             logger.info(
                 'Rejected unauthorized message from: %s',
                 update.message.chat_id
@@ -91,7 +95,7 @@ class Telegram(RPCHandler):
         Validates the keyboard configuration from telegram config
         section.
         """
-        self._keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = [
+        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
             ['/daily', '/profit', '/balance'],
             ['/status', '/status table', '/performance'],
             ['/count', '/start', '/stop', '/help']
@@ -164,8 +168,21 @@ class Telegram(RPCHandler):
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
+        callbacks = [
+            CallbackQueryHandler(self._status_table, pattern='update_status_table'),
+            CallbackQueryHandler(self._daily, pattern='update_daily'),
+            CallbackQueryHandler(self._profit, pattern='update_profit'),
+            CallbackQueryHandler(self._balance, pattern='update_balance'),
+            CallbackQueryHandler(self._performance, pattern='update_performance'),
+            CallbackQueryHandler(self._count, pattern='update_count'),
+            CallbackQueryHandler(self._forcebuy_inline),
+        ]
         for handle in handles:
             self._updater.dispatcher.add_handler(handle)
+
+        for callback in callbacks:
+            self._updater.dispatcher.add_handler(callback)
+
         self._updater.start_polling(
             bootstrap_retries=-1,
             timeout=30,
@@ -176,11 +193,6 @@ class Telegram(RPCHandler):
             'rpc.telegram is listening for following commands: %s',
             [h.command for h in handles]
         )
-
-        self._current_callback_query_handler: Optional[CallbackQueryHandler] = None
-        self._callback_query_handlers = {
-            'forcebuy': CallbackQueryHandler(self._forcebuy_inline)
-        }
 
     def cleanup(self) -> None:
         """
@@ -409,7 +421,9 @@ class Telegram(RPCHandler):
                     # insert separators line between Total
                     lines = message.split("\n")
                     message = "\n".join(lines[:-1] + [lines[1]] + [lines[-1]])
-                self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML)
+                self._send_msg(f"<pre>{message}</pre>", parse_mode=ParseMode.HTML,
+                               reload_able=True, callback_path="update_status_table",
+                               query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -447,7 +461,8 @@ class Telegram(RPCHandler):
                 ],
                 tablefmt='simple')
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
-            self._send_msg(message, parse_mode=ParseMode.HTML)
+            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
+                           callback_path="update_daily", query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -519,7 +534,8 @@ class Telegram(RPCHandler):
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
-        self._send_msg(markdown_msg)
+        self._send_msg(markdown_msg, reload_able=True, callback_path="update_profit",
+                       query=update.callback_query)
 
     @authorized_only
     def _stats(self, update: Update, context: CallbackContext) -> None:
@@ -606,7 +622,8 @@ class Telegram(RPCHandler):
                        f"\t`{result['stake']}: {result['total']: .8f}`\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`\n")
-            self._send_msg(output)
+            self._send_msg(output, reload_able=True, callback_path="update_balance",
+                           query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -713,10 +730,10 @@ class Telegram(RPCHandler):
             self._forcebuy_action(pair, price)
         else:
             whitelist = self._rpc._rpc_whitelist()['whitelist']
-            pairs = [InlineKeyboardButton(pair, callback_data=pair) for pair in whitelist]
-            self._send_inline_msg("Which pair?",
-                                  keyboard=self._layout_inline_keyboard(pairs),
-                                  callback_query_handler='forcebuy')
+            pairs = [InlineKeyboardButton(text=pair, callback_data=pair) for pair in whitelist]
+
+            self._send_msg(msg="Which pair?",
+                           keyboard=self._layout_inline_keyboard(pairs))
 
     @authorized_only
     def _trades(self, update: Update, context: CallbackContext) -> None:
@@ -800,7 +817,9 @@ class Telegram(RPCHandler):
                 else:
                     output += stat_line
 
-            self._send_msg(output, parse_mode=ParseMode.HTML)
+            self._send_msg(output, parse_mode=ParseMode.HTML,
+                           reload_able=True, callback_path="update_performance",
+                           query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -820,7 +839,9 @@ class Telegram(RPCHandler):
                                tablefmt='simple')
             message = "<pre>{}</pre>".format(message)
             logger.debug(message)
-            self._send_msg(message, parse_mode=ParseMode.HTML)
+            self._send_msg(message, parse_mode=ParseMode.HTML,
+                           reload_able=True, callback_path="update_count",
+                           query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
@@ -1052,29 +1073,42 @@ class Telegram(RPCHandler):
             f"*Current state:* `{val['state']}`"
         )
 
-    def _send_inline_msg(self, msg: str, callback_query_handler,
-                         parse_mode: str = ParseMode.MARKDOWN, disable_notification: bool = False,
-                         keyboard: List[List[InlineKeyboardButton]] = None, ) -> None:
-        """
-        Send given markdown message
-        :param msg: message
-        :param bot: alternative bot
-        :param parse_mode: telegram parse mode
-        :return: None
-        """
-        if self._current_callback_query_handler:
-            self._updater.dispatcher.remove_handler(self._current_callback_query_handler)
-        self._current_callback_query_handler = self._callback_query_handlers[callback_query_handler]
-        self._updater.dispatcher.add_handler(self._current_callback_query_handler)
+    def _update_msg(self, query: CallbackQuery, msg: str, callback_path: str = "",
+                    reload_able: bool = False, parse_mode: str = ParseMode.MARKDOWN) -> None:
+        if reload_able:
+            reply_markup = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Refresh", callback_data=callback_path)],
+                ])
+        else:
+            reply_markup = InlineKeyboardMarkup([[]])
+        msg += "\nUpdated: {}".format(datetime.now().ctime())
+        if not query.message:
+            return
+        chat_id = query.message.chat_id
+        message_id = query.message.message_id
 
-        self._send_msg(msg, parse_mode, disable_notification,
-                       cast(List[List[Union[str, KeyboardButton, InlineKeyboardButton]]], keyboard),
-                       reply_markup=InlineKeyboardMarkup)
+        try:
+            self._updater.bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=msg,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup
+            )
+        except BadRequest as e:
+            if 'not modified' in e.message.lower():
+                pass
+            else:
+                logger.warning('TelegramError: %s', e.message)
+        except TelegramError as telegram_err:
+            logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,
-                  keyboard: List[List[Union[str, KeyboardButton, InlineKeyboardButton]]] = None,
-                  reply_markup=ReplyKeyboardMarkup) -> None:
+                  keyboard: List[List[InlineKeyboardButton]] = None,
+                  callback_path: str = "",
+                  reload_able: bool = False,
+                  query: Optional[CallbackQuery] = None) -> None:
         """
         Send given markdown message
         :param msg: message
@@ -1082,9 +1116,19 @@ class Telegram(RPCHandler):
         :param parse_mode: telegram parse mode
         :return: None
         """
-        if keyboard is None:
-            keyboard = self._keyboard
-        reply_markup = reply_markup(keyboard, resize_keyboard=True)
+        reply_markup: Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]
+        if query:
+            self._update_msg(query=query, msg=msg, parse_mode=parse_mode,
+                             callback_path=callback_path, reload_able=reload_able)
+            return
+        if reload_able and self._config['telegram'].get('reload', True):
+            reply_markup = InlineKeyboardMarkup([
+                [InlineKeyboardButton("Refresh", callback_data=callback_path)]])
+        else:
+            if keyboard is not None:
+                reply_markup = InlineKeyboardMarkup(keyboard, resize_keyboard=True)
+            else:
+                reply_markup = ReplyKeyboardMarkup(self._keyboard, resize_keyboard=True)
         try:
             try:
                 self._updater.bot.send_message(

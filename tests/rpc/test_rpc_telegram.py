@@ -13,7 +13,7 @@ from unittest.mock import ANY, MagicMock
 import arrow
 import pytest
 from telegram import Chat, Message, ReplyKeyboardMarkup, Update
-from telegram.error import NetworkError
+from telegram.error import BadRequest, NetworkError, TelegramError
 
 from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
@@ -25,8 +25,8 @@ from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, patch_exchange,
-                            patch_get_signal, patch_whitelist)
+from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, log_has_re,
+                            patch_exchange, patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -53,14 +53,6 @@ class DummyCls(Telegram):
         Fake method that throw an exception
         """
         raise Exception('test')
-
-
-def get_telegram_testobject_with_inline(mocker, default_conf, mock=True, ftbot=None):
-    inline_msg_mock = MagicMock()
-    telegram, ftbot, msg_mock = get_telegram_testobject(mocker, default_conf)
-    mocker.patch('freqtrade.rpc.telegram.Telegram._send_inline_msg', inline_msg_mock)
-
-    return telegram, ftbot, msg_mock, inline_msg_mock
 
 
 def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
@@ -920,8 +912,8 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch('freqtrade.rpc.RPC._rpc_forcebuy', fbuy_mock)
 
-    telegram, freqtradebot, _, inline_msg_mock = get_telegram_testobject_with_inline(mocker,
-                                                                                     default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+
     patch_get_signal(freqtradebot, (True, False))
 
     context = MagicMock()
@@ -929,10 +921,10 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     telegram._forcebuy(update=update, context=context)
 
     assert fbuy_mock.call_count == 0
-    assert inline_msg_mock.call_count == 1
-    assert inline_msg_mock.call_args_list[0][0][0] == 'Which pair?'
-    assert inline_msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
-    keyboard = inline_msg_mock.call_args_list[0][1]['keyboard']
+    assert msg_mock.call_count == 1
+    assert msg_mock.call_args_list[0][1]['msg'] == 'Which pair?'
+    # assert msg_mock.call_args_list[0][1]['callback_query_handler'] == 'forcebuy'
+    keyboard = msg_mock.call_args_list[0][1]['keyboard']
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
     update = MagicMock()
     update.callback_query = MagicMock()
@@ -1569,7 +1561,7 @@ def test__sell_emoji(default_conf, mocker, msg, expected):
     assert telegram._get_sell_emoji(msg) == expected
 
 
-def test__send_msg(default_conf, mocker) -> None:
+def test_telegram__send_msg(default_conf, mocker, caplog) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram._init', MagicMock())
     bot = MagicMock()
     telegram, _, _ = get_telegram_testobject(mocker, default_conf, mock=False)
@@ -1579,6 +1571,28 @@ def test__send_msg(default_conf, mocker) -> None:
     telegram._config['telegram']['enabled'] = True
     telegram._send_msg('test')
     assert len(bot.method_calls) == 1
+
+    # Test update
+    query = MagicMock()
+    telegram._send_msg('test', callback_path="DeadBeef", query=query, reload_able=True)
+    edit_message_text = telegram._updater.bot.edit_message_text
+    assert edit_message_text.call_count == 1
+    assert "Updated: " in edit_message_text.call_args_list[0][1]['text']
+
+    telegram._updater.bot.edit_message_text = MagicMock(side_effect=BadRequest("not modified"))
+    telegram._send_msg('test', callback_path="DeadBeef", query=query)
+    assert telegram._updater.bot.edit_message_text.call_count == 1
+    assert not log_has_re(r"TelegramError: .*", caplog)
+
+    telegram._updater.bot.edit_message_text = MagicMock(side_effect=BadRequest(""))
+    telegram._send_msg('test2', callback_path="DeadBeef", query=query)
+    assert telegram._updater.bot.edit_message_text.call_count == 1
+    assert log_has_re(r"TelegramError: .*", caplog)
+
+    telegram._updater.bot.edit_message_text = MagicMock(side_effect=TelegramError("DeadBEEF"))
+    telegram._send_msg('test3', callback_path="DeadBeef", query=query)
+
+    assert log_has_re(r"TelegramError: DeadBEEF! Giving up.*", caplog)
 
 
 def test__send_msg_network_error(default_conf, mocker, caplog) -> None:

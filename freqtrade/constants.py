@@ -275,7 +275,8 @@ CONF_SCHEMA = {
                             'default': 'off'
                             },
                     }
-                }
+                },
+                'reload': {'type': 'boolean'},
             },
             'required': ['enabled', 'token', 'chat_id'],
         },
