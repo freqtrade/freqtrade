@@ -75,7 +75,7 @@ def whitelist_conf_agefilter(default_conf):
             "method": "VolumePairList",
             "number_assets": 5,
             "sort_key": "quoteVolume",
-            "refresh_period": 0,
+            "refresh_period": -1,
         },
         {
             "method": "AgeFilter",
@@ -687,7 +687,6 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
     freqtrade.pairlists.refresh_pairlist()
     assert len(freqtrade.pairlists.whitelist) == 3
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
-    # freqtrade.config['exchange']['pair_whitelist'].append('HOT/BTC')
 
     previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
     freqtrade.pairlists.refresh_pairlist()
