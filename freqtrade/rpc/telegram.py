@@ -1088,27 +1088,20 @@ class Telegram(RPCHandler):
         message_id = query.message.message_id
 
         try:
-            try:
-                self._updater.bot.edit_message_text(
-                    chat_id=chat_id,
-                    message_id=message_id,
-                    text=msg,
-                    parse_mode=parse_mode,
-                    reply_markup=reply_markup
-                )
-            except BadRequest as e:
-                if 'not modified' in e.message.lower():
-                    pass
-                else:
-                    logger.warning(
-                        'TelegramError: %s',
-                        e.message
-                    )
-        except TelegramError as telegram_err:
-            logger.warning(
-                'TelegramError: %s! Giving up on that message.',
-                telegram_err.message
+            self._updater.bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=msg,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup
             )
+        except BadRequest as e:
+            if 'not modified' in e.message.lower():
+                pass
+            else:
+                logger.warning('TelegramError: %s', e.message)
+        except TelegramError as telegram_err:
+            logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
 
     def _send_msg(self, msg: str, parse_mode: str = ParseMode.MARKDOWN,
                   disable_notification: bool = False,
