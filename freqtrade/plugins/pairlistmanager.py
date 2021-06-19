@@ -83,7 +83,8 @@ class PairListManager():
         pairlist = self._pairlist_handlers[0].gen_pairlist(tickers)
 
         # Process all Pairlist Handlers in the chain
-        for pairlist_handler in self._pairlist_handlers:
+        # except for the first one, which is the generator.
+        for pairlist_handler in self._pairlist_handlers[1:]:
             pairlist = pairlist_handler.filter_pairlist(pairlist, tickers)
 
         # Validation against blacklist happens after the chain of Pairlist Handlers
