@@ -27,16 +27,3 @@ def start_trading(args: Dict[str, Any]) -> int:
             logger.info("worker found ... calling exit")
             worker.exit()
     return 0
-
-
-def start_webserver(args: Dict[str, Any]) -> None:
-    """
-    Main entry point for webserver mode
-    """
-    from freqtrade.configuration import Configuration
-    from freqtrade.enums import RunMode
-    from freqtrade.rpc.api_server import ApiServer
-
-    # Initialize configuration
-    config = Configuration(args, RunMode.WEBSERVER).get_config()
-    ApiServer(config, standalone=True)

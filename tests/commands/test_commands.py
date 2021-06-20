@@ -13,10 +13,9 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
                                 start_list_data, start_list_exchanges, start_list_hyperopts,
                                 start_list_markets, start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy, start_show_trades,
-                                start_test_pairlist, start_trading)
+                                start_test_pairlist, start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
-from freqtrade.commands.trade_commands import start_webserver
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
