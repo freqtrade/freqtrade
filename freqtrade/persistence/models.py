@@ -265,7 +265,8 @@ class LocalTrade():
     # Margin trading properties
     leverage: Optional[float] = 0.0
     borrowed: float = 0.0
-    borrowed_currency: float = None
+    borrowed_currency: str = None
+    collateral_currency: str = None
     interest_rate: float = 0.0
     liquidation_price: float = None
     is_short: bool = False
@@ -367,6 +368,7 @@ class LocalTrade():
             'leverage': self.leverage,
             'borrowed': self.borrowed,
             'borrowed_currency': self.borrowed_currency,
+            'collateral_currency': self.collateral_currency,
             'interest_rate': self.interest_rate,
             'liquidation_price': self.liquidation_price,
             'leverage': self.leverage,
@@ -775,6 +777,7 @@ class Trade(_DECL_BASE, LocalTrade):
     leverage = Column(Float, nullable=True, default=0.0)
     borrowed = Column(Float, nullable=False, default=0.0)
     borrowed_currency = Column(Float, nullable=True)
+    collateral_currency = Column(String(25), nullable=True)
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
