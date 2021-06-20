@@ -268,7 +268,7 @@ class FreqtradeBot(LoggingMixin):
             # Updating open orders in dry-run does not make sense and will fail.
             return
 
-        trades: List[Trade] = Trade.get_closed_trades_without_assigned_fees()
+        trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
         for trade in trades:
 
             if not trade.is_open and not trade.fee_updated('sell'):
@@ -752,7 +752,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Selling the trade forcefully')
-            self.execute_sell(trade, trade.stop_loss, close_reason=SellCheckTuple(
+            self.execute_sell(trade, trade.stop_loss, sell_reason=SellCheckTuple(
                 sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
@@ -783,7 +783,7 @@ class FreqtradeBot(LoggingMixin):
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
-            trade.close_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
@@ -1071,16 +1071,16 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, close_reason: SellCheckTuple) -> bool:
+    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
-        :param close_reason: Reason the sell was triggered
+        :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
         sell_type = 'sell'
-        if close_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             sell_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
@@ -1099,10 +1099,10 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = self.strategy.order_types[sell_type]
-        if close_reason.sell_type == SellType.EMERGENCY_SELL:
+        if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if close_reason.sell_type == SellType.FORCE_SELL:
+        if sell_reason.sell_type == SellType.FORCE_SELL:
             # Force sells (default to the sell_type defined in the strategy,
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
@@ -1112,7 +1112,7 @@ class FreqtradeBot(LoggingMixin):
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
-                time_in_force=time_in_force, close_reason=close_reason.close_reason,
+                time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
                 current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of selling {trade.pair}")
             return False
@@ -1134,9 +1134,9 @@ class FreqtradeBot(LoggingMixin):
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
-        trade.close_order_status = ''
+        trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.close_reason = close_reason.close_reason
+        trade.sell_reason = sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1176,7 +1176,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'close_reason': trade.close_reason,
+            'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
@@ -1195,10 +1195,10 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a sell cancel occurred.
         """
-        if trade.close_order_status == reason:
+        if trade.sell_order_status == reason:
             return
         else:
-            trade.close_order_status = reason
+            trade.sell_order_status = reason
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
@@ -1219,7 +1219,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'close_reason': trade.close_reason,
+            'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date,
             'stake_currency': self.config['stake_currency'],

@@ -132,7 +132,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `fiat_currency`
-* `close_reason`
+* `sell_reason`
 * `order_type`
 * `open_date`
 * `close_date`
@@ -154,7 +154,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `fiat_currency`
-* `close_reason`
+* `sell_reason`
 * `order_type`
 * `open_date`
 * `close_date`
@@ -176,7 +176,7 @@ Possible parameters are:
 * `profit_ratio`
 * `stake_currency`
 * `fiat_currency`
-* `close_reason`
+* `sell_reason`
 * `order_type`
 * `open_date`
 * `close_date`

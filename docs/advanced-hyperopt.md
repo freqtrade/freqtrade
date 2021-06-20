@@ -55,7 +55,7 @@ Currently, the arguments are:
 
 * `results`: DataFrame containing the result  
     The following columns are available in results (corresponds to the output-file of backtesting when used with `--export trades`):  
-    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, close_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
+    `pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, sell_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs`
 * `trade_count`: Amount of trades (identical to `len(results)`)
 * `min_date`: Start date of the timerange used
 * `min_date`: End date of the timerange used

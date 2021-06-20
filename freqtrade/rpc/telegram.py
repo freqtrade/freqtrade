@@ -242,7 +242,7 @@ class Telegram(RPCHandler):
 
         message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
                    "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
-                   "*Sell Reason:* `{close_reason}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
                    "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                    "*Amount:* `{amount:.8f}`\n"
                    "*Open Rate:* `{open_rate:.8f}`\n"
@@ -265,7 +265,7 @@ class Telegram(RPCHandler):
             if isinstance(sell_noti, str):
                 noti = sell_noti
             else:
-                noti = sell_noti.get(str(msg['close_reason']), default_noti)
+                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
         else:
             noti = self._config['telegram'] \
               .get('notification_settings', {}).get(str(msg_type), default_noti)
@@ -318,7 +318,7 @@ class Telegram(RPCHandler):
             return "\N{ROCKET}"
         elif float(msg['profit_percent']) >= 0.0:
             return "\N{EIGHT SPOKED ASTERISK}"
-        elif msg['close_reason'] == "stop_loss":
+        elif msg['sell_reason'] == "stop_loss":
             return"\N{WARNING SIGN}"
         else:
             return "\N{CROSS MARK}"
@@ -372,8 +372,8 @@ class Telegram(RPCHandler):
                 lines.append("*Stoploss distance:* `{stoploss_current_dist:.8f}` "
                              "`({stoploss_current_dist_pct:.2f}%)`")
                 if r['open_order']:
-                    if r['close_order_status']:
-                        lines.append("*Open Order:* `{open_order}` - `{close_order_status}`")
+                    if r['sell_order_status']:
+                        lines.append("*Open Order:* `{open_order}` - `{sell_order_status}`")
                     else:
                         lines.append("*Open Order:* `{open_order}`")
 
@@ -554,16 +554,16 @@ class Telegram(RPCHandler):
             'force_sell': 'Forcesell',
             'emergency_sell': 'Emergency Sell',
         }
-        close_reasons_tabulate = [
+        sell_reasons_tabulate = [
             [
                 reason_map.get(reason, reason),
                 sum(count.values()),
                 count['wins'],
                 count['losses']
-            ] for reason, count in stats['close_reasons'].items()
+            ] for reason, count in stats['sell_reasons'].items()
         ]
-        close_reasons_msg = tabulate(
-            close_reasons_tabulate,
+        sell_reasons_msg = tabulate(
+            sell_reasons_tabulate,
             headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
             )
         durations = stats['durations']
@@ -575,7 +575,7 @@ class Telegram(RPCHandler):
             ],
             headers=['', 'Avg. Duration']
         )
-        msg = (f"""```\n{close_reasons_msg}```\n```\n{duration_msg}```""")
+        msg = (f"""```\n{sell_reasons_msg}```\n```\n{duration_msg}```""")
 
         self._send_msg(msg, ParseMode.MARKDOWN)
 
