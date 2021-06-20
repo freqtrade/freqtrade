@@ -76,7 +76,6 @@ class ApiServer(RPCHandler):
         Attach rpc handler
         """
         if not self._has_rpc:
-            self._rpc = rpc
             ApiServer._rpc = rpc
             ApiServer._has_rpc = True
         else:
@@ -85,7 +84,9 @@ class ApiServer(RPCHandler):
 
     def cleanup(self) -> None:
         """ Cleanup pending module resources """
-        if self._server:
+        ApiServer._has_rpc = False
+        del ApiServer._rpc
+        if self._server and not self._standalone:
             logger.info("Stopping API Server")
             self._server.cleanup()
 
