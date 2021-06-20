@@ -257,7 +257,7 @@ class LocalTrade():
     max_rate: float = 0.0
     # Lowest price reached
     min_rate: float = 0.0
-    close_reason: str = ''
+    sell_reason: str = ''
     close_order_status: str = ''
     strategy: str = ''
     timeframe: Optional[int] = None
@@ -265,9 +265,10 @@ class LocalTrade():
     # Margin trading properties
     leverage: Optional[float] = 0.0
     borrowed: float = 0.0
-    borrowed_currency: float = None
+    borrowed_currency: str = None
+    collateral_currency: str = None
     interest_rate: float = 0.0
-    min_stoploss: float = None
+    liquidation_price: float = None
     is_short: bool = False
     # End of margin trading properties
 
@@ -346,7 +347,7 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'close_reason': self.close_reason,
+            'sell_reason': self.sell_reason,
             'close_order_status': self.close_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -367,8 +368,9 @@ class LocalTrade():
             'leverage': self.leverage,
             'borrowed': self.borrowed,
             'borrowed_currency': self.borrowed_currency,
+            'collateral_currency': self.collateral_currency,
             'interest_rate': self.interest_rate,
-            'min_stoploss': self.min_stoploss,
+            'liquidation_price': self.liquidation_price,
             'leverage': self.leverage,
 
             'open_order_id': self.open_order_id,
@@ -411,8 +413,8 @@ class LocalTrade():
 
         new_loss = float(current_price * (1 - abs(stoploss)))
         # TODO: Could maybe move this if into the new stoploss if branch
-        if (self.min_stoploss):  # If trading on margin, don't set the stoploss below the liquidation price
-            new_loss = min(self.min_stoploss, new_loss)
+        if (self.liquidation_price):  # If trading on margin, don't set the stoploss below the liquidation price
+            new_loss = min(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
         if not self.stop_loss:
@@ -465,7 +467,7 @@ class LocalTrade():
 
         logger.info('Updating trade (id=%s) ...', self.id)
 
-        if order_type in ('market', 'limit') and self.isOpeningTrade(order['side']):
+        if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
@@ -474,7 +476,7 @@ class LocalTrade():
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
             self.open_order_id = None
-        elif order_type in ('market', 'limit') and self.isClosingTrade(order['side']):
+        elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
@@ -482,7 +484,7 @@ class LocalTrade():
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.close_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            self.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
                 logger.info(f'{order_type.upper()} is hit for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
@@ -574,8 +576,8 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
-        interest = ((self.interest_rate * Decimal(borrowed or self.borrowed)) *
-                    (datetime.utcnow() - self.open_date).days) or 0  # Interest/day * num of days
+        #TODO: Interest rate could be hourly instead of daily
+        interest = ((Decimal(self.interest_rate) * Decimal(self.borrowed)) * Decimal((datetime.utcnow() - self.open_date).days)) or 0  # Interest/day * num of days
         if (self.is_short):
             return float(close_trade + fees + interest)
         else:
@@ -670,7 +672,7 @@ class LocalTrade():
             sel_trades = [trade for trade in sel_trades if trade.close_date
                           and trade.close_date > close_date]
 
-        return sel_trades  # TODO: What is sel_trades does it mean sell_trades? If so, update this for margin
+        return sel_trades 
 
     @staticmethod
     def close_bt_trade(trade):
@@ -766,7 +768,7 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    close_reason = Column(String(100), nullable=True)
+    sell_reason = Column(String(100), nullable=True)    #TODO: Change to close_reason
     close_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
@@ -775,8 +777,9 @@ class Trade(_DECL_BASE, LocalTrade):
     leverage = Column(Float, nullable=True, default=0.0)
     borrowed = Column(Float, nullable=False, default=0.0)
     borrowed_currency = Column(Float, nullable=True)
+    collateral_currency = Column(String(25), nullable=True)
     interest_rate = Column(Float, nullable=False, default=0.0)
-    min_stoploss = Column(Float, nullable=True)
+    liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
     # End of margin trading properties
 
