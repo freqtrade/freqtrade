@@ -131,8 +131,8 @@ class Order(_DECL_BASE):
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
-    
-    leverage = Column(Float, nullable=True)
+
+    leverage = Column(Float, nullable=True, default=0.0)
 
     def __repr__(self):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -257,21 +257,33 @@ class LocalTrade():
     max_rate: float = 0.0
     # Lowest price reached
     min_rate: float = 0.0
-    close_reason: str = ''   
-    close_order_status: str = '' 
+    close_reason: str = ''
+    close_order_status: str = ''
     strategy: str = ''
     timeframe: Optional[int] = None
 
-    #Margin trading properties
-    leverage: Optional[float] = None
-    borrowed: float = 0
+    # Margin trading properties
+    leverage: Optional[float] = 0.0
+    borrowed: float = 0.0
     borrowed_currency: float = None
-    interest_rate: float = 0
+    interest_rate: float = 0.0
     min_stoploss: float = None
-    isShort: boolean = False
-    #End of margin trading properties
+    is_short: bool = False
+    # End of margin trading properties
 
     def __init__(self, **kwargs):
+        lev = kwargs.get('leverage')
+        bor = kwargs.get('borrowed')
+        amount = kwargs.get('amount')
+        if lev and bor:
+            # TODO: should I raise an error?
+            raise OperationalException('Cannot pass both borrowed and leverage to Trade')
+        elif lev:
+            self.amount = amount * lev
+            self.borrowed = amount * (lev-1)
+        elif bor:
+            self.lev = (bor + amount)/amount
+
         for key in kwargs:
             setattr(self, key, kwargs[key])
         self.recalc_open_trade_value()
@@ -398,8 +410,8 @@ class LocalTrade():
             return
 
         new_loss = float(current_price * (1 - abs(stoploss)))
-        #TODO: Could maybe move this if into the new stoploss if branch
-        if (self.min_stoploss):          #If trading on margin, don't set the stoploss below the liquidation price
+        # TODO: Could maybe move this if into the new stoploss if branch
+        if (self.min_stoploss):  # If trading on margin, don't set the stoploss below the liquidation price
             new_loss = min(self.min_stoploss, new_loss)
 
         # no stop loss assigned yet
@@ -411,7 +423,8 @@ class LocalTrade():
 
         # evaluate if the stop loss needs to be updated
         else:
-            if (new_loss > self.stop_loss and not self.isShort) or (new_loss < self.stop_loss and self.isShort):  # stop losses only walk up, never down!, #TODO: But adding more to a margin account would create a lower liquidation price, decreasing the minimum stoploss
+            # stop losses only walk up, never down!, #TODO: But adding more to a margin account would create a lower liquidation price, decreasing the minimum stoploss
+            if (new_loss > self.stop_loss and not self.is_short) or (new_loss < self.stop_loss and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self._set_new_stoploss(new_loss, stoploss)
             else:
@@ -430,14 +443,14 @@ class LocalTrade():
         Determines if the trade is an opening (long buy or short sell) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        return (side == 'buy' and not self.isShort) or (side == 'sell' and self.isShort)
-    
+        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
+
     def is_closing_trade(self, side) -> bool:
         """
         Determines if the trade is an closing (long sell or short buy) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        return (side == 'sell' and not self.isShort) or (side == 'buy' and self.isShort)
+        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
 
     def update(self, order: Dict) -> None:
         """
@@ -458,14 +471,14 @@ class LocalTrade():
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_value()
             if self.is_open:
-                payment = "SELL" if self.isShort else "BUY"
+                payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
             self.open_order_id = None
         elif order_type in ('market', 'limit') and self.isClosingTrade(order['side']):
             if self.is_open:
-                payment = "BUY" if self.isShort else "SELL"
+                payment = "BUY" if self.is_short else "SELL"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price')) #TODO: Double check this
+            self.close(safe_value_fallback(order, 'average', 'price'))  # TODO: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -534,11 +547,10 @@ class LocalTrade():
         """
         open_trade = Decimal(self.amount) * Decimal(self.open_rate)
         fees = open_trade * Decimal(self.fee_open)
-        if (self.isShort):
-            return float(open_trade - fees)    
+        if (self.is_short):
+            return float(open_trade - fees)
         else:
-            return float(open_trade + fees)    
-        
+            return float(open_trade + fees)
 
     def recalc_open_trade_value(self) -> None:
         """
@@ -562,8 +574,9 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
-        interest = ((self.interest_rate * Decimal(borrowed or self.borrowed)) * (datetime.utcnow() - self.open_date).days) or 0 #Interest/day * num of days
-        if (self.isShort):
+        interest = ((self.interest_rate * Decimal(borrowed or self.borrowed)) *
+                    (datetime.utcnow() - self.open_date).days) or 0  # Interest/day * num of days
+        if (self.is_short):
             return float(close_trade + fees + interest)
         else:
             return float(close_trade - fees - interest)
@@ -583,7 +596,7 @@ class LocalTrade():
             fee=(fee or self.fee_close)
         )
 
-        if self.isShort:
+        if self.is_short:
             profit = self.open_trade_value - close_trade_value
         else:
             profit = close_trade_value - self.open_trade_value
@@ -604,7 +617,7 @@ class LocalTrade():
         )
         if self.open_trade_value == 0.0:
             return 0.0
-        if self.isShort:
+        if self.is_short:
             profit_ratio = (close_trade_value / self.open_trade_value) - 1
         else:
             profit_ratio = (self.open_trade_value / close_trade_value) - 1
@@ -657,7 +670,7 @@ class LocalTrade():
             sel_trades = [trade for trade in sel_trades if trade.close_date
                           and trade.close_date > close_date]
 
-        return sel_trades   #TODO: What is sel_trades does it mean sell_trades? If so, update this for margin
+        return sel_trades  # TODO: What is sel_trades does it mean sell_trades? If so, update this for margin
 
     @staticmethod
     def close_bt_trade(trade):
@@ -758,26 +771,16 @@ class Trade(_DECL_BASE, LocalTrade):
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
-    #Margin trading properties
-    leverage = Column(Float, nullable=True)
+    # Margin trading properties
+    leverage = Column(Float, nullable=True, default=0.0)
     borrowed = Column(Float, nullable=False, default=0.0)
     borrowed_currency = Column(Float, nullable=True)
     interest_rate = Column(Float, nullable=False, default=0.0)
     min_stoploss = Column(Float, nullable=True)
-    isShort = Column(Boolean, nullable=False, default=False)
-    #End of margin trading properties
+    is_short = Column(Boolean, nullable=False, default=False)
+    # End of margin trading properties
 
     def __init__(self, **kwargs):
-        lev = kwargs.get('leverage')
-        bor = kwargs.get('borrowed')
-        amount = kwargs.get('amount')
-        if lev and bor:
-            raise OperationalException('Cannot pass both borrowed and leverage to Trade') #TODO: should I raise an error?
-        elif lev:
-            self.amount = amount * lev
-            self.borrowed = amount * (lev-1)
-        elif bor:
-            self.lev = (bor + amount)/amount
         super().__init__(**kwargs)
         self.recalc_open_trade_value()
 
