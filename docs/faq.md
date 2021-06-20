@@ -136,6 +136,22 @@ On Windows, the `--logfile` option is also supported by Freqtrade and you can us
 > type \path\to\mylogfile.log | findstr "something"
 ```
 
+### Why does freqtrade not have GPU support?
+
+First of all, most indicator libraries don't have GPU support - as such, there would be little benefit for indicator calculations.
+The GPU improvements would only apply to pandas-native calculations - or ones written by yourself.
+
+For hyperopt, freqtrade is using scikit-optimize, which is built on top of scikit-learn.
+Their statement about GPU support is [pretty clear](https://scikit-learn.org/stable/faq.html#will-you-add-gpu-support).
+
+GPU's also are only good at crunching numbers (floating point operations). 
+For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting). 
+As such, GPU's are not too well suited for most parts of hyperopt.
+
+The benefit of using GPU would therefore be pretty slim - and will not justify the complexity introduced by trying to add GPU support.
+
+There is however nothing preventing you from using GPU-enabled indicators within your strategy if you think you must have this - you will however probably be disappointed by the slim gain that will give you (compared to the complexity).
+
 ## Hyperopt module
 
 ### How many epochs do I need to get a good Hyperopt result?
