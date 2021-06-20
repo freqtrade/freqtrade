@@ -2271,8 +2271,9 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_fetch_order(default_conf, mocker, exchange_name):
+def test_fetch_order(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = True
+    default_conf['exchange']['log_responses'] = True
     order = MagicMock()
     order.myid = 123
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -2287,6 +2288,7 @@ def test_fetch_order(default_conf, mocker, exchange_name):
     api_mock.fetch_order = MagicMock(return_value=456)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.fetch_order('X', 'TKN/BTC') == 456
+    assert log_has("API fetch_order: 456", caplog)
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))

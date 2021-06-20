@@ -98,7 +98,7 @@ Create a new directory and place the [docker-compose file](https://raw.githubuse
         image: freqtradeorg/freqtrade:custom_arm64
         build:
           context: .
-          dockerfile: "./docker/Dockerfile.aarch64"
+          dockerfile: "Dockerfile"
         ```
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.

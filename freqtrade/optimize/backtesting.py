@@ -137,7 +137,7 @@ class Backtesting:
             if hasattr(strategy, 'protections'):
                 conf = deepcopy(conf)
                 conf['protections'] = strategy.protections
-            self.protections = ProtectionManager(conf)
+            self.protections = ProtectionManager(self.config, strategy.protections)
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
         """
@@ -224,6 +224,22 @@ class Backtesting:
                 # possibly due to a cancelled trade exit.
                 # sell at open price.
                 return sell_row[OPEN_IDX]
+
+            # Special case: trailing triggers within same candle as trade opened. Assume most
+            # pessimistic price movement, which is moving just enough to arm stoploss and
+            # immediately going down to stop price.
+            if (sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0
+                    and self.strategy.trailing_stop_positive):
+                if self.strategy.trailing_only_offset_is_reached:
+                    # Worst case: price reaches stop_positive_offset and dives down.
+                    stop_rate = (sell_row[OPEN_IDX] *
+                                 (1 + abs(self.strategy.trailing_stop_positive_offset) -
+                                 abs(self.strategy.trailing_stop_positive)))
+                else:
+                    # Worst case: price ticks tiny bit above open and dives down.
+                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(self.strategy.trailing_stop_positive))
+                    assert stop_rate < sell_row[HIGH_IDX]
+                return stop_rate
 
             # Set close_rate to stoploss
             return trade.stop_loss

@@ -113,7 +113,9 @@ class StrategyResolver(IResolver):
         - Strategy
         - default (if not None)
         """
-        if attribute in config:
+        if (attribute in config
+                and not isinstance(getattr(type(strategy), 'my_property', None), property)):
+            # Ensure Properties are not overwritten
             setattr(strategy, attribute, config[attribute])
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
