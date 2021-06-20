@@ -263,7 +263,7 @@ class LocalTrade():
     timeframe: Optional[int] = None
 
     #Margin trading properties
-    leverage: float = 1.0
+    leverage: Optional[float] = None
     borrowed: float = 0
     borrowed_currency: float = None
     interest_rate: float = 0
@@ -555,8 +555,6 @@ class LocalTrade():
             If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
-        :param borrowed: amount borrowed to make this trade
-            If borrowed is not set self.borrowed will be used
         :return: Price in BTC of the open trade
         """
         if rate is None and not self.close_rate:
@@ -564,11 +562,11 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
+        interest = ((self.interest_rate * Decimal(borrowed or self.borrowed)) * (datetime.utcnow() - self.open_date).days) or 0 #Interest/day * num of days
         if (self.isShort):
-            interest = (self.interest_rate * Decimal(borrowed or self.borrowed)) * (datetime.utcnow() - self.open_date).days #Interest/day * num of days, 0 if not margin
             return float(close_trade + fees + interest)
         else:
-            return float(close_trade - fees)
+            return float(close_trade - fees - interest)
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None) -> float:
@@ -578,8 +576,6 @@ class LocalTrade():
             If fee is not set self.fee will be used
         :param rate: close rate to compare with (optional).
             If rate is not set self.close_rate will be used
-        :param borrowed: amount borrowed to make this trade
-            If borrowed is not set self.borrowed will be used
         :return:  profit in stake currency as float
         """
         close_trade_value = self.calc_close_trade_value(
@@ -594,8 +590,7 @@ class LocalTrade():
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
-                          fee: Optional[float] = None,
-                          borrowed: Optional[float] = None) -> float:
+                          fee: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with (optional).
@@ -763,7 +758,26 @@ class Trade(_DECL_BASE, LocalTrade):
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
+    #Margin trading properties
+    leverage = Column(Float, nullable=True)
+    borrowed = Column(Float, nullable=False, default=0.0)
+    borrowed_currency = Column(Float, nullable=True)
+    interest_rate = Column(Float, nullable=False, default=0.0)
+    min_stoploss = Column(Float, nullable=True)
+    isShort = Column(Boolean, nullable=False, default=False)
+    #End of margin trading properties
+
     def __init__(self, **kwargs):
+        lev = kwargs.get('leverage')
+        bor = kwargs.get('borrowed')
+        amount = kwargs.get('amount')
+        if lev and bor:
+            raise OperationalException('Cannot pass both borrowed and leverage to Trade') #TODO: should I raise an error?
+        elif lev:
+            self.amount = amount * lev
+            self.borrowed = amount * (lev-1)
+        elif bor:
+            self.lev = (bor + amount)/amount
         super().__init__(**kwargs)
         self.recalc_open_trade_value()
 
@@ -849,7 +863,7 @@ class Trade(_DECL_BASE, LocalTrade):
                                  ]).all()
 
     @staticmethod
-    def get_sold_trades_without_assigned_fees():
+    def get_closed_trades_without_assigned_fees():
         """
         Returns all closed trades which don't have fees set correctly
         NOTE: Not supported in Backtesting.

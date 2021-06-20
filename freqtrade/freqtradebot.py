@@ -268,7 +268,7 @@ class FreqtradeBot(LoggingMixin):
             # Updating open orders in dry-run does not make sense and will fail.
             return
 
-        trades: List[Trade] = Trade.get_sold_trades_without_assigned_fees()
+        trades: List[Trade] = Trade.get_closed_trades_without_assigned_fees()
         for trade in trades:
 
             if not trade.is_open and not trade.fee_updated('sell'):
