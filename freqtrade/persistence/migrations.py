@@ -47,6 +47,13 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     min_rate = get_column_def(cols, 'min_rate', 'null')
     close_reason = get_column_def(cols, 'close_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
+    
+    leverage = get_column_def(cols, 'leverage', '0.0')
+    borrowed = get_column_def(cols, 'borrowed', '0.0')
+    borrowed_currency = get_column_def(cols, 'borrowed_currency', 'null')
+    interest_rate = get_column_def(cols, 'interest_rate', '0.0')
+    min_stoploss = get_column_def(cols, 'min_stoploss', 'null')
+    is_short = get_column_def(cols, 'is_short', 'False')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -81,7 +88,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, close_reason, close_order_status, strategy,
-            timeframe, open_trade_value, close_profit_abs
+            timeframe, open_trade_value, close_profit_abs,
+            leverage, borrowed, borrowed_currency, interest_rate, min_stoploss, is_short
             )
         select id, lower(exchange),
             case
@@ -104,11 +112,13 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {max_rate} max_rate, {min_rate} min_rate, {close_reason} close_reason,
             {close_order_status} close_order_status,
             {strategy} strategy, {timeframe} timeframe,
-            {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
+            {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
+            {leverage} leverage, {borrowed} borrowed, {borrowed_currency} borrowed_currency, 
+            {interest_rate} interest_rate, {min_stoploss} min_stoploss, {is_short} is_short
             from {table_back_name}
             """))
 
-
+#TODO: Does leverage go in here?
 def migrate_open_orders_to_trades(engine):
     with engine.begin() as connection:
         connection.execute(text("""
@@ -141,10 +151,10 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date)
+            order_date, order_filled_date, order_update_date, leverage)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date
+            order_date, order_filled_date, order_update_date, leverage
             from {table_back_name}
             """))
 
