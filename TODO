@@ -1,0 +1,34 @@
+List of things TODO to add margin trading
+
+Files to edit
+    freqtrade/freqtradebot.py
+    freqtrade/wallets.py
+    freqtrade/data/btanalysis.py
+    configuration
+    freqtrade/commands/deploy_commands.py
+    freqtrade/commands/arguments.py
+    freqtrade/strategy
+    freqtrade/constants.py
+
+Tests
+    tests/test_persistence.pys
+    tests/test_freqtradebot.py
+
+later
+    freqtrade/commands/build_config_commands.py
+    freqtrade/commands/cli_options.py
+    freqtrade/commands/list_commands.py
+    freqtrade/commands/hyperopt_commands.py
+    config_binance.json.example
+    config_kraken.json.example
+    freqtrade/enums/selltype.py
+
+Did not look at these files
+    freqtrade/plot/plotting.py
+    freqtrade/plugins
+    freqtrade/resolvers/strategy_resolver.py
+    freqtrade/rpc
+
+Already Edited
+    freqtrade/persistence/migrations.py
+    freqtrade/persistence/models.py
