@@ -153,6 +153,8 @@ def test_assert_df_raise(mocker, caplog, ohlcv_history):
 
 def test_assert_df(ohlcv_history, caplog):
     df_len = len(ohlcv_history) - 1
+    ohlcv_history.loc[:, 'buy'] = 0
+    ohlcv_history.loc[:, 'sell'] = 0
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[df_len, 'date'])
@@ -169,6 +171,18 @@ def test_assert_df(ohlcv_history, caplog):
     with pytest.raises(StrategyError,
                        match=r"Dataframe returned from strategy.*last date\."):
         _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
+                            ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
+    with pytest.raises(StrategyError,
+                       match=r"No dataframe returned \(return statement missing\?\)."):
+        _STRATEGY.assert_df(None, len(ohlcv_history),
+                            ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
+    with pytest.raises(StrategyError,
+                       match="Buy column not set"):
+        _STRATEGY.assert_df(ohlcv_history.drop('buy', axis=1), len(ohlcv_history),
+                            ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
+    with pytest.raises(StrategyError,
+                       match="Sell column not set"):
+        _STRATEGY.assert_df(ohlcv_history.drop('sell', axis=1), len(ohlcv_history),
                             ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
 
     _STRATEGY.disable_dataframe_checks = True

@@ -8,7 +8,6 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 
 !!! Note
     Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.  
-    To align your protection with your strategy, you can define protections in the strategy.
 
 !!! Tip
     Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).
@@ -47,16 +46,16 @@ This applies across all pairs, unless `only_per_pair` is set to true, which will
 
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
 
-```json
-"protections": [
+``` python
+protections = [
     {
         "method": "StoplossGuard",
         "lookback_period_candles": 24,
         "trade_limit": 4,
         "stop_duration_candles": 4,
-        "only_per_pair": false
+        "only_per_pair": False
     }
-],
+]
 ```
 
 !!! Note
@@ -69,8 +68,8 @@ The below example stops trading for all pairs for 4 candles after the last trade
 
 The below sample stops trading for 12 candles if max-drawdown is > 20% considering all pairs - with a minimum of `trade_limit` trades - within the last 48 candles. If desired, `lookback_period` and/or `stop_duration` can be used.
 
-```json
-"protections": [
+``` python
+protections = [
       {
         "method": "MaxDrawdown",
         "lookback_period_candles": 48,
@@ -78,7 +77,7 @@ The below sample stops trading for 12 candles if max-drawdown is > 20% consideri
         "stop_duration_candles": 12,
         "max_allowed_drawdown": 0.2
       },
-],
+]
 ```
 
 #### Low Profit Pairs
@@ -88,8 +87,8 @@ If that ratio is below `required_profit`, that pair will be locked for `stop_dur
 
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
-```json
-"protections": [
+``` python
+protections = [
     {
         "method": "LowProfitPairs",
         "lookback_period_candles": 6,
@@ -97,7 +96,7 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
         "stop_duration": 60,
         "required_profit": 0.02
     }
-],
+]
 ```
 
 #### Cooldown Period
@@ -106,13 +105,13 @@ The below example will stop trading a pair for 60 minutes if the pair does not h
 
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 
-```json
-"protections": [
+``` python
+protections = [
     {
         "method": "CooldownPeriod",
         "stop_duration_candles": 2
     }
-],
+]
 ```
 
 !!! Note
@@ -131,46 +130,6 @@ The below example assumes a timeframe of 1 hour:
 * Stops trading if more than 4 stoploss occur for all pairs within a 1 day (`24 * 1h candles`) limit (`StoplossGuard`).
 * Locks all pairs that had 4 Trades within the last 6 hours (`6 * 1h candles`) with a combined profit ratio of below 0.02 (<2%) (`LowProfitPairs`).
 * Locks all pairs for 2 candles that had a profit of below 0.01 (<1%) within the last 24h (`24 * 1h candles`), a minimum of 4 trades.
-
-```json
-"timeframe": "1h",
-"protections": [
-    {
-        "method": "CooldownPeriod",
-        "stop_duration_candles": 5
-    },
-    {
-        "method": "MaxDrawdown",
-        "lookback_period_candles": 48,
-        "trade_limit": 20,
-        "stop_duration_candles": 4,
-        "max_allowed_drawdown": 0.2
-    },
-    {
-        "method": "StoplossGuard",
-        "lookback_period_candles": 24,
-        "trade_limit": 4,
-        "stop_duration_candles": 2,
-        "only_per_pair": false
-    },
-    {
-        "method": "LowProfitPairs",
-        "lookback_period_candles": 6,
-        "trade_limit": 2,
-        "stop_duration_candles": 60,
-        "required_profit": 0.02
-    },
-    {
-        "method": "LowProfitPairs",
-        "lookback_period_candles": 24,
-        "trade_limit": 4,
-        "stop_duration_candles": 2,
-        "required_profit": 0.01
-    }
-    ],
-```
-
-You can use the same in your strategy, the syntax is only slightly different:
 
 ``` python
 from freqtrade.strategy import IStrategy

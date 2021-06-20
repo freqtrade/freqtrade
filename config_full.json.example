@@ -178,7 +178,9 @@
             "sell_fill": "on",
             "buy_cancel": "on",
             "sell_cancel": "on"
-        }
+        },
+        "reload": true,
+        "balance_dust_level": 0.01
     },
     "api_server": {
         "enabled": false,

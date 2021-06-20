@@ -70,7 +70,7 @@ class FreqtradeBot(LoggingMixin):
 
         PairLocks.timeframe = self.config['timeframe']
 
-        self.protections = ProtectionManager(self.config)
+        self.protections = ProtectionManager(self.config, self.strategy.protections)
 
         # RPC runs in separate threads, can start handling external commands just after
         # initialization, even before Freqtradebot has a chance to start its throttling,
