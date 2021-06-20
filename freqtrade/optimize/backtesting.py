@@ -267,7 +267,7 @@ class Backtesting:
 
         if sell.sell_flag:
             trade.close_date = sell_row[DATE_IDX].to_pydatetime()
-            trade.sell_reason = sell.sell_reason
+            trade.close_reason = sell.close_reason
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
@@ -277,7 +277,7 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_reason,
+                    close_reason=sell.close_reason,
                     current_time=sell_row[DATE_IDX].to_pydatetime()):
                 return None
 
@@ -329,7 +329,7 @@ class Backtesting:
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX].to_pydatetime()
-                    trade.sell_reason = SellType.FORCE_SELL.value
+                    trade.close_reason = SellType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
                     # Deepcopy object to have wallets update correctly

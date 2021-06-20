@@ -127,7 +127,7 @@ print(stats['strategy_comparison'])
 trades = load_backtest_data(backtest_dir)
 
 # Show value-counts per pair
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["close_reason"].value_counts()
 ```
 
 ### Load live trading results into a pandas dataframe
@@ -142,7 +142,7 @@ from freqtrade.data.btanalysis import load_trades_from_db
 trades = load_trades_from_db("sqlite:///tradesv3.sqlite")
 
 # Display results
-trades.groupby("pair")["sell_reason"].value_counts()
+trades.groupby("pair")["close_reason"].value_counts()
 ```
 
 ## Analyze the loaded trades for trade parallelism

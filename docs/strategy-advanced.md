@@ -49,7 +49,7 @@ from freqtrade.exchange import timeframe_to_prev_date
 
 class AwesomeStrategy(IStrategy):
     def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, close_reason: str,
                            current_time: 'datetime', **kwargs) -> bool:
         # Obtain pair dataframe.
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -490,7 +490,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, close_reason: str, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -505,14 +505,14 @@ class AwesomeStrategy(IStrategy):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Sell reason.
+        :param close_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
         """
-        if sell_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
+        if close_reason == 'force_sell' and trade.calc_profit_ratio(rate) < 0:
             # Reject force-sells with negative profit
             # This is just a sample, please adjust to your needs
             # (this does not necessarily make sense, assuming you know when you're force-selling)

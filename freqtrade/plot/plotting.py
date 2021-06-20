@@ -193,7 +193,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
         trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
-                                                  f"{row['sell_reason']}, "
+                                                  f"{row['close_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)
         trade_buys = go.Scatter(
