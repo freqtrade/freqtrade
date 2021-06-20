@@ -269,3 +269,5 @@ def _hyperopt_filter_epochs_objective(epochs: List, filteroptions: dict) -> List
         epochs = [x for x in epochs if x['loss'] > filteroptions['filter_max_objective']]
 
     return epochs
+
+#TODO: Hyperopt optimal leverage

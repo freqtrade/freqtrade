@@ -55,6 +55,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
         templatefile=f"subtemplates/strategy_methods_{subtemplate}.j2",
         templatefallbackfile="subtemplates/strategy_methods_empty.j2",
     )
+    #TODO: Short Trend, Exit short trend
 
     strategy_text = render_template(templatefile='base_strategy.py.j2',
                                     arguments={"strategy": strategy_name,
@@ -110,6 +111,7 @@ def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: st
         templatefile=f"subtemplates/hyperopt_sell_space_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/hyperopt_sell_space_{fallback}.j2",
         )
+    #TODO: short_guards, exit_short_guards, short_space, exit_short_space
 
     strategy_text = render_template(templatefile='base_hyperopt.py.j2',
                                     arguments={"hyperopt": hyperopt_name,
@@ -117,7 +119,7 @@ def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: st
                                                "sell_guards": sell_guards,
                                                "buy_space": buy_space,
                                                "sell_space": sell_space,
-                                               })
+                                               })  #TODO: short_guards, exit_short_guards, short_space, exit_short_space
 
     logger.info(f"Writing hyperopt to `{hyperopt_path}`.")
     hyperopt_path.write_text(strategy_text)

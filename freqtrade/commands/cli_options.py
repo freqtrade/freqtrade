@@ -543,4 +543,20 @@ AVAILABLE_CLI_OPTIONS = {
         help='Do not print epoch details header.',
         action='store_true',
     ),
+    #TODO: Set up these options
+    # "leverage": Arg(
+    #     '-L', '--leverage',
+    #     help='Leverage applied for margin and futures trading.',
+    #     action=''
+    # ),
+    # "leverage_min": Arg(
+    #     '--leverage-min',
+    #     help='The minimum leverage to trade at if the desired leverage is not available',
+    #     action=''
+    # ),
+    # "shorts_enabled": Arg(
+    #     '--shorts-enabled',
+    #     help='Enables short trading',
+    #     action=''
+    # )
 }

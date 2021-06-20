@@ -14,7 +14,7 @@ ARGS_COMMON = ["verbosity", "logfile", "version", "config", "datadir", "user_dat
 
 ARGS_STRATEGY = ["strategy", "strategy_path"]
 
-ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"]
+ARGS_TRADE = ["db_url", "sd_notify", "dry_run", "dry_run_wallet", "fee"] #TODO: leverage?
 
 ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
                         "max_open_trades", "stake_amount", "fee", "pairs"]
@@ -58,7 +58,7 @@ ARGS_BUILD_HYPEROPT = ["user_data_dir", "hyperopt", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
-ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
+ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]  #TODO: Leverage?
 
 ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "timerange",
                       "download_trades", "exchange", "timeframes", "erase", "dataformat_ohlcv",

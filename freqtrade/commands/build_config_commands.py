@@ -167,6 +167,7 @@ def ask_user_config() -> Dict[str, Any]:
             "when": lambda x: x['api_server']
         },
     ]
+    #TODO: Enable short trading, trade with leverage
     answers = prompt(questions)
 
     if not answers:
