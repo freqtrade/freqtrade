@@ -467,7 +467,7 @@ class LocalTrade():
 
         logger.info('Updating trade (id=%s) ...', self.id)
 
-        if order_type in ('market', 'limit') and self.isOpeningTrade(order['side']):
+        if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
@@ -476,7 +476,7 @@ class LocalTrade():
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
             self.open_order_id = None
-        elif order_type in ('market', 'limit') and self.isClosingTrade(order['side']):
+        elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
@@ -577,7 +577,7 @@ class LocalTrade():
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
         #TODO: Interest rate could be hourly instead of daily
-        interest = ((self.interest_rate * Decimal(self.borrowed)) * (datetime.utcnow() - self.open_date).days) or 0  # Interest/day * num of days
+        interest = ((Decimal(self.interest_rate) * Decimal(self.borrowed)) * Decimal((datetime.utcnow() - self.open_date).days)) or 0  # Interest/day * num of days
         if (self.is_short):
             return float(close_trade + fees + interest)
         else:
