@@ -29,13 +29,13 @@ _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database
 
 def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
-    Initializes this module with the given config,
-    registers all known command handlers
-    and starts polling for message updates
-    :param db_url: Database to use
-    :param clean_open_orders: Remove open orders from the database.
-        Useful for dry-run or if all orders have been reset on the exchange.
-    :return: None
+        Initializes this module with the given config,
+        registers all known command handlers
+        and starts polling for message updates
+        :param db_url: Database to use
+        :param clean_open_orders: Remove open orders from the database.
+            Useful for dry-run or if all orders have been reset on the exchange.
+        :return: None
     """
     kwargs = {}
 
@@ -131,9 +131,10 @@ class Order(_DECL_BASE):
     order_date = Column(DateTime, nullable=True, default=datetime.utcnow)
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
+    
+    leverage = Column(Float, nullable=True)
 
     def __repr__(self):
-
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
                 f'side={self.side}, order_type={self.order_type}, status={self.status})')
 
@@ -155,6 +156,7 @@ class Order(_DECL_BASE):
         self.average = order.get('average', self.average)
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
+        self.leverage = order.get('leverage', self.leverage)
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -226,6 +228,7 @@ class LocalTrade():
     fee_close_currency: str = ''
     open_rate: float = 0.0
     open_rate_requested: Optional[float] = None
+
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value: float = 0.0
     close_rate: Optional[float] = None
@@ -254,10 +257,19 @@ class LocalTrade():
     max_rate: float = 0.0
     # Lowest price reached
     min_rate: float = 0.0
-    sell_reason: str = ''
-    sell_order_status: str = ''
+    close_reason: str = ''   
+    close_order_status: str = '' 
     strategy: str = ''
     timeframe: Optional[int] = None
+
+    #Margin trading properties
+    leverage: float = 1.0
+    borrowed: float = 0
+    borrowed_currency: float = None
+    interest_rate: float = 0
+    min_stoploss: float = None
+    isShort: boolean = False
+    #End of margin trading properties
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -322,8 +334,8 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.sell_reason,
-            'sell_order_status': self.sell_order_status,
+            'close_reason': self.close_reason,
+            'close_order_status': self.close_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
@@ -339,6 +351,13 @@ class LocalTrade():
                                       if self.initial_stop_loss_pct else None),
             'min_rate': self.min_rate,
             'max_rate': self.max_rate,
+
+            'leverage': self.leverage,
+            'borrowed': self.borrowed,
+            'borrowed_currency': self.borrowed_currency,
+            'interest_rate': self.interest_rate,
+            'min_stoploss': self.min_stoploss,
+            'leverage': self.leverage,
 
             'open_order_id': self.open_order_id,
         }
@@ -379,6 +398,9 @@ class LocalTrade():
             return
 
         new_loss = float(current_price * (1 - abs(stoploss)))
+        #TODO: Could maybe move this if into the new stoploss if branch
+        if (self.min_stoploss):          #If trading on margin, don't set the stoploss below the liquidation price
+            new_loss = min(self.min_stoploss, new_loss)
 
         # no stop loss assigned yet
         if not self.stop_loss:
@@ -389,7 +411,7 @@ class LocalTrade():
 
         # evaluate if the stop loss needs to be updated
         else:
-            if new_loss > self.stop_loss:  # stop losses only walk up, never down!
+            if (new_loss > self.stop_loss and not self.isShort) or (new_loss < self.stop_loss and self.isShort):  # stop losses only walk up, never down!, #TODO: But adding more to a margin account would create a lower liquidation price, decreasing the minimum stoploss
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self._set_new_stoploss(new_loss, stoploss)
             else:
@@ -402,6 +424,20 @@ class LocalTrade():
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
+
+    def is_opening_trade(self, side) -> bool:
+        """
+        Determines if the trade is an opening (long buy or short sell) trade
+        :param side (string): the side (buy/sell) that order happens on
+        """
+        return (side == 'buy' and not self.isShort) or (side == 'sell' and self.isShort)
+    
+    def is_closing_trade(self, side) -> bool:
+        """
+        Determines if the trade is an closing (long sell or short buy) trade
+        :param side (string): the side (buy/sell) that order happens on
+        """
+        return (side == 'sell' and not self.isShort) or (side == 'buy' and self.isShort)
 
     def update(self, order: Dict) -> None:
         """
@@ -416,22 +452,24 @@ class LocalTrade():
 
         logger.info('Updating trade (id=%s) ...', self.id)
 
-        if order_type in ('market', 'limit') and order['side'] == 'buy':
+        if order_type in ('market', 'limit') and self.isOpeningTrade(order['side']):
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             self.recalc_open_trade_value()
             if self.is_open:
-                logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
+                payment = "SELL" if self.isShort else "BUY"
+                logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
             self.open_order_id = None
-        elif order_type in ('market', 'limit') and order['side'] == 'sell':
+        elif order_type in ('market', 'limit') and self.isClosingTrade(order['side']):
             if self.is_open:
-                logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))
+                payment = "BUY" if self.isShort else "SELL"
+                logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
+            self.close(safe_value_fallback(order, 'average', 'price')) #TODO: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.sell_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            self.close_reason = SellType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
                 logger.info(f'{order_type.upper()} is hit for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
@@ -445,11 +483,11 @@ class LocalTrade():
         and marks trade as closed
         """
         self.close_rate = rate
+        self.close_date = self.close_date or datetime.utcnow()
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
-        self.close_date = self.close_date or datetime.utcnow()
         self.is_open = False
-        self.sell_order_status = 'closed'
+        self.close_order_status = 'closed'
         self.open_order_id = None
         if show_msg:
             logger.info(
@@ -462,14 +500,14 @@ class LocalTrade():
         """
         Update Fee parameters. Only acts once per side
         """
-        if side == 'buy' and self.fee_open_currency is None:
+        if self.is_opening_trade(side) and self.fee_open_currency is None:
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
             if fee_rate is not None:
                 self.fee_open = fee_rate
                 # Assume close-fee will fall into the same fee category and take an educated guess
                 self.fee_close = fee_rate
-        elif side == 'sell' and self.fee_close_currency is None:
+        elif self.is_closing_trade(side) and self.fee_close_currency is None:
             self.fee_close_cost = fee_cost
             self.fee_close_currency = fee_currency
             if fee_rate is not None:
@@ -479,9 +517,9 @@ class LocalTrade():
         """
         Verify if this side (buy / sell) has already been updated
         """
-        if side == 'buy':
+        if self.is_opening_trade(side):
             return self.fee_open_currency is not None
-        elif side == 'sell':
+        elif self.is_closing_trade(side):
             return self.fee_close_currency is not None
         else:
             return False
@@ -494,9 +532,13 @@ class LocalTrade():
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        buy_trade = Decimal(self.amount) * Decimal(self.open_rate)
-        fees = buy_trade * Decimal(self.fee_open)
-        return float(buy_trade + fees)
+        open_trade = Decimal(self.amount) * Decimal(self.open_rate)
+        fees = open_trade * Decimal(self.fee_open)
+        if (self.isShort):
+            return float(open_trade - fees)    
+        else:
+            return float(open_trade + fees)    
+        
 
     def recalc_open_trade_value(self) -> None:
         """
@@ -513,34 +555,47 @@ class LocalTrade():
             If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
+        :param borrowed: amount borrowed to make this trade
+            If borrowed is not set self.borrowed will be used
         :return: Price in BTC of the open trade
         """
         if rate is None and not self.close_rate:
             return 0.0
 
-        sell_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
-        fees = sell_trade * Decimal(fee or self.fee_close)
-        return float(sell_trade - fees)
+        close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
+        fees = close_trade * Decimal(fee or self.fee_close)
+        if (self.isShort):
+            interest = (self.interest_rate * Decimal(borrowed or self.borrowed)) * (datetime.utcnow() - self.open_date).days #Interest/day * num of days, 0 if not margin
+            return float(close_trade + fees + interest)
+        else:
+            return float(close_trade - fees)
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
-            If rate is not set self.fee will be used
+            If fee is not set self.fee will be used
         :param rate: close rate to compare with (optional).
             If rate is not set self.close_rate will be used
+        :param borrowed: amount borrowed to make this trade
+            If borrowed is not set self.borrowed will be used
         :return:  profit in stake currency as float
         """
         close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        profit = close_trade_value - self.open_trade_value
+
+        if self.isShort:
+            profit = self.open_trade_value - close_trade_value
+        else:
+            profit = close_trade_value - self.open_trade_value
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
-                          fee: Optional[float] = None) -> float:
+                          fee: Optional[float] = None,
+                          borrowed: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with (optional).
@@ -554,7 +609,10 @@ class LocalTrade():
         )
         if self.open_trade_value == 0.0:
             return 0.0
-        profit_ratio = (close_trade_value / self.open_trade_value) - 1
+        if self.isShort:
+            profit_ratio = (close_trade_value / self.open_trade_value) - 1
+        else:
+            profit_ratio = (self.open_trade_value / close_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
@@ -604,7 +662,7 @@ class LocalTrade():
             sel_trades = [trade for trade in sel_trades if trade.close_date
                           and trade.close_date > close_date]
 
-        return sel_trades
+        return sel_trades   #TODO: What is sel_trades does it mean sell_trades? If so, update this for margin
 
     @staticmethod
     def close_bt_trade(trade):
@@ -700,8 +758,8 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)
-    sell_order_status = Column(String(100), nullable=True)
+    close_reason = Column(String(100), nullable=True)
+    close_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 

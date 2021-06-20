@@ -45,7 +45,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     stoploss_last_update = get_column_def(cols, 'stoploss_last_update', 'null')
     max_rate = get_column_def(cols, 'max_rate', '0.0')
     min_rate = get_column_def(cols, 'min_rate', 'null')
-    sell_reason = get_column_def(cols, 'sell_reason', 'null')
+    close_reason = get_column_def(cols, 'close_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
@@ -58,7 +58,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
-    sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
+    close_order_status = get_column_def(cols, 'close_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
@@ -80,7 +80,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, sell_reason, sell_order_status, strategy,
+            max_rate, min_rate, close_reason, close_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs
             )
         select id, lower(exchange),
@@ -101,8 +101,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {initial_stop_loss} initial_stop_loss,
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
-            {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-            {sell_order_status} sell_order_status,
+            {max_rate} max_rate, {min_rate} min_rate, {close_reason} close_reason,
+            {close_order_status} close_order_status,
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
