@@ -40,4 +40,4 @@ aiofiles==0.7.0
 colorama==0.4.4
 # Building config files interactively
 questionary==1.9.0
-prompt-toolkit==3.0.18
+prompt-toolkit==3.0.19
