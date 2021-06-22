@@ -258,7 +258,7 @@ class LocalTrade():
     # Lowest price reached
     min_rate: float = 0.0
     sell_reason: str = ''
-    close_order_status: str = ''
+    sell_order_status: str = ''
     strategy: str = ''
     timeframe: Optional[int] = None
 
@@ -348,7 +348,7 @@ class LocalTrade():
             'profit_abs': self.close_profit_abs,
 
             'sell_reason': self.sell_reason,
-            'close_order_status': self.close_order_status,
+            'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
@@ -502,7 +502,7 @@ class LocalTrade():
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
         self.is_open = False
-        self.close_order_status = 'closed'
+        self.sell_order_status = 'closed'
         self.open_order_id = None
         if show_msg:
             logger.info(
@@ -576,8 +576,10 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
-        #TODO: Interest rate could be hourly instead of daily
-        interest = ((Decimal(self.interest_rate) * Decimal(self.borrowed)) * Decimal((datetime.utcnow() - self.open_date).days)) or 0  # Interest/day * num of days
+        # TODO: This interest rate is bad, doesn't get fractions of days
+
+        interest = ((Decimal(self.interest_rate) * Decimal(self.borrowed)) *
+                    Decimal((datetime.utcnow() - self.open_date).days)) or 0  # Interest/day * num of days
         if (self.is_short):
             return float(close_trade + fees + interest)
         else:
@@ -622,7 +624,10 @@ class LocalTrade():
         if self.is_short:
             profit_ratio = (close_trade_value / self.open_trade_value) - 1
         else:
-            profit_ratio = (self.open_trade_value / close_trade_value) - 1
+            if close_trade_value == 0:
+                profit_ratio = 0
+            else:
+                profit_ratio = (self.open_trade_value / close_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
@@ -672,7 +677,7 @@ class LocalTrade():
             sel_trades = [trade for trade in sel_trades if trade.close_date
                           and trade.close_date > close_date]
 
-        return sel_trades 
+        return sel_trades
 
     @staticmethod
     def close_bt_trade(trade):
@@ -768,8 +773,8 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)    #TODO: Change to close_reason
-    close_order_status = Column(String(100), nullable=True)
+    sell_reason = Column(String(100), nullable=True)  # TODO: Change to close_reason
+    sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 

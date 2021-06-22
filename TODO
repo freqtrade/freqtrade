@@ -12,6 +12,33 @@ Files to edit
 
 Tests
     tests/test_persistence.pys
+        init with 
+            lev & bor
+            lev
+            bor
+            neither lev nor bor
+        adjust_stop_loss
+            short
+            leverage
+        is_opening_trade
+            short
+            long
+            shortBuy
+            longSell
+        is_closing_trade
+            short
+            long
+            shortBuy
+            longSell        
+        update, close, update fee
+            possible to test?    
+        calc_profit
+            * * create a few shorts, a few leveraged longs test correct ratio
+        calc_profit_ratio
+            * create a few shorts, a few leveraged longs test correct ratio
+        get_open_trades 
+            * create a short, check if exists
+
     tests/test_freqtradebot.py
 
 later

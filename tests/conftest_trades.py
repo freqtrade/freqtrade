@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from freqtrade.persistence.models import Order, Trade
 
 
-MOCK_TRADE_COUNT = 6
+MOCK_TRADE_COUNT = 6  # TODO-mg: Increase for short and leverage
 
 
 def mock_order_1():
@@ -303,3 +303,5 @@ def mock_trade_6(fee):
     o = Order.parse_from_ccxt_object(mock_order_6_sell(), 'LTC/BTC', 'sell')
     trade.orders.append(o)
     return trade
+
+# TODO-mg: Mock orders for leveraged and short  trades
