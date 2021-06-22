@@ -60,7 +60,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     sudo apt-get update
 
     # install packages
-    sudo apt install -y python3-pip python3.7-venv python3.7-dev python3-pandas git
+    sudo apt install -y python3-pip python3-venv python3-dev python3-pandas git
     ```
 
 === "RaspberryPi/Raspbian"
