@@ -339,9 +339,8 @@ class RPC:
             self, stake_currency: str, fiat_display_currency: str,
             start_date: datetime = datetime.fromtimestamp(0)) -> Dict[str, Any]:
         """ Returns cumulative profit statistics """
-        trade_filter = \
-            (Trade.is_open.is_(False) & (Trade.close_date >= start_date)) | \
-            Trade.is_open.is_(True)
+        trade_filter = ((Trade.is_open.is_(False) & (Trade.close_date >= start_date)) |
+                        Trade.is_open.is_(True))
         trades = Trade.get_trades(trade_filter).order_by(Trade.id).all()
 
         profit_all_coin = []
