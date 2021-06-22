@@ -287,6 +287,8 @@ class LocalTrade():
 
         for key in kwargs:
             setattr(self, key, kwargs[key])
+        if not self.is_short:
+            self.is_short = False
         self.recalc_open_trade_value()
 
     def __repr__(self):
@@ -474,12 +476,12 @@ class LocalTrade():
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
-                logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
+                logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.open_order_id = None
         elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                logger.info(f'{order_type.upper()}_{payment} order has been fulfilled for {self}.')
+                logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))  # TODO: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
@@ -576,10 +578,18 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
-        # TODO: This interest rate is bad, doesn't get fractions of days
 
-        interest = ((Decimal(self.interest_rate) * Decimal(self.borrowed)) *
-                    Decimal((datetime.utcnow() - self.open_date).days)) or 0  # Interest/day * num of days
+        # TODO: Need to set other conditions because sometimes self.open_date is not defined, but why would it ever not be set
+        try:
+            open = self.open_date.replace(tzinfo=None)
+            now = datetime.now()
+
+            # breakpoint()
+            interest = ((Decimal(self.interest_rate or 0) * Decimal(self.borrowed or 0)) *
+                        Decimal((now - open).total_seconds())/86400) or 0  # Interest/day * (seconds in trade)/(seconds per day)
+        except:
+            interest = 0
+
         if (self.is_short):
             return float(close_trade + fees + interest)
         else:
@@ -619,15 +629,17 @@ class LocalTrade():
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close)
         )
-        if self.open_trade_value == 0.0:
-            return 0.0
         if self.is_short:
-            profit_ratio = (close_trade_value / self.open_trade_value) - 1
-        else:
-            if close_trade_value == 0:
-                profit_ratio = 0
+            if close_trade_value == 0.0:
+                return 0.0
             else:
                 profit_ratio = (self.open_trade_value / close_trade_value) - 1
+
+        else:
+            if self.open_trade_value == 0.0:
+                return 0.0
+            else:
+                profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:

@@ -1305,7 +1305,7 @@ def test_Trade_object_idem():
         'get_best_pair',
         'get_overall_performance',
         'total_open_trades_stakes',
-        'get_sold_trades_without_assigned_fees',
+        'get_closed_trades_without_assigned_fees',
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
