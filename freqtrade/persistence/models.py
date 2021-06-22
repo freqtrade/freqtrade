@@ -132,7 +132,7 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
-    leverage = Column(Float, nullable=True, default=0.0)
+    leverage = Column(Float, nullable=True, default=1.0)
 
     def __repr__(self):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -263,7 +263,7 @@ class LocalTrade():
     timeframe: Optional[int] = None
 
     # Margin trading properties
-    leverage: Optional[float] = 0.0
+    leverage: Optional[float] = 1.0
     borrowed: float = 0.0
     borrowed_currency: str = None
     collateral_currency: str = None
@@ -373,7 +373,7 @@ class LocalTrade():
             'collateral_currency': self.collateral_currency,
             'interest_rate': self.interest_rate,
             'liquidation_price': self.liquidation_price,
-            'leverage': self.leverage,
+            'is_short': self.is_short,
 
             'open_order_id': self.open_order_id,
         }
@@ -791,7 +791,7 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     # Margin trading properties
-    leverage = Column(Float, nullable=True, default=0.0)
+    leverage = Column(Float, nullable=True, default=1.0)
     borrowed = Column(Float, nullable=False, default=0.0)
     borrowed_currency = Column(Float, nullable=True)
     collateral_currency = Column(String(25), nullable=True)

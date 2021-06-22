@@ -665,11 +665,13 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 order_date DATETIME,
                 order_filled_date DATETIME,
                 order_update_date DATETIME,
+                leverage FLOAT,
                 PRIMARY KEY (id),
                 CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
+        # TODO-mg: Had to add field leverage to this table, check that this is correct
 
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
@@ -918,6 +920,14 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
+
+                      'leverage': None,
+                      'borrowed': None,
+                      'borrowed_currency': None,
+                      'collateral_currency': None,
+                      'interest_rate': None,
+                      'liquidation_price': None,
+                      'is_short': None,
                       }
 
     # Simulate dry_run entries
@@ -983,6 +993,14 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
+
+                      'leverage': None,
+                      'borrowed': None,
+                      'borrowed_currency': None,
+                      'collateral_currency': None,
+                      'interest_rate': None,
+                      'liquidation_price': None,
+                      'is_short': None,
                       }
 
 
