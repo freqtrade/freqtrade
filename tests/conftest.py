@@ -221,6 +221,8 @@ def create_mock_trades(fee, use_db: bool = True):
     trade = mock_trade_6(fee)
     add_trade(trade)
 
+    # TODO-mg: Add margin trades
+
     if use_db:
         Trade.query.session.flush()
 
@@ -250,6 +252,7 @@ def patch_coingekko(mocker) -> None:
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
+    # TODO-mg: margin with leverage and/or borrowed?
 
 
 @pytest.fixture(scope="function")
@@ -812,7 +815,7 @@ def shitcoinmarkets(markets):
             "future": False,
             "active": True
         },
-        })
+    })
     return shitmarkets
 
 
@@ -914,18 +917,17 @@ def limit_sell_order_old():
 
 @pytest.fixture
 def limit_buy_order_old_partial():
-    return {
-        'id': 'mocked_limit_buy_old_partial',
-        'type': 'limit',
-        'side': 'buy',
-        'symbol': 'ETH/BTC',
-        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-        'price': 0.00001099,
-        'amount': 90.99181073,
-        'filled': 23.0,
-        'remaining': 67.99181073,
-        'status': 'open'
-    }
+    return {'id': 'mocked_limit_buy_old_partial',
+            'type': 'limit',
+                    'side': 'buy',
+                    'symbol': 'ETH/BTC',
+                    'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+                    'price': 0.00001099,
+                    'amount': 90.99181073,
+                    'filled': 23.0,
+                    'remaining': 67.99181073,
+                    'status': 'open'
+            }
 
 
 @pytest.fixture
@@ -1769,6 +1771,7 @@ def rpc_balance():
             'used': 0.0
         },
     }
+    # TODO-mg: Add shorts and leverage?
 
 
 @pytest.fixture
@@ -2084,3 +2087,95 @@ def saved_hyperopt_results():
                                                                          ].total_seconds()
 
     return hyperopt_res
+
+
+# * Margin Tests
+
+@pytest.fixture
+def leveraged_fee():
+    return
+
+
+@pytest.fixture
+def short_fee():
+    return
+
+
+@pytest.fixture
+def ticker_short():
+    return
+
+
+@pytest.fixture
+def ticker_exit_short_up():
+    return
+
+
+@pytest.fixture
+def ticker_exit_short_down():
+    return
+
+
+@pytest.fixture
+def leveraged_markets():
+    return
+
+
+@pytest.fixture(scope='function')
+def limit_short_order_open():
+    return
+
+
+@pytest.fixture(scope='function')
+def limit_short_order(limit_short_order_open):
+    return
+
+
+@pytest.fixture(scope='function')
+def market_short_order():
+    return
+
+
+@pytest.fixture
+def market_short_exit_order():
+    return
+
+
+@pytest.fixture
+def limit_short_order_old():
+    return
+
+
+@pytest.fixture
+def limit_exit_short_order_old():
+    return
+
+
+@pytest.fixture
+def limit_short_order_old_partial():
+    return
+
+
+@pytest.fixture
+def limit_short_order_old_partial_canceled(limit_short_order_old_partial):
+    return
+
+
+@pytest.fixture(scope='function')
+def limit_short_order_canceled_empty(request):
+    return
+
+
+@pytest.fixture
+def limit_exit_short_order_open():
+    return
+
+
+@pytest.fixture
+def limit_exit_short_order(limit_sell_order_open):
+    return
+
+
+@pytest.fixture
+def short_order_fee():
+    return

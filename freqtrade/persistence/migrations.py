@@ -47,7 +47,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     min_rate = get_column_def(cols, 'min_rate', 'null')
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
-    
+
     leverage = get_column_def(cols, 'leverage', '0.0')
     borrowed = get_column_def(cols, 'borrowed', '0.0')
     borrowed_currency = get_column_def(cols, 'borrowed_currency', 'null')
@@ -66,7 +66,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
-    close_order_status = get_column_def(cols, 'close_order_status', 'null')
+    # TODO-mg: update to exit order status
+    sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
@@ -88,7 +89,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, sell_reason, close_order_status, strategy,
+            max_rate, min_rate, sell_reason, sell_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs,
             leverage, borrowed, borrowed_currency, collateral_currency, interest_rate, liquidation_price, is_short
             )
@@ -111,7 +112,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-            {close_order_status} close_order_status,
+            {sell_order_status} sell_order_status,
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {leverage} leverage, {borrowed} borrowed, {borrowed_currency} borrowed_currency, 
@@ -120,7 +121,9 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             from {table_back_name}
             """))
 
-#TODO: Does leverage go in here?
+# TODO: Does leverage go in here?
+
+
 def migrate_open_orders_to_trades(engine):
     with engine.begin() as connection:
         connection.execute(text("""
