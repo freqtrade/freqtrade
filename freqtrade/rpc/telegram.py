@@ -482,7 +482,7 @@ class Telegram(RPCHandler):
         timescale = None
         try:
             if context.args:
-                timescale = int(context.args[0])
+                timescale = int(context.args[0]) - 1
                 today_start = datetime.combine(date.today(), datetime.min.time())
                 start_date = today_start - timedelta(days=timescale)
         except (TypeError, ValueError, IndexError):
