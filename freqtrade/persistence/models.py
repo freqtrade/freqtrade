@@ -563,6 +563,42 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value()
 
+    def calculate_interest(self) -> Decimal:
+        # TODO-mg: Need to set other conditions because sometimes self.open_date is not defined, but why would it ever not be set
+        if not self.interest_rate or not (self.borrowed):
+            return Decimal(0.0)
+
+        try:
+            open_date = self.open_date.replace(tzinfo=None)
+            now = datetime.now()
+            secPerDay = 86400
+            days = Decimal((now - open_date).total_seconds()/secPerDay) or 0.0
+            hours = days/24
+        except:
+            raise OperationalException("Time isn't calculated properly")
+
+        rate = Decimal(self.interest_rate)
+        borrowed = Decimal(self.borrowed)
+
+        if self.exchange == 'binance':
+            # Rate is per day but accrued hourly or something
+            # binance: https://www.binance.com/en-AU/support/faq/360030157812
+            return borrowed * (rate/24) * max(hours, 1.0)  # TODO-mg: Is hours rounded?
+        elif self.exchange == 'kraken':
+            # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
+            opening_fee = borrowed * rate
+            roll_over_fee = borrowed * rate * max(0, (hours-4)/4)
+            return opening_fee + roll_over_fee
+        elif self.exchange == 'binance_usdm_futures':
+            # ! TODO-mg: This is incorrect, I didn't look it up
+            return borrowed * (rate/24) * max(hours, 1.0)
+        elif self.exchange == 'binance_coinm_futures':
+            # ! TODO-mg: This is incorrect, I didn't look it up
+            return borrowed * (rate/24) * max(hours, 1.0)
+        else:
+            # TODO-mg: make sure this breaks and can't be squelched
+            raise OperationalException("Leverage not available on this exchange")
+
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None) -> float:
         """
@@ -578,17 +614,7 @@ class LocalTrade():
 
         close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
-
-        # TODO: Need to set other conditions because sometimes self.open_date is not defined, but why would it ever not be set
-        try:
-            open = self.open_date.replace(tzinfo=None)
-            now = datetime.now()
-
-            # breakpoint()
-            interest = ((Decimal(self.interest_rate or 0) * Decimal(self.borrowed or 0)) *
-                        Decimal((now - open).total_seconds())/86400) or 0  # Interest/day * (seconds in trade)/(seconds per day)
-        except:
-            interest = 0
+        interest = self.calculate_interest()
 
         if (self.is_short):
             return float(close_trade + fees + interest)
@@ -657,7 +683,7 @@ class LocalTrade():
         else:
             return None
 
-    @staticmethod
+    @ staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
                          ) -> List['LocalTrade']:
@@ -691,27 +717,27 @@ class LocalTrade():
 
         return sel_trades
 
-    @staticmethod
+    @ staticmethod
     def close_bt_trade(trade):
         LocalTrade.trades_open.remove(trade)
         LocalTrade.trades.append(trade)
         LocalTrade.total_profit += trade.close_profit_abs
 
-    @staticmethod
+    @ staticmethod
     def add_bt_trade(trade):
         if trade.is_open:
             LocalTrade.trades_open.append(trade)
         else:
             LocalTrade.trades.append(trade)
 
-    @staticmethod
+    @ staticmethod
     def get_open_trades() -> List[Any]:
         """
         Query trades from persistence layer
         """
         return Trade.get_trades_proxy(is_open=True)
 
-    @staticmethod
+    @ staticmethod
     def stoploss_reinitialization(desired_stoploss):
         """
         Adjust initial Stoploss to desired stoploss for all open trades.
@@ -812,11 +838,11 @@ class Trade(_DECL_BASE, LocalTrade):
         Trade.query.session.delete(self)
         Trade.commit()
 
-    @staticmethod
+    @ staticmethod
     def commit():
         Trade.query.session.commit()
 
-    @staticmethod
+    @ staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
                          ) -> List['LocalTrade']:
@@ -846,7 +872,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 close_date=close_date
             )
 
-    @staticmethod
+    @ staticmethod
     def get_trades(trade_filter=None) -> Query:
         """
         Helper function to query Trades using filters.
@@ -866,7 +892,7 @@ class Trade(_DECL_BASE, LocalTrade):
         else:
             return Trade.query
 
-    @staticmethod
+    @ staticmethod
     def get_open_order_trades():
         """
         Returns all open trades
@@ -874,7 +900,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
         return Trade.get_trades(Trade.open_order_id.isnot(None)).all()
 
-    @staticmethod
+    @ staticmethod
     def get_open_trades_without_assigned_fees():
         """
         Returns all open trades which don't have open fees set correctly
@@ -885,7 +911,7 @@ class Trade(_DECL_BASE, LocalTrade):
                                  Trade.is_open.is_(True),
                                  ]).all()
 
-    @staticmethod
+    @ staticmethod
     def get_closed_trades_without_assigned_fees():
         """
         Returns all closed trades which don't have fees set correctly
@@ -923,7 +949,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 t.stake_amount for t in LocalTrade.get_trades_proxy(is_open=True))
         return total_open_stake_amount or 0
 
-    @staticmethod
+    @ staticmethod
     def get_overall_performance() -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, including profit and trade count
@@ -986,7 +1012,7 @@ class PairLock(_DECL_BASE):
         return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
                 f'lock_end_time={lock_end_time})')
 
-    @staticmethod
+    @ staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
         """
         Get all currently active locks for this pair
