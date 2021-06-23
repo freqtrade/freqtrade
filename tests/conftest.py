@@ -24,7 +24,7 @@ from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6)
+                                   mock_trade_5, mock_trade_6, short_trade, leverage_trade)
 
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -221,7 +221,12 @@ def create_mock_trades(fee, use_db: bool = True):
     trade = mock_trade_6(fee)
     add_trade(trade)
 
-    # TODO-mg: Add margin trades
+    # TODO: margin trades
+    # trade = short_trade(fee)
+    # add_trade(trade)
+
+    # trade = leverage_trade(fee)
+    # add_trade(trade)
 
     if use_db:
         Trade.query.session.flush()
@@ -252,7 +257,7 @@ def patch_coingekko(mocker) -> None:
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    # TODO-mg: margin with leverage and/or borrowed?
+    # TODO-mg: trade with leverage and/or borrowed?
 
 
 @pytest.fixture(scope="function")
