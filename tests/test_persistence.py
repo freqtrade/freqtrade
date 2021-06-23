@@ -129,9 +129,6 @@ def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
                       caplog)
 
-    # TODO-mg: create a short order
-    # TODO-mg: create a leveraged long order
-
 
 @pytest.mark.usefixtures("init_persistence")
 def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
@@ -169,9 +166,6 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
                       r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
                       caplog)
-
-    # TODO-mg: market short
-    # TODO-mg: market leveraged long
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -665,13 +659,11 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 order_date DATETIME,
                 order_filled_date DATETIME,
                 order_update_date DATETIME,
-                leverage FLOAT,
                 PRIMARY KEY (id),
                 CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
-        # TODO-mg: Had to add field leverage to this table, check that this is correct
 
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
@@ -920,14 +912,6 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
-                      'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
-                      'interest_rate': None,
-                      'liquidation_price': None,
-                      'is_short': None,
                       }
 
     # Simulate dry_run entries
@@ -993,14 +977,6 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
-                      'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
-                      'interest_rate': None,
-                      'liquidation_price': None,
-                      'is_short': None,
                       }
 
 
@@ -1339,7 +1315,7 @@ def test_Trade_object_idem():
         'get_overall_performance',
         'get_total_closed_profit',
         'total_open_trades_stakes',
-        'get_closed_trades_without_assigned_fees',
+        'get_sold_trades_without_assigned_fees',
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',

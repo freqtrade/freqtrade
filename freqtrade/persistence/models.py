@@ -133,6 +133,7 @@ class Order(_DECL_BASE):
     order_update_date = Column(DateTime, nullable=True)
 
     leverage = Column(Float, nullable=True, default=1.0)
+    is_short = Column(Boolean, nullable=False, default=False)
 
     def __repr__(self):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -447,14 +448,16 @@ class LocalTrade():
         Determines if the trade is an opening (long buy or short sell) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
+        is_short = self.is_short
+        return (side == 'buy' and not is_short) or (side == 'sell' and is_short)
 
     def is_closing_trade(self, side) -> bool:
         """
         Determines if the trade is an closing (long sell or short buy) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
+        is_short = self.is_short
+        return (side == 'sell' and not is_short) or (side == 'buy' and is_short)
 
     def update(self, order: Dict) -> None:
         """
@@ -463,6 +466,9 @@ class LocalTrade():
         :return: None
         """
         order_type = order['type']
+        # TODO: I don't like this, but it might be the only way
+        if 'is_short' in order and order['side'] == 'sell':
+            self.is_short = order['is_short']
         # Ignore open and cancelled orders
         if order['status'] == 'open' or safe_value_fallback(order, 'average', 'price') is None:
             return
@@ -579,11 +585,13 @@ class LocalTrade():
 
         rate = Decimal(self.interest_rate)
         borrowed = Decimal(self.borrowed)
+        twenty4 = Decimal(24.0)
+        one = Decimal(1.0)
 
         if self.exchange == 'binance':
             # Rate is per day but accrued hourly or something
             # binance: https://www.binance.com/en-AU/support/faq/360030157812
-            return borrowed * (rate/24) * max(hours, 1.0)  # TODO-mg: Is hours rounded?
+            return borrowed * (rate/twenty4) * max(hours, one)  # TODO-mg: Is hours rounded?
         elif self.exchange == 'kraken':
             # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
             opening_fee = borrowed * rate
@@ -591,10 +599,10 @@ class LocalTrade():
             return opening_fee + roll_over_fee
         elif self.exchange == 'binance_usdm_futures':
             # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/24) * max(hours, 1.0)
+            return borrowed * (rate/twenty4) * max(hours, one)
         elif self.exchange == 'binance_coinm_futures':
             # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/24) * max(hours, 1.0)
+            return borrowed * (rate/twenty4) * max(hours, one)
         else:
             # TODO-mg: make sure this breaks and can't be squelched
             raise OperationalException("Leverage not available on this exchange")
@@ -612,14 +620,19 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        close_trade = Decimal(self.amount) * Decimal(rate or self.close_rate)  # type: ignore
-        fees = close_trade * Decimal(fee or self.fee_close)
         interest = self.calculate_interest()
+        if self.is_short:
+            amount = Decimal(self.amount) + interest
+        else:
+            amount = Decimal(self.amount) - interest
+
+        close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
+        fees = close_trade * Decimal(fee or self.fee_close)
 
         if (self.is_short):
-            return float(close_trade + fees + interest)
+            return float(close_trade + fees)
         else:
-            return float(close_trade - fees - interest)
+            return float(close_trade - fees)
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None) -> float:

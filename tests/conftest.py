@@ -7,12 +7,10 @@ from datetime import datetime, timedelta
 from functools import reduce
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, PropertyMock
-
 import arrow
 import numpy as np
 import pytest
 from telegram import Chat, Message, Update
-
 from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
@@ -24,12 +22,8 @@ from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6)
-
-
+                                   mock_trade_5, mock_trade_6, short_trade, leverage_trade)
 logging.getLogger('').setLevel(logging.INFO)
-
-
 # Do not mask numpy errors as warnings that no one read, raise the exсeption
 np.seterr(all='raise')
 
@@ -63,13 +57,12 @@ def log_has_re(line, logs):
 
 def get_args(args):
     return Arguments(args).get_parsed_arg()
-
-
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
+
+
 def get_mock_coro(return_value):
     async def mock_coro(*args, **kwargs):
         return return_value
-
     return Mock(wraps=mock_coro)
 
 
@@ -92,7 +85,6 @@ def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> No
     if mock_markets:
         mocker.patch('freqtrade.exchange.Exchange.markets',
                      PropertyMock(return_value=get_markets()))
-
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
@@ -126,7 +118,6 @@ def patch_edge(mocker) -> None:
     # "LTC/BTC",
     # "XRP/BTC",
     # "NEO/BTC"
-
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'NEO/BTC': PairInfo(-0.20, 0.66, 3.71, 0.50, 1.71, 10, 25),
@@ -140,7 +131,6 @@ def get_patched_edge(mocker, config) -> Edge:
     patch_edge(mocker)
     edge = Edge(config)
     return edge
-
 # Functions for recurrent object patching
 
 
@@ -201,28 +191,24 @@ def create_mock_trades(fee, use_db: bool = True):
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
-
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
     add_trade(trade)
-
     trade = mock_trade_2(fee)
     add_trade(trade)
-
     trade = mock_trade_3(fee)
     add_trade(trade)
-
     trade = mock_trade_4(fee)
     add_trade(trade)
-
     trade = mock_trade_5(fee)
     add_trade(trade)
-
     trade = mock_trade_6(fee)
     add_trade(trade)
-
-    # TODO-mg: Add margin trades
-
+    # TODO: margin trades
+    # trade = short_trade(fee)
+    # add_trade(trade)
+    # trade = leverage_trade(fee)
+    # add_trade(trade)
     if use_db:
         Trade.query.session.flush()
 
@@ -234,7 +220,6 @@ def patch_coingekko(mocker) -> None:
     :param mocker: mocker to patch coingekko class
     :return: None
     """
-
     tickermock = MagicMock(return_value={'bitcoin': {'usd': 12345.0}, 'ethereum': {'usd': 12345.0}})
     listmock = MagicMock(return_value=[{'id': 'bitcoin', 'name': 'Bitcoin', 'symbol': 'btc',
                                         'website_slug': 'bitcoin'},
@@ -245,14 +230,13 @@ def patch_coingekko(mocker) -> None:
         'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
         get_price=tickermock,
         get_coins_list=listmock,
-
     )
 
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    # TODO-mg: margin with leverage and/or borrowed?
+    # TODO-mg: trade with leverage and/or borrowed?
 
 
 @pytest.fixture(scope="function")
@@ -943,7 +927,6 @@ def limit_buy_order_canceled_empty(request):
     # Indirect fixture
     # Documentation:
     # https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
-
     exchange_name = request.param
     if exchange_name == 'ftx':
         return {
@@ -1733,7 +1716,6 @@ def edge_conf(default_conf):
         "max_trade_duration_minute": 1440,
         "remove_pumps": False
     }
-
     return conf
 
 
@@ -1791,12 +1773,9 @@ def import_fails() -> None:
         if name in ["filelock", 'systemd.journal', 'uvloop']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
-
     builtins.__import__ = mockedimport
-
     # Run test - then cleanup
     yield
-
     # restore previous importfunction
     builtins.__import__ = realimport
 
@@ -2081,101 +2060,79 @@ def saved_hyperopt_results():
             'is_best': False
             }
     ]
-
     for res in hyperopt_res:
         res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
                                                                          ].total_seconds()
-
     return hyperopt_res
-
 
 # * Margin Tests
 
-@pytest.fixture
-def leveraged_fee():
-    return
-
 
 @pytest.fixture
-def short_fee():
-    return
+def ten_minutes_ago():
+    return datetime.utcnow() - timedelta(hours=0, minutes=10)
 
 
 @pytest.fixture
-def ticker_short():
-    return
-
-
-@pytest.fixture
-def ticker_exit_short_up():
-    return
-
-
-@pytest.fixture
-def ticker_exit_short_down():
-    return
-
-
-@pytest.fixture
-def leveraged_markets():
-    return
+def five_hours_ago():
+    return datetime.utcnow() - timedelta(hours=1, minutes=0)
 
 
 @pytest.fixture(scope='function')
 def limit_short_order_open():
-    return
-
-
-@pytest.fixture(scope='function')
-def limit_short_order(limit_short_order_open):
-    return
-
-
-@pytest.fixture(scope='function')
-def market_short_order():
-    return
-
-
-@pytest.fixture
-def market_short_exit_order():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old():
-    return
-
-
-@pytest.fixture
-def limit_exit_short_order_old():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old_partial():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old_partial_canceled(limit_short_order_old_partial):
-    return
-
-
-@pytest.fixture(scope='function')
-def limit_short_order_canceled_empty(request):
-    return
+    return {
+        'id': 'mocked_limit_short',
+        'type': 'limit',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001173,
+        'amount': 90.99181073,
+        'borrowed': 90.99181073,
+        'filled': 0.0,
+        'cost': 0.00106733393,
+        'remaining': 90.99181073,
+        'status': 'open',
+        'is_short': True
+    }
 
 
 @pytest.fixture
 def limit_exit_short_order_open():
-    return
+    return {
+        'id': 'mocked_limit_exit_short',
+        'type': 'limit',
+        'side': 'buy',
+        'pair': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001099,
+        'amount': 90.99181073,
+        'filled': 0.0,
+        'remaining': 90.99181073,
+        'status': 'open'
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_short_order(limit_short_order_open):
+    order = deepcopy(limit_short_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
 
 
 @pytest.fixture
-def limit_exit_short_order(limit_sell_order_open):
-    return
+def limit_exit_short_order(limit_exit_short_order_open):
+    order = deepcopy(limit_exit_short_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
 
 
 @pytest.fixture
-def short_order_fee():
-    return
+def interest_rate():
+    return MagicMock(return_value=0.0005)

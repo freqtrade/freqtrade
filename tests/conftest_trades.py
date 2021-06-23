@@ -304,4 +304,133 @@ def mock_trade_6(fee):
     trade.orders.append(o)
     return trade
 
-# TODO-mg: Mock orders for leveraged and short  trades
+
+#! TODO Currently the following short_trade test and leverage_trade test will fail
+
+
+def short_order():
+    return {
+        'id': '1235',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'sell',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+        'leverage': 5.0,
+        'isShort': True
+    }
+
+
+def exit_short_order():
+    return {
+        'id': '12366',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.128,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+        'leverage': 5.0,
+        'isShort': True
+    }
+
+
+def short_trade(fee):
+    """
+    Closed trade...
+    """
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=123.0,  # TODO-mg: In BTC?
+        amount_requested=123.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        close_rate=0.128,
+        close_profit=0.005,  # TODO-mg: Would this be -0.005 or -0.025
+        close_profit_abs=0.000584127,
+        exchange='binance',
+        is_open=False,
+        open_order_id='dry_run_exit_short_12345',
+        strategy='DefaultStrategy',
+        timeframe=5,
+        sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
+        close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
+        # borrowed=
+        isShort=True
+    )
+    o = Order.parse_from_ccxt_object(short_order(), 'ETC/BTC', 'sell')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object(exit_short_order(), 'ETC/BTC', 'sell')
+    trade.orders.append(o)
+    return trade
+
+
+def leverage_order():
+    return {
+        'id': '1235',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'buy',
+        'type': 'limit',
+        'price': 0.123,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+        'leverage': 5.0
+    }
+
+
+def leverage_order_sell():
+    return {
+        'id': '12366',
+        'symbol': 'ETC/BTC',
+        'status': 'closed',
+        'side': 'sell',
+        'type': 'limit',
+        'price': 0.128,
+        'amount': 123.0,
+        'filled': 123.0,
+        'remaining': 0.0,
+        'leverage': 5.0,
+        'isShort': True
+    }
+
+
+def leverage_trade(fee):
+    """
+    Closed trade...
+    """
+    trade = Trade(
+        pair='ETC/BTC',
+        stake_amount=0.001,
+        amount=615.0,
+        amount_requested=615.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.123,
+        close_rate=0.128,
+        close_profit=0.005,  # TODO-mg: Would this be -0.005 or -0.025
+        close_profit_abs=0.000584127,
+        exchange='binance',
+        is_open=False,
+        open_order_id='dry_run_leverage_sell_12345',
+        strategy='DefaultStrategy',
+        timeframe=5,
+        sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
+        close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
+        # borrowed=
+    )
+    o = Order.parse_from_ccxt_object(leverage_order(), 'ETC/BTC', 'sell')
+    trade.orders.append(o)
+    o = Order.parse_from_ccxt_object(leverage_order_sell(), 'ETC/BTC', 'sell')
+    trade.orders.append(o)
+    return trade
