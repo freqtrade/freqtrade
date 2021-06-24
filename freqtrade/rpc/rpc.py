@@ -824,8 +824,8 @@ class RPC:
         )
         if pair not in _data:
             raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
-        from freqtrade.resolvers.strategy_resolver import StrategyResolver
         from freqtrade.data.dataprovider import DataProvider
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
         strategy.dp = DataProvider(config, exchange=None, pairlists=None)
 
