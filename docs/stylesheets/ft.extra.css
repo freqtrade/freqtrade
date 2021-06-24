@@ -22,3 +22,7 @@
     border-width: 1px;
     border-radius: 5px;
 }
+
+@media screen and (max-width: 700px) {
+    #widget-wrapper { display: none; }
+}
