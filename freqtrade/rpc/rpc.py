@@ -825,7 +825,10 @@ class RPC:
         if pair not in _data:
             raise RPCException(f"No data for {pair}, {timeframe} in {timerange} found.")
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        from freqtrade.data.dataprovider import DataProvider
         strategy = StrategyResolver.load_strategy(config)
+        strategy.dp = DataProvider(config, exchange=None, pairlists=None)
+
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 
         return RPC._convert_dataframe_to_dict(strategy.get_strategy_name(), pair, timeframe,
