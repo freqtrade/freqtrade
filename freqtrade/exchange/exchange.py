@@ -475,11 +475,11 @@ class Exchange:
         return endpoint in self._api.has and self._api.has[endpoint]
 
     def amount_to_precision(self, pair: str, amount: float) -> float:
-        '''
+        """
         Returns the amount to buy or sell to a precision the Exchange accepts
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
-        '''
+        """
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -489,14 +489,14 @@ class Exchange:
         return amount
 
     def price_to_precision(self, pair: str, price: float) -> float:
-        '''
+        """
         Returns the price rounded up to the precision the Exchange accepts.
         Partial Re-implementation of ccxt internal method decimal_to_precision(),
         which does not support rounding up
         TODO: If ccxt supports ROUND_UP for decimal_to_precision(), we could remove this and
         align with amount_to_precision().
         Rounds up
-        '''
+        """
         if self.markets[pair]['precision']['price']:
             # price = float(decimal_to_precision(price, rounding_mode=ROUND,
             #                                    precision=self.markets[pair]['precision']['price'],
@@ -796,6 +796,8 @@ class Exchange:
         """
         Simple wrapper calling either fetch_order or fetch_stoploss_order depending on
         the stoploss_order parameter
+        :param order_id: OrderId to fetch order
+        :param pair: Pair corresponding to order_id
         :param stoploss_order: If true, uses fetch_stoploss_order, otherwise fetch_order.
         """
         if stoploss_order:

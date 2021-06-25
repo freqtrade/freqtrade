@@ -507,9 +507,8 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
 def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     Generate summary table per strategy
+    :param strategy_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :param stake_currency: stake-currency - used to correctly name headers
-    :param max_open_trades: Maximum allowed open trades used for backtest
-    :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
