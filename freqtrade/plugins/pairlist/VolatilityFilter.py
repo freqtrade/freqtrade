@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 class VolatilityFilter(IPairList):
-    '''
+    """
     Filters pairs by volatility
-    '''
+    """
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],

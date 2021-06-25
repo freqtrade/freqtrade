@@ -349,7 +349,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
         and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
         of 2 seconds for a buy to happen on an old signal.
-        :param: pair: "Pair to check"
+        :param pair: "Pair to check"
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
         """
@@ -733,7 +733,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Based on TA indicators, populates the buy signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param metadata: Additional information dictionary, with details like the
+            currently traded pair
         :return: DataFrame with buy column
         """
         logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
@@ -750,7 +751,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Based on TA indicators, populates the sell signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param metadata: Additional information dictionary, with details like the
+            currently traded pair
         :return: DataFrame with sell column
         """
         logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
