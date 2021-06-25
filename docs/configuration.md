@@ -170,7 +170,7 @@ There are several methods to configure how much of the stake currency the bot wi
 #### Minimum trade stake
 
 The minimum stake amount will depend by exchange and pair, and is usually listed in the exchange support pages.
-Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.4$.
+Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.6$.
 
 The minimum stake amount to buy this pair is therefore `20 * 0.6 ~= 12`.
 This exchange has also a limit on USD - where all orders must be > 10$ - which however does not apply in this case.
