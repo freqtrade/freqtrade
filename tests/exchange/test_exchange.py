@@ -1869,7 +1869,8 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError):
         exchange.get_sell_rate(pair, True)
-    assert log_has_re(r"Sell Price at location 1 from orderbook could not be determined\..*", caplog)
+    assert log_has_re(r"Sell Price at location 1 from orderbook could not be determined\..*",
+                      caplog)
 
 
 def test_get_sell_rate_exception(default_conf, mocker, caplog):

@@ -193,7 +193,7 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
     ask_strategy = conf.get('ask_strategy', {})
     ob_min = ask_strategy.get('order_book_min')
     ob_max = ask_strategy.get('order_book_max')
-    if ob_min is not None and ob_max is not None:
+    if ob_min is not None and ob_max is not None and ask_strategy.get('use_order_book'):
         if ob_min != ob_max:
             raise OperationalException(
                 "Using order_book_max != order_book_min in ask_strategy is no longer supported."

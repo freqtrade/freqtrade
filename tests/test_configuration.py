@@ -935,6 +935,23 @@ def test_validate_protections(default_conf, protconf, expected):
         validate_config_consistency(conf)
 
 
+def test_validate_ask_orderbook(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['ask_strategy']['use_order_book'] = True
+    conf['ask_strategy']['order_book_min'] = 2
+    conf['ask_strategy']['order_book_max'] = 2
+
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Please use `order_book_top` instead of.*", caplog)
+    assert conf['ask_strategy']['order_book_top'] == 2
+
+    conf['ask_strategy']['order_book_max'] = 5
+
+    with pytest.raises(OperationalException,
+                       match=r"Using order_book_max != order_book_min in ask_strategy.*"):
+        validate_config_consistency(conf)
+
+
 def test_load_config_test_comments() -> None:
     """
     Load config with comments

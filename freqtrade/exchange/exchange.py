@@ -1071,8 +1071,8 @@ class Exchange:
                 rate = order_book[f"{ask_strategy['price_side']}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    "Sell Price at location from orderbook could not be determined."
-                    f"Orderbook: {order_book}"
+                    f"Sell Price at location {order_book_top} from orderbook could not be "
+                    f"determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
         else:
