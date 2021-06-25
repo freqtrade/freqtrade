@@ -288,8 +288,8 @@ def plot_area(fig, row: int, data: pd.DataFrame, indicator_a: str,
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
-    :param indicator_a: indicator name as populated in stragetie
-    :param indicator_b: indicator name as populated in stragetie
+    :param indicator_a: indicator name as populated in strategy
+    :param indicator_b: indicator name as populated in strategy
     :param label: label for the filled area
     :param fill_color: color to be used for the filled area
     :return: fig with added  filled_traces plot

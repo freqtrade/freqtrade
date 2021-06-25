@@ -47,7 +47,7 @@ class InvalidOrderException(ExchangeError):
 class RetryableOrderError(InvalidOrderException):
     """
     This is returned when the order is not found.
-    This Error will be repeated with increasing backof (in line with DDosError).
+    This Error will be repeated with increasing backoff (in line with DDosError).
     """
 
 
@@ -75,6 +75,6 @@ class DDosProtection(TemporaryError):
 
 class StrategyError(FreqtradeException):
     """
-    Errors with custom user-code deteced.
+    Errors with custom user-code detected.
     Usually caused by errors in the strategy.
     """

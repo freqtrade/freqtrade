@@ -460,7 +460,7 @@ class Configuration:
             pairs_file = Path(self.args["pairs_file"])
             logger.info(f'Reading pairs file "{pairs_file}".')
             # Download pairs from the pairs file if no config is specified
-            # or if pairs file is specified explicitely
+            # or if pairs file is specified explicitly
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
             config['pairs'] = load_file(pairs_file)

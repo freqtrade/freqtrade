@@ -183,7 +183,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     """
     Applies selections to the template and writes the result to config_path
     :param config_path: Path object for new config file. Should not exist yet
-    :param selecions: Dict containing selections taken by the user.
+    :param selections: Dict containing selections taken by the user.
     """
     from jinja2.exceptions import TemplateNotFound
     try:
@@ -213,7 +213,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
 def start_new_config(args: Dict[str, Any]) -> None:
     """
     Create a new strategy from a template
-    Asking the user questions to fill out the templateaccordingly.
+    Asking the user questions to fill out the template accordingly.
     """
 
     config_path = Path(args['config'][0])

@@ -242,7 +242,7 @@ class CategoricalParameter(BaseParameter):
 
 class HyperStrategyMixin(object):
     """
-    A helper base class which allows HyperOptAuto class to reuse implementations of of buy/sell
+    A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
      strategy logic.
     """
 
@@ -258,7 +258,7 @@ class HyperStrategyMixin(object):
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
-        Find all optimizeable parameters and return (name, attr) iterator.
+        Find all optimizable parameters and return (name, attr) iterator.
         :param category:
         :return:
         """
@@ -310,7 +310,7 @@ class HyperStrategyMixin(object):
 
     def _load_params(self, params: dict, space: str, hyperopt: bool = False) -> None:
         """
-        Set optimizeable parameter values.
+        Set optimizable parameter values.
         :param params: Dictionary with new parameter values.
         """
         if not params:
