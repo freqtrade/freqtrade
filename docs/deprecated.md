@@ -33,3 +33,8 @@ The old section of configuration parameters (`"pairlist"`) has been deprecated i
 ### deprecation of bidVolume and askVolume from volume-pairlist
 
 Since only quoteVolume can be compared between assets, the other options (bidVolume, askVolume) have been deprecated in 2020.4, and have been removed in 2020.9.
+
+### Using order book steps for sell price
+
+Using `order_book_min` and `order_book_max` used to allow stepping the orderbook and trying to find the next ROI slot - trying to place sell-orders early.
+As this does however increase risk and provides no benefit, it's been removed for maintainability purposes in 2021.6.
