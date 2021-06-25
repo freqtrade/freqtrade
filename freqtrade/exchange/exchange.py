@@ -235,7 +235,7 @@ class Exchange:
     def ohlcv_candle_limit(self, timeframe: str) -> int:
         """
         Exchange ohlcv candle limit
-        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limts
+        Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
         :return: Candle limit as integer

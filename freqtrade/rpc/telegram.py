@@ -103,7 +103,7 @@ class Telegram(RPCHandler):
         # do not allow commands with mandatory arguments and critical cmds
         # like /forcesell and /forcebuy
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
-        #       this needs refacoring of the whole telegram module (same
+        #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
                                  r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
@@ -611,7 +611,7 @@ class Telegram(RPCHandler):
                     curr_output = (f"*{curr['currency']}:* not showing <{balance_dust_level} "
                                    f"{curr['stake']} amount \n")
 
-                # Handle overflowing messsage length
+                # Handle overflowing message length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     self._send_msg(output)
                     output = curr_output

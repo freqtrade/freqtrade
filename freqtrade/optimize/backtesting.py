@@ -445,7 +445,7 @@ class Backtesting:
                 for trade in open_trades[pair]:
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
-                    # Sell occured
+                    # Sell occurred
                     if trade_entry:
                         # logger.debug(f"{pair} - Backtesting sell {trade}")
                         open_trade_count -= 1

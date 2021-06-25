@@ -61,7 +61,7 @@ class Worker:
 
     def _notify(self, message: str) -> None:
         """
-        Removes the need to verify in all occurances if sd_notify is enabled
+        Removes the need to verify in all occurrences if sd_notify is enabled
         :param message: Message to send to systemd if it's enabled.
         """
         if self._sd_notify:

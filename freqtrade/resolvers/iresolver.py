@@ -163,7 +163,7 @@ class IResolver:
         :param directory: Path to search
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
-        :return: List of dicts containing 'name', 'class' and 'location' entires
+        :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
         objects = []
