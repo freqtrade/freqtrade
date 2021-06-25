@@ -141,7 +141,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 
 ### Parameters in the strategy
 
-The following parameters can be set in either configuration file or strategy.
+The following parameters can be set in configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
 * `minimal_roi`
