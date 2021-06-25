@@ -39,8 +39,7 @@
     "ask_strategy":{
         "price_side": "ask",
         "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
+        "order_book_top": 1,
         "use_sell_signal": true,
         "sell_profit_only": false,
         "sell_profit_offset": 0.0,

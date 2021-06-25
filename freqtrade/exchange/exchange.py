@@ -997,15 +997,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _order_book_gen(self, pair: str, side: str, order_book_max: int = 1,
-                        order_book_min: int = 1):
-        """
-        Helper generator to query orderbook in loop (used for early sell-order placing)
-        """
-        order_book = self.fetch_l2_order_book(pair, order_book_max)
-        for i in range(order_book_min, order_book_max + 1):
-            yield order_book[side][i - 1][0]
-
     def get_buy_rate(self, pair: str, refresh: bool) -> float:
         """
         Calculates bid target between current ask price and last price
@@ -1074,10 +1065,15 @@ class Exchange:
             logger.info(
                 f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
             )
+            order_book_top = ask_strategy.get('order_book_top', 1)
+            order_book = self.fetch_l2_order_book(pair, order_book_top)
             try:
-                rate = next(self._order_book_gen(pair, f"{ask_strategy['price_side']}s"))
+                rate = order_book[f"{ask_strategy['price_side']}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
-                logger.warning("Sell Price at location from orderbook could not be determined.")
+                logger.warning(
+                    "Sell Price at location from orderbook could not be determined."
+                    f"Orderbook: {order_book}"
+                )
                 raise PricingError from e
         else:
             ticker = self.fetch_ticker(pair)
