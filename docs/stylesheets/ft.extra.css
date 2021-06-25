@@ -23,6 +23,6 @@
     border-radius: 5px;
 }
 
-@media screen and (max-width: calc(76.25em + 1px)) {
+@media screen and (max-width: calc(76.25em - 1px)) {
     #widget-wrapper { display: none; }
 }
