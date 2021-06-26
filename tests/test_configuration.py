@@ -1249,8 +1249,8 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
 
     # Both new and deprecated settings exists
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
@@ -1261,8 +1261,8 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
@@ -1275,10 +1275,20 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Delete deprecated setting
     del default_conf['sectionB']['deprecated_setting']
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
+
+    caplog.clear()
+    # Test moving to root
+    default_conf['sectionB']['deprecated_setting2'] = "DeadBeef"
+    process_deprecated_setting(default_conf,
+                               'sectionB', 'deprecated_setting2',
+                               None, 'new_setting')
+
+    assert log_has_re('DEPRECATED', caplog)
+    assert default_conf['new_setting']
 
 
 def test_process_removed_setting(mocker, default_conf, caplog):
