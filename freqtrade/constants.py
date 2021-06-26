@@ -163,7 +163,7 @@ CONF_SCHEMA = {
                     }
                 },
             },
-            'required': ['ask_last_balance']
+            'required': ['price_side']
         },
         'ask_strategy': {
             'type': 'object',
@@ -181,7 +181,8 @@ CONF_SCHEMA = {
                 'sell_profit_only': {'type': 'boolean'},
                 'sell_profit_offset': {'type': 'number'},
                 'ignore_roi_if_buy_signal': {'type': 'boolean'}
-            }
+            },
+            'required': ['price_side']
         },
         'order_types': {
             'type': 'object',

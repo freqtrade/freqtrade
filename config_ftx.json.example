@@ -13,7 +13,7 @@
     },
     "bid_strategy": {
         "ask_last_balance": 0.0,
-        "use_order_book": false,
+        "use_order_book": true,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
@@ -21,7 +21,7 @@
         }
     },
     "ask_strategy": {
-        "use_order_book": false,
+        "use_order_book": true,
         "order_book_top": 1,
         "use_sell_signal": true,
         "sell_profit_only": false,
