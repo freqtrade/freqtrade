@@ -878,15 +878,15 @@ def test_validate_tsl(default_conf):
 
 
 def test_validate_edge2(edge_conf):
-    edge_conf.update({"ask_strategy": {
+    edge_conf.update({
         "use_sell_signal": True,
-    }})
+    })
     # Passes test
     validate_config_consistency(edge_conf)
 
-    edge_conf.update({"ask_strategy": {
+    edge_conf.update({
         "use_sell_signal": False,
-    }})
+    })
     with pytest.raises(OperationalException, match="Edge requires `use_sell_signal` to be True, "
                        "otherwise no sells will happen."):
         validate_config_consistency(edge_conf)
