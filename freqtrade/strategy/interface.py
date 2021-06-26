@@ -543,10 +543,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
-        ask_strategy = self.config.get('ask_strategy', {})
 
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and ask_strategy.get('ignore_roi_if_buy_signal', False))
+        roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
@@ -556,11 +555,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (ask_strategy.get('sell_profit_only', False)
-                and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
+        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif ask_strategy.get('use_sell_signal', True) and not buy:
+        elif self.use_sell_signal and not buy:
             if sell:
                 sell_signal = SellType.SELL_SIGNAL
             else:

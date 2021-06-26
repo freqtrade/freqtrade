@@ -134,6 +134,11 @@ CONF_SCHEMA = {
         'trailing_stop_positive': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_stop_positive_offset': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'trailing_only_offset_is_reached': {'type': 'boolean'},
+        'use_sell_signal': {'type': 'boolean'},
+        'sell_profit_only': {'type': 'boolean'},
+        'sell_profit_offset': {'type': 'number'},
+        'ignore_roi_if_buy_signal': {'type': 'boolean'},
+        'ignore_buying_expired_candle_after': {'type': 'number'},
         'bot_name': {'type': 'string'},
         'unfilledtimeout': {
             'type': 'object',
@@ -177,10 +182,6 @@ CONF_SCHEMA = {
                 },
                 'use_order_book': {'type': 'boolean'},
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
-                'use_sell_signal': {'type': 'boolean'},
-                'sell_profit_only': {'type': 'boolean'},
-                'sell_profit_offset': {'type': 'number'},
-                'ignore_roi_if_buy_signal': {'type': 'boolean'}
             },
             'required': ['price_side']
         },

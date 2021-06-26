@@ -14,6 +14,10 @@
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
+    "use_sell_signal": true,
+    "sell_profit_only": false,
+    "sell_profit_offset": 0.0,
+    "ignore_roi_if_buy_signal": false,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -39,11 +43,7 @@
     "ask_strategy":{
         "price_side": "ask",
         "use_order_book": true,
-        "order_book_top": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": false
+        "order_book_top": 1
     },
     "order_types": {
         "buy": "limit",

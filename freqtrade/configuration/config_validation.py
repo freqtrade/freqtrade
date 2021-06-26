@@ -150,7 +150,7 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if not conf.get('ask_strategy', {}).get('use_sell_signal', True):
+    if not conf.get('use_sell_signal', True):
         raise OperationalException(
             "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."
         )
