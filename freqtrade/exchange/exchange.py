@@ -1063,8 +1063,7 @@ class Exchange:
 
         ask_strategy = self._config.get('ask_strategy', {})
         if ask_strategy.get('use_order_book', False):
-            # This code is only used for notifications, selling uses the generator directly
-            logger.info(
+            logger.debug(
                 f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
             )
             order_book_top = ask_strategy.get('order_book_top', 1)
