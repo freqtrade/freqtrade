@@ -1128,11 +1128,10 @@ def test_pairlist_resolving_fallback(mocker):
     assert config['datadir'] == Path.cwd() / "user_data/data/binance"
 
 
-@pytest.mark.skip(reason='Currently no deprecated / moved sections')
 # The below is kept as a sample for the future.
 @pytest.mark.parametrize("setting", [
         ("ask_strategy", "use_sell_signal", True,
-         "experimental", "use_sell_signal", False),
+         None, "use_sell_signal", False),
     ])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
@@ -1141,10 +1140,14 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     # (they may not exist in the config)
     default_conf[setting[0]] = {}
     default_conf[setting[3]] = {}
-    # Assign new setting
-    default_conf[setting[0]][setting[1]] = setting[2]
+
     # Assign deprecated setting
-    default_conf[setting[3]][setting[4]] = setting[5]
+    default_conf[setting[0]][setting[1]] = setting[2]
+    # Assign new setting
+    if setting[3]:
+        default_conf[setting[3]][setting[4]] = setting[5]
+    else:
+        default_conf[setting[4]] = setting[5]
 
     # New and deprecated settings are conflicting ones
     with pytest.raises(OperationalException, match=r'DEPRECATED'):
@@ -1153,13 +1156,20 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     caplog.clear()
 
     # Delete new setting
-    del default_conf[setting[0]][setting[1]]
+    if setting[3]:
+        del default_conf[setting[3]][setting[4]]
+    else:
+        del default_conf[setting[4]]
 
     process_temporary_deprecated_settings(default_conf)
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
-    assert default_conf[setting[0]][setting[1]] == setting[5]
+    if setting[3]:
+        assert default_conf[setting[3]][setting[4]] == setting[2]
+    else:
+        assert default_conf[setting[4]] == setting[2]
+
 
 
 @pytest.mark.parametrize("setting", [
@@ -1209,16 +1219,16 @@ def test_check_conflicting_settings(mocker, default_conf, caplog):
     # New and deprecated settings are conflicting ones
     with pytest.raises(OperationalException, match=r'DEPRECATED'):
         check_conflicting_settings(default_conf,
-                                   'sectionA', 'new_setting',
-                                   'sectionB', 'deprecated_setting')
+                                   'sectionB', 'deprecated_setting',
+                                   'sectionA', 'new_setting')
 
     caplog.clear()
 
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
     check_conflicting_settings(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert 'new_setting' not in default_conf['sectionA']
 
@@ -1229,8 +1239,8 @@ def test_check_conflicting_settings(mocker, default_conf, caplog):
     # Delete deprecated setting
     del default_conf['sectionB']['deprecated_setting']
     check_conflicting_settings(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
 
@@ -1242,8 +1252,6 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # (they may not exist in the config)
     default_conf['sectionA'] = {}
     default_conf['sectionB'] = {}
-    # Assign new setting
-    default_conf['sectionA']['new_setting'] = 'valA'
     # Assign deprecated setting
     default_conf['sectionB']['deprecated_setting'] = 'valB'
 
