@@ -290,8 +290,7 @@ def get_default_conf(testdatadir):
         },
         "ask_strategy": {
             "use_order_book": False,
-            "order_book_min": 1,
-            "order_book_max": 1
+            "order_book_top": 1,
         },
         "exchange": {
             "name": "binance",

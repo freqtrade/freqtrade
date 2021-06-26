@@ -1844,8 +1844,7 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     # Test orderbook mode
     default_conf['ask_strategy']['price_side'] = side
     default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_min'] = 1
-    default_conf['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['order_book_top'] = 1
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     exchange = get_patched_exchange(mocker, default_conf)
@@ -1862,8 +1861,7 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     # Test orderbook mode
     default_conf['ask_strategy']['price_side'] = 'ask'
     default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_min'] = 1
-    default_conf['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['order_book_top'] = 1
     pair = "ETH/BTC"
     # Test What happens if the exchange returns an empty orderbook.
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
@@ -1871,7 +1869,8 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError):
         exchange.get_sell_rate(pair, True)
-    assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
+    assert log_has_re(r"Sell Price at location 1 from orderbook could not be determined\..*",
+                      caplog)
 
 
 def test_get_sell_rate_exception(default_conf, mocker, caplog):

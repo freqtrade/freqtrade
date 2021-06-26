@@ -3990,8 +3990,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     default_conf['exchange']['name'] = 'binance'
     default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_min'] = 1
-    default_conf['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['order_book_top'] = 1
     default_conf['telegram']['enabled'] = False
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -4027,7 +4026,8 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
                  return_value={'bids': [[]], 'asks': [[]]})
     with pytest.raises(PricingError):
         freqtrade.handle_trade(trade)
-    assert log_has('Sell Price at location 1 from orderbook could not be determined.', caplog)
+    assert log_has_re(r'Sell Price at location 1 from orderbook could not be determined\..*',
+                      caplog)
 
 
 def test_startup_state(default_conf, mocker):
