@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import locale
 import logging
 import re
 from datetime import datetime
@@ -14,6 +13,7 @@ from filelock import Timeout
 
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_hyperopt
 from freqtrade.data.history import load_data
+from freqtrade.enums import RunMode, SellType
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt import Hyperopt
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
@@ -21,9 +21,7 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
-from freqtrade.state import RunMode
 from freqtrade.strategy.hyper import IntParameter
-from freqtrade.strategy.interface import SellType
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
@@ -640,9 +638,9 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'loss': 1.9147239021396234,
         'results_explanation': ('     4 trades. 4/0/0 Wins/Draws/Losses. '
                                 'Avg profit   0.77%. Median profit   0.71%. Total profit  '
-                                '0.00003100 BTC (   0.00\N{GREEK CAPITAL LETTER SIGMA}%). '
+                                '0.00003100 BTC (   0.00%). '
                                 'Avg duration 0:50:00 min.'
-                                ).encode(locale.getpreferredencoding(), 'replace').decode('utf-8'),
+                                ),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
                                    'fastd-enabled': True,
@@ -1070,7 +1068,7 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, method, space) -> No
         hyperopt.start()
 
 
-def test_print_epoch_details(capsys):
+def test_show_epoch_details(capsys):
     test_result = {
         'params_details': {
             'trailing': {
@@ -1092,7 +1090,7 @@ def test_print_epoch_details(capsys):
         'is_best': True
     }
 
-    HyperoptTools.print_epoch_details(test_result, 5, False, no_header=True)
+    HyperoptTools.show_epoch_details(test_result, 5, False, no_header=True)
     captured = capsys.readouterr()
     assert '# Trailing stop:' in captured.out
     # re.match(r"Pairs for .*", captured.out)

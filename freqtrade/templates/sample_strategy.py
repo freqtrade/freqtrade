@@ -329,7 +329,7 @@ class SampleStrategy(IStrategy):
         """
         # first check if dataprovider is available
         if self.dp:
-            if self.dp.runmode in ('live', 'dry_run'):
+            if self.dp.runmode.value in ('live', 'dry_run'):
                 ob = self.dp.orderbook(metadata['pair'], 1)
                 dataframe['best_bid'] = ob['bids'][0][0]
                 dataframe['best_ask'] = ob['asks'][0][0]

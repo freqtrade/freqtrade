@@ -8,12 +8,12 @@ import pytest
 from numpy import isnan
 
 from freqtrade.edge import PairInfo
+from freqtrade.enums import State
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
 from freqtrade.rpc import RPC, RPCException
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.state import State
 from tests.conftest import create_mock_trades, get_patched_freqtradebot, patch_get_signal
 
 
@@ -109,7 +109,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'exchange': 'binance',
     }
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
@@ -217,7 +217,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.41% (-0.06)' == result[0][3]
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
@@ -422,18 +422,18 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] == '0:00:00'
+    assert stats['avg_duration'] in ('0:00:00', '0:00:01')
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
 
     # Test non-available pair
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2
     assert stats['first_trade_date'] == 'just now'
     assert stats['latest_trade_date'] == 'just now'
-    assert stats['avg_duration'] == '0:00:00'
+    assert stats['avg_duration'] in ('0:00:00', '0:00:01')
     assert stats['best_pair'] == 'ETH/BTC'
     assert prec_satoshi(stats['best_rate'], 6.2)
     assert isnan(stats['profit_all_coin'])
@@ -679,6 +679,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
                 'filled': 0.0,
             }
         ),
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
         get_fee=fee,
     )
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=1000)
@@ -703,8 +704,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
     freqtradebot.enter_positions()
-    msg = rpc._rpc_forcesell('1')
-    assert msg == {'result': 'Created sell order for trade 1.'}
+    msg = rpc._rpc_forcesell('2')
+    assert msg == {'result': 'Created sell order for trade 2.'}
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
@@ -715,9 +716,11 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
+    mocker.patch(
+        'freqtrade.exchange.Exchange._is_dry_limit_order_filled', MagicMock(return_value=False))
     freqtradebot.enter_positions()
     # make an limit-buy open trade
-    trade = Trade.query.filter(Trade.id == '1').first()
+    trade = Trade.query.filter(Trade.id == '3').first()
     filled_amount = trade.amount / 2
     # Fetch order - it's open first, and closed after cancel_order is called.
     mocker.patch(
@@ -738,7 +741,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     # and trade amount is updated
-    rpc._rpc_forcesell('1')
+    rpc._rpc_forcesell('3')
     assert cancel_order_mock.call_count == 1
     assert trade.amount == filled_amount
 
@@ -766,8 +769,8 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         }
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
-    msg = rpc._rpc_forcesell('2')
-    assert msg == {'result': 'Created sell order for trade 2.'}
+    msg = rpc._rpc_forcesell('4')
+    assert msg == {'result': 'Created sell order for trade 4.'}
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
 

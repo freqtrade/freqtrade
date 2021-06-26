@@ -17,6 +17,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin
@@ -26,7 +27,7 @@ from freqtrade.persistence import LocalTrade, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple, SellType
+from freqtrade.strategy.interface import IStrategy, SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -136,7 +137,7 @@ class Backtesting:
             if hasattr(strategy, 'protections'):
                 conf = deepcopy(conf)
                 conf['protections'] = strategy.protections
-            self.protections = ProtectionManager(conf)
+            self.protections = ProtectionManager(self.config, strategy.protections)
 
     def load_bt_data(self) -> Tuple[Dict[str, DataFrame], TimeRange]:
         """
@@ -223,6 +224,22 @@ class Backtesting:
                 # possibly due to a cancelled trade exit.
                 # sell at open price.
                 return sell_row[OPEN_IDX]
+
+            # Special case: trailing triggers within same candle as trade opened. Assume most
+            # pessimistic price movement, which is moving just enough to arm stoploss and
+            # immediately going down to stop price.
+            if (sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0
+                    and self.strategy.trailing_stop_positive):
+                if self.strategy.trailing_only_offset_is_reached:
+                    # Worst case: price reaches stop_positive_offset and dives down.
+                    stop_rate = (sell_row[OPEN_IDX] *
+                                 (1 + abs(self.strategy.trailing_stop_positive_offset) -
+                                 abs(self.strategy.trailing_stop_positive)))
+                else:
+                    # Worst case: price ticks tiny bit above open and dives down.
+                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(self.strategy.trailing_stop_positive))
+                    assert stop_rate < sell_row[HIGH_IDX]
+                return stop_rate
 
             # Set close_rate to stoploss
             return trade.stop_loss
@@ -428,7 +445,7 @@ class Backtesting:
                 for trade in open_trades[pair]:
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
-                    # Sell occured
+                    # Sell occurred
                     if trade_entry:
                         # logger.debug(f"{pair} - Backtesting sell {trade}")
                         open_trade_count -= 1
@@ -519,7 +536,7 @@ class Backtesting:
             stats = generate_backtest_stats(data, self.all_results,
                                             min_date=min_date, max_date=max_date)
 
-            if self.config.get('export', False):
+            if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], stats)
 
             # Show backtest results

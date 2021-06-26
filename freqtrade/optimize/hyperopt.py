@@ -469,8 +469,8 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
-            HyperoptTools.print_epoch_details(self.current_best_epoch, self.total_epochs,
-                                              self.print_json)
+            HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
+                                             self.print_json)
         else:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.

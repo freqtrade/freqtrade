@@ -12,6 +12,7 @@ PROCESS_THROTTLE_SECS = 5  # sec
 HYPEROPT_EPOCH = 100  # epochs
 RETRY_TIMEOUT = 30  # sec
 TIMEOUT_UNITS = ['minutes', 'seconds']
+EXPORT_OPTIONS = ['none', 'trades']
 DEFAULT_DB_PROD_URL = 'sqlite:///tradesv3.sqlite'
 DEFAULT_DB_DRYRUN_URL = 'sqlite:///tradesv3.dryrun.sqlite'
 UNLIMITED_STAKE_AMOUNT = 'unlimited'
@@ -61,7 +62,7 @@ DUST_PER_COIN = {
 }
 
 
-# Soure files with destination directories within user-directory
+# Source files with destination directories within user-directory
 USER_DATA_FILES = {
     'sample_strategy.py': USERPATH_STRATEGIES,
     'sample_hyperopt_advanced.py': USERPATH_HYPEROPTS,
@@ -260,7 +261,13 @@ CONF_SCHEMA = {
                                      'enum': TELEGRAM_SETTING_OPTIONS,
                                      'default': 'off'
                                      },
-                        'sell': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
+                        'sell': {
+                            'type': ['string', 'object'],
+                            'additionalProperties': {
+                                'type': 'string',
+                                'enum': TELEGRAM_SETTING_OPTIONS
+                            }
+                        },
                         'sell_cancel': {'type': 'string', 'enum': TELEGRAM_SETTING_OPTIONS},
                         'sell_fill': {
                             'type': 'string',
@@ -268,7 +275,8 @@ CONF_SCHEMA = {
                             'default': 'off'
                             },
                     }
-                }
+                },
+                'reload': {'type': 'boolean'},
             },
             'required': ['enabled', 'token', 'chat_id'],
         },
@@ -302,6 +310,7 @@ CONF_SCHEMA = {
             'required': ['enabled', 'listen_ip_address', 'listen_port', 'username', 'password']
         },
         'db_url': {'type': 'string'},
+        'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},

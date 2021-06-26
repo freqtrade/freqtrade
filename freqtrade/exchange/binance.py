@@ -68,6 +68,7 @@ class Binance(Exchange):
                                            amount=amount, price=rate, params=params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
+            self._log_exchange_response('create_stoploss_order', order)
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(

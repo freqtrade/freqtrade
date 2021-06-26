@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 
 class ProtectionManager():
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: Dict, protections: List) -> None:
         self._config = config
 
         self._protection_handlers: List[IProtection] = []
-        for protection_handler_config in self._config.get('protections', []):
+        for protection_handler_config in protections:
             protection_handler = ProtectionResolver.load_protection(
                 protection_handler_config['method'],
                 config=config,

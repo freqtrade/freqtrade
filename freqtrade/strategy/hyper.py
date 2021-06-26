@@ -14,8 +14,8 @@ with suppress(ImportError):
     from skopt.space import Integer, Real, Categorical
     from freqtrade.optimize.space import SKDecimal
 
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -242,7 +242,7 @@ class CategoricalParameter(BaseParameter):
 
 class HyperStrategyMixin(object):
     """
-    A helper base class which allows HyperOptAuto class to reuse implementations of of buy/sell
+    A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
      strategy logic.
     """
 
@@ -258,7 +258,7 @@ class HyperStrategyMixin(object):
 
     def enumerate_parameters(self, category: str = None) -> Iterator[Tuple[str, BaseParameter]]:
         """
-        Find all optimizeable parameters and return (name, attr) iterator.
+        Find all optimizable parameters and return (name, attr) iterator.
         :param category:
         :return:
         """
@@ -273,11 +273,12 @@ class HyperStrategyMixin(object):
         for par in params:
             yield par.name, par
 
-    def _detect_parameters(self, category: str) -> Iterator[Tuple[str, BaseParameter]]:
+    @classmethod
+    def detect_parameters(cls, category: str) -> Iterator[Tuple[str, BaseParameter]]:
         """ Detect all parameters for 'category' """
-        for attr_name in dir(self):
+        for attr_name in dir(cls):
             if not attr_name.startswith('__'):  # Ignore internals, not strictly necessary.
-                attr = getattr(self, attr_name)
+                attr = getattr(cls, attr_name)
                 if issubclass(attr.__class__, BaseParameter):
                     if (attr_name.startswith(category + '_')
                             and attr.category is not None and attr.category != category):
@@ -286,6 +287,19 @@ class HyperStrategyMixin(object):
                     if (category == attr.category or
                             (attr_name.startswith(category + '_') and attr.category is None)):
                         yield attr_name, attr
+
+    @classmethod
+    def detect_all_parameters(cls) -> Dict:
+        """ Detect all parameters and return them as a list"""
+        params: Dict = {
+            'buy': list(cls.detect_parameters('buy')),
+            'sell': list(cls.detect_parameters('sell')),
+        }
+        params.update({
+            'count': len(params['buy'] + params['sell'])
+        })
+
+        return params
 
     def _load_hyper_params(self, hyperopt: bool = False) -> None:
         """
@@ -296,14 +310,14 @@ class HyperStrategyMixin(object):
 
     def _load_params(self, params: dict, space: str, hyperopt: bool = False) -> None:
         """
-        Set optimizeable parameter values.
+        Set optimizable parameter values.
         :param params: Dictionary with new parameter values.
         """
         if not params:
             logger.info(f"No params for {space} found, using default values.")
         param_container: List[BaseParameter] = getattr(self, f"ft_{space}_params")
 
-        for attr_name, attr in self._detect_parameters(space):
+        for attr_name, attr in self.detect_parameters(space):
             attr.name = attr_name
             attr.in_space = hyperopt and HyperoptTools.has_space(self.config, space)
             if not attr.category:

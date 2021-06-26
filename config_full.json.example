@@ -165,11 +165,22 @@
             "startup": "on",
             "buy": "on",
             "buy_fill": "on",
-            "sell": "on",
+            "sell": {
+                "roi": "off",
+                "emergency_sell": "off",
+                "force_sell": "off",
+                "sell_signal": "off",
+                "trailing_stop_loss": "off",
+                "stop_loss": "off",
+                "stoploss_on_exchange": "off",
+                "custom_sell": "off"
+            },
             "sell_fill": "on",
             "buy_cancel": "on",
             "sell_cancel": "on"
-        }
+        },
+        "reload": true,
+        "balance_dust_level": 0.01
     },
     "api_server": {
         "enabled": false,

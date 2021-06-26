@@ -6,7 +6,6 @@ This module load custom strategies
 import logging
 import tempfile
 from base64 import urlsafe_b64decode
-from collections import OrderedDict
 from inspect import getfullargspec
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -114,7 +113,9 @@ class StrategyResolver(IResolver):
         - Strategy
         - default (if not None)
         """
-        if attribute in config:
+        if (attribute in config
+                and not isinstance(getattr(type(strategy), 'my_property', None), property)):
+            # Ensure Properties are not overwritten
             setattr(strategy, attribute, config[attribute])
             logger.info("Override strategy '%s' with value in config file: %s.",
                         attribute, config[attribute])
@@ -139,7 +140,7 @@ class StrategyResolver(IResolver):
 
         # Sort and apply type conversions
         if hasattr(strategy, 'minimal_roi'):
-            strategy.minimal_roi = OrderedDict(sorted(
+            strategy.minimal_roi = dict(sorted(
                 {int(key): value for (key, value) in strategy.minimal_roi.items()}.items(),
                 key=lambda t: t[0]))
         if hasattr(strategy, 'stoploss'):

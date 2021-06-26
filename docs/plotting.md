@@ -170,8 +170,14 @@ Additional features when using plot_config include:
 * Specify additional subplots
 * Specify indicator pairs to fill area in between 
 
-The sample plot configuration below specifies fixed colors for the indicators. Otherwise consecutive plots may produce different colorschemes each time, making comparisons difficult.
+The sample plot configuration below specifies fixed colors for the indicators. Otherwise, consecutive plots may produce different color schemes each time, making comparisons difficult.
 It also allows multiple subplots to display both MACD and RSI at the same time.
+
+Plot type can be configured using `type` key. Possible types are:
+* `scatter` corresponding to `plotly.graph_objects.Scatter` class (default).
+* `bar` corresponding to `plotly.graph_objects.Bar` class.
+
+Extra parameters to `plotly.graph_objects.*` constructor can be specified in `plotly` dict.
 
 Sample configuration with inline comments explaining the process:
 
@@ -198,7 +204,8 @@ Sample configuration with inline comments explaining the process:
             # Create subplot MACD
             "MACD": {
                 'macd': {'color': 'blue', 'fill_to': 'macdhist'},
-                'macdsignal': {'color': 'orange'}
+                'macdsignal': {'color': 'orange'},
+                'macdhist': {'type': 'bar', 'plotly': {'opacity': 0.9}}
             },
             # Additional subplot RSI
             "RSI": {
@@ -212,6 +219,9 @@ Sample configuration with inline comments explaining the process:
 !!! Note
     The above configuration assumes that `ema10`, `ema50`, `senkou_a`, `senkou_b`,
     `macd`, `macdsignal`, `macdhist` and `rsi` are columns in the DataFrame created by the strategy.
+
+!!! Warning
+    `plotly` arguments are only supported with plotly library and will not work with freq-ui.
 
 ## Plot profit
 
@@ -265,6 +275,7 @@ optional arguments:
                         (backtest file)) Default: file
   -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
+  --auto-open           Automatically open generated plot.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

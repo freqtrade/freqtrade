@@ -8,10 +8,10 @@ from typing import Any, Dict, NamedTuple
 import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import LocalTrade, Trade
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)

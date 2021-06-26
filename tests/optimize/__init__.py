@@ -3,8 +3,8 @@ from typing import Dict, List, NamedTuple, Optional
 import arrow
 from pandas import DataFrame
 
+from freqtrade.enums import SellType
 from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.strategy.interface import SellType
 
 
 tests_start_time = arrow.get(2018, 10, 3)

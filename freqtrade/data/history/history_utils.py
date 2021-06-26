@@ -113,6 +113,7 @@ def refresh_data(datadir: Path,
     :param timeframe: Timeframe (e.g. "5m")
     :param pairs: List of pairs to load
     :param exchange: Exchange object
+    :param data_format: dataformat to use
     :param timerange: Limit data to be loaded to this timerange
     """
     data_handler = get_datahandler(datadir, data_format)

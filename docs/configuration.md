@@ -102,10 +102,11 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
 | `exchange.skip_pair_validation` | Skip pairlist validation on startup.<br>*Defaults to `false`<br> **Datatype:** Boolean
 | `exchange.skip_open_order_update` | Skips open order updates on startup should the exchange cause problems. Only relevant in live conditions.<br>*Defaults to `false`<br> **Datatype:** Boolean
+| `exchange.log_responses` | Log relevant exchange responses. For debug mode only - use with care.<br>*Defaults to `false`<br> **Datatype:** Boolean
 | `edge.*` | Please refer to [edge configuration document](edge.md) for detailed explanation.
 | `experimental.block_bad_exchanges` | Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `pairlists` | Define one or more pairlists to be used. [More information](plugins.md#pairlists-and-pairlist-handlers). <br>*Defaults to `StaticPairList`.*  <br> **Datatype:** List of Dicts
-| `protections` | Define one or more protections to be used. [More information](plugins.md#protections). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** List of Dicts
+| `protections` | Define one or more protections to be used. [More information](plugins.md#protections). <br> **Datatype:** List of Dicts
 | `telegram.enabled` | Enable the usage of Telegram. <br> **Datatype:** Boolean
 | `telegram.token` | Your Telegram bot token. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `telegram.chat_id` | Your personal Telegram account id. Only required if `telegram.enabled` is `true`. <br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -140,7 +141,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 
 ### Parameters in the strategy
 
-The following parameters can be set in either configuration file or strategy.
+The following parameters can be set in configuration file or strategy.
 Values set in the configuration file always overwrite values set in the strategy.
 
 * `minimal_roi`
@@ -156,7 +157,6 @@ Values set in the configuration file always overwrite values set in the strategy
 * `order_time_in_force`
 * `unfilledtimeout`
 * `disable_dataframe_checks`
-* `protections`
 * `use_sell_signal` (ask_strategy)
 * `sell_profit_only` (ask_strategy)
 * `sell_profit_offset` (ask_strategy)
@@ -170,7 +170,7 @@ There are several methods to configure how much of the stake currency the bot wi
 #### Minimum trade stake
 
 The minimum stake amount will depend by exchange and pair, and is usually listed in the exchange support pages.
-Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.4$.
+Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.6$.
 
 The minimum stake amount to buy this pair is therefore `20 * 0.6 ~= 12`.
 This exchange has also a limit on USD - where all orders must be > 10$ - which however does not apply in this case.
@@ -304,6 +304,9 @@ For example, if your strategy is using a 1h timeframe, and you only want to buy 
   },
 ```
 
+!!! Note
+    This setting resets with each new candle, so it will not prevent sticking-signals from executing on the 2nd or 3rd candle they're active. Best use a "trigger" selector for buy signals, which are only active for one candle.
+
 ### Understand order_types
 
 The `order_types` configuration parameter maps actions (`buy`, `sell`, `stoploss`, `emergencysell`, `forcesell`, `forcebuy`) to order-types (`market`, `limit`, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.
@@ -403,8 +406,8 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 ```
 
 !!! Warning
-    This is an ongoing work. For now it is supported only for binance and only for buy orders.
-    Please don't change the default value unless you know what you are doing.
+    This is an ongoing work. For now it is supported only for binance.
+    Please don't change the default value unless you know what you are doing and have researched the impact of using different values.
 
 ### Exchange configuration
 
@@ -500,7 +503,8 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 * API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.
 * Wallets (`/balance`) are simulated based on `dry_run_wallet`.
 * Orders are simulated, and will not be posted to the exchange.
-* Orders are assumed to fill immediately, and will never time out.
+* Market orders fill based on orderbook volume the moment the order is placed.
+* Limit orders fill once price reaches the defined level - or time out based on `unfilledtimeout` settings.
 * In combination with `stoploss_on_exchange`, the stop_loss price is assumed to be filled.
 * Open orders (not trades, which are stored in the database) are reset on bot restart.
 

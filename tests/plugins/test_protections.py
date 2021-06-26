@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import pytest
 
 from freqtrade import constants
+from freqtrade.enums import SellType
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.plugins.protectionmanager import ProtectionManager
-from freqtrade.strategy.interface import SellType
 from tests.conftest import get_patched_freqtradebot, log_has_re
 
 
@@ -70,8 +70,7 @@ def test_protectionmanager(mocker, default_conf):
 ])
 def test_protections_init(mocker, default_conf, timeframe, expected, protconf):
     default_conf['timeframe'] = timeframe
-    default_conf['protections'] = protconf
-    man = ProtectionManager(default_conf)
+    man = ProtectionManager(default_conf, protconf)
     assert len(man._protection_handlers) == len(protconf)
     assert man._protection_handlers[0]._lookback_period == expected[0]
     assert man._protection_handlers[0]._stop_duration == expected[1]

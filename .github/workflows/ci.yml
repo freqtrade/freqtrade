@@ -75,7 +75,7 @@ jobs:
         COVERALLS_REPO_TOKEN: 6D1m0xupS3FgutfuGao8keFf9Hc0FpIXu
       run: |
         # Allow failure for coveralls
-        coveralls -v  || true
+        coveralls || true
 
     - name: Backtesting
       run: |
@@ -374,13 +374,6 @@ jobs:
       run: |
         echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
 
-    - name: Build and test and push docker image
-      env:
-        IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
-      run: |
-        build_helpers/publish_docker.sh
-
     # We need docker experimental to pull the ARM image.
     - name: Switch docker to experimental
       run: |
@@ -399,12 +392,12 @@ jobs:
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
 
-    - name: Build Raspberry docker image
+    - name: Build and test and push docker images
       env:
         IMAGE_NAME: freqtradeorg/freqtrade
-        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}_pi
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
       run: |
-        build_helpers/publish_docker_pi.sh
+        build_helpers/publish_docker_multi.sh
 
 
     - name: Slack Notification

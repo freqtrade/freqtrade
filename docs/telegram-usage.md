@@ -72,22 +72,32 @@ Example configuration showing the different settings:
 
 ``` json
 "telegram": {
-      "enabled": true,
-      "token": "your_telegram_token",
-      "chat_id": "your_telegram_chat_id",
-      "notification_settings": {
-         "status": "silent",
-         "warning": "on",
-         "startup": "off",
-         "buy": "silent",
-         "sell": "on",
-         "buy_cancel": "silent",
-         "sell_cancel": "on",
-         "buy_fill": "off",
-         "sell_fill": "off"
-      },
-      "balance_dust_level": 0.01
-   },
+    "enabled": true,
+    "token": "your_telegram_token",
+    "chat_id": "your_telegram_chat_id",
+    "notification_settings": {
+        "status": "silent",
+        "warning": "on",
+        "startup": "off",
+        "buy": "silent",
+        "sell": {
+            "roi": "silent",
+            "emergency_sell": "on",
+            "force_sell": "on",
+            "sell_signal": "silent",
+            "trailing_stop_loss": "on",
+            "stop_loss": "on",
+            "stoploss_on_exchange": "on",
+            "custom_sell": "silent"
+        },
+        "buy_cancel": "silent",
+        "sell_cancel": "on",
+        "buy_fill": "off",
+        "sell_fill": "off"
+    },
+    "reload": true,
+    "balance_dust_level": 0.01
+},
 ```
 
 `buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
@@ -96,6 +106,7 @@ Example configuration showing the different settings:
 
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
+`reload` allows you to disable reload-buttons on selected messages.
 
 ## Create a custom keyboard (command shortcut buttons)
 
@@ -154,7 +165,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/count` | Displays number of trades used and available
 | `/locks` | Show currently locked pairs.
 | `/unlock <pair or lock_id>` | Remove the lock for this pair (or for this lock id).
-| `/profit` | Display a summary of your profit/loss from close trades and some stats about your performance
+| `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
 | `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)

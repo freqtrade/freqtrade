@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from freqtrade.state import RunMode
+from freqtrade.enums import RunMode
 
 from .check_exchange import remove_credentials
 from .config_validation import validate_config_consistency
@@ -15,6 +15,7 @@ def setup_utils_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str
     """
     Prepare the configuration for utils subcommands
     :param args: Cli args from Arguments()
+    :param method: Bot running mode
     :return: Configuration
     """
     configuration = Configuration(args, method)

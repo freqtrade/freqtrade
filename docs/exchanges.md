@@ -14,11 +14,10 @@ Accounts having BNB accounts use this to pay for fees - if your first trade happ
 
 ### Binance sites
 
-Binance has been split into 3, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
+Binance has been split into 2, and users must use the correct ccxt exchange ID for their exchange, otherwise API keys are not recognized.
 
 * [binance.com](https://www.binance.com/) - International users. Use exchange id: `binance`.
 * [binance.us](https://www.binance.us/) - US based users. Use exchange id: `binanceus`.
-* [binance.je](https://www.binance.je/) - Binance Jersey, trading fiat currencies. Use exchange id: `binanceje`.
 
 ## Kraken
 
@@ -53,6 +52,9 @@ Due to the heavy rate-limiting applied by Kraken, the following configuration se
 ### Order types
 
 Bittrex does not support market orders. If you have a message at the bot startup about this, you should change order type values set in your configuration and/or in the strategy from `"market"` to `"limit"`. See some more details on this [here in the FAQ](faq.md#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy).
+
+Bittrex also does not support `VolumePairlist` due to limited / split API constellation at the moment.
+Please use `StaticPairlist`. Other pairlists (other than `VolumePairlist`) should not be affected.
 
 ### Restricted markets
 

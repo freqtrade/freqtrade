@@ -15,6 +15,7 @@ from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
+from freqtrade.enums import RunMode, State
 from freqtrade.exceptions import ExchangeError
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
@@ -22,7 +23,6 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
-from freqtrade.state import RunMode, State
 from tests.conftest import (create_mock_trades, get_mock_coro, get_patched_freqtradebot, log_has,
                             log_has_re, patch_get_signal)
 
@@ -834,7 +834,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'exchange': 'binance',
     }
 
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
 
     rc = client_get(client, f"{BASE_URI}/status")
@@ -996,7 +996,8 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
+        markets=PropertyMock(return_value=markets),
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     patch_get_signal(ftbot, (True, False))
 

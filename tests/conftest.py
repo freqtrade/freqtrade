@@ -17,11 +17,11 @@ from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
+from freqtrade.enums import RunMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
-from freqtrade.state import RunMode
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
                                    mock_trade_5, mock_trade_6)
@@ -326,6 +326,7 @@ def get_default_conf(testdatadir):
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy",
         "internals": {},
+        "export": "none",
     }
     return configuration
 
@@ -1084,6 +1085,40 @@ def order_book_l2():
         'timestamp': None,
         'datetime': None,
         'nonce': 288004540
+    })
+
+
+@pytest.fixture
+def order_book_l2_usd():
+    return MagicMock(return_value={
+        'symbol': 'LTC/USDT',
+        'bids': [
+            [25.563, 49.269],
+            [25.562, 83.0],
+            [25.56, 106.0],
+            [25.559, 15.381],
+            [25.558, 29.299],
+            [25.557, 34.624],
+            [25.556, 10.0],
+            [25.555, 14.684],
+            [25.554, 45.91],
+            [25.553, 50.0]
+        ],
+        'asks': [
+            [25.566, 14.27],
+            [25.567, 48.484],
+            [25.568, 92.349],
+            [25.572, 31.48],
+            [25.573, 23.0],
+            [25.574, 20.0],
+            [25.575, 89.606],
+            [25.576, 262.016],
+            [25.577, 178.557],
+            [25.578, 78.614]
+            ],
+        'timestamp': None,
+        'datetime': None,
+        'nonce': 2372149736
     })
 
 
@@ -1913,7 +1948,7 @@ def saved_hyperopt_results_legacy():
 
 @pytest.fixture
 def saved_hyperopt_results():
-    return [
+    hyperopt_res = [
         {
             'loss': 0.4366182531161519,
             'params_dict': {
@@ -2042,3 +2077,9 @@ def saved_hyperopt_results():
             'is_best': False
             }
     ]
+
+    for res in hyperopt_res:
+        res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
+                                                                         ].total_seconds()
+
+    return hyperopt_res

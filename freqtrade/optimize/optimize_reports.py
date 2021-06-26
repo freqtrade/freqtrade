@@ -21,7 +21,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
     Stores backtest results
     :param recordfilename: Path object, which can either be a filename or a directory.
         Filenames will be appended with a timestamp right before the suffix
-        while for diectories, <directory>/backtest-result-<datetime>.json will be used as filename
+        while for directories, <directory>/backtest-result-<datetime>.json will be used as filename
     :param stats: Dataframe containing the backtesting statistics
     """
     if recordfilename.is_dir():
@@ -232,16 +232,23 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     zero_duration_trades = len(results.loc[(results['trade_duration'] == 0) &
                                            (results['sell_reason'] == 'trailing_stop_loss')])
 
+    holding_avg = (timedelta(minutes=round(results['trade_duration'].mean()))
+                   if not results.empty else timedelta())
+    winner_holding_avg = (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
+                          if not winning_trades.empty else timedelta())
+    loser_holding_avg = (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
+                         if not losing_trades.empty else timedelta())
+
     return {
         'wins': len(winning_trades),
         'losses': len(losing_trades),
         'draws': len(draw_trades),
-        'holding_avg': (timedelta(minutes=round(results['trade_duration'].mean()))
-                        if not results.empty else timedelta()),
-        'winner_holding_avg': (timedelta(minutes=round(winning_trades['trade_duration'].mean()))
-                               if not winning_trades.empty else timedelta()),
-        'loser_holding_avg': (timedelta(minutes=round(losing_trades['trade_duration'].mean()))
-                              if not losing_trades.empty else timedelta()),
+        'holding_avg': holding_avg,
+        'holding_avg_s': holding_avg.total_seconds(),
+        'winner_holding_avg': winner_holding_avg,
+        'winner_holding_avg_s': winner_holding_avg.total_seconds(),
+        'loser_holding_avg': loser_holding_avg,
+        'loser_holding_avg_s': loser_holding_avg.total_seconds(),
         'zero_duration_trades': zero_duration_trades,
     }
 
@@ -293,7 +300,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     :param min_date: Backtest start date
     :param max_date: Backtest end date
     :param market_change: float indicating the market change
-    :return: Dictionary containing results per strategy and a stratgy summary.
+    :return: Dictionary containing results per strategy and a strategy summary.
     """
     results: Dict[str, DataFrame] = content['results']
     if not isinstance(results, DataFrame):
@@ -429,7 +436,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                      { Strategy: {'results: results, 'config: config}}.
     :param min_date: Backtest start date
     :param max_date: Backtest end date
-    :return: Dictionary containing results per strategy and a stratgy summary.
+    :return: Dictionary containing results per strategy and a strategy summary.
     """
     result: Dict[str, Any] = {'strategy': {}}
     market_change = calculate_market_change(btdata, 'close')
@@ -500,9 +507,8 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
 def text_table_strategy(strategy_results, stake_currency: str) -> str:
     """
     Generate summary table per strategy
+    :param strategy_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :param stake_currency: stake-currency - used to correctly name headers
-    :param max_open_trades: Maximum allowed open trades used for backtest
-    :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: pretty printed table with tabulate as string
     """
     floatfmt = _get_line_floatfmt(stake_currency)
@@ -549,7 +555,8 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Backtesting to', strat_results['backtest_end']),
             ('Max open trades', strat_results['max_open_trades']),
             ('', ''),  # Empty line to improve readability
-            ('Total trades', strat_results['total_trades']),
+            ('Total/Daily Avg Trades',
+                f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],
@@ -557,7 +564,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Absolute profit ', round_coin_value(strat_results['profit_total_abs'],
                                                   strat_results['stake_currency'])),
             ('Total profit %', f"{round(strat_results['profit_total'] * 100, 2):}%"),
-            ('Trades per day', strat_results['trades_per_day']),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],

@@ -129,13 +129,16 @@ def test_strategy_override_minimal_roi(caplog, default_conf):
     default_conf.update({
         'strategy': 'DefaultStrategy',
         'minimal_roi': {
+            "20": 0.1,
             "0": 0.5
         }
     })
     strategy = StrategyResolver.load_strategy(default_conf)
 
     assert strategy.minimal_roi[0] == 0.5
-    assert log_has("Override strategy 'minimal_roi' with value in config file: {'0': 0.5}.", caplog)
+    assert log_has(
+        "Override strategy 'minimal_roi' with value in config file: {'20': 0.1, '0': 0.5}.",
+        caplog)
 
 
 def test_strategy_override_stoploss(caplog, default_conf):
