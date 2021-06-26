@@ -3,7 +3,7 @@ Functions to handle deprecated settings
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from freqtrade.exceptions import OperationalException
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def check_conflicting_settings(config: Dict[str, Any],
                                section_old: str, name_old: str,
-                               section_new: str, name_new: str) -> None:
+                               section_new: Optional[str], name_new: str) -> None:
     section_new_config = config.get(section_new, {}) if section_new else config
     section_old_config = config.get(section_old, {})
     if name_new in section_new_config and name_old in section_old_config:
@@ -29,7 +29,7 @@ def check_conflicting_settings(config: Dict[str, Any],
 
 def process_removed_setting(config: Dict[str, Any],
                             section1: str, name1: str,
-                            section2: str, name2: str) -> None:
+                            section2: Optional[str], name2: str) -> None:
     """
     :param section1: Removed section
     :param name1: Removed setting name
@@ -48,7 +48,7 @@ def process_removed_setting(config: Dict[str, Any],
 
 def process_deprecated_setting(config: Dict[str, Any],
                                section_old: str, name_old: str,
-                               section_new: str, name_new: str
+                               section_new: Optional[str], name_new: str
                                ) -> None:
     check_conflicting_settings(config, section_old, name_old, section_new, name_new)
     section_old_config = config.get(section_old, {})

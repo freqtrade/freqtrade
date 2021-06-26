@@ -97,6 +97,11 @@ class IStrategy(ABC, HyperStrategyMixin):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
+    use_sell_signal: bool
+    sell_profit_only: bool
+    sell_profit_offset: float
+    ignore_roi_if_buy_signal: bool
+
     # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
 

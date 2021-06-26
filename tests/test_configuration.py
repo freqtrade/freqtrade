@@ -1128,10 +1128,17 @@ def test_pairlist_resolving_fallback(mocker):
     assert config['datadir'] == Path.cwd() / "user_data/data/binance"
 
 
-# The below is kept as a sample for the future.
 @pytest.mark.parametrize("setting", [
         ("ask_strategy", "use_sell_signal", True,
          None, "use_sell_signal", False),
+        ("ask_strategy", "sell_profit_only", True,
+         None, "sell_profit_only", False),
+        ("ask_strategy", "sell_profit_offset", 0.1,
+         None, "sell_profit_offset", 0.01),
+        ("ask_strategy", "ignore_roi_if_buy_signal", True,
+         None, "ignore_roi_if_buy_signal", False),
+        ("ask_strategy", "ignore_buying_expired_candle_after", 5,
+         None, "ignore_buying_expired_candle_after", 6),
     ])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
@@ -1169,7 +1176,6 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
         assert default_conf[setting[3]][setting[4]] == setting[2]
     else:
         assert default_conf[setting[4]] == setting[2]
-
 
 
 @pytest.mark.parametrize("setting", [
