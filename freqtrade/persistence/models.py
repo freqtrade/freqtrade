@@ -608,29 +608,24 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value()
 
-    def calculate_interest(self) -> Decimal:
+    def calculate_interest(self) -> float:
         # TODO-mg: Need to set other conditions because sometimes self.open_date is not defined, but why would it ever not be set
         if not self.interest_rate or not (self.borrowed):
-            return Decimal(0.0)
+            return 0.0
 
-        try:
-            open_date = self.open_date.replace(tzinfo=None)
-            now = datetime.now()
-            secPerDay = 86400
-            days = Decimal((now - open_date).total_seconds()/secPerDay) or 0.0
-            hours = days/24
-        except:
-            raise OperationalException("Time isn't calculated properly")
+        open_date = self.open_date.replace(tzinfo=None)
+        now = datetime.utcnow()
+        secPerDay = 86400
+        days = ((now - open_date).total_seconds())/secPerDay or 0.0
+        hours = days * 24
 
-        rate = Decimal(self.interest_rate)
-        borrowed = Decimal(self.borrowed)
-        twenty4 = Decimal(24.0)
-        one = Decimal(1.0)
+        rate = self.interest_rate
+        borrowed = self.borrowed
 
         if self.exchange == 'binance':
             # Rate is per day but accrued hourly or something
             # binance: https://www.binance.com/en-AU/support/faq/360030157812
-            return borrowed * (rate/twenty4) * max(hours, one)  # TODO-mg: Is hours rounded?
+            return borrowed * rate * max(hours, 1)/24  # TODO-mg: Is hours rounded?
         elif self.exchange == 'kraken':
             # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
             opening_fee = borrowed * rate
@@ -638,10 +633,10 @@ class LocalTrade():
             return opening_fee + roll_over_fee
         elif self.exchange == 'binance_usdm_futures':
             # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/twenty4) * max(hours, one)
+            return borrowed * (rate/24) * max(hours, 1)
         elif self.exchange == 'binance_coinm_futures':
             # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/twenty4) * max(hours, one)
+            return borrowed * (rate/24) * max(hours, 1)
         else:
             # TODO-mg: make sure this breaks and can't be squelched
             raise OperationalException("Leverage not available on this exchange")
@@ -661,7 +656,7 @@ class LocalTrade():
 
         interest = self.calculate_interest()
         if self.is_short:
-            amount = Decimal(self.amount) + interest
+            amount = Decimal(self.amount) + Decimal(interest)
         else:
             # The interest does not need to be purchased on longs because the user already owns that currency in your wallet
             amount = Decimal(self.amount)

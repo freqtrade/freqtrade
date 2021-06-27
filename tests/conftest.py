@@ -2041,7 +2041,7 @@ def ten_minutes_ago():
 
 @pytest.fixture
 def five_hours_ago():
-    return datetime.utcnow() - timedelta(hours=1, minutes=0)
+    return datetime.utcnow() - timedelta(hours=5, minutes=0)
 
 
 @pytest.fixture(scope='function')
