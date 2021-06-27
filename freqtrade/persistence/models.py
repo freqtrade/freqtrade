@@ -285,17 +285,17 @@ class LocalTrade():
         return self.__is_short or False
 
     @is_short.setter
-    def is_short(self, val):
+    def is_short(self, val: bool):
         self.__is_short = val
 
     @leverage.setter
-    def leverage(self, lev):
+    def leverage(self, lev: float):
         self.__leverage = lev
         self.__borrowed = self.amount * (lev-1)
         self.amount = self.amount * lev
 
     @borrowed.setter
-    def borrowed(self, bor):
+    def borrowed(self, bor: float):
         self.__leverage = self.amount / (self.amount - self.borrowed)
         self.__borrowed = bor
     # End of margin trading properties
