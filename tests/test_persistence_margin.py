@@ -5,6 +5,7 @@ from types import FunctionType
 from unittest.mock import MagicMock
 import arrow
 import pytest
+from math import isclose
 from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -202,11 +203,12 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
     trade.update(limit_short_order)
     assert trade._calc_open_trade_value() == 0.0010646656050132426
     trade.update(limit_exit_short_order)
-    assert trade.calc_close_trade_value() == 0.0010026044270662663  # Actually 0.001002604427005832
+
+    assert isclose(trade.calc_close_trade_value(), 0.001002604427005832)
     # Profit in BTC
-    assert trade.calc_profit() == 0.00006206117800741065
+    assert isclose(trade.calc_profit(), 0.00006206)
     #Profit in percent
-    assert trade.calc_profit_ratio() == 0.06189996406932852
+    assert isclose(trade.calc_profit_ratio(), 0.06189996)
 
 
 # @pytest.mark.usefixtures("init_persistence")
