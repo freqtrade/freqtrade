@@ -48,7 +48,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
 
-    leverage = get_column_def(cols, 'leverage', '0.0')
+    leverage = get_column_def(cols, 'leverage', 'null')
     borrowed = get_column_def(cols, 'borrowed', '0.0')
     borrowed_currency = get_column_def(cols, 'borrowed_currency', 'null')
     collateral_currency = get_column_def(cols, 'collateral_currency', 'null')
