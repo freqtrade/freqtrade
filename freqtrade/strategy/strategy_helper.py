@@ -1,7 +1,6 @@
 import pandas as pd
 
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
-from freqtrade.strategy import IStrategy
 from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
@@ -107,7 +106,7 @@ def get_buy_candle(self, trade: 'Trade', timeframe="5m"):
     """
     trade_candle = find_candle_datetime(
         self,
-        trade.open_date_utc-timedelta(minutes=timeframe_to_minutes(self.timeframe)),
+        trade.open_date_utc - timedelta(minutes=timeframe_to_minutes(self.timeframe)),
         pair=trade.pair,
         now=None)
     return trade_candle
