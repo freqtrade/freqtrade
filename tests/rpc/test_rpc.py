@@ -189,7 +189,6 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'interest_rate': 0.0,
         'liquidation_price': None,
         'is_short': False,
-
     }
 
 

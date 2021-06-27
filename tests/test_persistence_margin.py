@@ -11,41 +11,35 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
-# * Margin tests
-
 
 @pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, interest_rate, ten_minutes_ago, caplog):
     """
         On this test we will short and buy back(exit short) a crypto currency at 1x leverage
-        #*The actual program uses more precise numbers
-        Short
-        - Sell: 90.99181073 Crypto at 0.00001173  BTC
-        - Selling fee: 0.25%
-        - Total value of sell trade: 0.001064666 BTC
-            ((90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025))
-        Exit Short
-        - Buy: 90.99181073 Crypto at 0.00001099 BTC
-        - Buying fee: 0.25%
-        - Interest fee: 0.05%
-        - Total interest
-            (90.99181073 * 0.0005)/24 = 0.00189566272
-        - Total cost of buy trade: 0.00100252088
-            (90.99181073 + 0.00189566272) * 0.00001099        = 0.00100002083  :(borrowed + interest * cost)
-          + ((90.99181073 + 0.00189566272)*0.00001099)*0.0025 = 0.00000250005
-          = 0.00100252088
 
-        Profit/Loss: +0.00006214512 BTC
-            Sell:0.001064666 - Buy:0.00100252088
-        Profit/Loss percentage: 0.06198885353
-            (0.001064666/0.00100252088)-1 = 0.06198885353
-            #* ~0.061988453889463014104555743 With more precise numbers used
-        :param limit_short_order:
-        :param limit_exit_short_order:
-        :param fee
-        :param interest_rate
-        :param caplog
-        :return:
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per day
+        open_rate: 0.00001173 base
+        close_rate: 0.00001099 base
+        amount: 90.99181073 crypto
+        borrowed: 90.99181073  crypto
+        time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
+        interest: borrowed * interest_rate * time-periods
+                    = 90.99181073 * 0.0005 * 1/24 = 0.0018956627235416667 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = 90.99181073 * 0.00001173 - 90.99181073 * 0.00001173 * 0.0025
+            = 0.0010646656050132426
+        amount_closed: amount + interest = 90.99181073 + 0.0018956627235416667 = 90.99370639272354
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (90.99370639272354 * 0.00001099) + (90.99370639272354 * 0.00001099 * 0.0025)
+            = 0.0010025208853391716
+        total_profit = open_value - close_value
+            = 0.0010646656050132426 - 0.0010025208853391716
+            = 6.214471967407108e-05
+        total_profit_percentage = (open_value/close_value) - 1
+            = (0.0010646656050132426/0.0010025208853391716)-1
+            = 0.06198845388946328
     """
     trade = Trade(
         id=2,
@@ -94,7 +88,6 @@ def test_update_market_order(
     market_short_order,
     market_exit_short_order,
     fee,
-    interest_rate,
     ten_minutes_ago,
     caplog
 ):
@@ -168,25 +161,27 @@ def test_update_market_order(
 # TODO-mg: create a leveraged long order
 
 # @pytest.mark.usefixtures("init_persistence")
-# def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         open_rate=0.01,
-#         amount=5,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#     )
-#     trade.open_order_id = 'something'
-#     trade.update(limit_buy_order)
-#     assert trade._calc_open_trade_value() == 0.0010024999999225068
-#     trade.update(limit_sell_order)
-#     assert trade.calc_close_trade_value() == 0.0010646656050132426
-#     # Profit in BTC
-#     assert trade.calc_profit() == 0.00006217
-#     # Profit in percent
-#     assert trade.calc_profit_ratio() == 0.06201058
+
+
+def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+    )
+    trade.open_order_id = 'something'
+    trade.update(limit_short_order)
+    assert trade._calc_open_trade_value() == 0.0010024999999225068
+    trade.update(limit_exit_short_order)
+    assert trade.calc_close_trade_value() == 0.0010646656050132426
+    # Profit in BTC
+    assert trade.calc_profit() == 0.00006217
+    # Profit in percent
+    assert trade.calc_profit_ratio() == 0.06201058
 
 
 # @pytest.mark.usefixtures("init_persistence")
