@@ -2060,7 +2060,8 @@ def limit_short_order_open():
         'cost': 0.00106733393,
         'remaining': 90.99181073,
         'status': 'open',
-        'is_short': True
+        'is_short': True,
+        'interest_rate': 0.0005
     }
 
 
@@ -2133,8 +2134,3 @@ def market_exit_short_order():
         'status': 'closed',
         'leverage': 3.0
     }
-
-
-@pytest.fixture
-def interest_rate():
-    return MagicMock(return_value=0.0005)

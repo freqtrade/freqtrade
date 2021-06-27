@@ -13,7 +13,7 @@ from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, interest_rate, ten_minutes_ago, caplog):
+def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten_minutes_ago, caplog):
     """
         On this test we will short and buy back(exit short) a crypto currency at 1x leverage
 
@@ -36,7 +36,7 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
             = 0.0010025208853391716
         total_profit = open_value - close_value
             = 0.0010646656050132426 - 0.0010025208853391716
-            = 6.214471967407108e-05
+            = 0.00006214471967407108
         total_profit_percentage = (open_value/close_value) - 1
             = (0.0010646656050132426/0.0010025208853391716)-1
             = 0.06198845388946328
@@ -51,7 +51,6 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
         open_date=ten_minutes_ago,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        interest_rate=interest_rate.return_value,
         # borrowed=90.99181073,
         exchange='binance'
     )
@@ -171,17 +170,17 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
         amount=5,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange='binance'
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
-    assert trade._calc_open_trade_value() == 0.0010024999999225068
+    assert trade._calc_open_trade_value() == 0.0010646656050132426
     trade.update(limit_exit_short_order)
-    assert trade.calc_close_trade_value() == 0.0010646656050132426
+    assert trade.calc_close_trade_value() == 0.0010025208853391716
     # Profit in BTC
-    assert trade.calc_profit() == 0.00006217
-    # Profit in percent
-    assert trade.calc_profit_ratio() == 0.06201058
+    assert trade.calc_profit() == 0.00006214471967407108
+    #Profit in percent
+    assert trade.calc_profit_ratio() == 0.06198845388946328
 
 
 # @pytest.mark.usefixtures("init_persistence")
