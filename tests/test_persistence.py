@@ -659,12 +659,13 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 order_date DATETIME,
                 order_filled_date DATETIME,
                 order_update_date DATETIME,
+                leverage FLOAT,
                 PRIMARY KEY (id),
                 CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
-
+        # TODO-mg @xmatthias: Had to add field leverage to this table, check that this is correct
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
             symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
@@ -912,6 +913,14 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
+
+                      'leverage': None,
+                      'borrowed': None,
+                      'borrowed_currency': None,
+                      'collateral_currency': None,
+                      'interest_rate': None,
+                      'liquidation_price': None,
+                      'is_short': None,
                       }
 
     # Simulate dry_run entries
@@ -977,6 +986,14 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
+
+                      'leverage': None,
+                      'borrowed': None,
+                      'borrowed_currency': None,
+                      'collateral_currency': None,
+                      'interest_rate': None,
+                      'liquidation_price': None,
+                      'is_short': None,
                       }
 
 
@@ -1315,7 +1332,7 @@ def test_Trade_object_idem():
         'get_overall_performance',
         'get_total_closed_profit',
         'total_open_trades_stakes',
-        'get_sold_trades_without_assigned_fees',
+        'get_closed_trades_without_assigned_fees',
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',

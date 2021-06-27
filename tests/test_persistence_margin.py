@@ -58,19 +58,22 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         interest_rate=interest_rate.return_value,
-        borrowed=90.99181073,
-        exchange='binance',
-        is_short=True
+        # borrowed=90.99181073,
+        exchange='binance'
     )
     #assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
+    assert trade.borrowed is None
+    assert trade.is_short is None
     #trade.open_order_id = 'something'
     trade.update(limit_short_order)
     #assert trade.open_order_id is None
     assert trade.open_rate == 0.00001173
     assert trade.close_profit is None
     assert trade.close_date is None
+    assert trade.borrowed == 90.99181073
+    assert trade.is_short is True
     assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
                       caplog)
@@ -89,7 +92,18 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
 
 
 # @pytest.mark.usefixtures("init_persistence")
-# def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
+# def test_update_market_order(
+#     market_buy_order,
+#     market_sell_order,
+#     fee,
+#     interest_rate,
+#     ten_minutes_ago,
+#     caplog
+# ):
+#     """Test Kraken and leverage arguments as well as update market order
+
+
+#     """
 #     trade = Trade(
 #         id=1,
 #         pair='ETH/BTC',
@@ -99,11 +113,15 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
 #         is_open=True,
 #         fee_open=fee.return_value,
 #         fee_close=fee.return_value,
-#         open_date=arrow.utcnow().datetime,
-#         exchange='binance',
+#         open_date=ten_minutes_ago,
+#         exchange='kraken',
+#         interest_rate=interest_rate.return_value
 #     )
 #     trade.open_order_id = 'something'
 #     trade.update(market_buy_order)
+#     assert trade.leverage is 3
+#     assert trade.is_short is true
+#     assert trade.leverage is 3
 #     assert trade.open_order_id is None
 #     assert trade.open_rate == 0.00004099
 #     assert trade.close_profit is None
@@ -122,8 +140,6 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
 #     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
 #                       r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
 #                       caplog)
-#     # TODO-mg: market short
-#     # TODO-mg: market leveraged long
 
 
 # @pytest.mark.usefixtures("init_persistence")
