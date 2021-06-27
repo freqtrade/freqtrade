@@ -12,152 +12,153 @@ from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, in
 from tests.conftest import create_mock_trades, log_has, log_has_re
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten_minutes_ago, caplog):
-#     """
-#         On this test we will short and buy back(exit short) a crypto currency at 1x leverage
+@pytest.mark.usefixtures("init_persistence")
+def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten_minutes_ago, caplog):
+    """
+        On this test we will short and buy back(exit short) a crypto currency at 1x leverage
 
-#         Short trade
-#         fee: 0.25% base
-#         interest_rate: 0.05% per day
-#         open_rate: 0.00001173 base
-#         close_rate: 0.00001099 base
-#         amount: 90.99181073 crypto
-#         borrowed: 90.99181073  crypto
-#         time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
-#         interest: borrowed * interest_rate * time-periods
-#                     = 90.99181073 * 0.0005 * 1/24 = 0.0018956627235416667 crypto
-#         open_value: (amount * open_rate) - (amount * open_rate * fee)
-#             = 90.99181073 * 0.00001173 - 90.99181073 * 0.00001173 * 0.0025
-#             = 0.0010646656050132426
-#         amount_closed: amount + interest = 90.99181073 + 0.0018956627235416667 = 90.99370639272354
-#         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-#             = (90.99370639272354 * 0.00001099) + (90.99370639272354 * 0.00001099 * 0.0025)
-#             = 0.0010025208853391716
-#         total_profit = open_value - close_value
-#             = 0.0010646656050132426 - 0.0010025208853391716
-#             = 0.00006214471967407108
-#         total_profit_percentage = (open_value/close_value) - 1
-#             = (0.0010646656050132426/0.0010025208853391716)-1
-#             = 0.06198845388946328
-#     """
-#     trade = Trade(
-#         id=2,
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         open_rate=0.01,
-#         amount=5,
-#         is_open=True,
-#         open_date=ten_minutes_ago,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         # borrowed=90.99181073,
-#         exchange='binance'
-#     )
-#     #assert trade.open_order_id is None
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
-#     assert trade.borrowed is None
-#     assert trade.is_short is None
-#     #trade.open_order_id = 'something'
-#     trade.update(limit_short_order)
-#     #assert trade.open_order_id is None
-#     assert trade.open_rate == 0.00001173
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
-#     assert trade.borrowed == 90.99181073
-#     assert trade.is_short is True
-#     assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
-#                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
-#                       caplog)
-#     caplog.clear()
-#     #trade.open_order_id = 'something'
-#     trade.update(limit_exit_short_order)
-#     #assert trade.open_order_id is None
-#     assert trade.close_rate == 0.00001099
-#     assert trade.close_profit == 0.06198845
-#     assert trade.close_date is not None
-#     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
-#                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
-#                       caplog)
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per day
+        open_rate: 0.00001173 base
+        close_rate: 0.00001099 base
+        amount: 90.99181073 crypto
+        borrowed: 90.99181073  crypto
+        time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
+        interest: borrowed * interest_rate * time-periods
+                    = 90.99181073 * 0.0005 * 1/24 = 0.0018956627235416667 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = 90.99181073 * 0.00001173 - 90.99181073 * 0.00001173 * 0.0025
+            = 0.0010646656050132426
+        amount_closed: amount + interest = 90.99181073 + 0.0018956627235416667 = 90.99370639272354
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (90.99370639272354 * 0.00001099) + (90.99370639272354 * 0.00001099 * 0.0025)
+            = 0.0010025208853391716
+        total_profit = open_value - close_value
+            = 0.0010646656050132426 - 0.0010025208853391716
+            = 0.00006214471967407108
+        total_profit_percentage = (open_value/close_value) - 1
+            = (0.0010646656050132426/0.0010025208853391716)-1
+            = 0.06198845388946328
+    """
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=ten_minutes_ago,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        # borrowed=90.99181073,
+        exchange='binance'
+    )
+    #assert trade.open_order_id is None
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.borrowed is None
+    assert trade.is_short is None
+    #trade.open_order_id = 'something'
+    trade.update(limit_short_order)
+    #assert trade.open_order_id is None
+    assert trade.open_rate == 0.00001173
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.borrowed == 90.99181073
+    assert trade.is_short is True
+    assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
+                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
+                      caplog)
+    caplog.clear()
+    #trade.open_order_id = 'something'
+    trade.update(limit_exit_short_order)
+    #assert trade.open_order_id is None
+    assert trade.close_rate == 0.00001099
+    assert trade.close_profit == 0.06198845
+    assert trade.close_date is not None
+    assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
+                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
+                      caplog)
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_update_market_order(
-#     market_short_order,
-#     market_exit_short_order,
-#     fee,
-#     ten_minutes_ago,
-#     caplog
-# ):
-#     """
-#         Test Kraken and leverage arguments as well as update market order
-#         Short trade
-#         fee: 0.25% base
-#         interest_rate: 0.05% per 4 hrs
-#         open_rate: 0.00004173 base
-#         close_rate: 0.00004099 base
-#         amount: 91.99181073 * leverage(3) = 275.97543219 crypto
-#         borrowed: 275.97543219  crypto
-#         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-#         interest: borrowed * interest_rate * time-periods
-#                     = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
-#         open_value: (amount * open_rate) - (amount * open_rate * fee)
-#             = 275.97543219 * 0.00004173 - 275.97543219 * 0.00004173 * 0.0025
-#             = 0.011487663648325479
-#         amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
-#         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-#             = (276.113419906095 * 0.00004099) + (276.113419906095 * 0.00004099 * 0.0025)
-#             = 0.01134618380465571
-#         total_profit = open_value - close_value
-#             = 0.011487663648325479 - 0.01134618380465571
-#             = 0.00014147984366976937
-#         total_profit_percentage = (open_value/close_value) - 1
-#         = (0.011487663648325479/0.01134618380465571)-1
-#         = 0.012469377026284034
-#     """
-#     trade = Trade(
-#         id=1,
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         amount=5,
-#         open_rate=0.01,
-#         is_open=True,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         open_date=ten_minutes_ago,
-#         exchange='kraken'
-#     )
-#     trade.open_order_id = 'something'
-#     trade.update(market_short_order)
-#     assert trade.leverage == 3.0
-#     assert trade.is_short == True
-#     assert trade.open_order_id is None
-#     assert trade.open_rate == 0.00004173
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
-#     assert trade.interest_rate == 0.0005
-#     # TODO: Uncomment the next assert and make it work.
-#     # The logger also has the exact same but there's some spacing in there
-#     # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-#     #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
-#     #                   caplog)
-#     caplog.clear()
-#     trade.is_open = True
-#     trade.open_order_id = 'something'
-#     trade.update(market_exit_short_order)
-#     assert trade.open_order_id is None
-#     assert trade.close_rate == 0.00004099
-#     assert trade.close_profit == 0.01246938
-#     assert trade.close_date is not None
-#     # TODO: The amount should maybe be the opening amount + the interest
-#     # TODO: Uncomment the next assert and make it work.
-#     # The logger also has the exact same but there's some spacing in there
-#     # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-#     #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004099, open_since=.*\).",
-#     #                   caplog)
+@pytest.mark.usefixtures("init_persistence")
+def test_update_market_order(
+    market_short_order,
+    market_exit_short_order,
+    fee,
+    ten_minutes_ago,
+    caplog
+):
+    """
+        Test Kraken and leverage arguments as well as update market order
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per 4 hrs
+        open_rate: 0.00004173 base
+        close_rate: 0.00004099 base
+        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        borrowed: 275.97543219  crypto
+        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
+        interest: borrowed * interest_rate * time-periods
+                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = 275.97543219 * 0.00004173 - 275.97543219 * 0.00004173 * 0.0025
+            = 0.011487663648325479
+        amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (276.113419906095 * 0.00004099) + (276.113419906095 * 0.00004099 * 0.0025)
+            = 0.01134618380465571
+        total_profit = open_value - close_value
+            = 0.011487663648325479 - 0.01134618380465571
+            = 0.00014147984366976937
+        total_profit_percentage = (open_value/close_value) - 1
+        = (0.011487663648325479/0.01134618380465571)-1
+        = 0.012469377026284034
+    """
+    trade = Trade(
+        id=1,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.01,
+        is_open=True,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=ten_minutes_ago,
+        exchange='kraken'
+    )
+    trade.open_order_id = 'something'
+    trade.update(market_short_order)
+    assert trade.leverage == 3.0
+    assert trade.is_short == True
+    assert trade.open_order_id is None
+    assert trade.open_rate == 0.00004173
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.interest_rate == 0.0005
+    # TODO: Uncomment the next assert and make it work.
+    # The logger also has the exact same but there's some spacing in there
+    # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
+    #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
+    #                   caplog)
+    caplog.clear()
+    trade.is_open = True
+    trade.open_order_id = 'something'
+    trade.update(market_exit_short_order)
+    assert trade.open_order_id is None
+    assert trade.close_rate == 0.00004099
+    assert trade.close_profit == 0.01246938
+    assert trade.close_date is not None
+    # TODO: The amount should maybe be the opening amount + the interest
+    # TODO: Uncomment the next assert and make it work.
+    # The logger also has the exact same but there's some spacing in there
+    # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
+    #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004099, open_since=.*\).",
+    #                   caplog)
 
 # TODO-mg: create a leveraged long order
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, five_hours_ago, fee):
