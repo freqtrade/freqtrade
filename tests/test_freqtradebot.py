@@ -2960,11 +2960,11 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-    default_conf['ask_strategy'] = {
+    default_conf.update({
         'use_sell_signal': True,
         'sell_profit_only': True,
         'sell_profit_offset': 0.1,
-    }
+    })
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
@@ -2977,7 +2977,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     patch_get_signal(freqtrade, value=(False, True))
     assert freqtrade.handle_trade(trade) is False
 
-    freqtrade.config['ask_strategy']['sell_profit_offset'] = 0.0
+    freqtrade.strategy.sell_profit_offset = 0.0
     assert freqtrade.handle_trade(trade) is True
 
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
@@ -2997,10 +2997,10 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, limit_bu
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-    default_conf['ask_strategy'] = {
+    default_conf.update({
         'use_sell_signal': True,
         'sell_profit_only': False,
-    }
+    })
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
@@ -3028,10 +3028,10 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, limit_buy_o
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-    default_conf['ask_strategy'] = {
+    default_conf.update({
         'use_sell_signal': True,
         'sell_profit_only': True,
-    }
+    })
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.stop_loss_reached = MagicMock(return_value=SellCheckTuple(
@@ -3058,10 +3058,10 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, limit_buy_
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-    default_conf['ask_strategy'] = {
+    default_conf.update({
         'use_sell_signal': True,
         'sell_profit_only': False,
-    }
+    })
 
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
@@ -3209,9 +3209,8 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order
         buy=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-    default_conf['ask_strategy'] = {
-        'ignore_roi_if_buy_signal': True
-    }
+    default_conf['ignore_roi_if_buy_signal'] = True
+
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)

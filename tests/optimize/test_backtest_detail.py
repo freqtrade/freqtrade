@@ -551,7 +551,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
-    default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
+    default_conf["use_sell_signal"] = data.use_sell_signal
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
