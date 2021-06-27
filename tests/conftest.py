@@ -57,9 +57,9 @@ def log_has_re(line, logs):
 
 def get_args(args):
     return Arguments(args).get_parsed_arg()
+
+
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
-
-
 def get_mock_coro(return_value):
     async def mock_coro(*args, **kwargs):
         return return_value
@@ -2075,7 +2075,7 @@ def ten_minutes_ago():
 
 @pytest.fixture
 def five_hours_ago():
-    return datetime.utcnow() - timedelta(hours=1, minutes=0)
+    return datetime.utcnow() - timedelta(hours=5, minutes=0)
 
 
 @pytest.fixture(scope='function')
@@ -2136,9 +2136,9 @@ def limit_exit_short_order(limit_exit_short_order_open):
 @pytest.fixture(scope='function')
 def market_short_order():
     return {
-        'id': 'mocked_market_buy',
+        'id': 'mocked_market_short',
         'type': 'market',
-        'side': 'buy',
+        'side': 'sell',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
@@ -2147,16 +2147,16 @@ def market_short_order():
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        'leverage': 3
+        'leverage': 3.0
     }
 
 
 @pytest.fixture
 def market_exit_short_order():
     return {
-        'id': 'mocked_limit_sell',
+        'id': 'mocked_limit_exit_short',
         'type': 'market',
-        'side': 'sell',
+        'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
@@ -2164,11 +2164,5 @@ def market_exit_short_order():
         'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed',
-        'leverage': 3,
-        'interest_rate': 0.0005
+        'leverage': 3.0
     }
-
-
-@pytest.fixture
-def interest_rate():
-    return MagicMock(return_value=0.0005)

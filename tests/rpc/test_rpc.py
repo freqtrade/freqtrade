@@ -108,7 +108,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
 
-        'leverage': 1.0,
+        'leverage': None,
         'borrowed': 0.0,
         'borrowed_currency': None,
         'collateral_currency': None,
@@ -182,14 +182,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
 
-        'leverage': 1.0,
+        'leverage': None,
         'borrowed': 0.0,
         'borrowed_currency': None,
         'collateral_currency': None,
         'interest_rate': 0.0,
         'liquidation_price': None,
         'is_short': False,
-
     }
 
 
