@@ -2098,6 +2098,7 @@ def limit_exit_short_order(limit_exit_short_order_open):
     order['status'] = 'closed'
     return order
 
+
 @pytest.fixture(scope='function')
 def market_short_order():
     return {
@@ -2128,9 +2129,10 @@ def market_exit_short_order():
         'amount': 91.99181073,
         'filled': 91.99181073,
         'remaining': 0.0,
-        'status': 'closed'
+        'status': 'closed',
+        'leverage': 3,
+        'interest_rate': 0.0005
     }
-
 
 
 @pytest.fixture

@@ -101,8 +101,14 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
 #     caplog
 # ):
 #     """Test Kraken and leverage arguments as well as update market order
-
-
+#     fee: 0.25%
+#     interest_rate: 0.05% per 4 hrs
+#     open_rate: 0.00004173
+#     close_rate: 0.00004099
+#     amount: 91.99181073 * leverage(3) = 275.97543219
+#     borrowed: 183.98362146
+#     time: 10 minutes(rounds to min of 4hrs)
+#     interest
 #     """
 #     trade = Trade(
 #         id=1,
@@ -114,27 +120,25 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, int
 #         fee_open=fee.return_value,
 #         fee_close=fee.return_value,
 #         open_date=ten_minutes_ago,
-#         exchange='kraken',
-#         interest_rate=interest_rate.return_value
+#         exchange='kraken'
 #     )
 #     trade.open_order_id = 'something'
 #     trade.update(market_buy_order)
 #     assert trade.leverage is 3
-#     assert trade.is_short is true
-#     assert trade.leverage is 3
+#     assert trade.is_short is True
 #     assert trade.open_order_id is None
-#     assert trade.open_rate == 0.00004099
+#     assert trade.open_rate == 0.00004173
 #     assert trade.close_profit is None
 #     assert trade.close_date is None
 #     assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
-#                       r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
+#                       r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
 #                       caplog)
 #     caplog.clear()
 #     trade.is_open = True
 #     trade.open_order_id = 'something'
 #     trade.update(market_sell_order)
 #     assert trade.open_order_id is None
-#     assert trade.close_rate == 0.00004173
+#     assert trade.close_rate == 0.00004099
 #     assert trade.close_profit == 0.01297561
 #     assert trade.close_date is not None
 #     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
