@@ -132,7 +132,7 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
-    leverage = Column(Float, nullable=True, default=1.0)
+    leverage = Column(Float, nullable=True, default=None)
     is_short = Column(Boolean, nullable=True, default=False)
 
     def __repr__(self):
@@ -269,33 +269,40 @@ class LocalTrade():
     interest_rate: float = 0.0
     liquidation_price: float = None
     is_short: bool = False
-    __leverage: float = 1.0  # * You probably want to use self.leverage instead |
-    __borrowed: float = 0.0  # * You probably want to use self.borrowed instead V
+    borrowed: float = 0.0
+    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
+
+    # @property
+    # def base_currency(self) -> str:
+    #     if not self.pair:
+    #         raise OperationalException('LocalTrade.pair must be assigned')
+    #     return self.pair.split("/")[1]
 
     @property
     def leverage(self) -> float:
-        return self.__leverage or 1.0
-
-    @property
-    def borrowed(self) -> float:
-        return self.__borrowed or 0.0
+        return self._leverage
 
     @leverage.setter
-    def leverage(self, lev: float):
+    def leverage(self, value):
+        # def set_leverage(self, lev: float, is_short: Optional[bool], amount: Optional[float]):
+        # TODO: Should this be @leverage.setter, or should it take arguments is_short and amount
+        # if is_short is None:
+        #     is_short = self.is_short
+        # if amount is None:
+        #     amount = self.amount
         if self.is_short is None or self.amount is None:
             raise OperationalException(
-                'LocalTrade.amount and LocalTrade.is_short must be assigned before LocalTrade.leverage')
-        self.__leverage = lev
-        self.__borrowed = self.amount * (lev-1)
-        self.amount = self.amount * lev
+                'LocalTrade.amount and LocalTrade.is_short must be assigned before assigning leverage')
 
-    @borrowed.setter
-    def borrowed(self, bor: float):
-        if not self.amount:
-            raise OperationalException(
-                'LocalTrade.amount must be assigned before LocalTrade.borrowed')
-        self.__borrowed = bor
-        self.__leverage = self.amount / (self.amount - self.borrowed)
+        self._leverage = value
+        if self.is_short:
+            # If shorting the full amount must be borrowed
+            self.borrowed = self.amount * value
+        else:
+            # If not shorting, then the trader already owns a bit
+            self.borrowed = self.amount * (value-1)
+        self.amount = self.amount * value
+
     # End of margin trading properties
 
     @property
@@ -501,10 +508,14 @@ class LocalTrade():
 
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
+
             if 'borrowed' in order:
                 self.borrowed = order['borrowed']
             elif 'leverage' in order:
                 self.leverage = order['leverage']
+
+            if 'interest_rate' in order:
+                self.interest_rate = order['interest_rate']
 
             self.recalc_open_trade_value()
             if self.is_open:
@@ -514,6 +525,7 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
+                # TODO: On Shorts technically your buying a little bit more than the amount because it's the ammount plus the interest
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))  # TODO: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
@@ -853,18 +865,19 @@ class Trade(_DECL_BASE, LocalTrade):
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
     sell_reason = Column(String(100), nullable=True)  # TODO: Change to close_reason
-    sell_order_status = Column(String(100), nullable=True)
+    sell_order_status = Column(String(100), nullable=True)  # TODO: Change to close_order_status
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     # Margin trading properties
-    leverage = Column(Float, nullable=True, default=1.0)
+    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
     borrowed = Column(Float, nullable=False, default=0.0)
-    borrowed_currency = Column(Float, nullable=True)
-    collateral_currency = Column(String(25), nullable=True)
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
+    # TODO: Bottom 2 might not be needed
+    borrowed_currency = Column(Float, nullable=True)
+    collateral_currency = Column(String(25), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):

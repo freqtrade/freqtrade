@@ -2102,9 +2102,9 @@ def limit_exit_short_order(limit_exit_short_order_open):
 @pytest.fixture(scope='function')
 def market_short_order():
     return {
-        'id': 'mocked_market_buy',
+        'id': 'mocked_market_short',
         'type': 'market',
-        'side': 'buy',
+        'side': 'sell',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
@@ -2113,16 +2113,17 @@ def market_short_order():
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        'leverage': 3
+        'leverage': 3.0,
+        'interest_rate': 0.0005
     }
 
 
 @pytest.fixture
 def market_exit_short_order():
     return {
-        'id': 'mocked_limit_sell',
+        'id': 'mocked_limit_exit_short',
         'type': 'market',
-        'side': 'sell',
+        'side': 'buy',
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
@@ -2130,8 +2131,7 @@ def market_exit_short_order():
         'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed',
-        'leverage': 3,
-        'interest_rate': 0.0005
+        'leverage': 3.0
     }
 
 
