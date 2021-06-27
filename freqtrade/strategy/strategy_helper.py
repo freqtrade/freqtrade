@@ -2,7 +2,7 @@ import pandas as pd
 
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.strategy import IStrategy
-from datetime import datetime
+from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 
@@ -88,44 +88,54 @@ def stoploss_from_open(open_relative_stop: float, current_profit: float) -> floa
     return max(stoploss, 0.0)
 
 
-class HelperMixin(IStrategy):
-    custom_stoploss_config = {}
+def get_custom_dataframe(self, pair: str):
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    return dataframe
 
-    def get_custom_dataframe(self, pair: str):
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        return dataframe
 
-    def get_trade_candle(self, trade: 'Trade'):
-        """
-        search for nearest row of trade.open_date
-        """
-        trade_candle = self.find_candle_datetime(trade.open_date_utc, pair=trade.pair, now=None)
-        return trade_candle
+def get_trade_candle(self, trade: 'Trade'):
+    """
+    search for nearest row of trade.open_date
+    """
+    trade_candle = find_candle_datetime(self, trade.open_date_utc, pair=trade.pair, now=None)
+    return trade_candle
 
-    def find_candle_datetime(self, query_date: datetime, pair: str, now: datetime):
-        result = None
-        dataframe = self.get_custom_dataframe(pair)
-        candle = self.find_candle_datetime_safer(query_date, now, dataframe,)
-        result = candle if candle.empty else candle.squeeze()
-        return result
 
-    def find_candle_datetime_faster(self, query_date: datetime, now: datetime, dataframe):
-        if(now and now == query_date):
-            candle = dataframe.iloc[-1]
-        else:
-            candle_date = timeframe_to_prev_date(self.timeframe, query_date)
-            candle = dataframe.loc[dataframe.date == candle_date]
-        return candle
+def get_buy_candle(self, trade: 'Trade', timeframe="5m"):
+    """
+    search for nearest row of trade.open_date
+    """
+    trade_candle = find_candle_datetime(
+        self,
+        trade.open_date_utc-timedelta(minutes=timeframe_to_minutes(self.timeframe)),
+        pair=trade.pair,
+        now=None)
+    return trade_candle
 
-    def find_candle_datetime_safer(self, query_date: datetime, now: datetime, dataframe):
-        df = dataframe[['date']].set_index('date')
 
-        try:
-            date_mask = df.index.unique().get_loc(query_date, method='ffill')
-            candle = dataframe.iloc[date_mask]  # use iloc because date_mask maybe :int
-        except KeyError:  # trade.open_date may not exist yet
-            candle = pd.DataFrame(index=dataframe.index)
-        return candle
+def find_candle_datetime(self, query_date: datetime, pair: str, now: datetime):
+    result = None
+    dataframe = get_custom_dataframe(self, pair)
+    candle = find_candle_datetime_safer(self, query_date, now, dataframe,)
+    result = candle if candle.empty else candle.squeeze()
+    return result
 
-    def __init__(self, config: dict) -> None:
-        super().__init__(config)
+
+def find_candle_datetime_faster(self, query_date: datetime, now: datetime, dataframe):
+    if(now and now == query_date):
+        candle = dataframe.iloc[-1]
+    else:
+        candle_date = timeframe_to_prev_date(self.timeframe, query_date)
+        candle = dataframe.loc[dataframe.date == candle_date]
+    return candle
+
+
+def find_candle_datetime_safer(self, query_date: datetime, now: datetime, dataframe):
+    df = dataframe[['date']].set_index('date')
+
+    try:
+        date_mask = df.index.unique().get_loc(query_date, method='ffill')
+        candle = dataframe.iloc[date_mask]  # use iloc because date_mask maybe :int
+    except KeyError:  # trade.open_date may not exist yet
+        candle = pd.DataFrame(index=dataframe.index)
+    return candle
