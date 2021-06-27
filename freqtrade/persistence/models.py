@@ -133,7 +133,7 @@ class Order(_DECL_BASE):
     order_update_date = Column(DateTime, nullable=True)
 
     leverage = Column(Float, nullable=True, default=1.0)
-    is_short = Column(Boolean, nullable=False, default=False)
+    is_short = Column(Boolean, nullable=True, default=False)
 
     def __repr__(self):
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
@@ -264,39 +264,41 @@ class LocalTrade():
     timeframe: Optional[int] = None
 
     # Margin trading properties
-    leverage: Optional[float] = 1.0
-    borrowed: float = 0.0
     borrowed_currency: str = None
     collateral_currency: str = None
     interest_rate: float = 0.0
     liquidation_price: float = None
-    is_short: bool = False
+    __leverage: float = 1.0  # * You probably want to use self.leverage instead |
+    __borrowed: float = 0.0  # * You probably want to use self.borrowed instead |
+    __is_short: bool = False  # * You probably want to use self.is_short instead V
+
+    @property
+    def leverage(self) -> float:
+        return self.__leverage or 1.0
+
+    @property
+    def borrowed(self) -> float:
+        return self.__borrowed or 0.0
+
+    @property
+    def is_short(self) -> bool:
+        return self.__is_short or False
+
+    @is_short.setter
+    def is_short(self, val):
+        self.__is_short = val
+
+    @leverage.setter
+    def leverage(self, lev):
+        self.__leverage = lev
+        self.__borrowed = self.amount * (lev-1)
+        self.amount = self.amount * lev
+
+    @borrowed.setter
+    def borrowed(self, bor):
+        self.__leverage = self.amount / (self.amount - self.borrowed)
+        self.__borrowed = bor
     # End of margin trading properties
-
-    def __init__(self, **kwargs):
-        lev = kwargs.get('leverage')
-        bor = kwargs.get('borrowed')
-        amount = kwargs.get('amount')
-        if lev and bor:
-            # TODO: should I raise an error?
-            raise OperationalException('Cannot pass both borrowed and leverage to Trade')
-        elif lev:
-            self.amount = amount * lev
-            self.borrowed = amount * (lev-1)
-        elif bor:
-            self.lev = (bor + amount)/amount
-
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
-        if not self.is_short:
-            self.is_short = False
-        self.recalc_open_trade_value()
-
-    def __repr__(self):
-        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
-
-        return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
-                f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
     @property
     def open_date_utc(self):
@@ -305,6 +307,20 @@ class LocalTrade():
     @property
     def close_date_utc(self):
         return self.close_date.replace(tzinfo=timezone.utc)
+
+    def __init__(self, **kwargs):
+        if kwargs.get('leverage') and kwargs.get('borrowed'):
+            # TODO-mg: should I raise an error?
+            raise OperationalException('Cannot pass both borrowed and leverage to Trade')
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
+        self.recalc_open_trade_value()
+
+    def __repr__(self):
+        open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
+
+        return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
+                f'open_rate={self.open_rate:.8f}, open_since={open_since})')
 
     def to_json(self) -> Dict[str, Any]:
         return {
@@ -448,7 +464,7 @@ class LocalTrade():
         Determines if the trade is an opening (long buy or short sell) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        is_short = self.is_short
+        is_short = self.is_short or False
         return (side == 'buy' and not is_short) or (side == 'sell' and is_short)
 
     def is_closing_trade(self, side) -> bool:
@@ -456,7 +472,7 @@ class LocalTrade():
         Determines if the trade is an closing (long sell or short buy) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        is_short = self.is_short
+        is_short = self.is_short or False
         return (side == 'sell' and not is_short) or (side == 'buy' and is_short)
 
     def update(self, order: Dict) -> None:
@@ -466,9 +482,14 @@ class LocalTrade():
         :return: None
         """
         order_type = order['type']
+
+        # if ('leverage' in order and 'borrowed' in order):
+        #     raise OperationalException('Cannot update a trade with both borrowed and leverage')
+
         # TODO: I don't like this, but it might be the only way
         if 'is_short' in order and order['side'] == 'sell':
             self.is_short = order['is_short']
+
         # Ignore open and cancelled orders
         if order['status'] == 'open' or safe_value_fallback(order, 'average', 'price') is None:
             return
@@ -477,8 +498,17 @@ class LocalTrade():
 
         if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
             # Update open rate and actual amount
+
+            # self.is_short = safe_value_fallback(order, 'is_short', default_value=False)
+            # self.borrowed = safe_value_fallback(order, 'is_short', default_value=False)
+
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
+            if 'borrowed' in order:
+                self.borrowed = order['borrowed']
+            elif 'leverage' in order:
+                self.leverage = order['leverage']
+
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
