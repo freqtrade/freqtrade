@@ -268,9 +268,9 @@ class LocalTrade():
     collateral_currency: str = None
     interest_rate: float = 0.0
     liquidation_price: float = None
+    is_short: bool = False
     __leverage: float = 1.0  # * You probably want to use self.leverage instead |
-    __borrowed: float = 0.0  # * You probably want to use self.borrowed instead |
-    __is_short: bool = False  # * You probably want to use self.is_short instead V
+    __borrowed: float = 0.0  # * You probably want to use self.borrowed instead V
 
     @property
     def leverage(self) -> float:
@@ -280,24 +280,22 @@ class LocalTrade():
     def borrowed(self) -> float:
         return self.__borrowed or 0.0
 
-    @property
-    def is_short(self) -> bool:
-        return self.__is_short or False
-
-    @is_short.setter
-    def is_short(self, val: bool):
-        self.__is_short = val
-
     @leverage.setter
     def leverage(self, lev: float):
+        if self.is_short is None or self.amount is None:
+            raise OperationalException(
+                'LocalTrade.amount and LocalTrade.is_short must be assigned before LocalTrade.leverage')
         self.__leverage = lev
         self.__borrowed = self.amount * (lev-1)
         self.amount = self.amount * lev
 
     @borrowed.setter
     def borrowed(self, bor: float):
-        self.__leverage = self.amount / (self.amount - self.borrowed)
+        if not self.amount:
+            raise OperationalException(
+                'LocalTrade.amount must be assigned before LocalTrade.borrowed')
         self.__borrowed = bor
+        self.__leverage = self.amount / (self.amount - self.borrowed)
     # End of margin trading properties
 
     @property
@@ -314,6 +312,8 @@ class LocalTrade():
             raise OperationalException('Cannot pass both borrowed and leverage to Trade')
         for key in kwargs:
             setattr(self, key, kwargs[key])
+        if not self.is_short:
+            self.is_short = False
         self.recalc_open_trade_value()
 
     def __repr__(self):
@@ -464,16 +464,14 @@ class LocalTrade():
         Determines if the trade is an opening (long buy or short sell) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        is_short = self.is_short or False
-        return (side == 'buy' and not is_short) or (side == 'sell' and is_short)
+        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
 
     def is_closing_trade(self, side) -> bool:
         """
         Determines if the trade is an closing (long sell or short buy) trade
         :param side (string): the side (buy/sell) that order happens on
         """
-        is_short = self.is_short or False
-        return (side == 'sell' and not is_short) or (side == 'buy' and is_short)
+        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
 
     def update(self, order: Dict) -> None:
         """
@@ -483,11 +481,13 @@ class LocalTrade():
         """
         order_type = order['type']
 
-        # if ('leverage' in order and 'borrowed' in order):
-        #     raise OperationalException('Cannot update a trade with both borrowed and leverage')
+        if ('leverage' in order and 'borrowed' in order):
+            raise OperationalException(
+                'Pass only one of Leverage or Borrowed to the order in update trade')
 
-        # TODO: I don't like this, but it might be the only way
         if 'is_short' in order and order['side'] == 'sell':
+            # Only set's is_short on opening trades, ignores non-shorts
+            # TODO-mg: I don't like this, but it might be the only way
             self.is_short = order['is_short']
 
         # Ignore open and cancelled orders
@@ -498,9 +498,6 @@ class LocalTrade():
 
         if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
             # Update open rate and actual amount
-
-            # self.is_short = safe_value_fallback(order, 'is_short', default_value=False)
-            # self.borrowed = safe_value_fallback(order, 'is_short', default_value=False)
 
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
@@ -654,7 +651,8 @@ class LocalTrade():
         if self.is_short:
             amount = Decimal(self.amount) + interest
         else:
-            amount = Decimal(self.amount) - interest
+            # The interest does not need to be purchased on longs because the user already owns that currency in your wallet
+            amount = Decimal(self.amount)
 
         close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
@@ -662,7 +660,7 @@ class LocalTrade():
         if (self.is_short):
             return float(close_trade + fees)
         else:
-            return float(close_trade - fees)
+            return float(close_trade - fees - interest)
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None) -> float:
