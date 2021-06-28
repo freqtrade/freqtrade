@@ -311,24 +311,24 @@ def test_update_open_order(limit_short_order):
     assert trade.close_date is None
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_calc_open_trade_value(limit_buy_order, fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         amount=5,
-#         open_rate=0.00001099,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#     )
-#     trade.open_order_id = 'open_trade'
-#     trade.update(limit_buy_order)  # Buy @ 0.00001099
-#     # Get the open rate price with the standard fee rate
-#     assert trade._calc_open_trade_value() == 0.0010024999999225068
-#     trade.fee_open = 0.003
-#     # Get the open rate price with a custom fee rate
-#     assert trade._calc_open_trade_value() == 0.001002999999922468
+@pytest.mark.usefixtures("init_persistence")
+def test_calc_open_trade_value(market_short_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.00004173,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='kraken',
+    )
+    trade.open_order_id = 'open_trade'
+    trade.update(market_short_order)  # Buy @ 0.00001099
+    # Get the open rate price with the standard fee rate
+    assert trade._calc_open_trade_value() == 0.011487663648325479
+    trade.fee_open = 0.003
+    # Get the open rate price with a custom fee rate
+    assert trade._calc_open_trade_value() == 0.011481905420932834
 
 
 # @pytest.mark.usefixtures("init_persistence")
