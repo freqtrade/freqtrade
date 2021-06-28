@@ -381,7 +381,7 @@ class RPC:
             )
             profit_all_ratio.append(profit_ratio)
 
-        best_pair = Trade.get_best_pair()
+        best_pair = Trade.get_best_pair(start_date)
 
         # Prepare data to display
         profit_closed_coin_sum = round(sum(profit_closed_coin), 8)

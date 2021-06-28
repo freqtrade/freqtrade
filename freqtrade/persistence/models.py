@@ -841,7 +841,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_best_pair():
+    def get_best_pair(start_date: datetime = datetime.fromtimestamp(0)):
         """
         Get best pair with closed trade.
         NOTE: Not supported in Backtesting.
@@ -849,7 +849,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
         best_pair = Trade.query.with_entities(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
-        ).filter(Trade.is_open.is_(False)) \
+        ).filter(Trade.is_open.is_(False) & (Trade.close_date >= start_date)) \
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
