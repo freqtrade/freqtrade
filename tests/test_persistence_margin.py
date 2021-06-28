@@ -290,25 +290,25 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
     assert trade.calc_close_trade_value() == 0.0
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_update_open_order(limit_buy_order):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=1.00,
-#         open_rate=0.01,
-#         amount=5,
-#         fee_open=0.1,
-#         fee_close=0.1,
-#         exchange='binance',
-#     )
-#     assert trade.open_order_id is None
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
-#     limit_buy_order['status'] = 'open'
-#     trade.update(limit_buy_order)
-#     assert trade.open_order_id is None
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
+@pytest.mark.usefixtures("init_persistence")
+def test_update_open_order(limit_short_order):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=1.00,
+        open_rate=0.01,
+        amount=5,
+        fee_open=0.1,
+        fee_close=0.1,
+        exchange='binance',
+    )
+    assert trade.open_order_id is None
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    limit_short_order['status'] = 'open'
+    trade.update(limit_short_order)
+    assert trade.open_order_id is None
+    assert trade.close_profit is None
+    assert trade.close_date is None
 
 
 # @pytest.mark.usefixtures("init_persistence")
