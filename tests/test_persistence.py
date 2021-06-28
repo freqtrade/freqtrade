@@ -106,6 +106,27 @@ def test_is_opening_closing_trade(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+def test_amount(limit_buy_order, limit_sell_order, fee, caplog):
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=False
+    )
+    assert trade.amount == 5
+    trade.leverage = 3
+    assert trade.amount == 15
+    assert trade._amount == 5
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     """
     On this test we will buy and sell a crypto currency.
