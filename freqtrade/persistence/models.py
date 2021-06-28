@@ -280,7 +280,7 @@ class LocalTrade():
 
     @property
     def amount(self) -> float:
-        if self.leverage is not None:
+        if self._leverage is not None:
             return self._amount * self.leverage
         else:
             return self._amount
@@ -295,12 +295,6 @@ class LocalTrade():
 
     @leverage.setter
     def leverage(self, value):
-        # def set_leverage(self, lev: float, is_short: Optional[bool], amount: Optional[float]):
-        # TODO: Should this be @leverage.setter, or should it take arguments is_short and amount
-        # if is_short is None:
-        #     is_short = self.is_short
-        # if amount is None:
-        #     amount = self.amount
         if self.is_short is None or self.amount is None:
             raise OperationalException(
                 'LocalTrade.amount and LocalTrade.is_short must be assigned before assigning leverage')
@@ -308,12 +302,10 @@ class LocalTrade():
         self._leverage = value
         if self.is_short:
             # If shorting the full amount must be borrowed
-            self.borrowed = self.amount * value
+            self.borrowed = self._amount * value
         else:
             # If not shorting, then the trader already owns a bit
-            self.borrowed = self.amount * (value-1)
-        # TODO: Maybe amount should be a computed property, so we don't have to modify it
-        self.amount = self.amount * value
+            self.borrowed = self._amount * (value-1)
 
     # End of margin trading properties
 
@@ -878,7 +870,7 @@ class Trade(_DECL_BASE, LocalTrade):
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
-    amount = Column(Float)
+    _amount = Column(Float)
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
