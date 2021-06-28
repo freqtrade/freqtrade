@@ -16,7 +16,7 @@ from tests.conftest import create_mock_trades, log_has, log_has_re
 @pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten_minutes_ago, caplog):
     """
-        On this test we will short and buy back(exit short) a crypto currency at 1x leverage
+        10 minute short limit trade on binance
 
         Short trade
         fee: 0.25% base
@@ -92,7 +92,7 @@ def test_update_market_order(
     caplog
 ):
     """
-        Test Kraken and leverage arguments as well as update market order
+        10 minute short market trade on Kraken at 3x leverage
         Short trade
         fee: 0.25% base
         interest_rate: 0.05% per 4 hrs
@@ -164,7 +164,7 @@ def test_update_market_order(
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, five_hours_ago, fee):
     """
-        This trade lasts for five hours, but the one above lasted for 10 minutes
+        5 hour short trade on Binance
         Short trade
         fee: 0.25% base
         interest_rate: 0.05% per day
@@ -214,7 +214,7 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(fee, five_hours_ago):
     """
-        This trade lasts for five hours, but the one above lasted for 10 minutes
+        Five hour short trade on Kraken at 3x leverage
         Short trade
         Exchange: Kraken
         fee: 0.25% base
@@ -274,20 +274,20 @@ def test_trade_close(fee, five_hours_ago):
     # assert trade.close_date == new_date
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_calc_close_trade_price_exception(limit_buy_order, fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         open_rate=0.1,
-#         amount=5,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#     )
-#     trade.open_order_id = 'something'
-#     trade.update(limit_buy_order)
-#     assert trade.calc_close_trade_value() == 0.0
+@pytest.mark.usefixtures("init_persistence")
+def test_calc_close_trade_price_exception(limit_short_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.1,
+        amount=5,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+    )
+    trade.open_order_id = 'something'
+    trade.update(limit_short_order)
+    assert trade.calc_close_trade_value() == 0.0
 
 
 # @pytest.mark.usefixtures("init_persistence")
