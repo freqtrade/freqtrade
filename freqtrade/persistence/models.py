@@ -237,7 +237,7 @@ class LocalTrade():
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
     stake_amount: float = 0.0
-    amount: float = 0.0
+    _amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
@@ -277,6 +277,17 @@ class LocalTrade():
     #     if not self.pair:
     #         raise OperationalException('LocalTrade.pair must be assigned')
     #     return self.pair.split("/")[1]
+
+    @property
+    def amount(self) -> float:
+        if self.leverage is not None:
+            return self._amount * self.leverage
+        else:
+            return self._amount
+
+    @amount.setter
+    def amount(self, value):
+        self._amount = value
 
     @property
     def leverage(self) -> float:
@@ -422,7 +433,10 @@ class LocalTrade():
     def _set_new_stoploss(self, new_loss: float, stoploss: float):
         """Assign new stop value"""
         self.stop_loss = new_loss
-        self.stop_loss_pct = -1 * abs(stoploss)
+        if self.is_short:
+            self.stop_loss_pct = abs(stoploss)
+        else:
+            self.stop_loss_pct = -1 * abs(stoploss)
         self.stoploss_last_update = datetime.utcnow()
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
@@ -438,17 +452,24 @@ class LocalTrade():
             # Don't modify if called with initial and nothing to do
             return
 
-        new_loss = float(current_price * (1 - abs(stoploss)))
-        # TODO: Could maybe move this if into the new stoploss if branch
-        if (self.liquidation_price):  # If trading on margin, don't set the stoploss below the liquidation price
-            new_loss = min(self.liquidation_price, new_loss)
+        if self.is_short:
+            new_loss = float(current_price * (1 + abs(stoploss)))
+            if self.liquidation_price:  # If trading on margin, don't set the stoploss below the liquidation price
+                new_loss = min(self.liquidation_price, new_loss)
+        else:
+            new_loss = float(current_price * (1 - abs(stoploss)))
+            if self.liquidation_price:  # If trading on margin, don't set the stoploss below the liquidation price
+                new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
         if not self.stop_loss:
             logger.debug(f"{self.pair} - Assigning new stoploss...")
             self._set_new_stoploss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
-            self.initial_stop_loss_pct = -1 * abs(stoploss)
+            if self.is_short:
+                self.initial_stop_loss_pct = abs(stoploss)
+            else:
+                self.initial_stop_loss_pct = -1 * abs(stoploss)
 
         # evaluate if the stop loss needs to be updated
         else:

@@ -611,50 +611,51 @@ def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, f
         trade.calculate_interest(interest_rate=0.00025))), 0.0047912401421875)
 
 
-# def test_adjust_stop_loss(fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         amount=5,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#         open_rate=1,
-#         max_rate=1,
-#     )
-#     trade.adjust_stop_loss(trade.open_rate, 0.05, True)
-#     assert trade.stop_loss == 0.95
-#     assert trade.stop_loss_pct == -0.05
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     # Get percent of profit with a lower rate
-#     trade.adjust_stop_loss(0.96, 0.05)
-#     assert trade.stop_loss == 0.95
-#     assert trade.stop_loss_pct == -0.05
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     # Get percent of profit with a custom rate (Higher than open rate)
-#     trade.adjust_stop_loss(1.3, -0.1)
-#     assert round(trade.stop_loss, 8) == 1.17
-#     assert trade.stop_loss_pct == -0.1
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     # current rate lower again ... should not change
-#     trade.adjust_stop_loss(1.2, 0.1)
-#     assert round(trade.stop_loss, 8) == 1.17
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     # current rate higher... should raise stoploss
-#     trade.adjust_stop_loss(1.4, 0.1)
-#     assert round(trade.stop_loss, 8) == 1.26
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     #  Initial is true but stop_loss set - so doesn't do anything
-#     trade.adjust_stop_loss(1.7, 0.1, True)
-#     assert round(trade.stop_loss, 8) == 1.26
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     assert trade.stop_loss_pct == -0.1
+def test_adjust_stop_loss(fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+        max_rate=1,
+        is_short=True
+    )
+    trade.adjust_stop_loss(trade.open_rate, 0.05, True)
+    assert trade.stop_loss == 1.05
+    assert trade.stop_loss_pct == 0.05
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    # Get percent of profit with a lower rate
+    trade.adjust_stop_loss(1.04, 0.05)
+    assert trade.stop_loss == 1.05
+    assert trade.stop_loss_pct == 0.05
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    # Get percent of profit with a custom rate (Higher than open rate)
+    trade.adjust_stop_loss(0.7, 0.1)
+    # assert round(trade.stop_loss, 8) == 1.17 #TODO: What is this test?
+    assert trade.stop_loss_pct == 0.1
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    # current rate lower again ... should not change
+    trade.adjust_stop_loss(0.8, -0.1)
+    # assert round(trade.stop_loss, 8) == 1.17 #TODO: What is this test?
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    # current rate higher... should raise stoploss
+    trade.adjust_stop_loss(0.6, -0.1)
+    # assert round(trade.stop_loss, 8) == 1.26  #TODO: What is this test?
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    #  Initial is true but stop_loss set - so doesn't do anything
+    trade.adjust_stop_loss(0.3, -0.1, True)
+    # assert round(trade.stop_loss, 8) == 1.26  #TODO: What is this test?
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    assert trade.stop_loss_pct == 0.1
 
 # def test_adjust_min_max_rates(fee):
 #     trade = Trade(
@@ -741,42 +742,6 @@ def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, f
 #     assert trade_adj.stop_loss_pct == -0.04
 #     assert trade_adj.initial_stop_loss == 0.96
 #     assert trade_adj.initial_stop_loss_pct == -0.04
-
-# def test_update_fee(fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         fee_open=fee.return_value,
-#         open_date=arrow.utcnow().shift(hours=-2).datetime,
-#         amount=10,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#         open_rate=1,
-#         max_rate=1,
-#     )
-#     fee_cost = 0.15
-#     fee_currency = 'BTC'
-#     fee_rate = 0.0075
-#     assert trade.fee_open_currency is None
-#     assert not trade.fee_updated('buy')
-#     assert not trade.fee_updated('sell')
-#     trade.update_fee(fee_cost, fee_currency, fee_rate, 'buy')
-#     assert trade.fee_updated('buy')
-#     assert not trade.fee_updated('sell')
-#     assert trade.fee_open_currency == fee_currency
-#     assert trade.fee_open_cost == fee_cost
-#     assert trade.fee_open == fee_rate
-#     # Setting buy rate should "guess" close rate
-#     assert trade.fee_close == fee_rate
-#     assert trade.fee_close_currency is None
-#     assert trade.fee_close_cost is None
-#     fee_rate = 0.0076
-#     trade.update_fee(fee_cost, fee_currency, fee_rate, 'sell')
-#     assert trade.fee_updated('buy')
-#     assert trade.fee_updated('sell')
-#     assert trade.fee_close == 0.0076
-#     assert trade.fee_close_cost == fee_cost
-#     assert trade.fee_close == fee_rate
 
 # @pytest.mark.usefixtures("init_persistence")
 # @pytest.mark.parametrize('use_db', [True, False])
