@@ -63,6 +63,47 @@ def test_init_dryrun_db(default_conf, tmpdir):
     assert Path(filename).is_file()
 
 
+def test_is_opening_closing_trade(fee):
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=False,
+        leverage=2.0
+    )
+    assert trade.is_opening_trade('buy') == True
+    assert trade.is_opening_trade('sell') == False
+    assert trade.is_closing_trade('buy') == False
+    assert trade.is_closing_trade('sell') == True
+
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        leverage=2.0
+    )
+
+    assert trade.is_opening_trade('buy') == False
+    assert trade.is_opening_trade('sell') == True
+    assert trade.is_closing_trade('buy') == True
+    assert trade.is_closing_trade('sell') == False
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     """
@@ -196,7 +237,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(limit_buy_order, limit_sell_order, fee):
-    #TODO: limit_buy_order and limit_sell_order aren't used, remove them probably
+    # TODO: limit_buy_order and limit_sell_order aren't used, remove them probably
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
