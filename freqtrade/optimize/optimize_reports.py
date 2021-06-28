@@ -660,8 +660,9 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         show_backtest_result(strategy, results, stake_currency)
 
     if len(backtest_stats['strategy']) > 1:
-        backtest_timerange = f"{next(iter(backtest_stats['strategy'].items()))[1]['backtest_start']} -> " \
-                             f"{next(iter(backtest_stats['strategy'].items()))[1]['backtest_end']}"
+        backtest_timerange = \
+            f"{next(iter(backtest_stats['strategy'].items()))[1]['backtest_start']} -> " \
+            f"{next(iter(backtest_stats['strategy'].items()))[1]['backtest_end']}"
 
         # Print Strategy summary table
 
