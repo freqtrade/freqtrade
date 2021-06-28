@@ -57,9 +57,9 @@ def log_has_re(line, logs):
 
 def get_args(args):
     return Arguments(args).get_parsed_arg()
+
+
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines
-
-
 def get_mock_coro(return_value):
     async def mock_coro(*args, **kwargs):
         return return_value

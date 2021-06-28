@@ -211,33 +211,67 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
     assert isclose(trade.calc_profit_ratio(), 0.06189996)
 
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_trade_close(limit_buy_order, limit_sell_order, fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         open_rate=0.01,
-#         amount=5,
-#         is_open=True,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         open_date=arrow.Arrow(2020, 2, 1, 15, 5, 1).datetime,
-#         exchange='binance',
-#     )
-#     assert trade.close_profit is None
-#     assert trade.close_date is None
-#     assert trade.is_open is True
-#     trade.close(0.02)
-#     assert trade.is_open is False
-#     assert trade.close_profit == 0.99002494
-#     assert trade.close_date is not None
-#     new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
-#     assert trade.close_date != new_date
-#     # Close should NOT update close_date if the trade has been closed already
-#     assert trade.is_open is False
-#     trade.close_date = new_date
-#     trade.close(0.02)
-#     assert trade.close_date == new_date
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_close(fee, five_hours_ago):
+    """
+        This trade lasts for five hours, but the one above lasted for 10 minutes
+        Short trade
+        Exchange: Kraken
+        fee: 0.25% base
+        interest_rate: 0.05% per 4 hours
+        open_rate: 0.02 base
+        close_rate: 0.01 base
+        leverage: 3.0
+        amount: 5 * 3 = 15 crypto
+        borrowed: 15 crypto
+        time-periods: 5 hours = 5/4
+
+        interest: borrowed * interest_rate * time-periods
+                    = 15 * 0.0005 * 5/4 = 0.009375 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = (15 * 0.02) - (15 * 0.02 * 0.0025)
+            = 0.29925
+        amount_closed: amount + interest = 15 + 0.009375 = 15.009375
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (15.009375 * 0.01) + (15.009375 * 0.01 * 0.0025)
+            = 0.150468984375
+        total_profit = open_value - close_value
+            = 0.29925 - 0.150468984375
+            = 0.148781015625
+        total_profit_percentage = (open_value/close_value) - 1
+            = (0.29925/0.150468984375)-1
+            = 0.9887819489377738
+    """
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.02,
+        amount=5,
+        is_open=True,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=five_hours_ago,
+        exchange='kraken',
+        is_short=True,
+        leverage=3.0,
+        interest_rate=0.0005
+    )
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.is_open is True
+    trade.close(0.01)
+    assert trade.is_open is False
+    assert trade.close_profit == 0.98878195
+    assert trade.close_date is not None
+
+    # TODO-mg: Remove these comments probably
+    #new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    # assert trade.close_date != new_date
+    # # Close should NOT update close_date if the trade has been closed already
+    # assert trade.is_open is False
+    # trade.close_date = new_date
+    # trade.close(0.02)
+    # assert trade.close_date == new_date
 
 
 # @pytest.mark.usefixtures("init_persistence")
