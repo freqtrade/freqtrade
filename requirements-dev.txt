@@ -16,7 +16,7 @@ pytest-random-order==1.0.4
 isort==5.9.1
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.0.7
+nbconvert==6.1.0
 
 # mypy types
 types-cachetools==0.1.9
