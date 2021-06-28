@@ -636,53 +636,29 @@ def test_adjust_stop_loss(fee):
     assert trade.initial_stop_loss_pct == 0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO: What is this test?
+    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
     assert trade.stop_loss_pct == 0.1
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate lower again ... should not change
     trade.adjust_stop_loss(0.8, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO: What is this test?
+    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(0.6, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO: What is this test?
+    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO: What is this test?
+    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
+    # TODO-mg: Do a test with a trade that has a liquidation price
 
-# def test_adjust_min_max_rates(fee):
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         amount=5,
-#         fee_open=fee.return_value,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#         open_rate=1,
-#     )
-#     trade.adjust_min_max_rates(trade.open_rate)
-#     assert trade.max_rate == 1
-#     assert trade.min_rate == 1
-#     # check min adjusted, max remained
-#     trade.adjust_min_max_rates(0.96)
-#     assert trade.max_rate == 1
-#     assert trade.min_rate == 0.96
-#     # check max adjusted, min remains
-#     trade.adjust_min_max_rates(1.05)
-#     assert trade.max_rate == 1.05
-#     assert trade.min_rate == 0.96
-#     # current rate "in the middle" - no adjustment
-#     trade.adjust_min_max_rates(1.03)
-#     assert trade.max_rate == 1.05
-#     assert trade.min_rate == 0.96
-
+# TODO: I don't know how to do this test, but it should be tested for shorts
 # @pytest.mark.usefixtures("init_persistence")
 # @pytest.mark.parametrize('use_db', [True, False])
 # def test_get_open(fee, use_db):
@@ -692,56 +668,58 @@ def test_adjust_stop_loss(fee):
 #     assert len(Trade.get_open_trades()) == 4
 #     Trade.use_db = True
 
-# def test_stoploss_reinitialization(default_conf, fee):
-#     init_db(default_conf['db_url'])
-#     trade = Trade(
-#         pair='ETH/BTC',
-#         stake_amount=0.001,
-#         fee_open=fee.return_value,
-#         open_date=arrow.utcnow().shift(hours=-2).datetime,
-#         amount=10,
-#         fee_close=fee.return_value,
-#         exchange='binance',
-#         open_rate=1,
-#         max_rate=1,
-#     )
-#     trade.adjust_stop_loss(trade.open_rate, 0.05, True)
-#     assert trade.stop_loss == 0.95
-#     assert trade.stop_loss_pct == -0.05
-#     assert trade.initial_stop_loss == 0.95
-#     assert trade.initial_stop_loss_pct == -0.05
-#     Trade.query.session.add(trade)
-#     # Lower stoploss
-#     Trade.stoploss_reinitialization(0.06)
-#     trades = Trade.get_open_trades()
-#     assert len(trades) == 1
-#     trade_adj = trades[0]
-#     assert trade_adj.stop_loss == 0.94
-#     assert trade_adj.stop_loss_pct == -0.06
-#     assert trade_adj.initial_stop_loss == 0.94
-#     assert trade_adj.initial_stop_loss_pct == -0.06
-#     # Raise stoploss
-#     Trade.stoploss_reinitialization(0.04)
-#     trades = Trade.get_open_trades()
-#     assert len(trades) == 1
-#     trade_adj = trades[0]
-#     assert trade_adj.stop_loss == 0.96
-#     assert trade_adj.stop_loss_pct == -0.04
-#     assert trade_adj.initial_stop_loss == 0.96
-#     assert trade_adj.initial_stop_loss_pct == -0.04
-#     # Trailing stoploss (move stoplos up a bit)
-#     trade.adjust_stop_loss(1.02, 0.04)
-#     assert trade_adj.stop_loss == 0.9792
-#     assert trade_adj.initial_stop_loss == 0.96
-#     Trade.stoploss_reinitialization(0.04)
-#     trades = Trade.get_open_trades()
-#     assert len(trades) == 1
-#     trade_adj = trades[0]
-#     # Stoploss should not change in this case.
-#     assert trade_adj.stop_loss == 0.9792
-#     assert trade_adj.stop_loss_pct == -0.04
-#     assert trade_adj.initial_stop_loss == 0.96
-#     assert trade_adj.initial_stop_loss_pct == -0.04
+
+def test_stoploss_reinitialization(default_conf, fee):
+    init_db(default_conf['db_url'])
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        fee_open=fee.return_value,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=10,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=1,
+        max_rate=1,
+        is_short=True
+    )
+    trade.adjust_stop_loss(trade.open_rate, -0.05, True)
+    assert trade.stop_loss == 1.05
+    assert trade.stop_loss_pct == 0.05
+    assert trade.initial_stop_loss == 1.05
+    assert trade.initial_stop_loss_pct == 0.05
+    Trade.query.session.add(trade)
+    # Lower stoploss
+    Trade.stoploss_reinitialization(-0.06)
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 1.06
+    assert trade_adj.stop_loss_pct == 0.06
+    assert trade_adj.initial_stop_loss == 1.06
+    assert trade_adj.initial_stop_loss_pct == 0.06
+    # Raise stoploss
+    Trade.stoploss_reinitialization(-0.04)
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    assert trade_adj.stop_loss == 1.04
+    assert trade_adj.stop_loss_pct == 0.04
+    assert trade_adj.initial_stop_loss == 1.04
+    assert trade_adj.initial_stop_loss_pct == 0.04
+    # Trailing stoploss (move stoplos up a bit)
+    trade.adjust_stop_loss(0.98, -0.04)
+    assert trade_adj.stop_loss == 1.0208
+    assert trade_adj.initial_stop_loss == 1.04
+    Trade.stoploss_reinitialization(-0.04)
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade_adj = trades[0]
+    # Stoploss should not change in this case.
+    assert trade_adj.stop_loss == 1.0208
+    assert trade_adj.stop_loss_pct == 0.04
+    assert trade_adj.initial_stop_loss == 1.04
+    assert trade_adj.initial_stop_loss_pct == 0.04
 
 # @pytest.mark.usefixtures("init_persistence")
 # @pytest.mark.parametrize('use_db', [True, False])
