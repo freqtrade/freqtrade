@@ -514,9 +514,6 @@ class LocalTrade():
             elif 'leverage' in order:
                 self.leverage = order['leverage']
 
-            if 'interest_rate' in order:
-                self.interest_rate = order['interest_rate']
-
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
@@ -608,10 +605,14 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value()
 
-    def calculate_interest(self) -> float:
+    def calculate_interest(self, interest_rate: Optional[float] = None) -> float:
+        """
+        : param interest_rate: interest_charge for borrowing this coin(optional).
+        If interest_rate is not set self.interest_rate will be used
+        """
         # TODO-mg: Need to set other conditions because sometimes self.open_date is not defined, but why would it ever not be set
         zero = Decimal(0.0)
-        if not self.interest_rate or not (self.borrowed):
+        if not (self.borrowed):
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
@@ -622,7 +623,7 @@ class LocalTrade():
         #days = total_seconds/sec_per_day or zero
         hours = total_seconds/sec_per_hour or zero
 
-        rate = Decimal(self.interest_rate)
+        rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
         one = Decimal(1.0)
         twenty_four = Decimal(24.0)
@@ -648,19 +649,22 @@ class LocalTrade():
             raise OperationalException("Leverage not available on this exchange")
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
-                               fee: Optional[float] = None) -> float:
+                               fee: Optional[float] = None,
+                               interest_rate: Optional[float] = None) -> float:
         """
         Calculate the close_rate including fee
         :param fee: fee to use on the close rate (optional).
             If rate is not set self.fee will be used
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
+        :param interest_rate: interest_charge for borrowing this coin (optional).
+            If interest_rate is not set self.interest_rate will be used
         :return: Price in BTC of the open trade
         """
         if rate is None and not self.close_rate:
             return 0.0
 
-        interest = self.calculate_interest()
+        interest = self.calculate_interest(interest_rate)
         if self.is_short:
             amount = Decimal(self.amount) + Decimal(interest)
         else:
@@ -676,18 +680,22 @@ class LocalTrade():
             return float(close_trade - fees - interest)
 
     def calc_profit(self, rate: Optional[float] = None,
-                    fee: Optional[float] = None) -> float:
+                    fee: Optional[float] = None,
+                    interest_rate: Optional[float] = None) -> float:
         """
         Calculate the absolute profit in stake currency between Close and Open trade
         :param fee: fee to use on the close rate (optional).
             If fee is not set self.fee will be used
         :param rate: close rate to compare with (optional).
             If rate is not set self.close_rate will be used
+        :param interest_rate: interest_charge for borrowing this coin (optional).
+            If interest_rate is not set self.interest_rate will be used
         :return:  profit in stake currency as float
         """
         close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee_close)
+            fee=(fee or self.fee_close),
+            interest_rate=(interest_rate or self.interest_rate)
         )
 
         if self.is_short:
@@ -697,17 +705,21 @@ class LocalTrade():
         return float(f"{profit:.8f}")
 
     def calc_profit_ratio(self, rate: Optional[float] = None,
-                          fee: Optional[float] = None) -> float:
+                          fee: Optional[float] = None,
+                          interest_rate: Optional[float] = None) -> float:
         """
         Calculates the profit as ratio (including fee).
         :param rate: rate to compare with (optional).
             If rate is not set self.close_rate will be used
         :param fee: fee to use on the close rate (optional).
+        :param interest_rate: interest_charge for borrowing this coin (optional).
+            If interest_rate is not set self.interest_rate will be used
         :return: profit ratio as float
         """
         close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
-            fee=(fee or self.fee_close)
+            fee=(fee or self.fee_close),
+            interest_rate=(interest_rate or self.interest_rate)
         )
         if self.is_short:
             if close_trade_value == 0.0:

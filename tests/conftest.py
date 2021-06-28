@@ -2060,8 +2060,7 @@ def limit_short_order_open():
         'cost': 0.00106733393,
         'remaining': 90.99181073,
         'status': 'open',
-        'is_short': True,
-        'interest_rate': 0.0005
+        'is_short': True
     }
 
 
@@ -2114,8 +2113,7 @@ def market_short_order():
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        'leverage': 3.0,
-        'interest_rate': 0.0005
+        'leverage': 3.0
     }
 
 
