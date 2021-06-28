@@ -270,7 +270,7 @@ class LocalTrade():
     liquidation_price: float = None
     is_short: bool = False
     _borrowed: float = 0.0
-    leverage: float = None  # * You probably want to use LocalTrade.leverage instead
+    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
 
     # @property
     # def base_currency(self) -> str:
@@ -280,7 +280,7 @@ class LocalTrade():
 
     @property
     def amount(self) -> float:
-        if self.leverage is not None:
+        if self._leverage is not None:
             return self._amount * self.leverage
         else:
             return self._amount
@@ -291,20 +291,29 @@ class LocalTrade():
 
     @property
     def borrowed(self) -> float:
-        if self.leverage is not None:
+        if self._leverage is not None:
             if self.is_short:
                 # If shorting the full amount must be borrowed
-                return self._amount * self.leverage
+                return self._amount * self._leverage
             else:
                 # If not shorting, then the trader already owns a bit
-                return self._amount * (self.leverage-1)
+                return self._amount * (self._leverage-1)
         else:
             return self._borrowed
 
     @borrowed.setter
     def borrowed(self, value):
         self._borrowed = value
-        self.leverage = None
+        self._leverage = None
+
+    @property
+    def leverage(self) -> float:
+        return self._leverage
+
+    @leverage.setter
+    def leverage(self, value):
+        self._leverage = value
+        self._borrowed = None
 
     # End of margin trading properties
 
@@ -896,7 +905,7 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     # Margin trading properties
-    leverage: float = None  # * You probably want to use LocalTrade.leverage instead
+    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
     _borrowed = Column(Float, nullable=False, default=0.0)
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)

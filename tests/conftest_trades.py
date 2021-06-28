@@ -347,13 +347,13 @@ def short_trade(fee):
     trade = Trade(
         pair='ETC/BTC',
         stake_amount=0.001,
-        amount=123.0,  # TODO-mg: In BTC?
+        amount=123.0,
         amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
         close_rate=0.128,
-        close_profit=0.005,  # TODO-mg: Would this be -0.005 or -0.025
+        close_profit=0.025,
         close_profit_abs=0.000584127,
         exchange='binance',
         is_open=False,
