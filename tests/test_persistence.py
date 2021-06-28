@@ -63,6 +63,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
     assert Path(filename).is_file()
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_is_opening_closing_trade(fee):
     trade = Trade(
         id=2,
@@ -1166,6 +1167,42 @@ def test_fee_updated(fee):
     assert trade.fee_updated('buy')
     assert trade.fee_updated('sell')
     assert not trade.fee_updated('asfd')
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_update_leverage(fee, ten_minutes_ago):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
+        open_date=ten_minutes_ago,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        interest_rate=0.0005
+    )
+    trade.leverage = 3.0
+    assert trade.borrowed == 15.0
+    assert trade.amount == 15.0
+
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
+        open_date=ten_minutes_ago,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=False,
+        interest_rate=0.0005
+    )
+
+    trade.leverage = 5.0
+    assert trade.borrowed == 20.0
+    assert trade.amount == 25.0
 
 
 @pytest.mark.usefixtures("init_persistence")

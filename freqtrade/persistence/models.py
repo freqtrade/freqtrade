@@ -301,6 +301,7 @@ class LocalTrade():
         else:
             # If not shorting, then the trader already owns a bit
             self.borrowed = self.amount * (value-1)
+        # TODO: Maybe amount should be a computed property, so we don't have to modify it
         self.amount = self.amount * value
 
     # End of margin trading properties
@@ -605,7 +606,7 @@ class LocalTrade():
         """
         self.open_trade_value = self._calc_open_trade_value()
 
-    def calculate_interest(self, interest_rate: Optional[float] = None) -> float:
+    def calculate_interest(self, interest_rate: Optional[float] = None) -> Decimal:
         """
         : param interest_rate: interest_charge for borrowing this coin(optional).
         If interest_rate is not set self.interest_rate will be used
