@@ -993,4 +993,5 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
+    assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out
