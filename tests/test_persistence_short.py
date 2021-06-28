@@ -56,14 +56,14 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
         interest_rate=0.0005,
         exchange='binance'
     )
-    #assert trade.open_order_id is None
+    # assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.borrowed is None
     assert trade.is_short is None
-    #trade.open_order_id = 'something'
+    # trade.open_order_id = 'something'
     trade.update(limit_short_order)
-    #assert trade.open_order_id is None
+    # assert trade.open_order_id is None
     assert trade.open_rate == 0.00001173
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -73,9 +73,9 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
                       caplog)
     caplog.clear()
-    #trade.open_order_id = 'something'
+    # trade.open_order_id = 'something'
     trade.update(limit_exit_short_order)
-    #assert trade.open_order_id is None
+    # assert trade.open_order_id is None
     assert trade.close_rate == 0.00001099
     assert trade.close_profit == 0.06198845
     assert trade.close_date is not None
@@ -208,7 +208,7 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
     assert isclose(trade.calc_close_trade_value(), 0.001002604427005832)
     # Profit in BTC
     assert isclose(trade.calc_profit(), 0.00006206)
-    #Profit in percent
+    # Profit in percent
     assert isclose(trade.calc_profit_ratio(), 0.06189996)
 
 
@@ -266,7 +266,7 @@ def test_trade_close(fee, five_hours_ago):
     assert trade.close_date is not None
 
     # TODO-mg: Remove these comments probably
-    #new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    # new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
     # assert trade.close_date != new_date
     # # Close should NOT update close_date if the trade has been closed already
     # assert trade.is_open is False
@@ -405,7 +405,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
                     = 275.97543219 * 0.00025 * 1 = 0.0689938580475 crypto
         open_value: (amount * open_rate) - (amount * open_rate * fee)
             = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025) = 0.011487663648325479
-        amount_closed: amount + interest 
+        amount_closed: amount + interest
             = 275.97543219 + 0.137987716095 = 276.113419906095
             = 275.97543219 + 0.086242322559375 = 276.06167451255936
             = 275.97543219 + 0.17248464511875 = 276.14791683511874
@@ -484,16 +484,16 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
 
 @pytest.mark.usefixtures("init_persistence")
 def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fee):
-    """        
+    """
         Market trade on Kraken at 3x and 8x leverage
         Short trade
         interest_rate: 0.05%, 0.25% per 4 hrs
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
-        amount: 
+        amount:
             91.99181073 * leverage(3) = 275.97543219 crypto
             91.99181073 * leverage(5) = 459.95905365 crypto
-        borrowed: 
+        borrowed:
             275.97543219  crypto
             459.95905365  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
@@ -502,14 +502,14 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
         interest: borrowed * interest_rate * time-periods
                     = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
                     = 275.97543219 * 0.00025 * 5/4 = 0.086242322559375 crypto
-                    = 459.95905365 * 0.0005 * 5/4 = 0.17248464511875 crypto
-                    = 459.95905365 * 0.00025 * 1 = 0.0689938580475 crypto
+                    = 459.95905365 * 0.0005 * 5/4 = 0.28747440853125 crypto
+                    = 459.95905365 * 0.00025 * 1 = 0.1149897634125 crypto
     """
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=5,
+        amount=91.99181073,
         open_rate=0.00001099,
         open_date=ten_minutes_ago,
         fee_open=fee.return_value,
@@ -519,19 +519,18 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
         leverage=3.0,
         interest_rate=0.0005
     )
-    trade.update(market_short_order)  # Buy @ 0.00001099
 
-    assert isclose(float("{:.15f}".format(trade.calculate_interest())), 0.137987716095)
+    assert float(round(trade.calculate_interest(), 8)) == 0.13798772
     trade.open_date = five_hours_ago
-    assert isclose(float("{:.15f}".format(
-        trade.calculate_interest(interest_rate=0.00025))), 0.086242322559375)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
+                 ) == 0.08624232  # TODO: Fails with 0.08624233
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=5,
+        amount=91.99181073,
         open_rate=0.00001099,
-        open_date=ten_minutes_ago,
+        open_date=five_hours_ago,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='kraken',
@@ -539,76 +538,71 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
         leverage=5.0,
         interest_rate=0.0005
     )
-    trade.update(market_short_order)  # Buy @ 0.00001099
 
-    assert isclose(float("{:.15f}".format(trade.calculate_interest())), 0.17248464511875)
+    assert float(round(trade.calculate_interest(), 8)) == 0.28747441  # TODO: Fails with 0.28747445
     trade.open_date = ten_minutes_ago
-    assert isclose(float("{:.15f}".format(
-        trade.calculate_interest(interest_rate=0.00025))), 0.0689938580475)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.11498976
 
 
 @pytest.mark.usefixtures("init_persistence")
 def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, fee):
-    """        
+    """
         Market trade on Binance at 3x and 5x leverage
         Short trade
         interest_rate: 0.05%, 0.25% per 1 day
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
-        amount: 
+        amount:
             91.99181073 * leverage(3) = 275.97543219 crypto
             91.99181073 * leverage(5) = 459.95905365 crypto
-        borrowed: 
+        borrowed:
             275.97543219  crypto
             459.95905365  crypto
         time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
                         5 hours = 5/24
 
         interest: borrowed * interest_rate * time-periods
-                    = print(275.97543219 * 0.0005 * 1/24) = 0.005749488170625 crypto
-                    = print(275.97543219 * 0.00025 * 5/24) = 0.0143737204265625 crypto
-                    = print(459.95905365 * 0.0005 * 5/24) = 0.047912401421875 crypto
-                    = print(459.95905365 * 0.00025 * 1/24) = 0.0047912401421875 crypto
+                    = 275.97543219 * 0.0005 * 1/24 = 0.005749488170625 crypto
+                    = 275.97543219 * 0.00025 * 5/24 = 0.0143737204265625 crypto
+                    = 459.95905365 * 0.0005 * 5/24 = 0.047912401421875 crypto
+                    = 459.95905365 * 0.00025 * 1/24 = 0.0047912401421875 crypto
     """
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=5,
+        amount=275.97543219,
         open_rate=0.00001099,
         open_date=ten_minutes_ago,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         is_short=True,
+        borrowed=275.97543219,
         interest_rate=0.0005
     )
-    trade.update(market_short_order)  # Buy @ 0.00001099
 
-    assert isclose(float("{:.15f}".format(trade.calculate_interest())), 0.005749488170625)
+    assert float(round(trade.calculate_interest(), 8)) == 0.00574949
     trade.open_date = five_hours_ago
-    assert isclose(float("{:.15f}".format(
-        trade.calculate_interest(interest_rate=0.00025))), 0.0143737204265625)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.01437372
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=5,
+        amount=459.95905365,
         open_rate=0.00001099,
-        open_date=ten_minutes_ago,
+        open_date=five_hours_ago,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         is_short=True,
-        leverage=5.0,
+        borrowed=459.95905365,
         interest_rate=0.0005
     )
-    trade.update(market_short_order)  # Buy @ 0.00001099
 
-    assert isclose(float("{:.15f}".format(trade.calculate_interest())), 0.047912401421875)
+    assert float(round(trade.calculate_interest(), 8)) == 0.04791240
     trade.open_date = ten_minutes_ago
-    assert isclose(float("{:.15f}".format(
-        trade.calculate_interest(interest_rate=0.00025))), 0.0047912401421875)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.00479124
 
 
 def test_adjust_stop_loss(fee):
