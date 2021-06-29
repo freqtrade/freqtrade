@@ -53,6 +53,21 @@ class StrategyResolver(IResolver):
                     )
                 strategy.timeframe = strategy.ticker_interval
 
+        if strategy._ft_params_from_file:
+            # Set parameters from Hyperopt results file
+            params = strategy._ft_params_from_file
+            strategy.minimal_roi = params.get('roi', strategy.minimal_roi)
+
+            strategy.stoploss = params.get('stoploss', {}).get('stoploss', strategy.stoploss)
+            trailing = params.get('trailing', {})
+            strategy.trailing_stop = trailing.get('trailing_stop', strategy.trailing_stop)
+            strategy.trailing_stop_positive = trailing.get('trailing_stop_positive',
+                                                           strategy.trailing_stop_positive)
+            strategy.trailing_stop_positive_offset = trailing.get(
+                'trailing_stop_positive_offset', strategy.trailing_stop_positive_offset)
+            strategy.trailing_only_offset_is_reached = trailing.get(
+                'trailing_only_offset_is_reached', strategy.trailing_only_offset_is_reached)
+
         # Set attributes
         # Check if we need to override configuration
         #             (Attribute name,                    default,     subkey)

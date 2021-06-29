@@ -309,6 +309,7 @@ class HyperStrategyMixin(object):
         """
         params = self.load_params_from_file()
         params = params.get('params', {})
+        self._ft_params_from_file = params
         buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', None))
         sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', None))
 
@@ -324,7 +325,7 @@ class HyperStrategyMixin(object):
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             params = json_load(filename.open('r'))
-            if params.get('strategy_name') != self.get_strategy_name():
+            if params.get('strategy_name') != self.__class__.__name__:
                 raise OperationalException('Invalid parameter file provided')
             return params
         logger.info("Found no parameter file.")

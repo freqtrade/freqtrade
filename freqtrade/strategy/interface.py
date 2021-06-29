@@ -62,6 +62,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
+    _ft_params_from_file: Dict = {}
     # associated minimal roi
     minimal_roi: Dict
 
