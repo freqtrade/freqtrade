@@ -29,7 +29,7 @@ from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
-from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_parser
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 
@@ -163,13 +163,9 @@ class Hyperopt:
         While not a valid json object - this allows appending easily.
         :param epoch: result dictionary for this epoch.
         """
-        def default_parser(x):
-            if isinstance(x, np.integer):
-                return int(x)
-            return str(x)
         epoch[FTHYPT_FILEVERSION] = 2
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=default_parser,
+            rapidjson.dump(epoch, f, default=hyperopt_parser,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 

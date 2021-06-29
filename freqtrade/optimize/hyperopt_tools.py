@@ -2,9 +2,11 @@
 import io
 import logging
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import rapidjson
 import tabulate
 from colorama import Fore, Style
@@ -18,6 +20,12 @@ from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_
 logger = logging.getLogger(__name__)
 
 NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
+
+
+def hyperopt_parser(x):
+    if isinstance(x, np.integer):
+        return int(x)
+    return str(x)
 
 
 class HyperoptTools():
@@ -48,9 +56,12 @@ class HyperoptTools():
             'strategy_name': strategy_name,
             'params': final_params,
             'ft_stratparam_v': 1,
+            'export_time': datetime.now(timezone.utc),
         }
         logger.info(f"Dumping parameters to {filename}")
-        rapidjson.dump(final_params, filename.open('w'), indent=2)
+        rapidjson.dump(final_params, filename.open('w'), indent=2,
+                       default=hyperopt_parser, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                       )
 
     @staticmethod
     def try_export_params(config: Dict[str, Any], strategy_name: str, val: Dict):
