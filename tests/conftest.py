@@ -324,6 +324,7 @@ def get_default_conf(testdatadir):
         "verbosity": 3,
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy",
+        "disableparamexport": True,
         "internals": {},
         "export": "none",
     }
