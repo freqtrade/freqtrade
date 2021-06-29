@@ -313,6 +313,7 @@ CONF_SCHEMA = {
         },
         'db_url': {'type': 'string'},
         'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
+        'disableparamexport': {'type': 'boolean'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},
