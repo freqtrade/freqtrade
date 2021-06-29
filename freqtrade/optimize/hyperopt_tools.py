@@ -10,7 +10,7 @@ import tabulate
 from colorama import Fore, Style
 from pandas import isna, json_normalize
 
-from freqtrade.constants import USERPATH_STRATEGIES
+from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
 
@@ -51,6 +51,16 @@ class HyperoptTools():
         }
         logger.info(f"Dumping parameters to {filename}")
         rapidjson.dump(final_params, filename.open('w'), indent=2)
+
+    @staticmethod
+    def try_export_params(config: Dict[str, Any], strategy_name: str, val: Dict):
+        if val.get(FTHYPT_FILEVERSION, 1) >= 2 and not config.get('disableparamexport', False):
+            # Export parameters ...
+            fn = HyperoptTools.get_strategy_filename(config, strategy_name)
+            if fn:
+                HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
+            else:
+                logger.warn("Strategy not found, not exporting parameter file.")
 
     @staticmethod
     def has_space(config: Dict[str, Any], space: str) -> bool:

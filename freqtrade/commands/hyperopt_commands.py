@@ -5,7 +5,6 @@ from typing import Any, Dict, List
 from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -134,14 +133,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
             show_backtest_result(strategy_name, metrics,
                                  metrics['stake_currency'])
 
-            if val.get(FTHYPT_FILEVERSION, 1) >= 2:
-                # Export parameters ...
-                # TODO: make this optional? otherwise it'll overwrite previous parameters ...
-                fn = HyperoptTools.get_strategy_filename(config, strategy_name)
-                if fn:
-                    HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
-                else:
-                    logger.warn("Strategy not found, not exporting parameter file.")
+            HyperoptTools.try_export_params(config, strategy_name, val)
 
         HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
                                          header_str="Epoch details")

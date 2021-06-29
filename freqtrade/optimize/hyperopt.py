@@ -489,6 +489,11 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
+            HyperoptTools.try_export_params(
+                self.config,
+                self.backtesting.strategy.get_strategy_name(),
+                self.current_best_epoch)
+
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
         else:
