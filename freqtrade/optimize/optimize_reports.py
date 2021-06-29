@@ -663,6 +663,8 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         # Print Strategy summary table
 
         table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
+        print(f"{results['backtest_start']} -> {results['backtest_end']} |"
+              f" Max open trades : {results['max_open_trades']}")
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))
