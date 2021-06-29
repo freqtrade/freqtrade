@@ -662,10 +662,9 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
     if len(backtest_stats['strategy']) > 1:
         # Print Strategy summary table
 
-        first_strat_stats = next(iter(backtest_stats['strategy'].items()))[1]
         table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
-        print(f"{first_strat_stats['backtest_start']} -> {first_strat_stats['backtest_end']} |"
-              f" Max open trades : {first_strat_stats['max_open_trades']}")
+        print(f"{results['backtest_start']} -> {results['backtest_end']} |"
+              f" Max open trades : {results['max_open_trades']}")
         print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
         print(table)
         print('=' * len(table.splitlines()[0]))
