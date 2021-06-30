@@ -533,8 +533,9 @@ class MyAwesomeStrategy(IStrategy):
     }
 ```
 
-!!! Note:
-    Parameter-files will overwrite parameters within the strategy.
+!!! Note
+    Values in the configuration file will overwrite Parameter-file level parameters - and both will overwrite parameters within the strategy.
+    The prevalence is therefore: config > parameter file > strategy
 
 ### Understand Hyperopt ROI results
 
