@@ -327,10 +327,10 @@ class HyperStrategyMixin(object):
             try:
                 params = json_load(filename.open('r'))
                 if params.get('strategy_name') != self.__class__.__name__:
-                    raise OperationalException('Invalid parameter file provided')
+                    raise OperationalException('Invalid parameter file provided.')
                 return params
             except ValueError:
-                logger.warning("Invalid parameter file.")
+                logger.warning("Invalid parameter file format.")
                 return {}
         logger.info("Found no parameter file.")
 
