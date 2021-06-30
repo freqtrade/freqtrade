@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
 
 
-def hyperopt_parser(x):
+def hyperopt_serializer(x):
     if isinstance(x, np.integer):
         return int(x)
     return str(x)
@@ -60,7 +60,8 @@ class HyperoptTools():
         }
         logger.info(f"Dumping parameters to {filename}")
         rapidjson.dump(final_params, filename.open('w'), indent=2,
-                       default=hyperopt_parser, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                       default=hyperopt_serializer,
+                       number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
                        )
 
     @staticmethod
