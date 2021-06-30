@@ -77,8 +77,11 @@ class Hyperopt:
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
+            self.auto_hyperopt = True
         else:
             self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
+            self.auto_hyperopt = False
+
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
         self.custom_hyperopt.strategy = self.backtesting.strategy
 
@@ -484,10 +487,11 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
-            HyperoptTools.try_export_params(
-                self.config,
-                self.backtesting.strategy.get_strategy_name(),
-                self.current_best_epoch)
+            if self.auto_hyperopt:
+                HyperoptTools.try_export_params(
+                    self.config,
+                    self.backtesting.strategy.get_strategy_name(),
+                    self.current_best_epoch)
 
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
