@@ -64,12 +64,12 @@ class HyperoptTools():
                        )
 
     @staticmethod
-    def try_export_params(config: Dict[str, Any], strategy_name: str, val: Dict):
-        if val.get(FTHYPT_FILEVERSION, 1) >= 2 and not config.get('disableparamexport', False):
+    def try_export_params(config: Dict[str, Any], strategy_name: str, params: Dict):
+        if params.get(FTHYPT_FILEVERSION, 1) >= 2 and not config.get('disableparamexport', False):
             # Export parameters ...
             fn = HyperoptTools.get_strategy_filename(config, strategy_name)
             if fn:
-                HyperoptTools.export_params(val, strategy_name, fn.with_suffix('.json'))
+                HyperoptTools.export_params(params, strategy_name, fn.with_suffix('.json'))
             else:
                 logger.warn("Strategy not found, not exporting parameter file.")
 

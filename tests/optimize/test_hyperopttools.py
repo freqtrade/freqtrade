@@ -6,6 +6,7 @@ from typing import Dict, List
 import pytest
 import rapidjson
 
+from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from tests.conftest import log_has, log_has_re
@@ -199,6 +200,52 @@ def test_export_params(tmpdir):
     assert "roi" in content["params"]
     assert "stoploss" in content["params"]
     assert "trailing" in content["params"]
+
+
+def test_try_export_params(default_conf, tmpdir, caplog, mocker):
+    default_conf['disableparamexport'] = False
+    export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
+
+    filename = Path(tmpdir) / "DefaultStrategy.json"
+    assert not filename.is_file()
+    params = {
+        "params_details": {
+            "buy": {
+                "buy_rsi": 30
+            },
+            "sell": {
+                "sell_rsi": 70
+            },
+            "roi": {
+                "0": 0.528,
+                "346": 0.08499,
+                "507": 0.049,
+                "1595": 0
+            }
+        },
+        "params_not_optimized": {
+            "stoploss": -0.05,
+            "trailing": {
+                "trailing_stop": False,
+                "trailing_stop_positive": 0.05,
+                "trailing_stop_positive_offset": 0.1,
+                "trailing_only_offset_is_reached": True
+            },
+        },
+        FTHYPT_FILEVERSION: 2,
+
+    }
+    HyperoptTools.try_export_params(default_conf, "DefaultStrategy22", params)
+
+    assert log_has("Strategy not found, not exporting parameter file.", caplog)
+    assert export_mock.call_count == 0
+    caplog.clear()
+
+    HyperoptTools.try_export_params(default_conf, "DefaultStrategy", params)
+
+    assert export_mock.call_count == 1
+    assert export_mock.call_args_list[0][0][1] == 'DefaultStrategy'
+    assert export_mock.call_args_list[0][0][2].name == 'default_strategy.json'
 
 
 def test_params_print(capsys):
