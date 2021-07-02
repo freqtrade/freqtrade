@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades, log_has, log_has_re
+from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -43,9 +43,6 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
             = (0.0010646656050132426 - 0.0010025208853391716) / 0.0010673339398629
             = 0.05822425142973869
 
-        #Old    
-            = 1-(0.0010025208853391716/0.0010646656050132426)
-            = 0.05837017687191848
     """
     trade = Trade(
         id=2,
@@ -295,7 +292,7 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
         exchange='binance',
         interest_rate=0.0005,
         is_short=True,
-        leverage=3.0
+        borrowed=15
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -636,40 +633,41 @@ def test_adjust_stop_loss(fee):
     assert trade.initial_stop_loss_pct == 0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
     assert trade.stop_loss_pct == 0.1
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate lower again ... should not change
     trade.adjust_stop_loss(0.8, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(0.6, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
     # TODO-mg: Do a test with a trade that has a liquidation price
 
-# TODO: I don't know how to do this test, but it should be tested for shorts
-# @pytest.mark.usefixtures("init_persistence")
-# @pytest.mark.parametrize('use_db', [True, False])
-# def test_get_open(fee, use_db):
-#     Trade.use_db = use_db
-#     Trade.reset_trades()
-#     create_mock_trades(fee, use_db)
-#     assert len(Trade.get_open_trades()) == 4
-#     Trade.use_db = True
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
+def test_get_open(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    create_mock_trades_with_leverage(fee, use_db)
+    assert len(Trade.get_open_trades()) == 5
+    Trade.use_db = True
 
 
 def test_stoploss_reinitialization(default_conf, fee):
+    # TODO-mg: I don't understand this at all, I was just going in the opposite direction as the matching function form test_persistance.py
     init_db(default_conf['db_url'])
     trade = Trade(
         pair='ETH/BTC',
@@ -721,83 +719,26 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
 
-# @pytest.mark.usefixtures("init_persistence")
-# @pytest.mark.parametrize('use_db', [True, False])
-# def test_total_open_trades_stakes(fee, use_db):
-#     Trade.use_db = use_db
-#     Trade.reset_trades()
-#     res = Trade.total_open_trades_stakes()
-#     assert res == 0
-#     create_mock_trades(fee, use_db)
-#     res = Trade.total_open_trades_stakes()
-#     assert res == 0.004
-#     Trade.use_db = True
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_get_overall_performance(fee):
-#     create_mock_trades(fee)
-#     res = Trade.get_overall_performance()
-#     assert len(res) == 2
-#     assert 'pair' in res[0]
-#     assert 'profit' in res[0]
-#     assert 'count' in res[0]
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
+def test_total_open_trades_stakes(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    res = Trade.total_open_trades_stakes()
+    assert res == 0
+    create_mock_trades_with_leverage(fee, use_db)
+    res = Trade.total_open_trades_stakes()
+    assert res == 15.133
+    Trade.use_db = True
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_get_best_pair(fee):
-#     res = Trade.get_best_pair()
-#     assert res is None
-#     create_mock_trades(fee)
-#     res = Trade.get_best_pair()
-#     assert len(res) == 2
-#     assert res[0] == 'XRP/BTC'
-#     assert res[1] == 0.01
 
-# @pytest.mark.usefixtures("init_persistence")
-# def test_update_order_from_ccxt(caplog):
-#     # Most basic order return (only has orderid)
-#     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ETH/BTC', 'buy')
-#     assert isinstance(o, Order)
-#     assert o.ft_pair == 'ETH/BTC'
-#     assert o.ft_order_side == 'buy'
-#     assert o.order_id == '1234'
-#     assert o.ft_is_open
-#     ccxt_order = {
-#         'id': '1234',
-#         'side': 'buy',
-#         'symbol': 'ETH/BTC',
-#         'type': 'limit',
-#         'price': 1234.5,
-#         'amount':  20.0,
-#         'filled': 9,
-#         'remaining': 11,
-#         'status': 'open',
-#         'timestamp': 1599394315123
-#     }
-#     o = Order.parse_from_ccxt_object(ccxt_order, 'ETH/BTC', 'buy')
-#     assert isinstance(o, Order)
-#     assert o.ft_pair == 'ETH/BTC'
-#     assert o.ft_order_side == 'buy'
-#     assert o.order_id == '1234'
-#     assert o.order_type == 'limit'
-#     assert o.price == 1234.5
-#     assert o.filled == 9
-#     assert o.remaining == 11
-#     assert o.order_date is not None
-#     assert o.ft_is_open
-#     assert o.order_filled_date is None
-#     # Order has been closed
-#     ccxt_order.update({'filled': 20.0, 'remaining': 0.0, 'status': 'closed'})
-#     o.update_from_ccxt_object(ccxt_order)
-#     assert o.filled == 20.0
-#     assert o.remaining == 0.0
-#     assert not o.ft_is_open
-#     assert o.order_filled_date is not None
-#     ccxt_order.update({'id': 'somethingelse'})
-#     with pytest.raises(DependencyException, match=r"Order-id's don't match"):
-#         o.update_from_ccxt_object(ccxt_order)
-#     message = "aaaa is not a valid response object."
-#     assert not log_has(message, caplog)
-#     Order.update_orders([o], 'aaaa')
-#     assert log_has(message, caplog)
-#     # Call regular update - shouldn't fail.
-#     Order.update_orders([o], {'id': '1234'})
+@pytest.mark.usefixtures("init_persistence")
+def test_get_best_pair(fee):
+    res = Trade.get_best_pair()
+    assert res is None
+    create_mock_trades_with_leverage(fee)
+    res = Trade.get_best_pair()
+    assert len(res) == 2
+    assert res[0] == 'ETC/BTC'
+    assert res[1] == 0.22626016260162551
