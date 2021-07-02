@@ -907,7 +907,7 @@ def test_get_open(fee, use_db):
     Trade.reset_trades()
 
     create_mock_trades(fee, use_db)
-    assert len(Trade.get_open_trades()) == 5
+    assert len(Trade.get_open_trades()) == 4
 
     Trade.use_db = True
 

@@ -310,7 +310,7 @@ def mock_trade_6(fee):
 
 def short_order():
     return {
-        'id': '1235',
+        'id': '1236',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'sell',
@@ -324,7 +324,7 @@ def short_order():
 
 def exit_short_order():
     return {
-        'id': '12366',
+        'id': '12367',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'buy',
@@ -397,7 +397,7 @@ def short_trade(fee):
 
 def leverage_order():
     return {
-        'id': '1235',
+        'id': '1237',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'buy',
@@ -412,7 +412,7 @@ def leverage_order():
 
 def leverage_order_sell():
     return {
-        'id': '12366',
+        'id': '12368',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'sell',
