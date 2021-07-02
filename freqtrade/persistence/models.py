@@ -743,17 +743,19 @@ class LocalTrade():
             fee=(fee or self.fee_close),
             interest_rate=(interest_rate or self.interest_rate)
         )
-        if self.is_short:
-            if close_trade_value == 0.0:
-                return 0.0
-            else:
-                profit_ratio = (self.open_trade_value / close_trade_value) - 1
-
+        if (self.is_short and close_trade_value == 0.0) or (not self.is_short and self.open_trade_value == 0.0):
+            return 0.0
         else:
-            if self.open_trade_value == 0.0:
-                return 0.0
-            else:
-                profit_ratio = (close_trade_value / self.open_trade_value) - 1
+            if self.borrowed:  # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
+                if self.is_short:
+                    profit_ratio = ((self.open_trade_value - close_trade_value) / self.stake_amount)
+                else:
+                    profit_ratio = ((close_trade_value - self.open_trade_value) / self.stake_amount)
+            else:  # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
+                if self.is_short:
+                    profit_ratio = 1 - (close_trade_value/self.open_trade_value)
+                else:
+                    profit_ratio = (close_trade_value/self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
