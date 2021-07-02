@@ -204,11 +204,34 @@ def create_mock_trades(fee, use_db: bool = True):
     add_trade(trade)
     trade = mock_trade_6(fee)
     add_trade(trade)
-    # TODO: margin trades
-    # trade = short_trade(fee)
-    # add_trade(trade)
-    # trade = leverage_trade(fee)
-    # add_trade(trade)
+
+
+def create_mock_trades_with_leverage(fee, use_db: bool = True):
+    """
+    Create some fake trades ...
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee)
+    add_trade(trade)
+    trade = mock_trade_2(fee)
+    add_trade(trade)
+    trade = mock_trade_3(fee)
+    add_trade(trade)
+    trade = mock_trade_4(fee)
+    add_trade(trade)
+    trade = mock_trade_5(fee)
+    add_trade(trade)
+    trade = mock_trade_6(fee)
+    add_trade(trade)
+    trade = short_trade(fee)
+    add_trade(trade)
+    trade = leverage_trade(fee)
+    add_trade(trade)
     if use_db:
         Trade.query.session.flush()
 
@@ -2094,7 +2117,7 @@ def limit_short_order_open():
         'cost': 0.00106733393,
         'remaining': 90.99181073,
         'status': 'open',
-        'is_short': True
+        'exchange': 'binance'
     }
 
 
@@ -2111,7 +2134,8 @@ def limit_exit_short_order_open():
         'amount': 90.99181073,
         'filled': 0.0,
         'remaining': 90.99181073,
-        'status': 'open'
+        'status': 'open',
+        'exchange': 'binance'
     }
 
 
@@ -2147,7 +2171,8 @@ def market_short_order():
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        'leverage': 3.0
+        # 'leverage': 3.0,
+        'exchange': 'kraken'
     }
 
 
@@ -2164,5 +2189,96 @@ def market_exit_short_order():
         'filled': 91.99181073,
         'remaining': 0.0,
         'status': 'closed',
-        'leverage': 3.0
+        # 'leverage': 3.0,
+        'exchange': 'kraken'
+    }
+
+
+# leverage 3x
+@pytest.fixture(scope='function')
+def limit_leveraged_buy_order_open():
+    return {
+        'id': 'mocked_limit_buy',
+        'type': 'limit',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001099,
+        'amount': 272.97543219,
+        'filled': 0.0,
+        'cost': 0.0029999999997681,
+        'remaining': 272.97543219,
+        'status': 'open',
+        'exchange': 'binance'
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_leveraged_buy_order(limit_leveraged_buy_order_open):
+    order = deepcopy(limit_leveraged_buy_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
+
+
+@pytest.fixture
+def limit_leveraged_sell_order_open():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'limit',
+        'side': 'sell',
+        'pair': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001173,
+        'amount': 272.97543219,
+        'filled': 0.0,
+        'remaining': 272.97543219,
+        'status': 'open',
+        'exchange': 'binance'
+    }
+
+
+@pytest.fixture
+def limit_leveraged_sell_order(limit_leveraged_sell_order_open):
+    order = deepcopy(limit_leveraged_sell_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
+
+
+@pytest.fixture(scope='function')
+def market_leveraged_buy_order():
+    return {
+        'id': 'mocked_market_buy',
+        'type': 'market',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004099,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
+        'remaining': 0.0,
+        'status': 'closed',
+        'exchange': 'kraken'
+    }
+
+
+@pytest.fixture
+def market_leveraged_sell_order():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'market',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004173,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
+        'remaining': 0.0,
+        'status': 'closed',
+        'exchange': 'kraken'
     }
