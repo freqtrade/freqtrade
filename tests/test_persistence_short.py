@@ -43,9 +43,6 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
             = (0.0010646656050132426 - 0.0010025208853391716) / 0.0010673339398629
             = 0.05822425142973869
 
-        #Old    
-            = 1-(0.0010025208853391716/0.0010646656050132426)
-            = 0.05837017687191848
     """
     trade = Trade(
         id=2,
@@ -636,40 +633,43 @@ def test_adjust_stop_loss(fee):
     assert trade.initial_stop_loss_pct == 0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
     assert trade.stop_loss_pct == 0.1
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate lower again ... should not change
     trade.adjust_stop_loss(0.8, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.17 #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(0.6, -0.1)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    # assert round(trade.stop_loss, 8) == 1.26  #TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
     # TODO-mg: Do a test with a trade that has a liquidation price
 
-# TODO: I don't know how to do this test, but it should be tested for shorts
-# @pytest.mark.usefixtures("init_persistence")
-# @pytest.mark.parametrize('use_db', [True, False])
-# def test_get_open(fee, use_db):
-#     Trade.use_db = use_db
-#     Trade.reset_trades()
-#     create_mock_trades(fee, use_db)
-#     assert len(Trade.get_open_trades()) == 4
-#     Trade.use_db = True
+# TODO-mg: I don't know how to do this test, but it should be tested for shorts
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
+def test_get_open(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    create_mock_trades(fee, use_db)
+    assert len(Trade.get_open_trades()) == 5
+    Trade.use_db = True
 
 
 def test_stoploss_reinitialization(default_conf, fee):
+    # TODO-mg: I don't understand this at all, I was going in the opposite direction as the matching function form test_persistance.py
     init_db(default_conf['db_url'])
     trade = Trade(
         pair='ETH/BTC',

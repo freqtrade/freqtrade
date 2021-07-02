@@ -205,10 +205,10 @@ def create_mock_trades(fee, use_db: bool = True):
     trade = mock_trade_6(fee)
     add_trade(trade)
     # TODO: margin trades
-    # trade = short_trade(fee)
-    # add_trade(trade)
-    # trade = leverage_trade(fee)
-    # add_trade(trade)
+    trade = short_trade(fee)
+    add_trade(trade)
+    trade = leverage_trade(fee)
+    add_trade(trade)
     if use_db:
         Trade.query.session.flush()
 
