@@ -25,6 +25,9 @@ NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
 def hyperopt_serializer(x):
     if isinstance(x, np.integer):
         return int(x)
+    if isinstance(x, np.bool_):
+        return bool(x)
+
     return str(x)
 
 
