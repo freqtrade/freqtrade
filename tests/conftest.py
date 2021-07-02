@@ -204,7 +204,30 @@ def create_mock_trades(fee, use_db: bool = True):
     add_trade(trade)
     trade = mock_trade_6(fee)
     add_trade(trade)
-    # TODO: margin trades
+
+
+def create_mock_trades_with_leverage(fee, use_db: bool = True):
+    """
+    Create some fake trades ...
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee)
+    add_trade(trade)
+    trade = mock_trade_2(fee)
+    add_trade(trade)
+    trade = mock_trade_3(fee)
+    add_trade(trade)
+    trade = mock_trade_4(fee)
+    add_trade(trade)
+    trade = mock_trade_5(fee)
+    add_trade(trade)
+    trade = mock_trade_6(fee)
+    add_trade(trade)
     trade = short_trade(fee)
     add_trade(trade)
     trade = leverage_trade(fee)
