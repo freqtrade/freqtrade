@@ -91,7 +91,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, borrowed, borrowed_currency, collateral_currency, interest_rate, liquidation_price, is_short
+            leverage, borrowed, borrowed_currency, collateral_currency, interest_rate,
+            liquidation_price, is_short
             )
         select id, lower(exchange),
             case
@@ -115,8 +116,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {sell_order_status} sell_order_status,
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
-            {leverage} leverage, {borrowed} borrowed, {borrowed_currency} borrowed_currency, 
-            {collateral_currency} collateral_currency, {interest_rate} interest_rate, 
+            {leverage} leverage, {borrowed} borrowed, {borrowed_currency} borrowed_currency,
+            {collateral_currency} collateral_currency, {interest_rate} interest_rate,
             {liquidation_price} liquidation_price, {is_short} is_short
             from {table_back_name}
             """))
@@ -152,14 +153,17 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
 
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
+    leverage = get_column_def(cols, 'leverage', 'null')
+    is_short = get_column_def(cols, 'is_short', 'False')
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, leverage)
+            order_date, order_filled_date, order_update_date, leverage, is_short)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date, leverage
+            order_date, order_filled_date, order_update_date,
+            {leverage} leverage, {is_short} is_short
             from {table_back_name}
             """))
 
@@ -174,8 +178,9 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
-    # Check for latest column
-    if not has_column(cols, 'open_trade_value'):
+    # Last added column of trades table
+    # To determine if migrations need to run
+    if not has_column(cols, 'collateral_currency'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!
@@ -188,9 +193,11 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     else:
         cols_order = inspector.get_columns('orders')
 
-        if not has_column(cols_order, 'average'):
+        # Last added column of order table
+        # To determine if migrations need to run
+        if not has_column(cols_order, 'leverage'):
             tabs = get_table_names_for_table(inspector, 'orders')
             # Empty for now - as there is only one iteration of the orders table so far.
             table_back_name = get_backup_name(tabs, 'orders_bak')
 
-            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols)
+            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols_order)

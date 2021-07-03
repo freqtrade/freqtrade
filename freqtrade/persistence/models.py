@@ -234,7 +234,7 @@ class LocalTrade():
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
     stake_amount: float = 0.0
-    _amount: float = 0.0
+    amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
     close_date: Optional[datetime] = None
@@ -266,8 +266,8 @@ class LocalTrade():
     interest_rate: float = 0.0
     liquidation_price: float = None
     is_short: bool = False
-    _borrowed: float = 0.0
-    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
+    borrowed: float = 0.0
+    leverage: float = None
 
     # @property
     # def base_currency(self) -> str:
@@ -275,42 +275,45 @@ class LocalTrade():
     #         raise OperationalException('LocalTrade.pair must be assigned')
     #     return self.pair.split("/")[1]
 
-    @property
-    def amount(self) -> float:
-        if self._leverage is not None:
-            return self._amount * self.leverage
-        else:
-            return self._amount
+    # TODO: @samgermain: Amount should be persisted "as is".
+    # I've partially reverted this (this killed most of your tests)
+    # but leave this here as i'm not sure where you intended to use this.
+    # @property
+    # def amount(self) -> float:
+    #     if self._leverage is not None:
+    #         return self._amount * self.leverage
+    #     else:
+    #         return self._amount
 
-    @amount.setter
-    def amount(self, value):
-        self._amount = value
+    # @amount.setter
+    # def amount(self, value):
+    #     self._amount = value
 
-    @property
-    def borrowed(self) -> float:
-        if self._leverage is not None:
-            if self.is_short:
-                # If shorting the full amount must be borrowed
-                return self._amount * self._leverage
-            else:
-                # If not shorting, then the trader already owns a bit
-                return self._amount * (self._leverage-1)
-        else:
-            return self._borrowed
+    # @property
+    # def borrowed(self) -> float:
+    #     if self._leverage is not None:
+    #         if self.is_short:
+    #             # If shorting the full amount must be borrowed
+    #             return self._amount * self._leverage
+    #         else:
+    #             # If not shorting, then the trader already owns a bit
+    #             return self._amount * (self._leverage-1)
+    #     else:
+    #         return self._borrowed
 
-    @borrowed.setter
-    def borrowed(self, value):
-        self._borrowed = value
-        self._leverage = None
+    # @borrowed.setter
+    # def borrowed(self, value):
+    #     self._borrowed = value
+    #     self._leverage = None
 
-    @property
-    def leverage(self) -> float:
-        return self._leverage
+    # @property
+    # def leverage(self) -> float:
+    #     return self._leverage
 
-    @leverage.setter
-    def leverage(self, value):
-        self._leverage = value
-        self._borrowed = None
+    # @leverage.setter
+    # def leverage(self, value):
+    #     self._leverage = value
+    #     self._borrowed = None
 
     # End of margin trading properties
 
@@ -639,7 +642,7 @@ class LocalTrade():
         # sec_per_day = Decimal(86400)
         sec_per_hour = Decimal(3600)
         total_seconds = Decimal((now - open_date).total_seconds())
-        #days = total_seconds/sec_per_day or zero
+        # days = total_seconds/sec_per_day or zero
         hours = total_seconds/sec_per_hour or zero
 
         rate = Decimal(interest_rate or self.interest_rate)
@@ -877,7 +880,7 @@ class Trade(_DECL_BASE, LocalTrade):
     close_profit = Column(Float)
     close_profit_abs = Column(Float)
     stake_amount = Column(Float, nullable=False)
-    _amount = Column(Float)
+    amount = Column(Float)
     amount_requested = Column(Float)
     open_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     close_date = Column(DateTime)
@@ -904,8 +907,8 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     # Margin trading properties
-    _leverage: float = None  # * You probably want to use LocalTrade.leverage instead
-    _borrowed = Column(Float, nullable=False, default=0.0)
+    leverage = Column(Float, nullable=True)   # TODO: can this be nullable, or should it default to 1? (must also be changed in migrations eventually)
+    borrowed = Column(Float, nullable=False, default=0.0)
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
