@@ -66,7 +66,9 @@ class AgeFilter(IPairList):
         if not needed_pairs:
             return pairlist
 
-        since_days = -(self._max_days_listed if self._max_days_listed else self._min_days_listed) - 1
+        since_days = -(
+            self._max_days_listed if self._max_days_listedelse else self._min_days_listed
+        ) - 1
         since_ms = int(arrow.utcnow()
                        .floor('day')
                        .shift(days=since_days)
