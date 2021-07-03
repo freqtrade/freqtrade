@@ -11,7 +11,6 @@ from html import escape
 from itertools import chain
 from math import isnan
 from typing import Any, Callable, Dict, List, Optional, Union
-
 import arrow
 from tabulate import tabulate
 from telegram import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton,
@@ -24,7 +23,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import chunks, round_coin_value
+from freqtrade.misc import chunks, round_coin_value, plural
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
@@ -623,7 +622,8 @@ class Telegram(RPCHandler):
 
             if total_dust_balance > 0:
                 output += (
-                    f"*{total_dust_currencies} Other Currencies:*\n"
+                    f"*{total_dust_currencies} Other "
+                    f"{plural(total_dust_currencies, 'Currency', 'Currencies')}:*\n"
                     f"\t`Est. {result['stake']}: "
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
 
