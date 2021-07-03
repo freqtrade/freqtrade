@@ -292,7 +292,7 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
         exchange='binance',
         interest_rate=0.0005,
         is_short=True,
-        leverage=3.0
+        borrowed=15
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
