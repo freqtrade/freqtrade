@@ -623,7 +623,8 @@ class Telegram(RPCHandler):
             if total_dust_balance > 0:
                 output += (
                     f"*{total_dust_currencies} Other "
-                    f"{plural(total_dust_currencies, 'Currency', 'Currencies')}:*\n"
+                    f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
+                    f"(< {balance_dust_level} {result['stake']}):*\n"
                     f"\t`Est. {result['stake']}: "
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
 
