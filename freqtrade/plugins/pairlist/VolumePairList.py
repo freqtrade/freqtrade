@@ -52,7 +52,7 @@ class VolumePairList(IPairList):
 
         self._use_range = (self._tf_in_min > 0) & (self._lookback_period > 0)
 
-        if self._use_range & (self._refresh_period < self._tf_in_secs):
+        if self._use_range & (self._refresh_period < self._tf_in_sec):
             raise OperationalException(
                 f'Refresh period of {self._refresh_period} seconds is smaller than one timeframe of {self._lookback_timeframe}. '
                 f'Please adjust refresh_period to at least {self._tf_in_sec} and restart the bot.'
