@@ -11,6 +11,9 @@ from cachetools.ttl import TTLCache
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
+import arrow
+from copy import deepcopy
+from freqtrade.exchange import timeframe_to_minutes
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +39,25 @@ class VolumePairList(IPairList):
         self._min_value = self._pairlistconfig.get('min_value', 0)
         self._refresh_period = self._pairlistconfig.get('refresh_period', 1800)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
+        self._lookback_days = self._pairlistconfig.get('lookback_days', 0)
+        self._lookback_timeframe = self._pairlistconfig.get('lookback_timeframe', '1d')
+        self._lookback_period = self._pairlistconfig.get('lookback_period', 0)
+
+        # overwrite lookback timeframe and days when lookback_days is set
+        if self._lookback_days > 0:
+            self._lookback_timeframe = '1d'
+            self._lookback_period = self._lookback_days
+
+        self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
+        self._tf_in_secs = self._tf_in_min * 60
+
+        self._use_range = (self._tf_in_min > 0) & (self._lookback_period > 0)
+
+        if self._use_range & (self._refresh_period < self._tf_in_secs):
+            raise OperationalException(
+                f'Refresh period of {self._refresh_period} seconds is smaller than one timeframe of {self._lookback_timeframe}. '
+                f'Please adjust refresh_period to at least {self._tf_in_secs} and restart the bot.'
+            )
 
         if not self._exchange.exchange_has('fetchTickers'):
             raise OperationalException(
@@ -46,6 +68,14 @@ class VolumePairList(IPairList):
         if not self._validate_keys(self._sort_key):
             raise OperationalException(
                 f'key {self._sort_key} not in {SORT_VALUES}')
+
+
+        if self._lookback_period < 0:
+            raise OperationalException("VolumeFilter requires lookback_period to be >= 0")
+        if self._lookback_period > exchange.ohlcv_candle_limit(self._lookback_timeframe):
+            raise OperationalException("VolumeFilter requires lookback_period to not "
+                                       "exceed exchange max request size "
+                                       f"({exchange.ohlcv_candle_limit(self._lookback_timeframe)})")
 
     @property
     def needstickers(self) -> bool:
@@ -78,7 +108,6 @@ class VolumePairList(IPairList):
             # Item found - no refresh necessary
             return pairlist
         else:
-
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
             filtered_tickers = [
@@ -100,8 +129,43 @@ class VolumePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        # Use the incoming pairlist.
+
+        # Use the incoming pairlist.      
         filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
+
+        if self._use_range == True:
+            since_ms = int(arrow.utcnow()
+                        .floor('minute')
+                        .shift(minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min)
+                        .float_timestamp) * 1000
+
+            self.log_once(f"Using volume range of {self._lookback_period} {self._lookback_timeframe} candles from {since_ms}", logger.info)
+            needed_pairs = [(p, self._lookback_timeframe) for p in [s['symbol'] for s in filtered_tickers] if p not in self._pair_cache]
+            # Get all candles
+            candles = {}
+            if needed_pairs:
+                candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms,
+                                                            cache=False)
+
+            for i,p in enumerate(filtered_tickers):
+            # for p in deepcopy([s['symbol'] for s in filtered_tickers]):
+                pair_candles = candles[(p['symbol'], self._lookback_timeframe)] if (p['symbol'], self._lookback_timeframe) in candles else None
+                #print(p['symbol'], " 24h quote volume   = ",filtered_tickers[i]['quoteVolume'])
+
+                #if p['symbol'] == 'BCC/USDT':
+                    #print(pair_candles)
+                    #quit()
+
+                print(p['symbol'], " 24h quote volume     = ",filtered_tickers[i]['quoteVolume'])
+                if not pair_candles.empty:
+                    pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low'] + pair_candles['close']) / 3
+                    pair_candles['quoteVolume'] = pair_candles['volume'] * pair_candles['typical_price']
+                    # print(p['symbol'], " range quote volume = ", pair_candles['quoteVolume'].sum())
+                    filtered_tickers[i]['quoteVolume'] = pair_candles['quoteVolume'].sum()
+                else:
+                    filtered_tickers[i]['quoteVolume'] = 0
+
+                print(p['symbol'], " range quote volume   = ",filtered_tickers[i]['quoteVolume'])
 
         if self._min_value > 0:
             filtered_tickers = [
@@ -112,9 +176,12 @@ class VolumePairList(IPairList):
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
         pairs = self.verify_blacklist(pairs, logger.info)
+        
         # Limit pairlist to the requested number of pairs
+        
         pairs = pairs[:self._number_pairs]
 
         self.log_once(f"Searching {self._number_pairs} pairs: {pairs}", logger.info)
 
+        quit()
         return pairs
