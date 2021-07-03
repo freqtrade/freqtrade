@@ -67,7 +67,7 @@
             "sort_key": "quoteVolume",
             "refresh_period": 1800
         },
-        {"method": "AgeFilter", "min_days_listed": 10},
+        {"method": "AgeFilter", "min_days_listed": 10, "max_days_listed": 7300},
         {"method": "PrecisionFilter"},
         {"method": "PriceFilter", "low_price_ratio": 0.01, "min_price": 0.00000010},
         {"method": "SpreadFilter", "max_spread_ratio": 0.005},

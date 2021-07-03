@@ -87,7 +87,7 @@ When pairs are first listed on an exchange they can suffer huge price drops and 
 in the first few days while the pair goes through its price-discovery period. Bots can often
 be caught out buying before the pair has finished dropping in price.
 
-This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days and listed before `max_days_listed`.
 
 #### PerformanceFilter
 
@@ -212,7 +212,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "number_assets": 20,
         "sort_key": "quoteVolume"
     },
-    {"method": "AgeFilter", "min_days_listed": 10},
+    {"method": "AgeFilter", "min_days_listed": 10, "max_days_listed": 7300},
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},

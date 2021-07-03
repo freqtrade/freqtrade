@@ -79,7 +79,8 @@ def whitelist_conf_agefilter(default_conf):
         },
         {
             "method": "AgeFilter",
-            "min_days_listed": 2
+            "min_days_listed": 2,
+            "max_days_listed": 100
         }
     ]
     return default_conf
@@ -302,7 +303,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # No pair for ETH, all handlers
     ([{"method": "StaticPairList"},
       {"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "AgeFilter", "min_days_listed": 2},
+      {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": None},
       {"method": "PrecisionFilter"},
       {"method": "PriceFilter", "low_price_ratio": 0.03},
       {"method": "SpreadFilter", "max_spread_ratio": 0.005},
@@ -310,11 +311,15 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
      "ETH", []),
     # AgeFilter and VolumePairList (require 2 days only, all should pass age test)
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "AgeFilter", "min_days_listed": 2}],
+      {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 100}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'XRP/BTC', 'HOT/BTC']),
     # AgeFilter and VolumePairList (require 10 days, all should fail age test)
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
-      {"method": "AgeFilter", "min_days_listed": 10}],
+      {"method": "AgeFilter", "min_days_listed": 10, "max_days_listed": None}],
+     "BTC", []),
+    # AgeFilter and VolumePairList (all pair listed > 2, all should fail age test)
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "AgeFilter", "min_days_listed": 1, "max_days_listed": 2}],
      "BTC", []),
     # Precisionfilter and quote volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
@@ -480,9 +485,13 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
 
         for pairlist in pairlists:
             if pairlist['method'] == 'AgeFilter' and pairlist['min_days_listed'] and \
-                    len(ohlcv_history) <= pairlist['min_days_listed']:
+                    len(ohlcv_history) < pairlist['min_days_listed']:
                 assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
-                                  r'.* day.*', caplog)
+                                  r'.* day.* or more than .* day', caplog)
+            if pairlist['method'] == 'AgeFilter' and pairlist['max_days_listed'] and \
+                    len(ohlcv_history) > pairlist['max_days_listed']:
+                assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
+                                  r'.* day.* or more than .* day', caplog)
             if pairlist['method'] == 'PrecisionFilter' and whitelist_result:
                 assert log_has_re(r'^Removed .* from whitelist, because stop price .* '
                                   r'would be <= stop limit.*', caplog)
@@ -647,6 +656,22 @@ def test_agefilter_min_days_listed_too_small(mocker, default_conf, markets, tick
 
     with pytest.raises(OperationalException,
                        match=r'AgeFilter requires min_days_listed to be >= 1'):
+        get_patched_freqtradebot(mocker, default_conf)
+
+
+def test_agefilter_max_days_lower_than_min_days(mocker, default_conf, markets, tickers):
+    default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
+                                 {'method': 'AgeFilter', 'min_days_listed': 3,
+                                 "max_days_listed": 2}]
+
+    mocker.patch.multiple('freqtrade.exchange.Exchange',
+                          markets=PropertyMock(return_value=markets),
+                          exchange_has=MagicMock(return_value=True),
+                          get_tickers=tickers
+                          )
+
+    with pytest.raises(OperationalException,
+                       match=r'AgeFilter max_days_listed <= min_days_listed not permitted'):
         get_patched_freqtradebot(mocker, default_conf)
 
 
