@@ -2,13 +2,14 @@ import logging
 import re
 from pathlib import Path
 from typing import Dict, List
+import numpy as np
 
 import pytest
 import rapidjson
 
 from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from tests.conftest import log_has, log_has_re
 
 
@@ -307,3 +308,10 @@ def test_params_print(capsys):
     assert re.search('trailing_stop_positive = 0.05  # value loaded.*\n', captured.out)
     assert re.search('trailing_stop_positive_offset = 0.1  # value loaded.*\n', captured.out)
     assert re.search('trailing_only_offset_is_reached = True  # value loaded.*\n', captured.out)
+
+
+def test_hyperopt_serializer():
+
+    assert isinstance(hyperopt_serializer(np.int_(5)), int)
+    assert isinstance(hyperopt_serializer(np.bool_(True)), bool)
+    assert isinstance(hyperopt_serializer(np.bool_(False)), bool)

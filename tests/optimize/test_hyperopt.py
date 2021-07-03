@@ -307,6 +307,18 @@ def test_roi_table_generation(hyperopt) -> None:
     assert hyperopt.custom_hyperopt.generate_roi_table(params) == {0: 6, 15: 3, 25: 1, 30: 0}
 
 
+def test_params_no_optimize_details(hyperopt) -> None:
+    hyperopt.config['spaces'] = ['buy']
+    res = hyperopt._get_no_optimize_details()
+    assert isinstance(res, dict)
+    assert "trailing" in res
+    assert res["trailing"]['trailing_stop'] is False
+    assert "roi" in res
+    assert res['roi']['0'] == 0.04
+    assert "stoploss" in res
+    assert res['stoploss']['stoploss'] == -0.1
+
+
 def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     dumper = mocker.patch('freqtrade.optimize.hyperopt.dump')
     dumper2 = mocker.patch('freqtrade.optimize.hyperopt.Hyperopt._save_result')
