@@ -37,6 +37,10 @@ class AgeFilter(IPairList):
                                        f"({exchange.ohlcv_candle_limit('1d')})")
         if self._max_days_listed and self._max_days_listed <= self._min_days_listed:
             raise OperationalException("AgeFilter max_days_listed <= min_days_listed not permitted")
+        if self._max_days_listed > exchange.ohlcv_candle_limit('1d'):
+            raise OperationalException("AgeFilter requires max_days_listed to not exceed "
+                                       "exchange max request size "
+                                       f"({exchange.ohlcv_candle_limit('1d')})")
 
     @property
     def needstickers(self) -> bool:
@@ -67,7 +71,7 @@ class AgeFilter(IPairList):
             return pairlist
 
         since_days = -(
-            self._max_days_listed if self._max_days_listedelse else self._min_days_listed
+            self._max_days_listed if self._max_days_listed else self._min_days_listed
         ) - 1
         since_ms = int(arrow.utcnow()
                        .floor('day')
