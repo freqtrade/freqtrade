@@ -228,16 +228,20 @@ class Backtesting:
             # Special case: trailing triggers within same candle as trade opened. Assume most
             # pessimistic price movement, which is moving just enough to arm stoploss and
             # immediately going down to stop price.
-            if (sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0
-                    and self.strategy.trailing_stop_positive):
-                if self.strategy.trailing_only_offset_is_reached:
+            if sell.sell_type == SellType.TRAILING_STOP_LOSS and trade_dur == 0:
+                if (
+                    not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
+                    and self.strategy.trailing_only_offset_is_reached
+                    and self.strategy.trailing_stop_positive_offset is not None
+                    and self.strategy.trailing_stop_positive
+                ):
                     # Worst case: price reaches stop_positive_offset and dives down.
                     stop_rate = (sell_row[OPEN_IDX] *
                                  (1 + abs(self.strategy.trailing_stop_positive_offset) -
                                  abs(self.strategy.trailing_stop_positive)))
                 else:
                     # Worst case: price ticks tiny bit above open and dives down.
-                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(self.strategy.trailing_stop_positive))
+                    stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct))
                     assert stop_rate < sell_row[HIGH_IDX]
                 return stop_rate
 
