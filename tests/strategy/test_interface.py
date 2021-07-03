@@ -12,6 +12,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import SellType
 from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
@@ -657,17 +658,31 @@ def test_hyperopt_parameters():
     assert list(intpar.range) == [0, 1, 2, 3, 4, 5]
 
     fltpar = RealParameter(low=0.0, high=5.5, default=1.0, space='buy')
+    assert fltpar.value == 1
     assert isinstance(fltpar.get_space(''), Real)
-    assert fltpar.value == 1
 
-    fltpar = DecimalParameter(low=0.0, high=5.5, default=1.0004, decimals=3, space='buy')
-    assert isinstance(fltpar.get_space(''), Integer)
-    assert fltpar.value == 1
+    fltpar = DecimalParameter(low=0.0, high=0.5, default=0.14, decimals=1, space='buy')
+    assert fltpar.value == 0.1
+    assert isinstance(fltpar.get_space(''), SKDecimal)
+    assert isinstance(fltpar.range, list)
+    assert len(list(fltpar.range)) == 1
+    # Range contains ONLY the default / value.
+    assert list(fltpar.range) == [fltpar.value]
+    fltpar.in_space = True
+    assert len(list(fltpar.range)) == 6
+    assert list(fltpar.range) == [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
 
     catpar = CategoricalParameter(['buy_rsi', 'buy_macd', 'buy_none'],
                                   default='buy_macd', space='buy')
-    assert isinstance(catpar.get_space(''), Categorical)
     assert catpar.value == 'buy_macd'
+    assert isinstance(catpar.get_space(''), Categorical)
+    assert isinstance(catpar.range, list)
+    assert len(list(catpar.range)) == 1
+    # Range contains ONLY the default / value.
+    assert list(catpar.range) == [catpar.value]
+    catpar.in_space = True
+    assert len(list(catpar.range)) == 3
+    assert list(catpar.range) == ['buy_rsi', 'buy_macd', 'buy_none']
 
 
 def test_auto_hyperopt_interface(default_conf):

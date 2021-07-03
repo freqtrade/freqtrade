@@ -205,6 +205,21 @@ class DecimalParameter(NumericParameter):
         return SKDecimal(low=self.low, high=self.high, decimals=self._decimals, name=name,
                          **self._space_params)
 
+    @property
+    def range(self):
+        """
+        Get each value in this space as list.
+        Returns a List from low to high (inclusive) in Hyperopt mode.
+        Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
+        calculating 100ds of indicators.
+        """
+        if self.in_space and self.optimize:
+            low = int(self.low * pow(10, self._decimals))
+            high = int(self.high * pow(10, self._decimals)) + 1
+            return [round(n * pow(0.1, self._decimals), self._decimals) for n in range(low, high)]
+        else:
+            return [self.value]
+
 
 class CategoricalParameter(BaseParameter):
     default: Any
@@ -238,6 +253,19 @@ class CategoricalParameter(BaseParameter):
         :param name: A name of parameter field.
         """
         return Categorical(self.opt_range, name=name, **self._space_params)
+
+    @property
+    def range(self):
+        """
+        Get each value in this space as list.
+        Returns a List of categories in Hyperopt mode.
+        Returns a List with 1 item (`value`) in "non-hyperopt" mode, to avoid
+        calculating 100ds of indicators.
+        """
+        if self.in_space and self.optimize:
+            return self.opt_range
+        else:
+            return [self.value]
 
 
 class HyperStrategyMixin(object):
