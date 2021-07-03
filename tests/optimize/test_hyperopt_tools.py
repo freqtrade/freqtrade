@@ -2,8 +2,8 @@ import logging
 import re
 from pathlib import Path
 from typing import Dict, List
-import numpy as np
 
+import numpy as np
 import pytest
 import rapidjson
 
