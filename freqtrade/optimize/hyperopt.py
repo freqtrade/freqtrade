@@ -12,7 +12,6 @@ from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import progressbar
 import rapidjson
 from colorama import Fore, Style
@@ -20,16 +19,16 @@ from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from pandas import DataFrame
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
-from freqtrade.misc import file_dump_json, plural
+from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
-from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
 
@@ -78,8 +77,11 @@ class Hyperopt:
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
+            self.auto_hyperopt = True
         else:
             self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
+            self.auto_hyperopt = False
+
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
         self.custom_hyperopt.strategy = self.backtesting.strategy
 
@@ -163,13 +165,9 @@ class Hyperopt:
         While not a valid json object - this allows appending easily.
         :param epoch: result dictionary for this epoch.
         """
-        def default_parser(x):
-            if isinstance(x, np.integer):
-                return int(x)
-            return str(x)
-
+        epoch[FTHYPT_FILEVERSION] = 2
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=default_parser,
+            rapidjson.dump(epoch, f, default=hyperopt_serializer,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 
@@ -199,6 +197,25 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
+        return result
+
+    def _get_no_optimize_details(self) -> Dict[str, Any]:
+        """
+        Get non-optimized parameters
+        """
+        result: Dict[str, Any] = {}
+        strategy = self.backtesting.strategy
+        if not HyperoptTools.has_space(self.config, 'roi'):
+            result['roi'] = {str(k): v for k, v in strategy.minimal_roi.items()}
+        if not HyperoptTools.has_space(self.config, 'stoploss'):
+            result['stoploss'] = {'stoploss': strategy.stoploss}
+        if not HyperoptTools.has_space(self.config, 'trailing'):
+            result['trailing'] = {
+                'trailing_stop': strategy.trailing_stop,
+                'trailing_stop_positive': strategy.trailing_stop_positive,
+                'trailing_stop_positive_offset': strategy.trailing_stop_positive_offset,
+                'trailing_only_offset_is_reached': strategy.trailing_only_offset_is_reached,
+            }
         return result
 
     def print_results(self, results) -> None:
@@ -310,7 +327,8 @@ class Hyperopt:
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
 
-        not_optimized = self.backtesting.strategy.get_params_dict()
+        not_optimized = self.backtesting.strategy.get_no_optimize_params()
+        not_optimized = deep_merge_dicts(not_optimized, self._get_no_optimize_details())
 
         trade_count = strat_stats['total_trades']
         total_profit = strat_stats['profit_total']
@@ -470,6 +488,12 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
+            if self.auto_hyperopt:
+                HyperoptTools.try_export_params(
+                    self.config,
+                    self.backtesting.strategy.get_strategy_name(),
+                    self.current_best_epoch)
+
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
         else:

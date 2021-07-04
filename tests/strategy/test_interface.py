@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import arrow
@@ -707,3 +708,50 @@ def test_auto_hyperopt_interface(default_conf):
 
     with pytest.raises(OperationalException, match=r"Inconclusive parameter.*"):
         [x for x in strategy.detect_parameters('sell')]
+
+
+def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
+    default_conf.update({'strategy': 'HyperoptableStrategy'})
+    del default_conf['stoploss']
+    del default_conf['minimal_roi']
+    mocker.patch.object(Path, 'is_file', MagicMock(return_value=True))
+    mocker.patch.object(Path, 'open')
+    expected_result = {
+        "strategy_name": "HyperoptableStrategy",
+        "params": {
+            "stoploss": {
+                "stoploss": -0.05,
+            },
+            "roi": {
+                "0": 0.2,
+                "1200": 0.01
+            }
+        }
+    }
+    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    PairLocks.timeframe = default_conf['timeframe']
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert strategy.stoploss == -0.05
+    assert strategy.minimal_roi == {0: 0.2, 1200: 0.01}
+
+    expected_result = {
+        "strategy_name": "HyperoptableStrategy_No",
+        "params": {
+            "stoploss": {
+                "stoploss": -0.05,
+            },
+            "roi": {
+                "0": 0.2,
+                "1200": 0.01
+            }
+        }
+    }
+
+    mocker.patch('freqtrade.strategy.hyper.json_load', return_value=expected_result)
+    with pytest.raises(OperationalException, match="Invalid parameter file provided."):
+        StrategyResolver.load_strategy(default_conf)
+
+    mocker.patch('freqtrade.strategy.hyper.json_load', MagicMock(side_effect=ValueError()))
+
+    StrategyResolver.load_strategy(default_conf)
+    assert log_has("Invalid parameter file format.", caplog)
