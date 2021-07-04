@@ -54,14 +54,13 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
         open_date=ten_minutes_ago,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        # borrowed=90.99181073,
+        leverage=3.0,
         interest_rate=0.0005,
         exchange='binance'
     )
     # assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
-    assert trade.borrowed is None
     assert trade.is_short is None
     # trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -101,7 +100,7 @@ def test_update_market_order(
         interest_rate: 0.05% per 4 hrs
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        amount: = 275.97543219 crypto
         stake_amount: 0.0038388182617629
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
@@ -131,6 +130,7 @@ def test_update_market_order(
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=ten_minutes_ago,
+        leverage=3.0,
         interest_rate=0.0005,
         exchange='kraken'
     )
@@ -228,7 +228,7 @@ def test_trade_close(fee, five_hours_ago):
         open_rate: 0.02 base
         close_rate: 0.01 base
         leverage: 3.0
-        amount: 5 * 3 = 15 crypto
+        amount: 15 crypto
         borrowed: 15 crypto
         time-periods: 5 hours = 5/4
 
@@ -286,13 +286,13 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
         pair='ETH/BTC',
         stake_amount=0.001,
         open_rate=0.1,
-        amount=5,
+        amount=15.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
         interest_rate=0.0005,
-        is_short=True,
-        borrowed=15
+        leverage=3.0,
+        is_short=True
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -306,6 +306,7 @@ def test_update_open_order(limit_short_order):
         stake_amount=1.00,
         open_rate=0.01,
         amount=5,
+        leverage=3.0,
         fee_open=0.1,
         fee_close=0.1,
         interest_rate=0.0005,
@@ -355,7 +356,7 @@ def test_calc_close_trade_price(market_short_order, market_exit_short_order, ten
         interest_rate: 0.05% per 4 hrs
         open_rate: 0.00004173 base
         close_rate: 0.00001234 base
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        amount: = 275.97543219 crypto
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
         interest: borrowed * interest_rate * time-periods
@@ -399,7 +400,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
         stake_amount: 0.0038388182617629
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        amount: = 275.97543219 crypto
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
                         5 hours = 5/4
@@ -494,8 +495,8 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
         amount:
-            91.99181073 * leverage(3) = 275.97543219 crypto
-            91.99181073 * leverage(5) = 459.95905365 crypto
+            275.97543219 crypto
+            459.95905365 crypto
         borrowed:
             275.97543219  crypto
             459.95905365  crypto
@@ -512,7 +513,7 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=91.99181073,
+        amount=275.97543219,
         open_rate=0.00001099,
         open_date=ten_minutes_ago,
         fee_open=fee.return_value,
@@ -531,7 +532,7 @@ def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fe
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
-        amount=91.99181073,
+        amount=459.95905365,
         open_rate=0.00001099,
         open_date=five_hours_ago,
         fee_open=fee.return_value,
@@ -581,7 +582,7 @@ def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, f
         fee_close=fee.return_value,
         exchange='binance',
         is_short=True,
-        borrowed=275.97543219,
+        leverage=3.0,
         interest_rate=0.0005
     )
 
@@ -599,7 +600,7 @@ def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, f
         fee_close=fee.return_value,
         exchange='binance',
         is_short=True,
-        borrowed=459.95905365,
+        leverage=5.0,
         interest_rate=0.0005
     )
 
@@ -679,7 +680,8 @@ def test_stoploss_reinitialization(default_conf, fee):
         exchange='binance',
         open_rate=1,
         max_rate=1,
-        is_short=True
+        is_short=True,
+        leverage=3.0,
     )
     trade.adjust_stop_loss(trade.open_rate, -0.05, True)
     assert trade.stop_loss == 1.05
