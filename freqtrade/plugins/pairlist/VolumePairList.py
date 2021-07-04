@@ -147,12 +147,12 @@ class VolumePairList(IPairList):
                            .floor('minute')
                            .shift(minutes=-(self._lookback_period * self._tf_in_min)
                                   - self._tf_in_min)
-                           .float_timestamp) * 1000
+                           .int_timestamp) * 1000
 
             to_ms = int(arrow.utcnow()
                         .floor('minute')
                         .shift(minutes=-self._tf_in_min)
-                        .float_timestamp) * 1000
+                        .int_timestamp) * 1000
 
             # todo: utc date output for starting date
             self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: "
