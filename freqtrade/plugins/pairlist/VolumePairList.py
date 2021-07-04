@@ -12,6 +12,7 @@ from cachetools.ttl import TTLCache
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.misc import format_ms_time
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,12 @@ class VolumePairList(IPairList):
         self._lookback_timeframe = self._pairlistconfig.get('lookback_timeframe', '1d')
         self._lookback_period = self._pairlistconfig.get('lookback_period', 0)
 
+        if (self._lookback_days > 0) & (self._lookback_period > 0):
+            raise OperationalException(
+                f'Ambigous configuration: lookback_days and lookback_period both set in pairlist config. '
+                f'Please set lookback_days only or lookback_period and lookback_timeframe and restart the bot.'
+            )
+
         # overwrite lookback timeframe and days when lookback_days is set
         if self._lookback_days > 0:
             self._lookback_timeframe = '1d'
@@ -49,7 +56,8 @@ class VolumePairList(IPairList):
         # get timeframe in minutes and seconds 
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
         self._tf_in_sec = self._tf_in_min * 60
-
+        
+        # wether to use range lookback or not
         self._use_range = (self._tf_in_min > 0) & (self._lookback_period > 0)
 
         if self._use_range & (self._refresh_period < self._tf_in_sec):
@@ -138,7 +146,13 @@ class VolumePairList(IPairList):
                         .shift(minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min)
                         .float_timestamp) * 1000
 
-            self.log_once(f"Using volume range of {self._lookback_period} {self._lookback_timeframe} candles from {since_ms}", logger.info)
+            to_ms = int(arrow.utcnow()
+                        .floor('minute')
+                        .shift(minutes=-self._tf_in_min)
+                        .float_timestamp) * 1000
+
+            # todo: utc date output for starting date
+            self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: {self._lookback_timeframe}, starting from {format_ms_time(since_ms)} till {format_ms_time(to_ms)}", logger.info)
             needed_pairs = [(p, self._lookback_timeframe) for p in [s['symbol'] for s in filtered_tickers] if p not in self._pair_cache]
 
             # Get all candles
@@ -148,17 +162,14 @@ class VolumePairList(IPairList):
 
             for i,p in enumerate(filtered_tickers):
                 pair_candles = candles[(p['symbol'], self._lookback_timeframe)] if (p['symbol'], self._lookback_timeframe) in candles else None
-                # print(p['symbol'], " 24h quote volume     = ",filtered_tickers[i]['quoteVolume'])
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if not pair_candles.empty:
                     pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low'] + pair_candles['close']) / 3
                     pair_candles['quoteVolume'] = pair_candles['volume'] * pair_candles['typical_price']
-                    # replace quoteVolume with range sum
+                    # replace quoteVolume with range quoteVolume sum calculated above
                     filtered_tickers[i]['quoteVolume'] = pair_candles['quoteVolume'].sum()
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
-
-                # print(p['symbol'], " range quote volume   = ",filtered_tickers[i]['quoteVolume'])
 
         if self._min_value > 0:
             filtered_tickers = [
