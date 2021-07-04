@@ -49,9 +49,6 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     strategy = get_column_def(cols, 'strategy', 'null')
 
     leverage = get_column_def(cols, 'leverage', 'null')
-    borrowed = get_column_def(cols, 'borrowed', '0.0')
-    borrowed_currency = get_column_def(cols, 'borrowed_currency', 'null')
-    collateral_currency = get_column_def(cols, 'collateral_currency', 'null')
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     liquidation_price = get_column_def(cols, 'liquidation_price', 'null')
     is_short = get_column_def(cols, 'is_short', 'False')
@@ -91,8 +88,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, borrowed, borrowed_currency, collateral_currency, interest_rate,
-            liquidation_price, is_short
+            leverage, interest_rate, liquidation_price, is_short
             )
         select id, lower(exchange),
             case
@@ -116,13 +112,10 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {sell_order_status} sell_order_status,
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
-            {leverage} leverage, {borrowed} borrowed, {borrowed_currency} borrowed_currency,
-            {collateral_currency} collateral_currency, {interest_rate} interest_rate,
+            {leverage} leverage, {interest_rate} interest_rate,
             {liquidation_price} liquidation_price, {is_short} is_short
             from {table_back_name}
             """))
-
-# TODO: Does leverage go in here?
 
 
 def migrate_open_orders_to_trades(engine):

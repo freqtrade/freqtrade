@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 
 import ccxt
+from decimal import Decimal
 
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
@@ -89,3 +90,12 @@ class Binance(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    @staticmethod
+    def calculate_interest(borrowed: Decimal, hours: Decimal, interest_rate: Decimal) -> Decimal:
+        # Rate is per day but accrued hourly or something
+        # binance: https://www.binance.com/en-AU/support/faq/360030157812
+        one = Decimal(1)
+        twenty_four = Decimal(24)
+        # TODO-mg: Is hours rounded?
+        return borrowed * interest_rate * max(hours, one)/twenty_four

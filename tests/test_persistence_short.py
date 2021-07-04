@@ -14,7 +14,357 @@ from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten_minutes_ago, caplog):
+def test_interest_kraken(market_short_order, fee):
+    """
+        Market trade on Kraken at 3x and 8x leverage
+        Short trade
+        interest_rate: 0.05%, 0.25% per 4 hrs
+        open_rate: 0.00004173 base
+        close_rate: 0.00004099 base
+        amount:
+            275.97543219 crypto
+            459.95905365 crypto
+        borrowed:
+            275.97543219  crypto
+            459.95905365  crypto
+        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
+                        5 hours = 5/4
+
+        interest: borrowed * interest_rate * time-periods
+                    = 275.97543219 * 0.0005 * 1    = 0.137987716095 crypto
+                    = 275.97543219 * 0.00025 * 5/4 = 0.086242322559375 crypto
+                    = 459.95905365 * 0.0005 * 5/4  = 0.28747440853125 crypto
+                    = 459.95905365 * 0.00025 * 1   = 0.1149897634125 crypto
+    """
+
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=275.97543219,
+        open_rate=0.00001099,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='kraken',
+        is_short=True,
+        leverage=3.0,
+        interest_rate=0.0005
+    )
+
+    assert float(round(trade.calculate_interest(), 8)) == round(0.137987716095, 8)
+    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
+                 ) == round(0.086242322559375, 8)
+
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=459.95905365,
+        open_rate=0.00001099,
+        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='kraken',
+        is_short=True,
+        leverage=5.0,
+        interest_rate=0.0005
+    )
+
+    assert float(round(trade.calculate_interest(), 8)) == round(0.28747440853125, 8)
+    trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
+                 ) == round(0.1149897634125, 8)
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_interest_binance(market_short_order, fee):
+    """
+        Market trade on Binance at 3x and 5x leverage
+        Short trade
+        interest_rate: 0.05%, 0.25% per 1 day
+        open_rate: 0.00004173 base
+        close_rate: 0.00004099 base
+        amount:
+            91.99181073 * leverage(3) = 275.97543219 crypto
+            91.99181073 * leverage(5) = 459.95905365 crypto
+        borrowed:
+            275.97543219  crypto
+            459.95905365  crypto
+        time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
+                        5 hours = 5/24
+
+        interest: borrowed * interest_rate * time-periods
+                    = 275.97543219 * 0.0005 * 1/24 = 0.005749488170625 crypto
+                    = 275.97543219 * 0.00025 * 5/24 = 0.0143737204265625 crypto
+                    = 459.95905365 * 0.0005 * 5/24 = 0.047912401421875 crypto
+                    = 459.95905365 * 0.00025 * 1/24 = 0.0047912401421875 crypto
+    """
+
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=275.97543219,
+        open_rate=0.00001099,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        leverage=3.0,
+        interest_rate=0.0005
+    )
+
+    assert float(round(trade.calculate_interest(), 8)) == 0.00574949
+    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.01437372
+
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=459.95905365,
+        open_rate=0.00001099,
+        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        leverage=5.0,
+        interest_rate=0.0005
+    )
+
+    assert float(round(trade.calculate_interest(), 8)) == 0.04791240
+    trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
+    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.00479124
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_calc_open_trade_value(market_short_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.00004173,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        interest_rate=0.0005,
+        is_short=True,
+        leverage=3.0,
+        exchange='kraken',
+    )
+    trade.open_order_id = 'open_trade'
+    trade.update(market_short_order)  # Buy @ 0.00001099
+    # Get the open rate price with the standard fee rate
+    assert trade._calc_open_trade_value() == 0.011487663648325479
+    trade.fee_open = 0.003
+    # Get the open rate price with a custom fee rate
+    assert trade._calc_open_trade_value() == 0.011481905420932834
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_update_open_order(limit_short_order):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=1.00,
+        open_rate=0.01,
+        amount=5,
+        leverage=3.0,
+        fee_open=0.1,
+        fee_close=0.1,
+        interest_rate=0.0005,
+        is_short=True,
+        exchange='binance',
+    )
+    assert trade.open_order_id is None
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    limit_short_order['status'] = 'open'
+    trade.update(limit_short_order)
+    assert trade.open_order_id is None
+    assert trade.close_profit is None
+    assert trade.close_date is None
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_calc_close_trade_price_exception(limit_short_order, fee):
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.1,
+        amount=15.0,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        interest_rate=0.0005,
+        leverage=3.0,
+        is_short=True
+    )
+    trade.open_order_id = 'something'
+    trade.update(limit_short_order)
+    assert trade.calc_close_trade_value() == 0.0
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_calc_close_trade_price(market_short_order, market_exit_short_order, fee):
+    """
+        10 minute short market trade on Kraken at 3x leverage
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per 4 hrs
+        open_rate: 0.00004173 base
+        close_rate: 0.00001234 base
+        amount: = 275.97543219 crypto
+        borrowed: 275.97543219  crypto
+        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
+        interest: borrowed * interest_rate * time-periods
+                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
+        amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (276.113419906095 * 0.00001234) + (276.113419906095 * 0.00001234 * 0.0025)
+            = 0.01134618380465571
+    """
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        amount=5,
+        open_rate=0.00001099,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        interest_rate=0.0005,
+        is_short=True,
+        leverage=3.0,
+        exchange='kraken',
+    )
+    trade.open_order_id = 'close_trade'
+    trade.update(market_short_order)  # Buy @ 0.00001099
+    # Get the close rate price with a custom close rate and a regular fee rate
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.003415757700645315)
+    # Get the close rate price with a custom close rate and a custom fee rate
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.0034174613204461354)
+    # Test when we apply a Sell order, and ask price with a custom fee rate
+    trade.update(market_exit_short_order)
+    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011374478527360586)
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, fee):
+    """
+        5 hour short trade on Binance
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per day
+        open_rate: 0.00001173 base
+        close_rate: 0.00001099 base
+        amount: 90.99181073 crypto
+        borrowed: 90.99181073  crypto
+        stake_amount: 0.0010673339398629
+        time-periods: 5 hours = 5/24
+        interest: borrowed * interest_rate * time-periods
+                    = 90.99181073 * 0.0005 * 5/24 = 0.009478313617708333 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = (90.99181073 * 0.00001173) - (90.99181073 * 0.00001173 * 0.0025)
+            = 0.0010646656050132426
+        amount_closed: amount + interest = 90.99181073 + 0.009478313617708333 = 91.0012890436177
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (91.0012890436177 * 0.00001099) + (91.0012890436177 * 0.00001099 * 0.0025)
+            = 0.001002604427005832
+        total_profit = open_value - close_value
+            = 0.0010646656050132426 - 0.001002604427005832
+            = 0.00006206117800741065
+        total_profit_percentage = (close_value - open_value) / stake_amount
+            = (0.0010646656050132426 - 0.0010025208853391716)/0.0010673339398629
+            = 0.05822425142973869
+    """
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.0010673339398629,
+        open_rate=0.01,
+        amount=5,
+        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        interest_rate=0.0005
+    )
+    trade.open_order_id = 'something'
+    trade.update(limit_short_order)
+    assert trade._calc_open_trade_value() == 0.0010646656050132426
+    trade.update(limit_exit_short_order)
+
+    # Will be slightly different due to slight changes in compilation time, and the fact that interest depends on time
+    assert round(trade.calc_close_trade_value(), 11) == round(0.001002604427005832, 11)
+    # Profit in BTC
+    assert round(trade.calc_profit(), 8) == round(0.00006206117800741065, 8)
+    # Profit in percent
+    # assert round(trade.calc_profit_ratio(), 11) == round(0.05822425142973869, 11)
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_trade_close(fee):
+    """
+        Five hour short trade on Kraken at 3x leverage
+        Short trade
+        Exchange: Kraken
+        fee: 0.25% base
+        interest_rate: 0.05% per 4 hours
+        open_rate: 0.02 base
+        close_rate: 0.01 base
+        leverage: 3.0
+        amount: 15 crypto
+        borrowed: 15 crypto
+        time-periods: 5 hours = 5/4
+
+        interest: borrowed * interest_rate * time-periods
+                    = 15 * 0.0005 * 5/4 = 0.009375 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = (15 * 0.02) - (15 * 0.02 * 0.0025)
+            = 0.29925
+        amount_closed: amount + interest = 15 + 0.009375 = 15.009375
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (15.009375 * 0.01) + (15.009375 * 0.01 * 0.0025)
+            = 0.150468984375
+        total_profit = open_value - close_value
+            = 0.29925 - 0.150468984375
+            = 0.148781015625
+        total_profit_percentage = total_profit / stake_amount
+            = 0.148781015625 / 0.1
+            = 1.4878101562500001
+    """
+    trade = Trade(
+        pair='ETH/BTC',
+        stake_amount=0.1,
+        open_rate=0.02,
+        amount=15,
+        is_open=True,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        exchange='kraken',
+        is_short=True,
+        leverage=3.0,
+        interest_rate=0.0005
+    )
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert trade.is_open is True
+    trade.close(0.01)
+    assert trade.is_open is False
+    assert trade.close_profit == round(1.4878101562500001, 8)
+    assert trade.close_date is not None
+
+    # TODO-mg: Remove these comments probably
+    # new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
+    # assert trade.close_date != new_date
+    # # Close should NOT update close_date if the trade has been closed already
+    # assert trade.is_open is False
+    # trade.close_date = new_date
+    # trade.close(0.02)
+    # assert trade.close_date == new_date
+
+
+@ pytest.mark.usefixtures("init_persistence")
+def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, caplog):
     """
         10 minute short limit trade on binance
 
@@ -40,7 +390,7 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
             = 0.0010646656050132426 - 0.0010025208853391716
             = 0.00006214471967407108
         total_profit_percentage = (close_value - open_value) / stake_amount
-            = (0.0010646656050132426 - 0.0010025208853391716) / 0.0010673339398629
+            = 0.00006214471967407108 / 0.0010673339398629
             = 0.05822425142973869
 
     """
@@ -51,7 +401,7 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
         open_rate=0.01,
         amount=5,
         is_open=True,
-        open_date=ten_minutes_ago,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         # borrowed=90.99181073,
@@ -61,7 +411,7 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
     # assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
-    assert trade.borrowed is None
+    assert trade.borrowed == 0.0
     assert trade.is_short is None
     # trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -86,12 +436,11 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, ten
                       caplog)
 
 
-@pytest.mark.usefixtures("init_persistence")
+@ pytest.mark.usefixtures("init_persistence")
 def test_update_market_order(
     market_short_order,
     market_exit_short_order,
     fee,
-    ten_minutes_ago,
     caplog
 ):
     """
@@ -101,7 +450,7 @@ def test_update_market_order(
         interest_rate: 0.05% per 4 hrs
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        amount: = 275.97543219 crypto
         stake_amount: 0.0038388182617629
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
@@ -130,7 +479,8 @@ def test_update_market_order(
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=ten_minutes_ago,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        leverage=3.0,
         interest_rate=0.0005,
         exchange='kraken'
     )
@@ -164,233 +514,8 @@ def test_update_market_order(
     #                   caplog)
 
 
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, five_hours_ago, fee):
-    """
-        5 hour short trade on Binance
-        Short trade
-        fee: 0.25% base
-        interest_rate: 0.05% per day
-        open_rate: 0.00001173 base
-        close_rate: 0.00001099 base
-        amount: 90.99181073 crypto
-        borrowed: 90.99181073  crypto
-        stake_amount: 0.0010673339398629
-        time-periods: 5 hours = 5/24
-        interest: borrowed * interest_rate * time-periods
-                    = 90.99181073 * 0.0005 * 5/24 = 0.009478313617708333 crypto
-        open_value: (amount * open_rate) - (amount * open_rate * fee)
-            = (90.99181073 * 0.00001173) - (90.99181073 * 0.00001173 * 0.0025)
-            = 0.0010646656050132426
-        amount_closed: amount + interest = 90.99181073 + 0.009478313617708333 = 91.0012890436177
-        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (91.0012890436177 * 0.00001099) + (91.0012890436177 * 0.00001099 * 0.0025)
-            = 0.001002604427005832
-        total_profit = open_value - close_value
-            = 0.0010646656050132426 - 0.001002604427005832
-            = 0.00006206117800741065
-        total_profit_percentage = (close_value - open_value) / stake_amount
-            = (0.0010646656050132426 - 0.0010025208853391716)/0.0010673339398629
-            = 0.05822425142973869
-    """
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.0010673339398629,
-        open_rate=0.01,
-        amount=5,
-        open_date=five_hours_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        interest_rate=0.0005
-    )
-    trade.open_order_id = 'something'
-    trade.update(limit_short_order)
-    assert trade._calc_open_trade_value() == 0.0010646656050132426
-    trade.update(limit_exit_short_order)
-
-    # Will be slightly different due to slight changes in compilation time, and the fact that interest depends on time
-    assert round(trade.calc_close_trade_value(), 11) == round(0.001002604427005832, 11)
-    # Profit in BTC
-    assert round(trade.calc_profit(), 8) == round(0.00006206117800741065, 8)
-    # Profit in percent
-    # assert round(trade.calc_profit_ratio(), 11) == round(0.05822425142973869, 11)
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_trade_close(fee, five_hours_ago):
-    """
-        Five hour short trade on Kraken at 3x leverage
-        Short trade
-        Exchange: Kraken
-        fee: 0.25% base
-        interest_rate: 0.05% per 4 hours
-        open_rate: 0.02 base
-        close_rate: 0.01 base
-        leverage: 3.0
-        amount: 5 * 3 = 15 crypto
-        borrowed: 15 crypto
-        time-periods: 5 hours = 5/4
-
-        interest: borrowed * interest_rate * time-periods
-                    = 15 * 0.0005 * 5/4 = 0.009375 crypto
-        open_value: (amount * open_rate) - (amount * open_rate * fee)
-            = (15 * 0.02) - (15 * 0.02 * 0.0025)
-            = 0.29925
-        amount_closed: amount + interest = 15 + 0.009375 = 15.009375
-        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (15.009375 * 0.01) + (15.009375 * 0.01 * 0.0025)
-            = 0.150468984375
-        total_profit = open_value - close_value
-            = 0.29925 - 0.150468984375
-            = 0.148781015625
-        total_profit_percentage = total_profit / stake_amount
-            = 0.148781015625 / 0.1
-            = 1.4878101562500001
-    """
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.1,
-        open_rate=0.02,
-        amount=5,
-        is_open=True,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_date=five_hours_ago,
-        exchange='kraken',
-        is_short=True,
-        leverage=3.0,
-        interest_rate=0.0005
-    )
-    assert trade.close_profit is None
-    assert trade.close_date is None
-    assert trade.is_open is True
-    trade.close(0.01)
-    assert trade.is_open is False
-    assert trade.close_profit == round(1.4878101562500001, 8)
-    assert trade.close_date is not None
-
-    # TODO-mg: Remove these comments probably
-    # new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
-    # assert trade.close_date != new_date
-    # # Close should NOT update close_date if the trade has been closed already
-    # assert trade.is_open is False
-    # trade.close_date = new_date
-    # trade.close(0.02)
-    # assert trade.close_date == new_date
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception(limit_short_order, fee):
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.1,
-        amount=5,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        interest_rate=0.0005,
-        is_short=True,
-        borrowed=15
-    )
-    trade.open_order_id = 'something'
-    trade.update(limit_short_order)
-    assert trade.calc_close_trade_value() == 0.0
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_update_open_order(limit_short_order):
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=1.00,
-        open_rate=0.01,
-        amount=5,
-        fee_open=0.1,
-        fee_close=0.1,
-        interest_rate=0.0005,
-        is_short=True,
-        exchange='binance',
-    )
-    assert trade.open_order_id is None
-    assert trade.close_profit is None
-    assert trade.close_date is None
-    limit_short_order['status'] = 'open'
-    trade.update(limit_short_order)
-    assert trade.open_order_id is None
-    assert trade.close_profit is None
-    assert trade.close_date is None
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value(market_short_order, ten_minutes_ago, fee):
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00004173,
-        open_date=ten_minutes_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        interest_rate=0.0005,
-        is_short=True,
-        leverage=3.0,
-        exchange='kraken',
-    )
-    trade.open_order_id = 'open_trade'
-    trade.update(market_short_order)  # Buy @ 0.00001099
-    # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == 0.011487663648325479
-    trade.fee_open = 0.003
-    # Get the open rate price with a custom fee rate
-    assert trade._calc_open_trade_value() == 0.011481905420932834
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(market_short_order, market_exit_short_order, ten_minutes_ago, fee):
-    """
-        10 minute short market trade on Kraken at 3x leverage
-        Short trade
-        fee: 0.25% base
-        interest_rate: 0.05% per 4 hrs
-        open_rate: 0.00004173 base
-        close_rate: 0.00001234 base
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
-        borrowed: 275.97543219  crypto
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-        interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
-        amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
-        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (276.113419906095 * 0.00001234) + (276.113419906095 * 0.00001234 * 0.0025)
-            = 0.01134618380465571
-    """
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_date=ten_minutes_ago,
-        interest_rate=0.0005,
-        is_short=True,
-        leverage=3.0,
-        exchange='kraken',
-    )
-    trade.open_order_id = 'close_trade'
-    trade.update(market_short_order)  # Buy @ 0.00001099
-    # Get the close rate price with a custom close rate and a regular fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.003415757700645315)
-    # Get the close rate price with a custom close rate and a custom fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.0034174613204461354)
-    # Test when we apply a Sell order, and ask price with a custom fee rate
-    trade.update(market_exit_short_order)
-    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011374478527360586)
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ago, five_hours_ago, fee):
+@ pytest.mark.usefixtures("init_persistence")
+def test_calc_profit(market_short_order, market_exit_short_order, fee):
     """
         Market trade on Kraken at 3x leverage
         Short trade
@@ -399,7 +524,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
         stake_amount: 0.0038388182617629
-        amount: 91.99181073 * leverage(3) = 275.97543219 crypto
+        amount: = 275.97543219 crypto
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
                         5 hours = 5/4
@@ -438,7 +563,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
         stake_amount=0.0038388182617629,
         amount=5,
         open_rate=0.00001099,
-        open_date=ten_minutes_ago,
+        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='kraken',
@@ -456,7 +581,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
         rate=0.00004374, interest_rate=0.0005) == round(-0.16143779115744006, 8)
 
     # Lower than open rate
-    trade.open_date = five_hours_ago
+    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
     assert trade.calc_profit(rate=0.00000437, interest_rate=0.00025) == round(0.01027826, 8)
     assert trade.calc_profit_ratio(
         rate=0.00000437, interest_rate=0.00025) == round(2.677453699564163, 8)
@@ -469,7 +594,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
                                    interest_rate=0.0005) == round(-0.16340506919482353, 8)
 
     # Lower than open rate
-    trade.open_date = ten_minutes_ago
+    trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
     assert trade.calc_profit(rate=0.00000437, fee=0.003,
                              interest_rate=0.00025) == round(0.01027773, 8)
     assert trade.calc_profit_ratio(rate=0.00000437, fee=0.003,
@@ -483,129 +608,6 @@ def test_calc_profit(market_short_order, market_exit_short_order, ten_minutes_ag
     # Test with a custom fee rate on the close trade
     # assert trade.calc_profit(fee=0.003) == 0.00006163
     # assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_interest_kraken(market_short_order, ten_minutes_ago, five_hours_ago, fee):
-    """
-        Market trade on Kraken at 3x and 8x leverage
-        Short trade
-        interest_rate: 0.05%, 0.25% per 4 hrs
-        open_rate: 0.00004173 base
-        close_rate: 0.00004099 base
-        amount:
-            91.99181073 * leverage(3) = 275.97543219 crypto
-            91.99181073 * leverage(5) = 459.95905365 crypto
-        borrowed:
-            275.97543219  crypto
-            459.95905365  crypto
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-                        5 hours = 5/4
-
-        interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
-                    = 275.97543219 * 0.00025 * 5/4 = 0.086242322559375 crypto
-                    = 459.95905365 * 0.0005 * 5/4 = 0.28747440853125 crypto
-                    = 459.95905365 * 0.00025 * 1 = 0.1149897634125 crypto
-    """
-
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=91.99181073,
-        open_rate=0.00001099,
-        open_date=ten_minutes_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='kraken',
-        is_short=True,
-        leverage=3.0,
-        interest_rate=0.0005
-    )
-
-    assert float(round(trade.calculate_interest(), 8)) == 0.13798772
-    trade.open_date = five_hours_ago
-    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
-                 ) == 0.08624232  # TODO: Fails with 0.08624233
-
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=91.99181073,
-        open_rate=0.00001099,
-        open_date=five_hours_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='kraken',
-        is_short=True,
-        leverage=5.0,
-        interest_rate=0.0005
-    )
-
-    assert float(round(trade.calculate_interest(), 8)) == 0.28747441  # TODO: Fails with 0.28747445
-    trade.open_date = ten_minutes_ago
-    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.11498976
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_interest_binance(market_short_order, ten_minutes_ago, five_hours_ago, fee):
-    """
-        Market trade on Binance at 3x and 5x leverage
-        Short trade
-        interest_rate: 0.05%, 0.25% per 1 day
-        open_rate: 0.00004173 base
-        close_rate: 0.00004099 base
-        amount:
-            91.99181073 * leverage(3) = 275.97543219 crypto
-            91.99181073 * leverage(5) = 459.95905365 crypto
-        borrowed:
-            275.97543219  crypto
-            459.95905365  crypto
-        time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
-                        5 hours = 5/24
-
-        interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1/24 = 0.005749488170625 crypto
-                    = 275.97543219 * 0.00025 * 5/24 = 0.0143737204265625 crypto
-                    = 459.95905365 * 0.0005 * 5/24 = 0.047912401421875 crypto
-                    = 459.95905365 * 0.00025 * 1/24 = 0.0047912401421875 crypto
-    """
-
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=275.97543219,
-        open_rate=0.00001099,
-        open_date=ten_minutes_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=True,
-        borrowed=275.97543219,
-        interest_rate=0.0005
-    )
-
-    assert float(round(trade.calculate_interest(), 8)) == 0.00574949
-    trade.open_date = five_hours_ago
-    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.01437372
-
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=459.95905365,
-        open_rate=0.00001099,
-        open_date=five_hours_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=True,
-        borrowed=459.95905365,
-        interest_rate=0.0005
-    )
-
-    assert float(round(trade.calculate_interest(), 8)) == 0.04791240
-    trade.open_date = ten_minutes_ago
-    assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.00479124
 
 
 def test_adjust_stop_loss(fee):
@@ -653,11 +655,13 @@ def test_adjust_stop_loss(fee):
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
+    trade.liquidation_price == 1.03
+
     # TODO-mg: Do a test with a trade that has a liquidation price
 
 
-@pytest.mark.usefixtures("init_persistence")
-@pytest.mark.parametrize('use_db', [True, False])
+@ pytest.mark.usefixtures("init_persistence")
+@ pytest.mark.parametrize('use_db', [True, False])
 def test_get_open(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -679,7 +683,8 @@ def test_stoploss_reinitialization(default_conf, fee):
         exchange='binance',
         open_rate=1,
         max_rate=1,
-        is_short=True
+        is_short=True,
+        leverage=3.0,
     )
     trade.adjust_stop_loss(trade.open_rate, -0.05, True)
     assert trade.stop_loss == 1.05
@@ -720,8 +725,8 @@ def test_stoploss_reinitialization(default_conf, fee):
     assert trade_adj.initial_stop_loss_pct == 0.04
 
 
-@pytest.mark.usefixtures("init_persistence")
-@pytest.mark.parametrize('use_db', [True, False])
+@ pytest.mark.usefixtures("init_persistence")
+@ pytest.mark.parametrize('use_db', [True, False])
 def test_total_open_trades_stakes(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -733,7 +738,7 @@ def test_total_open_trades_stakes(fee, use_db):
     Trade.use_db = True
 
 
-@pytest.mark.usefixtures("init_persistence")
+@ pytest.mark.usefixtures("init_persistence")
 def test_get_best_pair(fee):
     res = Trade.get_best_pair()
     assert res is None
