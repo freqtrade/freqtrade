@@ -261,6 +261,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
             'winning_days': 0,
             'draw_days': 0,
             'losing_days': 0,
+            'daily_profit_list': [],
         }
     daily_profit_rel = results.resample('1d', on='close_date')['profit_ratio'].sum()
     daily_profit = results.resample('1d', on='close_date')['profit_abs'].sum().round(10)
@@ -271,6 +272,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     winning_days = sum(daily_profit > 0)
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
+    daily_profit_list = daily_profit.tolist()
 
     return {
         'backtest_best_day': best_rel,
@@ -280,6 +282,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
         'winning_days': winning_days,
         'draw_days': draw_days,
         'losing_days': losing_days,
+        'daily_profit': daily_profit_list,
     }
 
 
