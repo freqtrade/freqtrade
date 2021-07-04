@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from freqtrade.persistence.models import Order, Trade
 
 
-MOCK_TRADE_COUNT = 6  # TODO-mg: Increase for short and leverage
+MOCK_TRADE_COUNT = 6
 
 
 def mock_order_1():
@@ -433,8 +433,7 @@ def leverage_trade(fee):
         interest_rate: 0.05% per day
         open_rate: 0.123 base
         close_rate: 0.128 base
-        amount: 123.0 crypto
-        amount_with_leverage: 615.0
+        amount: 615 crypto
         stake_amount: 15.129 base
         borrowed: 60.516  base
         leverage: 5

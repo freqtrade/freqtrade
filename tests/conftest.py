@@ -7,10 +7,12 @@ from datetime import datetime, timedelta
 from functools import reduce
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, PropertyMock
+
 import arrow
 import numpy as np
 import pytest
 from telegram import Chat, Message, Update
+
 from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
@@ -23,7 +25,11 @@ from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
                                    mock_trade_5, mock_trade_6, short_trade, leverage_trade)
+
+
 logging.getLogger('').setLevel(logging.INFO)
+
+
 # Do not mask numpy errors as warnings that no one read, raise the exсeption
 np.seterr(all='raise')
 
@@ -63,6 +69,7 @@ def get_args(args):
 def get_mock_coro(return_value):
     async def mock_coro(*args, **kwargs):
         return return_value
+
     return Mock(wraps=mock_coro)
 
 
@@ -85,6 +92,7 @@ def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> No
     if mock_markets:
         mocker.patch('freqtrade.exchange.Exchange.markets',
                      PropertyMock(return_value=get_markets()))
+
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     else:
@@ -118,6 +126,7 @@ def patch_edge(mocker) -> None:
     # "LTC/BTC",
     # "XRP/BTC",
     # "NEO/BTC"
+
     mocker.patch('freqtrade.edge.Edge._cached_pairs', mocker.PropertyMock(
         return_value={
             'NEO/BTC': PairInfo(-0.20, 0.66, 3.71, 0.50, 1.71, 10, 25),
@@ -131,6 +140,7 @@ def get_patched_edge(mocker, config) -> Edge:
     patch_edge(mocker)
     edge = Edge(config)
     return edge
+
 # Functions for recurrent object patching
 
 
@@ -191,6 +201,7 @@ def create_mock_trades(fee, use_db: bool = True):
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
+
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
     add_trade(trade)
@@ -220,14 +231,19 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
     add_trade(trade)
     trade = mock_trade_2(fee)
     add_trade(trade)
+
     trade = mock_trade_3(fee)
     add_trade(trade)
+
     trade = mock_trade_4(fee)
     add_trade(trade)
+
     trade = mock_trade_5(fee)
     add_trade(trade)
+
     trade = mock_trade_6(fee)
     add_trade(trade)
+
     trade = short_trade(fee)
     add_trade(trade)
     trade = leverage_trade(fee)
@@ -243,6 +259,7 @@ def patch_coingekko(mocker) -> None:
     :param mocker: mocker to patch coingekko class
     :return: None
     """
+
     tickermock = MagicMock(return_value={'bitcoin': {'usd': 12345.0}, 'ethereum': {'usd': 12345.0}})
     listmock = MagicMock(return_value=[{'id': 'bitcoin', 'name': 'Bitcoin', 'symbol': 'btc',
                                         'website_slug': 'bitcoin'},
@@ -253,13 +270,13 @@ def patch_coingekko(mocker) -> None:
         'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
         get_price=tickermock,
         get_coins_list=listmock,
+
     )
 
 
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    # TODO-mg: trade with leverage and/or borrowed?
 
 
 @pytest.fixture(scope="function")
@@ -924,17 +941,18 @@ def limit_sell_order_old():
 
 @pytest.fixture
 def limit_buy_order_old_partial():
-    return {'id': 'mocked_limit_buy_old_partial',
-            'type': 'limit',
-                    'side': 'buy',
-                    'symbol': 'ETH/BTC',
-                    'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-                    'price': 0.00001099,
-                    'amount': 90.99181073,
-                    'filled': 23.0,
-                    'remaining': 67.99181073,
-                    'status': 'open'
-            }
+    return {
+        'id': 'mocked_limit_buy_old_partial',
+        'type': 'limit',
+        'side': 'buy',
+        'symbol': 'ETH/BTC',
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'price': 0.00001099,
+        'amount': 90.99181073,
+        'filled': 23.0,
+        'remaining': 67.99181073,
+        'status': 'open'
+    }
 
 
 @pytest.fixture
@@ -950,6 +968,7 @@ def limit_buy_order_canceled_empty(request):
     # Indirect fixture
     # Documentation:
     # https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
+
     exchange_name = request.param
     if exchange_name == 'ftx':
         return {
@@ -1123,7 +1142,7 @@ def order_book_l2_usd():
             [25.576, 262.016],
             [25.577, 178.557],
             [25.578, 78.614]
-            ],
+        ],
         'timestamp': None,
         'datetime': None,
         'nonce': 2372149736
@@ -1739,6 +1758,7 @@ def edge_conf(default_conf):
         "max_trade_duration_minute": 1440,
         "remove_pumps": False
     }
+
     return conf
 
 
@@ -1776,7 +1796,6 @@ def rpc_balance():
             'used': 0.0
         },
     }
-    # TODO-mg: Add shorts and leverage?
 
 
 @pytest.fixture
@@ -1796,9 +1815,12 @@ def import_fails() -> None:
         if name in ["filelock", 'systemd.journal', 'uvloop']:
             raise ImportError(f"No module named '{name}'")
         return realimport(name, *args, **kwargs)
+
     builtins.__import__ = mockedimport
+
     # Run test - then cleanup
     yield
+
     # restore previous importfunction
     builtins.__import__ = realimport
 
@@ -2083,22 +2105,13 @@ def saved_hyperopt_results():
             'is_best': False
             }
     ]
+
     for res in hyperopt_res:
         res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
                                                                          ].total_seconds()
     return hyperopt_res
 
 # * Margin Tests
-
-
-@pytest.fixture
-def ten_minutes_ago():
-    return datetime.utcnow() - timedelta(hours=0, minutes=10)
-
-
-@pytest.fixture
-def five_hours_ago():
-    return datetime.utcnow() - timedelta(hours=5, minutes=0)
 
 
 @pytest.fixture(scope='function')
@@ -2112,12 +2125,12 @@ def limit_short_order_open():
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001173,
         'amount': 90.99181073,
-        'borrowed': 90.99181073,
+        'leverage': 1.0,
         'filled': 0.0,
         'cost': 0.00106733393,
         'remaining': 90.99181073,
         'status': 'open',
-        'exchange': 'binance'
+        'is_short': True
     }
 
 
@@ -2131,11 +2144,10 @@ def limit_exit_short_order_open():
         'datetime': arrow.utcnow().isoformat(),
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 0.00001099,
-        'amount': 90.99181073,
+        'amount': 90.99370639272354,
         'filled': 0.0,
-        'remaining': 90.99181073,
-        'status': 'open',
-        'exchange': 'binance'
+        'remaining': 90.99370639272354,
+        'status': 'open'
     }
 
 
@@ -2166,13 +2178,12 @@ def market_short_order():
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004173,
-        'amount': 91.99181073,
-        'filled': 91.99181073,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        # 'leverage': 3.0,
-        'exchange': 'kraken'
+        'leverage': 3.0
     }
 
 
@@ -2185,12 +2196,11 @@ def market_exit_short_order():
         'symbol': 'mocked',
         'datetime': arrow.utcnow().isoformat(),
         'price': 0.00004099,
-        'amount': 91.99181073,
-        'filled': 91.99181073,
+        'amount': 276.113419906095,
+        'filled': 276.113419906095,
         'remaining': 0.0,
         'status': 'closed',
-        # 'leverage': 3.0,
-        'exchange': 'kraken'
+        'leverage': 3.0
     }
 
 
@@ -2207,8 +2217,9 @@ def limit_leveraged_buy_order_open():
         'price': 0.00001099,
         'amount': 272.97543219,
         'filled': 0.0,
-        'cost': 0.0029999999997681,
+        'cost': 0.0009999999999226999,
         'remaining': 272.97543219,
+        'leverage': 3.0,
         'status': 'open',
         'exchange': 'binance'
     }
@@ -2236,6 +2247,7 @@ def limit_leveraged_sell_order_open():
         'amount': 272.97543219,
         'filled': 0.0,
         'remaining': 272.97543219,
+        'leverage': 3.0,
         'status': 'open',
         'exchange': 'binance'
     }
