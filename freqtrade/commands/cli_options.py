@@ -118,7 +118,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Optimize common
     "timeframe": Arg(
         '-i', '--timeframe', '--ticker-interval',
-        help='Specify ticker interval (`1m`, `5m`, `30m`, `1h`, `1d`).',
+        help='Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
     "timerange": Arg(
         '--timerange',
@@ -167,8 +167,9 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "export": Arg(
         '--export',
-        help='Export backtest results, argument are: trades. '
-        'Example: `--export=trades`',
+        help='Export backtest results (default: trades).',
+        choices=constants.EXPORT_OPTIONS,
+
     ),
     "exportfilename": Arg(
         '--export-filename',
@@ -176,6 +177,11 @@ AVAILABLE_CLI_OPTIONS = {
         'Requires `--export` to be set as well. '
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
+    ),
+    "disableparamexport": Arg(
+        '--disable-param-export',
+        help="Disable automatic hyperopt parameter export.",
+        action='store_true',
     ),
     "fee": Arg(
         '--fee',
@@ -195,6 +201,7 @@ AVAILABLE_CLI_OPTIONS = {
         '--hyperopt',
         help='Specify hyperopt class name which will be used by the bot.',
         metavar='NAME',
+        required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
@@ -266,7 +273,7 @@ AVAILABLE_CLI_OPTIONS = {
         default=1,
     ),
     "hyperopt_loss": Arg(
-        '--hyperopt-loss',
+        '--hyperopt-loss', '--hyperoptloss',
         help='Specify the class name of the hyperopt loss function class (IHyperOptLoss). '
         'Different functions can generate completely different results, '
         'since the target for optimization is different. Built-in Hyperopt-loss-functions are: '
@@ -329,7 +336,7 @@ AVAILABLE_CLI_OPTIONS = {
     # Script options
     "pairs": Arg(
         '-p', '--pairs',
-        help='Show profits for only these pairs. Pairs are space-separated.',
+        help='Limit command to these pairs. Pairs are space-separated.',
         nargs='+',
     ),
     # Download data
@@ -341,6 +348,12 @@ AVAILABLE_CLI_OPTIONS = {
     "days": Arg(
         '--days',
         help='Download data for given number of days.',
+        type=check_int_positive,
+        metavar='INT',
+    ),
+    "new_pairs_days": Arg(
+        '--new-pairs-days',
+        help='Download data of new pairs for given number of days. Default: `%(default)s`.',
         type=check_int_positive,
         metavar='INT',
     ),
@@ -425,6 +438,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
         default=750,
+    ),
+    "plot_auto_open": Arg(
+        '--auto-open',
+        help='Automatically open generated plot.',
+        action='store_true',
     ),
     "no_trades": Arg(
         '--no-trades',

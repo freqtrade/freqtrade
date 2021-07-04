@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+
+<!-- Navigation -->
+{% block site_nav %}
+
+  <!-- Main navigation -->
+  {% if nav %}
+  {% if page and page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "navigation" in page.meta.hide %}
+  {% endif %}
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" {{ hidden }}>
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        {% include "partials/nav.html" %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Table of contents -->
+  {% if page.toc and not "toc.integrate" in features %}
+  {% if page and page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "toc" in page.meta.hide %}
+  {% endif %}
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" {{ hidden }}>
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        {% include "partials/toc.html" %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+{% endblock %}

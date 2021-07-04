@@ -52,8 +52,8 @@ class HDF5DataHandler(IDataHandler):
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
-        :timeframe: Timeframe - used to generate filename
-        :data: Dataframe containing OHLCV data
+        :param timeframe: Timeframe - used to generate filename
+        :param data: Dataframe containing OHLCV data
         :return: None
         """
         key = self._pair_ohlcv_key(pair, timeframe)
@@ -89,7 +89,7 @@ class HDF5DataHandler(IDataHandler):
             if timerange.starttype == 'date':
                 where.append(f"date >= Timestamp({timerange.startts * 1e9})")
             if timerange.stoptype == 'date':
-                where.append(f"date < Timestamp({timerange.stopts * 1e9})")
+                where.append(f"date <= Timestamp({timerange.stopts * 1e9})")
 
         pairdata = pd.read_hdf(filename, key=key, mode="r", where=where)
 

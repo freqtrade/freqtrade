@@ -1,11 +1,12 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.configuration.directory_operations import (copy_sample_files, create_datadir,
-                                                          create_userdata_dir)
+from freqtrade.configuration.directory_operations import (chown_user_directory, copy_sample_files,
+                                                          create_datadir, create_userdata_dir)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import log_has, log_has_re
 
@@ -29,6 +30,24 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
     assert isinstance(x, Path)
     assert str(x) == str(Path("/tmp/bar"))
+
+
+def test_create_userdata_dir_and_chown(mocker, tmpdir, caplog) -> None:
+    sp_mock = mocker.patch('subprocess.check_output')
+    path = Path(tmpdir / 'bar')
+    assert not path.is_dir()
+
+    x = create_userdata_dir(str(path), create_dir=True)
+    assert sp_mock.call_count == 0
+    assert log_has(f'Created user-data directory: {path}', caplog)
+    assert isinstance(x, Path)
+    assert path.is_dir()
+    assert (path / 'data').is_dir()
+
+    os.environ['FT_APP_ENV'] = 'docker'
+    chown_user_directory(path / 'data')
+    assert sp_mock.call_count == 1
+    del os.environ['FT_APP_ENV']
 
 
 def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:

@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any, Dict, List
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import market_is_active
+from freqtrade.exchange import Exchange, market_is_active
 from freqtrade.mixins import LoggingMixin
 
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class IPairList(LoggingMixin, ABC):
 
-    def __init__(self, exchange, pairlistmanager,
+    def __init__(self, exchange: Exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         """
@@ -28,7 +28,7 @@ class IPairList(LoggingMixin, ABC):
         """
         self._enabled = True
 
-        self._exchange = exchange
+        self._exchange: Exchange = exchange
         self._pairlistmanager = pairlistmanager
         self._config = config
         self._pairlistconfig = pairlistconfig
@@ -68,12 +68,12 @@ class IPairList(LoggingMixin, ABC):
         filter_pairlist() method.
 
         :param pair: Pair that's currently validated
-        :param ticker: ticker dict as returned from ccxt.load_markets()
+        :param ticker: ticker dict as returned from ccxt.fetch_tickers()
         :return: True if the pair can stay, false if it should be removed
         """
         raise NotImplementedError()
 
-    def gen_pairlist(self, cached_pairlist: List[str], tickers: Dict) -> List[str]:
+    def gen_pairlist(self, tickers: Dict) -> List[str]:
         """
         Generate the pairlist.
 
@@ -84,8 +84,7 @@ class IPairList(LoggingMixin, ABC):
         it will raise the exception if a Pairlist Handler is used at the first
         position in the chain.
 
-        :param cached_pairlist: Previously generated pairlist (cached)
-        :param tickers: Tickers (from exchange.get_tickers()).
+        :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
         """
         raise OperationalException("This Pairlist Handler should not be used "

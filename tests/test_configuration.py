@@ -18,11 +18,11 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
-from freqtrade.configuration.load_config import load_config_file, log_config_error_range
+from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
-from freqtrade.state import RunMode
 from tests.conftest import log_has, log_has_re, patched_configuration_load_config_file
 
 
@@ -87,6 +87,24 @@ def test_load_config_file_error_range(default_conf, mocker, caplog) -> None:
     assert (x == '{"max_open_trades": 1, "stake_currency": "BTC", '
             '"stake_amount": .001, "fiat_display_currency": "USD", '
             '"timeframe": "5m", "dry_run": true, "cance')
+
+    filedata = json.dumps(default_conf, indent=2).replace(
+        '"stake_amount": 0.001,', '"stake_amount": .001,')
+    mocker.patch.object(Path, "read_text", MagicMock(return_value=filedata))
+
+    x = log_config_error_range('somefile', 'Parse error at offset 4: Invalid value.')
+    assert isinstance(x, str)
+    assert (x == '  "max_open_trades": 1,\n  "stake_currency": "BTC",\n'
+            '  "stake_amount": .001,')
+
+    x = log_config_error_range('-', '')
+    assert x == ''
+
+
+def test_load_file_error(tmpdir):
+    testpath = Path(tmpdir) / 'config.json'
+    with pytest.raises(OperationalException, match=r"File .* not found!"):
+        load_file(testpath)
 
 
 def test__args_to_config(caplog):
@@ -407,7 +425,6 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     assert not log_has('Parameter --enable-position-stacking detected ...', caplog)
 
     assert 'timerange' not in config
-    assert 'export' not in config
 
 
 def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> None:
@@ -430,7 +447,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--timerange', ':100',
-        '--export', '/bar/foo',
+        '--export', 'trades',
         '--stake-amount', 'unlimited'
     ]
 
@@ -478,7 +495,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         'backtesting',
         '--config', 'config.json',
         '--ticker-interval', '1m',
-        '--export', '/bar/foo',
+        '--export', 'trades',
         '--strategy-list',
         'DefaultStrategy',
         'TestStrategy'
@@ -565,7 +582,7 @@ def test_check_exchange(default_conf, caplog) -> None:
     # Test a 'bad' exchange, which known to have serious problems
     default_conf.get('exchange').update({'name': 'bitmex'})
     with pytest.raises(OperationalException,
-                       match=r"Exchange .* is known to not work with the bot yet.*"):
+                       match=r"Exchange .* will not work with Freqtrade\..*"):
         check_exchange(default_conf)
     caplog.clear()
 
@@ -860,32 +877,16 @@ def test_validate_tsl(default_conf):
         validate_config_consistency(default_conf)
 
 
-def test_validate_edge(edge_conf):
-    edge_conf.update({"pairlist": {
-        "method": "VolumePairList",
-    }})
-
-    with pytest.raises(OperationalException,
-                       match="Edge and VolumePairList are incompatible, "
-                       "Edge will override whatever pairs VolumePairlist selects."):
-        validate_config_consistency(edge_conf)
-
-    edge_conf.update({"pairlist": {
-        "method": "StaticPairList",
-    }})
-    validate_config_consistency(edge_conf)
-
-
 def test_validate_edge2(edge_conf):
-    edge_conf.update({"ask_strategy": {
+    edge_conf.update({
         "use_sell_signal": True,
-    }})
+    })
     # Passes test
     validate_config_consistency(edge_conf)
 
-    edge_conf.update({"ask_strategy": {
+    edge_conf.update({
         "use_sell_signal": False,
-    }})
+    })
     with pytest.raises(OperationalException, match="Edge requires `use_sell_signal` to be True, "
                        "otherwise no sells will happen."):
         validate_config_consistency(edge_conf)
@@ -931,6 +932,23 @@ def test_validate_protections(default_conf, protconf, expected):
         with pytest.raises(OperationalException, match=expected):
             validate_config_consistency(conf)
     else:
+        validate_config_consistency(conf)
+
+
+def test_validate_ask_orderbook(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['ask_strategy']['use_order_book'] = True
+    conf['ask_strategy']['order_book_min'] = 2
+    conf['ask_strategy']['order_book_max'] = 2
+
+    validate_config_consistency(conf)
+    assert log_has_re(r"DEPRECATED: Please use `order_book_top` instead of.*", caplog)
+    assert conf['ask_strategy']['order_book_top'] == 2
+
+    conf['ask_strategy']['order_book_max'] = 5
+
+    with pytest.raises(OperationalException,
+                       match=r"Using order_book_max != order_book_min in ask_strategy.*"):
         validate_config_consistency(conf)
 
 
@@ -1018,6 +1036,7 @@ def test_pairlist_resolving():
     config = configuration.get_config()
 
     assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert config['exchange']['pair_whitelist'] == ['ETH/BTC', 'XRP/BTC']
     assert config['exchange']['name'] == 'binance'
 
 
@@ -1054,37 +1073,30 @@ def test_pairlist_resolving_with_config(mocker, default_conf):
 
 def test_pairlist_resolving_with_config_pl(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    load_mock = mocker.patch("freqtrade.configuration.configuration.json_load",
-                             MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
 
     configuration = Configuration(args)
     config = configuration.get_config()
-
-    assert load_mock.call_count == 1
-    assert config['pairs'] == ['ETH/BTC', 'XRP/BTC']
+    assert len(config['pairs']) == 23
+    assert 'ETH/BTC' in config['pairs']
+    assert 'XRP/BTC' in config['pairs']
     assert config['exchange']['name'] == default_conf['exchange']['name']
 
 
 def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
     patched_configuration_load_config_file(mocker, default_conf)
-    mocker.patch("freqtrade.configuration.configuration.json_load",
-                 MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
 
     arglist = [
         'download-data',
         '--config', 'config.json',
-        '--pairs-file', 'pairs.json',
+        '--pairs-file', 'tests/testdata/pairs_doesnotexist.json',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -1097,7 +1109,7 @@ def test_pairlist_resolving_with_config_pl_not_exists(mocker, default_conf):
 def test_pairlist_resolving_fallback(mocker):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     mocker.patch.object(Path, "open", MagicMock(return_value=MagicMock()))
-    mocker.patch("freqtrade.configuration.configuration.json_load",
+    mocker.patch("freqtrade.configuration.configuration.load_file",
                  MagicMock(return_value=['XRP/BTC', 'ETH/BTC']))
     arglist = [
         'download-data',
@@ -1116,11 +1128,17 @@ def test_pairlist_resolving_fallback(mocker):
     assert config['datadir'] == Path.cwd() / "user_data/data/binance"
 
 
-@pytest.mark.skip(reason='Currently no deprecated / moved sections')
-# The below is kept as a sample for the future.
 @pytest.mark.parametrize("setting", [
         ("ask_strategy", "use_sell_signal", True,
-         "experimental", "use_sell_signal", False),
+         None, "use_sell_signal", False),
+        ("ask_strategy", "sell_profit_only", True,
+         None, "sell_profit_only", False),
+        ("ask_strategy", "sell_profit_offset", 0.1,
+         None, "sell_profit_offset", 0.01),
+        ("ask_strategy", "ignore_roi_if_buy_signal", True,
+         None, "ignore_roi_if_buy_signal", False),
+        ("ask_strategy", "ignore_buying_expired_candle_after", 5,
+         None, "ignore_buying_expired_candle_after", 6),
     ])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
@@ -1129,10 +1147,14 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     # (they may not exist in the config)
     default_conf[setting[0]] = {}
     default_conf[setting[3]] = {}
-    # Assign new setting
-    default_conf[setting[0]][setting[1]] = setting[2]
+
     # Assign deprecated setting
-    default_conf[setting[3]][setting[4]] = setting[5]
+    default_conf[setting[0]][setting[1]] = setting[2]
+    # Assign new setting
+    if setting[3]:
+        default_conf[setting[3]][setting[4]] = setting[5]
+    else:
+        default_conf[setting[4]] = setting[5]
 
     # New and deprecated settings are conflicting ones
     with pytest.raises(OperationalException, match=r'DEPRECATED'):
@@ -1141,13 +1163,19 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
     caplog.clear()
 
     # Delete new setting
-    del default_conf[setting[0]][setting[1]]
+    if setting[3]:
+        del default_conf[setting[3]][setting[4]]
+    else:
+        del default_conf[setting[4]]
 
     process_temporary_deprecated_settings(default_conf)
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
-    assert default_conf[setting[0]][setting[1]] == setting[5]
+    if setting[3]:
+        assert default_conf[setting[3]][setting[4]] == setting[2]
+    else:
+        assert default_conf[setting[4]] == setting[2]
 
 
 @pytest.mark.parametrize("setting", [
@@ -1197,16 +1225,16 @@ def test_check_conflicting_settings(mocker, default_conf, caplog):
     # New and deprecated settings are conflicting ones
     with pytest.raises(OperationalException, match=r'DEPRECATED'):
         check_conflicting_settings(default_conf,
-                                   'sectionA', 'new_setting',
-                                   'sectionB', 'deprecated_setting')
+                                   'sectionB', 'deprecated_setting',
+                                   'sectionA', 'new_setting')
 
     caplog.clear()
 
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
     check_conflicting_settings(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert 'new_setting' not in default_conf['sectionA']
 
@@ -1217,8 +1245,8 @@ def test_check_conflicting_settings(mocker, default_conf, caplog):
     # Delete deprecated setting
     del default_conf['sectionB']['deprecated_setting']
     check_conflicting_settings(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
 
@@ -1230,15 +1258,13 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # (they may not exist in the config)
     default_conf['sectionA'] = {}
     default_conf['sectionB'] = {}
-    # Assign new setting
-    default_conf['sectionA']['new_setting'] = 'valA'
     # Assign deprecated setting
     default_conf['sectionB']['deprecated_setting'] = 'valB'
 
     # Both new and deprecated settings exists
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
@@ -1249,8 +1275,8 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Delete new setting (deprecated exists)
     del default_conf['sectionA']['new_setting']
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert log_has_re('DEPRECATED', caplog)
     # The value of the new setting shall have been set to the
     # value of the deprecated one
@@ -1263,10 +1289,20 @@ def test_process_deprecated_setting(mocker, default_conf, caplog):
     # Delete deprecated setting
     del default_conf['sectionB']['deprecated_setting']
     process_deprecated_setting(default_conf,
-                               'sectionA', 'new_setting',
-                               'sectionB', 'deprecated_setting')
+                               'sectionB', 'deprecated_setting',
+                               'sectionA', 'new_setting')
     assert not log_has_re('DEPRECATED', caplog)
     assert default_conf['sectionA']['new_setting'] == 'valA'
+
+    caplog.clear()
+    # Test moving to root
+    default_conf['sectionB']['deprecated_setting2'] = "DeadBeef"
+    process_deprecated_setting(default_conf,
+                               'sectionB', 'deprecated_setting2',
+                               None, 'new_setting')
+
+    assert log_has_re('DEPRECATED', caplog)
+    assert default_conf['new_setting']
 
 
 def test_process_removed_setting(mocker, default_conf, caplog):

@@ -49,8 +49,8 @@ class IDataHandler(ABC):
         """
         Store ohlcv data.
         :param pair: Pair - used to generate filename
-        :timeframe: Timeframe - used to generate filename
-        :data: Dataframe containing OHLCV data
+        :param timeframe: Timeframe - used to generate filename
+        :param data: Dataframe containing OHLCV data
         :return: None
         """
 
@@ -245,8 +245,8 @@ def get_datahandler(datadir: Path, data_format: str = None,
                     data_handler: IDataHandler = None) -> IDataHandler:
     """
     :param datadir: Folder to save data
-    :data_format: dataformat to use
-    :data_handler: returns this datahandler if it exists or initializes a new one
+    :param data_format: dataformat to use
+    :param data_handler: returns this datahandler if it exists or initializes a new one
     """
 
     if not data_handler:

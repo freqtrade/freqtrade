@@ -12,7 +12,7 @@ Few pointers for contributions:
 - New features need to contain unit tests, must conform to PEP8 (max-line-length = 100) and should be documented with the introduction PR.
 - PR's can be declared as `[WIP]` - which signify Work in Progress Pull Requests (which are not finished).
 
-If you are unsure, discuss the feature on our [discord server](https://discord.gg/MA9v74M), on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
+If you are unsure, discuss the feature on our [discord server](https://discord.gg/p7nuUNVfP7), on [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a PR.
 
 ## Getting started
 

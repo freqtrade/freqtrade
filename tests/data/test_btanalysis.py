@@ -1,3 +1,4 @@
+from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -246,7 +247,7 @@ def test_create_cum_profit(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
 
 def test_create_cum_profit1(testdatadir):
@@ -264,7 +265,7 @@ def test_create_cum_profit1(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],

@@ -3,8 +3,8 @@ from typing import Dict, List, NamedTuple, Optional
 import arrow
 from pandas import DataFrame
 
+from freqtrade.enums import SellType
 from freqtrade.exchange import timeframe_to_minutes
-from freqtrade.strategy.interface import SellType
 
 
 tests_start_time = arrow.get(2018, 10, 3)
@@ -34,6 +34,7 @@ class BTContainer(NamedTuple):
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: float = 0.0
     use_sell_signal: bool = False
+    use_custom_stoploss: bool = False
 
 
 def _get_frame_time_from_offset(offset):

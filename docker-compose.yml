@@ -9,7 +9,7 @@ services:
     # Build step - only needed when additional dependencies are needed
     # build:
     #   context: .
-    #   dockerfile: "./docker/Dockerfile.technical"
+    #   dockerfile: "./docker/Dockerfile.custom"
     restart: unless-stopped
     container_name: freqtrade
     volumes:

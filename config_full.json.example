@@ -14,6 +14,10 @@
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
+    "use_sell_signal": true,
+    "sell_profit_only": false,
+    "sell_profit_offset": 0.0,
+    "ignore_roi_if_buy_signal": false,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -23,11 +27,12 @@
     "stoploss": -0.10,
     "unfilledtimeout": {
         "buy": 10,
-        "sell": 30
+        "sell": 30,
+        "unit": "minutes"
     },
     "bid_strategy": {
         "price_side": "bid",
-        "use_order_book": false,
+        "use_order_book": true,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
         "check_depth_of_market": {
@@ -37,13 +42,8 @@
     },
     "ask_strategy":{
         "price_side": "ask",
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": false
+        "use_order_book": true,
+        "order_book_top": 1
     },
     "order_types": {
         "buy": "limit",
@@ -163,10 +163,23 @@
             "warning": "on",
             "startup": "on",
             "buy": "on",
-            "sell": "on",
+            "buy_fill": "on",
+            "sell": {
+                "roi": "off",
+                "emergency_sell": "off",
+                "force_sell": "off",
+                "sell_signal": "off",
+                "trailing_stop_loss": "off",
+                "stop_loss": "off",
+                "stoploss_on_exchange": "off",
+                "custom_sell": "off"
+            },
+            "sell_fill": "on",
             "buy_cancel": "on",
             "sell_cancel": "on"
-        }
+        },
+        "reload": true,
+        "balance_dust_level": 0.01
     },
     "api_server": {
         "enabled": false,
