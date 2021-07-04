@@ -136,6 +136,7 @@ class Order(_DECL_BASE):
     is_short = Column(Boolean, nullable=True, default=False)
 
     def __repr__(self):
+
         return (f'Order(id={self.id}, order_id={self.order_id}, trade_id={self.ft_trade_id}, '
                 f'side={self.side}, order_type={self.order_type}, status={self.status})')
 
@@ -229,7 +230,6 @@ class LocalTrade():
     fee_close_currency: str = ''
     open_rate: float = 0.0
     open_rate_requested: Optional[float] = None
-
     # open_trade_value - calculated via _calc_open_trade_value
     open_trade_value: float = 0.0
     close_rate: Optional[float] = None
@@ -270,9 +270,15 @@ class LocalTrade():
     leverage: float = None
 
     @property
-    def borrowed(self):
-        if not self.is_short:
-            return self.amount * (self.leverage-1)/self.leverage
+    def has_no_leverage(self) -> bool:
+        return (self.leverage == 1.0 and not self.is_short) or self.leverage is None
+
+    @property
+    def borrowed(self) -> float:
+        if self.has_no_leverage:
+            return 0.0
+        elif not self.is_short:
+            return self.stake_amount * (self.leverage-1)
         else:
             return self.amount
 
@@ -461,6 +467,10 @@ class LocalTrade():
         """
         order_type = order['type']
 
+        if 'is_short' in order and order['side'] == 'sell':
+            # Only set's is_short on opening trades, ignores non-shorts
+            self.is_short = order['is_short']
+
         # Ignore open and cancelled orders
         if order['status'] == 'open' or safe_value_fallback(order, 'average', 'price') is None:
             return
@@ -469,10 +479,10 @@ class LocalTrade():
 
         if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
             # Update open rate and actual amount
-
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
-
+            if 'leverage' in order:
+                self.leverage = order['leverage']
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
@@ -481,7 +491,8 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                # TODO: On Shorts technically your buying a little bit more than the amount because it's the ammount plus the interest
+                # TODO-mg: On Shorts technically your buying a little bit more than the amount because it's the ammount plus the interest
+                # But this wll only print the original
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))  # TODO: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
@@ -576,7 +587,7 @@ class LocalTrade():
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
-        now = datetime.utcnow()
+        now = datetime.utcnow()  # TODO-mg: Update to self.close_date
         sec_per_hour = Decimal(3600)
         total_seconds = Decimal((now - open_date).total_seconds())
         hours = total_seconds/sec_per_hour or zero
@@ -682,17 +693,15 @@ class LocalTrade():
         if (self.is_short and close_trade_value == 0.0) or (not self.is_short and self.open_trade_value == 0.0):
             return 0.0
         else:
-            # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
-            if (self.leverage == 1.0 and not self.is_short) or not self.leverage:
+            if self.has_no_leverage:
+                # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
+                profit_ratio = (close_trade_value/self.open_trade_value) - 1
+            else:
                 if self.is_short:
                     profit_ratio = ((self.open_trade_value - close_trade_value) / self.stake_amount)
                 else:
                     profit_ratio = ((close_trade_value - self.open_trade_value) / self.stake_amount)
-            else:  # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
-                if self.is_short:
-                    profit_ratio = 1 - (close_trade_value/self.open_trade_value)
-                else:
-                    profit_ratio = (close_trade_value/self.open_trade_value) - 1
+
         return float(f"{profit_ratio:.8f}")
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from freqtrade.persistence.models import Order, Trade
 
 
-MOCK_TRADE_COUNT = 6  # TODO-mg: Increase for short and leverage
+MOCK_TRADE_COUNT = 6
 
 
 def mock_order_1():

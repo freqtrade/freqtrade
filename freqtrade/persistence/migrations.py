@@ -88,8 +88,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, interest_rate,
-            liquidation_price, is_short
+            leverage, interest_rate, liquidation_price, is_short
             )
         select id, lower(exchange),
             case
@@ -117,8 +116,6 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {liquidation_price} liquidation_price, {is_short} is_short
             from {table_back_name}
             """))
-
-# TODO: Does leverage go in here?
 
 
 def migrate_open_orders_to_trades(engine):

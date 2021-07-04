@@ -106,27 +106,6 @@ def test_is_opening_closing_trade(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_amount(limit_buy_order, limit_sell_order, fee, caplog):
-    trade = Trade(
-        id=2,
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.01,
-        amount=5,
-        is_open=True,
-        open_date=arrow.utcnow().datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=False
-    )
-    assert trade.amount == 5
-    trade.leverage = 3
-    assert trade.amount == 15
-    assert trade._amount == 5
-
-
-@pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     """
     On this test we will buy and sell a crypto currency.
@@ -728,6 +707,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
+
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
             symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
@@ -978,9 +958,6 @@ def test_to_json(default_conf, fee):
                       'exchange': 'binance',
 
                       'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
                       'interest_rate': None,
                       'liquidation_price': None,
                       'is_short': None,
@@ -1051,9 +1028,6 @@ def test_to_json(default_conf, fee):
                       'exchange': 'binance',
 
                       'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
                       'interest_rate': None,
                       'liquidation_price': None,
                       'is_short': None,
@@ -1187,42 +1161,6 @@ def test_fee_updated(fee):
     assert trade.fee_updated('buy')
     assert trade.fee_updated('sell')
     assert not trade.fee_updated('asfd')
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_update_leverage(fee, ten_minutes_ago):
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
-        open_date=ten_minutes_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=True,
-        interest_rate=0.0005
-    )
-    trade.leverage = 3.0
-    assert trade.borrowed == 15.0
-    assert trade.amount == 15.0
-
-    trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
-        open_date=ten_minutes_ago,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=False,
-        interest_rate=0.0005
-    )
-
-    trade.leverage = 5.0
-    assert trade.borrowed == 20.0
-    assert trade.amount == 25.0
 
 
 @pytest.mark.usefixtures("init_persistence")
