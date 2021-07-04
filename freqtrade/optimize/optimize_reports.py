@@ -229,8 +229,6 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     winning_trades = results.loc[results['profit_ratio'] > 0]
     draw_trades = results.loc[results['profit_ratio'] == 0]
     losing_trades = results.loc[results['profit_ratio'] < 0]
-    zero_duration_trades = len(results.loc[(results['trade_duration'] == 0) &
-                                           (results['sell_reason'] == 'trailing_stop_loss')])
 
     holding_avg = (timedelta(minutes=round(results['trade_duration'].mean()))
                    if not results.empty else timedelta())
@@ -249,7 +247,6 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
         'winner_holding_avg_s': winner_holding_avg.total_seconds(),
         'loser_holding_avg': loser_holding_avg,
         'loser_holding_avg_s': loser_holding_avg.total_seconds(),
-        'zero_duration_trades': zero_duration_trades,
     }
 
 
@@ -542,14 +539,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
-        zero_duration_trades = '--'
-
-        if 'zero_duration_trades' in strat_results:
-            zero_duration_trades_per = \
-                100.0 / strat_results['total_trades'] * strat_results['zero_duration_trades']
-            zero_duration_trades = f'{zero_duration_trades_per:.2f}% ' \
-                                   f'({strat_results["zero_duration_trades"]})'
-
         metrics = [
             ('Backtesting from', strat_results['backtest_start']),
             ('Backtesting to', strat_results['backtest_end']),
@@ -585,7 +574,6 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                 f"{strat_results['draw_days']} / {strat_results['losing_days']}"),
             ('Avg. Duration Winners', f"{strat_results['winner_holding_avg']}"),
             ('Avg. Duration Loser', f"{strat_results['loser_holding_avg']}"),
-            ('Zero Duration Trades', zero_duration_trades),
             ('Rejected Buy signals', strat_results.get('rejected_signals', 'N/A')),
             ('', ''),  # Empty line to improve readability
 
