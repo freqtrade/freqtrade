@@ -723,13 +723,11 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 order_date DATETIME,
                 order_filled_date DATETIME,
                 order_update_date DATETIME,
-                leverage FLOAT,
                 PRIMARY KEY (id),
                 CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
-        # TODO-mg @xmatthias: Had to add field leverage to this table, check that this is correct
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
             symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
@@ -752,6 +750,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     assert orders[1].order_id == 'stop_order_id222'
     assert orders[1].ft_order_side == 'stoploss'
+    assert orders[0].is_short is False
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
