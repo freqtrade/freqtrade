@@ -65,7 +65,7 @@ class RangeStabilityFilter(IPairList):
         since_ms = int(arrow.utcnow()
                        .floor('day')
                        .shift(days=-self._days - 1)
-                       .float_timestamp) * 1000
+                       .int_timestamp) * 1000
         # Get all candles
         candles = {}
         if needed_pairs:
