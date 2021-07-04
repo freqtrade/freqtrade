@@ -130,6 +130,39 @@ trades = load_backtest_data(backtest_dir)
 trades.groupby("pair")["sell_reason"].value_counts()
 ```
 
+## Plotting daily profit / equity line
+
+
+```python
+# Plotting equity line (starting with 0 on day 1 and adding daily profit for each backtested day)
+
+from freqtrade.configuration import Configuration
+from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
+import plotly.express as px
+import pandas as pd
+
+# strategy = 'SampleStrategy'
+# config = Configuration.from_files(["user_data/config.json"])
+# backtest_dir = config["user_data_dir"] / "backtest_results"
+
+stats = load_backtest_stats(backtest_dir)
+strategy_stats = stats['strategy'][strategy]
+
+equity = 0
+equity_daily = []
+for dp in strategy_stats['daily_profit']:
+    equity_daily.append(equity)
+    equity += float(dp)
+
+dates = pd.date_range(strategy_stats['backtest_start'], strategy_stats['backtest_end'])
+
+df = pd.DataFrame({'dates': dates,'equity_daily': equity_daily})
+
+fig = px.line(df, x="dates", y="equity_daily")
+fig.show()
+
+```
+
 ### Load live trading results into a pandas dataframe
 
 In case you did already some trading and want to analyze your performance
