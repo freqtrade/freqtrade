@@ -515,8 +515,6 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     patch_get_signal(freqtradebot, (True, False))
 
     telegram._balance(update=update, context=MagicMock())
-    print('msg_mock.call_args_list')
-    print(msg_mock.call_args_list)
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
     assert '*BTC:*' in result
@@ -528,7 +526,7 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12.00000000' in result
-    assert "*3 Other Currencies:*" in result
+    assert "*3 Other Currencies (< 0.0001 BTC):*" in result
     assert 'BTC: 0.00000309' in result
 
 
