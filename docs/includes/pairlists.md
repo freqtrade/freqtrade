@@ -81,7 +81,7 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 #### AgeFilter
 
-Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
+Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`) or more than `max_days_listed` days (defaults `None` mean infinity).
 
 When pairs are first listed on an exchange they can suffer huge price drops and volatility
 in the first few days while the pair goes through its price-discovery period. Bots can often
@@ -212,7 +212,7 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "number_assets": 20,
         "sort_key": "quoteVolume"
     },
-    {"method": "AgeFilter", "min_days_listed": 10, "max_days_listed": 7300},
+    {"method": "AgeFilter", "min_days_listed": 10},
     {"method": "PrecisionFilter"},
     {"method": "PriceFilter", "low_price_ratio": 0.01},
     {"method": "SpreadFilter", "max_spread_ratio": 0.005},
