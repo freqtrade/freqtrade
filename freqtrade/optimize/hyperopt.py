@@ -324,7 +324,8 @@ class Hyperopt:
             loss = self.calculate_loss(results=backtesting_results['results'],
                                        trade_count=trade_count,
                                        min_date=min_date, max_date=max_date,
-                                       config=self.config, processed=processed)
+                                       config=self.config, processed=processed,
+                                       backtest_stats=strat_stats)
         return {
             'loss': loss,
             'params_dict': params_dict,
