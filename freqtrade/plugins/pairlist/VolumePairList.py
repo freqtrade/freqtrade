@@ -171,13 +171,12 @@ class VolumePairList(IPairList):
                 candles = self._exchange.refresh_latest_ohlcv(
                     needed_pairs, since_ms=since_ms, cache=False
                 )
-
             for i, p in enumerate(filtered_tickers):
                 pair_candles = candles[
                     (p['symbol'], self._lookback_timeframe)
                 ] if (p['symbol'], self._lookback_timeframe) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
-                if not pair_candles.empty:
+                if pair_candles is not None and not pair_candles.empty:
                     pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']
                                                      + pair_candles['close']) / 3
                     pair_candles['quoteVolume'] = (

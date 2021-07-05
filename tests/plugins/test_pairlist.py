@@ -507,6 +507,101 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                 assert log_has_re(r'^Removed .* from whitelist, because volatility.*$', caplog)
 
 
+@pytest.mark.parametrize("pairlists,base_currency,volumefilter_result", [
+    # default refresh of 1800 to small for daily candle lookback
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_days": 1}],
+     "BTC", "default_refresh_too_short"),  # OperationalException expected
+    # ambigous configuration with lookback days and period
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_days": 1, "lookback_period": 1}],
+     "BTC", "lookback_days_and_period"),  # OperationalException expected
+    # negative lookback period
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": -1}],
+     "BTC", "lookback_period_negative"),  # OperationalException expected
+    # lookback range exceedes exchange limit
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1m", "lookback_period": 2000, "refresh_period": 3600}],
+     "BTC", 'lookback_exceeds_exchange_request_size'),  # OperationalException expected
+    # expecing pairs as given
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
+     "BTC", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
+    # expecting pairs from default tickers, because 1h candles are not available
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
+     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+])
+def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
+                              pairlists, base_currency, volumefilter_result, caplog) -> None:
+    whitelist_conf['pairlists'] = pairlists
+    whitelist_conf['stake_currency'] = base_currency
+
+    ohlcv_history_high_vola = ohlcv_history.copy()
+    ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
+
+    # create candles for high volume
+    ohlcv_history_high_volume = ohlcv_history.copy()
+    ohlcv_history_high_volume.loc[ohlcv_history_high_volume.index == 1, 'volume'] = 10
+
+    ohlcv_data = {
+        ('ETH/BTC', '1d'): ohlcv_history,
+        ('TKN/BTC', '1d'): ohlcv_history,
+        ('LTC/BTC', '1d'): ohlcv_history_high_volume,
+        ('XRP/BTC', '1d'): ohlcv_history_high_vola,
+        ('HOT/BTC', '1d'): ohlcv_history,
+    }
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    if volumefilter_result == 'default_refresh_too_short':
+        with pytest.raises(OperationalException,
+                           match=r'Refresh period of [0-9]+ seconds is smaller than one timeframe '
+                                 r'of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ '
+                                 r'and restart the bot\.'):
+            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+        return
+    elif volumefilter_result == 'lookback_days_and_period':
+        with pytest.raises(OperationalException,
+                           match=r'Ambigous configuration: lookback_days and lookback_period both '
+                                 r'set in pairlist config\..*'):
+            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    elif volumefilter_result == 'lookback_period_negative':
+        with pytest.raises(OperationalException,
+                           match=r'VolumeFilter requires lookback_period to be >= 0'):
+            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    elif volumefilter_result == 'lookback_exceeds_exchange_request_size':
+        with pytest.raises(OperationalException,
+                           match=r'VolumeFilter requires lookback_period to not exceed '
+                           r'exchange max request size \([0-9]+\)'):
+            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    else:
+        freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+        mocker.patch.multiple(
+            'freqtrade.exchange.Exchange',
+            get_tickers=tickers,
+            markets=PropertyMock(return_value=shitcoinmarkets)
+        )
+
+        # remove ohlcv when looback_timeframe != 1d
+        # to enforce fallback to ticker data
+        if 'lookback_timeframe' in pairlists[0]:
+            if pairlists[0]['lookback_timeframe'] != '1d':
+                ohlcv_data = []
+
+        mocker.patch.multiple(
+            'freqtrade.exchange.Exchange',
+            refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
+        )
+
+        freqtrade.pairlists.refresh_pairlist()
+        whitelist = freqtrade.pairlists.whitelist
+
+        assert isinstance(whitelist, list)
+        assert whitelist == volumefilter_result
+
+
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf['pairlists'] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}]
     del whitelist_conf['stoploss']
