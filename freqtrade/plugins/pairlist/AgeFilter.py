@@ -89,7 +89,7 @@ class AgeFilter(IPairList):
             if len(daily_candles) >= self._min_days_listed:
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
-                self._symbolsChecked[pair] = int(arrow.utcnow().int_timestamp) * 1000
+                self._symbolsChecked[pair] = arrow.utcnow().int_timestamp * 1000
                 return True
             else:
                 self.log_once(f"Removed {pair} from whitelist, because age "
