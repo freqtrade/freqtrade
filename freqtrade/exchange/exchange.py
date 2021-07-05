@@ -8,7 +8,6 @@ import inspect
 import logging
 from copy import deepcopy
 from datetime import datetime, timezone
-from decimal import Decimal
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -552,7 +551,7 @@ class Exchange:
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
         amount_reserve_percent = (
-            amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+          amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
         )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
@@ -966,7 +965,7 @@ class Exchange:
                 logger.warning(
                     "Buy Price from orderbook could not be determined."
                     f"Orderbook: {order_book}"
-                )
+                 )
                 raise PricingError from e
             logger.info(f"Buy price from orderbook {bid_strategy['price_side'].capitalize()} side "
                         f"- top {order_book_top} order book buy rate {rate_from_l2:.8f}")
@@ -1253,8 +1252,8 @@ class Exchange:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             ohlcv_df = ohlcv_to_dataframe(
-                ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle)
+                    ticks, timeframe, pair=pair, fill_missing=True,
+                    drop_incomplete=self._ohlcv_partial_candle)
             results_df[(pair, timeframe)] = ohlcv_df
             if cache:
                 self._klines[(pair, timeframe)] = ohlcv_df
@@ -1473,18 +1472,6 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
-
-    @staticmethod
-    def calculate_interest(borrowed: Decimal, hours: Decimal, interest_rate: Decimal) -> Decimal:
-        """Generate the interest owed for borrowing an amount of currency for a certain amount of time
-        :param borrowed: The amount of currency borrowed
-        :param hours: The length of time in hours that the currency has been borrowed for
-        :param interest_rate: The rate of interest for this trade
-                #TODO: May update this just to the currency of the borrowed amount
-        :raises ValueError: Throws value error if not implemented for the exchange
-        :returns The amount of interest owed for the borrowed currency
-        """
-        raise ValueError('Margin trading is not available on this exchange with freqtrade')
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
