@@ -305,9 +305,6 @@ def mock_trade_6(fee):
     return trade
 
 
-#! TODO Currently the following short_trade test and leverage_trade test will fail
-
-
 def short_order():
     return {
         'id': '1236',

@@ -132,7 +132,7 @@ class Order(_DECL_BASE):
     order_filled_date = Column(DateTime, nullable=True)
     order_update_date = Column(DateTime, nullable=True)
 
-    leverage = Column(Float, nullable=True, default=None)
+    leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=True, default=False)
 
     def __repr__(self):
@@ -267,7 +267,7 @@ class LocalTrade():
     interest_rate: float = 0.0
     liquidation_price: float = None
     is_short: bool = False
-    leverage: float = None
+    leverage: float = 1.0
 
     @property
     def has_no_leverage(self) -> bool:
@@ -583,7 +583,7 @@ class LocalTrade():
 
         zero = Decimal(0.0)
         # If nothing was borrowed
-        if (self.leverage == 1.0 and not self.is_short) or not self.leverage:
+        if self.has_no_leverage:
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
@@ -853,7 +853,7 @@ class Trade(_DECL_BASE, LocalTrade):
     timeframe = Column(Integer, nullable=True)
 
     # Margin trading properties
-    leverage = Column(Float, nullable=True)
+    leverage = Column(Float, nullable=True, default=1.0)
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
