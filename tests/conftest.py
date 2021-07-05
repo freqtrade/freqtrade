@@ -1762,7 +1762,7 @@ def rpc_balance():
             'total': 0.1,
             'free': 0.01,
             'used': 0.0
-            },
+        },
         'EUR': {
             'total': 10.0,
             'free': 10.0,

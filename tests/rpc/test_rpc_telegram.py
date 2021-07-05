@@ -519,12 +519,15 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert msg_mock.call_count == 1
     assert '*BTC:*' in result
     assert '*ETH:*' not in result
-    assert '*USDT:*' in result
-    assert '*EUR:*' in result
+    assert '*USDT:*' not in result
+    assert '*EUR:*' not in result
+    assert '*LTC:*' in result
+    assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12.00000000' in result
-    assert '*XRP:* not showing <0.0001 BTC amount' in result
+    assert "*3 Other Currencies (< 0.0001 BTC):*" in result
+    assert 'BTC: 0.00000309' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
