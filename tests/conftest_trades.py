@@ -436,33 +436,33 @@ def leverage_trade(fee):
         leverage: 5
         time-periods: 5 hrs( 5/4 time-period of 4 hours)
         interest: borrowed * interest_rate * time-periods
-                    = 60.516 * 0.0005 * 1/24 = 0.0378225 base
-        open_value: (amount * open_rate) - (amount * open_rate * fee)
-            = (615.0 * 0.123) - (615.0 * 0.123 * 0.0025)
-            = 75.4558875
+                    = 60.516 * 0.0005 * 5/4 = 0.0378225 base
+        open_value: (amount * open_rate) + (amount * open_rate * fee)
+            = (615.0 * 0.123) + (615.0 * 0.123 * 0.0025)
+            = 75.83411249999999
 
-        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (615.0 * 0.128) + (615.0 * 0.128 * 0.0025)
-            = 78.9168
-        total_profit = close_value - open_value - interest
-            = 78.9168 - 75.4558875 - 0.0378225
-            = 3.423089999999992
+        close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
+            = (615.0 * 0.128) - (615.0 * 0.128 * 0.0025) - 0.0378225
+            = 78.4853775
+        total_profit = close_value - open_value 
+            = 78.4853775 - 75.83411249999999
+            = 2.6512650000000093
         total_profit_percentage = total_profit / stake_amount
-            = 3.423089999999992 / 15.129
-            = 0.22626016260162551
+            = 2.6512650000000093 / 15.129
+            = 0.17524390243902502
     """
     trade = Trade(
         pair='ETC/BTC',
         stake_amount=15.129,
-        amount=123.0,
-        leverage=5,
-        amount_requested=123.0,
+        amount=615.0,
+        leverage=5.0,
+        amount_requested=615.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
         close_rate=0.128,
-        close_profit=0.22626016260162551,
-        close_profit_abs=3.423089999999992,
+        close_profit=0.17524390243902502,
+        close_profit_abs=2.6512650000000093,
         exchange='kraken',
         is_open=False,
         open_order_id='dry_run_leverage_sell_12345',
@@ -471,7 +471,7 @@ def leverage_trade(fee):
         sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=300),
         close_date=datetime.now(tz=timezone.utc),
-        # borrowed=
+        interest_rate=0.0005
     )
     o = Order.parse_from_ccxt_object(leverage_order(), 'ETC/BTC', 'sell')
     trade.orders.append(o)
