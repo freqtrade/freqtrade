@@ -49,7 +49,7 @@ class Kraken(Exchange):
             orders = self._api.fetch_open_orders()
             order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
                            x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
-                           # Don't remove the below comment, this can be important for debuggung
+                           # Don't remove the below comment, this can be important for debugging
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:

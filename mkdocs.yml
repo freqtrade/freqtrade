@@ -44,8 +44,18 @@ theme:
   favicon: 'images/logo.png'
   custom_dir: 'docs/overrides'
   palette:
-    primary: 'blue grey'
-    accent: 'tear'
+    - scheme: default
+      primary: 'blue grey'
+      accent: 'tear'
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: 'blue grey'
+      accent: 'tear'
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
 extra_css:
   - 'stylesheets/ft.extra.css'
 extra_javascript:

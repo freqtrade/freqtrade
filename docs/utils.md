@@ -702,7 +702,8 @@ You can show the details of any hyperoptimization epoch previously evaluated by 
 usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
                                [--profitable] [-n INT] [--print-json]
-                               [--hyperopt-filename PATH] [--no-header]
+                               [--hyperopt-filename FILENAME] [--no-header]
+                               [--disable-param-export]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -714,6 +715,8 @@ optional arguments:
                         Hyperopt result filename.Example: `--hyperopt-
                         filename=hyperopt_results_2020-09-27_16-20-48.pickle`
   --no-header           Do not print epoch details header.
+  --disable-param-export
+                        Disable automatic hyperopt parameter export.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

@@ -102,7 +102,7 @@ class CryptoToFiatConverter:
             inverse = True
 
         symbol = f"{crypto_symbol}/{fiat_symbol}"
-        # Check if the fiat convertion you want is supported
+        # Check if the fiat conversion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError(f'The fiat {fiat_symbol} is not supported.')
 
@@ -135,7 +135,7 @@ class CryptoToFiatConverter:
         :param fiat_symbol: FIAT currency you want to convert to (e.g usd)
         :return: float, price of the crypto-currency in Fiat
         """
-        # Check if the fiat convertion you want is supported
+        # Check if the fiat conversion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
             raise ValueError(f'The fiat {fiat_symbol} is not supported.')
 
@@ -146,7 +146,7 @@ class CryptoToFiatConverter:
         if self._cryptomap == {}:
             if self._backoff <= datetime.datetime.now().timestamp():
                 self._load_cryptomap()
-                # return 0.0 if we still dont have data to check, no reason to proceed
+                # return 0.0 if we still don't have data to check, no reason to proceed
                 if self._cryptomap == {}:
                     return 0.0
             else:

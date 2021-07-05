@@ -56,6 +56,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
     """
     Dump JSON data into a file
     :param filename: file to create
+    :param is_zip: if file should be zip
     :param data: JSON Data to save
     :return:
     """

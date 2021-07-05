@@ -501,6 +501,21 @@ tc31 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
+# Test 32: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 1%, ROI: 10% (should not apply)
+tc32 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01, use_custom_stoploss=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -534,6 +549,7 @@ TESTS = [
     tc29,
     tc30,
     tc31,
+    tc32,
 ]
 
 
@@ -551,7 +567,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
-    default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
+    default_conf["use_sell_signal"] = data.use_sell_signal
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
@@ -561,6 +577,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = lambda a, m: frame
     backtesting.strategy.advise_sell = lambda a, m: frame
+    backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     caplog.set_level(logging.DEBUG)
 
     pair = "UNITTEST/BTC"

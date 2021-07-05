@@ -135,7 +135,7 @@ class IResolver:
                     extra_dir: Optional[str] = None) -> Any:
         """
         Search and loads the specified object as configured in hte child class.
-        :param objectname: name of the module to import
+        :param object_name: name of the module to import
         :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist
         :raises: OperationalException if the class is invalid or does not exist.
@@ -163,7 +163,7 @@ class IResolver:
         :param directory: Path to search
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
-        :return: List of dicts containing 'name', 'class' and 'location' entires
+        :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
         objects = []

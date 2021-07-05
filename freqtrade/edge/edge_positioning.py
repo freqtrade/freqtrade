@@ -301,7 +301,7 @@ class Edge:
     def _process_expectancy(self, results: DataFrame) -> Dict[str, Any]:
         """
         This calculates WinRate, Required Risk Reward, Risk Reward and Expectancy of all pairs
-        The calulation will be done per pair and per strategy.
+        The calculation will be done per pair and per strategy.
         """
         # Removing pairs having less than min_trades_number
         min_trades_number = self.edge_config.get('min_trade_number', 10)
