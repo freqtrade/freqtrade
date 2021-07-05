@@ -215,6 +215,8 @@ def create_mock_trades(fee, use_db: bool = True):
     add_trade(trade)
     trade = mock_trade_6(fee)
     add_trade(trade)
+    if use_db:
+        Trade.query.session.flush()
 
 
 def create_mock_trades_with_leverage(fee, use_db: bool = True):
