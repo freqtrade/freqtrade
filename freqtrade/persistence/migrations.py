@@ -48,7 +48,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
 
-    leverage = get_column_def(cols, 'leverage', 'null')
+    leverage = get_column_def(cols, 'leverage', '1.0')
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     liquidation_price = get_column_def(cols, 'liquidation_price', 'null')
     is_short = get_column_def(cols, 'is_short', 'False')
@@ -146,7 +146,7 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
 
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
-    leverage = get_column_def(cols, 'leverage', 'null')
+    leverage = get_column_def(cols, 'leverage', '1.0')
     is_short = get_column_def(cols, 'is_short', 'False')
     with engine.begin() as connection:
         connection.execute(text(f"""
