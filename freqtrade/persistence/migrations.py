@@ -171,9 +171,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
-    # Last added column of trades table
-    # To determine if migrations need to run
-    if not has_column(cols, 'collateral_currency'):
+    # Check for latest column
+    if not has_column(cols, 'open_trade_value'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!

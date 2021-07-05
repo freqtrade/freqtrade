@@ -495,9 +495,9 @@ def test_update_market_order(
     assert trade.interest_rate == 0.0005
     # TODO: Uncomment the next assert and make it work.
     # The logger also has the exact same but there's some spacing in there
-    # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-    #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
-    #                   caplog)
+    assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
+                      r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
+                      caplog)
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = 'something'
@@ -509,9 +509,9 @@ def test_update_market_order(
     # TODO: The amount should maybe be the opening amount + the interest
     # TODO: Uncomment the next assert and make it work.
     # The logger also has the exact same but there's some spacing in there
-    # assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-    #                   r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004099, open_since=.*\).",
-    #                   caplog)
+    assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
+                      r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004099, open_since=.*\).",
+                      caplog)
 
 
 @ pytest.mark.usefixtures("init_persistence")
@@ -746,4 +746,4 @@ def test_get_best_pair(fee):
     res = Trade.get_best_pair()
     assert len(res) == 2
     assert res[0] == 'ETC/BTC'
-    assert res[1] == 0.22626016260162551
+    assert res[1] == 0.17524390243902502
