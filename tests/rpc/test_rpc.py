@@ -107,8 +107,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-
-        'leverage': None,
+        'leverage': 1.0,
         'interest_rate': 0.0,
         'liquidation_price': None,
         'is_short': False,
@@ -178,8 +177,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-
-        'leverage': None,
+        'leverage': 1.0,
         'interest_rate': 0.0,
         'liquidation_price': None,
         'is_short': False,
