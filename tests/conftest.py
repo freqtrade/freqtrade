@@ -2182,8 +2182,9 @@ def limit_leveraged_buy_order_open():
         'price': 0.00001099,
         'amount': 272.97543219,
         'filled': 0.0,
-        'cost': 0.0029999999997681,
+        'cost': 0.0009999999999226999,
         'remaining': 272.97543219,
+        'leverage': 3.0,
         'status': 'open',
         'exchange': 'binance'
     }
@@ -2211,6 +2212,7 @@ def limit_leveraged_sell_order_open():
         'amount': 272.97543219,
         'filled': 0.0,
         'remaining': 272.97543219,
+        'leverage': 3.0,
         'status': 'open',
         'exchange': 'binance'
     }

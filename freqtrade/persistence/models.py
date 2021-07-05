@@ -587,7 +587,7 @@ class LocalTrade():
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
-        now = datetime.utcnow()  # TODO-mg: Update to self.close_date
+        now = (self.close_date or datetime.utcnow()).replace(tzinfo=None)
         sec_per_hour = Decimal(3600)
         total_seconds = Decimal((now - open_date).total_seconds())
         hours = total_seconds/sec_per_hour or zero
@@ -601,7 +601,7 @@ class LocalTrade():
         if self.exchange == 'binance':
             # Rate is per day but accrued hourly or something
             # binance: https://www.binance.com/en-AU/support/faq/360030157812
-            return borrowed * rate * max(hours, one)/twenty_four  # TODO-mg: Is hours rounded?
+            return borrowed * rate * max(hours, one)/twenty_four
         elif self.exchange == 'kraken':
             # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
             opening_fee = borrowed * rate
