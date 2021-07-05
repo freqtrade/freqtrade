@@ -61,10 +61,10 @@ class AgeFilter(IPairList):
         if not needed_pairs:
             return pairlist
 
-        since_ms = int(arrow.utcnow()
-                       .floor('day')
-                       .shift(days=-self._min_days_listed - 1)
-                       .float_timestamp) * 1000
+        since_ms = (arrow.utcnow()
+                         .floor('day')
+                         .shift(days=-self._min_days_listed - 1)
+                         .int_timestamp) * 1000
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
             for p in deepcopy(pairlist):
@@ -89,7 +89,7 @@ class AgeFilter(IPairList):
             if len(daily_candles) >= self._min_days_listed:
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
-                self._symbolsChecked[pair] = int(arrow.utcnow().float_timestamp) * 1000
+                self._symbolsChecked[pair] = int(arrow.utcnow().int_timestamp) * 1000
                 return True
             else:
                 self.log_once(f"Removed {pair} from whitelist, because age "
