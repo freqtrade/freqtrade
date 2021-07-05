@@ -6,7 +6,7 @@ ccxt==1.52.40
 cryptography==3.4.7
 aiohttp==3.7.4.post0
 SQLAlchemy==1.4.20
-python-telegram-bot==13.6
+python-telegram-bot==13.7
 arrow==1.1.1
 cachetools==4.2.2
 requests==2.25.1
