@@ -3,7 +3,6 @@ import logging
 from typing import Any, Dict
 
 import ccxt
-from decimal import Decimal
 
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
@@ -125,11 +124,3 @@ class Kraken(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    @staticmethod
-    def calculate_interest(borrowed: Decimal, hours: Decimal, interest_rate: Decimal) -> Decimal:
-        four = Decimal(4.0)
-        # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
-        opening_fee = borrowed * interest_rate
-        roll_over_fee = borrowed * interest_rate * max(0, (hours-four)/four)
-        return opening_fee + roll_over_fee
