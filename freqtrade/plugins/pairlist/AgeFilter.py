@@ -61,10 +61,10 @@ class AgeFilter(IPairList):
         if not needed_pairs:
             return pairlist
 
-        since_ms = int(arrow.utcnow()
-                       .floor('day')
-                       .shift(days=-self._min_days_listed - 1)
-                       .int_timestamp) * 1000
+        since_ms = (arrow.utcnow()
+                         .floor('day')
+                         .shift(days=-self._min_days_listed - 1)
+                         .int_timestamp) * 1000
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
             for p in deepcopy(pairlist):
