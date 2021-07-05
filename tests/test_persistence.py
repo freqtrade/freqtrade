@@ -956,7 +956,6 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
                       'leverage': None,
                       'interest_rate': None,
                       'liquidation_price': None,
@@ -1026,7 +1025,6 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
                       'leverage': None,
                       'interest_rate': None,
                       'liquidation_price': None,
