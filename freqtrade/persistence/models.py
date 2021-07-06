@@ -615,7 +615,7 @@ class LocalTrade():
             raise OperationalException(f"Leverage not available on {self.exchange} using freqtrade")
 
         open_date = self.open_date.replace(tzinfo=None)
-        now = (self.close_date or datetime.utcnow()).replace(tzinfo=None)
+        now = (self.close_date or datetime.now(timezone.utc)).replace(tzinfo=None)
         sec_per_hour = Decimal(3600)
         total_seconds = Decimal((now - open_date).total_seconds())
         hours = total_seconds/sec_per_hour or zero
