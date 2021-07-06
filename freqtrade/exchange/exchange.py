@@ -578,7 +578,7 @@ class Exchange:
             'side': side,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
-            'timestamp': int(arrow.utcnow().int_timestamp * 1000),
+            'timestamp': arrow.utcnow().int_timestamp * 1000,
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
             'info': {}

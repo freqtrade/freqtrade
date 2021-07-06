@@ -1168,6 +1168,7 @@ def test_hyperopt_show(mocker, capsys, saved_hyperopt_results):
         'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
         MagicMock(return_value=saved_hyperopt_results)
     )
+    mocker.patch('freqtrade.commands.hyperopt_commands.show_backtest_result')
 
     args = [
         "hyperopt-show",
