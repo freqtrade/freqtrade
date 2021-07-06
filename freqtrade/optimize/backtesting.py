@@ -189,6 +189,15 @@ class Backtesting:
         self.rejected_trades = 0
         self.dataprovider.clear_cache()
 
+    def check_abort(self):
+        """
+        Check if abort was requested, raise DependencyException if that's the case
+        Only applies to Interactive backtest mode (webserver mode)
+        """
+        if self.abort:
+            self.abort = False
+            raise DependencyException("Stop requested")
+
     def _get_ohlcv_as_lists(self, processed: Dict[str, DataFrame]) -> Dict[str, Tuple]:
         """
         Helper function to convert a processed dataframes into lists for performance reasons.
@@ -203,8 +212,7 @@ class Backtesting:
 
         # Create dict with data
         for pair, pair_data in processed.items():
-            if self.abort:
-                raise DependencyException("Stop requested")
+            self.check_abort()
             self.progress.increment()
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
@@ -422,8 +430,7 @@ class Backtesting:
         # Loop timerange and get candle for each pair at that point in time
         while tmp <= end_date:
             open_trade_count_start = open_trade_count
-            if self.abort:
-                raise DependencyException("Stop requested")
+            self.check_abort()
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 try:

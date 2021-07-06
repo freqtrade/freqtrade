@@ -52,8 +52,8 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 # TODO: Investigate if enabling protections can be dynamically ingested from here...
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
-                # Reset data if backtesting is reloaded
 
+            # Only reload data if timeframe or timerange changed.
             if (not ApiServer._backtestdata or not ApiServer._bt_timerange
                     or lastconfig.get('timerange') != btconfig['timerange']
                     or lastconfig.get('timeframe') != strat.timeframe):

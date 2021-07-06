@@ -1252,10 +1252,6 @@ def test_api_backtesting(botclient, mocker, fee):
     assert not result['running']
     assert result['status_msg'] == 'Backtest reset'
 
-    # bt_mock = mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
-    #                        return_value=(1, 2))
-    # stats_mock = mocker.patch('freqtrade.optimize.optimize_reports.generate_backtest_stats')
-    # bt_mock.load_bt_data = MagicMock(return_value=(xxx, 'asdfadf'))
     # start backtesting
     data = {
         "strategy": "DefaultStrategy",
@@ -1284,6 +1280,13 @@ def test_api_backtesting(botclient, mocker, fee):
     assert result['status_msg'] == 'Backtest ended'
     assert result['progress'] == 1
     assert result['backtest_result']
+
+    rc = client_get(client, f"{BASE_URI}/backtest/abort")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'not_running'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")

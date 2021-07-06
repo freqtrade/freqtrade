@@ -346,6 +346,20 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     assert processed['UNITTEST/BTC'].equals(processed2['UNITTEST/BTC'])
 
 
+def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting.check_abort()
+
+    backtesting.abort = True
+
+    with pytest.raises(DependencyException, match="Stop requested"):
+        backtesting.check_abort()
+    # abort flag resets
+    assert backtesting.abort is False
+    assert backtesting.progress.progress == 0
+
+
 def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
