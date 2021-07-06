@@ -2132,7 +2132,8 @@ def limit_short_order_open():
         'cost': 0.00106733393,
         'remaining': 90.99181073,
         'status': 'open',
-        'is_short': True
+        'is_short': True,
+        'liquidation_price': 0.00001300
     }
 
 
@@ -2185,7 +2186,8 @@ def market_short_order():
         'remaining': 0.0,
         'status': 'closed',
         'is_short': True,
-        'leverage': 3.0
+        'leverage': 3.0,
+        'liquidation_price': 0.00004300
     }
 
 
@@ -2223,7 +2225,8 @@ def limit_leveraged_buy_order_open():
         'remaining': 272.97543219,
         'leverage': 3.0,
         'status': 'open',
-        'exchange': 'binance'
+        'exchange': 'binance',
+        'liquidation_price': 0.00001000
     }
 
 
@@ -2277,7 +2280,8 @@ def market_leveraged_buy_order():
         'filled': 275.97543219,
         'remaining': 0.0,
         'status': 'closed',
-        'exchange': 'kraken'
+        'exchange': 'kraken',
+        'liquidation_price': 0.00004000
     }
 
 
