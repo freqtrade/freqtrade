@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import SellType
+from freqtrade.enums import InterestMode, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
@@ -265,9 +265,10 @@ class LocalTrade():
 
     # Margin trading properties
     interest_rate: float = 0.0
-    liquidation_price: float = None
+    liquidation_price: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
+    interest_mode: Optional[InterestMode] = None
 
     @property
     def has_no_leverage(self) -> bool:
@@ -585,6 +586,8 @@ class LocalTrade():
         # If nothing was borrowed
         if self.has_no_leverage:
             return zero
+        elif not self.interest_mode:
+            raise OperationalException(f"Leverage not available on {self.exchange} using freqtrade")
 
         open_date = self.open_date.replace(tzinfo=None)
         now = (self.close_date or datetime.utcnow()).replace(tzinfo=None)
@@ -594,28 +597,8 @@ class LocalTrade():
 
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
-        one = Decimal(1.0)
-        twenty_four = Decimal(24.0)
-        four = Decimal(4.0)
 
-        if self.exchange == 'binance':
-            # Rate is per day but accrued hourly or something
-            # binance: https://www.binance.com/en-AU/support/faq/360030157812
-            return borrowed * rate * max(hours, one)/twenty_four
-        elif self.exchange == 'kraken':
-            # https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-
-            opening_fee = borrowed * rate
-            roll_over_fee = borrowed * rate * max(0, (hours-four)/four)
-            return opening_fee + roll_over_fee
-        elif self.exchange == 'binance_usdm_futures':
-            # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/twenty_four) * max(hours, one)
-        elif self.exchange == 'binance_coinm_futures':
-            # ! TODO-mg: This is incorrect, I didn't look it up
-            return borrowed * (rate/twenty_four) * max(hours, one)
-        else:
-            # TODO-mg: make sure this breaks and can't be squelched
-            raise OperationalException("Leverage not available on this exchange")
+        return self.interest_mode.value(borrowed, rate, hours)
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None,
@@ -857,6 +840,7 @@ class Trade(_DECL_BASE, LocalTrade):
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
+    interest_mode = Column(String(100), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):
