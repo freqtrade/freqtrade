@@ -87,40 +87,41 @@ def stoploss_from_open(open_relative_stop: float, current_profit: float) -> floa
     return max(stoploss, 0.0)
 
 
-def get_custom_dataframe(self, pair: str):
-    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-    return dataframe
-
-
-def get_trade_candle(self, trade: 'Trade'):
+def get_trade_candle(dataframe, trade: Trade, timeframe: str, now: datetime = None):
     """
     search for nearest row of trade.open_date
     """
-    trade_candle = find_candle_datetime(self, trade.open_date_utc, pair=trade.pair, now=None)
+    trade_candle = find_candle_datetime(dataframe,
+                                        timeframe,
+                                        query_date=trade.open_date_utc,
+                                        pair=trade.pair,
+                                        now=now)
     return trade_candle
 
 
-def get_buy_candle(self, trade: 'Trade', timeframe="5m"):
+def get_buy_candle(dataframe, trade: Trade, timeframe: str, now: datetime = None):
     """
-    search for nearest row of trade.open_date
+    search for nearest row of trade.open_date minus 1 candle (the buy decision candle)
     """
-    trade_candle = find_candle_datetime(
-        self,
-        trade.open_date_utc - timedelta(minutes=timeframe_to_minutes(self.timeframe)),
-        pair=trade.pair,
-        now=None)
+    trade_open = trade.open_date_utc
+    one_frame = timedelta(minutes=timeframe_to_minutes(timeframe))
+    trade_candle = find_candle_datetime(dataframe,
+                                        timeframe,
+                                        query_date=trade_open - one_frame,
+                                        pair=trade.pair,
+                                        now=now)
     return trade_candle
 
 
-def find_candle_datetime(self, query_date: datetime, pair: str, now: datetime):
+def find_candle_datetime(dataframe: pd.DataFrame, timeframe: str, query_date: datetime, pair: str, now: datetime = None):
     result = None
-    dataframe = get_custom_dataframe(self, pair)
-    candle = find_candle_datetime_safer(self, query_date, now, dataframe,)
+    candle = find_candle_datetime_safer(dataframe, query_date)
+    # candle = find_candle_datetime_faster(dataframe, timeframe, query_date, now)
     result = candle if candle.empty else candle.squeeze()
     return result
 
 
-def find_candle_datetime_faster(self, query_date: datetime, now: datetime, dataframe):
+def find_candle_datetime_faster(dataframe: pd.DataFrame, timeframe: str, query_date: datetime, now: datetime = None):
     if(now and now == query_date):
         candle = dataframe.iloc[-1]
     else:
@@ -129,7 +130,7 @@ def find_candle_datetime_faster(self, query_date: datetime, now: datetime, dataf
     return candle
 
 
-def find_candle_datetime_safer(self, query_date: datetime, now: datetime, dataframe):
+def find_candle_datetime_safer(dataframe: pd.DataFrame, query_date: datetime):
     df = dataframe[['date']].set_index('date')
 
     try:
