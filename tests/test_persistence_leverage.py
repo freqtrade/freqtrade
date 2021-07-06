@@ -8,6 +8,7 @@ import pytest
 from math import isclose
 from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
+from freqtrade.enums import InterestMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
@@ -49,7 +50,8 @@ def test_interest_kraken(market_leveraged_buy_order, fee):
         fee_close=fee.return_value,
         exchange='kraken',
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
 
     # The trades that last 10 minutes do not need to be rounded because they round up to 4 hours on kraken so we can predict the correct value
@@ -69,7 +71,8 @@ def test_interest_kraken(market_leveraged_buy_order, fee):
         fee_close=fee.return_value,
         exchange='kraken',
         leverage=5.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
 
     assert float(round(trade.calculate_interest(), 11)
@@ -113,9 +116,9 @@ def test_interest_binance(market_leveraged_buy_order, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     # The trades that last 10 minutes do not always need to be rounded because they round up to 4 hours on kraken so we can predict the correct value
     assert round(float(trade.calculate_interest()), 22) == round(4.166666666344583e-08, 22)
@@ -134,7 +137,8 @@ def test_interest_binance(market_leveraged_buy_order, fee):
         fee_close=fee.return_value,
         exchange='binance',
         leverage=5.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
 
     assert float(round(trade.calculate_interest(), 14)) == round(4.1666666663445834e-07, 14)
@@ -155,6 +159,7 @@ def test_update_open_order(limit_leveraged_buy_order):
         interest_rate=0.0005,
         leverage=3.0,
         exchange='binance',
+        interest_mode=InterestMode.HOURSPERDAY
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -195,7 +200,8 @@ def test_calc_open_trade_value(market_leveraged_buy_order, fee):
         fee_close=fee.return_value,
         interest_rate=0.0005,
         exchange='kraken',
-        leverage=3
+        leverage=3,
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'open_trade'
     trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
@@ -243,7 +249,8 @@ def test_calc_open_close_trade_price(limit_leveraged_buy_order, limit_leveraged_
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
     trade.update(limit_leveraged_buy_order)
@@ -296,7 +303,8 @@ def test_trade_close(fee):
         open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
         exchange='kraken',
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -349,9 +357,9 @@ def test_calc_close_trade_price(market_leveraged_buy_order, market_leveraged_sel
         fee_close=fee.return_value,
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         interest_rate=0.0005,
-
         leverage=3.0,
         exchange='kraken',
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'close_trade'
     trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
@@ -406,7 +414,8 @@ def test_update_limit_order(limit_leveraged_buy_order, limit_leveraged_sell_orde
         fee_close=fee.return_value,
         leverage=3.0,
         interest_rate=0.0005,
-        exchange='binance'
+        exchange='binance',
+        interest_mode=InterestMode.HOURSPERDAY
     )
     # assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -474,7 +483,8 @@ def test_update_market_order(market_leveraged_buy_order, market_leveraged_sell_o
         fee_close=fee.return_value,
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         interest_rate=0.0005,
-        exchange='kraken'
+        exchange='kraken',
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
     trade.update(market_leveraged_buy_order)
@@ -516,7 +526,8 @@ def test_calc_close_trade_price_exception(limit_leveraged_buy_order, fee):
         fee_close=fee.return_value,
         exchange='binance',
         interest_rate=0.0005,
-        leverage=3.0
+        leverage=3.0,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
     trade.update(limit_leveraged_buy_order)
@@ -572,7 +583,8 @@ def test_calc_profit(market_leveraged_buy_order, market_leveraged_sell_order, fe
         fee_close=fee.return_value,
         exchange='kraken',
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
     trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
