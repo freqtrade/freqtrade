@@ -15,7 +15,7 @@ from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_interest_kraken(market_leveraged_buy_order, fee):
+def test_interest_kraken_lev(market_leveraged_buy_order, fee):
     """
         Market trade on Kraken at 3x and 5x leverage
         Short trade
@@ -82,7 +82,7 @@ def test_interest_kraken(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_interest_binance(market_leveraged_buy_order, fee):
+def test_interest_binance_lev(market_leveraged_buy_order, fee):
     """
         Market trade on Kraken at 3x and 5x leverage
         Short trade
@@ -148,7 +148,7 @@ def test_interest_binance(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_open_order(limit_leveraged_buy_order):
+def test_update_open_order_lev(limit_leveraged_buy_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=1.00,
@@ -172,7 +172,7 @@ def test_update_open_order(limit_leveraged_buy_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value(market_leveraged_buy_order, fee):
+def test_calc_open_trade_value_lev(market_leveraged_buy_order, fee):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -213,7 +213,7 @@ def test_calc_open_trade_value(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_leveraged_buy_order, limit_leveraged_sell_order, fee):
+def test_calc_open_close_trade_price_lev(limit_leveraged_buy_order, limit_leveraged_sell_order, fee):
     """
         5 hour leveraged trade on Binance
 
@@ -266,7 +266,7 @@ def test_calc_open_close_trade_price(limit_leveraged_buy_order, limit_leveraged_
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_trade_close(fee):
+def test_trade_close_lev(fee):
     """
         5 hour leveraged market trade on Kraken at 3x leverage
         fee: 0.25% base
@@ -325,7 +325,7 @@ def test_trade_close(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(market_leveraged_buy_order, market_leveraged_sell_order, fee):
+def test_calc_close_trade_price_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -373,7 +373,7 @@ def test_calc_close_trade_price(market_leveraged_buy_order, market_leveraged_sel
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_limit_order(limit_leveraged_buy_order, limit_leveraged_sell_order, fee, caplog):
+def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_order, fee, caplog):
     """
         10 minute leveraged limit trade on binance at 3x leverage
 
@@ -444,7 +444,7 @@ def test_update_limit_order(limit_leveraged_buy_order, limit_leveraged_sell_orde
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_market_order(market_leveraged_buy_order, market_leveraged_sell_order, fee,  caplog):
+def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee,  caplog):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -516,7 +516,7 @@ def test_update_market_order(market_leveraged_buy_order, market_leveraged_sell_o
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception(limit_leveraged_buy_order, fee):
+def test_calc_close_trade_price_exception_lev(limit_leveraged_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -535,7 +535,7 @@ def test_calc_close_trade_price_exception(limit_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(market_leveraged_buy_order, market_leveraged_sell_order, fee):
+def test_calc_profit_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee):
     """
         # TODO: Update this one
         Leveraged trade on Kraken at 3x leverage
