@@ -55,10 +55,13 @@ class AgeFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return (f"{self.name} - Filtering pairs with age less than "
-                f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}"
-                " or more than "
-                f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}")
+        return (
+            f"{self.name} - Filtering pairs with age less than "
+            f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}"
+        ) + (
+            " or more than "
+            f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
+        ) if self._max_days_listed else ''
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -105,10 +108,13 @@ class AgeFilter(IPairList):
                 self._symbolsChecked[pair] = int(arrow.utcnow().float_timestamp) * 1000
                 return True
             else:
-                self.log_once(f"Removed {pair} from whitelist, because age "
-                              f"{len(daily_candles)} is less than {self._min_days_listed} "
-                              f"{plural(self._min_days_listed, 'day')} or more than "
-                              f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}",
-                              logger.info)
+                self.log_once((
+                    f"Removed {pair} from whitelist, because age "
+                    f"{len(daily_candles)} is less than {self._min_days_listed} "
+                    f"{plural(self._min_days_listed, 'day')}"
+                ) + (
+                    " or more than "
+                    f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
+                ) if self.max_days_listed else '', logger.info)
                 return False
         return False

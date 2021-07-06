@@ -487,7 +487,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
             if pairlist['method'] == 'AgeFilter' and pairlist['min_days_listed'] and \
                     len(ohlcv_history) < pairlist['min_days_listed']:
                 assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
-                                  r'.* day.* or more than .* day', caplog)
+                                  r'.* day.*', caplog)
             if pairlist['method'] == 'AgeFilter' and pairlist['max_days_listed'] and \
                     len(ohlcv_history) > pairlist['max_days_listed']:
                 assert log_has_re(r'^Removed .* from whitelist, because age .* is less than '
