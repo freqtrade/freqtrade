@@ -693,7 +693,6 @@ def test_get_open_short(fee, use_db):
 
 
 def test_stoploss_reinitialization_short(default_conf, fee):
-    # TODO-mg: I don't understand this at all, I was just going in the opposite direction as the matching function form test_persistance.py
     init_db(default_conf['db_url'])
     trade = Trade(
         pair='ETH/BTC',
@@ -733,19 +732,24 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade_adj.stop_loss_pct == 0.04
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
-    # Trailing stoploss (move stoplos up a bit)
+    # Trailing stoploss
     trade.adjust_stop_loss(0.98, -0.04)
-    assert trade_adj.stop_loss == 1.0208
+    assert trade_adj.stop_loss == 1.0192
     assert trade_adj.initial_stop_loss == 1.04
     Trade.stoploss_reinitialization(-0.04)
     trades = Trade.get_open_trades()
     assert len(trades) == 1
     trade_adj = trades[0]
     # Stoploss should not change in this case.
-    assert trade_adj.stop_loss == 1.0208
+    assert trade_adj.stop_loss == 1.0192
     assert trade_adj.stop_loss_pct == 0.04
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
+    # Stoploss can't go above liquidation price
+    trade_adj.set_liquidation_price(1.0)
+    trade.adjust_stop_loss(0.97, -0.04)
+    assert trade_adj.stop_loss == 1.0
+    assert trade_adj.stop_loss == 1.0
 
 
 @ pytest.mark.usefixtures("init_persistence")
