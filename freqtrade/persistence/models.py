@@ -134,6 +134,7 @@ class Order(_DECL_BASE):
 
     leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=True, default=False)
+    # liquidation_price = Column(Float, nullable=True)
 
     def __repr__(self):
 
@@ -159,6 +160,7 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         self.leverage = order.get('leverage', self.leverage)
+        # TODO-mg: liquidation price? is_short?
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 

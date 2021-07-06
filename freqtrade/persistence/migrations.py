@@ -148,6 +148,7 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
     decl_base.metadata.create_all(engine)
     leverage = get_column_def(cols, 'leverage', '1.0')
     is_short = get_column_def(cols, 'is_short', 'False')
+    liquidation_price = get_column_def(cols, 'liquidation_price', 'False')
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
@@ -156,7 +157,7 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
             order_date, order_filled_date, order_update_date,
-            {leverage} leverage, {is_short} is_short
+            {leverage} leverage, {is_short} is_short, {liquidation_price} liquidation_price
             from {table_back_name}
             """))
 
