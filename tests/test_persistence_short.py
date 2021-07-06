@@ -8,6 +8,7 @@ import pytest
 from math import isclose
 from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
+from freqtrade.enums import InterestMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
@@ -48,7 +49,8 @@ def test_interest_kraken(market_short_order, fee):
         exchange='kraken',
         is_short=True,
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
 
     assert float(round(trade.calculate_interest(), 8)) == round(0.137987716095, 8)
@@ -67,7 +69,8 @@ def test_interest_kraken(market_short_order, fee):
         exchange='kraken',
         is_short=True,
         leverage=5.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
 
     assert float(round(trade.calculate_interest(), 8)) == round(0.28747440853125, 8)
@@ -111,7 +114,8 @@ def test_interest_binance(market_short_order, fee):
         exchange='binance',
         is_short=True,
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
 
     assert float(round(trade.calculate_interest(), 8)) == 0.00574949
@@ -129,7 +133,8 @@ def test_interest_binance(market_short_order, fee):
         exchange='binance',
         is_short=True,
         leverage=5.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
 
     assert float(round(trade.calculate_interest(), 8)) == 0.04791240
@@ -151,6 +156,7 @@ def test_calc_open_trade_value(market_short_order, fee):
         is_short=True,
         leverage=3.0,
         exchange='kraken',
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'open_trade'
     trade.update(market_short_order)  # Buy @ 0.00001099
@@ -174,6 +180,7 @@ def test_update_open_order(limit_short_order):
         interest_rate=0.0005,
         is_short=True,
         exchange='binance',
+        interest_mode=InterestMode.HOURSPERDAY
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -197,7 +204,8 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
         exchange='binance',
         interest_rate=0.0005,
         leverage=3.0,
-        is_short=True
+        is_short=True,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -235,6 +243,7 @@ def test_calc_close_trade_price(market_short_order, market_exit_short_order, fee
         is_short=True,
         leverage=3.0,
         exchange='kraken',
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'close_trade'
     trade.update(market_short_order)  # Buy @ 0.00001099
@@ -285,7 +294,8 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
     trade.update(limit_short_order)
@@ -343,7 +353,8 @@ def test_trade_close(fee):
         exchange='kraken',
         is_short=True,
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -406,7 +417,8 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, cap
         fee_close=fee.return_value,
         # borrowed=90.99181073,
         interest_rate=0.0005,
-        exchange='binance'
+        exchange='binance',
+        interest_mode=InterestMode.HOURSPERDAY
     )
     # assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -482,7 +494,8 @@ def test_update_market_order(
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         leverage=3.0,
         interest_rate=0.0005,
-        exchange='kraken'
+        exchange='kraken',
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
     trade.update(market_short_order)
@@ -569,7 +582,8 @@ def test_calc_profit(market_short_order, market_exit_short_order, fee):
         exchange='kraken',
         is_short=True,
         leverage=3.0,
-        interest_rate=0.0005
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
     trade.update(market_short_order)  # Buy @ 0.00001099
@@ -620,7 +634,8 @@ def test_adjust_stop_loss(fee):
         exchange='binance',
         open_rate=1,
         max_rate=1,
-        is_short=True
+        is_short=True,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.adjust_stop_loss(trade.open_rate, 0.05, True)
     assert trade.stop_loss == 1.05
@@ -685,6 +700,7 @@ def test_stoploss_reinitialization(default_conf, fee):
         max_rate=1,
         is_short=True,
         leverage=3.0,
+        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.adjust_stop_loss(trade.open_rate, -0.05, True)
     assert trade.stop_loss == 1.05
