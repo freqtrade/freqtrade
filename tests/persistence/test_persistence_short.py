@@ -15,7 +15,7 @@ from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_interest_kraken(market_short_order, fee):
+def test_interest_kraken_short(market_short_order, fee):
     """
         Market trade on Kraken at 3x and 8x leverage
         Short trade
@@ -80,7 +80,7 @@ def test_interest_kraken(market_short_order, fee):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_interest_binance(market_short_order, fee):
+def test_interest_binance_short(market_short_order, fee):
     """
         Market trade on Binance at 3x and 5x leverage
         Short trade
@@ -143,7 +143,7 @@ def test_interest_binance(market_short_order, fee):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value(market_short_order, fee):
+def test_calc_open_trade_value_short(market_short_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -168,7 +168,7 @@ def test_calc_open_trade_value(market_short_order, fee):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_update_open_order(limit_short_order):
+def test_update_open_order_short(limit_short_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=1.00,
@@ -193,7 +193,7 @@ def test_update_open_order(limit_short_order):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception(limit_short_order, fee):
+def test_calc_close_trade_price_exception_short(limit_short_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -213,7 +213,7 @@ def test_calc_close_trade_price_exception(limit_short_order, fee):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(market_short_order, market_exit_short_order, fee):
+def test_calc_close_trade_price_short(market_short_order, market_exit_short_order, fee):
     """
         10 minute short market trade on Kraken at 3x leverage
         Short trade
@@ -257,7 +257,7 @@ def test_calc_close_trade_price(market_short_order, market_exit_short_order, fee
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, fee):
+def test_calc_open_close_trade_price_short(limit_short_order, limit_exit_short_order, fee):
     """
         5 hour short trade on Binance
         Short trade
@@ -311,7 +311,7 @@ def test_calc_open_close_trade_price(limit_short_order, limit_exit_short_order, 
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_trade_close(fee):
+def test_trade_close_short(fee):
     """
         Five hour short trade on Kraken at 3x leverage
         Short trade
@@ -375,7 +375,7 @@ def test_trade_close(fee):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, caplog):
+def test_update_with_binance_short(limit_short_order, limit_exit_short_order, fee, caplog):
     """
         10 minute short limit trade on binance
 
@@ -449,7 +449,7 @@ def test_update_with_binance(limit_short_order, limit_exit_short_order, fee, cap
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_update_market_order(
+def test_update_market_order_short(
     market_short_order,
     market_exit_short_order,
     fee,
@@ -527,7 +527,7 @@ def test_update_market_order(
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(market_short_order, market_exit_short_order, fee):
+def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
     """
         Market trade on Kraken at 3x leverage
         Short trade
@@ -623,7 +623,7 @@ def test_calc_profit(market_short_order, market_exit_short_order, fee):
     # assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
 
 
-def test_adjust_stop_loss(fee):
+def test_adjust_stop_loss_short(fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -676,7 +676,7 @@ def test_adjust_stop_loss(fee):
 
 @ pytest.mark.usefixtures("init_persistence")
 @ pytest.mark.parametrize('use_db', [True, False])
-def test_get_open(fee, use_db):
+def test_get_open_short(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
     create_mock_trades_with_leverage(fee, use_db)
@@ -684,7 +684,7 @@ def test_get_open(fee, use_db):
     Trade.use_db = True
 
 
-def test_stoploss_reinitialization(default_conf, fee):
+def test_stoploss_reinitialization_short(default_conf, fee):
     # TODO-mg: I don't understand this at all, I was just going in the opposite direction as the matching function form test_persistance.py
     init_db(default_conf['db_url'])
     trade = Trade(
@@ -742,7 +742,7 @@ def test_stoploss_reinitialization(default_conf, fee):
 
 @ pytest.mark.usefixtures("init_persistence")
 @ pytest.mark.parametrize('use_db', [True, False])
-def test_total_open_trades_stakes(fee, use_db):
+def test_total_open_trades_stakes_short(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
     res = Trade.total_open_trades_stakes()
@@ -754,7 +754,7 @@ def test_total_open_trades_stakes(fee, use_db):
 
 
 @ pytest.mark.usefixtures("init_persistence")
-def test_get_best_pair(fee):
+def test_get_best_pair_short(fee):
     res = Trade.get_best_pair()
     assert res is None
     create_mock_trades_with_leverage(fee)
