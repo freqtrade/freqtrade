@@ -506,7 +506,6 @@ def test_update_market_order(
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.interest_rate == 0.0005
-    # TODO: Uncomment the next assert and make it work.
     # The logger also has the exact same but there's some spacing in there
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
                       r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
@@ -519,11 +518,11 @@ def test_update_market_order(
     assert trade.close_rate == 0.00004099
     assert trade.close_profit == 0.03685505
     assert trade.close_date is not None
-    # TODO: The amount should maybe be the opening amount + the interest
-    # TODO: Uncomment the next assert and make it work.
+    # TODO-mg: The amount should maybe be the opening amount + the interest
+    # TODO-mg: Uncomment the next assert and make it work.
     # The logger also has the exact same but there's some spacing in there
-    assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-                      r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004099, open_since=.*\).",
+    assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
+                      r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",
                       caplog)
 
 
