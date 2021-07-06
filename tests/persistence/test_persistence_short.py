@@ -649,23 +649,24 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == 0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
-    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
+    # If the price goes down to 0.7, with a trailing stop of 0.1, the new stoploss at 0.1 above 0.7 would be 0.7*0.1 higher
+    assert round(trade.stop_loss, 8) == 0.77
     assert trade.stop_loss_pct == 0.1
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate lower again ... should not change
     trade.adjust_stop_loss(0.8, -0.1)
-    assert round(trade.stop_loss, 8) == 1.17  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.77
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     # current rate higher... should raise stoploss
     trade.adjust_stop_loss(0.6, -0.1)
-    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    assert round(trade.stop_loss, 8) == 1.26  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.66  # TODO-mg: What is this test?
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
