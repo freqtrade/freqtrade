@@ -294,7 +294,29 @@ class LocalTrade():
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
+        self.set_liquidation_price(self.liquidation_price)
         self.recalc_open_trade_value()
+
+    def set_stop_loss_helper(self, stop_loss: Optional[float], liquidation_price: Optional[float]):
+        # Stoploss would be better as a computed variable, but that messes up the database so it might not be possible
+        # TODO-mg: What should be done about initial_stop_loss
+        if liquidation_price is not None:
+            if stop_loss is not None:
+                if self.is_short:
+                    self.stop_loss = min(stop_loss, liquidation_price)
+                else:
+                    self.stop_loss = max(stop_loss, liquidation_price)
+            else:
+                self.stop_loss = liquidation_price
+            self.liquidation_price = liquidation_price
+        else:
+            self.stop_loss = stop_loss
+
+    def set_stop_loss(self, stop_loss: float):
+        self.set_stop_loss_helper(stop_loss=stop_loss, liquidation_price=self.liquidation_price)
+
+    def set_liquidation_price(self, liquidation_price: float):
+        self.set_stop_loss_helper(stop_loss=self.stop_loss, liquidation_price=liquidation_price)
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
@@ -390,7 +412,7 @@ class LocalTrade():
 
     def _set_new_stoploss(self, new_loss: float, stoploss: float):
         """Assign new stop value"""
-        self.stop_loss = new_loss
+        self.set_stop_loss(new_loss)
         if self.is_short:
             self.stop_loss_pct = abs(stoploss)
         else:
@@ -484,6 +506,9 @@ class LocalTrade():
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             if 'leverage' in order:
                 self.leverage = order['leverage']
+            if 'liquidation_price' in order:
+                self.liquidation_price = order['liquidation_price']
+                self.set_stop_loss(self.stop_loss)
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
