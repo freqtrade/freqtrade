@@ -1,5 +1,10 @@
 List of things TODO to add margin trading
 
+margin-db
+    profit ratio calculation
+    move leverage and is_short out of Trade = and into conftest
+    initial stop_loss with liquidation price maybe
+
 Files to edit
     freqtrade/freqtradebot.py
     freqtrade/wallets.py
