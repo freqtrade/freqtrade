@@ -17,7 +17,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import RunMode, State
-from freqtrade.exceptions import ExchangeError
+from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
@@ -243,6 +243,9 @@ def test_api__init__(default_conf, mocker):
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
     assert apiserver._config == default_conf
+    with pytest.raises(OperationalException, match="RPC Handler already attached."):
+        apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
+
     ApiServer.shutdown()
 
 
@@ -1287,6 +1290,38 @@ def test_api_backtesting(botclient, mocker, fee):
     assert result['status'] == 'not_running'
     assert not result['running']
     assert result['status_msg'] == 'Backtest ended'
+
+    # Simulate running backtest
+    ApiServer._bgtask_running = True
+    rc = client_get(client, f"{BASE_URI}/backtest/abort")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'stopping'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
+
+    # Get running backtest...
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'running'
+    assert result['running']
+    assert result['step'] == "backtest"
+    assert result['status_msg'] == "Backtest running"
+
+    # Try delete with task still running
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'running'
+
+    # Post to backtest that's still running
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert_response(rc, 502)
+    result = rc.json()
+    assert 'Bot Background task already running' in result['error']
+
+    ApiServer._bgtask_running = False
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")
