@@ -102,7 +102,7 @@ class AgeFilter(IPairList):
 
         if daily_candles is not None:
             if len(daily_candles) >= self._min_days_listed and \
-                    len(daily_candles) <= self._max_days_listed:
+                    (True if not self._max_days_listed else len(daily_candles) <= self._max_days_listed):
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
                 self._symbolsChecked[pair] = arrow.utcnow().int_timestamp * 1000
@@ -112,9 +112,9 @@ class AgeFilter(IPairList):
                     f"Removed {pair} from whitelist, because age "
                     f"{len(daily_candles)} is less than {self._min_days_listed} "
                     f"{plural(self._min_days_listed, 'day')}"
-                ) + (
+                ) + ((
                     " or more than "
                     f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
-                ) if self.max_days_listed else '', logger.info)
+                ) if self._max_days_listed else ''), logger.info)
                 return False
         return False
