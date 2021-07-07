@@ -772,5 +772,5 @@ def test_get_best_pair_short(fee):
     create_mock_trades_with_leverage(fee)
     res = Trade.get_best_pair()
     assert len(res) == 2
-    assert res[0] == 'ETC/BTC'
+    assert res[0] == 'DOGE/BTC'
     assert res[1] == 0.17524390243902502
