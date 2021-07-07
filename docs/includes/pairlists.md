@@ -109,7 +109,7 @@ Example to remove the first 10 pairs from the pairlist:
 !!! Warning
     When `OffsetFilter` is used to split a larger pairlist among multiple bots in combination with `VolumeFilter` 
     it can not be guaranteed that pairs won't overlap due to slightly different refresh intervals for the
-    `VolumeFilter`
+    `VolumeFilter`.
 
 !!! Note
     An offset larger then the total length of the incoming pairlist will result in an empty pairlist.
