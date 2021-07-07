@@ -494,7 +494,6 @@ def test_update_market_order_short(
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
-        leverage=3.0,
         interest_rate=0.0005,
         exchange='kraken',
         interest_mode=InterestMode.HOURSPER4
@@ -584,7 +583,6 @@ def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
         fee_close=fee.return_value,
         exchange='kraken',
         is_short=True,
-        leverage=3.0,
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPER4
     )

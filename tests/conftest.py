@@ -2150,7 +2150,8 @@ def limit_exit_short_order_open():
         'amount': 90.99370639272354,
         'filled': 0.0,
         'remaining': 90.99370639272354,
-        'status': 'open'
+        'status': 'open',
+        'leverage': 1.0
     }
 
 
@@ -2281,7 +2282,8 @@ def market_leveraged_buy_order():
         'remaining': 0.0,
         'status': 'closed',
         'exchange': 'kraken',
-        'liquidation_price': 0.00004000
+        'liquidation_price': 0.00004000,
+        'leverage': 3.0
     }
 
 
@@ -2298,5 +2300,6 @@ def market_leveraged_sell_order():
         'filled': 275.97543219,
         'remaining': 0.0,
         'status': 'closed',
+        'leverage': 3.0,
         'exchange': 'kraken'
     }
