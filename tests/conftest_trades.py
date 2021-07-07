@@ -395,7 +395,7 @@ def short_trade(fee):
 def leverage_order():
     return {
         'id': '1237',
-        'symbol': 'ETC/BTC',
+        'symbol': 'DOGE/BTC',
         'status': 'closed',
         'side': 'buy',
         'type': 'limit',
@@ -410,7 +410,7 @@ def leverage_order():
 def leverage_order_sell():
     return {
         'id': '12368',
-        'symbol': 'ETC/BTC',
+        'symbol': 'DOGE/BTC',
         'status': 'closed',
         'side': 'sell',
         'type': 'limit',
@@ -452,7 +452,7 @@ def leverage_trade(fee):
             = 0.17524390243902502
     """
     trade = Trade(
-        pair='ETC/BTC',
+        pair='DOGE/BTC',
         stake_amount=15.129,
         amount=615.0,
         leverage=5.0,
@@ -473,8 +473,8 @@ def leverage_trade(fee):
         close_date=datetime.now(tz=timezone.utc),
         interest_rate=0.0005
     )
-    o = Order.parse_from_ccxt_object(leverage_order(), 'ETC/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(leverage_order(), 'DOGE/BTC', 'sell')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(leverage_order_sell(), 'ETC/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(leverage_order_sell(), 'DOGE/BTC', 'sell')
     trade.orders.append(o)
     return trade
