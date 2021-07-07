@@ -417,7 +417,19 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "StaticPairList"},
       {"method": "VolatilityFilter", "lookback_days": 3,
        "min_volatility": 0.002, "max_volatility": 0.004, "refresh_period": 1440}],
-     "BTC", ['ETH/BTC', 'TKN/BTC'])
+     "BTC", ['ETH/BTC', 'TKN/BTC']),
+    # VolumePairList with no offset = unchanged pairlist
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "OffsetFilter", "offset": 0}],
+     "USDT", ['ETH/USDT', 'NANO/USDT', 'ADAHALF/USDT', 'ADADOUBLE/USDT']),
+    # VolumePairList with offset = 2
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "OffsetFilter", "offset": 2}],
+     "USDT", ['ADAHALF/USDT', 'ADADOUBLE/USDT']),
+    # VolumePairList with higher offset, than total pairlist
+    ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
+      {"method": "OffsetFilter", "offset": 100}],
+     "USDT", [])
 ])
 def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, tickers,
                                       ohlcv_history, pairlists, base_currency,
@@ -693,6 +705,18 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
     assert len(freqtrade.pairlists.whitelist) == 3
     # Called once for XRP/BTC
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count + 1
+
+
+def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
+    whitelist_conf['pairlists'] = (
+        [{"method": "StaticPairList"}, {"method": "OffsetFilter", "offset": -1}]
+    )
+
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+
+    with pytest.raises(OperationalException,
+                       match=r'OffsetFilter requires offset to be >= 0'):
+        PairListManager(MagicMock, whitelist_conf)
 
 
 def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
