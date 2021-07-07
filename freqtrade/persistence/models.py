@@ -134,7 +134,7 @@ class Order(_DECL_BASE):
 
     leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=True, default=False)
-    # liquidation_price = Column(Float, nullable=True)
+    liquidation_price = Column(Float, nullable=True)
 
     def __repr__(self):
 
