@@ -134,7 +134,6 @@ class Order(_DECL_BASE):
 
     leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=True, default=False)
-    # liquidation_price = Column(Float, nullable=True)
 
     def __repr__(self):
 
@@ -511,9 +510,6 @@ class LocalTrade():
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
             if 'leverage' in order:
                 self.leverage = order['leverage']
-            if 'liquidation_price' in order:
-                self.liquidation_price = order['liquidation_price']
-                self.set_stop_loss(self.stop_loss)
             self.recalc_open_trade_value()
             if self.is_open:
                 payment = "SELL" if self.is_short else "BUY"
