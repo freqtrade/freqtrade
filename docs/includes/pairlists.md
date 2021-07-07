@@ -100,10 +100,12 @@ a larger pairlist on two bot instances.
 Example to remove the first 10 pairs from the pairlist:
 
 ```json
-"pairlists": [{
+"pairlists": [
+    {
         "method": "OffsetFilter",
         "offset": 10
-}],
+    }
+],
 ```
 
 !!! Warning
