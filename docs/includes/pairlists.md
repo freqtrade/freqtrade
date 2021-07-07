@@ -81,13 +81,13 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 #### AgeFilter
 
-Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
+Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`) or more than `max_days_listed` days (defaults `None` mean infinity).
 
 When pairs are first listed on an exchange they can suffer huge price drops and volatility
 in the first few days while the pair goes through its price-discovery period. Bots can often
 be caught out buying before the pair has finished dropping in price.
 
-This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days and listed before `max_days_listed`.
 
 #### PerformanceFilter
 
