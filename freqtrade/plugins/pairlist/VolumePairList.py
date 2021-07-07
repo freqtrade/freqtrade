@@ -183,8 +183,15 @@ class VolumePairList(IPairList):
                         pair_candles['volume'] * pair_candles['typical_price']
                     )
 
+                    # ensure that a rolling sum over the lookback_period is built
+                    # if pair_candles contains more candles than lookback_period
+                    quoteVolume = (pair_candles['quoteVolume']
+                                   .rolling(self._lookback_period)
+                                   .sum()
+                                   .iloc[-1])
+
                     # replace quoteVolume with range quoteVolume sum calculated above
-                    filtered_tickers[i]['quoteVolume'] = pair_candles['quoteVolume'].sum()
+                    filtered_tickers[i]['quoteVolume'] = quoteVolume
                 else:
                     filtered_tickers[i]['quoteVolume'] = 0
 
