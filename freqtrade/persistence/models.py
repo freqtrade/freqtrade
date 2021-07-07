@@ -310,8 +310,11 @@ class LocalTrade():
                     self.stop_loss = max(stop_loss, liquidation_price)
             else:
                 self.stop_loss = liquidation_price
+                self.initial_stop_loss = liquidation_price
             self.liquidation_price = liquidation_price
         else:
+            if not self.stop_loss:
+                self.initial_stop_loss = stop_loss
             self.stop_loss = stop_loss
 
     def set_stop_loss(self, stop_loss: float):
