@@ -174,6 +174,24 @@ If the trading range over the last 10 days is <1%, remove the pair from the whit
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
 
+#### RangeStabilityFilterMax
+
+Same function as `RangeStabilityFilter` but instead of a minimum value, it uses a maximum value for rate of change, i.e. `max_rate_of_change` as seen in the example below.
+
+```json
+"pairlists": [
+    {
+        "method": "RangeStabilityFilterMax",
+        "lookback_days": 10,
+        "max_rate_of_change": 1.01,
+        "refresh_period": 1440
+    }
+]
+```
+
+!!! Tip
+    This Filter can be used to automatically remove pairs with extreme high/low variance over a given amount of time (`lookback_days`).
+
 #### VolatilityFilter
 
 Volatility is the degree of historical variation of a pairs over time, is is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of [`volatility`](https://en.wikipedia.org/wiki/Volatility_(finance)).
