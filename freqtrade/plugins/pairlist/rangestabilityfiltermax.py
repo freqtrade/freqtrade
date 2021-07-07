@@ -31,9 +31,9 @@ class RangeStabilityFilterMax(IPairList):
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
         if self._days < 1:
-            raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
+            raise OperationalException("RangeStabilityFilterMax requires lookback_days to be >= 1")
         if self._days > exchange.ohlcv_candle_limit('1d'):
-            raise OperationalException("RangeStabilityFilter requires lookback_days to not "
+            raise OperationalException("RangeStabilityFilterMax requires lookback_days to not "
                                        "exceed exchange max request size "
                                        f"({exchange.ohlcv_candle_limit('1d')})")
 
