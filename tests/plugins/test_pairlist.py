@@ -527,7 +527,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     # expecing pairs as given
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
-     "BTC", ['LTC/BTC', 'XRP/BTC', 'ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
+     "BTC", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
     # expecting pairs from default tickers, because 1h candles are not available
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
@@ -541,16 +541,20 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     ohlcv_history_high_vola = ohlcv_history.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
 
-    # create candles for high volume
+    # create candles for medium overall volume with last candle high volume
+    ohlcv_history_medium_volume = ohlcv_history.copy()
+    ohlcv_history_medium_volume.loc[ohlcv_history_medium_volume.index == 2, 'volume'] = 5
+
+    # create candles for high volume with all candles high volume
     ohlcv_history_high_volume = ohlcv_history.copy()
-    ohlcv_history_high_volume.loc[ohlcv_history_high_volume.index == 1, 'volume'] = 10
+    ohlcv_history_high_volume.loc[:, 'volume'] = 10
 
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history_high_volume,
+        ('LTC/BTC', '1d'): ohlcv_history_medium_volume,
         ('XRP/BTC', '1d'): ohlcv_history_high_vola,
-        ('HOT/BTC', '1d'): ohlcv_history,
+        ('HOT/BTC', '1d'): ohlcv_history_high_volume,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
