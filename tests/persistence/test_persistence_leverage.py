@@ -157,7 +157,6 @@ def test_update_open_order_lev(limit_leveraged_buy_order):
         fee_open=0.1,
         fee_close=0.1,
         interest_rate=0.0005,
-        leverage=3.0,
         exchange='binance',
         interest_mode=InterestMode.HOURSPERDAY
     )
@@ -412,7 +411,6 @@ def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        leverage=3.0,
         interest_rate=0.0005,
         exchange='binance',
         interest_mode=InterestMode.HOURSPERDAY
@@ -480,7 +478,6 @@ def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_se
         amount=5,
         open_rate=0.00004099,
         is_open=True,
-        leverage=3,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
