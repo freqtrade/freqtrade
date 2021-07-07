@@ -101,9 +101,10 @@ class AgeFilter(IPairList):
             return True
 
         if daily_candles is not None:
-            if len(daily_candles) >= self._min_days_listed and \
-                    (True if not self._max_days_listed
-                        else len(daily_candles) <= self._max_days_listed):
+            if (
+                len(daily_candles) >= self._min_days_listed
+                and (not self._max_days_listed or len(daily_candles) <= self._max_days_listed)
+            ):
                 # We have fetched at least the minimum required number of daily candles
                 # Add to cache, store the time we last checked this symbol
                 self._symbolsChecked[pair] = arrow.utcnow().int_timestamp * 1000

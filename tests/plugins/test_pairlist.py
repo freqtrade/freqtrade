@@ -321,6 +321,14 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "AgeFilter", "min_days_listed": 1, "max_days_listed": 2}],
      "BTC", []),
+    # AgeFilter and VolumePairList LTC/BTC has 6 candles - removes all
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "AgeFilter", "min_days_listed": 4, "max_days_listed": 5}],
+     "BTC", []),
+    # AgeFilter and VolumePairList LTC/BTC has 6 candles - passes
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+      {"method": "AgeFilter", "min_days_listed": 4, "max_days_listed": 10}],
+     "BTC", ["LTC/BTC"]),
     # Precisionfilter and quote volume
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
       {"method": "PrecisionFilter"}],
@@ -436,7 +444,7 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,
         ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history,
+        ('LTC/BTC', '1d'): ohlcv_history.append(ohlcv_history),
         ('XRP/BTC', '1d'): ohlcv_history,
         ('HOT/BTC', '1d'): ohlcv_history_high_vola,
     }
