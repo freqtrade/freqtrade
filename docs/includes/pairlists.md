@@ -68,12 +68,14 @@ Filtering instances (not the first position in the list) will not apply any cach
 * The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
-"pairlists": [{
+"pairlists": [
+    {
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 1800
-}],
+    }
+],
 ```
 
 `VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3), and multiplies it with every candle data's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
@@ -81,28 +83,36 @@ Filtering instances (not the first position in the list) will not apply any cach
 For convenience `lookback_days` can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:
 
 ```json
-"pairlists": [{
+"pairlists": [
+    {
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 86400,
         "lookback_days": 7
-}],
+    }
+],
 ```
 !!! Warning "Range look back and refresh period"
     When used in conjuction with `lookback_days` and `lookback_timeframe` the `refresh_period` can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.
 
+!!! Warning "Performance implications when using lookback range"
+    If used in first position in combination with lookback, the computation of the range based volume can be time and ressource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `VolumeFilter` to narrow the pairlist down for further range volume calculation.
+
+
 More sophisticated approach can be used, by using `lookback_timeframe` for candle size and `lookback_period` which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:
 
 ```json
-"pairlists": [{
+"pairlists": [
+    {
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 3600,
         "lookback_timeframe": "1h",
-        "lookback_timeframe": 72
-}],
+        "lookback_period": 72
+    }
+],
 ```
 
 !!! Note
