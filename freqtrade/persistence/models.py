@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
@@ -159,7 +159,7 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         self.leverage = order.get('leverage', self.leverage)
-        # TODO-mg: liquidation price? is_short?
+        # TODO-mg: is_short?
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -864,7 +864,7 @@ class Trade(_DECL_BASE, LocalTrade):
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
-    interest_mode = Column(String(100), nullable=True)
+    interest_mode = Column(Enum(InterestMode), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):
