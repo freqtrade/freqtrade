@@ -612,8 +612,6 @@ class LocalTrade():
         # If nothing was borrowed
         if self.has_no_leverage:
             return zero
-        elif not self.interest_mode:
-            raise OperationalException(f"Leverage not available on {self.exchange} using freqtrade")
 
         open_date = self.open_date.replace(tzinfo=None)
         now = (self.close_date or datetime.now(timezone.utc)).replace(tzinfo=None)
@@ -624,7 +622,7 @@ class LocalTrade():
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
 
-        return self.interest_mode.value(borrowed, rate, hours)
+        return self.interest_mode(borrowed=borrowed, rate=rate, hours=hours)
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None,
