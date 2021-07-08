@@ -231,9 +231,9 @@ def test_calc_open_close_trade_price_lev(limit_lev_buy_order, limit_lev_sell_ord
         total_profit =  close_value - open_value
             = 0.003193788481706411 - 0.0030074999997675204
             = 0.00018628848193889044
-        total_profit_percentage = total_profit / stake_amount
-            = 0.00018628848193889054 / 0.0009999999999226999
-            = 0.18628848195329067
+        total_profit_percentage = total_profit / open_value
+            = 0.00018628848193889054 / 0.0030074999997675204
+            = 0.06194130738264028
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -257,7 +257,7 @@ def test_calc_open_close_trade_price_lev(limit_lev_buy_order, limit_lev_sell_ord
     # Profit in BTC
     assert round(trade.calc_profit(), 8) == round(0.00018628848193889054, 8)
     # Profit in percent
-    assert round(trade.calc_profit_ratio(), 8) == round(0.18628848195329067, 8)
+    assert round(trade.calc_profit_ratio(), 8) == round(0.06194130738264028, 8)
 
 
 @pytest.mark.usefixtures("init_persistence")
