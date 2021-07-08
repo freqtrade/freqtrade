@@ -302,7 +302,6 @@ class LocalTrade():
         # Stoploss would be better as a computed variable,
         # but that messes up the database so it might not be possible
 
-        assert stop_loss or liquidation_price  # programming error check
         if liquidation_price is not None:
             if stop_loss is not None:
                 if self.is_short:
@@ -314,10 +313,11 @@ class LocalTrade():
                 self.initial_stop_loss = liquidation_price
             self.liquidation_price = liquidation_price
         else:
-            if stop_loss:  # Will always be true, here for mypy
-                if not self.stop_loss:
-                    self.initial_stop_loss = stop_loss
-                self.stop_loss = stop_loss
+            # programmming error check: 1 of liqudication_price or stop_loss must be set
+            assert stop_loss is not None
+            if not self.stop_loss:
+                self.initial_stop_loss = stop_loss
+            self.stop_loss = stop_loss
 
     def set_stop_loss(self, stop_loss: float):
         self.set_stop_loss_helper(stop_loss=stop_loss, liquidation_price=self.liquidation_price)

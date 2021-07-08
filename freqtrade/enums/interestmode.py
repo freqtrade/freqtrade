@@ -1,6 +1,8 @@
-from enum import Enum
 from decimal import Decimal
+from enum import Enum
+
 from freqtrade.exceptions import OperationalException
+
 
 one = Decimal(1.0)
 four = Decimal(4.0)

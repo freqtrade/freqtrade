@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+from math import isclose
+
 import arrow
 import pytest
-from math import isclose
+
 from freqtrade.enums import InterestMode
 from freqtrade.persistence import Trade, init_db
 from tests.conftest import create_mock_trades_with_leverage, log_has_re

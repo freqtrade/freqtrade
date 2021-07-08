@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
-import pytest
 from math import isclose
+
+import pytest
+
 from freqtrade.enums import InterestMode
 from freqtrade.persistence import Trade
 from tests.conftest import log_has_re
