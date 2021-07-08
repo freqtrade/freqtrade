@@ -52,6 +52,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     liquidation_price = get_column_def(cols, 'liquidation_price', 'null')
     is_short = get_column_def(cols, 'is_short', 'False')
+    interest_mode = get_column_def(cols, 'interest_mode', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -88,7 +89,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, interest_rate, liquidation_price, is_short
+            leverage, interest_rate, liquidation_price, is_short, interest_mode
             )
         select id, lower(exchange),
             case
@@ -113,7 +114,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {strategy} strategy, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {leverage} leverage, {interest_rate} interest_rate,
-            {liquidation_price} liquidation_price, {is_short} is_short
+            {liquidation_price} liquidation_price, {is_short} is_short,
+            {interest_mode} interest_mode
             from {table_back_name}
             """))
 
