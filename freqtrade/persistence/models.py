@@ -269,7 +269,7 @@ class LocalTrade():
     liquidation_price: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
-    interest_mode: Optional[InterestMode] = None
+    interest_mode: InterestMode = InterestMode.NONE
 
     @property
     def has_no_leverage(self) -> bool:
@@ -301,7 +301,8 @@ class LocalTrade():
     def set_stop_loss_helper(self, stop_loss: Optional[float], liquidation_price: Optional[float]):
         # Stoploss would be better as a computed variable,
         # but that messes up the database so it might not be possible
-        # TODO-mg: What should be done about initial_stop_loss
+
+        assert stop_loss or liquidation_price  # programming error check
         if liquidation_price is not None:
             if stop_loss is not None:
                 if self.is_short:
@@ -313,9 +314,10 @@ class LocalTrade():
                 self.initial_stop_loss = liquidation_price
             self.liquidation_price = liquidation_price
         else:
-            if not self.stop_loss:
-                self.initial_stop_loss = stop_loss
-            self.stop_loss = stop_loss
+            if stop_loss:  # Will always be true, here for mypy
+                if not self.stop_loss:
+                    self.initial_stop_loss = stop_loss
+                self.stop_loss = stop_loss
 
     def set_stop_loss(self, stop_loss: float):
         self.set_stop_loss_helper(stop_loss=stop_loss, liquidation_price=self.liquidation_price)
@@ -711,7 +713,7 @@ class LocalTrade():
             return 0.0
         else:
             if self.has_no_leverage:
-                # TODO: Use one profit_ratio calculation
+                # TODO-mg: Use one profit_ratio calculation
                 profit_ratio = (close_trade_value/self.open_trade_value) - 1
             else:
                 if self.is_short:

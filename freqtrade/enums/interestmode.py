@@ -12,6 +12,7 @@ class InterestMode(Enum):
 
     HOURSPERDAY = "HOURSPERDAY"
     HOURSPER4 = "HOURSPER4"  # Hours per 4 hour segment
+    NONE = "NONE"
 
     def __call__(self, *args, **kwargs):
 
