@@ -444,7 +444,7 @@ def leverage_trade(fee):
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
             = (615.0 * 0.128) - (615.0 * 0.128 * 0.0025) - 0.0378225
             = 78.4853775
-        total_profit = close_value - open_value 
+        total_profit = close_value - open_value
             = 78.4853775 - 75.83411249999999
             = 2.6512650000000093
         total_profit_percentage = total_profit / stake_amount

@@ -79,10 +79,10 @@ def test_is_opening_closing_trade(fee):
         is_short=False,
         leverage=2.0
     )
-    assert trade.is_opening_trade('buy') == True
-    assert trade.is_opening_trade('sell') == False
-    assert trade.is_closing_trade('buy') == False
-    assert trade.is_closing_trade('sell') == True
+    assert trade.is_opening_trade('buy') is True
+    assert trade.is_opening_trade('sell') is False
+    assert trade.is_closing_trade('buy') is False
+    assert trade.is_closing_trade('sell') is True
 
     trade = Trade(
         id=2,
@@ -99,10 +99,10 @@ def test_is_opening_closing_trade(fee):
         leverage=2.0
     )
 
-    assert trade.is_opening_trade('buy') == False
-    assert trade.is_opening_trade('sell') == True
-    assert trade.is_closing_trade('buy') == True
-    assert trade.is_closing_trade('sell') == False
+    assert trade.is_opening_trade('buy') is False
+    assert trade.is_opening_trade('sell') is True
+    assert trade.is_closing_trade('buy') is True
+    assert trade.is_closing_trade('sell') is False
 
 
 @pytest.mark.usefixtures("init_persistence")
