@@ -273,10 +273,16 @@ class LocalTrade():
 
     @property
     def has_no_leverage(self) -> bool:
+        """Returns true if this is a non-leverage, non-short trade"""
         return (self.leverage == 1.0 and not self.is_short) or self.leverage is None
 
     @property
     def borrowed(self) -> float:
+        """
+            The amount of currency borrowed from the exchange for leverage trades
+            If a long trade, the amount is in base currency
+            If a short trade, the amount is in the other currency being traded
+        """
         if self.has_no_leverage:
             return 0.0
         elif not self.is_short:
@@ -299,6 +305,7 @@ class LocalTrade():
         self.recalc_open_trade_value()
 
     def set_stop_loss_helper(self, stop_loss: Optional[float], liquidation_price: Optional[float]):
+        """Helper function for set_liquidation_price and set_stop_loss"""
         # Stoploss would be better as a computed variable,
         # but that messes up the database so it might not be possible
 
@@ -320,9 +327,17 @@ class LocalTrade():
             self.stop_loss = stop_loss
 
     def set_stop_loss(self, stop_loss: float):
+        """
+            Method you should use to set self.stop_loss.
+            Assures stop_loss is not passed the liquidation price
+        """
         self.set_stop_loss_helper(stop_loss=stop_loss, liquidation_price=self.liquidation_price)
 
     def set_liquidation_price(self, liquidation_price: float):
+        """
+            Method you should use to set self.liquidation price.
+            Assures stop_loss is not passed the liquidation price
+        """
         self.set_stop_loss_helper(stop_loss=self.stop_loss, liquidation_price=liquidation_price)
 
     def __repr__(self):
@@ -463,13 +478,13 @@ class LocalTrade():
         # evaluate if the stop loss needs to be updated
         else:
 
-            higherStop = new_loss > self.stop_loss
-            lowerStop = new_loss < self.stop_loss
+            higher_stop = new_loss > self.stop_loss
+            lower_stop = new_loss < self.stop_loss
 
             # stop losses only walk up, never down!,
             #   ? But adding more to a margin account would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
-            if (higherStop and not self.is_short) or (lowerStop and self.is_short):
+            if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self._set_new_stoploss(new_loss, stoploss)
             else:
@@ -601,7 +616,7 @@ class LocalTrade():
         """
         open_trade = Decimal(self.amount) * Decimal(self.open_rate)
         fees = open_trade * Decimal(self.fee_open)
-        if (self.is_short):
+        if self.is_short:
             return float(open_trade - fees)
         else:
             return float(open_trade + fees)
@@ -661,7 +676,7 @@ class LocalTrade():
         close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
         fees = close_trade * Decimal(fee or self.fee_close)
 
-        if (self.is_short):
+        if self.is_short:
             return float(close_trade + fees)
         else:
             return float(close_trade - fees - interest)
@@ -866,8 +881,8 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)  # TODO: Change to close_reason
-    sell_order_status = Column(String(100), nullable=True)  # TODO: Change to close_order_status
+    sell_reason = Column(String(100), nullable=True)  # TODO-mg: Change to close_reason
+    sell_order_status = Column(String(100), nullable=True)  # TODO-mg: Change to close_order_status
     strategy = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
