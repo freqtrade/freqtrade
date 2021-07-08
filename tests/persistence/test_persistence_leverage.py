@@ -1,21 +1,15 @@
-import logging
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from types import FunctionType
-from unittest.mock import MagicMock
-import arrow
-import pytest
+from datetime import datetime, timedelta
 from math import isclose
-from sqlalchemy import create_engine, inspect, text
-from freqtrade import constants
+
+import pytest
+
 from freqtrade.enums import InterestMode
-from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
+from freqtrade.persistence import Trade
+from tests.conftest import log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_interest_kraken_lev(market_leveraged_buy_order, fee):
+def test_interest_kraken_lev(market_lev_buy_order, fee):
     """
         Market trade on Kraken at 3x and 5x leverage
         Short trade
@@ -54,10 +48,10 @@ def test_interest_kraken_lev(market_leveraged_buy_order, fee):
         interest_mode=InterestMode.HOURSPER4
     )
 
-    # The trades that last 10 minutes do not need to be rounded because they round up to 4 hours on kraken so we can predict the correct value
+    # 10 minutes round up to 4 hours evenly on kraken so we can predict the exact value
     assert float(trade.calculate_interest()) == 3.7707443218227e-06
     trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
-    # The trades that last for 5 hours have to be rounded because the length of time that the test takes will vary every time it runs, so we can't predict the exact value
+    # All trade > 5 hours will vary slightly due to execution time and interest calculated
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 11)
                  ) == round(2.3567152011391876e-06, 11)
 
@@ -82,7 +76,7 @@ def test_interest_kraken_lev(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_interest_binance_lev(market_leveraged_buy_order, fee):
+def test_interest_binance_lev(market_lev_buy_order, fee):
     """
         Market trade on Kraken at 3x and 5x leverage
         Short trade
@@ -120,10 +114,10 @@ def test_interest_binance_lev(market_leveraged_buy_order, fee):
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPERDAY
     )
-    # The trades that last 10 minutes do not always need to be rounded because they round up to 4 hours on kraken so we can predict the correct value
+    # 10 minutes round up to 4 hours evenly on kraken so we can predict the them more accurately
     assert round(float(trade.calculate_interest()), 22) == round(4.166666666344583e-08, 22)
     trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
-    # The trades that last for 5 hours have to be rounded because the length of time that the test takes will vary every time it runs, so we can't predict the exact value
+    # All trade > 5 hours will vary slightly due to execution time and interest calculated
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 14)
                  ) == round(1.0416666665861459e-07, 14)
 
@@ -148,7 +142,7 @@ def test_interest_binance_lev(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_open_order_lev(limit_leveraged_buy_order):
+def test_update_open_order_lev(limit_lev_buy_order):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=1.00,
@@ -163,15 +157,15 @@ def test_update_open_order_lev(limit_leveraged_buy_order):
     assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
-    limit_leveraged_buy_order['status'] = 'open'
-    trade.update(limit_leveraged_buy_order)
+    limit_lev_buy_order['status'] = 'open'
+    trade.update(limit_lev_buy_order)
     assert trade.open_order_id is None
     assert trade.close_profit is None
     assert trade.close_date is None
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value_lev(market_leveraged_buy_order, fee):
+def test_calc_open_trade_value_lev(market_lev_buy_order, fee):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -203,7 +197,7 @@ def test_calc_open_trade_value_lev(market_leveraged_buy_order, fee):
         interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'open_trade'
-    trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
+    trade.update(market_lev_buy_order)  # Buy @ 0.00001099
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == 0.01134051354788177
     trade.fee_open = 0.003
@@ -212,7 +206,7 @@ def test_calc_open_trade_value_lev(market_leveraged_buy_order, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price_lev(limit_leveraged_buy_order, limit_leveraged_sell_order, fee):
+def test_calc_open_close_trade_price_lev(limit_lev_buy_order, limit_lev_sell_order, fee):
     """
         5 hour leveraged trade on Binance
 
@@ -230,7 +224,9 @@ def test_calc_open_close_trade_price_lev(limit_leveraged_buy_order, limit_levera
             = (272.97543219 * 0.00001099) + (272.97543219 * 0.00001099 * 0.0025)
             = 0.0030074999997675204
         close_value: ((amount_closed * close_rate) - (amount_closed * close_rate * fee)) - interest
-            = (272.97543219 * 0.00001173) - (272.97543219 * 0.00001173 * 0.0025) - 2.0833333331722917e-07
+            = (272.97543219 * 0.00001173)
+                - (272.97543219 * 0.00001173 * 0.0025)
+                - 2.0833333331722917e-07
             = 0.003193788481706411
         total_profit =  close_value - open_value
             = 0.003193788481706411 - 0.0030074999997675204
@@ -252,11 +248,11 @@ def test_calc_open_close_trade_price_lev(limit_leveraged_buy_order, limit_levera
         interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
-    trade.update(limit_leveraged_buy_order)
+    trade.update(limit_lev_buy_order)
     assert trade._calc_open_trade_value() == 0.00300749999976752
-    trade.update(limit_leveraged_sell_order)
+    trade.update(limit_lev_sell_order)
 
-    # Will be slightly different due to slight changes in compilation time, and the fact that interest depends on time
+    # Is slightly different due to compilation time changes. Interest depends on time
     assert round(trade.calc_close_trade_value(), 11) == round(0.003193788481706411, 11)
     # Profit in BTC
     assert round(trade.calc_profit(), 8) == round(0.00018628848193889054, 8)
@@ -281,11 +277,11 @@ def test_trade_close_lev(fee):
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (15 * 0.1) + (15 * 0.1 * 0.0025)
             = 1.50375
-        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee) - interest
+        close_value: (amount * close_rate) + (amount * close_rate * fee) - interest
             = (15 * 0.2) - (15 * 0.2 * 0.0025) - 0.000625
             = 2.9918750000000003
         total_profit = close_value - open_value
-            = 2.9918750000000003 - 1.50375 
+            = 2.9918750000000003 - 1.50375
             = 1.4881250000000001
         total_profit_percentage = total_profit / stake_amount
             = 1.4881250000000001 /  0.5
@@ -324,7 +320,7 @@ def test_trade_close_lev(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee):
+def test_calc_close_trade_price_lev(market_lev_buy_order, market_lev_sell_order, fee):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -337,15 +333,17 @@ def test_calc_close_trade_price_lev(market_leveraged_buy_order, market_leveraged
         borrowed: 0.0075414886436454 base
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
         interest: borrowed * interest_rate * time-periods
-                    = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 crypto
+            = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
             = 0.01134051354788177
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
-            = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.0025) - 3.7707443218227e-06 = 0.003393252246819716
-            = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.003)  - 3.7707443218227e-06 = 0.003391549478403104
-            = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.005)  - 3.7707443218227e-06 = 0.011455101767040435
-
+        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.0025) - 3.7707443218227e-06
+            = 0.003393252246819716
+        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.003) - 3.7707443218227e-06
+            = 0.003391549478403104
+        = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.005) - 3.7707443218227e-06
+            = 0.011455101767040435
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -361,18 +359,18 @@ def test_calc_close_trade_price_lev(market_leveraged_buy_order, market_leveraged
         interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'close_trade'
-    trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
+    trade.update(market_lev_buy_order)  # Buy @ 0.00001099
     # Get the close rate price with a custom close rate and a regular fee rate
     assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.003393252246819716)
     # Get the close rate price with a custom close rate and a custom fee rate
     assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.003391549478403104)
     # Test when we apply a Sell order, and ask price with a custom fee rate
-    trade.update(market_leveraged_sell_order)
+    trade.update(market_lev_sell_order)
     assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011455101767040435)
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_order, fee, caplog):
+def test_update_limit_order_lev(limit_lev_buy_order, limit_lev_sell_order, fee, caplog):
     """
         10 minute leveraged limit trade on binance at 3x leverage
 
@@ -420,7 +418,7 @@ def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_
     assert trade.close_date is None
 
     # trade.open_order_id = 'something'
-    trade.update(limit_leveraged_buy_order)
+    trade.update(limit_lev_buy_order)
     # assert trade.open_order_id is None
     assert trade.open_rate == 0.00001099
     assert trade.close_profit is None
@@ -431,7 +429,7 @@ def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_
                       caplog)
     caplog.clear()
     # trade.open_order_id = 'something'
-    trade.update(limit_leveraged_sell_order)
+    trade.update(limit_lev_sell_order)
     # assert trade.open_order_id is None
     assert trade.close_rate == 0.00001173
     assert trade.close_profit == round(0.18645514861995735, 8)
@@ -442,7 +440,7 @@ def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee,  caplog):
+def test_update_market_order_lev(market_lev_buy_order, market_lev_sell_order, fee,  caplog):
     """
         10 minute leveraged market trade on Kraken at 3x leverage
         Short trade
@@ -484,7 +482,7 @@ def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_se
         interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
-    trade.update(market_leveraged_buy_order)
+    trade.update(market_lev_buy_order)
     assert trade.leverage == 3.0
     assert trade.open_order_id is None
     assert trade.open_rate == 0.00004099
@@ -499,7 +497,7 @@ def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_se
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = 'something'
-    trade.update(market_leveraged_sell_order)
+    trade.update(market_lev_sell_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00004173
     assert trade.close_profit == round(0.03802415223225211, 8)
@@ -513,7 +511,7 @@ def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_se
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception_lev(limit_leveraged_buy_order, fee):
+def test_calc_close_trade_price_exception_lev(limit_lev_buy_order, fee):
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -527,14 +525,13 @@ def test_calc_close_trade_price_exception_lev(limit_leveraged_buy_order, fee):
         interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
-    trade.update(limit_leveraged_buy_order)
+    trade.update(limit_lev_buy_order)
     assert trade.calc_close_trade_value() == 0.0
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit_lev(market_leveraged_buy_order, market_leveraged_sell_order, fee):
+def test_calc_profit_lev(market_lev_buy_order, market_lev_sell_order, fee):
     """
-        # TODO: Update this one
         Leveraged trade on Kraken at 3x leverage
         fee: 0.25% base or 0.3%
         interest_rate: 0.05%, 0.25% per 4 hrs
@@ -547,17 +544,22 @@ def test_calc_profit_lev(market_leveraged_buy_order, market_leveraged_sell_order
                         5 hours = 5/4
 
         interest: borrowed * interest_rate * time-periods
-                    = 0.0075414886436454 * 0.0005 * 1    = 3.7707443218227e-06 crypto
-                    = 0.0075414886436454 * 0.00025 * 5/4 = 2.3567152011391876e-06 crypto
-                    = 0.0075414886436454 * 0.0005 * 5/4  = 4.713430402278375e-06 crypto
-                    = 0.0075414886436454 * 0.00025 * 1   = 1.88537216091135e-06 crypto
+            = 0.0075414886436454 * 0.0005 * 1    = 3.7707443218227e-06 crypto
+            = 0.0075414886436454 * 0.00025 * 5/4 = 2.3567152011391876e-06 crypto
+            = 0.0075414886436454 * 0.0005 * 5/4  = 4.713430402278375e-06 crypto
+            = 0.0075414886436454 * 0.00025 * 1   = 1.88537216091135e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
-            = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025) = 0.01134051354788177
+            = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
+            = 0.01134051354788177
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
-            (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.0025) - 3.7707443218227e-06 = 0.01479007168225405
-            (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.0025) - 2.3567152011391876e-06 = 0.001200640891872485
-            (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.003)  - 4.713430402278375e-06 = 0.014781713536310649
-            (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.003)  - 1.88537216091135e-06 = 0.0012005092285933775
+        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.0025) - 3.7707443218227e-06
+        = 0.01479007168225405
+        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.0025) - 2.3567152011391876e-06
+        = 0.001200640891872485
+        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.003) - 4.713430402278375e-06
+        = 0.014781713536310649
+        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.003) - 1.88537216091135e-06
+        = 0.0012005092285933775
         total_profit = close_value - open_value
             = 0.01479007168225405  - 0.01134051354788177  = 0.003449558134372281
             = 0.001200640891872485 - 0.01134051354788177  = -0.010139872656009285
@@ -584,7 +586,7 @@ def test_calc_profit_lev(market_leveraged_buy_order, market_leveraged_sell_order
         interest_mode=InterestMode.HOURSPER4
     )
     trade.open_order_id = 'something'
-    trade.update(market_leveraged_buy_order)  # Buy @ 0.00001099
+    trade.update(market_lev_buy_order)  # Buy @ 0.00001099
     # Custom closing rate and regular fee rate
 
     # Higher than open rate
@@ -615,7 +617,7 @@ def test_calc_profit_lev(market_leveraged_buy_order, market_leveraged_sell_order
                                    interest_rate=0.00025) == round(-2.6891253964381554, 8)
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
-    trade.update(market_leveraged_sell_order)
+    trade.update(market_lev_sell_order)
     assert trade.calc_profit() == round(0.0001433793561218866, 8)
     assert trade.calc_profit_ratio() == round(0.03802415223225211, 8)
 
