@@ -1,17 +1,12 @@
-import logging
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from types import FunctionType
-from unittest.mock import MagicMock
+from datetime import datetime, timedelta
+from math import isclose
+
 import arrow
 import pytest
-from math import isclose
-from sqlalchemy import create_engine, inspect, text
-from freqtrade import constants
+
 from freqtrade.enums import InterestMode
-from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades_with_leverage, log_has, log_has_re
+from freqtrade.persistence import Trade, init_db
+from tests.conftest import create_mock_trades_with_leverage, log_has_re
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -302,11 +297,12 @@ def test_calc_open_close_trade_price_short(limit_short_order, limit_exit_short_o
     assert trade._calc_open_trade_value() == 0.0010646656050132426
     trade.update(limit_exit_short_order)
 
-    # Will be slightly different due to slight changes in compilation time, and the fact that interest depends on time
+    # Is slightly different due to compilation time. Interest depends on time
     assert round(trade.calc_close_trade_value(), 11) == round(0.001002604427005832, 11)
     # Profit in BTC
     assert round(trade.calc_profit(), 8) == round(0.00006206117800741065, 8)
     # Profit in percent
+    # TODO-mg get this working
     # assert round(trade.calc_profit_ratio(), 11) == round(0.05822425142973869, 11)
 
 
@@ -499,7 +495,7 @@ def test_update_market_order_short(
     trade.open_order_id = 'something'
     trade.update(market_short_order)
     assert trade.leverage == 3.0
-    assert trade.is_short == True
+    assert trade.is_short is True
     assert trade.open_order_id is None
     assert trade.open_rate == 0.00004173
     assert trade.close_profit is None
@@ -546,17 +542,22 @@ def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
                     = 275.97543219 * 0.0005 * 5/4 = 0.17248464511875 crypto
                     = 275.97543219 * 0.00025 * 1 = 0.0689938580475 crypto
         open_value: (amount * open_rate) - (amount * open_rate * fee)
-            = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025) = 0.011487663648325479
+            = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025)
+            = 0.011487663648325479
         amount_closed: amount + interest
             = 275.97543219 + 0.137987716095 = 276.113419906095
             = 275.97543219 + 0.086242322559375 = 276.06167451255936
             = 275.97543219 + 0.17248464511875 = 276.14791683511874
             = 275.97543219 + 0.0689938580475 = 276.0444260480475
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            (276.113419906095 * 0.00004374) + (276.113419906095 * 0.00004374 * 0.0025) = 0.012107393989159325
-            (276.06167451255936 * 0.00000437) + (276.06167451255936 * 0.00000437 * 0.0025) = 0.0012094054914139338
-            (276.14791683511874 * 0.00004374) + (276.14791683511874 * 0.00004374 * 0.003) = 0.012114946012015198
-            (276.0444260480475 * 0.00000437) + (276.0444260480475 * 0.00000437 * 0.003) = 0.0012099330842554573
+            (276.113419906095 * 0.00004374) + (276.113419906095 * 0.00004374 * 0.0025)
+                = 0.012107393989159325
+            (276.06167451255936 * 0.00000437) + (276.06167451255936 * 0.00000437 * 0.0025)
+                = 0.0012094054914139338
+            (276.14791683511874 * 0.00004374) + (276.14791683511874 * 0.00004374 * 0.003)
+                = 0.012114946012015198
+            (276.0444260480475 * 0.00000437) + (276.0444260480475 * 0.00000437 * 0.003)
+                = 0.0012099330842554573
         total_profit = open_value - close_value
             = print(0.011487663648325479 - 0.012107393989159325) = -0.0006197303408338461
             = print(0.011487663648325479 - 0.0012094054914139338) = 0.010278258156911545
@@ -647,7 +648,8 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == 0.05
     # Get percent of profit with a custom rate (Higher than open rate)
     trade.adjust_stop_loss(0.7, 0.1)
-    # If the price goes down to 0.7, with a trailing stop of 0.1, the new stoploss at 0.1 above 0.7 would be 0.7*0.1 higher
+    # If the price goes down to 0.7, with a trailing stop of 0.1,
+    # the new stoploss at 0.1 above 0.7 would be 0.7*0.1 higher
     assert round(trade.stop_loss, 8) == 0.77
     assert trade.stop_loss_pct == 0.1
     assert trade.initial_stop_loss == 1.05

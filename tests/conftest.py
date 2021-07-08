@@ -23,8 +23,8 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6, short_trade, leverage_trade)
+from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
+                                   mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
 
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -2209,7 +2209,7 @@ def market_exit_short_order():
 
 # leverage 3x
 @pytest.fixture(scope='function')
-def limit_leveraged_buy_order_open():
+def limit_lev_buy_order_open():
     return {
         'id': 'mocked_limit_buy',
         'type': 'limit',
@@ -2229,8 +2229,8 @@ def limit_leveraged_buy_order_open():
 
 
 @pytest.fixture(scope='function')
-def limit_leveraged_buy_order(limit_leveraged_buy_order_open):
-    order = deepcopy(limit_leveraged_buy_order_open)
+def limit_lev_buy_order(limit_lev_buy_order_open):
+    order = deepcopy(limit_lev_buy_order_open)
     order['status'] = 'closed'
     order['filled'] = order['amount']
     order['remaining'] = 0.0
@@ -2238,7 +2238,7 @@ def limit_leveraged_buy_order(limit_leveraged_buy_order_open):
 
 
 @pytest.fixture
-def limit_leveraged_sell_order_open():
+def limit_lev_sell_order_open():
     return {
         'id': 'mocked_limit_sell',
         'type': 'limit',
@@ -2257,8 +2257,8 @@ def limit_leveraged_sell_order_open():
 
 
 @pytest.fixture
-def limit_leveraged_sell_order(limit_leveraged_sell_order_open):
-    order = deepcopy(limit_leveraged_sell_order_open)
+def limit_lev_sell_order(limit_lev_sell_order_open):
+    order = deepcopy(limit_lev_sell_order_open)
     order['remaining'] = 0.0
     order['filled'] = order['amount']
     order['status'] = 'closed'
@@ -2266,7 +2266,7 @@ def limit_leveraged_sell_order(limit_leveraged_sell_order_open):
 
 
 @pytest.fixture(scope='function')
-def market_leveraged_buy_order():
+def market_lev_buy_order():
     return {
         'id': 'mocked_market_buy',
         'type': 'market',
@@ -2284,7 +2284,7 @@ def market_leveraged_buy_order():
 
 
 @pytest.fixture
-def market_leveraged_sell_order():
+def market_lev_sell_order():
     return {
         'id': 'mocked_limit_sell',
         'type': 'market',

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
@@ -159,7 +159,7 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         self.leverage = order.get('leverage', self.leverage)
-        # TODO-mg: liquidation price? is_short?
+        # TODO-mg: is_short?
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -269,7 +269,7 @@ class LocalTrade():
     liquidation_price: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
-    interest_mode: Optional[InterestMode] = None
+    interest_mode: InterestMode = InterestMode.NONE
 
     @property
     def has_no_leverage(self) -> bool:
@@ -299,8 +299,9 @@ class LocalTrade():
         self.recalc_open_trade_value()
 
     def set_stop_loss_helper(self, stop_loss: Optional[float], liquidation_price: Optional[float]):
-        # Stoploss would be better as a computed variable, but that messes up the database so it might not be possible
-        # TODO-mg: What should be done about initial_stop_loss
+        # Stoploss would be better as a computed variable,
+        # but that messes up the database so it might not be possible
+
         if liquidation_price is not None:
             if stop_loss is not None:
                 if self.is_short:
@@ -312,6 +313,8 @@ class LocalTrade():
                 self.initial_stop_loss = liquidation_price
             self.liquidation_price = liquidation_price
         else:
+            # programmming error check: 1 of liqudication_price or stop_loss must be set
+            assert stop_loss is not None
             if not self.stop_loss:
                 self.initial_stop_loss = stop_loss
             self.stop_loss = stop_loss
@@ -438,11 +441,13 @@ class LocalTrade():
 
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss)))
-            if self.liquidation_price:  # If trading on margin, don't set the stoploss below the liquidation price
+            # If trading on margin, don't set the stoploss below the liquidation price
+            if self.liquidation_price:
                 new_loss = min(self.liquidation_price, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss)))
-            if self.liquidation_price:  # If trading on margin, don't set the stoploss below the liquidation price
+            # If trading on margin, don't set the stoploss below the liquidation price
+            if self.liquidation_price:
                 new_loss = max(self.liquidation_price, new_loss)
 
         # no stop loss assigned yet
@@ -457,8 +462,14 @@ class LocalTrade():
 
         # evaluate if the stop loss needs to be updated
         else:
-            # stop losses only walk up, never down!, #But adding more to a margin account would create a lower liquidation price, decreasing the minimum stoploss
-            if (new_loss > self.stop_loss and not self.is_short) or (new_loss < self.stop_loss and self.is_short):
+
+            higherStop = new_loss > self.stop_loss
+            lowerStop = new_loss < self.stop_loss
+
+            # stop losses only walk up, never down!,
+            #   ? But adding more to a margin account would create a lower liquidation price,
+            #   ? decreasing the minimum stoploss
+            if (higherStop and not self.is_short) or (lowerStop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
                 self._set_new_stoploss(new_loss, stoploss)
             else:
@@ -518,10 +529,10 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                # TODO-mg: On Shorts technically your buying a little bit more than the amount because it's the ammount plus the interest
-                # But this wll only print the original
+                # TODO-mg: On shorts, you buy a little bit more than the amount (amount + interest)
+                # This wll only print the original amount
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))  # TODO: Double check this
+            self.close(safe_value_fallback(order, 'average', 'price'))  # TODO-mg: Double check this
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -644,7 +655,7 @@ class LocalTrade():
         if self.is_short:
             amount = Decimal(self.amount) + Decimal(interest)
         else:
-            # The interest does not need to be purchased on longs because the user already owns that currency in your wallet
+            # Currency already owned for longs, no need to purchase
             amount = Decimal(self.amount)
 
         close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
@@ -697,11 +708,12 @@ class LocalTrade():
             fee=(fee or self.fee_close),
             interest_rate=(interest_rate or self.interest_rate)
         )
-        if (self.is_short and close_trade_value == 0.0) or (not self.is_short and self.open_trade_value == 0.0):
+        if ((self.is_short and close_trade_value == 0.0) or
+                (not self.is_short and self.open_trade_value == 0.0)):
             return 0.0
         else:
             if self.has_no_leverage:
-                # TODO: This is only needed so that previous tests that included dummy stake_amounts don't fail. Undate those tests and get rid of this else
+                # TODO-mg: Use one profit_ratio calculation
                 profit_ratio = (close_trade_value/self.open_trade_value) - 1
             else:
                 if self.is_short:
@@ -864,7 +876,7 @@ class Trade(_DECL_BASE, LocalTrade):
     interest_rate = Column(Float, nullable=False, default=0.0)
     liquidation_price = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
-    interest_mode = Column(String(100), nullable=True)
+    interest_mode = Column(Enum(InterestMode), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):
