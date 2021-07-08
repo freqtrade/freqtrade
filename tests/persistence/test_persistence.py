@@ -114,49 +114,20 @@ def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     - Buy: 90.99181073 Crypto at 0.00001099 BTC
         (90.99181073*0.00001099 = 0.0009999 BTC)
     - Buying fee: 0.25%
-    - open_trade_value: 0.0010024999999225066 BTC
-        (90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025)
+    - Total cost of buy trade: 0.001002500 BTC
+        ((90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025))
 
     Sell
     - Sell: 90.99181073 Crypto at 0.00001173 BTC
-        (90.99181073*0.00001173 = 0.0010673339398629 BTC)
+        (90.99181073*0.00001173 = 0,00106733394 BTC)
     - Selling fee: 0.25%
-    - close_trade_value: 0.0010646656050132426 BTC
-        (90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025)
+    - Total cost of sell trade: 0.001064666 BTC
+        ((90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025))
 
-    Profit/Loss: +6.216560509073607e-05 BTC
-        (Sell:0.0010646656050132426 - Buy:0.0010024999999225066)
+    Profit/Loss: +0.000062166 BTC
+        (Sell:0.001064666 - Buy:0.001002500)
     Profit/Loss percentage: 0.0620
-        (0.0010646656050132426/0.0010024999999225066)-1 = 6.20%
-            = 0.062010578648919124
-        6.216560509073607e-05 / 0.0010024999999225066
-            = 0.062010578648919186
-
-        amount = 90.99181073 Crypto
-        stake_amount = 0.0009999999999226999
-        open_rate = 0.00001099
-        close_rate = 0.00001173
-        fee: 0.0025 (0.25%)
-
-        open_trade_value = (amount * open_rate) + (amount * open_rate * fee)
-            = (90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025)
-            = 0.0010024999999225066
-
-        close_trade_value = (amount * close_rate) - (amount * close_rate * fee)
-            = (90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025)
-            = 0.0010646656050132426
-
-        #? ORIGINAL PROFIT RATIO CALCULATION
-        #? (close_trade_value/open_trade_value)-1 = original_answer
-        #? (0.0010646656050132426/0.0010024999999225066)-1 = 0.062010578648919
-
-        #? NEW PROFIT RATIO CALCULATION 1
-        #? (close_trade_value - open_trade_value)/stake_amount = new_answer 
-        #? (0.0010646656050132426 - 0.0010024999999225068)/0.0009999999999226999 = 0.06216560509554
-
-        #? NEW PROFIT RATIO CALCULATION 2
-        #? (close_trade_value - open_trade_value)/open_trade_value = original_answer
-        #? (0.0010646656050132426 - 0.0010024999999225066)/0.0010024999999225066 = 0.062010578648919
+        ((0.001064666/0.001002500)-1 = 6.20%)
 
     :param limit_buy_order:
     :param limit_sell_order:
@@ -166,7 +137,7 @@ def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     trade = Trade(
         id=2,
         pair='ETH/BTC',
-        stake_amount=0.0009999999999226999,
+        stake_amount=0.001,
         open_rate=0.01,
         amount=5,
         is_open=True,
