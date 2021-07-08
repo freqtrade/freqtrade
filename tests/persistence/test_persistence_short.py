@@ -433,8 +433,6 @@ def test_update_with_binance_short(limit_short_order, limit_exit_short_order, fe
     assert trade.close_date is None
     assert trade.borrowed == 90.99181073
     assert trade.is_short is True
-    assert trade.stop_loss == 0.00001300
-    assert trade.liquidation_price == 0.00001300
     assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
                       caplog)
@@ -507,8 +505,6 @@ def test_update_market_order_short(
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.interest_rate == 0.0005
-    assert trade.stop_loss == 0.00004300
-    assert trade.liquidation_price == 0.00004300
     # The logger also has the exact same but there's some spacing in there
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
                       r"pair=ETH/BTC, amount=275.97543219, open_rate=0.00004173, open_since=.*\).",

@@ -426,8 +426,6 @@ def test_update_limit_order_lev(limit_leveraged_buy_order, limit_leveraged_sell_
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.borrowed == 0.0019999999998453998
-    assert trade.stop_loss == 0.00001000
-    assert trade.liquidation_price == 0.00001000
     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
                       r"pair=ETH/BTC, amount=272.97543219, open_rate=0.00001099, open_since=.*\).",
                       caplog)
@@ -493,8 +491,6 @@ def test_update_market_order_lev(market_leveraged_buy_order, market_leveraged_se
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.interest_rate == 0.0005
-    assert trade.stop_loss == 0.00004000
-    assert trade.liquidation_price == 0.00004000
     # TODO: Uncomment the next assert and make it work.
     # The logger also has the exact same but there's some spacing in there
     assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
