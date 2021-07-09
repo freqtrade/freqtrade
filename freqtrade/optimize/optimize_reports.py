@@ -272,7 +272,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     winning_days = sum(daily_profit > 0)
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
-    daily_profit_list = daily_profit.tolist()
+    daily_profit_list = [(str(idx.date()), val) for idx, val in daily_profit.iteritems()]
 
     return {
         'backtest_best_day': best_rel,
