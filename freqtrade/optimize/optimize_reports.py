@@ -325,8 +325,9 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                      key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
-    results['open_timestamp'] = results['open_date'].astype(int64) // 1e6
-    results['close_timestamp'] = results['close_date'].astype(int64) // 1e6
+    if not results.empty:
+        results['open_timestamp'] = results['open_date'].view(int64) // 1e6
+        results['close_timestamp'] = results['close_date'].view(int64) // 1e6
 
     backtest_days = (max_date - min_date).days
     strat_stats = {

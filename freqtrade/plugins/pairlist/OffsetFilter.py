@@ -48,7 +48,7 @@ class OffsetFilter(IPairList):
         """
         if self._offset > len(pairlist):
             self.log_once(f"Offset of {self._offset} is larger than " +
-                          f"pair count of {len(pairlist)}", logger.warn)
+                          f"pair count of {len(pairlist)}", logger.warning)
         pairs = pairlist[self._offset:]
         self.log_once(f"Searching {len(pairs)} pairs: {pairs}", logger.info)
         return pairs
