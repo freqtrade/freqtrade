@@ -121,13 +121,19 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
         freqtrade.wallets.get_trade_stake_amount('ETH/BTC')
 
 
-@pytest.mark.parametrize("balance_ratio,result1,result2", [
-                        (1, 50, 66.66666),
-                        (0.99, 49.5, 66.0),
-                        (0.50, 25, 33.3333),
+@pytest.mark.parametrize("balance_ratio,capital,result1,result2", [
+                        (1,    None, 50, 66.66666),
+                        (0.99, None, 49.5, 66.0),
+                        (0.50, None, 25, 33.3333),
+                        # Tests with capital ignore balance_ratio
+                        (1,    100, 50, 0.0),
+                        (0.99, 200, 50, 66.66666),
+                        (0.99, 150, 50, 50),
+                        (0.50, 50, 25, 0.0),
+                        (0.50, 10, 5, 0.0),
 ])
-def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, result1,
-                                                 result2, limit_buy_order_open,
+def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_ratio, capital,
+                                                 result1, result2, limit_buy_order_open,
                                                  fee, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -141,6 +147,8 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     conf['dry_run_wallet'] = 100
     conf['max_open_trades'] = 2
     conf['tradable_balance_ratio'] = balance_ratio
+    if capital is not None:
+        conf['available_capital'] = capital
 
     freqtrade = get_patched_freqtradebot(mocker, conf)
 
