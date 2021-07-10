@@ -1,4 +1,3 @@
-
 from freqtrade.enums import BacktestState
 
 
