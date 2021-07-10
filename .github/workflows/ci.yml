@@ -6,7 +6,6 @@ on:
       - master
       - stable
       - develop
-      - feat/**
     tags:
   release:
     types: [published]
