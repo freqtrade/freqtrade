@@ -390,6 +390,6 @@ class Arguments:
 
         # Add webserver subcommand
         webserver_cmd = subparsers.add_parser('webserver', help='Webserver module.',
-                                              parents=[_common_parser, _strategy_parser])
+                                              parents=[_common_parser])
         webserver_cmd.set_defaults(func=start_webserver)
         self._build_args(optionlist=ARGS_WEBSERVER, parser=webserver_cmd)

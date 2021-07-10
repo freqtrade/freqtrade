@@ -35,9 +35,9 @@ class ApiServer(RPCHandler):
     _rpc: RPC
     # Backtesting type: Backtesting
     _bt = None
-    _backtestdata = None
+    _bt_data = None
     _bt_timerange = None
-    _lastbacktestconfig: Dict[str, Any] = {}
+    _bt_last_config: Dict[str, Any] = {}
     _has_rpc: bool = False
     _bgtask_running: bool = False
     _config: Dict[str, Any] = {}

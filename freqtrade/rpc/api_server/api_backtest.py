@@ -40,35 +40,39 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
         asyncio.set_event_loop(asyncio.new_event_loop())
         try:
             # Reload strategy
-            lastconfig = ApiServer._lastbacktestconfig
+            lastconfig = ApiServer._bt_last_config
             strat = StrategyResolver.load_strategy(btconfig)
 
-            if (not ApiServer._bt
-                    or lastconfig.get('timeframe') != strat.timeframe
-                    or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)):
+            if (
+                not ApiServer._bt
+                or lastconfig.get('timeframe') != strat.timeframe
+                or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)
+            ):
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
 
             # Only reload data if timeframe or timerange changed.
-            if (not ApiServer._backtestdata or not ApiServer._bt_timerange
-                    or lastconfig.get('timerange') != btconfig['timerange']
-                    or lastconfig.get('stake_amount') != btconfig.get('stake_amount')
-                    or lastconfig.get('enable_protections') != btconfig.get('enable_protections')
-                    or lastconfig.get('protections') != btconfig.get('protections', [])
-                    or lastconfig.get('timeframe') != strat.timeframe):
+            if (
+                not ApiServer._bt_data
+                or not ApiServer._bt_timerange
+                or lastconfig.get('timerange') != btconfig['timerange']
+                or lastconfig.get('stake_amount') != btconfig.get('stake_amount')
+                or lastconfig.get('enable_protections') != btconfig.get('enable_protections')
+                or lastconfig.get('protections') != btconfig.get('protections', [])
+                or lastconfig.get('timeframe') != strat.timeframe
+            ):
                 lastconfig['timerange'] = btconfig['timerange']
                 lastconfig['protections'] = btconfig.get('protections', [])
                 lastconfig['enable_protections'] = btconfig.get('enable_protections')
                 lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
                 lastconfig['timeframe'] = strat.timeframe
-                ApiServer._backtestdata, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
+                ApiServer._bt_data, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
 
             ApiServer._bt.abort = False
             min_date, max_date = ApiServer._bt.backtest_one_strategy(
-                strat, ApiServer._backtestdata,
-                ApiServer._bt_timerange)
+                strat, ApiServer._bt_data, ApiServer._bt_timerange)
             ApiServer._bt.results = generate_backtest_stats(
-                ApiServer._backtestdata, ApiServer._bt.all_results,
+                ApiServer._bt_data, ApiServer._bt.all_results,
                 min_date=min_date, max_date=max_date)
             logger.info("Backtest finished.")
 
@@ -140,8 +144,8 @@ def api_delete_backtest():
     if ApiServer._bt:
         del ApiServer._bt
         ApiServer._bt = None
-        del ApiServer._backtestdata
-        ApiServer._backtestdata = None
+        del ApiServer._bt_data
+        ApiServer._bt_data = None
         logger.info("Backtesting reset")
     return {
         "status": "reset",
