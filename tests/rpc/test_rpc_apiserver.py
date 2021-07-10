@@ -17,7 +17,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import RunMode, State
-from freqtrade.exceptions import ExchangeError, OperationalException
+from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
@@ -308,7 +308,10 @@ def test_api_run(default_conf, mocker, caplog):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
 
-    server_mock = MagicMock()
+    server_inst_mock = MagicMock()
+    server_inst_mock.run_in_thread = MagicMock()
+    server_inst_mock.run = MagicMock()
+    server_mock = MagicMock(return_value=server_inst_mock)
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(default_conf)
@@ -318,6 +321,8 @@ def test_api_run(default_conf, mocker, caplog):
     assert apiserver._config == default_conf
     apiserver.start_api()
     assert server_mock.call_count == 2
+    assert server_inst_mock.run_in_thread.call_count == 2
+    assert server_inst_mock.run.call_count == 0
     assert server_mock.call_args_list[0][0][0].host == "127.0.0.1"
     assert server_mock.call_args_list[0][0][0].port == 8080
     assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
@@ -336,6 +341,8 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.start_api()
 
     assert server_mock.call_count == 1
+    assert server_inst_mock.run_in_thread.call_count == 1
+    assert server_inst_mock.run.call_count == 0
     assert server_mock.call_args_list[0][0][0].host == "0.0.0.0"
     assert server_mock.call_args_list[0][0][0].port == 8089
     assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
@@ -348,6 +355,17 @@ def test_api_run(default_conf, mocker, caplog):
     assert log_has("SECURITY WARNING - No password for local REST Server defined. "
                    "Please make sure that this is intentional!", caplog)
     assert log_has_re("SECURITY WARNING - `jwt_secret_key` seems to be default.*", caplog)
+
+    server_mock.reset_mock()
+    apiserver._standalone = True
+    apiserver.start_api()
+    assert server_inst_mock.run_in_thread.call_count == 0
+    assert server_inst_mock.run.call_count == 1
+
+    apiserver1 = ApiServer(default_conf)
+    assert id(apiserver1) == id(apiserver)
+
+    apiserver._standalone = False
 
     # Test crashing API server
     caplog.clear()
@@ -1233,7 +1251,7 @@ def test_list_available_pairs(botclient):
     assert len(rc.json()['pair_interval']) == 1
 
 
-def test_api_backtesting(botclient, mocker, fee):
+def test_api_backtesting(botclient, mocker, fee, caplog):
     ftbot, client = botclient
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
 
@@ -1322,6 +1340,11 @@ def test_api_backtesting(botclient, mocker, fee):
     assert 'Bot Background task already running' in result['error']
 
     ApiServer._bgtask_running = False
+
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+                 side_effect=DependencyException())
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert log_has("Backtesting caused an error: ", caplog)
 
     # Delete backtesting to avoid leakage since the backtest-object may stick around.
     rc = client_delete(client, f"{BASE_URI}/backtest")
