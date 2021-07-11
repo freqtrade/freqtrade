@@ -886,7 +886,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
 
     # Test not buying
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    freqtradebot.config['stake_amount'] = 0.0000001
+    freqtradebot.config['stake_amount'] = 0
     patch_get_signal(freqtradebot, (True, False))
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
