@@ -600,8 +600,8 @@ class Telegram(RPCHandler):
                 )
             total_dust_balance = 0
             total_dust_currencies = 0
-            curr_output = ''
             for curr in result['currencies']:
+                curr_output = ''
                 if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"

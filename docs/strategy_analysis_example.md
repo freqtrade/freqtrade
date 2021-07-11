@@ -148,13 +148,18 @@ import pandas as pd
 stats = load_backtest_stats(backtest_dir)
 strategy_stats = stats['strategy'][strategy]
 
+dates = []
+profits = []
+for date_profit in strategy_stats['daily_profit']:
+    dates.append(date_profit[0])
+    profits.append(date_profit[1])
+
 equity = 0
 equity_daily = []
-for dp in strategy_stats['daily_profit']:
+for daily_profit in profits:
     equity_daily.append(equity)
-    equity += float(dp)
+    equity += float(daily_profit)
 
-dates = pd.date_range(strategy_stats['backtest_start'], strategy_stats['backtest_end'])
 
 df = pd.DataFrame({'dates': dates,'equity_daily': equity_daily})
 

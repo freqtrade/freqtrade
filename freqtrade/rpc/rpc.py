@@ -761,7 +761,7 @@ class RPC:
         sell_signals = 0
         if has_content:
 
-            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
             # Move open to seperate column when signal for easy plotting
             if 'buy' in dataframe.columns:
                 buy_mask = (dataframe['buy'] == 1)

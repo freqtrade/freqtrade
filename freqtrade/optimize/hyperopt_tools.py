@@ -75,7 +75,7 @@ class HyperoptTools():
             if fn:
                 HyperoptTools.export_params(params, strategy_name, fn.with_suffix('.json'))
             else:
-                logger.warn("Strategy not found, not exporting parameter file.")
+                logger.warning("Strategy not found, not exporting parameter file.")
 
     @staticmethod
     def has_space(config: Dict[str, Any], space: str) -> bool:

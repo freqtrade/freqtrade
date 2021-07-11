@@ -18,6 +18,17 @@ async def fallback():
     return FileResponse(str(Path(__file__).parent / 'ui/fallback_file.html'))
 
 
+@router_ui.get('/ui_version', include_in_schema=False)
+async def ui_version():
+    from freqtrade.commands.deploy_commands import read_ui_version
+    uibase = Path(__file__).parent / 'ui/installed/'
+    version = read_ui_version(uibase)
+
+    return {
+        "version": version if version else "not_installed",
+    }
+
+
 @router_ui.get('/{rest_of_path:path}', include_in_schema=False)
 async def index_html(rest_of_path: str):
     """
