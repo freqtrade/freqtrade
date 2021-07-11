@@ -288,8 +288,8 @@ def plot_area(fig, row: int, data: pd.DataFrame, indicator_a: str,
     :param fig: Plot figure to append to
     :param row: row number for this plot
     :param data: candlestick DataFrame
-    :param indicator_a: indicator name as populated in stragetie
-    :param indicator_b: indicator name as populated in stragetie
+    :param indicator_a: indicator name as populated in strategy
+    :param indicator_b: indicator name as populated in strategy
     :param label: label for the filled area
     :param fill_color: color to be used for the filled area
     :return: fig with added  filled_traces plot
@@ -373,6 +373,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     for i, name in enumerate(plot_config['subplots']):
         fig['layout'][f'yaxis{3 + i}'].update(title=name)
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
+    fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
     # Common information
     candles = go.Candlestick(
@@ -452,6 +453,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
                              data=data)
         # fill area between indicators ( 'fill_to': 'other_indicator')
         fig = add_areas(fig, row, data, sub_config)
+
     return fig
 
 
@@ -484,6 +486,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
     fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
+    fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
     fig.add_trace(avgclose, 1, 1)
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
@@ -497,7 +500,6 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
             fig = add_profit(fig, 3, df_comb, profit_col, f"Profit {pair}")
         except ValueError:
             pass
-
     return fig
 
 

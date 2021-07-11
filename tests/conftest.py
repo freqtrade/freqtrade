@@ -23,8 +23,8 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6, short_trade, leverage_trade)
+from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
+                                   mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
 
 
 logging.getLogger('').setLevel(logging.INFO)
@@ -205,7 +205,32 @@ def create_mock_trades(fee, use_db: bool = True):
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
     add_trade(trade)
+    trade = mock_trade_2(fee)
+    add_trade(trade)
+    trade = mock_trade_3(fee)
+    add_trade(trade)
+    trade = mock_trade_4(fee)
+    add_trade(trade)
+    trade = mock_trade_5(fee)
+    add_trade(trade)
+    trade = mock_trade_6(fee)
+    add_trade(trade)
+    if use_db:
+        Trade.query.session.flush()
 
+
+def create_mock_trades_with_leverage(fee, use_db: bool = True):
+    """
+    Create some fake trades ...
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+    # Simulate dry_run entries
+    trade = mock_trade_1(fee)
+    add_trade(trade)
     trade = mock_trade_2(fee)
     add_trade(trade)
 
@@ -221,13 +246,10 @@ def create_mock_trades(fee, use_db: bool = True):
     trade = mock_trade_6(fee)
     add_trade(trade)
 
-    # TODO: margin trades
-    # trade = short_trade(fee)
-    # add_trade(trade)
-
-    # trade = leverage_trade(fee)
-    # add_trade(trade)
-
+    trade = short_trade(fee)
+    add_trade(trade)
+    trade = leverage_trade(fee)
+    add_trade(trade)
     if use_db:
         Trade.query.session.flush()
 
@@ -257,7 +279,6 @@ def patch_coingekko(mocker) -> None:
 @pytest.fixture(scope='function')
 def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
-    # TODO-mg: trade with leverage and/or borrowed?
 
 
 @pytest.fixture(scope="function")
@@ -298,8 +319,7 @@ def get_default_conf(testdatadir):
         },
         "ask_strategy": {
             "use_order_book": False,
-            "order_book_min": 1,
-            "order_book_max": 1
+            "order_book_top": 1,
         },
         "exchange": {
             "name": "binance",
@@ -333,6 +353,7 @@ def get_default_conf(testdatadir):
         "verbosity": 3,
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
         "strategy": "DefaultStrategy",
+        "disableparamexport": True,
         "internals": {},
         "export": "none",
     }
@@ -922,17 +943,18 @@ def limit_sell_order_old():
 
 @pytest.fixture
 def limit_buy_order_old_partial():
-    return {'id': 'mocked_limit_buy_old_partial',
-            'type': 'limit',
-                    'side': 'buy',
-                    'symbol': 'ETH/BTC',
-                    'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
-                    'price': 0.00001099,
-                    'amount': 90.99181073,
-                    'filled': 23.0,
-                    'remaining': 67.99181073,
-                    'status': 'open'
-            }
+    return {
+        'id': 'mocked_limit_buy_old_partial',
+        'type': 'limit',
+        'side': 'buy',
+        'symbol': 'ETH/BTC',
+        'datetime': arrow.utcnow().shift(minutes=-601).isoformat(),
+        'price': 0.00001099,
+        'amount': 90.99181073,
+        'filled': 23.0,
+        'remaining': 67.99181073,
+        'status': 'open'
+    }
 
 
 @pytest.fixture
@@ -1092,6 +1114,40 @@ def order_book_l2():
         'timestamp': None,
         'datetime': None,
         'nonce': 288004540
+    })
+
+
+@pytest.fixture
+def order_book_l2_usd():
+    return MagicMock(return_value={
+        'symbol': 'LTC/USDT',
+        'bids': [
+            [25.563, 49.269],
+            [25.562, 83.0],
+            [25.56, 106.0],
+            [25.559, 15.381],
+            [25.558, 29.299],
+            [25.557, 34.624],
+            [25.556, 10.0],
+            [25.555, 14.684],
+            [25.554, 45.91],
+            [25.553, 50.0]
+        ],
+        'asks': [
+            [25.566, 14.27],
+            [25.567, 48.484],
+            [25.568, 92.349],
+            [25.572, 31.48],
+            [25.573, 23.0],
+            [25.574, 20.0],
+            [25.575, 89.606],
+            [25.576, 262.016],
+            [25.577, 178.557],
+            [25.578, 78.614]
+        ],
+        'timestamp': None,
+        'datetime': None,
+        'nonce': 2372149736
     })
 
 
@@ -1742,7 +1798,6 @@ def rpc_balance():
             'used': 0.0
         },
     }
-    # TODO-mg: Add shorts and leverage?
 
 
 @pytest.fixture
@@ -1928,12 +1983,13 @@ def saved_hyperopt_results():
             'params_dict': {
                 'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal', 'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper', 'roi_t1': 1190, 'roi_t2': 541, 'roi_t3': 408, 'roi_p1': 0.026035863879169705, 'roi_p2': 0.12508730043628782, 'roi_p3': 0.27766427921605896, 'stoploss': -0.2562930402099556},  # noqa: E501
             'params_details': {'buy': {'mfi-value': 15, 'fastd-value': 20, 'adx-value': 25, 'rsi-value': 28, 'mfi-enabled': False, 'fastd-enabled': True, 'adx-enabled': True, 'rsi-enabled': True, 'trigger': 'macd_cross_signal'}, 'sell': {'sell-mfi-value': 88, 'sell-fastd-value': 97, 'sell-adx-value': 51, 'sell-rsi-value': 67, 'sell-mfi-enabled': False, 'sell-fastd-enabled': False, 'sell-adx-enabled': True, 'sell-rsi-enabled': True, 'sell-trigger': 'sell-bb_upper'}, 'roi': {0: 0.4287874435315165, 408: 0.15112316431545753, 949: 0.026035863879169705, 2139: 0}, 'stoploss': {'stoploss': -0.2562930402099556}},  # noqa: E501
-            'results_metrics': {'total_trades': 2, 'wins': 0, 'draws': 0, 'losses': 2, 'profit_mean': -0.01254995, 'profit_median': -0.012222, 'profit_total': -0.00125625, 'profit_total_abs': -2.50999, 'holding_avg': timedelta(minutes=3930.0)},  # noqa: E501
+            'results_metrics': {'total_trades': 2, 'wins': 0, 'draws': 0, 'losses': 2, 'profit_mean': -0.01254995, 'profit_median': -0.012222, 'profit_total': -0.00125625, 'profit_total_abs': -2.50999, 'holding_avg': timedelta(minutes=3930.0), 'stake_currency': 'BTC', 'strategy_name': 'SampleStrategy'},  # noqa: E501
             'results_explanation': '     2 trades. Avg profit  -1.25%. Total profit -0.00125625 BTC (  -2.51Σ%). Avg duration 3930.0 min.',  # noqa: E501
             'total_profit': -0.00125625,
             'current_epoch': 1,
             'is_initial_point': True,
-            'is_best': True
+            'is_best': True,
+
         }, {
             'loss': 20.0,
             'params_dict': {
@@ -2055,98 +2111,191 @@ def saved_hyperopt_results():
     for res in hyperopt_res:
         res['results_metrics']['holding_avg_s'] = res['results_metrics']['holding_avg'
                                                                          ].total_seconds()
-
     return hyperopt_res
 
-
 # * Margin Tests
-# TODO-mg: fill in these tests with something useful
-
-@pytest.fixture
-def leveraged_fee():
-    return
-
-
-@pytest.fixture
-def short_fee():
-    return
-
-
-@pytest.fixture
-def ticker_short():
-    return
-
-
-@pytest.fixture
-def ticker_exit_short_up():
-    return
-
-
-@pytest.fixture
-def ticker_exit_short_down():
-    return
-
-
-@pytest.fixture
-def leveraged_markets():
-    return
 
 
 @pytest.fixture(scope='function')
 def limit_short_order_open():
-    return
-
-
-@pytest.fixture(scope='function')
-def limit_short_order(limit_short_order_open):
-    return
-
-
-@pytest.fixture(scope='function')
-def market_short_order():
-    return
-
-
-@pytest.fixture
-def market_short_exit_order():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old():
-    return
-
-
-@pytest.fixture
-def limit_exit_short_order_old():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old_partial():
-    return
-
-
-@pytest.fixture
-def limit_short_order_old_partial_canceled(limit_short_order_old_partial):
-    return
-
-
-@pytest.fixture(scope='function')
-def limit_short_order_canceled_empty(request):
-    return
+    return {
+        'id': 'mocked_limit_short',
+        'type': 'limit',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001173,
+        'amount': 90.99181073,
+        'leverage': 1.0,
+        'filled': 0.0,
+        'cost': 0.00106733393,
+        'remaining': 90.99181073,
+        'status': 'open',
+        'is_short': True
+    }
 
 
 @pytest.fixture
 def limit_exit_short_order_open():
-    return
+    return {
+        'id': 'mocked_limit_exit_short',
+        'type': 'limit',
+        'side': 'buy',
+        'pair': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001099,
+        'amount': 90.99370639272354,
+        'filled': 0.0,
+        'remaining': 90.99370639272354,
+        'status': 'open',
+        'leverage': 1.0
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_short_order(limit_short_order_open):
+    order = deepcopy(limit_short_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
 
 
 @pytest.fixture
-def limit_exit_short_order(limit_sell_order_open):
-    return
+def limit_exit_short_order(limit_exit_short_order_open):
+    order = deepcopy(limit_exit_short_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
+
+
+@pytest.fixture(scope='function')
+def market_short_order():
+    return {
+        'id': 'mocked_market_short',
+        'type': 'market',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004173,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
+        'remaining': 0.0,
+        'status': 'closed',
+        'is_short': True,
+        'leverage': 3.0,
+    }
 
 
 @pytest.fixture
-def short_order_fee():
-    return
+def market_exit_short_order():
+    return {
+        'id': 'mocked_limit_exit_short',
+        'type': 'market',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004099,
+        'amount': 276.113419906095,
+        'filled': 276.113419906095,
+        'remaining': 0.0,
+        'status': 'closed',
+        'leverage': 3.0
+    }
+
+
+# leverage 3x
+@pytest.fixture(scope='function')
+def limit_lev_buy_order_open():
+    return {
+        'id': 'mocked_limit_buy',
+        'type': 'limit',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001099,
+        'amount': 272.97543219,
+        'filled': 0.0,
+        'cost': 0.0009999999999226999,
+        'remaining': 272.97543219,
+        'leverage': 3.0,
+        'status': 'open',
+        'exchange': 'binance',
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_lev_buy_order(limit_lev_buy_order_open):
+    order = deepcopy(limit_lev_buy_order_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
+
+
+@pytest.fixture
+def limit_lev_sell_order_open():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'limit',
+        'side': 'sell',
+        'pair': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 0.00001173,
+        'amount': 272.97543219,
+        'filled': 0.0,
+        'remaining': 272.97543219,
+        'leverage': 3.0,
+        'status': 'open',
+        'exchange': 'binance'
+    }
+
+
+@pytest.fixture
+def limit_lev_sell_order(limit_lev_sell_order_open):
+    order = deepcopy(limit_lev_sell_order_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
+
+
+@pytest.fixture(scope='function')
+def market_lev_buy_order():
+    return {
+        'id': 'mocked_market_buy',
+        'type': 'market',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004099,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
+        'remaining': 0.0,
+        'status': 'closed',
+        'exchange': 'kraken',
+        'leverage': 3.0
+    }
+
+
+@pytest.fixture
+def market_lev_sell_order():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'market',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 0.00004173,
+        'amount': 275.97543219,
+        'filled': 275.97543219,
+        'remaining': 0.0,
+        'status': 'closed',
+        'leverage': 3.0,
+        'exchange': 'kraken'
+    }

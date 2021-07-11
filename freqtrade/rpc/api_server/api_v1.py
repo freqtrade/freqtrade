@@ -162,8 +162,8 @@ def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])
-def logs(limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_get_logs(limit)
+def logs(limit: Optional[int] = None):
+    return RPC._rpc_get_logs(limit)
 
 
 @router.post('/start', response_model=StatusMsg, tags=['botcontrol'])

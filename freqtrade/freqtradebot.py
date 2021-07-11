@@ -98,7 +98,7 @@ class FreqtradeBot(LoggingMixin):
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
-        # Protect sell-logic from forcesell and viceversa
+        # Protect sell-logic from forcesell and vice versa
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
@@ -472,6 +472,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
+        :param stake_amount: amount of stake-currency for the pair
         :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['buy']
@@ -683,46 +684,17 @@ class FreqtradeBot(LoggingMixin):
 
         (buy, sell) = (False, False)
 
-        config_ask_strategy = self.config.get('ask_strategy', {})
-
-        if (config_ask_strategy.get('use_sell_signal', True) or
-                config_ask_strategy.get('ignore_roi_if_buy_signal', False)):
+        if (self.config.get('use_sell_signal', True) or
+                self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
             (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
-        if config_ask_strategy.get('use_order_book', False):
-            order_book_min = config_ask_strategy.get('order_book_min', 1)
-            order_book_max = config_ask_strategy.get('order_book_max', 1)
-            logger.debug(f'Using order book between {order_book_min} and {order_book_max} '
-                         f'for selling {trade.pair}...')
-
-            order_book = self.exchange._order_book_gen(
-                trade.pair, f"{config_ask_strategy['price_side']}s",
-                order_book_min=order_book_min, order_book_max=order_book_max)
-            for i in range(order_book_min, order_book_max + 1):
-                try:
-                    sell_rate = next(order_book)
-                except (IndexError, KeyError) as e:
-                    logger.warning(
-                        f"Sell Price at location {i} from orderbook could not be determined."
-                    )
-                    raise PricingError from e
-                logger.debug(f"  order book {config_ask_strategy['price_side']} top {i}: "
-                             f"{sell_rate:0.8f}")
-                # Assign sell-rate to cache - otherwise sell-rate is never updated in the cache,
-                # resulting in outdated RPC messages
-                self.exchange._sell_rate_cache[trade.pair] = sell_rate
-
-                if self._check_and_execute_sell(trade, sell_rate, buy, sell):
-                    return True
-
-        else:
-            logger.debug('checking sell')
-            sell_rate = self.exchange.get_sell_rate(trade.pair, True)
-            if self._check_and_execute_sell(trade, sell_rate, buy, sell):
-                return True
+        logger.debug('checking sell')
+        sell_rate = self.exchange.get_sell_rate(trade.pair, True)
+        if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+            return True
 
         logger.debug('Found no sell signal for %s.', trade)
         return False
@@ -834,7 +806,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
-        :param Trade: Corresponding Trade
+        :param trade: Corresponding Trade
         :param order: Current on exchange stoploss order
         :return: None
         """

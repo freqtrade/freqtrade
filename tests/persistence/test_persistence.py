@@ -64,6 +64,48 @@ def test_init_dryrun_db(default_conf, tmpdir):
 
 
 @pytest.mark.usefixtures("init_persistence")
+def test_is_opening_closing_trade(fee):
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=False,
+        leverage=2.0
+    )
+    assert trade.is_opening_trade('buy') is True
+    assert trade.is_opening_trade('sell') is False
+    assert trade.is_closing_trade('buy') is False
+    assert trade.is_closing_trade('sell') is True
+
+    trade = Trade(
+        id=2,
+        pair='ETH/BTC',
+        stake_amount=0.001,
+        open_rate=0.01,
+        amount=5,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        leverage=2.0
+    )
+
+    assert trade.is_opening_trade('buy') is False
+    assert trade.is_opening_trade('sell') is True
+    assert trade.is_closing_trade('buy') is True
+    assert trade.is_closing_trade('sell') is False
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     """
     On this test we will buy and sell a crypto currency.
@@ -129,9 +171,6 @@ def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
                       caplog)
 
-    # TODO-mg: create a short order
-    # TODO-mg: create a leveraged long order
-
 
 @pytest.mark.usefixtures("init_persistence")
 def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
@@ -170,9 +209,6 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
                       r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
                       caplog)
 
-    # TODO-mg: market short
-    # TODO-mg: market leveraged long
-
 
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
@@ -202,6 +238,7 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(limit_buy_order, limit_sell_order, fee):
+    # TODO: limit_buy_order and limit_sell_order aren't used, remove them probably
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
@@ -665,13 +702,11 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                 order_date DATETIME,
                 order_filled_date DATETIME,
                 order_update_date DATETIME,
-                leverage FLOAT,
                 PRIMARY KEY (id),
                 CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
                 FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
             )
             """))
-        # TODO-mg: Had to add field leverage to this table, check that this is correct
 
         connection.execute(text("""
         insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
@@ -695,6 +730,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
 
     assert orders[1].order_id == 'stop_order_id222'
     assert orders[1].ft_order_side == 'stoploss'
+    assert orders[0].is_short is False
 
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
@@ -920,11 +956,7 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
                       'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
                       'interest_rate': None,
                       'liquidation_price': None,
                       'is_short': None,
@@ -993,11 +1025,7 @@ def test_to_json(default_conf, fee):
                       'strategy': None,
                       'timeframe': None,
                       'exchange': 'binance',
-
                       'leverage': None,
-                      'borrowed': None,
-                      'borrowed_currency': None,
-                      'collateral_currency': None,
                       'interest_rate': None,
                       'liquidation_price': None,
                       'is_short': None,

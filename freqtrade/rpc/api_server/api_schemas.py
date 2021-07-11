@@ -115,6 +115,7 @@ class ShowConfig(BaseModel):
     dry_run: bool
     stake_currency: str
     stake_amount: Union[float, str]
+    stake_currency_decimals: int
     max_open_trades: int
     minimal_roi: Dict[str, Any]
     stoploss: float

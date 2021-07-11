@@ -218,6 +218,7 @@ def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
     status_table = MagicMock()
     mocker.patch.multiple(
@@ -518,12 +519,15 @@ def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance, tick
     assert msg_mock.call_count == 1
     assert '*BTC:*' in result
     assert '*ETH:*' not in result
-    assert '*USDT:*' in result
-    assert '*EUR:*' in result
+    assert '*USDT:*' not in result
+    assert '*EUR:*' not in result
+    assert '*LTC:*' in result
+    assert '*XRP:*' not in result
     assert 'Balance:' in result
     assert 'Est. BTC:' in result
     assert 'BTC: 12.00000000' in result
-    assert '*XRP:* not showing <0.0001 BTC amount' in result
+    assert "*3 Other Currencies (< 0.0001 BTC):*" in result
+    assert 'BTC: 0.00000309' in result
 
 
 def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
@@ -666,6 +670,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -724,6 +729,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
 
     freqtradebot = FreqtradeBot(default_conf)
@@ -784,6 +790,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=True),
     )
     default_conf['max_open_trades'] = 4
     freqtradebot = FreqtradeBot(default_conf)
@@ -800,9 +807,9 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     context.args = ["all"]
     telegram._forcesell(update=update, context=context)
 
-    # Called for each trade 4 times
-    assert msg_mock.call_count == 12
-    msg = msg_mock.call_args_list[2][0][0]
+    # Called for each trade 2 times
+    assert msg_mock.call_count == 8
+    msg = msg_mock.call_args_list[1][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,

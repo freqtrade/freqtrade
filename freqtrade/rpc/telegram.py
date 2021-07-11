@@ -24,7 +24,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import chunks, round_coin_value
+from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
@@ -103,7 +103,7 @@ class Telegram(RPCHandler):
         # do not allow commands with mandatory arguments and critical cmds
         # like /forcesell and /forcebuy
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
-        #       this needs refacoring of the whole telegram module (same
+        #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
                                  r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
@@ -482,7 +482,7 @@ class Telegram(RPCHandler):
         timescale = None
         try:
             if context.args:
-                timescale = int(context.args[0])
+                timescale = int(context.args[0]) - 1
                 today_start = datetime.combine(date.today(), datetime.min.time())
                 start_date = today_start - timedelta(days=timescale)
         except (TypeError, ValueError, IndexError):
@@ -598,7 +598,10 @@ class Telegram(RPCHandler):
                     "Starting capital: "
                     f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
                 )
+            total_dust_balance = 0
+            total_dust_currencies = 0
             for curr in result['currencies']:
+                curr_output = ''
                 if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
@@ -607,16 +610,24 @@ class Telegram(RPCHandler):
                         f"\t`Pending: {curr['used']:.8f}`\n"
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
-                else:
-                    curr_output = (f"*{curr['currency']}:* not showing <{balance_dust_level} "
-                                   f"{curr['stake']} amount \n")
+                elif curr['est_stake'] <= balance_dust_level:
+                    total_dust_balance += curr['est_stake']
+                    total_dust_currencies += 1
 
-                # Handle overflowing messsage length
+                # Handle overflowing message length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
                     self._send_msg(output)
                     output = curr_output
                 else:
                     output += curr_output
+
+            if total_dust_balance > 0:
+                output += (
+                    f"*{total_dust_currencies} Other "
+                    f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
+                    f"(< {balance_dust_level} {result['stake']}):*\n"
+                    f"\t`Est. {result['stake']}: "
+                    f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
 
             output += ("\n*Estimated Value*:\n"
                        f"\t`{result['stake']}: {result['total']: .8f}`\n"

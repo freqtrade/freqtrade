@@ -49,7 +49,7 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
                           fill_missing: bool = True,
                           drop_incomplete: bool = True) -> DataFrame:
     """
-    Clense a OHLCV dataframe by
+    Cleanse a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
       * dropping last candles if requested
       * Filling up missing data (if requested)

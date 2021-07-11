@@ -37,6 +37,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 Exchanges confirmed working by the community:
 
 - [X] [Bitvavo](https://bitvavo.com/)
+- [X] [Kukoin](https://www.kucoin.com/)
 
 ## Documentation
 

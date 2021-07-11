@@ -260,6 +260,8 @@ class Configuration:
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
 
+        self._args_to_config(config, argname='disableparamexport',
+                             logstring='Parameter --disableparamexport detected: {} ...')
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
             txt_range = eval(self.args["stoploss_range"])
@@ -460,7 +462,7 @@ class Configuration:
             pairs_file = Path(self.args["pairs_file"])
             logger.info(f'Reading pairs file "{pairs_file}".')
             # Download pairs from the pairs file if no config is specified
-            # or if pairs file is specified explicitely
+            # or if pairs file is specified explicitly
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
             config['pairs'] = load_file(pairs_file)

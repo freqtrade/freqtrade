@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from freqtrade.persistence.models import Order, Trade
 
 
-MOCK_TRADE_COUNT = 6  # TODO-mg: Increase for short and leverage
+MOCK_TRADE_COUNT = 6
 
 
 def mock_order_1():
@@ -305,12 +305,9 @@ def mock_trade_6(fee):
     return trade
 
 
-#! TODO Currently the following short_trade test and leverage_trade test will fail
-
-
 def short_order():
     return {
-        'id': '1235',
+        'id': '1236',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'sell',
@@ -319,14 +316,12 @@ def short_order():
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
-        'leverage': 5.0,
-        'isShort': True
     }
 
 
 def exit_short_order():
     return {
-        'id': '12366',
+        'id': '12367',
         'symbol': 'ETC/BTC',
         'status': 'closed',
         'side': 'buy',
@@ -335,36 +330,60 @@ def exit_short_order():
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
-        'leverage': 5.0,
-        'isShort': True
     }
 
 
 def short_trade(fee):
     """
-    Closed trade...
+        10 minute short limit trade on binance
+
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per day
+        open_rate: 0.123 base
+        close_rate: 0.128 base
+        amount: 123.0 crypto
+        stake_amount: 15.129 base
+        borrowed: 123.0  crypto
+        time-periods: 10 minutes(rounds up to 1/24 time-period of 1 day)
+        interest: borrowed * interest_rate * time-periods
+                    = 123.0 * 0.0005 * 1/24 = 0.0025625 crypto
+        open_value: (amount * open_rate) - (amount * open_rate * fee)
+            = (123 * 0.123) - (123 * 0.123 * 0.0025)
+            = 15.091177499999999
+        amount_closed: amount + interest = 123 + 0.0025625 = 123.0025625
+        close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
+            = (123.0025625 * 0.128) + (123.0025625 * 0.128 * 0.0025)
+            = 15.78368882
+        total_profit = open_value - close_value
+            = 15.091177499999999 - 15.78368882
+            = -0.6925113200000013
+        total_profit_percentage = total_profit / stake_amount
+            = -0.6925113200000013 / 15.129
+            = -0.04577376693766946
+
     """
     trade = Trade(
         pair='ETC/BTC',
-        stake_amount=0.001,
-        amount=123.0,  # TODO-mg: In BTC?
+        stake_amount=15.129,
+        amount=123.0,
         amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
-        close_rate=0.128,
-        close_profit=0.005,  # TODO-mg: Would this be -0.005 or -0.025
-        close_profit_abs=0.000584127,
+        # close_rate=0.128,
+        # close_profit=-0.04577376693766946,
+        # close_profit_abs=-0.6925113200000013,
         exchange='binance',
-        is_open=False,
+        is_open=True,
         open_order_id='dry_run_exit_short_12345',
         strategy='DefaultStrategy',
         timeframe=5,
         sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
-        close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
+        # close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
         # borrowed=
-        isShort=True
+        is_short=True
     )
     o = Order.parse_from_ccxt_object(short_order(), 'ETC/BTC', 'sell')
     trade.orders.append(o)
@@ -375,8 +394,8 @@ def short_trade(fee):
 
 def leverage_order():
     return {
-        'id': '1235',
-        'symbol': 'ETC/BTC',
+        'id': '1237',
+        'symbol': 'DOGE/BTC',
         'status': 'closed',
         'side': 'buy',
         'type': 'limit',
@@ -390,8 +409,8 @@ def leverage_order():
 
 def leverage_order_sell():
     return {
-        'id': '12366',
-        'symbol': 'ETC/BTC',
+        'id': '12368',
+        'symbol': 'DOGE/BTC',
         'status': 'closed',
         'side': 'sell',
         'type': 'limit',
@@ -399,38 +418,63 @@ def leverage_order_sell():
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
-        'leverage': 5.0,
-        'isShort': True
     }
 
 
 def leverage_trade(fee):
     """
-    Closed trade...
+    5 hour short limit trade on kraken
+
+        Short trade
+        fee: 0.25% base
+        interest_rate: 0.05% per day
+        open_rate: 0.123 base
+        close_rate: 0.128 base
+        amount: 615 crypto
+        stake_amount: 15.129 base
+        borrowed: 60.516  base
+        leverage: 5
+        hours: 5
+        interest: borrowed * interest_rate * ceil(1 + hours/4)
+                    = 60.516 * 0.0005 * ceil(1 + 5/4) = 0.090774 base
+        open_value: (amount * open_rate) + (amount * open_rate * fee)
+            = (615.0 * 0.123) + (615.0 * 0.123 * 0.0025)
+            = 75.83411249999999
+
+        close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
+            = (615.0 * 0.128) - (615.0 * 0.128 * 0.0025) - 0.090774
+            = 78.432426
+        total_profit = close_value - open_value
+            = 78.432426 - 75.83411249999999
+            = 2.5983135000000175
+        total_profit_percentage = ((close_value/open_value)-1) * leverage
+            = ((78.432426/75.83411249999999)-1) * 5
+            = 0.1713156134055116
     """
     trade = Trade(
-        pair='ETC/BTC',
-        stake_amount=0.001,
+        pair='DOGE/BTC',
+        stake_amount=15.129,
         amount=615.0,
+        leverage=5.0,
         amount_requested=615.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_rate=0.123,
         close_rate=0.128,
-        close_profit=0.005,  # TODO-mg: Would this be -0.005 or -0.025
-        close_profit_abs=0.000584127,
-        exchange='binance',
+        close_profit=0.1713156134055116,
+        close_profit_abs=2.5983135000000175,
+        exchange='kraken',
         is_open=False,
         open_order_id='dry_run_leverage_sell_12345',
         strategy='DefaultStrategy',
         timeframe=5,
         sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
-        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
-        close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
-        # borrowed=
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=300),
+        close_date=datetime.now(tz=timezone.utc),
+        interest_rate=0.0005
     )
-    o = Order.parse_from_ccxt_object(leverage_order(), 'ETC/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(leverage_order(), 'DOGE/BTC', 'sell')
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(leverage_order_sell(), 'ETC/BTC', 'sell')
+    o = Order.parse_from_ccxt_object(leverage_order_sell(), 'DOGE/BTC', 'sell')
     trade.orders.append(o)
     return trade

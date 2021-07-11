@@ -55,8 +55,8 @@ class JsonDataHandler(IDataHandler):
             format looks as follows:
             [[<date>,<open>,<high>,<low>,<close>]]
         :param pair: Pair - used to generate filename
-        :timeframe: Timeframe - used to generate filename
-        :data: Dataframe containing OHLCV data
+        :param timeframe: Timeframe - used to generate filename
+        :param data: Dataframe containing OHLCV data
         :return: None
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)

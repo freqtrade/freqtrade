@@ -55,7 +55,7 @@ class AwesomeStrategy(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         # Obtain last available candle. Do not use current_time to look up latest candle, because 
-        # current_time points to curret incomplete candle whose data is not available.
+        # current_time points to current incomplete candle whose data is not available.
         last_candle = dataframe.iloc[-1].squeeze()
         # <...>
 
@@ -83,7 +83,7 @@ It is possible to define custom sell signals, indicating that specified position
 
 For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
 
-Using custom_sell() signals in place of stoplosses though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -243,7 +243,7 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit < 0.04:
-            return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
+            return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
         desired_stoploss = current_profit / 2

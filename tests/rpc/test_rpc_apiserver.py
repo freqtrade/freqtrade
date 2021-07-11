@@ -105,6 +105,15 @@ def test_api_ui_fallback(botclient):
     assert rc.status_code == 200
 
 
+def test_api_ui_version(botclient, mocker):
+    ftbot, client = botclient
+
+    mocker.patch('freqtrade.commands.deploy_commands.read_ui_version', return_value='0.1.2')
+    rc = client_get(client, "/ui_version")
+    assert rc.status_code == 200
+    assert rc.json()['version'] == '0.1.2'
+
+
 def test_api_auth():
     with pytest.raises(ValueError):
         create_token({'identity': {'u': 'Freqtrade'}}, 'secret1234', token_type="NotATokenType")
@@ -996,7 +1005,8 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
-        markets=PropertyMock(return_value=markets)
+        markets=PropertyMock(return_value=markets),
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     patch_get_signal(ftbot, (True, False))
 
