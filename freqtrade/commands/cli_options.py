@@ -548,7 +548,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Do not print epoch details header.',
         action='store_true',
     ),
-    #TODO: Set up these options
+    # TODO-mg: Set up these options
     # "leverage": Arg(
     #     '-L', '--leverage',
     #     help='Leverage applied for margin and futures trading.',

@@ -167,7 +167,8 @@ def ask_user_config() -> Dict[str, Any]:
             "when": lambda x: x['api_server']
         },
     ]
-    #TODO: Enable short trading, trade with leverage
+
+    # TODO-mg: Enable short trading, trade with leverage
     answers = prompt(questions)
 
     if not answers:
@@ -194,7 +195,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
         selections['exchange'] = render_template(
             templatefile=f"subtemplates/exchange_{exchange_template}.j2",
             arguments=selections
-            )
+        )
     except TemplateNotFound:
         selections['exchange'] = render_template(
             templatefile="subtemplates/exchange_generic.j2",

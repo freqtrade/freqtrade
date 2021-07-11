@@ -38,15 +38,15 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     indicators = render_template_with_fallback(
         templatefile=f"subtemplates/indicators_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/indicators_{fallback}.j2",
-        )
+    )
     buy_trend = render_template_with_fallback(
         templatefile=f"subtemplates/buy_trend_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/buy_trend_{fallback}.j2",
-        )
+    )
     sell_trend = render_template_with_fallback(
         templatefile=f"subtemplates/sell_trend_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/sell_trend_{fallback}.j2",
-        )
+    )
     plot_config = render_template_with_fallback(
         templatefile=f"subtemplates/plot_config_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/plot_config_{fallback}.j2",
@@ -55,7 +55,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
         templatefile=f"subtemplates/strategy_methods_{subtemplate}.j2",
         templatefallbackfile="subtemplates/strategy_methods_empty.j2",
     )
-    #TODO: Short Trend, Exit short trend
+    # TODO-mg: Short Trend, Exit short trend
 
     strategy_text = render_template(templatefile='base_strategy.py.j2',
                                     arguments={"strategy": strategy_name,
@@ -98,20 +98,20 @@ def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: st
     buy_guards = render_template_with_fallback(
         templatefile=f"subtemplates/hyperopt_buy_guards_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/hyperopt_buy_guards_{fallback}.j2",
-        )
+    )
     sell_guards = render_template_with_fallback(
         templatefile=f"subtemplates/hyperopt_sell_guards_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/hyperopt_sell_guards_{fallback}.j2",
-        )
+    )
     buy_space = render_template_with_fallback(
         templatefile=f"subtemplates/hyperopt_buy_space_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/hyperopt_buy_space_{fallback}.j2",
-        )
+    )
     sell_space = render_template_with_fallback(
         templatefile=f"subtemplates/hyperopt_sell_space_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/hyperopt_sell_space_{fallback}.j2",
-        )
-    #TODO: short_guards, exit_short_guards, short_space, exit_short_space
+    )
+    # TODO-mg: short_guards, exit_short_guards, short_space, exit_short_space
 
     strategy_text = render_template(templatefile='base_hyperopt.py.j2',
                                     arguments={"hyperopt": hyperopt_name,
@@ -119,7 +119,8 @@ def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: st
                                                "sell_guards": sell_guards,
                                                "buy_space": buy_space,
                                                "sell_space": sell_space,
-                                               })  #TODO: short_guards, exit_short_guards, short_space, exit_short_space
+                                               })
+    # TODO-mg: short_guards, exit_short_guards, short_space, exit_short_space
 
     logger.info(f"Writing hyperopt to `{hyperopt_path}`.")
     hyperopt_path.write_text(strategy_text)
