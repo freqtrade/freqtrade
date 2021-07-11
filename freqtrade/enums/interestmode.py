@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+from math import ceil
 
 from freqtrade.exceptions import OperationalException
 
@@ -21,8 +22,9 @@ class InterestMode(Enum):
         borrowed, rate, hours = kwargs["borrowed"], kwargs["rate"], kwargs["hours"]
 
         if self.name == "HOURSPERDAY":
-            return borrowed * rate * max(hours, one)/twenty_four
+            return borrowed * rate * ceil(hours)/twenty_four
         elif self.name == "HOURSPER4":
-            return borrowed * rate * (1 + max(0, (hours-four)/four))
+            # Probably rounded based on https://kraken-fees-calculator.github.io/
+            return borrowed * rate * (1+ceil(hours/four))
         else:
             raise OperationalException("Leverage not available on this exchange with freqtrade")

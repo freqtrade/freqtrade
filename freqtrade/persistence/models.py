@@ -609,14 +609,12 @@ class LocalTrade():
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
-    def _calc_open_trade_value(self, amount: Optional[float] = None) -> float:
+    def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
         :return: Price in of the open trade incl. Fees
         """
-        if amount is None:
-            amount = self.amount
-        open_trade = Decimal(amount) * Decimal(self.open_rate)
+        open_trade = Decimal(self.amount) * Decimal(self.open_rate)
         fees = open_trade * Decimal(self.fee_open)
         if self.is_short:
             return float(open_trade - fees)
@@ -653,7 +651,6 @@ class LocalTrade():
         return self.interest_mode(borrowed=borrowed, rate=rate, hours=hours)
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
-
                                fee: Optional[float] = None,
                                interest_rate: Optional[float] = None) -> float:
         """
@@ -721,30 +718,23 @@ class LocalTrade():
             If interest_rate is not set self.interest_rate will be used
         :return: profit ratio as float
         """
-
         close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close),
             interest_rate=(interest_rate or self.interest_rate)
         )
 
-        if self.leverage is None:
-            leverage = 1.0
-        else:
-            leverage = self.leverage
-
-        stake_value = self._calc_open_trade_value(amount=(self.amount/leverage))
-
         short_close_zero = (self.is_short and close_trade_value == 0.0)
         long_close_zero = (not self.is_short and self.open_trade_value == 0.0)
+        leverage = self.leverage or 1.0
 
         if (short_close_zero or long_close_zero):
             return 0.0
         else:
             if self.is_short:
-                profit_ratio = ((self.open_trade_value - close_trade_value) / stake_value)
+                profit_ratio = (1 - (close_trade_value/self.open_trade_value)) * leverage
             else:
-                profit_ratio = ((close_trade_value - self.open_trade_value) / stake_value)
+                profit_ratio = ((close_trade_value/self.open_trade_value) - 1) * leverage
 
         return float(f"{profit_ratio:.8f}")
 
