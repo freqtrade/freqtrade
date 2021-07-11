@@ -319,7 +319,7 @@ class Backtesting:
         max_stake_amount = self.wallets.get_available_stake_amount()
 
         stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
-                                             default_retval=None)(
+                                             default_retval=stake_amount)(
             pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
             proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)

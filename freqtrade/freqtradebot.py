@@ -486,7 +486,7 @@ class FreqtradeBot(LoggingMixin):
         if not self.edge:
             max_stake_amount = self.wallets.get_available_stake_amount()
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
-                                                 default_retval=None)(
+                                                 default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=buy_limit_requested, proposed_stake=stake_amount,
                 min_stake=min_stake_amount, max_stake=max_stake_amount)

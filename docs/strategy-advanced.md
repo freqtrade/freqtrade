@@ -523,7 +523,7 @@ class AwesomeStrategy(IStrategy):
 
 ### Stake size management
 
-It is possible to manage your risk by reducing or increasing or reducing stake amount when placing a new trade.
+It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.
 
 ```python
 class AwesomeStrategy(IStrategy):
@@ -546,8 +546,10 @@ class AwesomeStrategy(IStrategy):
         return proposed_stake
 ```
 
+Freqtrade will fall back to the `proposed_stake` value should your code raise an exception. The exception itself will be logged.
+
 !!! Tip
-    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed, as returned value will be clamped to supported range and this acton will be logged.
+    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.
 
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.

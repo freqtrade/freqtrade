@@ -397,7 +397,7 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order_open,
 
 
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order_open,
-                                             fee, mocker) -> None:
+                                             fee, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     buy_mock = MagicMock(return_value=limit_buy_order_open)
@@ -414,6 +414,7 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
     patch_get_signal(freqtrade)
 
     assert freqtrade.create_trade('ETH/BTC')
+    assert log_has_re(r"Stake amount for pair .* is too small.*", caplog)
 
 
 def test_create_trade_zero_stake_amount(default_conf, ticker, limit_buy_order_open,
@@ -861,6 +862,24 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
     assert trade.stake_amount == 40.495905365
+
+    # Test with custom stake
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '556'
+
+    freqtrade.strategy.custom_stake_amount = lambda **kwargs: 150.0
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[4]
+    assert trade
+    assert trade.stake_amount == 150
+
+    # Exception case
+    limit_buy_order['id'] = '557'
+    freqtrade.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[5]
+    assert trade
+    assert trade.stake_amount == 2.0
 
     # In case of the order is rejected and not filled at all
     limit_buy_order['status'] = 'rejected'
