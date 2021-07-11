@@ -150,8 +150,9 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
     leverage = get_column_def(cols, 'leverage', '1.0')
-    # is_short = get_column_def(cols, 'is_short', 'False')
-
+    # sqlite does not support literals for booleans
+    is_short = get_column_def(cols, 'is_short', '0')
+    # TODO-mg: Should liquidation price go in here?
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
