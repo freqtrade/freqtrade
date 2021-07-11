@@ -434,22 +434,22 @@ def leverage_trade(fee):
         stake_amount: 15.129 base
         borrowed: 60.516  base
         leverage: 5
-        time-periods: 5 hrs( 5/4 time-period of 4 hours)
-        interest: borrowed * interest_rate * time-periods
-                    = 60.516 * 0.0005 * 5/4 = 0.0378225 base
+        hours: 5
+        interest: borrowed * interest_rate * ceil(1 + hours/4)
+                    = 60.516 * 0.0005 * ceil(1 + 5/4) = 0.090774 base
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (615.0 * 0.123) + (615.0 * 0.123 * 0.0025)
             = 75.83411249999999
 
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
-            = (615.0 * 0.128) - (615.0 * 0.128 * 0.0025) - 0.0378225
-            = 78.4853775
+            = (615.0 * 0.128) - (615.0 * 0.128 * 0.0025) - 0.090774
+            = 78.432426
         total_profit = close_value - open_value
-            = 78.4853775 - 75.83411249999999
-            = 2.6512650000000093
-        total_profit_percentage = total_profit / stake_amount
-            = 2.6512650000000093 / 15.129
-            = 0.17524390243902502
+            = 78.432426 - 75.83411249999999
+            = 2.5983135000000175
+        total_profit_percentage = ((close_value/open_value)-1) * leverage
+            = ((78.432426/75.83411249999999)-1) * 5
+            = 0.1713156134055116
     """
     trade = Trade(
         pair='DOGE/BTC',
@@ -461,8 +461,8 @@ def leverage_trade(fee):
         fee_close=fee.return_value,
         open_rate=0.123,
         close_rate=0.128,
-        close_profit=0.17524390243902502,
-        close_profit_abs=2.6512650000000093,
+        close_profit=0.1713156134055116,
+        close_profit_abs=2.5983135000000175,
         exchange='kraken',
         is_open=False,
         open_order_id='dry_run_leverage_sell_12345',

@@ -238,7 +238,6 @@ def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(limit_buy_order, limit_sell_order, fee):
-    # TODO: limit_buy_order and limit_sell_order aren't used, remove them probably
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,

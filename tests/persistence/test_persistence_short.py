@@ -26,11 +26,11 @@ def test_interest_kraken_short(market_short_order, fee):
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
                         5 hours = 5/4
 
-        interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1    = 0.137987716095 crypto
-                    = 275.97543219 * 0.00025 * 5/4 = 0.086242322559375 crypto
-                    = 459.95905365 * 0.0005 * 5/4  = 0.28747440853125 crypto
-                    = 459.95905365 * 0.00025 * 1   = 0.1149897634125 crypto
+        interest: borrowed * interest_rate * ceil(1 + time-periods)
+                    = 275.97543219 * 0.0005  * ceil(1+1)  = 0.27597543219 crypto
+                    = 275.97543219 * 0.00025 * ceil(9/4)  = 0.20698157414249999 crypto
+                    = 459.95905365 * 0.0005  * ceil(9/4)  = 0.689938580475 crypto
+                    = 459.95905365 * 0.00025 * ceil(1+1)  = 0.229979526825 crypto
     """
 
     trade = Trade(
@@ -48,17 +48,17 @@ def test_interest_kraken_short(market_short_order, fee):
         interest_mode=InterestMode.HOURSPER4
     )
 
-    assert float(round(trade.calculate_interest(), 8)) == round(0.137987716095, 8)
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    assert float(round(trade.calculate_interest(), 8)) == round(0.27597543219, 8)
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
-                 ) == round(0.086242322559375, 8)
+                 ) == round(0.20698157414249999, 8)
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.001,
         amount=459.95905365,
         open_rate=0.00001099,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='kraken',
@@ -68,10 +68,10 @@ def test_interest_kraken_short(market_short_order, fee):
         interest_mode=InterestMode.HOURSPER4
     )
 
-    assert float(round(trade.calculate_interest(), 8)) == round(0.28747440853125, 8)
+    assert float(round(trade.calculate_interest(), 8)) == round(0.689938580475, 8)
     trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)
-                 ) == round(0.1149897634125, 8)
+                 ) == round(0.229979526825, 8)
 
 
 @ pytest.mark.usefixtures("init_persistence")
@@ -114,7 +114,7 @@ def test_interest_binance_short(market_short_order, fee):
     )
 
     assert float(round(trade.calculate_interest(), 8)) == 0.00574949
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 8)) == 0.01437372
 
     trade = Trade(
@@ -122,7 +122,7 @@ def test_interest_binance_short(market_short_order, fee):
         stake_amount=0.001,
         amount=459.95905365,
         open_rate=0.00001099,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -218,13 +218,13 @@ def test_calc_close_trade_price_short(market_short_order, market_exit_short_orde
         close_rate: 0.00001234 base
         amount: = 275.97543219 crypto
         borrowed: 275.97543219  crypto
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-        interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
-        amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
+        hours: 10 minutes = 1/6
+        interest: borrowed * interest_rate * ceil(1 + hours/4)
+                    = 275.97543219 * 0.0005 * ceil(1 + ((1/6)/4)) = 0.27597543219 crypto
+        amount_closed: amount + interest = 275.97543219 + 0.27597543219 = 276.25140762219
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (276.113419906095 * 0.00001234) + (276.113419906095 * 0.00001234 * 0.0025)
-            = 0.01134618380465571
+            = (276.25140762219 * 0.00004099) + (276.25140762219 * 0.00004099 * 0.005)
+            = 0.011380162924425737
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -243,12 +243,12 @@ def test_calc_close_trade_price_short(market_short_order, market_exit_short_orde
     trade.open_order_id = 'close_trade'
     trade.update(market_short_order)  # Buy @ 0.00001099
     # Get the close rate price with a custom close rate and a regular fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.003415757700645315)
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.0034174647259)
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.0034174613204461354)
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.0034191691971679986)
     # Test when we apply a Sell order, and ask price with a custom fee rate
     trade.update(market_exit_short_order)
-    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011374478527360586)
+    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011380162924425737)
 
 
 @ pytest.mark.usefixtures("init_persistence")
@@ -273,19 +273,21 @@ def test_calc_open_close_trade_price_short(limit_short_order, limit_exit_short_o
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
             = (91.0012890436177 * 0.00001099) + (91.0012890436177 * 0.00001099 * 0.0025)
             = 0.001002604427005832
+        stake_value = (amount/lev * open_rate) - (amount/lev * open_rate * fee)
+            = 0.0010646656050132426
         total_profit = open_value - close_value
             = 0.0010646656050132426 - 0.001002604427005832
             = 0.00006206117800741065
-        total_profit_percentage = (close_value - open_value) / stake_amount
-            = (0.0010646656050132426 - 0.0010025208853391716)/0.0010673339398629
-            = 0.05822425142973869
+        total_profit_percentage = (close_value - open_value) / stake_value
+            = (0.0010646656050132426 - 0.001002604427005832)/0.0010646656050132426
+            = 0.05829170935473088
     """
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.0010673339398629,
         open_rate=0.01,
         amount=5,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -302,8 +304,7 @@ def test_calc_open_close_trade_price_short(limit_short_order, limit_exit_short_o
     # Profit in BTC
     assert round(trade.calc_profit(), 8) == round(0.00006206117800741065, 8)
     # Profit in percent
-    # TODO-mg get this working
-    # assert round(trade.calc_profit_ratio(), 11) == round(0.05822425142973869, 11)
+    assert round(trade.calc_profit_ratio(), 8) == round(0.05829170935473088, 8)
 
 
 @ pytest.mark.usefixtures("init_persistence")
@@ -322,20 +323,20 @@ def test_trade_close_short(fee):
         time-periods: 5 hours = 5/4
 
         interest: borrowed * interest_rate * time-periods
-                    = 15 * 0.0005 * 5/4 = 0.009375 crypto
+                    = 15 * 0.0005 * ceil(1 + 5/4) = 0.0225 crypto
         open_value: (amount * open_rate) - (amount * open_rate * fee)
             = (15 * 0.02) - (15 * 0.02 * 0.0025)
             = 0.29925
-        amount_closed: amount + interest = 15 + 0.009375 = 15.009375
+        amount_closed: amount + interest = 15 + 0.009375 = 15.0225
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (15.009375 * 0.01) + (15.009375 * 0.01 * 0.0025)
-            = 0.150468984375
+            = (15.0225 * 0.01) + (15.0225 * 0.01 * 0.0025)
+            = 0.15060056250000003
         total_profit = open_value - close_value
-            = 0.29925 - 0.150468984375
-            = 0.148781015625
-        total_profit_percentage = total_profit / stake_amount
-            = 0.148781015625 / 0.1
-            = 1.4878101562500001
+            = 0.29925 - 0.15060056250000003
+            = 0.14864943749999998
+        total_profit_percentage = (1-(close_value/open_value)) * leverage
+            = (1 - (0.15060056250000003/0.29925)) * 3
+            = 1.4902199248120298
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -345,7 +346,7 @@ def test_trade_close_short(fee):
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         exchange='kraken',
         is_short=True,
         leverage=3.0,
@@ -357,7 +358,7 @@ def test_trade_close_short(fee):
     assert trade.is_open is True
     trade.close(0.01)
     assert trade.is_open is False
-    assert trade.close_profit == round(1.4878101562500001, 8)
+    assert trade.close_profit == round(1.4902199248120298, 8)
     assert trade.close_date is not None
 
     # TODO-mg: Remove these comments probably
@@ -396,9 +397,9 @@ def test_update_with_binance_short(limit_short_order, limit_exit_short_order, fe
         total_profit = open_value - close_value
             = 0.0010646656050132426 - 0.0010025208853391716
             = 0.00006214471967407108
-        total_profit_percentage = (close_value - open_value) / stake_amount
-            = 0.00006214471967407108 / 0.0010673339398629
-            = 0.05822425142973869
+        total_profit_percentage = (1 - (close_value/open_value)) * leverage
+            = (1 - (0.0010025208853391716/0.0010646656050132426)) * 1
+            = 0.05837017687191848
 
     """
     trade = Trade(
@@ -437,7 +438,7 @@ def test_update_with_binance_short(limit_short_order, limit_exit_short_order, fe
     trade.update(limit_exit_short_order)
     # assert trade.open_order_id is None
     assert trade.close_rate == 0.00001099
-    assert trade.close_profit == 0.05822425
+    assert trade.close_profit == round(0.05837017687191848, 8)
     assert trade.close_date is not None
     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
                       r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001173, open_since=.*\).",
@@ -463,20 +464,21 @@ def test_update_market_order_short(
         borrowed: 275.97543219  crypto
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
         interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
+                    = 275.97543219 * 0.0005 * 2 = 0.27597543219 crypto
         open_value: (amount * open_rate) - (amount * open_rate * fee)
             = 275.97543219 * 0.00004173 - 275.97543219 * 0.00004173 * 0.0025
             = 0.011487663648325479
-        amount_closed: amount + interest = 275.97543219 + 0.137987716095 = 276.113419906095
+        amount_closed: amount + interest = 275.97543219 + 0.27597543219 = 276.25140762219
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            = (276.113419906095 * 0.00004099) + (276.113419906095 * 0.00004099 * 0.0025)
-            = 0.01134618380465571
+            = (276.25140762219 * 0.00004099) + (276.25140762219 * 0.00004099 * 0.0025)
+            = 0.0034174647259
         total_profit = open_value - close_value
-            = 0.011487663648325479 - 0.01134618380465571
-            = 0.00014147984366976937
+            = 0.011487663648325479 - 0.0034174647259
+            = 0.00013580958689582596
         total_profit_percentage = total_profit / stake_amount
-        = 0.00014147984366976937 / 0.0038388182617629
-        = 0.036855051222142936
+            = (1 - (close_value/open_value)) * leverage
+            = (1 - (0.0034174647259/0.011487663648325479)) * 3
+            = 0.03546663387440563
     """
     trade = Trade(
         id=1,
@@ -511,7 +513,7 @@ def test_update_market_order_short(
     trade.update(market_exit_short_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00004099
-    assert trade.close_profit == 0.03685505
+    assert trade.close_profit == round(0.03546663387440563, 8)
     assert trade.close_date is not None
     # TODO-mg: The amount should maybe be the opening amount + the interest
     # TODO-mg: Uncomment the next assert and make it work.
@@ -527,7 +529,7 @@ def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
         Market trade on Kraken at 3x leverage
         Short trade
         fee: 0.25% base or 0.3%
-        interest_rate: 0.05%, 0.25% per 4 hrs
+        interest_rate: 0.05%, 0.025% per 4 hrs
         open_rate: 0.00004173 base
         close_rate: 0.00004099 base
         stake_amount: 0.0038388182617629
@@ -537,38 +539,42 @@ def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
                         5 hours = 5/4
 
         interest: borrowed * interest_rate * time-periods
-                    = 275.97543219 * 0.0005 * 1 = 0.137987716095 crypto
-                    = 275.97543219 * 0.00025 * 5/4 = 0.086242322559375 crypto
-                    = 275.97543219 * 0.0005 * 5/4 = 0.17248464511875 crypto
-                    = 275.97543219 * 0.00025 * 1 = 0.0689938580475 crypto
+            = 275.97543219 * 0.0005  * ceil(1+1)   = 0.27597543219 crypto
+            = 275.97543219 * 0.00025 * ceil(1+5/4) = 0.20698157414249999 crypto
+            = 275.97543219 * 0.0005  * ceil(1+5/4) = 0.41396314828499997 crypto
+            = 275.97543219 * 0.00025 * ceil(1+1)   = 0.27597543219  crypto
+            = 275.97543219 * 0.00025 * ceil(1+1)   = 0.27597543219  crypto
         open_value: (amount * open_rate) - (amount * open_rate * fee)
             = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025)
             = 0.011487663648325479
         amount_closed: amount + interest
-            = 275.97543219 + 0.137987716095 = 276.113419906095
-            = 275.97543219 + 0.086242322559375 = 276.06167451255936
-            = 275.97543219 + 0.17248464511875 = 276.14791683511874
-            = 275.97543219 + 0.0689938580475 = 276.0444260480475
+            = 275.97543219 + 0.27597543219       = 276.25140762219
+            = 275.97543219 + 0.20698157414249999 = 276.1824137641425
+            = 275.97543219 + 0.41396314828499997 = 276.389395338285
+            = 275.97543219 + 0.27597543219       = 276.25140762219
         close_value: (amount_closed * close_rate) + (amount_closed * close_rate * fee)
-            (276.113419906095 * 0.00004374) + (276.113419906095 * 0.00004374 * 0.0025)
-                = 0.012107393989159325
-            (276.06167451255936 * 0.00000437) + (276.06167451255936 * 0.00000437 * 0.0025)
-                = 0.0012094054914139338
-            (276.14791683511874 * 0.00004374) + (276.14791683511874 * 0.00004374 * 0.003)
-                = 0.012114946012015198
-            (276.0444260480475 * 0.00000437) + (276.0444260480475 * 0.00000437 * 0.003)
-                = 0.0012099330842554573
+            (276.25140762219 * 0.00004374) + (276.25140762219 * 0.00004374 * 0.0025)
+                = 0.012113444660818078
+            (276.1824137641425 * 0.00000437) + (276.1824137641425 * 0.00000437 * 0.0025)
+                = 0.0012099344410196758
+            (276.389395338285 * 0.00004374) + (276.389395338285 * 0.00004374 * 0.003)
+                = 0.012125539968552874
+            (276.25140762219 * 0.00000437) + (276.25140762219 * 0.00000437 * 0.003)
+                = 0.0012102354919246037
+            (276.25140762219 * 0.00004099) + (276.25140762219 * 0.00004099 * 0.0025)
+                = 0.011351854061429653
         total_profit = open_value - close_value
-            = print(0.011487663648325479 - 0.012107393989159325) = -0.0006197303408338461
-            = print(0.011487663648325479 - 0.0012094054914139338) = 0.010278258156911545
-            = print(0.011487663648325479 - 0.012114946012015198) = -0.0006272823636897188
-            = print(0.011487663648325479 - 0.0012099330842554573) = 0.010277730564070022
-        total_profit_percentage = (close_value - open_value) / stake_amount
-            (0.011487663648325479 - 0.012107393989159325)/0.0038388182617629  = -0.16143779115744006
-            (0.011487663648325479 - 0.0012094054914139338)/0.0038388182617629 = 2.677453699564163
-            (0.011487663648325479 - 0.012114946012015198)/0.0038388182617629  = -0.16340506919482353
-            (0.011487663648325479 - 0.0012099330842554573)/0.0038388182617629 = 2.677316263299785
-
+            = 0.011487663648325479 - 0.012113444660818078  = -0.0006257810124925996
+            = 0.011487663648325479 - 0.0012099344410196758 = 0.010277729207305804
+            = 0.011487663648325479 - 0.012125539968552874  = -0.0006378763202273957
+            = 0.011487663648325479 - 0.0012102354919246037 = 0.010277428156400875
+            = 0.011487663648325479 - 0.011351854061429653   = 0.00013580958689582596
+        total_profit_percentage = (1-(close_value/open_value)) * leverage
+            (1-(0.012113444660818078 /0.011487663648325479))*3  = -0.16342252828332549
+            (1-(0.0012099344410196758/0.011487663648325479))*3  = 2.6840259748040123
+            (1-(0.012125539968552874 /0.011487663648325479))*3  = -0.16658121435868578
+            (1-(0.0012102354919246037/0.011487663648325479))*3  = 2.68394735544829
+            (1-(0.011351854061429653/0.011487663648325479))*3    = 0.03546663387440563
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -588,34 +594,36 @@ def test_calc_profit_short(market_short_order, market_exit_short_order, fee):
     # Custom closing rate and regular fee rate
 
     # Higher than open rate
-    assert trade.calc_profit(rate=0.00004374, interest_rate=0.0005) == round(-0.00061973, 8)
+    assert trade.calc_profit(
+        rate=0.00004374, interest_rate=0.0005) == round(-0.0006257810124925996, 8)
     assert trade.calc_profit_ratio(
-        rate=0.00004374, interest_rate=0.0005) == round(-0.16143779115744006, 8)
+        rate=0.00004374, interest_rate=0.0005) == round(-0.16342252828332549, 8)
 
     # Lower than open rate
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
-    assert trade.calc_profit(rate=0.00000437, interest_rate=0.00025) == round(0.01027826, 8)
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
+    assert trade.calc_profit(rate=0.00000437, interest_rate=0.00025) == round(
+        0.010277729207305804, 8)
     assert trade.calc_profit_ratio(
-        rate=0.00000437, interest_rate=0.00025) == round(2.677453699564163, 8)
+        rate=0.00000437, interest_rate=0.00025) == round(2.6840259748040123, 8)
 
     # Custom closing rate and custom fee rate
     # Higher than open rate
     assert trade.calc_profit(rate=0.00004374, fee=0.003,
-                             interest_rate=0.0005) == round(-0.00062728, 8)
+                             interest_rate=0.0005) == round(-0.0006378763202273957, 8)
     assert trade.calc_profit_ratio(rate=0.00004374, fee=0.003,
-                                   interest_rate=0.0005) == round(-0.16340506919482353, 8)
+                                   interest_rate=0.0005) == round(-0.16658121435868578, 8)
 
     # Lower than open rate
     trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
     assert trade.calc_profit(rate=0.00000437, fee=0.003,
-                             interest_rate=0.00025) == round(0.01027773, 8)
+                             interest_rate=0.00025) == round(0.010277428156400875, 8)
     assert trade.calc_profit_ratio(rate=0.00000437, fee=0.003,
-                                   interest_rate=0.00025) == round(2.677316263299785, 8)
+                                   interest_rate=0.00025) == round(2.68394735544829, 8)
 
-    # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
+    # Test when we apply a exit short order.
     trade.update(market_exit_short_order)
-    assert trade.calc_profit() == round(0.00014148, 8)
-    assert trade.calc_profit_ratio() == round(0.03685505, 8)
+    assert trade.calc_profit(rate=0.00004099) == round(0.00013580958689582596, 8)
+    assert trade.calc_profit_ratio() == round(0.03546663387440563, 8)
 
     # Test with a custom fee rate on the close trade
     # assert trade.calc_profit(fee=0.003) == 0.00006163
@@ -769,4 +777,4 @@ def test_get_best_pair_short(fee):
     res = Trade.get_best_pair()
     assert len(res) == 2
     assert res[0] == 'DOGE/BTC'
-    assert res[1] == 0.17524390243902502
+    assert res[1] == 0.1713156134055116

@@ -27,11 +27,11 @@ def test_interest_kraken_lev(market_lev_buy_order, fee):
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
                         5 hours = 5/4
 
-        interest: borrowed * interest_rate * time-periods
-                = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 base
-                = 0.0075414886436454 * 0.00025 * 5/4 = 2.3567152011391876e-06 base
-                = 0.0150829772872908 * 0.0005 * 5/4 = 9.42686080455675e-06 base
-                = 0.0150829772872908 * 0.00025 * 1 = 3.7707443218227e-06 base
+        interest: borrowed * interest_rate * ceil(1 + time-periods)
+                = 0.0075414886436454 * 0.0005  * ceil(2)   = 7.5414886436454e-06 base
+                = 0.0075414886436454 * 0.00025 * ceil(9/4) = 5.65611648273405e-06 base
+                = 0.0150829772872908 * 0.0005  * ceil(9/4) = 2.26244659309362e-05 base
+                = 0.0150829772872908 * 0.00025 * ceil(2)   = 7.5414886436454e-06 base
     """
 
     trade = Trade(
@@ -48,19 +48,17 @@ def test_interest_kraken_lev(market_lev_buy_order, fee):
         interest_mode=InterestMode.HOURSPER4
     )
 
-    # 10 minutes round up to 4 hours evenly on kraken so we can predict the exact value
-    assert float(trade.calculate_interest()) == 3.7707443218227e-06
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
-    # All trade > 5 hours will vary slightly due to execution time and interest calculated
+    assert float(trade.calculate_interest()) == 7.5414886436454e-06
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 11)
-                 ) == round(2.3567152011391876e-06, 11)
+                 ) == round(5.65611648273405e-06, 11)
 
     trade = Trade(
         pair='ETH/BTC',
         stake_amount=0.0037707443218227,
         amount=459.95905365,
         open_rate=0.00001099,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='kraken',
@@ -70,9 +68,10 @@ def test_interest_kraken_lev(market_lev_buy_order, fee):
     )
 
     assert float(round(trade.calculate_interest(), 11)
-                 ) == round(9.42686080455675e-06, 11)
+                 ) == round(2.26244659309362e-05, 11)
     trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
-    assert float(trade.calculate_interest(interest_rate=0.00025)) == 3.7707443218227e-06
+    trade.interest_rate = 0.00025
+    assert float(trade.calculate_interest(interest_rate=0.00025)) == 7.5414886436454e-06
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -116,7 +115,7 @@ def test_interest_binance_lev(market_lev_buy_order, fee):
     )
     # 10 minutes round up to 4 hours evenly on kraken so we can predict the them more accurately
     assert round(float(trade.calculate_interest()), 22) == round(4.166666666344583e-08, 22)
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
     # All trade > 5 hours will vary slightly due to execution time and interest calculated
     assert float(round(trade.calculate_interest(interest_rate=0.00025), 14)
                  ) == round(1.0416666665861459e-07, 14)
@@ -126,7 +125,7 @@ def test_interest_binance_lev(market_lev_buy_order, fee):
         stake_amount=0.0009999999999226999,
         amount=459.95905365,
         open_rate=0.00001099,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -178,7 +177,7 @@ def test_calc_open_trade_value_lev(market_lev_buy_order, fee):
         borrowed: 0.0075414886436454 base
         time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
         interest: borrowed * interest_rate * time-periods
-            = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 crypto
+            = 0.0075414886436454 * 0.0005 * 1 = 7.5414886436454e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
             = 0.01134051354788177
@@ -243,7 +242,7 @@ def test_calc_open_close_trade_price_lev(limit_lev_buy_order, limit_lev_sell_ord
         stake_amount=0.0009999999999226999,
         open_rate=0.01,
         amount=5,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -275,23 +274,20 @@ def test_trade_close_lev(fee):
         stake_amount: 0.5
         borrowed: 1 base
         time-periods: 5/4 periods of 4hrs
-        interest: borrowed * interest_rate * time-periods
-                    = 1 * 0.0005 * 5/4 = 0.000625 crypto
+        interest: borrowed * interest_rate * ceil(1 + time-periods)
+                    = 1 * 0.0005 * ceil(9/4) = 0.0015 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (15 * 0.1) + (15 * 0.1 * 0.0025)
             = 1.50375
         close_value: (amount * close_rate) + (amount * close_rate * fee) - interest
-            = (15 * 0.2) - (15 * 0.2 * 0.0025) - 0.000625
-            = 2.9918750000000003
-        stake_value: (amount/lev * open_rate) + (amount/lev * open_rate * fee)
-            = ((15/3) * 0.1) + ((15/3) * 0.1 * 0.0025)
-            = 0.50125
+            = (15 * 0.2) - (15 * 0.2 * 0.0025) - 0.0015
+            = 2.991
         total_profit = close_value - open_value
-            = 2.9918750000000003 - 1.50375
-            = 1.4881250000000001
-        total_profit_ratio = total_profit / stake_value
-            = 1.4881250000000001 / 0.50125
-            = 2.968827930174564
+            = 2.991 - 1.50375
+            = 1.4872500000000002
+        total_profit_ratio = ((close_value/open_value) - 1) * leverage
+            = ((2.991/1.50375) - 1) * 3
+            = 2.96708229426434
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -301,7 +297,7 @@ def test_trade_close_lev(fee):
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        open_date=datetime.utcnow() - timedelta(hours=5, minutes=0),
+        open_date=datetime.utcnow() - timedelta(hours=4, minutes=55),
         exchange='kraken',
         leverage=3.0,
         interest_rate=0.0005,
@@ -312,7 +308,7 @@ def test_trade_close_lev(fee):
     assert trade.is_open is True
     trade.close(0.2)
     assert trade.is_open is False
-    assert trade.close_profit == round(2.968827930174564, 8)
+    assert trade.close_profit == round(2.96708229426434, 8)
     assert trade.close_date is not None
 
     # TODO-mg: Remove these comments probably
@@ -337,19 +333,19 @@ def test_calc_close_trade_price_lev(market_lev_buy_order, market_lev_sell_order,
         amount: 91.99181073 * leverage(3) = 275.97543219 crypto
         stake_amount: 0.0037707443218227
         borrowed: 0.0075414886436454 base
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
+        time-periods: 10 minutes = 2
         interest: borrowed * interest_rate * time-periods
-            = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 crypto
+            = 0.0075414886436454 * 0.0005 * 2 = 7.5414886436454e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
             = 0.01134051354788177
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
-        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.0025) - 3.7707443218227e-06
-            = 0.003393252246819716
-        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.003) - 3.7707443218227e-06
-            = 0.003391549478403104
-        = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.005) - 3.7707443218227e-06
-            = 0.011455101767040435
+        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.0025) - 7.5414886436454e-06
+            = 0.0033894815024978933
+        = (275.97543219 * 0.00001234) - (275.97543219 * 0.00001234 * 0.003) -  7.5414886436454e-06
+            = 0.003387778734081281
+        = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.005) -  7.5414886436454e-06
+            = 0.011451331022718612
     """
     trade = Trade(
         pair='ETH/BTC',
@@ -367,12 +363,12 @@ def test_calc_close_trade_price_lev(market_lev_buy_order, market_lev_sell_order,
     trade.open_order_id = 'close_trade'
     trade.update(market_lev_buy_order)  # Buy @ 0.00001099
     # Get the close rate price with a custom close rate and a regular fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.003393252246819716)
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234), 0.0033894815024978933)
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.003391549478403104)
+    assert isclose(trade.calc_close_trade_value(rate=0.00001234, fee=0.003), 0.003387778734081281)
     # Test when we apply a Sell order, and ask price with a custom fee rate
     trade.update(market_lev_sell_order)
-    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011455101767040435)
+    assert isclose(trade.calc_close_trade_value(fee=0.005), 0.011451331022718612)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -394,6 +390,9 @@ def test_update_limit_order_lev(limit_lev_buy_order, limit_lev_sell_order, fee, 
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (272.97543219 * 0.00001099) + (272.97543219 * 0.00001099 * 0.0025)
             = 0.0030074999997675204
+        stake_value = (amount/lev * open_rate) + (amount/lev * open_rate * fee)
+            = (272.97543219 * 0.00001099) + (272.97543219 * 0.00001099 * 0.0025)
+            = 0.0010024999999225066
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee)
             = (272.97543219 * 0.00001173) - (272.97543219 * 0.00001173 * 0.0025)
             = 0.003193996815039728
@@ -460,24 +459,23 @@ def test_update_market_order_lev(market_lev_buy_order, market_lev_sell_order, fe
         amount: = 275.97543219 crypto
         stake_amount: 0.0037707443218227
         borrowed: 0.0075414886436454 base
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-        interest: borrowed * interest_rate * time-periods
-                    = 0.0075414886436454 * 0.0005 * 1 = 3.7707443218227e-06 crypto
+        interest: borrowed * interest_rate * 1+ceil(hours)
+                    = 0.0075414886436454 * 0.0005 * (1+ceil(1)) = 7.5414886436454e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
             = 0.01134051354788177
-        close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee)
-            = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025)
-            = 0.011487663648325479
+        close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
+        = (275.97543219 * 0.00004173) - (275.97543219 * 0.00004173 * 0.0025) - 7.5414886436454e-06
+            = 0.011480122159681833
         stake_value: (amount/lev * open_rate) + (amount/lev * open_rate * fee)
             = (275.97543219/3 * 0.00004099) + (275.97543219/3 * 0.00004099 * 0.0025)
             = 0.0037801711826272568
-        total_profit = close_value - open_value - interest
-            = 0.011487663648325479 - 0.01134051354788177 - 3.7707443218227e-06
-            = 0.0001433793561218866
-        total_profit_percentage = total_profit / stake_value
-            = 0.0001433793561218866 / 0.0037801711826272568
-            = 0.03792932890997717
+        total_profit = close_value - open_value
+            = 0.011480122159681833 - 0.01134051354788177
+            = 0.00013960861180006392
+        total_profit_percentage = ((close_value/open_value) - 1) * leverage
+            = ((0.011480122159681833 / 0.01134051354788177)-1) * 3
+            = 0.036931822675563275
     """
     trade = Trade(
         id=1,
@@ -512,7 +510,7 @@ def test_update_market_order_lev(market_lev_buy_order, market_lev_sell_order, fe
     trade.update(market_lev_sell_order)
     assert trade.open_order_id is None
     assert trade.close_rate == 0.00004173
-    assert trade.close_profit == round(0.03792932890997717, 8)
+    assert trade.close_profit == round(0.036931822675563275, 8)
     assert trade.close_date is not None
     # TODO: The amount should maybe be the opening amount + the interest
     # TODO: Uncomment the next assert and make it work.
@@ -552,39 +550,38 @@ def test_calc_profit_lev(market_lev_buy_order, market_lev_sell_order, fee):
         stake_amount: 0.0037707443218227
         amount: 91.99181073 * leverage(3) = 275.97543219 crypto
         borrowed: 0.0075414886436454 base
-        time-periods: 10 minutes(rounds up to 1 time-period of 4hrs)
-                        5 hours = 5/4
+        hours: 1/6, 5 hours
 
-        interest: borrowed * interest_rate * time-periods
-            = 0.0075414886436454 * 0.0005 * 1    = 3.7707443218227e-06 crypto
-            = 0.0075414886436454 * 0.00025 * 5/4 = 2.3567152011391876e-06 crypto
-            = 0.0075414886436454 * 0.0005 * 5/4  = 4.713430402278375e-06 crypto
-            = 0.0075414886436454 * 0.00025 * 1   = 1.88537216091135e-06 crypto
+        interest: borrowed * interest_rate * ceil(1+hours/4)
+            = 0.0075414886436454 * 0.0005  * ceil(1+((1/6)/4))  = 7.5414886436454e-06 crypto
+            = 0.0075414886436454 * 0.00025 * ceil(1+(5/4))      = 5.65611648273405e-06 crypto
+            = 0.0075414886436454 * 0.0005  * ceil(1+(5/4))      = 1.13122329654681e-05 crypto
+            = 0.0075414886436454 * 0.00025 * ceil(1+((1/6)/4))  = 3.7707443218227e-06 crypto
         open_value: (amount * open_rate) + (amount * open_rate * fee)
             = (275.97543219 * 0.00004099) + (275.97543219 * 0.00004099 * 0.0025)
             = 0.01134051354788177
         close_value: (amount_closed * close_rate) - (amount_closed * close_rate * fee) - interest
-        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.0025) - 3.7707443218227e-06
-        = 0.01479007168225405
-        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.0025) - 2.3567152011391876e-06
-        = 0.001200640891872485
-        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.003) - 4.713430402278375e-06
-        = 0.014781713536310649
-        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.003) - 1.88537216091135e-06
-        = 0.0012005092285933775
+        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.0025) - 7.5414886436454e-06
+        = 0.014786300937932227
+        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.0025) - 5.65611648273405e-06
+        = 0.0011973414905908902
+        (275.97543219 * 0.00005374) - (275.97543219 * 0.00005374 * 0.003) - 1.13122329654681e-05
+        = 0.01477511473374746
+        (275.97543219 * 0.00000437) - (275.97543219 * 0.00000437 * 0.003) - 3.7707443218227e-06
+        = 0.0011986238564324662
         stake_value: (amount/lev * open_rate) + (amount/lev * open_rate * fee)
             = (275.97543219/3 * 0.00004099) + (275.97543219/3 * 0.00004099 * 0.0025)
             = 0.0037801711826272568
         total_profit = close_value - open_value
-            = 0.01479007168225405  - 0.01134051354788177  = 0.003449558134372281
-            = 0.001200640891872485 - 0.01134051354788177  = -0.010139872656009285
-            = 0.014781713536310649  - 0.01134051354788177 = 0.0034411999884288794
-            = 0.0012005092285933775 - 0.01134051354788177 = -0.010140004319288392
-        total_profit_percentage = total_profit / stake_value
-            0.003449558134372281/0.0037801711826272568 = 0.9125401913610705
-            -0.010139872656009285/0.0037801711826272568 = -2.682384518089991
-            0.0034411999884288794/0.0037801711826272568 = 0.9103291417710906
-            -0.010140004319288392/0.0037801711826272568 = -2.6824193480679854
+            = 0.014786300937932227  - 0.01134051354788177  = 0.0034457873900504577
+            = 0.0011973414905908902 - 0.01134051354788177  = -0.01014317205729088
+            = 0.01477511473374746  - 0.01134051354788177   = 0.00343460118586569
+            = 0.0011986238564324662 - 0.01134051354788177  = -0.010141889691449303
+        total_profit_percentage = ((close_value/open_value) - 1) * leverage
+            ((0.014786300937932227/0.01134051354788177) - 1) * 3  = 0.9115426851266561
+            ((0.0011973414905908902/0.01134051354788177) - 1) * 3 = -2.683257336045103
+            ((0.01477511473374746/0.01134051354788177) - 1) * 3   = 0.908583505860866
+            ((0.0011986238564324662/0.01134051354788177) - 1) * 3 = -2.6829181011851926
 
     """
     trade = Trade(
@@ -606,35 +603,35 @@ def test_calc_profit_lev(market_lev_buy_order, market_lev_sell_order, fee):
 
     # Higher than open rate
     assert trade.calc_profit(rate=0.00005374, interest_rate=0.0005) == round(
-        0.003449558134372281, 8)
+        0.0034457873900504577, 8)
     assert trade.calc_profit_ratio(
-        rate=0.00005374, interest_rate=0.0005) == round(0.9125401913610705, 8)
+        rate=0.00005374, interest_rate=0.0005) == round(0.9115426851266561, 8)
 
     # Lower than open rate
-    trade.open_date = datetime.utcnow() - timedelta(hours=5, minutes=0)
+    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
     assert trade.calc_profit(
-        rate=0.00000437, interest_rate=0.00025) == round(-0.010139872656009285, 8)
+        rate=0.00000437, interest_rate=0.00025) == round(-0.01014317205729088, 8)
     assert trade.calc_profit_ratio(
-        rate=0.00000437, interest_rate=0.00025) == round(-2.682384518089991, 8)
+        rate=0.00000437, interest_rate=0.00025) == round(-2.683257336045103, 8)
 
     # Custom closing rate and custom fee rate
     # Higher than open rate
     assert trade.calc_profit(rate=0.00005374, fee=0.003,
-                             interest_rate=0.0005) == round(0.0034411999884288794, 8)
+                             interest_rate=0.0005) == round(0.00343460118586569, 8)
     assert trade.calc_profit_ratio(rate=0.00005374, fee=0.003,
-                                   interest_rate=0.0005) == round(0.9103291417710906, 8)
+                                   interest_rate=0.0005) == round(0.908583505860866, 8)
 
     # Lower than open rate
     trade.open_date = datetime.utcnow() - timedelta(hours=0, minutes=10)
     assert trade.calc_profit(rate=0.00000437, fee=0.003,
-                             interest_rate=0.00025) == round(-0.010140004319288392, 8)
+                             interest_rate=0.00025) == round(-0.010141889691449303, 8)
     assert trade.calc_profit_ratio(rate=0.00000437, fee=0.003,
-                                   interest_rate=0.00025) == round(-2.6824193480679854, 8)
+                                   interest_rate=0.00025) == round(-2.6829181011851926, 8)
 
     # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
     trade.update(market_lev_sell_order)
-    assert trade.calc_profit() == round(0.0001433793561218866, 8)
-    assert trade.calc_profit_ratio() == round(0.03792932890997717, 8)
+    assert trade.calc_profit() == round(0.00013960861180006392, 8)
+    assert trade.calc_profit_ratio() == round(0.036931822675563275, 8)
 
     # Test with a custom fee rate on the close trade
     # assert trade.calc_profit(fee=0.003) == 0.00006163
