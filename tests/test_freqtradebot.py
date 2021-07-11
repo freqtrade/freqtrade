@@ -413,6 +413,26 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
 
     patch_get_signal(freqtrade)
 
+    assert freqtrade.create_trade('ETH/BTC')
+
+
+def test_create_trade_zero_stake_amount(default_conf, ticker, limit_buy_order_open,
+                                        fee, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    buy_mock = MagicMock(return_value=limit_buy_order_open)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        buy=buy_mock,
+        get_fee=fee,
+    )
+
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.config['stake_amount'] = 0
+
+    patch_get_signal(freqtrade)
+
     assert not freqtrade.create_trade('ETH/BTC')
 
 

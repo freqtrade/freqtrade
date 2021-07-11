@@ -521,6 +521,37 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
+### Stake size management
+
+It is possible to manage your risk by reducing or increasing or reducing stake amount when placing a new trade.
+
+```python
+class AwesomeStrategy(IStrategy):
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        current_candle = dataframe.iloc[-1].squeeze()
+
+        if current_candle['fastk_rsi_1h'] > current_candle['fastd_rsi_1h']:
+            if self.config['stake_amount'] == 'unlimited':
+                # Use entire available wallet during favorable conditions when in compounding mode.
+                return max_stake
+            else:
+                # Compound profits during favorable conditions instead of using a static stake.
+                return self.wallets.get_total_stake_amount() / self.config['max_open_trades']
+
+        # Use default stake amount.
+        return proposed_stake
+```
+
+!!! Tip
+    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed, as returned value will be clamped to supported range and this acton will be logged.
+
+!!! Tip
+    Returning `0` or `None` will prevent trades from being placed.
+
 ---
 
 ## Derived strategies

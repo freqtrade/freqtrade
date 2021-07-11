@@ -424,16 +424,10 @@ class FreqtradeBot(LoggingMixin):
 
         if buy and not sell:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
-            if not stake_amount:
-                logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
-                return False
-
-            logger.info(f"Buy signal found: about create a new trade for {pair} with stake_amount: "
-                        f"{stake_amount} ...")
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
-                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+               (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
                     return self.execute_buy(pair, stake_amount)
                 else:
@@ -488,12 +482,21 @@ class FreqtradeBot(LoggingMixin):
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, buy_limit_requested,
                                                                    self.strategy.stoploss)
-        if min_stake_amount is not None and min_stake_amount > stake_amount:
-            logger.warning(
-                f"Can't open a new trade for {pair}: stake amount "
-                f"is too small ({stake_amount} < {min_stake_amount})"
-            )
+
+        if not self.edge:
+            max_stake_amount = self.wallets.get_available_stake_amount()
+            stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
+                                                 default_retval=None)(
+                pair=pair, current_time=datetime.now(timezone.utc),
+                current_rate=buy_limit_requested, proposed_stake=stake_amount,
+                min_stake=min_stake_amount, max_stake=max_stake_amount)
+        stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
+
+        if not stake_amount:
             return False
+
+        logger.info(f"Buy signal found: about create a new trade for {pair} with stake_amount: "
+                    f"{stake_amount} ...")
 
         amount = stake_amount / buy_limit_requested
         order_type = self.strategy.order_types['buy']
