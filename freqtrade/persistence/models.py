@@ -651,7 +651,6 @@ class LocalTrade():
         return self.interest_mode(borrowed=borrowed, rate=rate, hours=hours)
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
-
                                fee: Optional[float] = None,
                                interest_rate: Optional[float] = None) -> float:
         """
@@ -719,7 +718,6 @@ class LocalTrade():
             If interest_rate is not set self.interest_rate will be used
         :return: profit ratio as float
         """
-
         close_trade_value = self.calc_close_trade_value(
             rate=(rate or self.close_rate),
             fee=(fee or self.fee_close),
