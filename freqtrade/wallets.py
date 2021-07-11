@@ -158,7 +158,6 @@ class Wallets:
         (<open_trade stakes> + free amount) * tradable_balance_ratio - <open_trade stakes>
         """
 
-
         free = self.get_free(self._config['stake_currency'])
         return min(self.get_total_stake_amount() - Trade.total_open_trades_stakes(), free)
 

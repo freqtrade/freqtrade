@@ -52,6 +52,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `stake_currency` | **Required.** Crypto-currency used for trading. <br> **Datatype:** String
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float or `"unlimited"`.
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
+| `available_capital` | Available starting capital for the bot. Useful when running multiple bots on the same exchange account.[More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float.
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
@@ -192,8 +193,24 @@ You can configure the "untouched" amount by using the `tradable_balance_ratio` s
 
 For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance. The rest of the wallet is untouched by the trades.
 
+!!! Danger
+    This setting should **not** be used when running multiple bots on the same exchange. Please look at [Available Capital to the bot](#assign-available-capital) instead.
+
 !!! Warning
     The `tradable_balance_ratio` setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with `tradable_balance_ratio=0.99` will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak, or by withdrawing balance).
+
+#### Assign available Capital
+
+To fully utilize compounding profits when using multiple bots on the same exchange account, you'll want to limit each bot to a certain starting balance.
+This can be accomplished by setting `available_capital` to the desired starting balance.
+
+Assuming your account has 10.000 USDT and you want to run 2 different strategies on this exchange.
+You'd set `available_capital=5000` - granting each bot an initial capital of 5000 USDT.
+The bot will then split this starting balance equally into `max_open_trades` buckets.
+Profitable trades will result in increased stake-sizes for this bot - without affecting stake-sizes of the other bot.
+
+!!! Warning "Incompatible with `tradable_balance_ratio`"
+    Setting this option will replace any configuration of `tradable_balance_ratio`.
 
 #### Amend last stake amount
 
