@@ -9,7 +9,7 @@ import pytest
 from freqtrade.misc import (decimals_per_coin, file_dump_json, file_load_json, format_ms_time,
                             pair_to_filename, plural, render_template,
                             render_template_with_fallback, round_coin_value, safe_value_fallback,
-                            safe_value_fallback2, shorten_date)
+                            safe_value_fallback2, shorten_date, parse_db_uri_for_logging)
 
 
 def test_decimals_per_coin():
@@ -179,3 +179,18 @@ def test_render_template_fallback(mocker):
     )
     assert isinstance(val, str)
     assert 'if self.dp' in val
+
+def test_parse_db_uri_for_logging() -> None:
+    postgresql_conn_uri = "postgresql+psycopg2://scott123:scott123@host/dbname"
+    mariadb_conn_uri = "mariadb+mariadbconnector://app_user:Password123!@127.0.0.1:3306/company"
+    mysql_conn_uri = "mysql+pymysql://user:pass@some_mariadb/dbname?charset=utf8mb4"
+    sqlite_conn_uri = "sqlite:////freqtrade/user_data/tradesv3.sqlite"
+    censored_pwd = "*****"
+
+    get_pwd = lambda x: x.split(':')[2].split('@')[0]
+
+    assert get_pwd(parse_db_uri_for_logging(postgresql_conn_uri)) == censored_pwd
+    assert get_pwd(parse_db_uri_for_logging(mariadb_conn_uri)) == censored_pwd
+    assert get_pwd(parse_db_uri_for_logging(mysql_conn_uri)) == censored_pwd
+    assert sqlite_conn_uri == parse_db_uri_for_logging(sqlite_conn_uri)
+
