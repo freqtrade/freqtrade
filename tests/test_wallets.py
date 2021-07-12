@@ -170,3 +170,22 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     freqtrade.config['max_open_trades'] = 0
     result = freqtrade.wallets.get_trade_stake_amount('NEO/USDT')
     assert result == 0
+
+
+@pytest.mark.parametrize('stake_amount,min_stake_amount,max_stake_amount,expected', [
+    (22, 11, 50, 22),
+    (100, 11, 500, 100),
+    (1000, 11, 500, 500),  # Above max-stake
+    (20, 15, 10, 0),  # Minimum stake > max-stake
+    (1, 11, 100, 11),  # Below min stake
+    (1, 15, 10, 0),  # Below min stake and min_stake > max_stake
+
+])
+def test__validate_stake_amount(mocker, default_conf,
+                                stake_amount, min_stake_amount, max_stake_amount, expected):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    mocker.patch("freqtrade.wallets.Wallets.get_available_stake_amount",
+                 return_value=max_stake_amount)
+    res = freqtrade.wallets._validate_stake_amount('XRP/USDT', stake_amount, min_stake_amount)
+    assert res == expected
