@@ -227,4 +227,4 @@ def parse_db_uri_for_logging(uri: str):
     if not parsed_db_uri.netloc:  # No need for censoring as no password was provided
         return uri
     pwd = parsed_db_uri.netloc.split(':')[1].split('@')[0]
-    return parsed_db_uri.geturl().replace(f':{pwd}@', ':****@')
+    return parsed_db_uri.geturl().replace(f':{pwd}@', ':*****@')
