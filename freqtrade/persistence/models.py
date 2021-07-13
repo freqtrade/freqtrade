@@ -133,7 +133,6 @@ class Order(_DECL_BASE):
     order_update_date = Column(DateTime, nullable=True)
 
     leverage = Column(Float, nullable=True, default=1.0)
-    is_short = Column(Boolean, nullable=True, default=False)
 
     def __repr__(self):
 
@@ -159,7 +158,7 @@ class Order(_DECL_BASE):
         self.remaining = order.get('remaining', self.remaining)
         self.cost = order.get('cost', self.cost)
         self.leverage = order.get('leverage', self.leverage)
-        # TODO-mg: is_short?
+
         if 'timestamp' in order and order['timestamp'] is not None:
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
@@ -301,44 +300,42 @@ class LocalTrade():
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        self.set_liquidation_price(self.liquidation_price)
+        if self.liquidation_price:
+            self.set_liquidation_price(self.liquidation_price)
         self.recalc_open_trade_value()
-
-    def set_stop_loss_helper(self, stop_loss: Optional[float], liquidation_price: Optional[float]):
-        """Helper function for set_liquidation_price and set_stop_loss"""
-        # Stoploss would be better as a computed variable,
-        # but that messes up the database so it might not be possible
-
-        if liquidation_price is not None:
-            if stop_loss is not None:
-                if self.is_short:
-                    self.stop_loss = min(stop_loss, liquidation_price)
-                else:
-                    self.stop_loss = max(stop_loss, liquidation_price)
-            else:
-                self.stop_loss = liquidation_price
-                self.initial_stop_loss = liquidation_price
-            self.liquidation_price = liquidation_price
-        else:
-            # programmming error check: 1 of liqudication_price or stop_loss must be set
-            assert stop_loss is not None
-            if not self.stop_loss:
-                self.initial_stop_loss = stop_loss
-            self.stop_loss = stop_loss
 
     def set_stop_loss(self, stop_loss: float):
         """
             Method you should use to set self.stop_loss.
             Assures stop_loss is not passed the liquidation price
         """
-        self.set_stop_loss_helper(stop_loss=stop_loss, liquidation_price=self.liquidation_price)
+        if self.liquidation_price is not None:
+            if self.is_short:
+                sl = min(stop_loss, self.liquidation_price)
+            else:
+                sl = max(stop_loss, self.liquidation_price)
+        else:
+            sl = stop_loss
+
+        if not self.stop_loss:
+            self.initial_stop_loss = sl
+        self.stop_loss = sl
 
     def set_liquidation_price(self, liquidation_price: float):
         """
             Method you should use to set self.liquidation price.
             Assures stop_loss is not passed the liquidation price
         """
-        self.set_stop_loss_helper(stop_loss=self.stop_loss, liquidation_price=liquidation_price)
+        if self.stop_loss is not None:
+            if self.is_short:
+                self.stop_loss = min(self.stop_loss, liquidation_price)
+            else:
+                self.stop_loss = max(self.stop_loss, liquidation_price)
+        else:
+            self.initial_stop_loss = liquidation_price
+            self.stop_loss = liquidation_price
+
+        self.liquidation_price = liquidation_price
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
