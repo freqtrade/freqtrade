@@ -17,14 +17,12 @@ class InterestMode(Enum):
     HOURSPER4 = "HOURSPER4"  # Hours per 4 hour segment
     NONE = "NONE"
 
-    def __call__(self, *args, **kwargs):
-
-        borrowed, rate, hours = kwargs["borrowed"], kwargs["rate"], kwargs["hours"]
+    def __call__(self, borrowed: Decimal, rate: Decimal, hours: Decimal):
 
         if self.name == "HOURSPERDAY":
             return borrowed * rate * ceil(hours)/twenty_four
         elif self.name == "HOURSPER4":
-            # Probably rounded based on https://kraken-fees-calculator.github.io/
+            # Rounded based on https://kraken-fees-calculator.github.io/
             return borrowed * rate * (1+ceil(hours/four))
         else:
             raise OperationalException("Leverage not available on this exchange with freqtrade")

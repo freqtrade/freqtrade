@@ -418,6 +418,7 @@ def leverage_order_sell():
         'amount': 123.0,
         'filled': 123.0,
         'remaining': 0.0,
+        'leverage': 5.0
     }
 
 
