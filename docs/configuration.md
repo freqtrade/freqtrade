@@ -194,7 +194,7 @@ You can configure the "untouched" amount by using the `tradable_balance_ratio` s
 For example, if you have 10 ETH available in your wallet on the exchange and `tradable_balance_ratio=0.5` (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as available balance. The rest of the wallet is untouched by the trades.
 
 !!! Danger
-    This setting should **not** be used when running multiple bots on the same exchange. Please look at [Available Capital to the bot](#assign-available-capital) instead.
+    This setting should **not** be used when running multiple bots on the same account. Please look at [Available Capital to the bot](#assign-available-capital) instead.
 
 !!! Warning
     The `tradable_balance_ratio` setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with `tradable_balance_ratio=0.99` will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak, or by withdrawing balance).
