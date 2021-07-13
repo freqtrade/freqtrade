@@ -24,6 +24,8 @@ class PairListManager():
         self._config = config
         self._whitelist = self._config['exchange'].get('pair_whitelist')
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        # TODO-mg: Add short whitelist and blacklist
+        # TODO-mg: Handle filtering of coins which can trade at min leverage
         self._pairlist_handlers: List[IPairList] = []
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):

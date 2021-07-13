@@ -71,6 +71,8 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     # Kept for future deprecated / moved settings
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
     #                            'experimental', 'use_sell_signal')
+    # TODO-mg: Perhaps update this to change sell_signal to exit_signal
+    # TODO-mg: and buy_signal to enter signal, and maybe put it back in ask_strategy/short_strategy
     process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
                                None, 'use_sell_signal')
     process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
@@ -108,5 +110,5 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             raise OperationalException(
                 "Both 'timeframe' and 'ticker_interval' detected."
                 "Please remove 'ticker_interval' from your configuration to continue operating."
-                )
+            )
         config['timeframe'] = config['ticker_interval']

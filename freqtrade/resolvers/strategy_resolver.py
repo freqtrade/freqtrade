@@ -61,6 +61,7 @@ class StrategyResolver(IResolver):
             strategy.stoploss = params.get('stoploss', {}).get('stoploss', strategy.stoploss)
             trailing = params.get('trailing', {})
             strategy.trailing_stop = trailing.get('trailing_stop', strategy.trailing_stop)
+            # TODO-mg: Check if trailing_stop_positive will work with shorts
             strategy.trailing_stop_positive = trailing.get('trailing_stop_positive',
                                                            strategy.trailing_stop_positive)
             strategy.trailing_stop_positive_offset = trailing.get(
@@ -71,6 +72,7 @@ class StrategyResolver(IResolver):
         # Set attributes
         # Check if we need to override configuration
         #             (Attribute name,                    default,     subkey)
+        # TODO-mg: Add short and leverage properties
         attributes = [("minimal_roi",                     {"0": 10.0}),
                       ("timeframe",                       None),
                       ("stoploss",                        None),
@@ -198,6 +200,7 @@ class StrategyResolver(IResolver):
                                                  add_source=True,
                                                  kwargs={'config': config},
                                                  )
+        # TODO-mg: populate short_trend and exit_short_trend
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)

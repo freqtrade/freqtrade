@@ -47,6 +47,7 @@ class StaticPairList(IPairList):
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: List of pairs
+        #TODO-mg: Add short_whitelist
         """
         if self._allow_inactive:
             return self.verify_whitelist(

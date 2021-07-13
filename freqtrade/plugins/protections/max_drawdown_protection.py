@@ -36,6 +36,7 @@ class MaxDrawdown(IProtection):
         """
         LockReason to use
         """
+        # TODO-mg: < for shorts?
         return (f'{drawdown} > {self._max_allowed_drawdown} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
@@ -59,6 +60,7 @@ class MaxDrawdown(IProtection):
         except ValueError:
             return False, None, None
 
+        # TODO-mg: < for shorts?
         if drawdown > self._max_allowed_drawdown:
             self.log_once(
                 f"Trading stopped due to Max Drawdown {drawdown:.2f} > {self._max_allowed_drawdown}"

@@ -15,6 +15,7 @@ class RPCManager:
     """
     Class to manage RPC objects (Telegram, Slack, ...)
     """
+    # TODO-mg: Add new configuration options introduced with leveraged/short trading
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
         self.registered_modules: List[RPCHandler] = []

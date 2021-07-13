@@ -114,6 +114,8 @@ class IPairList(LoggingMixin, ABC):
 
         return pairlist
 
+    # TODO-mg: verify_short_whitelist, verify_short_blacklist?
+
     def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.

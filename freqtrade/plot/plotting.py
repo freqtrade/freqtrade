@@ -35,7 +35,7 @@ def init_plotscript(config, markets: List, startup_candles: int = 0):
     Initialize objects needed for plotting
     :return: Dict with candle (OHLCV) data, trades and pairs
     """
-
+    # TODO-mg: Add short whitelist
     if "pairs" in config:
         pairs = expand_pairlist(config['pairs'], markets)
     else:
@@ -192,10 +192,12 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
+        # TODO-mg: update to exit_reason
         trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)
+        # TODO-mg: Update to Trade enter
         trade_buys = go.Scatter(
             x=trades["open_date"],
             y=trades["open_rate"],
@@ -210,7 +212,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
 
             )
         )
-
+        # TODO-mg: Update to trade_exits, Exit - Profit
         trade_sells = go.Scatter(
             x=trades.loc[trades['profit_ratio'] > 0, "close_date"],
             y=trades.loc[trades['profit_ratio'] > 0, "close_rate"],
@@ -224,6 +226,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
                 color='green'
             )
         )
+        # TODO-mg: Update to trade_exits_loss, Exit - Loss
         trade_sells_loss = go.Scatter(
             x=trades.loc[trades['profit_ratio'] <= 0, "close_date"],
             y=trades.loc[trades['profit_ratio'] <= 0, "close_rate"],
@@ -386,6 +389,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
+    # TODO-mg: Update buy to enter
     if 'buy' in data.columns:
         df_buy = data[data['buy'] == 1]
         if len(df_buy) > 0:
@@ -405,6 +409,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No buy-signals found.")
 
+    # TODO-mg: Update sell to exit
     if 'sell' in data.columns:
         df_sell = data[data['sell'] == 1]
         if len(df_sell) > 0:

@@ -17,6 +17,7 @@ logger.debug('Included module rpc.webhook ...')
 
 class Webhook(RPCHandler):
     """  This class handles all webhook communication """
+    # TODO-mg: Add short webhooks
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
         """
