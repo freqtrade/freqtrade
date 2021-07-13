@@ -575,6 +575,7 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.required_startup = 0
     backtesting.strategy.advise_buy = lambda a, m: frame
     backtesting.strategy.advise_sell = lambda a, m: frame
     backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss

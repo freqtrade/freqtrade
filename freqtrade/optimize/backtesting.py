@@ -15,7 +15,7 @@ from freqtrade.configuration import TimeRange, remove_credentials, validate_conf
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
-from freqtrade.data.converter import trim_dataframes
+from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import BacktestState, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -116,6 +116,9 @@ class Backtesting:
 
         self.wallets = Wallets(self.config, self.exchange, log=False)
 
+        self.timerange = TimeRange.parse_timerange(
+            None if self.config.get('timerange') is None else str(self.config.get('timerange')))
+
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
@@ -154,14 +157,11 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
-            timerange=timerange,
+            timerange=self.timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
@@ -174,11 +174,11 @@ class Backtesting:
                     f'({(max_date - min_date).days} days).')
 
         # Adjust startts forward if not enough data is available
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
-                                            self.required_startup, min_date)
+        self.timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
+                                                 self.required_startup, min_date)
 
         self.progress.set_new_value(1)
-        return data, timerange
+        return data, self.timerange
 
     def prepare_backtest(self, enable_protections):
         """
@@ -223,7 +223,9 @@ class Backtesting:
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
-
+            # Trim startup period from analyzed dataframe
+            df_analyzed = trim_dataframe(df_analyzed, self.timerange,
+                                         startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
@@ -537,14 +539,15 @@ class Backtesting:
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
-        preprocessed = trim_dataframes(preprocessed, timerange, self.required_startup)
+        preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
 
-        if not preprocessed:
+        if not preprocessed_tmp:
             raise OperationalException(
                 "No data left after adjusting for startup candles.")
 
-        min_date, max_date = history.get_timerange(preprocessed)
-
+        # Use preprocessed_tmp for date generation (the trimmed dataframe).
+        # Backtesting will re-trim the dataframes after buy/sell signal generation.
+        min_date, max_date = history.get_timerange(preprocessed_tmp)
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days).')
