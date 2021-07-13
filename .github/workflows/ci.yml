@@ -6,6 +6,7 @@ on:
       - master
       - stable
       - develop
+      - test_build_arm64
     tags:
   release:
     types: [published]
@@ -334,6 +335,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+
     steps:
     - uses: actions/checkout@v2
 
@@ -411,3 +413,31 @@ jobs:
         channel: '#notifications'
         url: ${{ secrets.SLACK_WEBHOOK }}
 
+
+  deploy_arm:
+    needs: [ deploy ]
+    # Only run on 64bit machines
+    runs-on: [self-hosted, linux, ARM64]
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
+      id: extract_branch
+
+    - name: Dockerhub login
+      env:
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      run: |
+        echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
+
+    - name: Build and test and push docker images
+      env:
+        IMAGE_NAME: freqtradeorg/freqtrade
+        BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+      run: |
+        build_helpers/publish_docker_arm64.sh
