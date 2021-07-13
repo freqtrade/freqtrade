@@ -556,7 +556,7 @@ You should also make sure to read the [Exchanges](exchanges.md) section of the d
 
 To use a proxy with freqtrade, add the kwarg `"aiohttp_trust_env"=true` to the `"ccxt_async_kwargs"` dict in the exchange section of the configuration.
 
-An example for this can be found in `config_full.json.example`
+An example for this can be found in `config_examples/config_full.example.json`
 
 ``` json
 "ccxt_async_config": {

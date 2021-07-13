@@ -28,7 +28,7 @@ from tests.conftest import log_has, log_has_re, patched_configuration_load_confi
 
 @pytest.fixture(scope="function")
 def all_conf():
-    config_file = Path(__file__).parents[1] / "config_full.json.example"
+    config_file = Path(__file__).parents[1] / "config_examples/config_full.example.json"
     conf = load_config_file(str(config_file))
     return conf
 
