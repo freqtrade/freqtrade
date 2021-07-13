@@ -51,7 +51,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     leverage = get_column_def(cols, 'leverage', '1.0')
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     liquidation_price = get_column_def(cols, 'liquidation_price', 'null')
-    is_short = get_column_def(cols, 'is_short', 'False')
+    # sqlite does not support literals for booleans
+    is_short = get_column_def(cols, 'is_short', '0')
     interest_mode = get_column_def(cols, 'interest_mode', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
@@ -149,17 +150,16 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
     leverage = get_column_def(cols, 'leverage', '1.0')
-    is_short = get_column_def(cols, 'is_short', 'False')
-    # TODO-mg: Should liquidation price go in here?
+    # is_short = get_column_def(cols, 'is_short', 'False')
+
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date, leverage, is_short)
+            order_date, order_filled_date, order_update_date, leverage)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date,
-            {leverage} leverage, {is_short} is_short
+            order_date, order_filled_date, order_update_date, {leverage} leverage
             from {table_back_name}
             """))
 
