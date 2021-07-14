@@ -67,12 +67,16 @@ class Profit(BaseModel):
     profit_closed_ratio_mean: float
     profit_closed_percent_sum: float
     profit_closed_ratio_sum: float
+    profit_closed_percent: float
+    profit_closed_ratio: float
     profit_closed_fiat: float
     profit_all_coin: float
     profit_all_percent_mean: float
     profit_all_ratio_mean: float
     profit_all_percent_sum: float
     profit_all_ratio_sum: float
+    profit_all_percent: float
+    profit_all_ratio: float
     profit_all_fiat: float
     trade_count: int
     closed_trade_count: int

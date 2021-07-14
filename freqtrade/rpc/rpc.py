@@ -397,7 +397,12 @@ class RPC:
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
         profit_all_ratio_mean = float(mean(profit_all_ratio) if profit_all_ratio else 0.0)
+        # Doing the sum is not right - overall profit needs to be based on initial capital
         profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
+        starting_balance = self._freqtrade.wallets.get_starting_balance()
+        profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
+        profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
+
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -411,14 +416,18 @@ class RPC:
             'profit_closed_coin': profit_closed_coin_sum,
             'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
             'profit_closed_ratio_mean': profit_closed_ratio_mean,
-            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),
-            'profit_closed_ratio_sum': profit_closed_ratio_sum,
+            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),  # Deprecated
+            'profit_closed_ratio_sum': profit_closed_ratio_sum,  # Deprecated
+            'profit_closed_ratio': profit_closed_ratio_fromstart,
+            'profit_closed_percent': round(profit_closed_ratio_fromstart * 100, 2),
             'profit_closed_fiat': profit_closed_fiat,
             'profit_all_coin': profit_all_coin_sum,
             'profit_all_percent_mean': round(profit_all_ratio_mean * 100, 2),
             'profit_all_ratio_mean': profit_all_ratio_mean,
-            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),
-            'profit_all_ratio_sum': profit_all_ratio_sum,
+            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),  # Deprecated
+            'profit_all_ratio_sum': profit_all_ratio_sum,  # Deprecated
+            'profit_all_ratio': profit_all_ratio_fromstart,
+            'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
