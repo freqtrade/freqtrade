@@ -197,3 +197,28 @@ def test__validate_stake_amount(mocker, default_conf,
                  return_value=max_stake_amount)
     res = freqtrade.wallets._validate_stake_amount('XRP/USDT', stake_amount, min_stake_amount)
     assert res == expected
+
+
+@pytest.mark.parametrize('available_capital,closed_profit,open_stakes,free,expected', [
+    (None, 10, 100, 910, 1000),
+    (None, 0, 0, 2500, 2500),
+    (None, 500, 0, 2500, 2000),
+    (None, 500, 0, 2500, 2000),
+    # Only available balance matters when it's set.
+    (100, 0, 0, 0, 100),
+    (1000, 0, 2, 5, 1000),
+    (1235, 2250, 2, 5, 1235),
+])
+def test_get_starting_balance(mocker, default_conf, available_capital, closed_profit,
+                              open_stakes, free, expected):
+    if available_capital:
+        default_conf['available_capital'] = available_capital
+    mocker.patch("freqtrade.persistence.models.Trade.get_total_closed_profit",
+                 return_value=closed_profit)
+    mocker.patch("freqtrade.persistence.models.Trade.total_open_trades_stakes",
+                 return_value=open_stakes)
+    mocker.patch("freqtrade.wallets.Wallets.get_free", return_value=free)
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    assert freqtrade.wallets.get_starting_balance() == expected
