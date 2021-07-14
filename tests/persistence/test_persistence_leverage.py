@@ -372,7 +372,7 @@ def test_calc_close_trade_price_lev(market_lev_buy_order, market_lev_sell_order,
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_limit_order_lev(limit_lev_buy_order, limit_lev_sell_order, fee, caplog):
+def test_update_with_binance_lev(limit_lev_buy_order, limit_lev_sell_order, fee, caplog):
     """
         10 minute leveraged limit trade on binance at 3x leverage
 
