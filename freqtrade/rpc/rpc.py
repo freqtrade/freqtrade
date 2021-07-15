@@ -416,16 +416,16 @@ class RPC:
             'profit_closed_coin': profit_closed_coin_sum,
             'profit_closed_percent_mean': round(profit_closed_ratio_mean * 100, 2),
             'profit_closed_ratio_mean': profit_closed_ratio_mean,
-            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),  # Deprecated
-            'profit_closed_ratio_sum': profit_closed_ratio_sum,  # Deprecated
+            'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),
+            'profit_closed_ratio_sum': profit_closed_ratio_sum,
             'profit_closed_ratio': profit_closed_ratio_fromstart,
             'profit_closed_percent': round(profit_closed_ratio_fromstart * 100, 2),
             'profit_closed_fiat': profit_closed_fiat,
             'profit_all_coin': profit_all_coin_sum,
             'profit_all_percent_mean': round(profit_all_ratio_mean * 100, 2),
             'profit_all_ratio_mean': profit_all_ratio_mean,
-            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),  # Deprecated
-            'profit_all_ratio_sum': profit_all_ratio_sum,  # Deprecated
+            'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),
+            'profit_all_ratio_sum': profit_all_ratio_sum,
             'profit_all_ratio': profit_all_ratio_fromstart,
             'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,

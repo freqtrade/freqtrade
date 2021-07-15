@@ -204,10 +204,12 @@ def test__validate_stake_amount(mocker, default_conf,
     (None, 0, 0, 2500, 2500),
     (None, 500, 0, 2500, 2000),
     (None, 500, 0, 2500, 2000),
+    (None, -70, 0, 1930, 2000),
     # Only available balance matters when it's set.
     (100, 0, 0, 0, 100),
     (1000, 0, 2, 5, 1000),
     (1235, 2250, 2, 5, 1235),
+    (1235, -2250, 2, 5, 1235),
 ])
 def test_get_starting_balance(mocker, default_conf, available_capital, closed_profit,
                               open_stakes, free, expected):
