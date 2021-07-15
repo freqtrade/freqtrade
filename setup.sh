@@ -17,6 +17,15 @@ function check_installed_python() {
         exit 2
     fi
 
+    which python3.9
+    if [ $? -eq 0 ]; then
+        echo "using Python 3.9"
+        PYTHON=python3.9
+        check_installed_pip
+        return
+    fi
+
+
     which python3.8
     if [ $? -eq 0 ]; then
         echo "using Python 3.8"
@@ -25,13 +34,6 @@ function check_installed_python() {
         return
     fi
 
-    which python3.9
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.9"
-        PYTHON=python3.9
-        check_installed_pip
-        return
-    fi
 
     which python3.7
     if [ $? -eq 0 ]; then
@@ -122,6 +124,25 @@ function install_talib() {
     cd ..
 }
 
+function install_mac_newer_python_dependencies() {    
+    
+    if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
+    then
+        echo "-------------------------"
+        echo "Installing hdf5"
+        echo "-------------------------"
+        brew install hdf5
+    fi
+
+    if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
+    then
+        echo "-------------------------"
+        echo "Installing c-blosc"
+        echo "-------------------------"
+        brew install c-blosc
+    fi    
+}
+
 # Install bot MacOS
 function install_macos() {
     if [ ! -x "$(command -v brew)" ]
@@ -130,6 +151,12 @@ function install_macos() {
         echo "Installing Brew"
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    fi
+    #Gets number after decimal in python version
+    version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g' ) 
+    
+    if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
+        install_mac_newer_python_dependencies
     fi
     install_talib
     test_and_fix_python_on_mac
