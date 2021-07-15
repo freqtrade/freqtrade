@@ -17,37 +17,17 @@ function check_installed_python() {
         exit 2
     fi
 
-    which python3.9
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.9"
-        PYTHON=python3.9
-        check_installed_pip
-        return
-    fi
+    for v in {9..7}; do
+        PYTHON="python3.${v}"
+        which $PYTHON
+        if [ $? -eq 0 ]; then
+            check_installed_pip
+            return
+        fi
+    done 
 
-
-    which python3.8
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.8"
-        PYTHON=python3.8
-        check_installed_pip
-        return
-    fi
-
-
-    which python3.7
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.7"
-        PYTHON=python3.7
-        check_installed_pip
-        return
-    fi
-
-
-   if [ -z ${PYTHON} ]; then
-        echo "No usable python found. Please make sure to have python3.7 or newer installed"
-        exit 1
-   fi
+    echo "No usable python found. Please make sure to have python3.7 or newer installed"
+    exit 1
 }
 
 function updateenv() {
