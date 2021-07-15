@@ -1,5 +1,5 @@
 """
-This module contains class to manage RPC communications (Telegram, Slack, ...)
+This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
 from typing import Any, Dict, List
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class RPCManager:
     """
-    Class to manage RPC objects (Telegram, Slack, ...)
+    Class to manage RPC objects (Telegram, API, ...)
     """
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
