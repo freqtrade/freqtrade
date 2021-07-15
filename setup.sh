@@ -17,7 +17,8 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in {9..7}; do
+    for v in 8 9 7
+    do
         PYTHON="python3.${v}"
         which $PYTHON
         if [ $? -eq 0 ]; then
@@ -141,7 +142,6 @@ function install_macos() {
         install_mac_newer_python_dependencies
     fi
     install_talib
-    test_and_fix_python_on_mac
 }
 
 # Install bot Debian_ubuntu
@@ -196,19 +196,6 @@ function reset() {
         exit 1
     fi
     updateenv
-}
-
-function test_and_fix_python_on_mac() {
-
-    if ! [ -x "$(command -v python3.6)" ]
-    then
-        echo "-------------------------"
-        echo "Fixing Python"
-        echo "-------------------------"
-        echo "Python 3.6 is not linked in your system. Fixing it..."
-        brew link --overwrite python
-        echo
-    fi
 }
 
 function config() {
