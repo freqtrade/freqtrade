@@ -21,6 +21,8 @@ function check_installed_python() {
         PYTHON="python3.${v}"
         which $PYTHON
         if [ $? -eq 0 ]; then
+            echo "using ${PYTHON}"
+
             check_installed_pip
             return
         fi
