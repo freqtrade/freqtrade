@@ -129,6 +129,19 @@ class Wallets:
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
 
+    def get_starting_balance(self) -> float:
+        """
+        Retrieves starting balance - based on either available capital,
+        or by using current balance subtracting
+        """
+        if "available_capital" in self._config:
+            return self._config['available_capital']
+        else:
+            tot_profit = Trade.get_total_closed_profit()
+            open_stakes = Trade.total_open_trades_stakes()
+            available_balance = self.get_free(self._config['stake_currency'])
+            return available_balance - tot_profit + open_stakes
+
     def get_total_stake_amount(self):
         """
         Return the total currently available balance in stake currency, including tied up stake and
