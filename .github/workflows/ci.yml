@@ -79,13 +79,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -172,13 +172,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
@@ -239,13 +239,13 @@ jobs:
 
     - name: Backtesting
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy
 
     - name: Hyperopt
       run: |
-        cp config_bittrex.json.example config.json
+        cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
