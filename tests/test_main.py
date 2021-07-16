@@ -157,7 +157,11 @@ def test_main_reload_config(mocker, default_conf, caplog) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
-    args = Arguments(['trade', '-c', 'config_examples/config_bittrex.example.json']).get_parsed_arg()
+    args = Arguments([
+        'trade',
+        '-c',
+        'config_examples/config_bittrex.example.json'
+    ]).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     with pytest.raises(SystemExit):
         main(['trade', '-c', 'config_examples/config_bittrex.example.json'])
@@ -180,7 +184,11 @@ def test_reconfigure(mocker, default_conf) -> None:
     mocker.patch('freqtrade.freqtradebot.RPCManager', MagicMock())
     mocker.patch('freqtrade.freqtradebot.init_db', MagicMock())
 
-    args = Arguments(['trade', '-c', 'config_examples/config_bittrex.example.json']).get_parsed_arg()
+    args = Arguments([
+        'trade',
+        '-c',
+        'config_examples/config_bittrex.example.json'
+    ]).get_parsed_arg()
     worker = Worker(args=args, config=default_conf)
     freqtrade = worker.freqtrade
 
