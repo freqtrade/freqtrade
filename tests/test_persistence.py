@@ -1126,6 +1126,21 @@ def test_total_open_trades_stakes(fee, use_db):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('use_db', [True, False])
+def test_get_total_closed_profit(fee, use_db):
+
+    Trade.use_db = use_db
+    Trade.reset_trades()
+    res = Trade.get_total_closed_profit()
+    assert res == 0
+    create_mock_trades(fee, use_db)
+    res = Trade.get_total_closed_profit()
+    assert res == 0.000739127
+
+    Trade.use_db = True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_get_trades_proxy(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -1298,6 +1313,7 @@ def test_Trade_object_idem():
         'open_date',
         'get_best_pair',
         'get_overall_performance',
+        'get_total_closed_profit',
         'total_open_trades_stakes',
         'get_sold_trades_without_assigned_fees',
         'get_open_trades_without_assigned_fees',

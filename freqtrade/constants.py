@@ -113,6 +113,10 @@ CONF_SCHEMA = {
             'maximum': 1,
             'default': 0.99
         },
+        'available_capital': {
+            'type': 'number',
+            'minimum': 0,
+        },
         'amend_last_stake_amount': {'type': 'boolean', 'default': False},
         'last_stake_amount_min_ratio': {
             'type': 'number', 'minimum': 0.0, 'maximum': 1.0, 'default': 0.5
