@@ -6,7 +6,6 @@ on:
       - master
       - stable
       - develop
-      - test_build_arm64
     tags:
   release:
     types: [published]

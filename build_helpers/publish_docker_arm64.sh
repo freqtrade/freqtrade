@@ -55,7 +55,7 @@ docker images
 docker push ${CACHE_IMAGE}:$TAG_PLOT_ARM
 docker push ${CACHE_IMAGE}:$TAG_ARM
 
-# Create multiarch image
+# Create multi-arch image
 # Make sure that all images contained here are pushed to github first.
 # Otherwise installation might fail.
 echo "create manifests"
@@ -63,14 +63,13 @@ echo "create manifests"
 docker manifest create --amend ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
 docker manifest push -p ${IMAGE_NAME}:${TAG}
 
-
 docker manifest create --amend ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM} ${CACHE_IMAGE}:${TAG_PLOT}
 docker manifest push -p ${IMAGE_NAME}:${TAG_PLOT}
 
 Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
-    docker manifest create --amend ${IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
-    docker manifest push -p ${IMAGE_NAME}:latest
+    docker tag ${IMAGE_NAME}:develop ${IMAGE_NAME}:latest
+    docker push ${IMAGE_NAME}:latest
 fi
 
 docker images

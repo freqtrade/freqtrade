@@ -10,7 +10,7 @@ TAG_PI="${TAG}_pi"
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
 CACHE_IMAGE=freqtradeorg/freqtrade_cache
-CACHE_TAG=${CACHE_IMAGE}:${TAG}_cache
+CACHE_TAG=${CACHE_IMAGE}:${TAG_PI}_cache
 
 # Add commit and commit_message to docker container
 echo "${GITHUB_SHA}" > freqtrade_commit
