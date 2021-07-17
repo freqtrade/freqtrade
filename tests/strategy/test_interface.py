@@ -607,7 +607,7 @@ def test_is_informative_pairs_callback(default_conf):
     strategy = StrategyResolver.load_strategy(default_conf)
     # Should return empty
     # Uses fallback to base implementation
-    assert [] == strategy.informative_pairs()
+    assert [] == strategy.gather_informative_pairs()
 
 
 @pytest.mark.parametrize('error', [

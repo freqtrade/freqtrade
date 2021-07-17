@@ -160,7 +160,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Refreshing candles
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
-                                  self.strategy.informative_pairs())
+                                  self.strategy.gather_informative_pairs())
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 

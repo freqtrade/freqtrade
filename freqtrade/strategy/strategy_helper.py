@@ -1,10 +1,24 @@
-import pandas as pd
+from typing import Any, Callable, NamedTuple, Optional, Union
 
+import pandas as pd
+from mypy_extensions import KwArg
+from pandas import DataFrame
+
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 
 
+class InformativeData(NamedTuple):
+    asset: Optional[str]
+    timeframe: str
+    fmt: Union[str, Callable[[KwArg(str)], str], None]
+    ffill: bool
+
+
 def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
-                           timeframe: str, timeframe_inf: str, ffill: bool = True) -> pd.DataFrame:
+                           timeframe: str, timeframe_inf: str, ffill: bool = True,
+                           append_timeframe: bool = True,
+                           date_column: str = 'date') -> pd.DataFrame:
     """
     Correctly merge informative samples to the original dataframe, avoiding lookahead bias.
 
@@ -24,6 +38,8 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     :param timeframe: Timeframe of the original pair sample.
     :param timeframe_inf: Timeframe of the informative pair sample.
     :param ffill: Forwardfill missing values - optional but usually required
+    :param append_timeframe: Rename columns by appending timeframe.
+    :param date_column: A custom date column name.
     :return: Merged dataframe
     :raise: ValueError if the secondary timeframe is shorter than the dataframe timeframe
     """
@@ -32,25 +48,29 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     minutes = timeframe_to_minutes(timeframe)
     if minutes == minutes_inf:
         # No need to forwardshift if the timeframes are identical
-        informative['date_merge'] = informative["date"]
+        informative['date_merge'] = informative[date_column]
     elif minutes < minutes_inf:
         # Subtract "small" timeframe so merging is not delayed by 1 small candle
         # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
         informative['date_merge'] = (
-            informative["date"] + pd.to_timedelta(minutes_inf, 'm') - pd.to_timedelta(minutes, 'm')
+            informative[date_column] + pd.to_timedelta(minutes_inf, 'm') -
+            pd.to_timedelta(minutes, 'm')
         )
     else:
         raise ValueError("Tried to merge a faster timeframe to a slower timeframe."
                          "This would create new rows, and can throw off your regular indicators.")
 
     # Rename columns to be unique
-    informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
+    date_merge = 'date_merge'
+    if append_timeframe:
+        date_merge = f'date_merge_{timeframe_inf}'
+        informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
 
     # Combine the 2 dataframes
     # all indicators on the informative sample MUST be calculated before this point
     dataframe = pd.merge(dataframe, informative, left_on='date',
-                         right_on=f'date_merge_{timeframe_inf}', how='left')
-    dataframe = dataframe.drop(f'date_merge_{timeframe_inf}', axis=1)
+                         right_on=date_merge, how='left')
+    dataframe = dataframe.drop(date_merge, axis=1)
 
     if ffill:
         dataframe = dataframe.ffill()
@@ -94,3 +114,117 @@ def stoploss_from_absolute(stop_rate: float, current_rate: float) -> float:
     :return: Positive stop loss value relative to current price
     """
     return 1 - (stop_rate / current_rate)
+
+
+def informative(timeframe: str, asset: str = '',
+                fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                ffill: bool = True) -> Callable[[Callable[[Any, DataFrame, dict], DataFrame]],
+                                                Callable[[Any, DataFrame, dict], DataFrame]]:
+    """
+    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
+    define informative indicators.
+
+    Example usage:
+
+        @informative('1h')
+        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+    :param timeframe: Informative timeframe. Must always be higher than strategy timeframe.
+    :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
+    current pair.
+    :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
+    specified, defaults to {asset}_{name}_{timeframe} if asset is specified, or {name}_{timeframe}
+    otherwise.
+    * {asset}: name of informative asset, provided in lower-case, with / replaced with _. Stake
+    currency is not included in this string.
+    * {name}: user-specified dataframe column name.
+    * {timeframe}: informative timeframe.
+    :param ffill: ffill dataframe after mering informative pair.
+    """
+    _asset = asset
+    _timeframe = timeframe
+    _fmt = fmt
+    _ffill = ffill
+
+    def decorator(fn: Callable[[Any, DataFrame, dict], DataFrame]):
+        informative_pairs = getattr(fn, '_ft_informative', [])
+        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill))
+        setattr(fn, '_ft_informative', informative_pairs)
+        return fn
+    return decorator
+
+
+def _format_pair_name(config, pair: str) -> str:
+    return pair.format(stake_currency=config['stake_currency'],
+                       stake=config['stake_currency']).upper()
+
+
+def _create_and_merge_informative_pair(strategy, dataframe: DataFrame,
+                                       metadata: dict, informative_data: InformativeData,
+                                       populate_indicators: Callable[[Any, DataFrame, dict],
+                                                                     DataFrame]):
+    asset = informative_data.asset or ''
+    timeframe = informative_data.timeframe
+    fmt = informative_data.fmt
+    ffill = informative_data.ffill
+    config = strategy.config
+    dp = strategy.dp
+
+    if asset:
+        # Insert stake currency if needed.
+        asset = _format_pair_name(config, asset)
+    else:
+        # Not specifying an asset will define informative dataframe for current pair.
+        asset = metadata['pair']
+
+    if '/' in asset:
+        base, quote = asset.split('/')
+    else:
+        # When futures are supported this may need reevaluation.
+        # base, quote = asset, None
+        raise OperationalException('Not implemented.')
+
+    # Default format. This optimizes for the common case: informative pairs using same stake
+    # currency. When quote currency matches stake currency, column name will omit base currency.
+    # This allows easily reconfiguring strategy to use different base currency. In a rare case
+    # where it is desired to keep quote currency in column name at all times user should specify
+    # fmt='{base}_{quote}_{column}_{timeframe}' format or similar.
+    if not fmt:
+        fmt = '{column}_{timeframe}'                # Informatives of current pair
+        if asset != metadata['pair']:
+            if quote == config['stake_currency']:
+                fmt = '{base}_' + fmt               # Informatives of other pair
+            else:
+                fmt = '{base}_{quote}_' + fmt       # Informatives of different quote currency
+
+    inf_metadata = {'pair': asset, 'timeframe': timeframe}
+    inf_dataframe = dp.get_pair_dataframe(asset, timeframe)
+    inf_dataframe = populate_indicators(strategy, inf_dataframe, inf_metadata)
+
+    formatter: Any = None
+    if callable(fmt):
+        formatter = fmt             # A custom user-specified formatter function.
+    else:
+        formatter = fmt.format      # A default string formatter.
+
+    fmt_args = {
+        'BASE': base.upper(),
+        'QUOTE': quote.upper(),
+        'base': base.lower(),
+        'quote': quote.lower(),
+        'asset': asset,
+        'timeframe': timeframe,
+    }
+    inf_dataframe.rename(columns=lambda column: formatter(column=column, **fmt_args),
+                         inplace=True)
+
+    date_column = formatter(column='date', **fmt_args)
+    if date_column in dataframe.columns:
+        raise OperationalException(f'Duplicate column name {date_column} exists in '
+                                   f'dataframe! Ensure column names are unique!')
+    dataframe = merge_informative_pair(dataframe, inf_dataframe, strategy.timeframe, timeframe,
+                                       ffill=ffill, append_timeframe=False,
+                                       date_column=date_column)
+    return dataframe

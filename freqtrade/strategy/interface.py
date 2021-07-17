@@ -6,7 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -19,6 +19,8 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
+from freqtrade.strategy.strategy_helper import (InformativeData, _create_and_merge_informative_pair,
+                                                _format_pair_name)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -133,6 +135,39 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
         super().__init__(config)
+
+        # Gather informative pairs from @informative-decorated methods.
+        self._ft_informative: Dict[
+            Tuple[str, str], Tuple[InformativeData,
+                                   Callable[[Any, DataFrame, dict], DataFrame]]] = {}
+        for attr_name in dir(self.__class__):
+            cls_method = getattr(self.__class__, attr_name)
+            if not callable(cls_method):
+                continue
+            ft_informative = getattr(cls_method, '_ft_informative', [])
+            if not isinstance(ft_informative, list):
+                # Type check is required because mocker would return a mock object that evaluates to
+                # True, confusing this code.
+                continue
+            for informative_data in ft_informative:
+                asset = informative_data.asset
+                timeframe = informative_data.timeframe
+                if asset:
+                    pair = _format_pair_name(self.config, asset)
+                    if (pair, timeframe) in self._ft_informative:
+                        raise OperationalException(f'Informative pair {pair} {timeframe} can not '
+                                                   f'be defined more than once!')
+                    self._ft_informative[(pair, timeframe)] = (informative_data, cls_method)
+                elif self.dp is not None:
+                    for pair in self.dp.current_whitelist():
+                        if (pair, timeframe) in self._ft_informative:
+                            raise OperationalException(f'Informative pair {pair} {timeframe} can '
+                                                       f'not be defined more than once!')
+                        self._ft_informative[(pair, timeframe)] = (informative_data, cls_method)
+
+    def _format_pair(self, pair: str) -> str:
+        return pair.format(stake_currency=self.config['stake_currency'],
+                           stake=self.config['stake_currency']).upper()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -376,6 +411,14 @@ class IStrategy(ABC, HyperStrategyMixin):
 ###
 # END - Intended to be overridden by strategy
 ###
+
+    def gather_informative_pairs(self) -> ListPairsWithTimeframes:
+        """
+        Internal method which gathers all informative pairs (user or automatically defined).
+        """
+        informative_pairs = self.informative_pairs()
+        informative_pairs += list(self._ft_informative.keys())
+        return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
         """
@@ -793,6 +836,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
         logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
+
+        # call populate_indicators_Nm() which were tagged with @informative decorator.
+        for (pair, timeframe), (informative_data, populate_fn) in self._ft_informative.items():
+            if not informative_data.asset and pair != metadata['pair']:
+                continue
+            dataframe = _create_and_merge_informative_pair(
+                self, dataframe, metadata, informative_data, populate_fn)
+
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
