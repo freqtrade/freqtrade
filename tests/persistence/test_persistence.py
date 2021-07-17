@@ -83,6 +83,8 @@ def test_is_opening_closing_trade(fee):
     assert trade.is_opening_trade('sell') is False
     assert trade.is_closing_trade('buy') is False
     assert trade.is_closing_trade('sell') is True
+    assert trade.enter_side == 'buy'
+    assert trade.exit_side == 'sell'
 
     trade = Trade(
         id=2,
@@ -103,6 +105,8 @@ def test_is_opening_closing_trade(fee):
     assert trade.is_opening_trade('sell') is True
     assert trade.is_closing_trade('buy') is True
     assert trade.is_closing_trade('sell') is False
+    assert trade.enter_side == 'sell'
+    assert trade.exit_side == 'buy'
 
 
 @pytest.mark.usefixtures("init_persistence")
