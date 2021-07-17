@@ -297,6 +297,20 @@ class LocalTrade():
     def close_date_utc(self):
         return self.close_date.replace(tzinfo=timezone.utc)
 
+    @property
+    def enter_side(self) -> str:
+        if self.is_short:
+            return "sell"
+        else:
+            return "buy"
+
+    @property
+    def exit_side(self) -> str:
+        if self.is_short:
+            return "buy"
+        else:
+            return "sell"
+
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
