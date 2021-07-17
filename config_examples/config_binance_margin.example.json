@@ -12,7 +12,6 @@
         "sell": 30  //TODO-mg: Update to exit
     },
     "shorting_enabled": true,
-    "use_short_signal": true,
     "use_exit_short_signal": true,
     "ignore_roi_if_buy_signal": true,
     "ignore_roi_if_short_signal": true,
