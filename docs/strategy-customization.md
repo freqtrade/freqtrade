@@ -639,6 +639,47 @@ Stoploss values returned from `custom_stoploss` must specify a percentage relati
 
     Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
 
+!!! Note
+    Providing invalid input to `stoploss_from_open()` may produce "CustomStoploss function did not return valid stoploss" warnings.
+    This may happen if `current_profit` parameter is below specified `open_relative_stop`. Such situations may arise when closing trade
+    is blocked by `confirm_trade_exit()` method. Warnings can be solved by never blocking stop loss sells by checking `sell_reason` in
+    `confirm_trade_exit()`, or by using `return stoploss_from_open(...) or 1` idiom, which will request to not change stop loss when
+    `current_profit < open_relative_stop`.
+
+### *stoploss_from_absolute()*
+
+In some situations it may be confusing to deal with stops relative to current rate. Instead, you may define a stoploss level using an absolute price.
+
+??? Example "Returning a stoploss using absolute price from the custom stoploss function"
+
+    Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).
+
+    If we want a stop price at $107 price we can call `stoploss_from_absolute(107, current_rate)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+
+    ``` python
+
+    from datetime import datetime
+    from freqtrade.persistence import Trade
+    from freqtrade.strategy import IStrategy, stoploss_from_open
+
+    class AwesomeStrategy(IStrategy):
+
+        # ... populate_* methods
+
+        use_custom_stoploss = True
+
+        def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                            current_rate: float, current_profit: float, **kwargs) -> float:
+
+            # once the profit has risen above 10%, keep the stoploss at 7% above the open price
+            if current_profit > 0.10:
+                return stoploss_from_absolute(trade.open_rate * 1.07, current_rate)
+
+            return 1
+
+    ```
+
+    Full examples can be found in the [Custom stoploss](strategy-advanced.md#custom-stoploss) section of the Documentation.
 
 ## Additional data (Wallets)
 
