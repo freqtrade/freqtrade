@@ -52,7 +52,7 @@ docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${TAG} -t fre
 docker tag freqtrade:$TAG_PLOT ${IMAGE_NAME}:$TAG_PLOT
 
 # Run backtest
-docker run --rm -v $(pwd)/config_bittrex.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
+docker run --rm -v $(pwd)/config_examples/config_bittrex.example.json:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
 
 if [ $? -ne 0 ]; then
     echo "failed running backtest"

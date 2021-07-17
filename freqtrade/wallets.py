@@ -129,6 +129,19 @@ class Wallets:
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
 
+    def get_starting_balance(self) -> float:
+        """
+        Retrieves starting balance - based on either available capital,
+        or by using current balance subtracting
+        """
+        if "available_capital" in self._config:
+            return self._config['available_capital']
+        else:
+            tot_profit = Trade.get_total_closed_profit()
+            open_stakes = Trade.total_open_trades_stakes()
+            available_balance = self.get_free(self._config['stake_currency'])
+            return available_balance - tot_profit + open_stakes
+
     def get_total_stake_amount(self):
         """
         Return the total currently available balance in stake currency, including tied up stake and
@@ -233,18 +246,21 @@ class Wallets:
         max_stake_amount = self.get_available_stake_amount()
 
         if min_stake_amount > max_stake_amount:
-            logger.warning("Minimum stake amount > available balance.")
+            if self._log:
+                logger.warning("Minimum stake amount > available balance.")
             return 0
         if min_stake_amount is not None and stake_amount < min_stake_amount:
             stake_amount = min_stake_amount
-            logger.info(
-                f"Stake amount for pair {pair} is too small ({stake_amount} < {min_stake_amount}), "
-                f"adjusting to {min_stake_amount}."
-            )
+            if self._log:
+                logger.info(
+                    f"Stake amount for pair {pair} is too small "
+                    f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
+                )
         if stake_amount > max_stake_amount:
             stake_amount = max_stake_amount
-            logger.info(
-                f"Stake amount for pair {pair} is too big ({stake_amount} > {max_stake_amount}), "
-                f"adjusting to {max_stake_amount}."
-            )
+            if self._log:
+                logger.info(
+                    f"Stake amount for pair {pair} is too big "
+                    f"({stake_amount} > {max_stake_amount}), adjusting to {max_stake_amount}."
+                )
         return stake_amount

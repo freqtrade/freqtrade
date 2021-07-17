@@ -26,7 +26,7 @@ from tests.conftest_trades import MOCK_TRADE_COUNT
 
 def test_setup_utils_configuration():
     args = [
-        'list-exchanges', '--config', 'config_bittrex.json.example',
+        'list-exchanges', '--config', 'config_examples/config_bittrex.example.json',
     ]
 
     config = setup_utils_configuration(get_args(args), RunMode.OTHER)
@@ -45,7 +45,7 @@ def test_start_trading_fail(mocker, caplog):
     exitmock = mocker.patch("freqtrade.worker.Worker.exit", MagicMock())
     args = [
         'trade',
-        '-c', 'config_bittrex.json.example'
+        '-c', 'config_examples/config_bittrex.example.json'
     ]
     start_trading(get_args(args))
     assert exitmock.call_count == 1
@@ -127,10 +127,10 @@ def test_list_timeframes(mocker, capsys):
                        match=r"This command requires a configured exchange.*"):
         start_list_timeframes(pargs)
 
-    # Test with --config config_bittrex.json.example
+    # Test with --config config_examples/config_bittrex.example.json
     args = [
         "list-timeframes",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
     ]
     start_list_timeframes(get_args(args))
     captured = capsys.readouterr()
@@ -174,7 +174,7 @@ def test_list_timeframes(mocker, capsys):
     # Test with --one-column
     args = [
         "list-timeframes",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--one-column",
     ]
     start_list_timeframes(get_args(args))
@@ -214,10 +214,10 @@ def test_list_markets(mocker, markets, capsys):
                        match=r"This command requires a configured exchange.*"):
         start_list_markets(pargs, False)
 
-    # Test with --config config_bittrex.json.example
+    # Test with --config config_examples/config_bittrex.example.json
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
@@ -244,7 +244,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test with --all: all markets
     args = [
         "list-markets", "--all",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), False)
@@ -257,7 +257,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test list-pairs subcommand: active pairs
     args = [
         "list-pairs",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
@@ -269,7 +269,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test list-pairs subcommand with --all: all pairs
     args = [
         "list-pairs", "--all",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-list",
     ]
     start_list_markets(get_args(args), True)
@@ -282,7 +282,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, base=ETH, LTC
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "ETH", "LTC",
         "--print-list",
     ]
@@ -295,7 +295,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, base=LTC
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC",
         "--print-list",
     ]
@@ -308,7 +308,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, quote=USDT, USD
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--quote", "USDT", "USD",
         "--print-list",
     ]
@@ -321,7 +321,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, quote=USDT
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--quote", "USDT",
         "--print-list",
     ]
@@ -334,7 +334,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, base=LTC, quote=USDT
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC", "--quote", "USDT",
         "--print-list",
     ]
@@ -347,7 +347,7 @@ def test_list_markets(mocker, markets, capsys):
     # active pairs, base=LTC, quote=USDT
     args = [
         "list-pairs",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC", "--quote", "USD",
         "--print-list",
     ]
@@ -360,7 +360,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, base=LTC, quote=USDT, NONEXISTENT
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC", "--quote", "USDT", "NONEXISTENT",
         "--print-list",
     ]
@@ -373,7 +373,7 @@ def test_list_markets(mocker, markets, capsys):
     # active markets, base=LTC, quote=NONEXISTENT
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC", "--quote", "NONEXISTENT",
         "--print-list",
     ]
@@ -386,7 +386,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test tabular output
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
@@ -396,7 +396,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test tabular output, no markets found
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--base", "LTC", "--quote", "NONEXISTENT",
     ]
     start_list_markets(get_args(args), False)
@@ -408,7 +408,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test --print-json
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-json"
     ]
     start_list_markets(get_args(args), False)
@@ -420,7 +420,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test --print-csv
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--print-csv"
     ]
     start_list_markets(get_args(args), False)
@@ -432,7 +432,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test --one-column
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--one-column"
     ]
     start_list_markets(get_args(args), False)
@@ -444,7 +444,7 @@ def test_list_markets(mocker, markets, capsys):
     # Test --one-column
     args = [
         "list-markets",
-        '--config', 'config_bittrex.json.example',
+        '--config', 'config_examples/config_bittrex.example.json',
         "--one-column"
     ]
     with pytest.raises(OperationalException, match=r"Cannot get markets.*"):
@@ -887,7 +887,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
     patched_configuration_load_config_file(mocker, default_conf)
     args = [
         'test-pairlist',
-        '-c', 'config_bittrex.json.example'
+        '-c', 'config_examples/config_bittrex.example.json'
     ]
 
     start_test_pairlist(get_args(args))
@@ -901,7 +901,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 
     args = [
         'test-pairlist',
-        '-c', 'config_bittrex.json.example',
+        '-c', 'config_examples/config_bittrex.example.json',
         '--one-column',
     ]
     start_test_pairlist(get_args(args))
@@ -910,7 +910,7 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 
     args = [
         'test-pairlist',
-        '-c', 'config_bittrex.json.example',
+        '-c', 'config_examples/config_bittrex.example.json',
         '--print-json',
     ]
     start_test_pairlist(get_args(args))
