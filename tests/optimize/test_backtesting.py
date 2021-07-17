@@ -496,6 +496,17 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is not None
 
+    backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    trade = backtesting._enter_trade(pair, row=row)
+    assert trade
+    assert trade.stake_amount == 123.5
+
+    # In case of error - use proposed stake
+    backtesting.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
+    trade = backtesting._enter_trade(pair, row=row)
+    assert trade
+    assert trade.stake_amount == 495
+
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
