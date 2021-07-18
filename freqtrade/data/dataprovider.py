@@ -10,12 +10,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
+from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
-from freqtrade.configuration import TimeRange
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +64,14 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         """
-        saved_pair = (pair, timeframe)
+        saved_pair = (pair, str(timeframe))
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
             # Move informative start time respecting startup_candle_count
-            timerange.subtract_start(timeframe_to_seconds(timeframe) * self._config.get('startup_candle_count', 0))
+            timerange.subtract_start(
+                timeframe_to_seconds(str(timeframe)) * self._config.get('startup_candle_count', 0)
+            )
             self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
                 pair=pair,
                 timeframe=timeframe or self._config['timeframe'],
