@@ -1001,7 +1001,10 @@ class Exchange:
 
     def get_rate(self, pair: str, refresh: bool, side: str = "buy") -> float:
         """
-        Calculates bid target between current ask price and last price
+        Calculates bid/ask target
+        bid rate - between current ask price and last price
+        ask rate - either using ticker bid or first bid based on orderbook
+        or remain static in any other case since it's not updating.
         :param pair: Pair to get rate for
         :param refresh: allow cached data
         :param side: "buy" or "sell"
@@ -1050,7 +1053,7 @@ class Exchange:
                     ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
 
-        if rate is None and side == "sell":
+        if rate is None:
             raise PricingError(f"{name}-Rate for {pair} was empty.")
         cache_rate[pair] = rate
 
