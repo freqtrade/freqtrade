@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPCManager
+from freqtrade.rpc.api_server.webserver import ApiServer
 from tests.conftest import get_patched_freqtradebot, log_has
 
 
@@ -190,3 +191,4 @@ def test_init_apiserver_enabled(mocker, default_conf, caplog) -> None:
     assert len(rpc_manager.registered_modules) == 1
     assert 'apiserver' in [mod.name for mod in rpc_manager.registered_modules]
     assert run_mock.call_count == 1
+    ApiServer.shutdown()

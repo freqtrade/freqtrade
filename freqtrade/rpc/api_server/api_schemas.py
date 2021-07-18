@@ -123,17 +123,17 @@ class ShowConfig(BaseModel):
     stake_currency_decimals: int
     max_open_trades: int
     minimal_roi: Dict[str, Any]
-    stoploss: float
-    trailing_stop: bool
+    stoploss: Optional[float]
+    trailing_stop: Optional[bool]
     trailing_stop_positive: Optional[float]
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
     use_custom_stoploss: Optional[bool]
-    timeframe: str
+    timeframe: Optional[str]
     timeframe_ms: int
     timeframe_min: int
     exchange: str
-    strategy: str
+    strategy: Optional[str]
     forcebuy_enabled: bool
     ask_strategy: Dict[str, Any]
     bid_strategy: Dict[str, Any]
@@ -318,3 +318,24 @@ class PairHistory(BaseModel):
         json_encoders = {
             datetime: lambda v: v.strftime(DATETIME_PRINT_FORMAT),
         }
+
+
+class BacktestRequest(BaseModel):
+    strategy: str
+    timeframe: Optional[str]
+    timerange: Optional[str]
+    max_open_trades: Optional[int]
+    stake_amount: Optional[Union[float, str]]
+    enable_protections: bool
+    dry_run_wallet: Optional[float]
+
+
+class BacktestResponse(BaseModel):
+    status: str
+    running: bool
+    status_msg: str
+    step: str
+    progress: float
+    trade_count: Optional[float]
+    # TODO: Properly type backtestresult...
+    backtest_result: Optional[Dict[str, Any]]

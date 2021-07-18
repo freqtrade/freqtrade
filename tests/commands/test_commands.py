@@ -13,7 +13,7 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
                                 start_list_data, start_list_exchanges, start_list_hyperopts,
                                 start_list_markets, start_list_strategies, start_list_timeframes,
                                 start_new_hyperopt, start_new_strategy, start_show_trades,
-                                start_test_pairlist, start_trading)
+                                start_test_pairlist, start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
@@ -56,6 +56,18 @@ def test_start_trading_fail(mocker, caplog):
     start_trading(get_args(args))
     assert exitmock.call_count == 0
     assert log_has('Fatal exception!', caplog)
+
+
+def test_start_webserver(mocker, caplog):
+
+    api_server_mock = mocker.patch("freqtrade.rpc.api_server.ApiServer", )
+
+    args = [
+        'webserver',
+        '-c', 'config_bittrex.json.example'
+    ]
+    start_webserver(get_args(args))
+    assert api_server_mock.call_count == 1
 
 
 def test_list_exchanges(capsys):

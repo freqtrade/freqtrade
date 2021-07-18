@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 
@@ -28,17 +29,37 @@ class FTJSONResponse(JSONResponse):
 
 class ApiServer(RPCHandler):
 
+    __instance = None
+    __initialized = False
+
     _rpc: RPC
+    # Backtesting type: Backtesting
+    _bt = None
+    _bt_data = None
+    _bt_timerange = None
+    _bt_last_config: Dict[str, Any] = {}
     _has_rpc: bool = False
+    _bgtask_running: bool = False
     _config: Dict[str, Any] = {}
 
-    def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
-        super().__init__(rpc, config)
-        self._server = None
+    def __new__(cls, *args, **kwargs):
+        """
+        This class is a singleton.
+        We'll only have one instance of it around.
+        """
+        if ApiServer.__instance is None:
+            ApiServer.__instance = object.__new__(cls)
+            ApiServer.__initialized = False
+        return ApiServer.__instance
 
-        ApiServer._rpc = rpc
-        ApiServer._has_rpc = True
+    def __init__(self, config: Dict[str, Any], standalone: bool = False) -> None:
         ApiServer._config = config
+        if self.__initialized and (standalone or self._standalone):
+            return
+        self._standalone: bool = standalone
+        self._server = None
+        ApiServer.__initialized = True
+
         api_config = self._config['api_server']
 
         self.app = FastAPI(title="Freqtrade API",
@@ -50,11 +71,32 @@ class ApiServer(RPCHandler):
 
         self.start_api()
 
+    def add_rpc_handler(self, rpc: RPC):
+        """
+        Attach rpc handler
+        """
+        if not self._has_rpc:
+            ApiServer._rpc = rpc
+            ApiServer._has_rpc = True
+        else:
+            # This should not happen assuming we didn't mess up.
+            raise OperationalException('RPC Handler already attached.')
+
     def cleanup(self) -> None:
         """ Cleanup pending module resources """
-        if self._server:
+        ApiServer._has_rpc = False
+        del ApiServer._rpc
+        if self._server and not self._standalone:
             logger.info("Stopping API Server")
             self._server.cleanup()
+
+    @classmethod
+    def shutdown(cls):
+        cls.__initialized = False
+        del cls.__instance
+        cls.__instance = None
+        cls._has_rpc = False
+        cls._rpc = None
 
     def send_msg(self, msg: Dict[str, str]) -> None:
         pass
@@ -68,6 +110,7 @@ class ApiServer(RPCHandler):
 
     def configure_app(self, app: FastAPI, config):
         from freqtrade.rpc.api_server.api_auth import http_basic_or_jwt_token, router_login
+        from freqtrade.rpc.api_server.api_backtest import router as api_backtest
         from freqtrade.rpc.api_server.api_v1 import router as api_v1
         from freqtrade.rpc.api_server.api_v1 import router_public as api_v1_public
         from freqtrade.rpc.api_server.web_ui import router_ui
@@ -75,6 +118,9 @@ class ApiServer(RPCHandler):
         app.include_router(api_v1_public, prefix="/api/v1")
 
         app.include_router(api_v1, prefix="/api/v1",
+                           dependencies=[Depends(http_basic_or_jwt_token)],
+                           )
+        app.include_router(api_backtest, prefix="/api/v1",
                            dependencies=[Depends(http_basic_or_jwt_token)],
                            )
         app.include_router(router_login, prefix="/api/v1", tags=["auth"])
@@ -125,6 +171,9 @@ class ApiServer(RPCHandler):
                                   )
         try:
             self._server = UvicornServer(uvconfig)
-            self._server.run_in_thread()
+            if self._standalone:
+                self._server.run()
+            else:
+                self._server.run_in_thread()
         except Exception:
             logger.exception("Api server failed to start.")
