@@ -64,7 +64,7 @@ def test_start_webserver(mocker, caplog):
 
     args = [
         'webserver',
-        '-c', 'config_bittrex.json.example'
+        '-c', 'config_examples/config_bittrex.example.json'
     ]
     start_webserver(get_args(args))
     assert api_server_mock.call_count == 1
