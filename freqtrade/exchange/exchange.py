@@ -551,7 +551,7 @@ class Exchange:
         amount_reserve_percent = 1.0 + self._config.get('amount_reserve_percent',
                                                         DEFAULT_AMOUNT_RESERVE_PERCENT)
         amount_reserve_percent = (
-          amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
+            amount_reserve_percent / (1 - abs(stoploss)) if abs(stoploss) != 1 else 1.5
         )
         # it should not be more than 50%
         amount_reserve_percent = max(min(amount_reserve_percent, 1.5), 1)
@@ -999,94 +999,61 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_buy_rate(self, pair: str, refresh: bool) -> float:
+    def get_rate(self, pair: str, refresh: bool, side: str = "buy") -> float:
         """
         Calculates bid target between current ask price and last price
         :param pair: Pair to get rate for
         :param refresh: allow cached data
+        :param side: "buy" or "sell"
         :return: float: Price
         :raises PricingError if orderbook price could not be determined.
         """
+        cache_rate: TTLCache = self._buy_rate_cache if side == "buy" else self._sell_rate_cache
+        [strat_name, name] = ['bid_strategy', 'Buy'] if side == "buy" else ['ask_strategy', 'Sell']
+
         if not refresh:
-            rate = self._buy_rate_cache.get(pair)
+            rate = cache_rate.get(pair)
             # Check if cache has been invalidated
             if rate:
-                logger.debug(f"Using cached buy rate for {pair}.")
+                logger.debug(f"Using cached {side} rate for {pair}.")
                 return rate
 
-        bid_strategy = self._config.get('bid_strategy', {})
-        if 'use_order_book' in bid_strategy and bid_strategy.get('use_order_book', False):
+        strategy = self._config.get(strat_name, {})
 
-            order_book_top = bid_strategy.get('order_book_top', 1)
+        if strategy.get('use_order_book', False) and ('use_order_book' in strategy):
+
+            order_book_top = strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
-                rate_from_l2 = order_book[f"{bid_strategy['price_side']}s"][order_book_top - 1][0]
+                rate = order_book[f"{strategy['price_side']}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
-                    "Buy Price from orderbook could not be determined."
-                    f"Orderbook: {order_book}"
-                 )
-                raise PricingError from e
-            logger.info(f"Buy price from orderbook {bid_strategy['price_side'].capitalize()} side "
-                        f"- top {order_book_top} order book buy rate {rate_from_l2:.8f}")
-            used_rate = rate_from_l2
-        else:
-            logger.info(f"Using Last {bid_strategy['price_side'].capitalize()} / Last Price")
-            ticker = self.fetch_ticker(pair)
-            ticker_rate = ticker[bid_strategy['price_side']]
-            if ticker['last'] and ticker_rate > ticker['last']:
-                balance = bid_strategy['ask_last_balance']
-                ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
-            used_rate = ticker_rate
-
-        self._buy_rate_cache[pair] = used_rate
-
-        return used_rate
-
-    def get_sell_rate(self, pair: str, refresh: bool) -> float:
-        """
-        Get sell rate - either using ticker bid or first bid based on orderbook
-        or remain static in any other case since it's not updating.
-        :param pair: Pair to get rate for
-        :param refresh: allow cached data
-        :return: Bid rate
-        :raises PricingError if price could not be determined.
-        """
-        if not refresh:
-            rate = self._sell_rate_cache.get(pair)
-            # Check if cache has been invalidated
-            if rate:
-                logger.debug(f"Using cached sell rate for {pair}.")
-                return rate
-
-        ask_strategy = self._config.get('ask_strategy', {})
-        if ask_strategy.get('use_order_book', False):
-            logger.debug(
-                f"Getting price from order book {ask_strategy['price_side'].capitalize()} side."
-            )
-            order_book_top = ask_strategy.get('order_book_top', 1)
-            order_book = self.fetch_l2_order_book(pair, order_book_top)
-            try:
-                rate = order_book[f"{ask_strategy['price_side']}s"][order_book_top - 1][0]
-            except (IndexError, KeyError) as e:
-                logger.warning(
-                    f"Sell Price at location {order_book_top} from orderbook could not be "
+                    f"{name} Price at location {order_book_top} from orderbook could not be "
                     f"determined. Orderbook: {order_book}"
                 )
                 raise PricingError from e
+
+            logger.info(f"{name} price from orderbook {strategy['price_side'].capitalize()}"
+                        f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
+            logger.info(f"Using Last {strategy['price_side'].capitalize()} / Last Price")
             ticker = self.fetch_ticker(pair)
-            ticker_rate = ticker[ask_strategy['price_side']]
-            if ticker['last'] and ticker_rate < ticker['last']:
-                balance = ask_strategy.get('bid_last_balance', 0.0)
-                ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
+            ticker_rate = ticker[strategy['price_side']]
+            if ticker['last']:
+                if side == 'buy' and ticker_rate > ticker['last']:
+                    balance = strategy['ask_last_balance']
+                    ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
+                elif side == 'sell' and ticker_rate < ticker['last']:
+                    balance = strategy.get('bid_last_balance', 0.0)
+                    ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
 
-        if rate is None:
-            raise PricingError(f"Sell-Rate for {pair} was empty.")
-        self._sell_rate_cache[pair] = rate
+        if rate is None and side == "sell":
+            raise PricingError(f"{name}-Rate for {pair} was empty.")
+        cache_rate[pair] = rate
+
         return rate
 
     # Fee handling
@@ -1318,8 +1285,8 @@ class Exchange:
                 self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             ohlcv_df = ohlcv_to_dataframe(
-                    ticks, timeframe, pair=pair, fill_missing=True,
-                    drop_incomplete=self._ohlcv_partial_candle)
+                ticks, timeframe, pair=pair, fill_missing=True,
+                drop_incomplete=self._ohlcv_partial_candle)
             results_df[(pair, timeframe)] = ohlcv_df
             if cache:
                 self._klines[(pair, timeframe)] = ohlcv_df
