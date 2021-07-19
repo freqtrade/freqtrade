@@ -42,6 +42,7 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
+BUY_SIGNAL_NAME_IDX = 7
 
 
 class Backtesting:
@@ -189,7 +190,7 @@ class Backtesting:
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_signal_name']
         data: Dict = {}
         # Create dict with data
         for pair, pair_data in processed.items():
@@ -332,6 +333,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
+                buy_signal_name=row[BUY_SIGNAL_NAME_IDX],
                 exchange='backtesting',
             )
             return trade

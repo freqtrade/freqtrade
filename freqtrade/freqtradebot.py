@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
+        (buy, sell, buy_signal_name) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
 
         if buy and not sell:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
@@ -435,11 +435,11 @@ class FreqtradeBot(LoggingMixin):
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_buy(pair, stake_amount)
+                    return self.execute_buy(pair, stake_amount, buy_signal_name=buy_signal_name)
                 else:
                     return False
 
-            return self.execute_buy(pair, stake_amount)
+            return self.execute_buy(pair, stake_amount, buy_signal_name=buy_signal_name)
         else:
             return False
 
@@ -468,7 +468,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                    forcebuy: bool = False) -> bool:
+                    forcebuy: bool = False, buy_signal_name: str = '') -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -562,6 +562,7 @@ class FreqtradeBot(LoggingMixin):
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
+            buy_signal_name=buy_signal_name,
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
         trade.orders.append(order_obj)

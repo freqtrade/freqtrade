@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalType
+from freqtrade.enums import SellType, SignalType, SignalNameType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -506,7 +506,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             )
             return False, False
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+        (buy, sell, buy_signal_name) = latest[SignalType.BUY.value] == 1,\
+            latest[SignalType.SELL.value] == 1,\
+            latest.get(SignalNameType.BUY_SIGNAL_NAME.value, '')
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
@@ -514,8 +516,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell
-        return buy, sell
+            return False, sell, buy_signal_name
+        return buy, sell, buy_signal_name
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
