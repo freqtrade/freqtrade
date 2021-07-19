@@ -999,7 +999,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_rate(self, pair: str, refresh: bool, side: str = "buy") -> float:
+    def get_rate(self, pair: str, refresh: bool, side: str) -> float:
         """
         Calculates bid/ask target
         bid rate - between current ask price and last price
@@ -1021,16 +1021,16 @@ class Exchange:
                 logger.debug(f"Using cached {side} rate for {pair}.")
                 return rate
 
-        strategy = self._config.get(strat_name, {})
+        conf_strategy = self._config.get(strat_name, {})
 
-        if strategy.get('use_order_book', False) and ('use_order_book' in strategy):
+        if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
 
-            order_book_top = strategy.get('order_book_top', 1)
+            order_book_top = conf_strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)
             logger.debug('order_book %s', order_book)
             # top 1 = index 0
             try:
-                rate = order_book[f"{strategy['price_side']}s"][order_book_top - 1][0]
+                rate = order_book[f"{conf_strategy['price_side']}s"][order_book_top - 1][0]
             except (IndexError, KeyError) as e:
                 logger.warning(
                     f"{name} Price at location {order_book_top} from orderbook could not be "
@@ -1038,18 +1038,18 @@ class Exchange:
                 )
                 raise PricingError from e
 
-            logger.info(f"{name} price from orderbook {strategy['price_side'].capitalize()}"
+            logger.info(f"{name} price from orderbook {conf_strategy['price_side'].capitalize()}"
                         f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
-            logger.info(f"Using Last {strategy['price_side'].capitalize()} / Last Price")
+            logger.info(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.fetch_ticker(pair)
-            ticker_rate = ticker[strategy['price_side']]
+            ticker_rate = ticker[conf_strategy['price_side']]
             if ticker['last']:
                 if side == 'buy' and ticker_rate > ticker['last']:
-                    balance = strategy['ask_last_balance']
+                    balance = conf_strategy['ask_last_balance']
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
                 elif side == 'sell' and ticker_rate < ticker['last']:
-                    balance = strategy.get('bid_last_balance', 0.0)
+                    balance = conf_strategy.get('bid_last_balance', 0.0)
                     ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
 
