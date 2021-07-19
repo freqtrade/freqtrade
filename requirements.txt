@@ -9,7 +9,7 @@ SQLAlchemy==1.4.20
 python-telegram-bot==13.7
 arrow==1.1.1
 cachetools==4.2.2
-requests==2.25.1
+requests==2.26.0
 urllib3==1.26.6
 wrapt==1.12.1
 jsonschema==3.2.0
