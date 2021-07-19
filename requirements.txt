@@ -39,5 +39,5 @@ aiofiles==0.7.0
 # Support for colorized terminal output
 colorama==0.4.4
 # Building config files interactively
-questionary==1.9.0
+questionary==1.10.0
 prompt-toolkit==3.0.19
