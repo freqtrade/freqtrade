@@ -161,7 +161,7 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
                         (True, 0.0022, 3, 0.5, [0.001, 0.001, 0.0]),
                         (True, 0.0027, 3, 0.5, [0.001, 0.001, 0.000673]),
                         (True, 0.0022, 3, 1, [0.001, 0.001, 0.0]),
-                        ])
+])
 def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_buy_order_open,
                                       amend_last, wallet, max_open, lsamr, expected) -> None:
     patch_RPCManager(mocker)
@@ -784,7 +784,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     buy_mm = MagicMock(return_value=limit_buy_order_open)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_buy_rate=buy_rate_mock,
+        get_rate=buy_rate_mock,
         fetch_ticker=MagicMock(return_value={
             'bid': 0.00001172,
             'ask': 0.00001173,
@@ -824,7 +824,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     limit_buy_order_open['id'] = '33'
     fix_price = 0.06
     assert freqtrade.execute_buy(pair, stake_amount, fix_price)
-    # Make sure get_buy_rate wasn't called again
+    # Make sure get_rate wasn't called again
     assert buy_rate_mock.call_count == 0
 
     assert buy_mm.call_count == 2
@@ -893,7 +893,7 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert not freqtrade.execute_buy(pair, stake_amount)
 
     # Fail to get price...
-    mocker.patch('freqtrade.exchange.Exchange.get_buy_rate', MagicMock(return_value=0.0))
+    mocker.patch('freqtrade.exchange.Exchange.get_rate', MagicMock(return_value=0.0))
 
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
@@ -909,7 +909,7 @@ def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -
             'last': 0.00001172
         }),
         buy=MagicMock(return_value=limit_buy_order),
-        get_buy_rate=MagicMock(return_value=0.11),
+        get_rate=MagicMock(return_value=0.11),
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
     )
@@ -2513,7 +2513,7 @@ def test_handle_cancel_sell_limit(mocker, default_conf, fee) -> None:
         'freqtrade.exchange.Exchange',
         cancel_order=cancel_order_mock,
     )
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate', return_value=0.245441)
+    mocker.patch('freqtrade.exchange.Exchange.get_rate', return_value=0.245441)
 
     freqtrade = FreqtradeBot(default_conf)
 
@@ -3956,7 +3956,7 @@ def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_o
 
 def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     """
-    test if function get_buy_rate will return the order book price
+    test if function get_rate will return the order book price
     instead of the ask rate
     """
     patch_exchange(mocker)
@@ -3974,7 +3974,7 @@ def test_order_book_bid_strategy1(mocker, default_conf, order_book_l2) -> None:
     default_conf['telegram']['enabled'] = False
 
     freqtrade = FreqtradeBot(default_conf)
-    assert freqtrade.exchange.get_buy_rate('ETH/BTC', True) == 0.043935
+    assert freqtrade.exchange.get_rate('ETH/BTC', refresh=True, side="buy") == 0.043935
     assert ticker_mock.call_count == 0
 
 
@@ -3996,8 +3996,8 @@ def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None
     freqtrade = FreqtradeBot(default_conf)
     # orderbook shall be used even if tickers would be lower.
     with pytest.raises(PricingError):
-        freqtrade.exchange.get_buy_rate('ETH/BTC', refresh=True)
-    assert log_has_re(r'Buy Price from orderbook could not be determined.', caplog)
+        freqtrade.exchange.get_rate('ETH/BTC', refresh=True, side="buy")
+    assert log_has_re(r'Buy Price at location 1 from orderbook could not be determined.', caplog)
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
