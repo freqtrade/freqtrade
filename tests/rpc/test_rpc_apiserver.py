@@ -2,6 +2,7 @@
 Unit test file for rpc/api_server.py
 """
 
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock
@@ -16,7 +17,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import RunMode, State
-from freqtrade.exceptions import ExchangeError
+from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
@@ -48,9 +49,13 @@ def botclient(default_conf, mocker):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtrade)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
-    apiserver = ApiServer(rpc, default_conf)
-    yield freqtrade, TestClient(apiserver.app)
-    # Cleanup ... ?
+    try:
+        apiserver = ApiServer(default_conf)
+        apiserver.add_rpc_handler(rpc)
+        yield freqtrade, TestClient(apiserver.app)
+        # Cleanup ... ?
+    finally:
+        ApiServer.shutdown()
 
 
 def client_post(client, url, data={}):
@@ -103,6 +108,15 @@ def test_api_ui_fallback(botclient):
     # Forwarded to fallback_html or index.html (depending if it's installed or not)
     rc = client_get(client, "/something")
     assert rc.status_code == 200
+
+
+def test_api_ui_version(botclient, mocker):
+    ftbot, client = botclient
+
+    mocker.patch('freqtrade.commands.deploy_commands.read_ui_version', return_value='0.1.2')
+    rc = client_get(client, "/ui_version")
+    assert rc.status_code == 200
+    assert rc.json()['version'] == '0.1.2'
 
 
 def test_api_auth():
@@ -226,8 +240,13 @@ def test_api__init__(default_conf, mocker):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
     mocker.patch('freqtrade.rpc.api_server.webserver.ApiServer.start_api', MagicMock())
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
     assert apiserver._config == default_conf
+    with pytest.raises(OperationalException, match="RPC Handler already attached."):
+        apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
+
+    ApiServer.shutdown()
 
 
 def test_api_UvicornServer(mocker):
@@ -289,15 +308,21 @@ def test_api_run(default_conf, mocker, caplog):
                                         }})
     mocker.patch('freqtrade.rpc.telegram.Updater', MagicMock())
 
-    server_mock = MagicMock()
+    server_inst_mock = MagicMock()
+    server_inst_mock.run_in_thread = MagicMock()
+    server_inst_mock.run = MagicMock()
+    server_mock = MagicMock(return_value=server_inst_mock)
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     assert server_mock.call_count == 1
     assert apiserver._config == default_conf
     apiserver.start_api()
     assert server_mock.call_count == 2
+    assert server_inst_mock.run_in_thread.call_count == 2
+    assert server_inst_mock.run.call_count == 0
     assert server_mock.call_args_list[0][0][0].host == "127.0.0.1"
     assert server_mock.call_args_list[0][0][0].port == 8080
     assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
@@ -316,6 +341,8 @@ def test_api_run(default_conf, mocker, caplog):
     apiserver.start_api()
 
     assert server_mock.call_count == 1
+    assert server_inst_mock.run_in_thread.call_count == 1
+    assert server_inst_mock.run.call_count == 0
     assert server_mock.call_args_list[0][0][0].host == "0.0.0.0"
     assert server_mock.call_args_list[0][0][0].port == 8089
     assert isinstance(server_mock.call_args_list[0][0][0].app, FastAPI)
@@ -329,12 +356,24 @@ def test_api_run(default_conf, mocker, caplog):
                    "Please make sure that this is intentional!", caplog)
     assert log_has_re("SECURITY WARNING - `jwt_secret_key` seems to be default.*", caplog)
 
+    server_mock.reset_mock()
+    apiserver._standalone = True
+    apiserver.start_api()
+    assert server_inst_mock.run_in_thread.call_count == 0
+    assert server_inst_mock.run.call_count == 1
+
+    apiserver1 = ApiServer(default_conf)
+    assert id(apiserver1) == id(apiserver)
+
+    apiserver._standalone = False
+
     # Test crashing API server
     caplog.clear()
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer',
                  MagicMock(side_effect=Exception))
     apiserver.start_api()
     assert log_has("Api server failed to start.", caplog)
+    ApiServer.shutdown()
 
 
 def test_api_cleanup(default_conf, mocker, caplog):
@@ -350,11 +389,13 @@ def test_api_cleanup(default_conf, mocker, caplog):
     server_mock.cleanup = MagicMock()
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
-    apiserver = ApiServer(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     apiserver.cleanup()
     assert apiserver._server.cleanup.call_count == 1
     assert log_has("Stopping API Server", caplog)
+    ApiServer.shutdown()
 
 
 def test_api_reloadconf(botclient):
@@ -668,12 +709,16 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
                          'profit_all_ratio_mean': -0.6641100666666667,
                          'profit_all_percent_sum': -398.47,
                          'profit_all_ratio_sum': -3.9846604,
+                         'profit_all_percent': -4.41,
+                         'profit_all_ratio': -0.044063014216106644,
                          'profit_closed_coin': 0.00073913,
                          'profit_closed_fiat': 9.124559849999999,
                          'profit_closed_ratio_mean': 0.0075,
                          'profit_closed_percent_mean': 0.75,
                          'profit_closed_ratio_sum': 0.015,
                          'profit_closed_percent_sum': 1.5,
+                         'profit_closed_ratio': 7.391275897987988e-07,
+                         'profit_closed_percent': 0.0,
                          'trade_count': 6,
                          'closed_trade_count': 2,
                          'winning_trades': 2,
@@ -834,7 +879,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'exchange': 'binance',
     }
 
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
 
     rc = client_get(client, f"{BASE_URI}/status")
@@ -1208,3 +1253,108 @@ def test_list_available_pairs(botclient):
     assert rc.json()['length'] == 1
     assert rc.json()['pairs'] == ['XRP/ETH']
     assert len(rc.json()['pair_interval']) == 1
+
+
+def test_api_backtesting(botclient, mocker, fee, caplog):
+    ftbot, client = botclient
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+
+    # Backtesting not started yet
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'not_started'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest not yet executed'
+    assert result['progress'] == 0
+
+    # Reset backtesting
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'reset'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest reset'
+
+    # start backtesting
+    data = {
+        "strategy": "DefaultStrategy",
+        "timeframe": "5m",
+        "timerange": "20180110-20180111",
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run_wallet": 1000,
+        "enable_protections": False
+    }
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert_response(rc)
+    result = rc.json()
+
+    assert result['status'] == 'running'
+    assert result['progress'] == 0
+    assert result['running']
+    assert result['status_msg'] == 'Backtest started'
+
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'ended'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
+    assert result['progress'] == 1
+    assert result['backtest_result']
+
+    rc = client_get(client, f"{BASE_URI}/backtest/abort")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'not_running'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
+
+    # Simulate running backtest
+    ApiServer._bgtask_running = True
+    rc = client_get(client, f"{BASE_URI}/backtest/abort")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'stopping'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest ended'
+
+    # Get running backtest...
+    rc = client_get(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'running'
+    assert result['running']
+    assert result['step'] == "backtest"
+    assert result['status_msg'] == "Backtest running"
+
+    # Try delete with task still running
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+    result = rc.json()
+    assert result['status'] == 'running'
+
+    # Post to backtest that's still running
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert_response(rc, 502)
+    result = rc.json()
+    assert 'Bot Background task already running' in result['error']
+
+    ApiServer._bgtask_running = False
+
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy',
+                 side_effect=DependencyException())
+    rc = client_post(client, f"{BASE_URI}/backtest", data=json.dumps(data))
+    assert log_has("Backtesting caused an error: ", caplog)
+
+    # Delete backtesting to avoid leakage since the backtest-object may stick around.
+    rc = client_delete(client, f"{BASE_URI}/backtest")
+    assert_response(rc)
+
+    result = rc.json()
+    assert result['status'] == 'reset'
+    assert not result['running']
+    assert result['status_msg'] == 'Backtest reset'

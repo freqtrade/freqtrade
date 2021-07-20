@@ -26,9 +26,9 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
-                       'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
-                       'SpreadFilter', 'VolatilityFilter']
+                       'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
+                       'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
+                       'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
@@ -40,6 +40,7 @@ DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 DEFAULT_TRADES_COLUMNS = ['timestamp', 'id', 'type', 'side', 'price', 'amount', 'cost']
 
 LAST_BT_RESULT_FN = '.last_result.json'
+FTHYPT_FILEVERSION = 'fthypt_fileversion'
 
 USERPATH_HYPEROPTS = 'hyperopts'
 USERPATH_STRATEGIES = 'strategies'
@@ -111,6 +112,10 @@ CONF_SCHEMA = {
             'minimum': 0.1,
             'maximum': 1,
             'default': 0.99
+        },
+        'available_capital': {
+            'type': 'number',
+            'minimum': 0,
         },
         'amend_last_stake_amount': {'type': 'boolean', 'default': False},
         'last_stake_amount_min_ratio': {
@@ -312,6 +317,7 @@ CONF_SCHEMA = {
         },
         'db_url': {'type': 'string'},
         'export': {'type': 'string', 'enum': EXPORT_OPTIONS, 'default': 'trades'},
+        'disableparamexport': {'type': 'boolean'},
         'initial_state': {'type': 'string', 'enum': ['running', 'stopped']},
         'forcebuy_enable': {'type': 'boolean'},
         'disable_dataframe_checks': {'type': 'boolean'},

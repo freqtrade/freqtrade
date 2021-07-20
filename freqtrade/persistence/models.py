@@ -805,6 +805,19 @@ class Trade(_DECL_BASE, LocalTrade):
                                  ]).all()
 
     @staticmethod
+    def get_total_closed_profit() -> float:
+        """
+        Retrieves total realized profit
+        """
+        if Trade.use_db:
+            total_profit = Trade.query.with_entities(
+                func.sum(Trade.close_profit_abs)).filter(Trade.is_open.is_(False)).scalar()
+        else:
+            total_profit = sum(
+                t.close_profit_abs for t in LocalTrade.get_trades_proxy(is_open=False))
+        return total_profit or 0
+
+    @staticmethod
     def total_open_trades_stakes() -> float:
         """
         Calculates total invested amount in open trades

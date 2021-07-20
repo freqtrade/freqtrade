@@ -178,6 +178,11 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
     ),
+    "disableparamexport": Arg(
+        '--disable-param-export',
+        help="Disable automatic hyperopt parameter export.",
+        action='store_true',
+    ),
     "fee": Arg(
         '--fee',
         help='Specify fee ratio. Will be applied twice (on trade entry and exit).',

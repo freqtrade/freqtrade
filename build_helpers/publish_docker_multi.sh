@@ -9,7 +9,8 @@ TAG_PI="${TAG}_pi"
 
 PI_PLATFORM="linux/arm/v7"
 echo "Running for ${TAG}"
-CACHE_TAG=freqtradeorg/freqtrade_cache:${TAG}_cache
+CACHE_IMAGE=freqtradeorg/freqtrade_cache
+CACHE_TAG=${CACHE_IMAGE}:${TAG_PI}_cache
 
 # Add commit and commit_message to docker container
 echo "${GITHUB_SHA}" > freqtrade_commit
@@ -45,14 +46,14 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 # Tag image for upload and next build step
-docker tag freqtrade:$TAG ${IMAGE_NAME}:$TAG
+docker tag freqtrade:$TAG ${CACHE_IMAGE}:$TAG
 
 docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
 
-docker tag freqtrade:$TAG_PLOT ${IMAGE_NAME}:$TAG_PLOT
+docker tag freqtrade:$TAG_PLOT ${CACHE_IMAGE}:$TAG_PLOT
 
 # Run backtest
-docker run --rm -v $(pwd)/config_bittrex.json.example:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
+docker run --rm -v $(pwd)/config_examples/config_bittrex.example.json:/freqtrade/config.json:ro -v $(pwd)/tests:/tests freqtrade:${TAG} backtesting --datadir /tests/testdata --strategy-path /tests/strategy/strats/ --strategy DefaultStrategy
 
 if [ $? -ne 0 ]; then
     echo "failed running backtest"
@@ -61,22 +62,9 @@ fi
 
 docker images
 
-docker push ${IMAGE_NAME}
-docker push ${IMAGE_NAME}:$TAG_PLOT
-docker push ${IMAGE_NAME}:$TAG
-
-# Create multiarch image
-# Make sure that all images contained here are pushed to github first.
-# Otherwise installation might fail.
-
-docker manifest create freqtradeorg/freqtrade:${TAG} ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:${TAG_PI}
-docker manifest push freqtradeorg/freqtrade:${TAG}
-
-# Tag as latest for develop builds
-if [ "${TAG}" = "develop" ]; then
-    docker manifest create freqtradeorg/freqtrade:latest ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:${TAG_PI}
-    docker manifest push freqtradeorg/freqtrade:latest
-fi
+docker push ${CACHE_IMAGE}
+docker push ${CACHE_IMAGE}:$TAG_PLOT
+docker push ${CACHE_IMAGE}:$TAG
 
 
 docker images

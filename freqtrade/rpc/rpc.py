@@ -106,6 +106,7 @@ class RPC:
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals':  decimals_per_coin(config['stake_currency']),
             'stake_amount': config['stake_amount'],
+            'available_capital': config.get('available_capital'),
             'max_open_trades': (config['max_open_trades']
                                 if config['max_open_trades'] != float('inf') else -1),
             'minimal_roi': config['minimal_roi'].copy() if 'minimal_roi' in config else {},
@@ -118,9 +119,9 @@ class RPC:
             'bot_name': config.get('bot_name', 'freqtrade'),
             'timeframe': config.get('timeframe'),
             'timeframe_ms': timeframe_to_msecs(config['timeframe']
-                                               ) if 'timeframe' in config else '',
+                                               ) if 'timeframe' in config else 0,
             'timeframe_min': timeframe_to_minutes(config['timeframe']
-                                                  ) if 'timeframe' in config else '',
+                                                  ) if 'timeframe' in config else 0,
             'exchange': config['exchange']['name'],
             'strategy': config['strategy'],
             'forcebuy_enabled': config.get('forcebuy_enable', False),
@@ -153,7 +154,8 @@ class RPC:
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
-                        current_rate = self._freqtrade.exchange.get_sell_rate(trade.pair, False)
+                        current_rate = self._freqtrade.exchange.get_rate(
+                            trade.pair, refresh=False, side="sell")
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -212,7 +214,8 @@ class RPC:
             for trade in trades:
                 # calculate profit and send message to user
                 try:
-                    current_rate = self._freqtrade.exchange.get_sell_rate(trade.pair, False)
+                    current_rate = self._freqtrade.exchange.get_rate(
+                        trade.pair, refresh=False, side="sell")
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_percent = (100 * trade.calc_profit_ratio(current_rate))
@@ -271,10 +274,10 @@ class RPC:
                 'date': key,
                 'abs_profit': value["amount"],
                 'fiat_value': self._fiat_converter.convert_amount(
-                        value['amount'],
-                        stake_currency,
-                        fiat_display_currency
-                    ) if self._fiat_converter else 0,
+                    value['amount'],
+                    stake_currency,
+                    fiat_display_currency
+                ) if self._fiat_converter else 0,
                 'trade_count': value["trades"],
             }
             for key, value in profit_days.items()
@@ -371,7 +374,8 @@ class RPC:
             else:
                 # Get current rate
                 try:
-                    current_rate = self._freqtrade.exchange.get_sell_rate(trade.pair, False)
+                    current_rate = self._freqtrade.exchange.get_rate(
+                        trade.pair, refresh=False, side="sell")
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
@@ -396,7 +400,12 @@ class RPC:
 
         profit_all_coin_sum = round(sum(profit_all_coin), 8)
         profit_all_ratio_mean = float(mean(profit_all_ratio) if profit_all_ratio else 0.0)
+        # Doing the sum is not right - overall profit needs to be based on initial capital
         profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
+        starting_balance = self._freqtrade.wallets.get_starting_balance()
+        profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
+        profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
+
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
             stake_currency,
@@ -412,12 +421,16 @@ class RPC:
             'profit_closed_ratio_mean': profit_closed_ratio_mean,
             'profit_closed_percent_sum': round(profit_closed_ratio_sum * 100, 2),
             'profit_closed_ratio_sum': profit_closed_ratio_sum,
+            'profit_closed_ratio': profit_closed_ratio_fromstart,
+            'profit_closed_percent': round(profit_closed_ratio_fromstart * 100, 2),
             'profit_closed_fiat': profit_closed_fiat,
             'profit_all_coin': profit_all_coin_sum,
             'profit_all_percent_mean': round(profit_all_ratio_mean * 100, 2),
             'profit_all_ratio_mean': profit_all_ratio_mean,
             'profit_all_percent_sum': round(profit_all_ratio_sum * 100, 2),
             'profit_all_ratio_sum': profit_all_ratio_sum,
+            'profit_all_ratio': profit_all_ratio_fromstart,
+            'profit_all_percent': round(profit_all_ratio_fromstart * 100, 2),
             'profit_all_fiat': profit_all_fiat,
             'trade_count': len(trades),
             'closed_trade_count': len([t for t in trades if not t.is_open]),
@@ -541,7 +554,8 @@ class RPC:
 
             if not fully_canceled:
                 # Get current rate and execute sell
-                current_rate = self._freqtrade.exchange.get_sell_rate(trade.pair, False)
+                current_rate = self._freqtrade.exchange.get_rate(
+                    trade.pair, refresh=False, side="sell")
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 self._freqtrade.execute_sell(trade, current_rate, sell_reason)
         # ---- EOF def _exec_forcesell ----
@@ -761,7 +775,7 @@ class RPC:
         sell_signals = 0
         if has_content:
 
-            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].astype(int64) // 1000 // 1000
+            dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
             # Move open to seperate column when signal for easy plotting
             if 'buy' in dataframe.columns:
                 buy_mask = (dataframe['buy'] == 1)

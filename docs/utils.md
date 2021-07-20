@@ -614,6 +614,48 @@ Show whitelist when using a [dynamic pairlist](plugins.md#pairlists).
 freqtrade test-pairlist --config config.json --quote USDT BTC
 ```
 
+## Webserver mode
+
+!!! Warning "Experimental"
+    Webserver mode is an experimental mode to increase backesting and strategy development productivity.
+    There may still be bugs - so if you happen to stumble across these, please report them as github issues, thanks.
+
+Run freqtrade in webserver mode.
+Freqtrade will start the webserver and allow FreqUI to start and control backtesting processes.
+This has the advantage that data will not be reloaded between backtesting runs (as long as timeframe and timerange remain identical).
+FreqUI will also show the backtesting results.
+
+```
+usage: freqtrade webserver [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+
+```
+
 ## List Hyperopt results
 
 You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` sub-command.
@@ -702,7 +744,8 @@ You can show the details of any hyperoptimization epoch previously evaluated by 
 usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
                                [--profitable] [-n INT] [--print-json]
-                               [--hyperopt-filename PATH] [--no-header]
+                               [--hyperopt-filename FILENAME] [--no-header]
+                               [--disable-param-export]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -714,6 +757,8 @@ optional arguments:
                         Hyperopt result filename.Example: `--hyperopt-
                         filename=hyperopt_results_2020-09-27_16-20-48.pickle`
   --no-header           Do not print epoch details header.
+  --disable-param-export
+                        Disable automatic hyperopt parameter export.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

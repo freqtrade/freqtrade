@@ -14,7 +14,7 @@ from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, validate_exchanges
-from freqtrade.misc import plural
+from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 
 
@@ -225,7 +225,7 @@ def start_show_trades(args: Dict[str, Any]) -> None:
     if 'db_url' not in config:
         raise OperationalException("--db-url is required for this command.")
 
-    logger.info(f'Using DB: "{config["db_url"]}"')
+    logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
     init_db(config['db_url'], clean_open_orders=False)
     tfilter = []
 
