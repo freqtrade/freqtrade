@@ -11,6 +11,6 @@ class SignalType(Enum):
 
 class SignalNameType(Enum):
     """
-    Enum for signal name
+    Enum for signal columns
     """
     BUY_SIGNAL_NAME = "buy_signal_name"
