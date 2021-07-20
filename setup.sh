@@ -4,8 +4,12 @@
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
-        echo "pip not found (called as '${PYTHON} -m pip'). Please make sure that pip is available for ${PYTHON}."
-        exit 1
+        echo "-----------------------------"
+        echo "Installing Pip for ${PYTHON}"
+        echo "-----------------------------"
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        ${PYTHON} get-pip.py
+        rm get-pip.py
    fi
 }
 
@@ -17,13 +21,12 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 8 9 7
+    for v in 9 8 7
     do
         PYTHON="python3.${v}"
         which $PYTHON
         if [ $? -eq 0 ]; then
             echo "using ${PYTHON}"
-
             check_installed_pip
             return
         fi
@@ -136,7 +139,7 @@ function install_macos() {
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
     #Gets number after decimal in python version
-    version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g' ) 
+    version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')
     
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
@@ -147,7 +150,7 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git libpython3-dev
+    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
     install_talib
 }
 
@@ -236,12 +239,12 @@ function install() {
 }
 
 function plot() {
-echo "
------------------------------------------
-Installing dependencies for Plotting scripts
------------------------------------------
-"
-${PYTHON} -m pip install plotly --upgrade
+    echo "
+    -----------------------------------------
+    Installing dependencies for Plotting scripts
+    -----------------------------------------
+    "
+    ${PYTHON} -m pip install plotly --upgrade
 }
 
 function help() {
