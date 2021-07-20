@@ -29,7 +29,6 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 
 tests_start_time = arrow.get(2018, 10, 3)
 timeframe_in_minute = 60
-_ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 # Helpers for this test file
 
@@ -77,23 +76,23 @@ def _time_on_candle(number):
 # End helper functions
 # Open trade should be removed from the end
 tc0 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4975, 4987, 6172, 0, 1]],  # enter trade (signal on last candle)
+    # D  O     H     L     C     V    B  S  SN
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 1, '']],  # enter trade (signal on last candle)
     stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
     trades=[]
 )
 
 # Two complete trades within dataframe(with sell hit for all)
 tc1 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4975, 4987, 6172, 0, 1],  # enter trade (signal on last candle)
-    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],  # exit at open
-    [3, 5000, 5025, 4975, 4987, 6172, 1, 0],  # no action
-    [4, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should enter the trade
-    [5, 5000, 5025, 4975, 4987, 6172, 0, 1],  # no action
-    [6, 5000, 5025, 4975, 4987, 6172, 0, 0],  # should sell
+    # D  O     H     L     C     V    B  S  SN
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],
+    [1, 5000, 5025, 4975, 4987, 6172, 0, 1, ''],  # enter trade (signal on last candle)
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],  # exit at open
+    [3, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],  # no action
+    [4, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],  # should enter the trade
+    [5, 5000, 5025, 4975, 4987, 6172, 0, 1, ''],  # no action
+    [6, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],  # should sell
 ],
     stop_loss=-0.99, roi={"0": float('inf')}, profit_perc=0.00,
     trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=2),
@@ -102,10 +101,10 @@ tc1 = BTContainer(data=[
 
 # 3) Entered, sl 1%, candle drops 8% => Trade closed, 1% loss
 tc2 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4600, 4987, 6172, 0, 0],  # enter trade, stoploss hit
-    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    # D  O     H     L     C     V    B  S  SN
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],
+    [1, 5000, 5025, 4600, 4987, 6172, 0, 0, ''],  # enter trade, stoploss hit
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],
 ],
     stop_loss=-0.01, roi={"0": float('inf')}, profit_perc=-0.01,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
@@ -113,10 +112,10 @@ tc2 = BTContainer(data=[
 
 # 4) Entered, sl 3 %, candle drops 4%, recovers to 1 % = > Trade closed, 3 % loss
 tc3 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4800, 4987, 6172, 0, 0],  # enter trade, stoploss hit
-    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    # D  O     H     L     C     V    B  S  SN
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],
+    [1, 5000, 5025, 4800, 4987, 6172, 0, 0, ''],  # enter trade, stoploss hit
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
@@ -124,10 +123,10 @@ tc3 = BTContainer(data=[
 
 # 5) Stoploss and sell are hit. should sell on stoploss
 tc4 = BTContainer(data=[
-    # D  O     H     L     C     V    B  S
-    [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
-    [1, 5000, 5025, 4800, 4987, 6172, 0, 1],  # enter trade, stoploss hit, sell signal
-    [2, 5000, 5025, 4975, 4987, 6172, 0, 0],
+    # D  O     H     L     C     V    B  S  SN
+    [0, 5000, 5025, 4975, 4987, 6172, 1, 0, ''],
+    [1, 5000, 5025, 4800, 4987, 6172, 0, 1, ''],  # enter trade, stoploss hit, sell signal
+    [2, 5000, 5025, 4975, 4987, 6172, 0, 0, ''],
 ],
     stop_loss=-0.03, roi={"0": float('inf')}, profit_perc=-0.03,
     trades=[BTrade(sell_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]

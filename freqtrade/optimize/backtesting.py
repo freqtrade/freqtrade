@@ -453,8 +453,6 @@ class Backtesting:
                 row_index = indexes[pair]
                 try:
                     row = data[pair][row_index]
-                    print('weeee')
-                    print(row)
                 except IndexError:
                     # missing Data for one pair at the end.
                     # Warnings for this are shown during data loading
