@@ -114,6 +114,32 @@ class AwesomeStrategy(IStrategy):
 
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
+## Buy Signal Name
+
+When your strategy has multiple buy signal, you can name it.
+Then you can access you buy signal on `custom_sell`
+
+```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            (dataframe['rsi'] < 35) &
+            (dataframe['volume'] > 0)
+        ),
+        ['buy', 'buy_signal_name']] = 1, 'buy_signal_rsi'
+
+    return dataframe
+
+def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+    if trade.buy_signal_name == 'buy_signal_rsi' and last_candle['rsi'] > 80:
+        return 'sell_signal_rsi'
+    return None
+
+```
+
 ## Custom stoploss
 
 The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
