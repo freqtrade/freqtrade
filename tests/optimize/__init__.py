@@ -18,6 +18,7 @@ class BTrade(NamedTuple):
     sell_reason: SellType
     open_tick: int
     close_tick: int
+    buy_signal_name: Optional[str] = ''
 
 
 class BTContainer(NamedTuple):
@@ -43,7 +44,7 @@ def _get_frame_time_from_offset(offset):
 
 
 def _build_backtest_dataframe(data):
-    columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell', 'buy_signal_name']
 
     frame = DataFrame.from_records(data, columns=columns)
     frame['date'] = frame['date'].apply(_get_frame_time_from_offset)
