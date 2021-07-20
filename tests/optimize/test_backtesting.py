@@ -482,6 +482,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
         0,  # Sell
         0.00099,  # Low
         0.0012,  # High
+        '',  # Buy Signal Name
     ]
     trade = backtesting._enter_trade(pair, row=row)
     assert isinstance(trade, LocalTrade)

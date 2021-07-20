@@ -45,11 +45,11 @@ def botclient(default_conf, mocker):
                                         "password": _TEST_PASS,
                                         }})
 
-    ftbot = get_patched_freqtradebot(mocker, default_conf)
-    rpc = RPC(ftbot)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtrade)
     mocker.patch('freqtrade.rpc.api_server.ApiServer.start_api', MagicMock())
     apiserver = ApiServer(rpc, default_conf)
-    yield ftbot, TestClient(apiserver.app)
+    yield freqtrade, TestClient(apiserver.app)
     # Cleanup ... ?
 
 
@@ -83,7 +83,7 @@ def assert_response(response, expected_code=200, needs_cors=True):
 
 
 def test_api_not_found(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/invalid_url")
     assert_response(rc, 404)
@@ -91,7 +91,7 @@ def test_api_not_found(botclient):
 
 
 def test_api_ui_fallback(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, "/favicon.ico")
     assert rc.status_code == 200
@@ -126,7 +126,7 @@ def test_api_auth():
 
 
 def test_api_unauthorized(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     rc = client.get(f"{BASE_URI}/ping")
     assert_response(rc, needs_cors=False)
     assert rc.json() == {'status': 'pong'}
@@ -137,20 +137,20 @@ def test_api_unauthorized(botclient):
     assert rc.json() == {'detail': 'Unauthorized'}
 
     # Change only username
-    ftbot.config['api_server']['username'] = 'Ftrader'
+    freqtrade.config['api_server']['username'] = 'Ftrader'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
     assert rc.json() == {'detail': 'Unauthorized'}
 
     # Change only password
-    ftbot.config['api_server']['username'] = _TEST_USER
-    ftbot.config['api_server']['password'] = 'WrongPassword'
+    freqtrade.config['api_server']['username'] = _TEST_USER
+    freqtrade.config['api_server']['password'] = 'WrongPassword'
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
     assert rc.json() == {'detail': 'Unauthorized'}
 
-    ftbot.config['api_server']['username'] = 'Ftrader'
-    ftbot.config['api_server']['password'] = 'WrongPassword'
+    freqtrade.config['api_server']['username'] = 'Ftrader'
+    freqtrade.config['api_server']['password'] = 'WrongPassword'
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc, 401)
@@ -158,7 +158,7 @@ def test_api_unauthorized(botclient):
 
 
 def test_api_token_login(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     rc = client.post(f"{BASE_URI}/token/login",
                      data=None,
                      headers={'Authorization': _basic_auth_str('WRONG_USER', 'WRONG_PASS'),
@@ -177,7 +177,7 @@ def test_api_token_login(botclient):
 
 
 def test_api_token_refresh(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     rc = client_post(client, f"{BASE_URI}/token/login")
     assert_response(rc)
     rc = client.post(f"{BASE_URI}/token/refresh",
@@ -190,12 +190,12 @@ def test_api_token_refresh(botclient):
 
 
 def test_api_stop_workflow(botclient):
-    ftbot, client = botclient
-    assert ftbot.state == State.RUNNING
+    freqtrade, client = botclient
+    assert freqtrade.state == State.RUNNING
     rc = client_post(client, f"{BASE_URI}/stop")
     assert_response(rc)
     assert rc.json() == {'status': 'stopping trader ...'}
-    assert ftbot.state == State.STOPPED
+    assert freqtrade.state == State.STOPPED
 
     # Stop bot again
     rc = client_post(client, f"{BASE_URI}/stop")
@@ -206,7 +206,7 @@ def test_api_stop_workflow(botclient):
     rc = client_post(client, f"{BASE_URI}/start")
     assert_response(rc)
     assert rc.json() == {'status': 'starting trader ...'}
-    assert ftbot.state == State.RUNNING
+    assert freqtrade.state == State.RUNNING
 
     # Call start again
     rc = client_post(client, f"{BASE_URI}/start")
@@ -358,32 +358,32 @@ def test_api_cleanup(default_conf, mocker, caplog):
 
 
 def test_api_reloadconf(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/reload_config")
     assert_response(rc)
     assert rc.json() == {'status': 'Reloading config ...'}
-    assert ftbot.state == State.RELOAD_CONFIG
+    assert freqtrade.state == State.RELOAD_CONFIG
 
 
 def test_api_stopbuy(botclient):
-    ftbot, client = botclient
-    assert ftbot.config['max_open_trades'] != 0
+    freqtrade, client = botclient
+    assert freqtrade.config['max_open_trades'] != 0
 
     rc = client_post(client, f"{BASE_URI}/stopbuy")
     assert_response(rc)
     assert rc.json() == {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
-    assert ftbot.config['max_open_trades'] == 0
+    assert freqtrade.config['max_open_trades'] == 0
 
 
 def test_api_balance(botclient, mocker, rpc_balance):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
-    ftbot.config['dry_run'] = False
+    freqtrade.config['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
-    ftbot.wallets.update()
+    freqtrade.wallets.update()
 
     rc = client_get(client, f"{BASE_URI}/balance")
     assert_response(rc)
@@ -400,8 +400,8 @@ def test_api_balance(botclient, mocker, rpc_balance):
 
 
 def test_api_count(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -422,13 +422,13 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json()["current"] == 4
     assert rc.json()["max"] == 1
 
-    ftbot.config['max_open_trades'] = float('inf')
+    freqtrade.config['max_open_trades'] = float('inf')
     rc = client_get(client, f"{BASE_URI}/count")
     assert rc.json()["max"] == -1
 
 
 def test_api_locks(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/locks")
     assert_response(rc)
@@ -462,8 +462,8 @@ def test_api_locks(botclient):
 
 
 def test_api_show_config(botclient, mocker):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
 
     rc = client_get(client, f"{BASE_URI}/show_config")
     assert_response(rc)
@@ -480,8 +480,8 @@ def test_api_show_config(botclient, mocker):
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -498,8 +498,8 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
 
 
 def test_api_trades(botclient, mocker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=markets)
@@ -526,8 +526,8 @@ def test_api_trades(botclient, mocker, fee, markets):
 
 
 def test_api_trade_single(botclient, mocker, fee, ticker, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=markets),
@@ -546,8 +546,8 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
 
 
 def test_api_delete_trade(botclient, mocker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     stoploss_mock = MagicMock()
     cancel_mock = MagicMock()
     mocker.patch.multiple(
@@ -562,7 +562,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
 
     create_mock_trades(fee)
     Trade.query.session.flush()
-    ftbot.strategy.order_types['stoploss_on_exchange'] = True
+    freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
     assert len(trades) > 2
@@ -588,7 +588,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
 
 
 def test_api_logs(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     rc = client_get(client, f"{BASE_URI}/logs")
     assert_response(rc)
     assert len(rc.json()) == 2
@@ -620,8 +620,8 @@ def test_api_logs(botclient):
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -636,8 +636,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_api_profit(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -683,8 +683,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_api_stats(botclient, mocker, ticker, fee, markets,):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -711,8 +711,8 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
 
 
 def test_api_performance(botclient, fee):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
 
     trade = Trade(
         pair='LTC/ETH',
@@ -757,8 +757,8 @@ def test_api_performance(botclient, fee):
 
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    freqtrade, client = botclient
+    patch_get_signal(freqtrade, (True, False, ''))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -845,7 +845,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
 
 
 def test_api_version(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/version")
     assert_response(rc)
@@ -853,7 +853,7 @@ def test_api_version(botclient):
 
 
 def test_api_blacklist(botclient, mocker):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/blacklist")
     assert_response(rc)
@@ -888,7 +888,7 @@ def test_api_blacklist(botclient, mocker):
 
 
 def test_api_whitelist(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/whitelist")
     assert_response(rc)
@@ -900,7 +900,7 @@ def test_api_whitelist(botclient):
 
 
 def test_api_forcebuy(botclient, mocker, fee):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/forcebuy",
                      data='{"pair": "ETH/BTC"}')
@@ -908,7 +908,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     assert rc.json() == {"error": "Error querying /api/v1/forcebuy: Forcebuy not enabled."}
 
     # enable forcebuy
-    ftbot.config['forcebuy_enable'] = True
+    freqtrade.config['forcebuy_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
@@ -990,7 +990,7 @@ def test_api_forcebuy(botclient, mocker, fee):
 
 
 def test_api_forcesell(botclient, mocker, ticker, fee, markets):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -999,14 +999,14 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
         markets=PropertyMock(return_value=markets),
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(freqtrade, (True, False, ''))
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')
     assert_response(rc, 502)
     assert rc.json() == {"error": "Error querying /api/v1/forcesell: invalid argument"}
 
-    ftbot.enter_positions()
+    freqtrade.enter_positions()
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')
@@ -1015,7 +1015,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
 
 
 def test_api_pair_candles(botclient, ohlcv_history):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     timeframe = '5m'
     amount = 3
 
@@ -1043,7 +1043,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     ohlcv_history.loc[1, 'buy'] = 1
     ohlcv_history['sell'] = 0
 
-    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    freqtrade.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
 
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
@@ -1081,7 +1081,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
 
 
 def test_api_pair_history(botclient, ohlcv_history):
-    ftbot, client = botclient
+    freqtrade, client = botclient
     timeframe = '5m'
 
     # No pair
@@ -1134,21 +1134,21 @@ def test_api_pair_history(botclient, ohlcv_history):
 
 
 def test_api_plot_config(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
     assert rc.json() == {}
 
-    ftbot.strategy.plot_config = {'main_plot': {'sma': {}},
+    freqtrade.strategy.plot_config = {'main_plot': {'sma': {}},
                                   'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
-    assert rc.json() == ftbot.strategy.plot_config
+    assert rc.json() == freqtrade.strategy.plot_config
     assert isinstance(rc.json()['main_plot'], dict)
     assert isinstance(rc.json()['subplots'], dict)
 
-    ftbot.strategy.plot_config = {'main_plot': {'sma': {}}}
+    freqtrade.strategy.plot_config = {'main_plot': {'sma': {}}}
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
 
@@ -1157,7 +1157,7 @@ def test_api_plot_config(botclient):
 
 
 def test_api_strategies(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/strategies")
 
@@ -1170,7 +1170,7 @@ def test_api_strategies(botclient):
 
 
 def test_api_strategy(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/strategy/DefaultStrategy")
 
@@ -1185,7 +1185,7 @@ def test_api_strategy(botclient):
 
 
 def test_list_available_pairs(botclient):
-    ftbot, client = botclient
+    freqtrade, client = botclient
 
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 

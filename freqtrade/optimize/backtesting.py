@@ -197,6 +197,7 @@ class Backtesting:
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
                 pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
+                pair_data.loc[:, 'buy_signal_name'] = ''  # cleanup if buy_signal_name is exist
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
@@ -205,6 +206,7 @@ class Backtesting:
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
             df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
+            df_analyzed.loc[:, 'buy_signal_name'] = df_analyzed.loc[:, 'buy_signal_name'].shift(1)
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 

@@ -404,6 +404,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
+            dataframe['buy_signal_name'] = ''
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)

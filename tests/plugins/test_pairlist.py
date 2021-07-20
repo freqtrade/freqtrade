@@ -769,20 +769,20 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
                           get_tickers=tickers
                           )
 
-    ftbot = get_patched_freqtradebot(mocker, default_conf)
-    ftbot.pairlists.refresh_pairlist()
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.pairlists.refresh_pairlist()
 
-    assert len(ftbot.pairlists.whitelist) == 5
+    assert len(freqtrade.pairlists.whitelist) == 5
 
     tickers.return_value['ETH/BTC']['ask'] = 0.0
     del tickers.return_value['TKN/BTC']
     del tickers.return_value['LTC/BTC']
     mocker.patch.multiple('freqtrade.exchange.Exchange', get_tickers=tickers)
 
-    ftbot.pairlists.refresh_pairlist()
+    freqtrade.pairlists.refresh_pairlist()
     assert log_has_re(r'Removed .* invalid ticker data.*', caplog)
 
-    assert len(ftbot.pairlists.whitelist) == 2
+    assert len(freqtrade.pairlists.whitelist) == 2
 
 
 @pytest.mark.parametrize("pairlistconfig,desc_expected,exception_expected", [
