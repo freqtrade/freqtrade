@@ -236,7 +236,7 @@ class LocalTrade():
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float = 0.0
+    stake_amount: float = 0.0  # TODO: This should probably be computed
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -273,7 +273,7 @@ class LocalTrade():
     @property
     def has_no_leverage(self) -> bool:
         """Returns true if this is a non-leverage, non-short trade"""
-        return (self.leverage == 1.0 and not self.is_short) or self.leverage is None
+        return ((self.leverage or self.leverage is None) == 1.0 and not self.is_short)
 
     @property
     def borrowed(self) -> float:
@@ -285,7 +285,7 @@ class LocalTrade():
         if self.has_no_leverage:
             return 0.0
         elif not self.is_short:
-            return self.stake_amount * (self.leverage-1)
+            return (self.amount * self.open_rate) * ((self.leverage-1)/self.leverage)
         else:
             return self.amount
 
@@ -350,6 +350,10 @@ class LocalTrade():
             self.stop_loss = liquidation_price
 
         self.liquidation_price = liquidation_price
+
+    def set_is_short(self, is_short: bool):
+        self.is_short = is_short
+        self.recalc_open_trade_value()
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
@@ -635,7 +639,8 @@ class LocalTrade():
     def recalc_open_trade_value(self) -> None:
         """
         Recalculate open_trade_value.
-        Must be called whenever open_rate or fee_open is changed.
+        Must be called whenever open_rate, fee_open or is_short is changed.
+
         """
         self.open_trade_value = self._calc_open_trade_value()
 
