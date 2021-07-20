@@ -879,7 +879,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'exchange': 'binance',
     }
 
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
 
     rc = client_get(client, f"{BASE_URI}/status")
