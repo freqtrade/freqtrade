@@ -690,7 +690,7 @@ class FreqtradeBot(LoggingMixin):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
+            (buy, sell, _) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
 
         logger.debug('checking sell')
         sell_rate = self.exchange.get_sell_rate(trade.pair, True)

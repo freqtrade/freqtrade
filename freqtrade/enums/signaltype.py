@@ -11,6 +11,6 @@ class SignalType(Enum):
 
 class SignalNameType(Enum):
     """
-    Enum to distinguish between buy and sell signals
+    Enum for signal name
     """
     BUY_SIGNAL_NAME = "buy_signal_name"

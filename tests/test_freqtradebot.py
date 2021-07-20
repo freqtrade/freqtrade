@@ -736,7 +736,7 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
         refresh_latest_ohlcv=refresh_mock,
     )
     inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m'), ("ETH/USDT", "1h")])
-    mocker.patch('freqtrade.strategy.interface.IStrategy.get_signal', return_value=(False, False))
+    mocker.patch('freqtrade.strategy.interface.IStrategy.get_signal', return_value=(False, False, ''))
     mocker.patch('time.sleep', return_value=None)
 
     freqtrade = FreqtradeBot(default_conf)
