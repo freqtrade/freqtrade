@@ -515,7 +515,7 @@ def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     )
     default_conf['stake_amount'] = 10
     freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade, value=(False, False))
+    patch_get_signal(freqtrade, value=(False, False, ''))
 
     Trade.query = MagicMock()
     Trade.query.filter = MagicMock()
@@ -1818,7 +1818,7 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limi
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == limit_sell_order['id']
 
@@ -1843,7 +1843,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     )
 
     freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade, value=(True, True))
+    patch_get_signal(freqtrade, value=(True, True, ''))
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.enter_positions()
@@ -1854,7 +1854,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     assert nb_trades == 0
 
     # Buy is triggering, so buying ...
-    patch_get_signal(freqtrade, value=(True, False))
+    patch_get_signal(freqtrade, value=(True, False, ''))
     freqtrade.enter_positions()
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1862,7 +1862,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     assert trades[0].is_open is True
 
     # Buy and Sell are not triggering, so doing nothing ...
-    patch_get_signal(freqtrade, value=(False, False))
+    patch_get_signal(freqtrade, value=(False, False, ''))
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1870,7 +1870,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     assert trades[0].is_open is True
 
     # Buy and Sell are triggering, so doing nothing ...
-    patch_get_signal(freqtrade, value=(True, True))
+    patch_get_signal(freqtrade, value=(True, True, ''))
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1878,7 +1878,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     assert trades[0].is_open is True
 
     # Sell is triggering, guess what : we are Selling!
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     trades = Trade.query.all()
     assert freqtrade.handle_trade(trades[0]) is True
 
@@ -1896,7 +1896,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtrade, value=(True, False))
+    patch_get_signal(freqtrade, value=(True, False, ''))
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.enter_positions()
@@ -1909,7 +1909,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Required profit reached. sell_type=SellType.ROI",
                    caplog)
@@ -1935,10 +1935,10 @@ def test_handle_trade_use_sell_signal(
     trade = Trade.query.first()
     trade.is_open = True
 
-    patch_get_signal(freqtrade, value=(False, False))
+    patch_get_signal(freqtrade, value=(False, False, ''))
     assert not freqtrade.handle_trade(trade)
 
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Sell signal received. sell_type=SellType.SELL_SIGNAL",
                    caplog)
@@ -2974,7 +2974,7 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is False
 
     freqtrade.strategy.sell_profit_offset = 0.0
@@ -3009,7 +3009,7 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, limit_bu
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
@@ -3040,7 +3040,7 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, limit_buy_o
 
     trade = Trade.query.first()
     trade.update(limit_buy_order)
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is False
 
 
@@ -3072,7 +3072,7 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, limit_buy_
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
@@ -3101,7 +3101,7 @@ def test_sell_not_enough_balance(default_conf, limit_buy_order, limit_buy_order_
     trade = Trade.query.first()
     amnt = trade.amount
     trade.update(limit_buy_order)
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=trade.amount * 0.985))
 
     assert freqtrade.handle_trade(trade) is True
@@ -3220,11 +3220,11 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(True, True))
+    patch_get_signal(freqtrade, value=(True, True, ''))
     assert freqtrade.handle_trade(trade) is False
 
     # Test if buy-signal is absent (should sell due to roi = true)
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3485,11 +3485,11 @@ def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_b
     trade = Trade.query.first()
     trade.update(limit_buy_order)
     # Sell due to min_roi_reached
-    patch_get_signal(freqtrade, value=(True, True))
+    patch_get_signal(freqtrade, value=(True, True, ''))
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
@@ -4017,7 +4017,7 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
     freqtrade.wallets.update()
     assert trade.is_open is True
 
-    patch_get_signal(freqtrade, value=(False, True))
+    patch_get_signal(freqtrade, value=(False, True, ''))
     assert freqtrade.handle_trade(trade) is True
     assert trade.close_rate_requested == order_book_l2.return_value['asks'][0][0]
 
