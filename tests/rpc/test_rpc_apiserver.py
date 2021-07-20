@@ -1185,8 +1185,10 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json() == {}
 
-    freqtrade.strategy.plot_config = {'main_plot': {'sma': {}},
-                                  'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
+    freqtrade.strategy.plot_config = {
+        'main_plot': {'sma': {}},
+        'subplots': {'RSI': {'rsi': {'color': 'red'}}}
+    }
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
     assert rc.json() == freqtrade.strategy.plot_config

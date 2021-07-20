@@ -528,7 +528,12 @@ tc33 = BTContainer(data=[
     stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
     trailing_stop_positive=0.01, use_custom_stoploss=True,
-    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1, buy_signal_name='buy_signal_01')]
+    trades=[BTrade(
+        sell_reason=SellType.TRAILING_STOP_LOSS,
+        open_tick=1,
+        close_tick=1,
+        buy_signal_name='buy_signal_01'
+    )]
 )
 
 TESTS = [

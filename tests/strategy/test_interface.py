@@ -76,7 +76,11 @@ def test_get_signal_empty(default_conf, mocker, caplog):
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
     caplog.clear()
 
-    assert (False, False, '') == _STRATEGY.get_signal('baz', default_conf['timeframe'], DataFrame([]))
+    assert (False, False, '') == _STRATEGY.get_signal(
+        'baz',
+        default_conf['timeframe'],
+        DataFrame([])
+    )
     assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
@@ -112,7 +116,11 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False, '') == _STRATEGY.get_signal('xyz', default_conf['timeframe'], mocked_history)
+    assert (False, False, '') == _STRATEGY.get_signal(
+        'xyz',
+        default_conf['timeframe'],
+        mocked_history
+    )
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 

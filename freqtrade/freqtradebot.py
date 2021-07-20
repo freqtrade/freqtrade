@@ -420,7 +420,11 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_signal_name) = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
+        (buy, sell, buy_signal_name) = self.strategy.get_signal(
+            pair,
+            self.strategy.timeframe,
+            analyzed_df
+        )
 
         if buy and not sell:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
@@ -693,7 +697,11 @@ class FreqtradeBot(LoggingMixin):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell, _) = self.strategy.get_signal(trade.pair, self.strategy.timeframe, analyzed_df)
+            (buy, sell, _) = self.strategy.get_signal(
+                trade.pair,
+                self.strategy.timeframe,
+                analyzed_df
+            )
 
         logger.debug('checking sell')
         sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
