@@ -68,7 +68,9 @@ def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False, None) == _STRATEGY.get_signal('foo', default_conf['timeframe'], DataFrame())
+    assert (False, False, None) == _STRATEGY.get_signal(
+        'foo', default_conf['timeframe'], DataFrame()
+    )
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
