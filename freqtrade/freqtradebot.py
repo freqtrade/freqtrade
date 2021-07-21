@@ -595,6 +595,7 @@ class FreqtradeBot(LoggingMixin):
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY,
+            'buy_tag': trade.buy_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -619,6 +620,7 @@ class FreqtradeBot(LoggingMixin):
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_CANCEL,
+            'buy_tag': trade.buy_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': trade.open_rate,
@@ -639,6 +641,7 @@ class FreqtradeBot(LoggingMixin):
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL,
+            'buy_tag': trade.buy_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'open_rate': trade.open_rate,

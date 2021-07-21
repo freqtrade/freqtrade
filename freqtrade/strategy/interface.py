@@ -508,7 +508,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False, ''
+            return False, False, None
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -523,11 +523,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False, ''
+            return False, False, None
 
         (buy, sell, buy_tag) = latest[SignalType.BUY.value] == 1,\
             latest[SignalType.SELL.value] == 1,\
-            latest.get(SignalTagType.BUY_TAG.value, '')
+            latest.get(SignalTagType.BUY_TAG.value, None)
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)

@@ -208,15 +208,25 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
-        message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
-                   f" (#{msg['trade_id']})\n"
-                   f"*Amount:* `{msg['amount']:.8f}`\n"
-                   f"*Open Rate:* `{msg['limit']:.8f}`\n"
-                   f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                   f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}")
-
+        content = []
+        content.append(
+            f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
+            f" (#{msg['trade_id']})\n"
+        )
+        if msg.get('buy_tag', None):
+            content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
+        content.append(f"*Open Rate:* `{msg['limit']:.8f}`\n")
+        content.append(f"*Current Rate:* `{msg['current_rate']:.8f}`\n")
+        content.append(
+            f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        )
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            content.append(
+                f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            )
+
+        message = ''.join(content)
         message += ")`"
         return message
 
@@ -354,6 +364,7 @@ class Telegram(RPCHandler):
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
+                    "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",

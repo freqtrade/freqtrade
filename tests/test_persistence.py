@@ -861,7 +861,7 @@ def test_to_json(default_conf, fee):
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         open_rate=0.123,
         exchange='binance',
-        buy_tag='',
+        buy_tag=None,
         open_order_id='dry_run_buy_12345'
     )
     result = trade.to_json()
@@ -911,7 +911,7 @@ def test_to_json(default_conf, fee):
                       'min_rate': None,
                       'max_rate': None,
                       'strategy': None,
-                      'buy_tag': '',
+                      'buy_tag': None,
                       'timeframe': None,
                       'exchange': 'binance',
                       }
