@@ -49,7 +49,7 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
     assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False, '')
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 1
-    mocked_history.loc[1, 'buy_signal_name'] = 'buy_signal_01'
+    mocked_history.loc[1, 'buy_tag'] = 'buy_signal_01'
 
     assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False, 'buy_signal_01')
 

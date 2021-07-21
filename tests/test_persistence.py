@@ -861,7 +861,7 @@ def test_to_json(default_conf, fee):
         open_date=arrow.utcnow().shift(hours=-2).datetime,
         open_rate=0.123,
         exchange='binance',
-        buy_signal_name='',
+        buy_tag='',
         open_order_id='dry_run_buy_12345'
     )
     result = trade.to_json()
@@ -911,7 +911,7 @@ def test_to_json(default_conf, fee):
                       'min_rate': None,
                       'max_rate': None,
                       'strategy': None,
-                      'buy_signal_name': '',
+                      'buy_tag': '',
                       'timeframe': None,
                       'exchange': 'binance',
                       }
@@ -928,7 +928,7 @@ def test_to_json(default_conf, fee):
         close_date=arrow.utcnow().shift(hours=-1).datetime,
         open_rate=0.123,
         close_rate=0.125,
-        buy_signal_name='buys_signal_001',
+        buy_tag='buys_signal_001',
         exchange='binance',
     )
     result = trade.to_json()
@@ -978,7 +978,7 @@ def test_to_json(default_conf, fee):
                       'sell_reason': None,
                       'sell_order_status': None,
                       'strategy': None,
-                      'buy_signal_name': 'buys_signal_001',
+                      'buy_tag': 'buys_signal_001',
                       'timeframe': None,
                       'exchange': 'binance',
                       }
@@ -1323,7 +1323,7 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
-        )
+    )
 
     # Parent (LocalTrade) should have the same attributes
     for item in trade:

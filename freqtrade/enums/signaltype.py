@@ -9,8 +9,8 @@ class SignalType(Enum):
     SELL = "sell"
 
 
-class SignalNameType(Enum):
+class SignalTagType(Enum):
     """
     Enum for signal columns
     """
-    BUY_SIGNAL_NAME = "buy_signal_name"
+    BUY_TAG = "buy_tag"

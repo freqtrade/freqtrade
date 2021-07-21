@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalNameType, SignalType
+from freqtrade.enums import SellType, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -422,7 +422,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
-            dataframe['buy_signal_name'] = ''
+            dataframe['buy_tag'] = ''
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -525,9 +525,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             )
             return False, False, ''
 
-        (buy, sell, buy_signal_name) = latest[SignalType.BUY.value] == 1,\
+        (buy, sell, buy_tag) = latest[SignalType.BUY.value] == 1,\
             latest[SignalType.SELL.value] == 1,\
-            latest.get(SignalNameType.BUY_SIGNAL_NAME.value, '')
+            latest.get(SignalTagType.BUY_TAG.value, '')
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
@@ -535,8 +535,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell, buy_signal_name
-        return buy, sell, buy_signal_name
+            return False, sell, buy_tag
+        return buy, sell, buy_tag
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):

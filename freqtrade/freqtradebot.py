@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_signal_name) = self.strategy.get_signal(
+        (buy, sell, buy_tag) = self.strategy.get_signal(
             pair,
             self.strategy.timeframe,
             analyzed_df
@@ -431,13 +431,13 @@ class FreqtradeBot(LoggingMixin):
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
-               (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_buy(pair, stake_amount, buy_signal_name=buy_signal_name)
+                    return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
                 else:
                     return False
 
-            return self.execute_buy(pair, stake_amount, buy_signal_name=buy_signal_name)
+            return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
         else:
             return False
 
@@ -466,7 +466,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                    forcebuy: bool = False, buy_signal_name: str = '') -> bool:
+                    forcebuy: bool = False, buy_tag: str = '') -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -569,7 +569,7 @@ class FreqtradeBot(LoggingMixin):
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            buy_signal_name=buy_signal_name,
+            buy_tag=buy_tag,
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
         trade.orders.append(order_obj)

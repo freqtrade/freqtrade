@@ -43,7 +43,7 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
-BUY_SIGNAL_NAME_IDX = 7
+buy_tag_IDX = 7
 
 
 class Backtesting:
@@ -210,7 +210,7 @@ class Backtesting:
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_signal_name']
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -221,7 +221,7 @@ class Backtesting:
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
                 pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
-                pair_data.loc[:, 'buy_signal_name'] = ''  # cleanup if buy_signal_name is exist
+                pair_data.loc[:, 'buy_tag'] = ''  # cleanup if buy_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
@@ -230,7 +230,7 @@ class Backtesting:
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
             df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
-            df_analyzed.loc[:, 'buy_signal_name'] = df_analyzed.loc[:, 'buy_signal_name'].shift(1)
+            df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
@@ -265,7 +265,7 @@ class Backtesting:
                     # Worst case: price reaches stop_positive_offset and dives down.
                     stop_rate = (sell_row[OPEN_IDX] *
                                  (1 + abs(self.strategy.trailing_stop_positive_offset) -
-                                 abs(self.strategy.trailing_stop_positive)))
+                                  abs(self.strategy.trailing_stop_positive)))
                 else:
                     # Worst case: price ticks tiny bit above open and dives down.
                     stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct))
@@ -370,7 +370,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_signal_name=row[BUY_SIGNAL_NAME_IDX],
+                buy_tag=row[buy_tag_IDX],
                 exchange='backtesting',
             )
             return trade
