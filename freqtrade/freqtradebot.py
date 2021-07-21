@@ -466,7 +466,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                    forcebuy: bool = False, buy_tag: str = '') -> bool:
+                    forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
