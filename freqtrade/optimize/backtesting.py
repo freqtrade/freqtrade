@@ -43,7 +43,7 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
-buy_tag_IDX = 7
+BUY_TAG_IDX = 7
 
 
 class Backtesting:
@@ -370,7 +370,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[buy_tag_IDX],
+                buy_tag=row[BUY_TAG_IDX],
                 exchange='backtesting',
             )
             return trade
