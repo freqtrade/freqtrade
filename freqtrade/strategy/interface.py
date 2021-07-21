@@ -497,7 +497,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 raise StrategyError(message)
 
-    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool, str]:
+    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
