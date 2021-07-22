@@ -140,6 +140,10 @@ def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_r
 
 ```
 
+!!! Note
+    `buy_tag` is limited to 100 characters, remaining data will be truncated.
+
+
 ## Custom stoploss
 
 The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.

@@ -530,9 +530,10 @@ class IStrategy(ABC, HyperStrategyMixin):
             )
             return False, False, None
 
-        (buy, sell, buy_tag) = latest[SignalType.BUY.value] == 1,\
-            latest[SignalType.SELL.value] == 1,\
-            latest.get(SignalTagType.BUY_TAG.value, None)
+        buy = latest[SignalType.BUY.value] == 1
+        sell = latest[SignalType.SELL.value] == 1
+        buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
