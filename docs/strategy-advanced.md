@@ -126,7 +126,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             (dataframe['rsi'] < 35) &
             (dataframe['volume'] > 0)
         ),
-        ['buy', 'buy_tag']] = 1, 'buy_signal_rsi'
+        ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
 
     return dataframe
 
