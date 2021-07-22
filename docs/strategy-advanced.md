@@ -116,7 +116,7 @@ See [Dataframe access](#dataframe-access) for more information about dataframe u
 
 ## Buy Tag
 
-When your strategy has multiple buy signal, you can name it.
+When your strategy has multiple buy signals, you can name the signal that triggered.
 Then you can access you buy signal on `custom_sell`
 
 ```python
