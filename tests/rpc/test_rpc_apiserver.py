@@ -875,6 +875,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
+        'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
     }
@@ -1029,6 +1030,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
+        'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
         }
