@@ -2014,16 +2014,16 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_buy_order_open
 
 
 def test_bot_loop_start_called_once(mocker, default_conf, caplog):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade')
-    patch_get_signal(freqtrade)
-    freqtrade.strategy.bot_loop_start = MagicMock(side_effect=ValueError)
-    freqtrade.strategy.analyze = MagicMock()
+    patch_get_signal(ftbot)
+    ftbot.strategy.bot_loop_start = MagicMock(side_effect=ValueError)
+    ftbot.strategy.analyze = MagicMock()
 
-    freqtrade.process()
+    ftbot.process()
     assert log_has_re(r'Strategy caused the following exception.*', caplog)
-    assert freqtrade.strategy.bot_loop_start.call_count == 1
-    assert freqtrade.strategy.analyze.call_count == 1
+    assert ftbot.strategy.bot_loop_start.call_count == 1
+    assert ftbot.strategy.analyze.call_count == 1
 
 
 def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -4086,14 +4086,14 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
     reinit_mock = MagicMock()
     mocker.patch('freqtrade.persistence.Trade.stoploss_reinitialization', reinit_mock)
 
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    freqtrade.startup()
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    ftbot.startup()
     assert reinit_mock.call_count == 1
 
     reinit_mock.reset_mock()
 
-    freqtrade = get_patched_freqtradebot(mocker, edge_conf)
-    freqtrade.startup()
+    ftbot = get_patched_freqtradebot(mocker, edge_conf)
+    ftbot.startup()
     assert reinit_mock.call_count == 0
 
 
@@ -4112,17 +4112,17 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_
         get_fee=fee,
     )
 
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtrade)
-    assert freqtrade.wallets.get_free('BTC') == 0.002
+    bot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(bot)
+    assert bot.wallets.get_free('BTC') == 0.002
 
-    n = freqtrade.enter_positions()
+    n = bot.enter_positions()
     assert n == 2
     trades = Trade.query.all()
     assert len(trades) == 2
 
-    freqtrade.config['max_open_trades'] = 3
-    n = freqtrade.enter_positions()
+    bot.config['max_open_trades'] = 3
+    n = bot.enter_positions()
     assert n == 0
     assert log_has_re(r"Unable to create trade for XRP/BTC: "
                       r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",

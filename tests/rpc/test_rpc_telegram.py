@@ -63,12 +63,12 @@ def get_telegram_testobject(mocker, default_conf, mock=True, freqtrade=None):
             _init=MagicMock(),
             _send_msg=msg_mock
         )
-    if not freqtrade:
-        freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    rpc = RPC(freqtrade)
+    if not ftbot:
+        ftbot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(ftbot)
     telegram = Telegram(rpc, default_conf)
 
-    return telegram, freqtrade, msg_mock
+    return telegram, ftbot, msg_mock
 
 
 def test_telegram__init__(default_conf, mocker) -> None:
@@ -115,11 +115,11 @@ def test_authorized_only(default_conf, mocker, caplog, update) -> None:
     patch_exchange(mocker)
     caplog.set_level(logging.DEBUG)
     default_conf['telegram']['enabled'] = False
-    freqtrade = FreqtradeBot(default_conf)
-    rpc = RPC(freqtrade)
+    bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
     dummy = DummyCls(rpc, default_conf)
 
-    patch_get_signal(freqtrade, (True, False, None))
+    patch_get_signal(bot, (True, False, None))
     dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is True
     assert log_has('Executing handler: dummy_handler for chat_id: 0', caplog)
@@ -135,11 +135,11 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     update.message = Message(randint(1, 100), datetime.utcnow(), chat)
 
     default_conf['telegram']['enabled'] = False
-    freqtrade = FreqtradeBot(default_conf)
-    rpc = RPC(freqtrade)
+    bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
     dummy = DummyCls(rpc, default_conf)
 
-    patch_get_signal(freqtrade, (True, False, None))
+    patch_get_signal(bot, (True, False, None))
     dummy.dummy_handler(update=update, context=MagicMock())
     assert dummy.state['called'] is False
     assert not log_has('Executing handler: dummy_handler for chat_id: 3735928559', caplog)
@@ -152,10 +152,10 @@ def test_authorized_only_exception(default_conf, mocker, caplog, update) -> None
 
     default_conf['telegram']['enabled'] = False
 
-    freqtrade = FreqtradeBot(default_conf)
-    rpc = RPC(freqtrade)
+    bot = FreqtradeBot(default_conf)
+    rpc = RPC(bot)
     dummy = DummyCls(rpc, default_conf)
-    patch_get_signal(freqtrade, (True, False, None))
+    patch_get_signal(bot, (True, False, None))
 
     dummy.dummy_exception(update=update, context=MagicMock())
     assert dummy.state['called'] is False
