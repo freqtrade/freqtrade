@@ -44,7 +44,6 @@ def _get_frame_time_from_offset(offset):
 
 
 def _build_backtest_dataframe(data):
-    
     columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
     columns = columns + ['buy_tag'] if len(data[0]) == 9 else columns
 
