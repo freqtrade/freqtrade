@@ -55,7 +55,7 @@ class DummyCls(Telegram):
         raise Exception('test')
 
 
-def get_telegram_testobject(mocker, default_conf, mock=True, freqtrade=None):
+def get_telegram_testobject(mocker, default_conf, mock=True, ftbot=None):
     msg_mock = MagicMock()
     if mock:
         mocker.patch.multiple(
