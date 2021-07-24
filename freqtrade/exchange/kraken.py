@@ -1,6 +1,6 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import ccxt
 
@@ -124,3 +124,23 @@ class Kraken(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def setup_leveraged_enter(
+        self,
+        pair: str,
+        leverage: float,
+        amount: float,
+        quote_currency: Optional[str],
+        is_short: Optional[bool]
+    ):
+        return
+
+    def complete_leveraged_exit(
+        self,
+        pair: str,
+        leverage: float,
+        amount: float,
+        quote_currency: Optional[str],
+        is_short: Optional[bool]
+    ):
+        return
