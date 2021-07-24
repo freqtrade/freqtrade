@@ -189,6 +189,7 @@ class Exchange:
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid', ''),
+            'options': exchange_config.get('options', {})
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
@@ -540,8 +541,9 @@ class Exchange:
         else:
             return 1 / pow(10, precision)
 
-    def get_min_pair_stake_amount(self, pair: str, price: float,
-                                  stoploss: float) -> Optional[float]:
+    def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
+                                  leverage: Optional[float] = 1.0) -> Optional[float]:
+        # TODO-mg: Using leverage makes the min stake amount lower (on binance at least)
         try:
             market = self.markets[pair]
         except KeyError:
@@ -575,7 +577,20 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return max(min_stake_amounts) * amount_reserve_percent
+        return self.apply_leverage_to_stake_amount(
+            max(min_stake_amounts) * amount_reserve_percent,
+            leverage or 1.0
+        )
+
+    def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
+        """
+        #* Should be implemented by child classes if leverage affects the stake_amount
+        Takes the minimum stake amount for a pair with no leverage and returns the minimum
+        stake amount when leverage is considered
+        :param stake_amount: The stake amount for a pair before leverage is considered
+        :param leverage: The amount of leverage being used on the current trade
+        """
+        return stake_amount
 
     # Dry-run methods
 
@@ -713,6 +728,15 @@ class Exchange:
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
 
+    def get_max_leverage(self, pair: str, stake_amount: float, price: float) -> float:
+        """
+        Gets the maximum leverage available on this pair that is below the config leverage
+        but higher than the config min_leverage
+        """
+
+        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
+        return 1.0
+
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
@@ -737,6 +761,7 @@ class Exchange:
             order = self._api.create_order(pair, ordertype, side,
                                            amount, rate_for_order, params)
             self._log_exchange_response('create_order', order)
+
             return order
 
         except ccxt.InsufficientFunds as e:
@@ -756,6 +781,26 @@ class Exchange:
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def setup_leveraged_enter(
+        self,
+        pair: str,
+        leverage: float,
+        amount: float,
+        quote_currency: Optional[str],
+        is_short: Optional[bool]
+    ):
+        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
+
+    def complete_leveraged_exit(
+        self,
+        pair: str,
+        leverage: float,
+        amount: float,
+        quote_currency: Optional[str],
+        is_short: Optional[bool]
+    ):
+        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
@@ -1524,6 +1569,9 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
+
+    def transfer(self, asset: str, amount: float, frm: str, to: str, pair: Optional[str]):
+        self._api.transfer(asset, amount, frm, to)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
