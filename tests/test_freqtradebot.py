@@ -1625,7 +1625,7 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
                            MagicMock(return_value=False))
     n = freqtrade.enter_positions()
     assert n == 0
-    assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
+    assert log_has('Found no enter signals for whitelisted currencies. Trying again...', caplog)
     # create_trade should be called once for every pair in the whitelist.
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
 
@@ -4332,14 +4332,14 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
+def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
     create_mock_trades(fee)
     trades = Trade.get_trades().all()
 
-    freqtrade.reupdate_buy_order_fees(trades[0])
+    freqtrade.reupdate_enter_order_fees(trades[0])
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 1
     assert mock_uts.call_args_list[0][0][0] == trades[0]
@@ -4362,7 +4362,7 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
     )
     Trade.query.session.add(trade)
 
-    freqtrade.reupdate_buy_order_fees(trade)
+    freqtrade.reupdate_enter_order_fees(trade)
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 0
     assert not log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
@@ -4372,7 +4372,7 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
 def test_handle_insufficient_funds(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
-    mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_buy_order_fees')
+    mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_enter_order_fees')
     create_mock_trades(fee)
     trades = Trade.get_trades().all()
 

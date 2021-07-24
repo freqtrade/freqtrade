@@ -67,6 +67,7 @@ class FreqtradeBot(LoggingMixin):
 
         init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
+        # TODO-mg: Do anything with this?
         self.wallets = Wallets(self.config, self.exchange)
 
         PairLocks.timeframe = self.config['timeframe']
@@ -78,6 +79,7 @@ class FreqtradeBot(LoggingMixin):
         # so anything in the Freqtradebot instance should be ready (initialized), including
         # the initial state of the bot.
         # Keep this at the end of this initialization method.
+        # TODO-mg: Do I need to consider the rpc, pairlists or dataprovider?
         self.rpc: RPCManager = RPCManager(self)
 
         self.pairlists = PairListManager(self.exchange, self.config)
@@ -100,6 +102,7 @@ class FreqtradeBot(LoggingMixin):
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
         # Protect sell-logic from forcesell and vice versa
+        # TODO-mg: update to _close_lock
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
@@ -174,13 +177,15 @@ class FreqtradeBot(LoggingMixin):
 
         self.strategy.analyze(self.active_pair_whitelist)
 
+        # TODO-mg: update to _close_lock
         with self._sell_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
 
-        # Protect from collisions with forcesell.
+        # Protect from collisions with forcesell(#TODO-mg: update to forceclose).
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
-        # while selling is in process, since telegram messages arrive in an different thread.
+        # while closing is in process, since telegram messages arrive in an different thread.
+        # TODO-mg: update to _close_lock
         with self._sell_lock:
             trades = Trade.get_open_trades()
             # First process current opened trades (positions)
@@ -258,6 +263,7 @@ class FreqtradeBot(LoggingMixin):
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
             try:
+                # TODO-mg: How to consider borrow orders?
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
 
@@ -278,49 +284,56 @@ class FreqtradeBot(LoggingMixin):
 
         trades: List[Trade] = Trade.get_closed_trades_without_assigned_fees()
         for trade in trades:
-
-            if not trade.is_open and not trade.fee_updated('sell'):
+            if not trade.is_open and not trade.fee_updated(trade.exit_side):
                 # Get sell fee
-                order = trade.select_order('sell', False)
+                order = trade.select_order(trade.exit_side, False)
                 if order:
-                    logger.info(f"Updating sell-fee on trade {trade} for order {order.order_id}.")
+                    logger.info(
+                        f"Updating {trade.exit_side}-fee on trade {trade}"
+                        f"for order {order.order_id}."
+                    )
                     self.update_trade_state(trade, order.order_id,
                                             stoploss_order=order.ft_order_side == 'stoploss')
 
         trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
-            if trade.is_open and not trade.fee_updated('buy'):
-                order = trade.select_order('buy', False)
+            if trade.is_open and not trade.fee_updated(trade.enter_side):
+                order = trade.select_order(trade.enter_side, False)
                 if order:
-                    logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+                    logger.info(
+                        f"Updating {trade.enter_side}-fee on trade {trade}"
+                        f"for order {order.order_id}."
+                    )
                     self.update_trade_state(trade, order.order_id)
 
     def handle_insufficient_funds(self, trade: Trade):
         """
-        Determine if we ever opened a sell order for this trade.
-        If not, try update buy fees - otherwise "refind" the open order we obviously lost.
+        Determine if we ever opened a exiting order for this trade.
+        If not, try update entering fees - otherwise "refind" the open order we obviously lost.
         """
-        sell_order = trade.select_order('sell', None)
-        if sell_order:
+        exit_order = trade.select_order(trade.exit_side, None)
+        if exit_order:
             self.refind_lost_order(trade)
         else:
-            self.reupdate_buy_order_fees(trade)
+            self.reupdate_enter_order_fees(trade)
 
-    def reupdate_buy_order_fees(self, trade: Trade):
+    def reupdate_enter_order_fees(self, trade: Trade):
         """
         Get buy order from database, and try to reupdate.
         Handles trades where the initial fee-update did not work.
         """
-        logger.info(f"Trying to reupdate buy fees for {trade}")
-        order = trade.select_order('buy', False)
+
+        logger.info(f"Trying to reupdate {trade.enter_side} fees for {trade}")
+        order = trade.select_order(trade.enter_side, False)
         if order:
-            logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
+            logger.info(
+                f"Updating {trade.enter_side}-fee on trade {trade} for order {order.order_id}.")
             self.update_trade_state(trade, order.order_id)
 
     def refind_lost_order(self, trade):
         """
         Try refinding a lost trade.
-        Only used when InsufficientFunds appears on sell orders (stoploss or sell).
+        Only used when InsufficientFunds appears on exit orders (stoploss or long sell/short buy).
         Tries to walk the stored orders and sell them off eventually.
         """
         logger.info(f"Trying to refind lost order for {trade}")
@@ -330,8 +343,8 @@ class FreqtradeBot(LoggingMixin):
             if not order.ft_is_open:
                 logger.debug(f"Order {order} is no longer open.")
                 continue
-            if order.ft_order_side == 'buy':
-                # Skip buy side - this is handled by reupdate_buy_order_fees
+            if order.ft_order_side == trade.enter_side:
+                # Skip buy side - this is handled by reupdate_enter_order_fees
                 continue
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
@@ -340,7 +353,7 @@ class FreqtradeBot(LoggingMixin):
                     if fo and fo['status'] == 'open':
                         # Assume this as the open stoploss order
                         trade.stoploss_order_id = order.order_id
-                elif order.ft_order_side == 'sell':
+                elif order.ft_order_side == trade.exit_side:
                     if fo and fo['status'] == 'open':
                         # Assume this as the open order
                         trade.open_order_id = order.order_id
@@ -358,7 +371,7 @@ class FreqtradeBot(LoggingMixin):
 
     def enter_positions(self) -> int:
         """
-        Tries to execute buy orders for new trades (positions)
+        Tries to execute long buy/short sell orders for new trades (positions)
         """
         trades_created = 0
 
@@ -374,7 +387,7 @@ class FreqtradeBot(LoggingMixin):
 
         if not whitelist:
             logger.info("No currency pair in active pair whitelist, "
-                        "but checking to sell open trades.")
+                        "but checking to exit open trades.")
             return trades_created
         if PairLocks.is_global_lock():
             lock = PairLocks.get_pair_longest_lock('*')
@@ -393,16 +406,16 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning('Unable to create trade for %s: %s', pair, exception)
 
         if not trades_created:
-            logger.debug("Found no buy signals for whitelisted currencies. Trying again...")
+            logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
 
         return trades_created
 
     def create_trade(self, pair: str) -> bool:
         """
-        Check the implemented trading strategy for buy signals.
+        Check the implemented trading strategy for enter signals.
 
-        If the pair triggers the buy signal a new trade record gets created
-        and the buy-order opening the trade gets issued towards the exchange.
+        If the pair triggers the enter signal a new trade record gets created
+        and the enter-order opening the trade gets issued towards the exchange.
 
         :return: True if a trade has been created.
         """
@@ -433,17 +446,45 @@ class FreqtradeBot(LoggingMixin):
             self.strategy.timeframe,
             analyzed_df
         )
+        (short, exit_short) = (False, False)
+        # = self.strategy.get_signal(pair, self.strategy.timeframe, analyzed_df)
+        # #TODO: Update strategy class to get these values
 
-        if buy and not sell:
+        open_buy_signal = buy and not sell
+        open_short_signal = short and not exit_short
+
+        # TODO: For a market making strategy, this condition should be removed
+        if (open_buy_signal or open_short_signal):
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
+            if not stake_amount:
+                logger.debug(f"Stake amount is 0, ignoring possible trade for {pair}.")
+                return False
+            # leverage = 1.0  # TODO: get leverage from somewhere
+            logger.info(
+                f"{'Buy' if open_buy_signal else 'Short'} signal found: "
+                f"about create a new trade for {pair} with stake_amount: "
+                f"{stake_amount} ..."
+            )
 
-            bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
-            if ((bid_check_dom.get('enabled', False)) and
-                    (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
-                if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
-                else:
-                    return False
+            # TODO: All later code in this function
+            if open_buy_signal:
+                bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
+                if ((bid_check_dom.get('enabled', False)) and
+                        (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                    if self._check_depth_of_market_buy(pair, bid_check_dom):
+                        return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
+                    else:
+                        return False
+            else:
+                # TODO-mg: Will check_depth_of_market_buy work for shorts?
+                short_check_dom = self.config.get(
+                    'short_strategy', {}).get('check_depth_of_market', {})
+                if ((short_check_dom.get('enabled', False)) and
+                        (short_check_dom.get('shorts_to_ask_delta', 0) > 0)):
+                    if self._check_depth_of_market_short(pair, short_check_dom):
+                        return self.execute_short(pair, stake_amount)
+                    else:
+                        return False
 
             return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
         else:
@@ -472,6 +513,10 @@ class FreqtradeBot(LoggingMixin):
         else:
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
+
+    def _check_depth_of_market_short(self, pair: str, conf: Dict) -> bool:
+        # TODO-mg: implement, use _check_depth_of_market_buy instead if possible
+        return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
                     forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
@@ -595,6 +640,10 @@ class FreqtradeBot(LoggingMixin):
         self._notify_buy(trade, order_type)
 
         return True
+
+    def execute_short(self, pair: str, stake_amount: float, price: Optional[float] = None,
+                      forcesell: bool = False) -> bool:
+        return False  # TODO-mg: implement
 
     def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """

@@ -28,13 +28,13 @@ class PairListManager():
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
             pairlist_handler = PairListResolver.load_pairlist(
-                    pairlist_handler_config['method'],
-                    exchange=exchange,
-                    pairlistmanager=self,
-                    config=config,
-                    pairlistconfig=pairlist_handler_config,
-                    pairlist_pos=len(self._pairlist_handlers)
-                    )
+                pairlist_handler_config['method'],
+                exchange=exchange,
+                pairlistmanager=self,
+                config=config,
+                pairlistconfig=pairlist_handler_config,
+                pairlist_pos=len(self._pairlist_handlers)
+            )
             self._tickers_needed |= pairlist_handler.needstickers
             self._pairlist_handlers.append(pairlist_handler)
 
@@ -127,7 +127,7 @@ class PairListManager():
         :return: pairlist - whitelisted pairs
         """
         try:
-
+            # TODO-mg: filter for pairlists that are able to trade at the desired leverage
             whitelist = expand_pairlist(pairlist, self._exchange.get_markets().keys(), keep_invalid)
         except ValueError as err:
             logger.error(f"Pair whitelist contains an invalid Wildcard: {err}")
