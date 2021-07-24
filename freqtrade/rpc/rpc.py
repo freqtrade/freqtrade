@@ -36,6 +36,7 @@ class RPCException(Exception):
 
     raise RPCException('*Status:* `no active trade`')
     """
+    # TODO-mg: Add new configuration options introduced with leveraged/short trading
 
     def __init__(self, message: str) -> None:
         super().__init__(self)
@@ -545,7 +546,7 @@ class RPC:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
                 if order['side'] == 'buy':
-                    fully_canceled = self._freqtrade.handle_cancel_buy(
+                    fully_canceled = self._freqtrade.handle_cancel_enter(
                         trade, order, CANCEL_REASON['FORCE_SELL'])
 
                 if order['side'] == 'sell':
@@ -613,7 +614,7 @@ class RPC:
         stakeamount = self._freqtrade.wallets.get_trade_stake_amount(pair)
 
         # execute buy
-        if self._freqtrade.execute_buy(pair, stakeamount, price, forcebuy=True):
+        if self._freqtrade.execute_enter(pair, stakeamount, price, forcebuy=True):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
