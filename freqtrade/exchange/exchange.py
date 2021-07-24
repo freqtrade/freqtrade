@@ -1038,10 +1038,13 @@ class Exchange:
                 )
                 raise PricingError from e
 
-            logger.info(f"{name} price from orderbook {conf_strategy['price_side'].capitalize()}"
-                        f"side - top {order_book_top} order book {side} rate {rate:.8f}")
+            if side == "buy":
+                price_side = {conf_strategy['price_side'].capitalize()}
+                logger.info(f"{name} price from orderbook {price_side}"
+                            f"side - top {order_book_top} order book {side} rate {rate:.8f}")
         else:
-            logger.info(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
+            if side == "buy":
+                logger.info(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[conf_strategy['price_side']]
             if ticker['last']:
