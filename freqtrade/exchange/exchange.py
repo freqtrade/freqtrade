@@ -689,7 +689,16 @@ class Exchange:
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, params: Dict = {}) -> Dict:
+                     rate: float, time_in_force: str = 'gtc') -> Dict:
+
+        if self._config['dry_run']:
+            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
+            return dry_order
+
+        params = self._params.copy()
+        if time_in_force != 'gtc' and ordertype != 'market':
+            params.update({'timeInForce': time_in_force})
+
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.amount_to_precision(pair, amount)
@@ -719,32 +728,6 @@ class Exchange:
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    def buy(self, pair: str, ordertype: str, amount: float,
-            rate: float, time_in_force: str) -> Dict:
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, "buy", amount, rate)
-            return dry_order
-
-        params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
-
-        return self.create_order(pair, ordertype, 'buy', amount, rate, params)
-
-    def sell(self, pair: str, ordertype: str, amount: float,
-             rate: float, time_in_force: str = 'gtc') -> Dict:
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, "sell", amount, rate)
-            return dry_order
-
-        params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
-
-        return self.create_order(pair, ordertype, 'sell', amount, rate, params)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
