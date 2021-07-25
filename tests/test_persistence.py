@@ -112,7 +112,7 @@ def test_is_opening_closing_trade(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_set_stop_loss_liquidation_price(fee):
+def test_set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ETH/BTC',
@@ -127,36 +127,36 @@ def test_set_stop_loss_liquidation_price(fee):
         is_short=False,
         leverage=2.0
     )
-    trade.set_liquidation_price(0.09)
-    assert trade.liquidation_price == 0.09
+    trade.set_isolated_liq(0.09)
+    assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
 
     trade.set_stop_loss(0.1)
-    assert trade.liquidation_price == 0.09
+    assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_liquidation_price(0.08)
-    assert trade.liquidation_price == 0.08
+    trade.set_isolated_liq(0.08)
+    assert trade.isolated_liq == 0.08
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_liquidation_price(0.11)
-    assert trade.liquidation_price == 0.11
+    trade.set_isolated_liq(0.11)
+    assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
 
     trade.set_stop_loss(0.1)
-    assert trade.liquidation_price == 0.11
+    assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
 
     trade.stop_loss = None
-    trade.liquidation_price = None
+    trade.isolated_liq = None
     trade.initial_stop_loss = None
     trade.set_stop_loss(0.07)
-    assert trade.liquidation_price is None
+    assert trade.isolated_liq is None
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.07
 
@@ -164,28 +164,28 @@ def test_set_stop_loss_liquidation_price(fee):
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
-    trade.set_liquidation_price(0.09)
-    assert trade.liquidation_price == 0.09
+    trade.set_isolated_liq(0.09)
+    assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
 
     trade.set_stop_loss(0.08)
-    assert trade.liquidation_price == 0.09
+    assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_liquidation_price(0.1)
-    assert trade.liquidation_price == 0.1
+    trade.set_isolated_liq(0.1)
+    assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_liquidation_price(0.07)
-    assert trade.liquidation_price == 0.07
+    trade.set_isolated_liq(0.07)
+    assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
 
     trade.set_stop_loss(0.1)
-    assert trade.liquidation_price == 0.07
+    assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
 
@@ -1616,10 +1616,10 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
-    trade.set_liquidation_price(0.63)
+    trade.set_isolated_liq(0.63)
     trade.adjust_stop_loss(0.59, -0.1)
     assert trade.stop_loss == 0.63
-    assert trade.liquidation_price == 0.63
+    assert trade.isolated_liq == 0.63
 
 
 def test_adjust_min_max_rates(fee):
@@ -1744,7 +1744,7 @@ def test_to_json(default_conf, fee):
                       'exchange': 'binance',
                       'leverage': None,
                       'interest_rate': None,
-                      'liquidation_price': None,
+                      'isolated_liq': None,
                       'is_short': None,
                       }
 
@@ -1813,7 +1813,7 @@ def test_to_json(default_conf, fee):
                       'exchange': 'binance',
                       'leverage': None,
                       'interest_rate': None,
-                      'liquidation_price': None,
+                      'isolated_liq': None,
                       'is_short': None,
                       }
 
@@ -1932,7 +1932,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
     # Stoploss can't go above liquidation price
-    trade_adj.set_liquidation_price(1.0)
+    trade_adj.set_isolated_liq(1.0)
     trade.adjust_stop_loss(0.97, -0.04)
     assert trade_adj.stop_loss == 1.0
     assert trade_adj.stop_loss == 1.0

@@ -109,7 +109,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
-        'liquidation_price': None,
+        'isolated_liq': None,
         'is_short': False,
     }
 
@@ -179,7 +179,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'exchange': 'binance',
         'leverage': 1.0,
         'interest_rate': 0.0,
-        'liquidation_price': None,
+        'isolated_liq': None,
         'is_short': False,
     }
 
