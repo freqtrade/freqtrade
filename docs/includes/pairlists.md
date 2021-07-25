@@ -23,6 +23,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
 * [`AgeFilter`](#agefilter)
+* [`OffsetFilter`](#offsetfilter)
 * [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
@@ -63,17 +64,56 @@ The `refresh_period` setting allows to define the period (in seconds), at which 
 The pairlist cache (`refresh_period`) on `VolumePairList` is only applicable to generating pairlists.
 Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.
 
-`VolumePairList` is based on the ticker data from exchange, as reported by the ccxt library:
+`VolumePairList` is per default based on the ticker data from exchange, as reported by the ccxt library:
 
 * The `quoteVolume` is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.
 
 ```json
-"pairlists": [{
+"pairlists": [
+    {
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
         "refresh_period": 1800
-}],
+    }
+],
+```
+
+`VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
+
+For convenience `lookback_days` can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:
+
+```json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "refresh_period": 86400,
+        "lookback_days": 7
+    }
+],
+```
+
+!!! Warning "Range look back and refresh period"
+    When used in conjunction with `lookback_days` and `lookback_timeframe` the `refresh_period` can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.
+
+!!! Warning "Performance implications when using lookback range"
+    If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `VolumeFilter` to narrow the pairlist down for further range volume calculation.
+
+More sophisticated approach can be used, by using `lookback_timeframe` for candle size and `lookback_period` which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:
+
+```json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "refresh_period": 3600,
+        "lookback_timeframe": "1h",
+        "lookback_period": 72
+    }
+],
 ```
 
 !!! Note
@@ -81,13 +121,39 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 #### AgeFilter
 
-Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`).
+Removes pairs that have been listed on the exchange for less than `min_days_listed` days (defaults to `10`) or more than `max_days_listed` days (defaults `None` mean infinity).
 
 When pairs are first listed on an exchange they can suffer huge price drops and volatility
 in the first few days while the pair goes through its price-discovery period. Bots can often
 be caught out buying before the pair has finished dropping in price.
 
-This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days.
+This filter allows freqtrade to ignore pairs until they have been listed for at least `min_days_listed` days and listed before `max_days_listed`.
+
+#### OffsetFilter
+
+Offsets an incoming pairlist by a given `offset` value.
+
+As an example it can be used in conjunction with `VolumeFilter` to remove the top X volume pairs. Or to split
+a larger pairlist on two bot instances.
+
+Example to remove the first 10 pairs from the pairlist:
+
+```json
+"pairlists": [
+    {
+        "method": "OffsetFilter",
+        "offset": 10
+    }
+],
+```
+
+!!! Warning
+    When `OffsetFilter` is used to split a larger pairlist among multiple bots in combination with `VolumeFilter` 
+    it can not be guaranteed that pairs won't overlap due to slightly different refresh intervals for the
+    `VolumeFilter`.
+
+!!! Note
+    An offset larger then the total length of the incoming pairlist will result in an empty pairlist.
 
 #### PerformanceFilter
 

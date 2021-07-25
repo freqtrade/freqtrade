@@ -494,11 +494,11 @@ class Telegram(RPCHandler):
             start_date)
         profit_closed_coin = stats['profit_closed_coin']
         profit_closed_percent_mean = stats['profit_closed_percent_mean']
-        profit_closed_percent_sum = stats['profit_closed_percent_sum']
+        profit_closed_percent = stats['profit_closed_percent']
         profit_closed_fiat = stats['profit_closed_fiat']
         profit_all_coin = stats['profit_all_coin']
         profit_all_percent_mean = stats['profit_all_percent_mean']
-        profit_all_percent_sum = stats['profit_all_percent_sum']
+        profit_all_percent = stats['profit_all_percent']
         profit_all_fiat = stats['profit_all_fiat']
         trade_count = stats['trade_count']
         first_trade_date = stats['first_trade_date']
@@ -514,7 +514,7 @@ class Telegram(RPCHandler):
                 markdown_msg = ("*ROI:* Closed trades\n"
                                 f"∙ `{round_coin_value(profit_closed_coin, stake_cur)} "
                                 f"({profit_closed_percent_mean:.2f}%) "
-                                f"({profit_closed_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                                f"({profit_closed_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                                 f"∙ `{round_coin_value(profit_closed_fiat, fiat_disp_cur)}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
@@ -523,7 +523,7 @@ class Telegram(RPCHandler):
                 f"*ROI:* All trades\n"
                 f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
                 f"({profit_all_percent_mean:.2f}%) "
-                f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                 f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
@@ -600,8 +600,8 @@ class Telegram(RPCHandler):
                 )
             total_dust_balance = 0
             total_dust_currencies = 0
-            curr_output = ''
             for curr in result['currencies']:
+                curr_output = ''
                 if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"

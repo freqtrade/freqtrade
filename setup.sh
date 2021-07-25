@@ -4,8 +4,12 @@
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
-        echo "pip not found (called as '${PYTHON} -m pip'). Please make sure that pip is available for ${PYTHON}."
-        exit 1
+        echo "-----------------------------"
+        echo "Installing Pip for ${PYTHON}"
+        echo "-----------------------------"
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        ${PYTHON} get-pip.py
+        rm get-pip.py
    fi
 }
 
@@ -17,35 +21,19 @@ function check_installed_python() {
         exit 2
     fi
 
-    which python3.8
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.8"
-        PYTHON=python3.8
-        check_installed_pip
-        return
-    fi
+    for v in 9 8 7
+    do
+        PYTHON="python3.${v}"
+        which $PYTHON
+        if [ $? -eq 0 ]; then
+            echo "using ${PYTHON}"
+            check_installed_pip
+            return
+        fi
+    done 
 
-    which python3.9
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.9"
-        PYTHON=python3.9
-        check_installed_pip
-        return
-    fi
-
-    which python3.7
-    if [ $? -eq 0 ]; then
-        echo "using Python 3.7"
-        PYTHON=python3.7
-        check_installed_pip
-        return
-    fi
-
-
-   if [ -z ${PYTHON} ]; then
-        echo "No usable python found. Please make sure to have python3.7 or newer installed"
-        exit 1
-   fi
+    echo "No usable python found. Please make sure to have python3.7 or newer installed"
+    exit 1
 }
 
 function updateenv() {
@@ -122,6 +110,25 @@ function install_talib() {
     cd ..
 }
 
+function install_mac_newer_python_dependencies() {    
+    
+    if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
+    then
+        echo "-------------------------"
+        echo "Installing hdf5"
+        echo "-------------------------"
+        brew install hdf5
+    fi
+
+    if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
+    then
+        echo "-------------------------"
+        echo "Installing c-blosc"
+        echo "-------------------------"
+        brew install c-blosc
+    fi    
+}
+
 # Install bot MacOS
 function install_macos() {
     if [ ! -x "$(command -v brew)" ]
@@ -131,14 +138,19 @@ function install_macos() {
         echo "-------------------------"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
+    #Gets number after decimal in python version
+    version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')
+    
+    if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
+        install_mac_newer_python_dependencies
+    fi
     install_talib
-    test_and_fix_python_on_mac
 }
 
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git libpython3-dev
+    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
     install_talib
 }
 
@@ -189,19 +201,6 @@ function reset() {
     updateenv
 }
 
-function test_and_fix_python_on_mac() {
-
-    if ! [ -x "$(command -v python3.6)" ]
-    then
-        echo "-------------------------"
-        echo "Fixing Python"
-        echo "-------------------------"
-        echo "Python 3.6 is not linked in your system. Fixing it..."
-        brew link --overwrite python
-        echo
-    fi
-}
-
 function config() {
 
     echo "-------------------------"
@@ -240,12 +239,12 @@ function install() {
 }
 
 function plot() {
-echo "
------------------------------------------
-Installing dependencies for Plotting scripts
------------------------------------------
-"
-${PYTHON} -m pip install plotly --upgrade
+    echo "
+    -----------------------------------------
+    Installing dependencies for Plotting scripts
+    -----------------------------------------
+    "
+    ${PYTHON} -m pip install plotly --upgrade
 }
 
 function help() {

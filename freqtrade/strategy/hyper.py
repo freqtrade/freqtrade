@@ -338,8 +338,8 @@ class HyperStrategyMixin(object):
         params = self.load_params_from_file()
         params = params.get('params', {})
         self._ft_params_from_file = params
-        buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', None))
-        sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', None))
+        buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', {}))
+        sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', {}))
 
         self._load_params(buy_params, 'buy', hyperopt)
         self._load_params(sell_params, 'sell', hyperopt)
