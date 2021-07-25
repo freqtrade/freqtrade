@@ -412,7 +412,7 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
         "USDT", ['NANO/USDT']),
     ([{"method": "StaticPairList"},
       {"method": "RangeStabilityFilter", "lookback_days": 10,
-       "min_rate_of_change": 0.01, "refresh_period": 1440}],
+       "min_rate_of_change": 0.01, "max_rate_of_change": 0.99, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
     ([{"method": "StaticPairList"},
       {"method": "VolatilityFilter", "lookback_days": 3,
@@ -718,15 +718,16 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
         get_patched_freqtradebot(mocker, default_conf)
 
 
-@pytest.mark.parametrize('min_rate_of_change,expected_length', [
-    (0.01, 5),
-    (0.05, 0),  # Setting rate_of_change to 5% removes all pairs from the whitelist.
+@pytest.mark.parametrize('min_rate_of_change,max_rate_of_change,expected_length', [
+    (0.01, 0.99, 5),
+    (0.05, 0.0, 0),  # Setting min rate_of_change to 5% removes all pairs from the whitelist.
 ])
 def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, ohlcv_history,
-                                      min_rate_of_change, expected_length):
+                                      min_rate_of_change, max_rate_of_change, expected_length):
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10},
                                  {'method': 'RangeStabilityFilter', 'lookback_days': 2,
-                                  'min_rate_of_change': min_rate_of_change}]
+                                  'min_rate_of_change': min_rate_of_change,
+                                  "max_rate_of_change": max_rate_of_change}]
 
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           markets=PropertyMock(return_value=markets),
@@ -828,9 +829,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      None,
      "PriceFilter requires max_value to be >= 0"
      ),  # OperationalException expected
-    ({"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
+    ({"method": "RangeStabilityFilter", "lookback_days": 10,
+     "min_rate_of_change": 0.01, "max_rate_of_change": 0.99},
      "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
-     "0.01 over the last days.'}]",
+     "0.01 and above 0.99 over the last days.'}]",
         None
      ),
 ])
