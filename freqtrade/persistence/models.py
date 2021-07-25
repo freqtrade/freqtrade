@@ -265,7 +265,7 @@ class LocalTrade():
 
     # Margin trading properties
     interest_rate: float = 0.0
-    liquidation_price: Optional[float] = None
+    isolated_liq: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
     interest_mode: InterestMode = InterestMode.NONE
@@ -314,8 +314,8 @@ class LocalTrade():
     def __init__(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        if self.liquidation_price:
-            self.set_liquidation_price(self.liquidation_price)
+        if self.isolated_liq:
+            self.set_isolated_liq(self.isolated_liq)
         self.recalc_open_trade_value()
 
     def set_stop_loss(self, stop_loss: float):
@@ -323,11 +323,11 @@ class LocalTrade():
             Method you should use to set self.stop_loss.
             Assures stop_loss is not passed the liquidation price
         """
-        if self.liquidation_price is not None:
+        if self.isolated_liq is not None:
             if self.is_short:
-                sl = min(stop_loss, self.liquidation_price)
+                sl = min(stop_loss, self.isolated_liq)
             else:
-                sl = max(stop_loss, self.liquidation_price)
+                sl = max(stop_loss, self.isolated_liq)
         else:
             sl = stop_loss
 
@@ -335,21 +335,21 @@ class LocalTrade():
             self.initial_stop_loss = sl
         self.stop_loss = sl
 
-    def set_liquidation_price(self, liquidation_price: float):
+    def set_isolated_liq(self, isolated_liq: float):
         """
             Method you should use to set self.liquidation price.
             Assures stop_loss is not passed the liquidation price
         """
         if self.stop_loss is not None:
             if self.is_short:
-                self.stop_loss = min(self.stop_loss, liquidation_price)
+                self.stop_loss = min(self.stop_loss, isolated_liq)
             else:
-                self.stop_loss = max(self.stop_loss, liquidation_price)
+                self.stop_loss = max(self.stop_loss, isolated_liq)
         else:
-            self.initial_stop_loss = liquidation_price
-            self.stop_loss = liquidation_price
+            self.initial_stop_loss = isolated_liq
+            self.stop_loss = isolated_liq
 
-        self.liquidation_price = liquidation_price
+        self.isolated_liq = isolated_liq
 
     def set_is_short(self, is_short: bool):
         self.is_short = is_short
@@ -425,7 +425,7 @@ class LocalTrade():
 
             'leverage': self.leverage,
             'interest_rate': self.interest_rate,
-            'liquidation_price': self.liquidation_price,
+            'isolated_liq': self.isolated_liq,
             'is_short': self.is_short,
 
             'open_order_id': self.open_order_id,
@@ -472,13 +472,13 @@ class LocalTrade():
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss)))
             # If trading on margin, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = min(self.liquidation_price, new_loss)
+            if self.isolated_liq:
+                new_loss = min(self.isolated_liq, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss)))
             # If trading on margin, don't set the stoploss below the liquidation price
-            if self.liquidation_price:
-                new_loss = max(self.liquidation_price, new_loss)
+            if self.isolated_liq:
+                new_loss = max(self.isolated_liq, new_loss)
 
         # no stop loss assigned yet
         if not self.stop_loss:
@@ -905,7 +905,7 @@ class Trade(_DECL_BASE, LocalTrade):
     # Margin trading properties
     leverage = Column(Float, nullable=True, default=1.0)
     interest_rate = Column(Float, nullable=False, default=0.0)
-    liquidation_price = Column(Float, nullable=True)
+    isolated_liq = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
     interest_mode = Column(Enum(InterestMode), nullable=True)
     # End of margin trading properties
