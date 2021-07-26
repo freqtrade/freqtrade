@@ -584,7 +584,7 @@ class Exchange:
 
     def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         """
-        #* Should be implemented by child classes if leverage affects the stake_amount
+        # * Should be implemented by child classes if leverage affects the stake_amount
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered
         :param stake_amount: The stake amount for a pair before leverage is considered
@@ -1572,6 +1572,16 @@ class Exchange:
 
     def transfer(self, asset: str, amount: float, frm: str, to: str, pair: Optional[str]):
         self._api.transfer(asset, amount, frm, to)
+
+    def get_isolated_liq(self, pair: str, open_rate: float,
+                         amount: float, leverage: float, is_short: bool) -> float:
+        raise OperationalException(
+            f"Isolated margin is not available on {self.name} using freqtrade"
+        )
+
+    def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
+        # TODO-mg: implement
+        return 0.0005
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
