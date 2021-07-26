@@ -2177,7 +2177,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
     pair = 'ETH/BTC'
 
     with pytest.raises(OperationalException,
-                       match="This exchange does not suport downloading Trades."):
+                       match="This exchange does not support downloading Trades."):
         exchange.get_historic_trades(pair, since=trades_history[0][0],
                                      until=trades_history[-1][0])
 
