@@ -183,7 +183,7 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, side="sell",
                               order_types={'stoploss': ordertype,
                                            'stoploss_on_exchange_limit_ratio': 0.99
                                            })
@@ -208,17 +208,17 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("kraken Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
 
 def test_stoploss_order_dry_run_kraken(default_conf, mocker):
@@ -231,7 +231,7 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     assert 'id' in order
     assert 'info' in order
@@ -248,8 +248,8 @@ def test_stoploss_adjust_kraken(mocker, default_conf):
         'type': STOPLOSS_ORDERTYPE,
         'price': 1500,
     }
-    assert exchange.stoploss_adjust(1501, order)
-    assert not exchange.stoploss_adjust(1499, order)
+    assert exchange.stoploss_adjust(1501, order, side="sell")
+    assert not exchange.stoploss_adjust(1499, order, side="sell")
     # Test with invalid order case ...
     order['type'] = 'stop_loss_limit'
-    assert not exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1501, order, side="sell")

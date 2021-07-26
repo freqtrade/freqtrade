@@ -67,20 +67,23 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
+        # TODO-mg: Short support
         return (order['type'] in ('stop-loss', 'stop-loss-limit')
                 and stop_loss > float(order['price']))
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float,
+                 stop_price: float, order_types: Dict, side: str) -> Dict:
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
         """
+        # TODO-mg: Short support
         params = self._params.copy()
 
         if order_types.get('stoploss', 'market') == 'limit':

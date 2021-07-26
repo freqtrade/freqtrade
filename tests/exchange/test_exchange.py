@@ -2581,10 +2581,10 @@ def test_get_fee(default_conf, mocker, exchange_name):
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss_adjust(1, {})
+        exchange.stoploss_adjust(1, {}, side="sell")
 
 
 def test_merge_ft_has_dict(default_conf, mocker):

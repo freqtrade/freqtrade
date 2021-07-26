@@ -802,14 +802,15 @@ class Exchange:
     ):
         raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float,
+                 stop_price: float, order_types: Dict, side: str) -> Dict:
         """
         creates a stoploss order.
         The precise ordertype is determined by the order_types dict or exchange default.

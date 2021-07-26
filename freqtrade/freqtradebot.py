@@ -728,9 +728,13 @@ class FreqtradeBot(LoggingMixin):
         :return: True if the order succeeded, and False in case of problems.
         """
         try:
-            stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
-                                                    stop_price=stop_price,
-                                                    order_types=self.strategy.order_types)
+            stoploss_order = self.exchange.stoploss(
+                pair=trade.pair,
+                amount=trade.amount,
+                stop_price=stop_price,
+                order_types=self.strategy.order_types,
+                side=trade.exit_side
+            )
 
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
             trade.orders.append(order_obj)
@@ -819,11 +823,11 @@ class FreqtradeBot(LoggingMixin):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
             # value immediately
-            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order)
+            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order, side=trade.exit_side)
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict, side: str) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -831,7 +835,7 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order, side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
