@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import ccxt
 
-from freqtrade.enums import LiqFormula
+from freqtrade.enums import InterestMode, LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -23,6 +23,7 @@ class Kraken(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
+    interest_mode: InterestMode = InterestMode.HOURSPER4
 
     maintenance_margin_formula = LiqFormula.KRAKEN
 
@@ -147,3 +148,8 @@ class Kraken(Exchange):
         is_short: Optional[bool]
     ):
         return
+
+    def get_isolated_liq(self, pair: str, open_rate: float,
+                         amount: float, leverage: float, is_short: bool) -> float:
+        # TODO-mg: implement
+        raise OperationalException("Kraken only supports cross margin trading")

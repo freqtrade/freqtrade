@@ -21,7 +21,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import LiqFormula
+from freqtrade.enums import InterestMode, LiqFormula
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -70,6 +70,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
     liq_formula: LiqFormula
+    interest_mode: InterestMode = InterestMode.NONE
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
@@ -570,7 +571,7 @@ class Exchange:
 
     def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         """
-        #* Should be implemented by child classes if leverage affects the stake_amount
+        # * Should be implemented by child classes if leverage affects the stake_amount
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered
         :param stake_amount: The stake amount for a pair before leverage is considered
@@ -715,7 +716,7 @@ class Exchange:
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, time_in_force: str = 'gtc') -> Dict:
+                     rate: float, time_in_force: str = "gtc") -> Dict:
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
@@ -1533,7 +1534,7 @@ class Exchange:
         :returns List of trade data
         """
         if not self.exchange_has("fetchTrades"):
-            raise OperationalException("This exchange does not suport downloading Trades.")
+            raise OperationalException("This exchange does not support downloading Trades.")
 
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
@@ -1541,6 +1542,16 @@ class Exchange:
 
     def transfer(self, asset: str, amount: float, frm: str, to: str, pair: Optional[str]):
         self._api.transfer(asset, amount, frm, to)
+
+    def get_isolated_liq(self, pair: str, open_rate: float,
+                         amount: float, leverage: float, is_short: bool) -> float:
+        raise OperationalException(
+            f"Isolated margin is not available on {self.name} using freqtrade"
+        )
+
+    def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
+        # TODO-mg: implement
+        return 0.0005
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

@@ -2,8 +2,8 @@
 import logging
 from typing import Dict, Optional
 
-from freqtrade.exchange import Exchange
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import Exchange
 
 
 logger = logging.getLogger(__name__)
@@ -44,3 +44,8 @@ class Bittrex(Exchange):
         is_short: Optional[bool]
     ):
         raise OperationalException("Bittrex does not support leveraged trading")
+
+    def get_isolated_liq(self, pair: str, open_rate: float,
+                         amount: float, leverage: float, is_short: bool) -> float:
+        # TODO-mg: implement
+        raise OperationalException("Bittrex does not support margin trading")

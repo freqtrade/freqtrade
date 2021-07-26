@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 import ccxt
 
-from freqtrade.enums import LiqFormula
+from freqtrade.enums import InterestMode, LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -24,6 +24,7 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
+    interest_mode: InterestMode = InterestMode.HOURSPERDAY
 
     maintenance_margin_formula = LiqFormula.BINANCE
 
@@ -193,3 +194,8 @@ class Binance(Exchange):
 
     def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         return stake_amount / leverage
+
+    def get_isolated_liq(self, pair: str, open_rate: float,
+                         amount: float, leverage: float, is_short: bool) -> float:
+        # TODO-mg: implement
+        return 0.0

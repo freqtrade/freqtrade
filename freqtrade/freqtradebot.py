@@ -16,7 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, State
+from freqtrade.enums import InterestMode, RPCMessageType, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -442,8 +442,8 @@ class FreqtradeBot(LoggingMixin):
             logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
             return False
 
-        long_lev = 3 if True else 1.0  # Replace with self.strategy.get_leverage
-        short_lev = 3 if True else 1.0  # Replace with self.strategy.get_leverage
+        long_lev = 1.0 if True else 1.0  # Replace with self.strategy.get_leverage
+        short_lev = 1.0 if True else 1.0  # Replace with self.strategy.get_leverage
         # running get_signal on historical data fetched
         (buy, sell, buy_tag) = self.strategy.get_signal(
             pair,
@@ -528,7 +528,7 @@ class FreqtradeBot(LoggingMixin):
         stake_amount: float,
         price: Optional[float] = None,
         forcebuy: bool = False,
-        leverage: Optional[float] = 1.0,
+        leverage: float = 1.0,
         is_short: bool = False,
         buy_tag: Optional[str] = None
     ) -> bool:
@@ -540,16 +540,17 @@ class FreqtradeBot(LoggingMixin):
         :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['buy']  # TODO-mg Change to enter
-        trade_type = 'short' if is_short else 'buy'
+        side = 'sell' if is_short else 'buy'
+        name = 'Short' if is_short else 'Buy'
 
         if price:
             enter_limit_requested = price
         else:
             # Calculate price
-            enter_limit_requested = self.exchange.get_rate(pair, refresh=True, side=trade_type)
+            enter_limit_requested = self.exchange.get_rate(pair, refresh=True, side=side)
 
         if not enter_limit_requested:
-            raise PricingError('Could not determine buy price.')
+            raise PricingError(f'Could not determine {side} price.')
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair=pair,
@@ -570,61 +571,82 @@ class FreqtradeBot(LoggingMixin):
         if not stake_amount:
             return False
 
-        log_type = f"{trade_type.capitalize()} signal found"
+        log_type = f"{name} signal found"
         logger.info(f"{log_type}: about create a new trade for {pair} with stake_amount: "
                     f"{stake_amount} ...")
 
-        amount = stake_amount / enter_limit_requested
-        order_type = self.strategy.order_types[trade_type]
+        amount = (stake_amount / enter_limit_requested) * leverage
+        order_type = self.strategy.order_types[side]  # TODO-mg: Don't knoww what to do here
         if forcebuy:
             # Forcebuy can define a different ordertype
-            # TODO-mg get a forceshort
+            # TODO-mg get a forceshort? What is this
             order_type = self.strategy.order_types.get('forcebuy', order_type)
 
+        # TODO-mg:Will this work for shorting?
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of buying {pair}")
+            logger.info(f"User requested abortion of {name.lower()}ing {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
-        order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
+        order = self.exchange.create_order(pair=pair, ordertype=order_type, side=side,
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
-        order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
+        order_obj = Order.parse_from_ccxt_object(order, pair, side)
         order_id = order['id']
         order_status = order.get('status', None)
 
         # we assume the order is executed at the price requested
-        buy_limit_filled_price = enter_limit_requested
+        enter_limit_filled_price = enter_limit_requested
         amount_requested = amount
 
         if order_status == 'expired' or order_status == 'rejected':
-            order_tif = self.strategy.order_time_in_force['buy']
+            order_tif = self.strategy.order_time_in_force['buy']  # TODO-mg: Update to enter
 
             # return false if the order is not filled
             if float(order['filled']) == 0:
-                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+                logger.warning('%s %s order with time in force %s for %s is %s by %s.'
                                ' zero amount is fulfilled.',
-                               order_tif, order_type, pair, order_status, self.exchange.name)
+                               name, order_tif, order_type, pair, order_status, self.exchange.name)
                 return False
             else:
                 # the order is partially fulfilled
                 # in case of IOC orders we can check immediately
                 # if the order is fulfilled fully or partially
-                logger.warning('Buy %s order with time in force %s for %s is %s by %s.'
+
+                logger.warning('%s %s order with time in force %s for %s is %s by %s.'
                                ' %s amount fulfilled out of %s (%s remaining which is canceled).',
-                               order_tif, order_type, pair, order_status, self.exchange.name,
+                               name, order_tif, order_type, pair, order_status, self.exchange.name,
                                order['filled'], order['amount'], order['remaining']
                                )
                 stake_amount = order['cost']
                 amount = safe_value_fallback(order, 'filled', 'amount')
-                buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+                enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
         # in case of FOK the order may be filled immediately and fully
         elif order_status == 'closed':
             stake_amount = order['cost']
             amount = safe_value_fallback(order, 'filled', 'amount')
-            buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+            enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+
+        interest_rate = 0
+        isolated_liq = None
+
+        if leverage > 1.0:  # TODO-mg: and margin == isolated:
+            isolated_liq = self.exchange.get_isolated_liq(
+                pair=pair,
+                open_rate=enter_limit_filled_price,
+                amount=amount,
+                leverage=leverage,
+                is_short=is_short
+            )
+
+        if leverage > 1.0:
+            interest_rate = self.exchange.get_interest_rate(
+                pair=pair,
+                open_rate=enter_limit_filled_price,
+                is_short=is_short
+            )
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -636,14 +658,19 @@ class FreqtradeBot(LoggingMixin):
             amount_requested=amount_requested,
             fee_open=fee,
             fee_close=fee,
-            open_rate=buy_limit_filled_price,
+            open_rate=enter_limit_filled_price,
             open_rate_requested=enter_limit_requested,
             open_date=datetime.utcnow(),
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
             buy_tag=buy_tag,
-            timeframe=timeframe_to_minutes(self.config['timeframe'])
+            timeframe=timeframe_to_minutes(self.config['timeframe']),
+            leverage=leverage,
+            is_short=is_short,
+            interest_rate=interest_rate,
+            interest_mode=self.exchange.interest_mode,
+            isolated_liq=isolated_liq
         )
         trade.orders.append(order_obj)
 
