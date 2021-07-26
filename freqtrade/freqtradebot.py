@@ -715,7 +715,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a buy/short cancel occurred.
         """
-        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side="buy")
+        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.enter_side)
         msg_type = RPCMessageType.SHORT_CANCEL if trade.is_short else RPCMessageType.BUY_CANCEL
         msg = {
             'trade_id': trade.id,
@@ -795,33 +795,29 @@ class FreqtradeBot(LoggingMixin):
         logger.debug('Handling %s ...', trade)
 
         (enter_trade, exit_trade) = (False, False)
+        exit_signal_type = "exit_short" if trade.is_short else "sell"
 
-        if trade.is_short:
-            # enter_signal = "short"
-            exit_signal = "exit_short"
-            signal_config = (self.config.get('use_exit_short_signal', True)
-                             or self.config.get('ignore_roi_if_short_signal', False))
-        else:
-            # enter_signal = "buy"
-            exit_signal = "sell"
-            signal_config = (self.config.get('use_sell_signal', True)
-                             or self.config.get('ignore_roi_if_buy_signal', False))
+        # TODO-mg: change to use_exit_signal, ignore_roi_if_enter_signal
+        signal_config = (self.config.get('use_sell_signal', True)
+                         or self.config.get('ignore_roi_if_buy_signal', False))
 
         if (signal_config):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
+
+            # TODO-mg: Call get_short_signal for shorts
             (enter_trade, exit_trade, _) = self.strategy.get_signal(
                 trade.pair, self.strategy.timeframe, analyzed_df)
 
-        sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        logger.debug(f'checking {exit_signal_type}')
 
-        # TODO-mg: This will not works for shorts,
-        # TODO-mg: update exchange.get_exit_rate and _check_and_execute_sell
-        if self._check_and_execute_sell(trade, sell_rate, enter_trade, exit_trade):
+        logger.debug(f'checking {exit_signal_type}')
+        exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side=trade.exit_side)
+
+        if self._check_and_execute_exit(trade, exit_rate, enter_trade, exit_trade):
             return True
-        # TODO-mg: end of non-working section
 
-        logger.debug(f'Found no {exit_signal} signal for %s.', trade)
+        logger.debug(f'Found no {exit_signal_type} signal for %s.', trade)
         return False
 
     def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
@@ -834,7 +830,8 @@ class FreqtradeBot(LoggingMixin):
         try:
             stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
                                                     stop_price=stop_price,
-                                                    order_types=self.strategy.order_types)
+                                                    order_types=self.strategy.order_types,
+                                                    side=trade.exit_side)
 
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
             trade.orders.append(order_obj)
@@ -848,14 +845,9 @@ class FreqtradeBot(LoggingMixin):
         except InvalidOrderException as e:
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
-            if trade.is_short:
-                logger.warning('Exiting(Buying) the trade forcefully')
-                # self.execute_exit_short(trade, trade.stop_loss, sell_reason=SellCheckTuple(
-                #    sell_type=SellType.EMERGENCY_SELL))
-            else:
-                logger.warning('Selling the trade forcefully')
-                self.execute_sell(trade, trade.stop_loss, sell_reason=SellCheckTuple(
-                    sell_type=SellType.EMERGENCY_SELL))
+            logger.warning('Exiting the trade forcefully')
+            self.execute_exit(trade, trade.stop_loss, sell_reason=SellCheckTuple(
+                sell_type=SellType.EMERGENCY_SELL), side=trade.exit_side)
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -947,7 +939,7 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order, side=trade.exit_side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
@@ -967,20 +959,25 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
+    def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
                                 buy: bool, sell: bool) -> bool:
         """
         Check and execute sell
         # TODO-mg: Update this for shorts
         """
-        should_sell = self.strategy.should_sell(
-            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
+        exit = getattr(self.strategy, "should_exit_short") if trade.is_short else getattr(
+            self.strategy, "should_sell")
+
+        should_exit = exit(
+            trade, exit_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
-        if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell)
+        if should_exit.sell_flag:
+            # TODO-mg: Update to exit_type
+            logger.info(
+                f'Executing {trade.exit_side} for {trade.pair}. Reason: {should_exit.sell_type}')
+            self.execute_exit(trade, exit_rate, should_exit, side="sell")
             return True
         return False
 
@@ -988,6 +985,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Check if timeout is active, and if the order is still open and timed out
         """
+        # TODO-mg: Maybe update side in the next line
         timeout = self.config.get('unfilledtimeout', {}).get(side)
         ordertime = arrow.get(order['datetime']).datetime
         if timeout is not None:
@@ -1020,20 +1018,20 @@ class FreqtradeBot(LoggingMixin):
                 order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
                     or self._check_timed_out(trade.enter_side, order)
-                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,
+                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,  # TODO-mg: maybe change to check_enter_timeout
                                              default_retval=False)(pair=trade.pair,
                                                                    trade=trade,
                                                                    order=order))):
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
-            elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
+            elif (order['side'] == trade.exit_side and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
-                  or self._check_timed_out('sell', order)
-                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,
+                  or self._check_timed_out(trade.exit_side, order)
+                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,    # TODO-mg: maybe change to check_exit_timeout
                                            default_retval=False)(pair=trade.pair,
                                                                  trade=trade,
                                                                  order=order))):
-                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -1048,11 +1046,11 @@ class FreqtradeBot(LoggingMixin):
                 logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
                 continue
 
-            if order['side'] == 'buy':
+            if order['side'] == trade.enter_side:
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
 
-            elif order['side'] == 'sell':
-                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+            elif order['side'] == trade.exit_side:
+                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
         Trade.commit()
 
     def handle_cancel_enter(self, trade: Trade, order: Dict, reason: str) -> bool:
@@ -1087,18 +1085,15 @@ class FreqtradeBot(LoggingMixin):
             corder = order
             reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
 
-        # TODO-mg: get this side variable working, fails in tests
-        # side = trade.enter_side[0].upper() + trade.enter_side[1:].lower()
-        logger.info('Buy order %s for %s.', reason, trade)
-        # logger.info(f'{side} order %s for %s.', reason, trade)
+        side = trade.enter_side.capitalize()
+        logger.info('%s order %s for %s.', side, reason, trade)
 
         # Using filled to determine the filled amount
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info(
-                'Buy order fully cancelled. Removing %s from database.',
-                # f'{side} order fully cancelled. Removing %s from database.',
-                trade
+                '%s order fully cancelled. Removing %s from database.',
+                side, trade
             )
             # if trade is not partially completed, just delete the trade
             trade.delete()
@@ -1116,20 +1111,18 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
-            # TODO-mg change to buy or short order
-            logger.info('Partial buy order timeout for %s.', trade)
+            logger.info('Partial %s order timeout for %s.', trade.enter_side, trade)
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        # TODO-mg change to buy or short order
-        # TODO-mg: Or should it be self.strategy.order_types['short'] or strategy.order_types['buy']
-        self._notify_open_cancel(trade, order_type=self.strategy.order_types['buy'],
+        # TODO-mg: Should short and exit_short be an order type?
+        self._notify_open_cancel(trade, order_type=self.strategy.order_types[trade.enter_side],
                                  reason=reason)
         return was_trade_fully_canceled
 
-    def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
+    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
         """
-        Sell cancel - cancel order and update trade
+        Sell/exit_short cancel - cancel order and update trade
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the order
@@ -1141,12 +1134,13 @@ class FreqtradeBot(LoggingMixin):
                                                                 trade.amount)
                     trade.update_order(co)
                 except InvalidOrderException:
-                    logger.exception(f"Could not cancel sell order {trade.open_order_id}")
+                    logger.exception(
+                        f"Could not cancel {trade.exit_side} order {trade.open_order_id}")
                     return 'error cancelling order'
-                logger.info('Sell order %s for %s.', reason, trade)
+                logger.info('%s order %s for %s.', trade.exit_side.capitalize(), reason, trade)
             else:
                 reason = constants.CANCEL_REASON['CANCELLED_ON_EXCHANGE']
-                logger.info('Sell order %s for %s.', reason, trade)
+                logger.info('%s order %s for %s.', trade.exit_side.capitalize(), reason, trade)
                 trade.update_order(order)
 
             trade.close_rate = None
@@ -1163,12 +1157,12 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         self._notify_close_cancel(
             trade,
-            order_type=self.strategy.order_types['sell'],
+            order_type=self.strategy.order_types[trade.exit_side],
             reason=reason
         )
         return reason
 
-    def _safe_sell_amount(self, pair: str, amount: float) -> float:
+    def _safe_exit_amount(self, pair: str, amount: float) -> float:
         """
         Get sellable amount.
         Should be trade.amount - but will fall back to the available amount if necessary.
@@ -1179,6 +1173,7 @@ class FreqtradeBot(LoggingMixin):
         :return: amount to sell
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
+        # TODO-mg Maybe update?
         # Update wallets to ensure amounts tied up in a stoploss is now free!
         self.wallets.update()
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
@@ -1191,9 +1186,15 @@ class FreqtradeBot(LoggingMixin):
             return wallet_amount
         else:
             raise DependencyException(
-                f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
+                f"Not enough amount to exit trade. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
+    def execute_exit(
+        self,
+        trade: Trade,
+        limit: float,
+        sell_reason: SellCheckTuple,
+        side: str
+    ) -> bool:
         """
         Executes a limit sell for the given trade and limit
         :param trade: Trade instance
@@ -1201,14 +1202,14 @@ class FreqtradeBot(LoggingMixin):
         :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
-        # TODO-mg: account for leverage and make this work for shorts
-        sell_type = 'sell'
+
+        exit_type = 'sell'  # TODO-mg: Update to exit
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
-            sell_type = 'stoploss'
+            exit_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and sell_type == 'stoploss' \
+        if self.config['dry_run'] and exit_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
@@ -1221,8 +1222,8 @@ class FreqtradeBot(LoggingMixin):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        order_type = self.strategy.order_types[sell_type]
-        if sell_reason.sell_type == SellType.EMERGENCY_SELL:
+        order_type = self.strategy.order_types[exit_type]
+        if sell_reason.sell_type == SellType.EMERGENCY_SELL:  # TODO-mg update to exit_reason
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
         if sell_reason.sell_type == SellType.FORCE_SELL:
@@ -1230,42 +1231,44 @@ class FreqtradeBot(LoggingMixin):
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
 
-        amount = self._safe_sell_amount(trade.pair, trade.amount)
-        time_in_force = self.strategy.order_time_in_force['sell']
+        amount = self._safe_exit_amount(trade.pair, trade.amount)
+        time_in_force = self.strategy.order_time_in_force['sell']  # TODO-mg update to exit
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
-                current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of selling {trade.pair}")
+                current_time=datetime.now(timezone.utc)):  # TODO-mg: Update to exit
+            logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
 
         try:
             # Execute sell and update trade record
-            order = self.exchange.create_order(pair=trade.pair,
-                                               ordertype=order_type, side="sell",
-                                               amount=amount, rate=limit,
-                                               time_in_force=time_in_force
-                                               )
+            order = self.exchange.create_order(
+                pair=trade.pair,
+                ordertype=order_type,
+                amount=amount, rate=limit,
+                time_in_force=time_in_force,
+                side=trade.exit_side
+            )
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
             # Try to figure out what went wrong
             self.handle_insufficient_funds(trade)
             return False
 
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side)
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
-        trade.sell_order_status = ''
+        trade.sell_order_status = ''  # TODO-mg: Update to exit_order_status
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.sell_reason
-        # In case of market sell orders the order can be closed immediately
+        trade.sell_reason = sell_reason.sell_reason  # TODO-mg: Update to exit_reason
+        # In case of market exit orders the order can be closed immediately
         if order.get('status', 'unknown') == 'closed':
             self.update_trade_state(trade, trade.open_order_id, order)
         Trade.commit()
 
-        # Lock pair for one candle to prevent immediate re-buys
+        # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
@@ -1281,7 +1284,7 @@ class FreqtradeBot(LoggingMixin):
         profit_trade = trade.calc_profit(rate=profit_rate)
         # Use cached rates here - it was updated seconds ago.
         current_rate = self.exchange.get_rate(
-            trade.pair, refresh=False, side="sell") if not fill else None
+            trade.pair, refresh=False, side=trade.exit_side) if not fill else None
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1300,7 +1303,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'sell_reason': trade.sell_reason,
+            'sell_reason': trade.sell_reason,  # TODO-mg: trade to exit_reason
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
@@ -1319,14 +1322,14 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a sell cancel occurred.
         """
-        if trade.sell_order_status == reason:
+        if trade.sell_order_status == reason:  # TODO-mg: Update to exit_order_status
             return
         else:
-            trade.sell_order_status = reason
+            trade.sell_order_status = reason  # TODO-mg: Update to exit_order_status
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
-        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side="sell")
+        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.exit_side)
         profit_ratio = trade.calc_profit_ratio(profit_rate)
         gain = "profit" if profit_ratio > 0 else "loss"
 
@@ -1343,7 +1346,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'sell_reason': trade.sell_reason,
+            'sell_reason': trade.sell_reason,  # TODO-mg: trade to exit_reason
             'open_date': trade.open_date,
             'close_date': trade.close_date,
             'stake_currency': self.config['stake_currency'],

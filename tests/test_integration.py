@@ -9,7 +9,7 @@ from freqtrade.strategy.interface import SellCheckTuple
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
 
 
-def test_may_execute_sell_stoploss_on_exchange_multi(default_conf, ticker, fee,
+def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
                                                      limit_buy_order, mocker) -> None:
     """
     Tests workflow of selling stoploss_on_exchange.
