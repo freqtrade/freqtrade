@@ -32,7 +32,7 @@ def test_stoploss_order_ftx(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
 
     # stoploss_on_exchange_limit_ratio is irrelevant for ftx market orders
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190,
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190, side="sell",
                               order_types={'stoploss_on_exchange_limit_ratio': 1.05})
 
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
@@ -47,7 +47,7 @@ def test_stoploss_order_ftx(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     assert 'id' in order
     assert 'info' in order
@@ -61,7 +61,7 @@ def test_stoploss_order_ftx(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
     order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
-                              order_types={'stoploss': 'limit'})
+                              order_types={'stoploss': 'limit'}, side="sell")
 
     assert 'id' in order
     assert 'info' in order
@@ -78,17 +78,17 @@ def test_stoploss_order_ftx(default_conf, mocker):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("ftx Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "ftx",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
 
 def test_stoploss_order_dry_run_ftx(default_conf, mocker):
@@ -101,7 +101,7 @@ def test_stoploss_order_dry_run_ftx(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
 
     assert 'id' in order
     assert 'info' in order
@@ -118,11 +118,11 @@ def test_stoploss_adjust_ftx(mocker, default_conf):
         'type': STOPLOSS_ORDERTYPE,
         'price': 1500,
     }
-    assert exchange.stoploss_adjust(1501, order)
-    assert not exchange.stoploss_adjust(1499, order)
+    assert exchange.stoploss_adjust(1501, order, side="sell")
+    assert not exchange.stoploss_adjust(1499, order, side="sell")
     # Test with invalid order case ...
     order['type'] = 'stop_loss_limit'
-    assert not exchange.stoploss_adjust(1501, order)
+    assert not exchange.stoploss_adjust(1501, order, side="sell")
 
 
 def test_fetch_stoploss_order(default_conf, mocker, limit_sell_order):

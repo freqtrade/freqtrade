@@ -31,21 +31,25 @@ class Ftx(Exchange):
         return (parent_check and
                 market.get('spot', False) is True)
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
+        # TODO-mg: Short support
         return order['type'] == 'stop' and stop_loss > float(order['price'])
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float,
+                 stop_price: float, order_types: Dict, side: str) -> Dict:
         """
         Creates a stoploss order.
         depending on order_types.stoploss configuration, uses 'market' or limit order.
 
         Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
+        # TODO-mg: Short support
+
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         limit_rate = stop_price * limit_price_pct
 
