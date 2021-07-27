@@ -520,7 +520,8 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
     assert trade.close_profit is None
     assert trade.close_date is None
     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
-                      r"pair=ETH/BTC, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
+                      r'pair=ETH/BTC, amount=30.00000000, '
+                      r"is_short=False, leverage=1.0, open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
     caplog.clear()
@@ -531,7 +532,31 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
     assert trade.close_profit == round(0.0945137157107232, 8)
     assert trade.close_date is not None
     assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
-                      r"pair=ETH/BTC, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
+                      r"pair=ETH/BTC, amount=30.00000000, "
+                      r"is_short=False, leverage=1.0, open_rate=2.00000000, open_since=.*\).",
+                      caplog)
+    caplog.clear()
+
+    trade = Trade(
+        id=226531,
+        pair='ETH/BTC',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
+        is_open=True,
+        open_date=arrow.utcnow().datetime,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        is_short=True,
+        leverage=3.0,
+        interest_rate=0.0005,
+        interest_mode=InterestMode.HOURSPERDAY
+    )
+    trade.update(limit_buy_order_usdt)
+    assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=226531, "
+                      r"pair=ETH/BTC, amount=30.00000000, "
+                      r"is_short=True, leverage=3.0, open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
 
@@ -557,7 +582,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     assert trade.close_profit is None
     assert trade.close_date is None
     assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
-                      r"pair=ETH/BTC, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
+                      r"pair=ETH/BTC, amount=30.00000000, is_short=False, leverage=1.0, "
+                      r"open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
     caplog.clear()
@@ -569,7 +595,8 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
     assert trade.close_profit == round(0.0945137157107232, 8)
     assert trade.close_date is not None
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-                      r"pair=ETH/BTC, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
+                      r"pair=ETH/BTC, amount=30.00000000, is_short=False, leverage=1.0, "
+                      r"open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
 
