@@ -454,7 +454,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -469,6 +469,7 @@ class AwesomeStrategy(IStrategy):
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -490,7 +491,8 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -508,6 +510,7 @@ class AwesomeStrategy(IStrategy):
         :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
