@@ -43,7 +43,8 @@ class Ftx(Exchange):
         return order['type'] == 'stop' and stop_loss > float(order['price'])
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict, side: str) -> Dict:
+    def stoploss(self, pair: str, amount: float,
+                 stop_price: float, order_types: Dict, side: str) -> Dict:
         """
         Creates a stoploss order.
         depending on order_types.stoploss configuration, uses 'market' or limit order.

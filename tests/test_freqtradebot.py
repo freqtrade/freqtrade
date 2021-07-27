@@ -2480,6 +2480,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> N
     caplog.clear()
     cancel_order_mock.reset_mock()
     limit_buy_order['filled'] = 2
+    trade.stake_amount = 0.090982711548927
     assert not freqtrade.handle_cancel_enter(trade, limit_buy_order, reason)
     assert cancel_order_mock.call_count == 1
 
@@ -2534,6 +2535,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order,
 
     trade = MagicMock()
     trade.pair = 'LTC/USDT'
+    trade.enter_side = "buy"
     trade.open_rate = 200
     trade.enter_side = "buy"
     limit_buy_order['filled'] = 0.0
@@ -2544,6 +2546,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order,
 
     cancel_order_mock.reset_mock()
     limit_buy_order['filled'] = 1.0
+    trade.stake_amount = 0.090982711548927
     assert not freqtrade.handle_cancel_enter(trade, limit_buy_order, reason)
     assert cancel_order_mock.call_count == 1
 

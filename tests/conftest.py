@@ -1845,7 +1845,7 @@ def open_trade():
         amount=90.99181073,
         fee_open=0.0,
         fee_close=0.0,
-        stake_amount=1,
+        stake_amount=0.001,
         open_date=arrow.utcnow().shift(minutes=-601).datetime,
         is_open=True
     )

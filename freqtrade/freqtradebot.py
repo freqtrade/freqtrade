@@ -5,7 +5,7 @@ import copy
 import logging
 import traceback
 from datetime import datetime, timezone
-from math import isclose
+from math import ceil, isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
 
@@ -16,7 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import InterestMode, RPCMessageType, SellType, State
+from freqtrade.enums import RPCMessageType, SellType, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -101,9 +101,8 @@ class FreqtradeBot(LoggingMixin):
         initial_state = self.config.get('initial_state')
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
-        # Protect sell-logic from forcesell and vice versa
-        # TODO-mg: update to _close_lock
-        self._sell_lock = Lock()
+        # Protect exit-logic from forcesell and vice versa
+        self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
         # Start calculating maintenance margin if on cross margin
@@ -177,16 +176,15 @@ class FreqtradeBot(LoggingMixin):
 
         self.strategy.analyze(self.active_pair_whitelist)
 
-        # TODO-mg: update to _close_lock
-        with self._sell_lock:
+        with self._exit_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
 
         # Protect from collisions with forcesell(#TODO-mg: update to forceclose).
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
         # while closing is in process, since telegram messages arrive in an different thread.
-        # TODO-mg: update to _close_lock
-        with self._sell_lock:
+
+        with self._exit_lock:
             trades = Trade.get_open_trades()
             # First process current opened trades (positions)
             self.exit_positions(trades)
@@ -263,7 +261,6 @@ class FreqtradeBot(LoggingMixin):
         logger.info(f"Updating {len(orders)} open orders.")
         for order in orders:
             try:
-                # TODO-mg: How to consider borrow orders?
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
 
@@ -412,8 +409,6 @@ class FreqtradeBot(LoggingMixin):
 
     def create_trade(self, pair: str) -> bool:
         """
-        # TODO-mg: Just make this function work for shorting and leverage, my todo notes in
-        # TODO-mg: it aren't very clear
         Check the implemented trading strategy for enter signals.
 
         If the pair triggers the enter signal a new trade record gets created
@@ -442,8 +437,8 @@ class FreqtradeBot(LoggingMixin):
             logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
             return False
 
-        long_lev = 1.0 if True else 1.0  # Replace with self.strategy.get_leverage
-        short_lev = 1.0 if True else 1.0  # Replace with self.strategy.get_leverage
+        long_lev = 1.0 if True else 1.0  # TODO-mg: Replace with self.strategy.get_leverage
+        short_lev = 1.0 if True else 1.0  # TODO-mg: Replace with self.strategy.get_leverage
         # running get_signal on historical data fetched
         (buy, sell, buy_tag) = self.strategy.get_signal(
             pair,
@@ -540,8 +535,7 @@ class FreqtradeBot(LoggingMixin):
         :return: True if a buy order is created, false if it fails.
         """
         time_in_force = self.strategy.order_time_in_force['buy']  # TODO-mg Change to enter
-        side = 'sell' if is_short else 'buy'
-        name = 'Short' if is_short else 'Buy'
+        [side, name] = ['sell', 'Short'] if is_short else ['buy', 'Buy']
 
         if price:
             enter_limit_requested = price
@@ -576,7 +570,7 @@ class FreqtradeBot(LoggingMixin):
                     f"{stake_amount} ...")
 
         amount = (stake_amount / enter_limit_requested) * leverage
-        order_type = self.strategy.order_types[side]  # TODO-mg: Don't knoww what to do here
+        order_type = self.strategy.order_types["buy"]  # TODO-mg: Maybe enter? or side?
         if forcebuy:
             # Forcebuy can define a different ordertype
             # TODO-mg get a forceshort? What is this
@@ -629,22 +623,22 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
-        interest_rate = 0
+        interest_rate = 0.0
         isolated_liq = None
-
-        if leverage > 1.0:  # TODO-mg: and margin == isolated:
-            isolated_liq = self.exchange.get_isolated_liq(
-                pair=pair,
-                open_rate=enter_limit_filled_price,
-                amount=amount,
-                leverage=leverage,
-                is_short=is_short
-            )
 
         if leverage > 1.0:
             interest_rate = self.exchange.get_interest_rate(
                 pair=pair,
                 open_rate=enter_limit_filled_price,
+                is_short=is_short
+            )
+
+            # TODO-mg: if margin == isolated
+            isolated_liq = self.exchange.get_isolated_liq(
+                pair=pair,
+                open_rate=enter_limit_filled_price,
+                amount=amount,
+                leverage=leverage,
                 is_short=is_short
             )
 
@@ -963,10 +957,9 @@ class FreqtradeBot(LoggingMixin):
                                 buy: bool, sell: bool) -> bool:
         """
         Check and execute sell
-        # TODO-mg: Update this for shorts
         """
         exit = getattr(self.strategy, "should_exit_short") if trade.is_short else getattr(
-            self.strategy, "should_sell")
+            self.strategy, "should_sell")  # TODO-mg: implement should_exit_short
 
         should_exit = exit(
             trade, exit_rate, datetime.now(timezone.utc), buy, sell,
@@ -977,7 +970,7 @@ class FreqtradeBot(LoggingMixin):
             # TODO-mg: Update to exit_type
             logger.info(
                 f'Executing {trade.exit_side} for {trade.pair}. Reason: {should_exit.sell_type}')
-            self.execute_exit(trade, exit_rate, should_exit, side="sell")
+            self.execute_exit(trade, exit_rate, should_exit, side=trade.exit_side)
             return True
         return False
 
@@ -1015,22 +1008,25 @@ class FreqtradeBot(LoggingMixin):
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
 
             if (order['side'] == trade.enter_side and (
+                # TODO-mg: maybe change check_buy_timeout to check_enter_timeout
                 order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
                     or self._check_timed_out(trade.enter_side, order)
-                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,  # TODO-mg: maybe change to check_enter_timeout
+                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,
                                              default_retval=False)(pair=trade.pair,
                                                                    trade=trade,
                                                                    order=order))):
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
-            elif (order['side'] == trade.exit_side and (order['status'] == 'open' or fully_cancelled) and (
-                  fully_cancelled
-                  or self._check_timed_out(trade.exit_side, order)
-                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,    # TODO-mg: maybe change to check_exit_timeout
-                                           default_retval=False)(pair=trade.pair,
-                                                                 trade=trade,
-                                                                 order=order))):
+            # TODO-mg: maybe change check_sell_timeout to check_exit_timeout
+            elif (order['side'] == trade.exit_side and (
+                  order['status'] == 'open' or fully_cancelled
+                  ) and (fully_cancelled
+                         or self._check_timed_out(trade.exit_side, order)
+                         or strategy_safe_wrapper(self.strategy.check_sell_timeout,
+                                                  default_retval=False)(pair=trade.pair,
+                                                                        trade=trade,
+                                                                        order=order))):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
     def cancel_all_open_orders(self) -> None:
@@ -1058,6 +1054,7 @@ class FreqtradeBot(LoggingMixin):
         Buy cancel - cancel order
         :return: True if order was fully cancelled
         """
+        # TODO-mg: Pay back borrowed and transfer back on leveraged trades
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
@@ -1105,9 +1102,15 @@ class FreqtradeBot(LoggingMixin):
             # cancel_order may not contain the full order dict, so we need to fallback
             # to the order dict aquired before cancelling.
             # we need to fall back to the values from order if corder does not contain these keys.
-            # TODO-mg: Update trade.leverage if the full buy order was not filled
             trade.amount = filled_amount
-            trade.stake_amount = trade.amount * trade.open_rate
+            # TODO-mg: Check edge cases, we don't want to make leverage > 1.0 if we don't have to
+
+            if trade.amount <= ceil(trade.stake_amount/trade.open_rate):
+                # If amount is less than 1x leverage
+                trade.stake_amount = trade.amount * trade.open_rate
+            else:
+                # TODO: deal with situation of paying back extra amount
+                trade.leverage = trade.amount/trade.stake_amount
             self.update_trade_state(trade, trade.open_order_id, corder)
 
             trade.open_order_id = None
@@ -1444,7 +1447,6 @@ class FreqtradeBot(LoggingMixin):
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
-        TODO-mg: Update this function to account for shorts
         Detect and update trade fee.
         Calls trade.update_fee() upon correct detection.
         Returns modified amount if the fee was taken from the destination currency.
@@ -1477,7 +1479,6 @@ class FreqtradeBot(LoggingMixin):
 
     def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:
         """
-        TODO-mg: Update this function to account for shorts
         fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
         """
         trades = self.exchange.get_trades_for_order(self.exchange.get_order_id_conditional(order),
@@ -1509,6 +1510,7 @@ class FreqtradeBot(LoggingMixin):
             trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
+            # TODO-mg: leverage?
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
             raise DependencyException("Half bought? Amounts don't match")
 

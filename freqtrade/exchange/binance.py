@@ -38,7 +38,8 @@ class Binance(Exchange):
         return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict, side: str) -> Dict:
+    def stoploss(self, pair: str, amount: float,
+                 stop_price: float, order_types: Dict, side: str) -> Dict:
         """
         creates a stoploss limit order.
         this stoploss-limit is binance-specific.
