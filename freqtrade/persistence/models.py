@@ -357,9 +357,14 @@ class LocalTrade():
 
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
+        leverage = self.leverage or 1.0
+        is_short = self.is_short or False
 
-        return (f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
-                f'open_rate={self.open_rate:.8f}, open_since={open_since})')
+        return (
+            f'Trade(id={self.id}, pair={self.pair}, amount={self.amount:.8f}, '
+            f'is_short={is_short}, leverage={leverage}, '
+            f'open_rate={self.open_rate:.8f}, open_since={open_since})'
+        )
 
     def to_json(self) -> Dict[str, Any]:
         return {
