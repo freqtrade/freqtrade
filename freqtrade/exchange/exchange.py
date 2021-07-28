@@ -1022,8 +1022,12 @@ class Exchange:
                 return rate
 
         conf_strategy = self._config.get(strat_name, {})
+        use_order_book = (
+            ('use_order_book' in conf_strategy or side == "sell") and
+            conf_strategy.get('use_order_book', False)
+        )
 
-        if conf_strategy.get('use_order_book', False) and ('use_order_book' in conf_strategy):
+        if use_order_book:
 
             order_book_top = conf_strategy.get('order_book_top', 1)
             order_book = self.fetch_l2_order_book(pair, order_book_top)
@@ -1053,8 +1057,8 @@ class Exchange:
                     ticker_rate = ticker_rate - balance * (ticker_rate - ticker['last'])
             rate = ticker_rate
 
-        if rate is None:
-            raise PricingError(f"{name}-Rate for {pair} was empty.")
+        if rate is None and side == "sell":
+            raise PricingError(f"Sell-Rate for {pair} was empty.")
         cache_rate[pair] = rate
 
         return rate
