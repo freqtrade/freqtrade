@@ -107,8 +107,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Start calculating maintenance margin if on cross margin
         # TODO: Add margin_mode to freqtrade.configuration?
-        if self.config.get('leverage_type') == "cross" or \
-                self.config.get('leverage_type') == "cross_futures":
+        if self.config.get('margin_mode') == "cross":
             self.maintenance_margin = MaintenanceMargin(self.exchange.liq_formula)
             self.maintenance_margin.run
 
