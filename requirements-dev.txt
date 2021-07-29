@@ -3,23 +3,23 @@
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
 
-coveralls==3.1.0
+coveralls==3.2.0
 flake8==3.9.2
 flake8-type-annotations==0.1.0
 flake8-tidy-imports==4.3.0
-mypy==0.902
+mypy==0.910
 pytest==6.2.4
 pytest-asyncio==0.15.1
 pytest-cov==2.12.1
 pytest-mock==3.6.1
 pytest-random-order==1.0.4
-isort==5.8.0
+isort==5.9.2
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.0.7
+nbconvert==6.1.0
 
 # mypy types
-types-cachetools==0.1.8
+types-cachetools==0.1.9
 types-filelock==0.1.4
-types-requests==0.1.13
+types-requests==2.25.0
 types-tabulate==0.1.1

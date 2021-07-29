@@ -346,6 +346,20 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     assert processed['UNITTEST/BTC'].equals(processed2['UNITTEST/BTC'])
 
 
+def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf)
+    backtesting.check_abort()
+
+    backtesting.abort = True
+
+    with pytest.raises(DependencyException, match="Stop requested"):
+        backtesting.check_abort()
+    # abort flag resets
+    assert backtesting.abort is False
+    assert backtesting.progress.progress == 0
+
+
 def test_backtesting_start(default_conf, mocker, testdatadir, caplog) -> None:
     def get_timerange(input1):
         return Arrow(2017, 11, 14, 21, 17), Arrow(2017, 11, 14, 22, 59)
@@ -465,7 +479,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
 
 def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
-    default_conf['ask_strategy']['use_sell_signal'] = False
+    default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -496,6 +510,17 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is not None
 
+    backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
+    trade = backtesting._enter_trade(pair, row=row)
+    assert trade
+    assert trade.stake_amount == 123.5
+
+    # In case of error - use proposed stake
+    backtesting.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
+    trade = backtesting._enter_trade(pair, row=row)
+    assert trade
+    assert trade.stake_amount == 495
+
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
@@ -511,7 +536,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['ask_strategy']['use_sell_signal'] = False
+    default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -574,7 +599,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
 
 
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['ask_strategy']['use_sell_signal'] = False
+    default_conf['use_sell_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -819,7 +844,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
-    default_conf['ask_strategy'].update({
+    default_conf.update({
         "use_sell_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
@@ -894,7 +919,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdatadir, capsys):
-    default_conf['ask_strategy'].update({
+    default_conf.update({
         "use_sell_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
@@ -993,4 +1018,5 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
+    assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out

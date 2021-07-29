@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
@@ -21,6 +22,8 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
+
+logger = logging.getLogger(__name__)
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -249,7 +252,7 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
     pairs = list({x[0] for x in pair_interval})
-
+    pairs.sort()
     result = {
         'length': len(pairs),
         'pairs': pairs,

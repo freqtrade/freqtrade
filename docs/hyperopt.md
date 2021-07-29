@@ -51,7 +51,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
-                          [--hyperopt-loss NAME]
+                          [--hyperopt-loss NAME] [--disable-param-export]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -118,6 +118,8 @@ optional arguments:
                         ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
                         SortinoHyperOptLoss, SortinoHyperOptLossDaily
+  --disable-param-export
+                        Disable automatic hyperopt parameter export.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -403,6 +405,9 @@ While this strategy is most likely too simple to provide consistent profit, it s
 !!! Note
     `self.buy_ema_short.range` will act differently between hyperopt and other modes. For hyperopt, the above example may generate 48 new columns, however for all other modes (backtesting, dry/live), it will only generate the column for the selected value. You should therefore avoid using the resulting column with explicit values (values other than `self.buy_ema_short.value`).
 
+!!! Note
+    `range` property may also be used with `DecimalParameter` and `CategoricalParameter`. `RealParameter` does not provide this property due to infinite search space.
+
 ??? Hint "Performance tip"
     By doing the calculation of all possible indicators in `populate_indicators()`, the calculation of the indicator happens only once for every parameter.  
     While this may slow down the hyperopt startup speed, the overall performance will increase as the Hyperopt execution itself may pick the same value for multiple epochs (changing other values).
@@ -509,7 +514,13 @@ You should understand this result like:
 * You should not use ADX because `'buy_adx_enabled': False`.
 * You should **consider** using the RSI indicator (`'buy_rsi_enabled': True`) and the best value is `29.0` (`'buy_rsi': 29.0`)
 
-Your strategy class can immediately take advantage of these results. Simply copy hyperopt results block and paste them at class level, replacing old parameters (if any). New parameters will automatically be loaded next time strategy is executed.
+### Automatic parameter application to the strategy
+
+When using Hyperoptable parameters, the result of your hyperopt-run will be written to a json file next to your strategy (so for `MyAwesomeStrategy.py`, the file would be `MyAwesomeStrategy.json`).  
+This file is also updated when using the `hyperopt-show` sub-command, unless `--disable-param-export` is provided to either of the 2 commands.
+
+
+Your strategy class can also contain these results explicitly. Simply copy hyperopt results block and paste them at class level, replacing old parameters (if any). New parameters will automatically be loaded next time strategy is executed.
 
 Transferring your whole hyperopt result to your strategy would then look like:
 
@@ -524,6 +535,10 @@ class MyAwesomeStrategy(IStrategy):
         'buy_trigger': 'bb_lower'
     }
 ```
+
+!!! Note
+    Values in the configuration file will overwrite Parameter-file level parameters - and both will overwrite parameters within the strategy.
+    The prevalence is therefore: config > parameter file > strategy
 
 ### Understand Hyperopt ROI results
 

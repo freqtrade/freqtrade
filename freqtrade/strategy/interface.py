@@ -62,6 +62,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
+    _ft_params_from_file: Dict = {}
     # associated minimal roi
     minimal_roi: Dict
 
@@ -96,6 +97,11 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
+
+    use_sell_signal: bool
+    sell_profit_only: bool
+    sell_profit_offset: float
+    ignore_roi_if_buy_signal: bool
 
     # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
@@ -297,6 +303,23 @@ class IStrategy(ABC, HyperStrategyMixin):
         None or False.
         """
         return None
+
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+        """
+        Customize stake size for each new trade. This method is not called when edge module is
+        enabled.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_stake: A stake amount proposed by the bot.
+        :param min_stake: Minimal stake size allowed by exchange.
+        :param max_stake: Balance available for trading.
+        :return: A stake size, which is between min_stake and max_stake.
+        """
+        return proposed_stake
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -543,10 +566,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
-        ask_strategy = self.config.get('ask_strategy', {})
 
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and ask_strategy.get('ignore_roi_if_buy_signal', False))
+        roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
@@ -556,11 +578,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (ask_strategy.get('sell_profit_only', False)
-                and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
+        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif ask_strategy.get('use_sell_signal', True) and not buy:
+        elif self.use_sell_signal and not buy:
             if sell:
                 sell_signal = SellType.SELL_SIGNAL
             else:

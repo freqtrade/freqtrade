@@ -194,8 +194,8 @@ def _download_pair_history(datadir: Path,
         new_data = exchange.get_historic_ohlcv(pair=pair,
                                                timeframe=timeframe,
                                                since_ms=since_ms if since_ms else
-                                               int(arrow.utcnow().shift(
-                                                   days=-new_pairs_days).float_timestamp) * 1000
+                                               arrow.utcnow().shift(
+                                                   days=-new_pairs_days).int_timestamp * 1000
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
@@ -272,7 +272,7 @@ def _download_trades_history(exchange: Exchange,
             if timerange.stoptype == 'date':
                 until = timerange.stopts * 1000
         else:
-            since = int(arrow.utcnow().shift(days=-new_pairs_days).float_timestamp) * 1000
+            since = arrow.utcnow().shift(days=-new_pairs_days).int_timestamp * 1000
 
         trades = data_handler.trades_load(pair)
 

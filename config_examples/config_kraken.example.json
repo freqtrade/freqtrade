@@ -1,9 +1,9 @@
 {
-    "max_open_trades": 3,
-    "stake_currency": "USD",
-    "stake_amount": 50,
+    "max_open_trades": 5,
+    "stake_currency": "EUR",
+    "stake_amount": 10,
     "tradable_balance_ratio": 0.99,
-    "fiat_display_currency": "USD",
+    "fiat_display_currency": "EUR",
     "timeframe": "5m",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
@@ -12,50 +12,51 @@
         "sell": 30
     },
     "bid_strategy": {
+        "use_order_book": true,
         "ask_last_balance": 0.0,
-        "use_order_book": false,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy": {
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
+    "ask_strategy":{
+        "use_order_book": true,
+        "order_book_top": 1
     },
     "exchange": {
-        "name": "ftx",
+        "name": "kraken",
         "key": "your_exchange_key",
-        "secret": "your_exchange_secret",
+        "secret": "your_exchange_key",
         "ccxt_config": {"enableRateLimit": true},
         "ccxt_async_config": {
             "enableRateLimit": true,
-            "rateLimit": 50
+            "rateLimit": 1000
         },
         "pair_whitelist": [
-            "BTC/USD",
-            "ETH/USD",
-            "BNB/USD",
-            "USDT/USD",
-            "LTC/USD",
-            "SRM/USD",
-            "SXP/USD",
-            "XRP/USD",
-            "DOGE/USD",
-            "1INCH/USD",
-            "CHZ/USD",
-            "MATIC/USD",
-            "LINK/USD",
-            "OXY/USD",
-            "SUSHI/USD"
+            "ADA/EUR",
+            "ATOM/EUR",
+            "BAT/EUR",
+            "BCH/EUR",
+            "BTC/EUR",
+            "DAI/EUR",
+            "DASH/EUR",
+            "EOS/EUR",
+            "ETC/EUR",
+            "ETH/EUR",
+            "LINK/EUR",
+            "LTC/EUR",
+            "QTUM/EUR",
+            "REP/EUR",
+            "WAVES/EUR",
+            "XLM/EUR",
+            "XMR/EUR",
+            "XRP/EUR",
+            "XTZ/EUR",
+            "ZEC/EUR"
         ],
         "pair_blacklist": [
-            "FTT/USD"
+
         ]
     },
     "pairlists": [
@@ -95,5 +96,6 @@
     "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "download_trades": true
 }

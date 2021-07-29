@@ -673,7 +673,7 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
-        'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
+        'XRP/BTC': {'quote': 'BTC', 'info': {'prohibitedIn': ['US']}},
         'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -1783,14 +1783,14 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'last': last, 'bid': bid})
 
-    assert exchange.get_buy_rate('ETH/BTC', True) == expected
+    assert exchange.get_rate('ETH/BTC', refresh=True, side="buy") == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
-    assert exchange.get_buy_rate('ETH/BTC', False) == expected
+    assert exchange.get_rate('ETH/BTC', refresh=False, side="buy") == expected
     assert log_has("Using cached buy rate for ETH/BTC.", caplog)
     # Running a 2nd time with Refresh on!
     caplog.clear()
-    assert exchange.get_buy_rate('ETH/BTC', True) == expected
+    assert exchange.get_rate('ETH/BTC', refresh=True, side="buy") == expected
     assert not log_has("Using cached buy rate for ETH/BTC.", caplog)
 
 
@@ -1825,12 +1825,12 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
 
     # Test regular mode
     exchange = get_patched_exchange(mocker, default_conf)
-    rate = exchange.get_sell_rate(pair, True)
+    rate = exchange.get_rate(pair, refresh=True, side="sell")
     assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
     # Use caching
-    rate = exchange.get_sell_rate(pair, False)
+    rate = exchange.get_rate(pair, refresh=False, side="sell")
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
@@ -1844,16 +1844,15 @@ def test_get_sell_rate_orderbook(default_conf, mocker, caplog, side, expected, o
     # Test orderbook mode
     default_conf['ask_strategy']['price_side'] = side
     default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_min'] = 1
-    default_conf['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['order_book_top'] = 1
     pair = "ETH/BTC"
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
     exchange = get_patched_exchange(mocker, default_conf)
-    rate = exchange.get_sell_rate(pair, True)
+    rate = exchange.get_rate(pair, refresh=True, side="sell")
     assert not log_has("Using cached sell rate for ETH/BTC.", caplog)
     assert isinstance(rate, float)
     assert rate == expected
-    rate = exchange.get_sell_rate(pair, False)
+    rate = exchange.get_rate(pair, refresh=False, side="sell")
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
 
@@ -1862,16 +1861,16 @@ def test_get_sell_rate_orderbook_exception(default_conf, mocker, caplog):
     # Test orderbook mode
     default_conf['ask_strategy']['price_side'] = 'ask'
     default_conf['ask_strategy']['use_order_book'] = True
-    default_conf['ask_strategy']['order_book_min'] = 1
-    default_conf['ask_strategy']['order_book_max'] = 2
+    default_conf['ask_strategy']['order_book_top'] = 1
     pair = "ETH/BTC"
     # Test What happens if the exchange returns an empty orderbook.
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
                  return_value={'bids': [[]], 'asks': [[]]})
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError):
-        exchange.get_sell_rate(pair, True)
-    assert log_has("Sell Price at location from orderbook could not be determined.", caplog)
+        exchange.get_rate(pair, refresh=True, side="sell")
+    assert log_has_re(r"Sell Price at location 1 from orderbook could not be determined\..*",
+                      caplog)
 
 
 def test_get_sell_rate_exception(default_conf, mocker, caplog):
@@ -1882,18 +1881,18 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
                  return_value={'ask': None, 'bid': 0.12, 'last': None})
     exchange = get_patched_exchange(mocker, default_conf)
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
-        exchange.get_sell_rate(pair, True)
+        exchange.get_rate(pair, refresh=True, side="sell")
 
     exchange._config['ask_strategy']['price_side'] = 'bid'
-    assert exchange.get_sell_rate(pair, True) == 0.12
+    assert exchange.get_rate(pair, refresh=True, side="sell") == 0.12
     # Reverse sides
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': 0.13, 'bid': None, 'last': None})
     with pytest.raises(PricingError, match=r"Sell-Rate for ETH/BTC was empty."):
-        exchange.get_sell_rate(pair, True)
+        exchange.get_rate(pair, refresh=True, side="sell")
 
     exchange._config['ask_strategy']['price_side'] = 'ask'
-    assert exchange.get_sell_rate(pair, True) == 0.13
+    assert exchange.get_rate(pair, refresh=True, side="sell") == 0.13
 
 
 def make_fetch_ohlcv_mock(data):
@@ -2204,7 +2203,7 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     ({'status': 'canceled', 'filled': 10.0}, False),
     ({'status': 'unknown', 'filled': 10.0}, False),
     ({'result': 'testest123'}, False),
-    ])
+])
 def test_check_order_canceled_empty(mocker, default_conf, exchange_name, order, result):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.check_order_canceled_empty(order) == result

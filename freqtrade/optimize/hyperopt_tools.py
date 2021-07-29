@@ -1,22 +1,81 @@
 
 import io
 import logging
+from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+import numpy as np
 import rapidjson
 import tabulate
 from colorama import Fore, Style
 from pandas import isna, json_normalize
 
+from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import round_coin_value, round_dict
+from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
 
 
 logger = logging.getLogger(__name__)
 
+NON_OPT_PARAM_APPENDIX = "  # value loaded from strategy"
+
+
+def hyperopt_serializer(x):
+    if isinstance(x, np.integer):
+        return int(x)
+    if isinstance(x, np.bool_):
+        return bool(x)
+
+    return str(x)
+
 
 class HyperoptTools():
+
+    @staticmethod
+    def get_strategy_filename(config: Dict, strategy_name: str) -> Optional[Path]:
+        """
+        Get Strategy-location (filename) from strategy_name
+        """
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+        directory = Path(config.get('strategy_path', config['user_data_dir'] / USERPATH_STRATEGIES))
+        strategy_objs = StrategyResolver.search_all_objects(directory, False)
+        strategies = [s for s in strategy_objs if s['name'] == strategy_name]
+        if strategies:
+            strategy = strategies[0]
+
+            return Path(strategy['location'])
+        return None
+
+    @staticmethod
+    def export_params(params, strategy_name: str, filename: Path):
+        """
+        Generate files
+        """
+        final_params = deepcopy(params['params_not_optimized'])
+        final_params = deep_merge_dicts(params['params_details'], final_params)
+        final_params = {
+            'strategy_name': strategy_name,
+            'params': final_params,
+            'ft_stratparam_v': 1,
+            'export_time': datetime.now(timezone.utc),
+        }
+        logger.info(f"Dumping parameters to {filename}")
+        rapidjson.dump(final_params, filename.open('w'), indent=2,
+                       default=hyperopt_serializer,
+                       number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                       )
+
+    @staticmethod
+    def try_export_params(config: Dict[str, Any], strategy_name: str, params: Dict):
+        if params.get(FTHYPT_FILEVERSION, 1) >= 2 and not config.get('disableparamexport', False):
+            # Export parameters ...
+            fn = HyperoptTools.get_strategy_filename(config, strategy_name)
+            if fn:
+                HyperoptTools.export_params(params, strategy_name, fn.with_suffix('.json'))
+            else:
+                logger.warning("Strategy not found, not exporting parameter file.")
 
     @staticmethod
     def has_space(config: Dict[str, Any], space: str) -> bool:
@@ -99,9 +158,9 @@ class HyperoptTools():
                                                non_optimized)
             HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:",
                                                non_optimized)
-            HyperoptTools._params_pretty_print(params, 'roi', "ROI table:")
-            HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:")
-            HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:")
+            HyperoptTools._params_pretty_print(params, 'roi', "ROI table:", non_optimized)
+            HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:", non_optimized)
+            HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:", non_optimized)
 
     @staticmethod
     def _params_update_for_json(result_dict, params, non_optimized, space: str) -> None:
@@ -127,23 +186,34 @@ class HyperoptTools():
     def _params_pretty_print(params, space: str, header: str, non_optimized={}) -> None:
         if space in params or space in non_optimized:
             space_params = HyperoptTools._space_params(params, space, 5)
+            no_params = HyperoptTools._space_params(non_optimized, space, 5)
+            appendix = ''
+            if not space_params and not no_params:
+                # No parameters - don't print
+                return
+            if not space_params:
+                # Not optimized parameters - append string
+                appendix = NON_OPT_PARAM_APPENDIX
+
             result = f"\n# {header}\n"
-            if space == 'stoploss':
-                result += f"stoploss = {space_params.get('stoploss')}"
-            elif space == 'roi':
+            if space == "stoploss":
+                stoploss = safe_value_fallback2(space_params, no_params, space, space)
+                result += (f"stoploss = {stoploss}{appendix}")
+
+            elif space == "roi":
+                result = result[:-1] + f'{appendix}\n'
                 minimal_roi_result = rapidjson.dumps({
-                        str(k): v for k, v in space_params.items()
+                        str(k): v for k, v in (space_params or no_params).items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
-            elif space == 'trailing':
-
-                for k, v in space_params.items():
-                    result += f'{k} = {v}\n'
+            elif space == "trailing":
+                for k, v in (space_params or no_params).items():
+                    result += f"{k} = {v}{appendix}\n"
 
             else:
-                no_params = HyperoptTools._space_params(non_optimized, space, 5)
+                # Buy / sell parameters
 
-                result += f"{space}_params = {HyperoptTools._pprint(space_params, no_params)}"
+                result += f"{space}_params = {HyperoptTools._pprint_dict(space_params, no_params)}"
 
             result = result.replace("\n", "\n    ")
             print(result)
@@ -157,7 +227,7 @@ class HyperoptTools():
         return {}
 
     @staticmethod
-    def _pprint(params, non_optimized, indent: int = 4):
+    def _pprint_dict(params, non_optimized, indent: int = 4):
         """
         Pretty-print hyperopt results (based on 2 dicts - with add. comment)
         """
@@ -169,7 +239,7 @@ class HyperoptTools():
             result += " " * indent + f'"{k}": '
             result += f'"{param}",' if isinstance(param, str) else f'{param},'
             if k in non_optimized:
-                result += "  # value loaded from strategy"
+                result += NON_OPT_PARAM_APPENDIX
             result += "\n"
         result += '}'
         return result
