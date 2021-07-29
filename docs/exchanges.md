@@ -77,8 +77,9 @@ You can get a list of restricted markets by using the following snippet:
 ``` python
 import ccxt
 ct = ccxt.bittrex()
-_ = ct.load_markets()
-res = [ f"{x['MarketCurrency']}/{x['BaseCurrency']}" for x in ct.publicGetMarkets()['result'] if x['IsRestricted']]
+lm = ct.load_markets()
+
+res = [p for p, x in lm.items() if 'US' in x['info']['prohibitedIn']]
 print(res)
 ```
 

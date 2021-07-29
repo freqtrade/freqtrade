@@ -673,7 +673,7 @@ def test_validate_pairs_restricted(default_conf, mocker, caplog):
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
-        'XRP/BTC': {'quote': 'BTC', 'info': {'IsRestricted': True}},
+        'XRP/BTC': {'quote': 'BTC', 'info': {'prohibitedIn': ['US']}},
         'NEO/BTC': {'quote': 'BTC', 'info': 'TestString'},  # info can also be a string ...
     })
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))

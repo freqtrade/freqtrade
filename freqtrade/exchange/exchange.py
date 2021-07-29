@@ -387,7 +387,7 @@ class Exchange:
                 # its contents depend on the exchange.
                 # It can also be a string or similar ... so we need to verify that first.
             elif (isinstance(self.markets[pair].get('info', None), dict)
-                  and self.markets[pair].get('info', {}).get('IsRestricted', False)):
+                  and self.markets[pair].get('info', {}).get('prohibitedIn', False)):
                 # Warn users about restricted pairs in whitelist.
                 # We cannot determine reliably if Users are affected.
                 logger.warning(f"Pair {pair} is restricted for some users on this exchange."
