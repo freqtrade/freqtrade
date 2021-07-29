@@ -24,6 +24,7 @@ class PairListManager():
         self._config = config
         self._whitelist = self._config['exchange'].get('pair_whitelist')
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
+        self._logged_blacklist_pairs = set()
         self._pairlist_handlers: List[IPairList] = []
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
@@ -108,9 +109,11 @@ class PairListManager():
         except ValueError as err:
             logger.error(f"Pair blacklist contains an invalid Wildcard: {err}")
             return []
-        for pair in deepcopy(pairlist):
+        for pair in pairlist.copy():
             if pair in blacklist:
-                logmethod(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                if pair not in self._logged_blacklist_pairs:
+                    logmethod(f"Pair {pair} in your blacklist. Removing it from whitelist...")
+                    self._logged_blacklist_pairs.add(pair)
                 pairlist.remove(pair)
         return pairlist
 
