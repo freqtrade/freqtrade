@@ -378,16 +378,15 @@ class Hyperopt:
 
         preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
 
-        # Trim startup period from analyzed dataframe
+        # Trim startup period from analyzed dataframe to get correct dates for output.
         processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
-
         self.min_date, self.max_date = get_timerange(processed)
 
         logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(self.max_date - self.min_date).days} days)..')
-
-        dump(processed, self.data_pickle_file)
+        # Store non-trimmed data - will be trimmed after signal generation.
+        dump(preprocessed, self.data_pickle_file)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))

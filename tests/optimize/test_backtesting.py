@@ -727,6 +727,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
     backtesting = Backtesting(default_conf)
+    backtesting.required_startup = 0
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = _trend_alternate  # Override
     backtesting.strategy.advise_sell = _trend_alternate  # Override
