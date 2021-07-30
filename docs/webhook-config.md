@@ -83,6 +83,7 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
+* `buy_tag`
 
 ### Webhookbuycancel
 
@@ -100,6 +101,7 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
+* `buy_tag`
 
 ### Webhookbuyfill
 
@@ -115,6 +117,7 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
+* `buy_tag`
 
 ### Webhooksell
 

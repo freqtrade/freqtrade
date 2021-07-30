@@ -38,15 +38,20 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
     mocked_history['buy'] = 0
     mocked_history.loc[1, 'sell'] = 1
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True, None)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 1
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False, None)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 0
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
+    mocked_history.loc[1, 'sell'] = 0
+    mocked_history.loc[1, 'buy'] = 1
+    mocked_history.loc[1, 'buy_tag'] = 'buy_signal_01'
+
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False, 'buy_signal_01')
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
@@ -63,15 +68,21 @@ def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'], DataFrame())
+    assert (False, False, None) == _STRATEGY.get_signal(
+        'foo', default_conf['timeframe'], DataFrame()
+    )
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
-    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
+    assert (False, False, None) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
     caplog.clear()
 
-    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'], DataFrame([]))
+    assert (False, False, None) == _STRATEGY.get_signal(
+        'baz',
+        default_conf['timeframe'],
+        DataFrame([])
+    )
     assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
@@ -107,7 +118,11 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'], mocked_history)
+    assert (False, False, None) == _STRATEGY.get_signal(
+        'xyz',
+        default_conf['timeframe'],
+        mocked_history
+    )
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 

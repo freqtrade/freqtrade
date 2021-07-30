@@ -496,6 +496,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
         0,  # Sell
         0.00099,  # Low
         0.0012,  # High
+        '',  # Buy Signal Name
     ]
     trade = backtesting._enter_trade(pair, row=row)
     assert isinstance(trade, LocalTrade)
@@ -583,6 +584,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.1038, 0.10302485],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
+         'buy_tag': [None, None],
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
@@ -858,7 +860,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'locks': [],
         'rejected_signals': 20,
         'final_balance': 1000,
-        })
+    })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
