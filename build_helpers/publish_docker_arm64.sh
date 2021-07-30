@@ -37,7 +37,7 @@ fi
 # Tag image for upload and next build step
 docker tag freqtrade:$TAG_ARM ${CACHE_IMAGE}:$TAG_ARM
 
-docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
+docker build --cache-from freqtrade:${TAG_ARM} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG_ARM} -t freqtrade:${TAG_PLOT_ARM} -f docker/Dockerfile.plot .
 
 docker tag freqtrade:$TAG_PLOT_ARM ${CACHE_IMAGE}:$TAG_PLOT_ARM
 
@@ -63,13 +63,13 @@ echo "create manifests"
 docker manifest create --amend ${IMAGE_NAME}:${TAG} ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
 docker manifest push -p ${IMAGE_NAME}:${TAG}
 
-docker manifest create --amend ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM} ${CACHE_IMAGE}:${TAG_PLOT}
+docker manifest create ${IMAGE_NAME}:${TAG_PLOT} ${CACHE_IMAGE}:${TAG_PLOT_ARM} ${CACHE_IMAGE}:${TAG_PLOT}
 docker manifest push -p ${IMAGE_NAME}:${TAG_PLOT}
 
-Tag as latest for develop builds
+# Tag as latest for develop builds
 if [ "${TAG}" = "develop" ]; then
-    docker tag ${IMAGE_NAME}:develop ${IMAGE_NAME}:latest
-    docker push ${IMAGE_NAME}:latest
+    docker manifest create ${IMAGE_NAME}:latest ${CACHE_IMAGE}:${TAG_ARM} ${IMAGE_NAME}:${TAG_PI} ${CACHE_IMAGE}:${TAG}
+    docker manifest push -p ${IMAGE_NAME}:latest
 fi
 
 docker images
