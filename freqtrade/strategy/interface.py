@@ -69,6 +69,10 @@ class IStrategy(ABC, HyperStrategyMixin):
     # associated stoploss
     stoploss: float
 
+    # custom order price
+    entryprice: Optional[float] = None
+    exitprice: Optional[float] = None
+
     # trailing stoploss
     trailing_stop: bool = False
     trailing_stop_positive: Optional[float] = None
@@ -279,6 +283,24 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return float: New stoploss value, relative to the current_rate
         """
         return self.stoploss
+
+    def custom_entry_price(self, pair: str, current_time: datetime, current_rate: float,
+                            **kwargs) -> float:
+        """
+        Custom entry price logic, returning the new entry price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set entry price
+        Only called when use_custom_entry_price is set to True.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+        """
+        return self.entryprice
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
@@ -634,6 +656,42 @@ class IStrategy(ABC, HyperStrategyMixin):
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No sell signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
+
+    def entry_price_reached(self, pair: str, current_rate: float,
+                          current_time: datetime, low: float = None,
+                          high: float = None, side: str = "long") -> bool:
+        """
+        Based on current candle low ,decides if entry price was reached
+        :param current_rate: current rate
+        :param low: Low value of this candle, only set in backtesting
+        :param high: High value of this candle, only set in backtesting
+        """
+
+        if self.use_custom_entry_price:
+            entry_price_value = strategy_safe_wrapper(self.custom_entry_price, default_retval=None
+                                                    )(pair=pair,
+                                                      current_time=current_time,
+                                                      current_rate=current_rate)
+            # Sanity check - error cases will return None
+            if side == "long":
+                if entry_price_value > low:
+                    return True
+                else:
+                    logger.info(f"Entry failed because entry price {entry_price_value} \
+                                higher than candle low in long side")
+                    return False
+            
+            elif side == "short":
+                if entry_price_value < high:
+                    return True
+                else:
+                    logger.info(f"Entry failed because entry price {entry_price_value} \
+                                higher than candle high in short side")
+                    return False
+
+            else:
+                logger.warning("CustomEntryPrice function did not return valid entry price")
+                return False
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,

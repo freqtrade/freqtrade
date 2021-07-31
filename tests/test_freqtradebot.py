@@ -904,6 +904,36 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
 
+def test_execute_buy_custom_entry_price(mocker, default_conf, fee, limit_buy_order, limit_buy_order_open) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf.update({'use_custom_entry_price': True})
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
+    stake_amount = 3
+    bid = 2304
+    buy_rate_mock = MagicMock(return_value=bid)
+    buy_mm = MagicMock(return_value=limit_buy_order_open)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=buy_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 2304,
+            'ask': 0.00001173,
+            'last': 2304
+        }),
+        buy=buy_mm,
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+    pair = 'ETH/USDT'
+
+    # Test calling with custom entry price option activated
+    limit_buy_order_open['id'] = '55'
+    assert freqtrade.execute_buy(pair, stake_amount)
+    # Make sure get_rate called to provide current_rate param to custom_entry_price
+    assert buy_rate_mock.call_count == 1
+
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

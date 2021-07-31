@@ -431,6 +431,34 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     strategy.custom_stoploss = original_stopvalue
 
 
+@pytest.mark.parametrize(
+    'current_rate, exp_custom_entry', 'expected_result', 'use_custom_entry_price', 'custom_entry' [
+        # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
+        #   enable custom stoploss, expected after 1st call, expected after 2nd call
+        (99, 98, False, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # custom_entry_price pice - (price * 0.01)
+        (97.8, 98, True, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # price stayed under entry price
+        (97.8, 98, True, True, lambda current_rate, **kwargs: current_rate + (current_rate * 0.01)), # entry price over current price
+        (99.9, 98, True, False, None), # feature not activated
+    ])
+def test_entry_price_reached(default_conf, current_rate, exp_custom_entry, candle_ohlc,
+                             expected_result, use_custom_entry_price, custom_entry) -> None:
+
+    default_conf.update({'strategy': 'DefaultStrategy'})
+
+
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    strategy.use_custom_entry_price = use_custom_entry_price
+    custom_entry_price = custom_entry
+    if use_custom_entry_price:
+        strategy.custom_entry_price = custom_entry(current_rate)
+
+    now = arrow.utcnow().datetime
+    entry_flag = strategy.entry_price_reached(current_rate=current_rate, low= None, high=None)
+
+
+    pass
+
 def test_custom_sell(default_conf, fee, caplog) -> None:
 
     default_conf.update({'strategy': 'DefaultStrategy'})
