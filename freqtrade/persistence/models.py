@@ -236,7 +236,7 @@ class LocalTrade():
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float = 0.0
+    stake_amount: float = 0.0  # TODO: This should probably be computed
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -510,6 +510,20 @@ class LocalTrade():
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
+
+    def is_opening_trade(self, side) -> bool:
+        """
+        Determines if the trade is an opening (long buy or short sell) trade
+        :param side (string): the side (buy/sell) that order happens on
+        """
+        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
+
+    def is_closing_trade(self, side) -> bool:
+        """
+        Determines if the trade is an closing (long sell or short buy) trade
+        :param side (string): the side (buy/sell) that order happens on
+        """
+        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
 
     def update(self, order: Dict) -> None:
         """
