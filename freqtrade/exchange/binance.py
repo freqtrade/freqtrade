@@ -3,7 +3,8 @@ import logging
 from typing import Dict
 
 import ccxt
-from freqtrade.enums import MaintenanceMarginFormula
+
+from freqtrade.enums import LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -24,7 +25,7 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
 
-    maintenance_margin_formula = MaintenanceMarginFormula.BINANCE
+    maintenance_margin_formula = LiqFormula.BINANCE
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """

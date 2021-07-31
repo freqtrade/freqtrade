@@ -1,11 +1,11 @@
-from freqtrade.enums import MaintenanceMarginFormula
+from freqtrade.enums import LiqFormula
 from freqtrade.persistence import Trade
 
 
 class MaintenanceMargin:
 
     trades: list[Trade]
-    formula: MaintenanceMarginFormula
+    formula: LiqFormula
 
     @property
     def margin_level(self):
@@ -15,7 +15,7 @@ class MaintenanceMargin:
     def liq_level(self):    # This may be a constant value and may not need a function
         return
 
-    def __init__(self, formula: MaintenanceMarginFormula):
+    def __init__(self, formula: LiqFormula):
         return
 
     def add_new_trade(self, trade):

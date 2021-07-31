@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.enums import MaintenanceMarginFormula
+from freqtrade.enums import LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -24,7 +24,7 @@ class Kraken(Exchange):
         "trades_pagination_arg": "since",
     }
 
-    maintenance_margin_formula = MaintenanceMarginFormula.KRAKEN
+    maintenance_margin_formula = LiqFormula.KRAKEN
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

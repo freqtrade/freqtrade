@@ -21,7 +21,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import MaintenanceMarginFormula
+from freqtrade.enums import LiqFormula
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -69,7 +69,7 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
-    maintenance_margin_formula: MaintenanceMarginFormula
+    liq_formula: LiqFormula
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """

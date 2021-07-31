@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.enums import MaintenanceMarginFormula
+from freqtrade.enums import LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -22,7 +22,7 @@ class Ftx(Exchange):
         "ohlcv_candle_limit": 1500,
     }
 
-    maintenance_margin_formula = MaintenanceMarginFormula.FTX
+    maintenance_margin_formula = LiqFormula.FTX
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
