@@ -236,7 +236,7 @@ class LocalTrade():
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float = 0.0  # TODO: This should probably be computed
+    stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -318,7 +318,7 @@ class LocalTrade():
             self.set_isolated_liq(self.isolated_liq)
         self.recalc_open_trade_value()
 
-    def set_stop_loss(self, stop_loss: float):
+    def _set_stop_loss(self, stop_loss: float, percent: float):
         """
             Method you should use to set self.stop_loss.
             Assures stop_loss is not passed the liquidation price
@@ -334,6 +334,12 @@ class LocalTrade():
         if not self.stop_loss:
             self.initial_stop_loss = sl
         self.stop_loss = sl
+
+        if self.is_short:
+            self.stop_loss_pct = abs(percent)
+        else:
+            self.stop_loss_pct = -1 * abs(percent)
+        self.stoploss_last_update = datetime.utcnow()
 
     def set_isolated_liq(self, isolated_liq: float):
         """
@@ -452,15 +458,6 @@ class LocalTrade():
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
         self.min_rate = min(current_price, self.min_rate or self.open_rate)
 
-    def _set_new_stoploss(self, new_loss: float, stoploss: float):
-        """Assign new stop value"""
-        self.set_stop_loss(new_loss)
-        if self.is_short:
-            self.stop_loss_pct = abs(stoploss)
-        else:
-            self.stop_loss_pct = -1 * abs(stoploss)
-        self.stoploss_last_update = datetime.utcnow()
-
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False) -> None:
         """
@@ -488,7 +485,7 @@ class LocalTrade():
         # no stop loss assigned yet
         if not self.stop_loss:
             logger.debug(f"{self.pair} - Assigning new stoploss...")
-            self._set_new_stoploss(new_loss, stoploss)
+            self._set_stop_loss(new_loss, stoploss)
             self.initial_stop_loss = new_loss
             if self.is_short:
                 self.initial_stop_loss_pct = abs(stoploss)
@@ -506,7 +503,7 @@ class LocalTrade():
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
-                self._set_new_stoploss(new_loss, stoploss)
+                self._set_stop_loss(new_loss, stoploss)
             else:
                 logger.debug(f"{self.pair} - Keeping current stoploss...")
 
@@ -517,20 +514,6 @@ class LocalTrade():
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
-
-    def is_opening_trade(self, side) -> bool:
-        """
-        Determines if the trade is an opening (long buy or short sell) trade
-        :param side (string): the side (buy/sell) that order happens on
-        """
-        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
-
-    def is_closing_trade(self, side) -> bool:
-        """
-        Determines if the trade is an closing (long sell or short buy) trade
-        :param side (string): the side (buy/sell) that order happens on
-        """
-        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
 
     def update(self, order: Dict) -> None:
         """
@@ -550,7 +533,7 @@ class LocalTrade():
 
         logger.info('Updating trade (id=%s) ...', self.id)
 
-        if order_type in ('market', 'limit') and self.is_opening_trade(order['side']):
+        if order_type in ('market', 'limit') and self.enter_side == order['side']:
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
@@ -561,7 +544,7 @@ class LocalTrade():
                 payment = "SELL" if self.is_short else "BUY"
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             self.open_order_id = None
-        elif order_type in ('market', 'limit') and self.is_closing_trade(order['side']):
+        elif order_type in ('market', 'limit') and self.exit_side == order['side']:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # TODO-mg: On shorts, you buy a little bit more than the amount (amount + interest)
@@ -602,14 +585,14 @@ class LocalTrade():
         """
         Update Fee parameters. Only acts once per side
         """
-        if self.is_opening_trade(side) and self.fee_open_currency is None:
+        if self.enter_side == side and self.fee_open_currency is None:
             self.fee_open_cost = fee_cost
             self.fee_open_currency = fee_currency
             if fee_rate is not None:
                 self.fee_open = fee_rate
                 # Assume close-fee will fall into the same fee category and take an educated guess
                 self.fee_close = fee_rate
-        elif self.is_closing_trade(side) and self.fee_close_currency is None:
+        elif self.exit_side == side and self.fee_close_currency is None:
             self.fee_close_cost = fee_cost
             self.fee_close_currency = fee_currency
             if fee_rate is not None:
@@ -619,9 +602,9 @@ class LocalTrade():
         """
         Verify if this side (buy / sell) has already been updated
         """
-        if self.is_opening_trade(side):
+        if self.enter_side == side:
             return self.fee_open_currency is not None
-        elif self.is_closing_trade(side):
+        elif self.exit_side == side:
             return self.fee_close_currency is not None
         else:
             return False

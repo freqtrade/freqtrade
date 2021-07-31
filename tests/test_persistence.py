@@ -66,7 +66,7 @@ def test_init_dryrun_db(default_conf, tmpdir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_is_opening_closing_trade(fee):
+def test_enter_exit_side(fee):
     trade = Trade(
         id=2,
         pair='ETH/BTC',
@@ -81,38 +81,17 @@ def test_is_opening_closing_trade(fee):
         is_short=False,
         leverage=2.0
     )
-    assert trade.is_opening_trade('buy') is True
-    assert trade.is_opening_trade('sell') is False
-    assert trade.is_closing_trade('buy') is False
-    assert trade.is_closing_trade('sell') is True
     assert trade.enter_side == 'buy'
     assert trade.exit_side == 'sell'
 
-    trade = Trade(
-        id=2,
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.01,
-        amount=5,
-        is_open=True,
-        open_date=arrow.utcnow().datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
-        is_short=True,
-        leverage=2.0
-    )
+    trade.is_short = True
 
-    assert trade.is_opening_trade('buy') is False
-    assert trade.is_opening_trade('sell') is True
-    assert trade.is_closing_trade('buy') is True
-    assert trade.is_closing_trade('sell') is False
     assert trade.enter_side == 'sell'
     assert trade.exit_side == 'buy'
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_set_stop_loss_isolated_liq(fee):
+def test__set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ETH/BTC',
@@ -132,7 +111,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_stop_loss(0.1)
+    trade._set_stop_loss(0.1, (1.0/9.0))
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
@@ -147,7 +126,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_stop_loss(0.1)
+    trade._set_stop_loss(0.1, 0)
     assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
@@ -155,7 +134,8 @@ def test_set_stop_loss_isolated_liq(fee):
     trade.stop_loss = None
     trade.isolated_liq = None
     trade.initial_stop_loss = None
-    trade.set_stop_loss(0.07)
+
+    trade._set_stop_loss(0.07, 0)
     assert trade.isolated_liq is None
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.07
@@ -169,7 +149,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_stop_loss(0.08)
+    trade._set_stop_loss(0.08, (1.0/9.0))
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
@@ -184,7 +164,7 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_stop_loss(0.1)
+    trade._set_stop_loss(0.1, (1.0/8.0))
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
