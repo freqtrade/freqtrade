@@ -227,7 +227,7 @@ class Backtesting:
                     pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair}).copy()
             # Trim startup period from analyzed dataframe
             df_analyzed = trim_dataframe(df_analyzed, self.timerange,
                                          startup_candles=self.required_startup)
@@ -245,7 +245,7 @@ class Backtesting:
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = df_analyzed.values.tolist()
+            data[pair] = df_analyzed[headers].values.tolist()
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
