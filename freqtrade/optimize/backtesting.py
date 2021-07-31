@@ -240,6 +240,9 @@ class Backtesting:
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
+            # Update dataprovider cache
+            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
             data[pair] = df_analyzed.values.tolist()
@@ -433,10 +436,6 @@ class Backtesting:
         """
         trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
-
-        # Update dataprovider cache
-        for pair, dataframe in processed.items():
-            self.dataprovider._set_cached_df(pair, self.timeframe, dataframe)
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
