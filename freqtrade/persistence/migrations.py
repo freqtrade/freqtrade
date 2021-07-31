@@ -65,7 +65,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     # Schema migration necessary
     with engine.begin() as connection:
         connection.execute(text(f"alter table trades rename to {table_back_name}"))
-        # drop indexes on backup table
+    with engine.begin() as connection:
+        # drop indexes on backup table in new session
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
     # let SQLAlchemy create the schema as required
@@ -76,7 +77,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
         connection.execute(text(f"""insert into trades
             (id, exchange, pair, is_open,
             fee_open, fee_open_cost, fee_open_currency,
-            fee_close, fee_close_cost, fee_open_currency, open_rate,
+            fee_close, fee_close_cost, fee_close_currency, open_rate,
             open_rate_requested, close_rate, close_rate_requested, close_profit,
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
@@ -84,14 +85,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
             timeframe, open_trade_value, close_profit_abs
             )
-        select id, lower(exchange),
-            case
-                when instr(pair, '_') != 0 then
-                substr(pair,    instr(pair, '_') + 1) || '/' ||
-                substr(pair, 1, instr(pair, '_') - 1)
-                else pair
-                end
-            pair,
+        select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
             {fee_open_currency} fee_open_currency, {fee_close} fee_close,
             {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
@@ -132,7 +126,9 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
 
     with engine.begin() as connection:
         connection.execute(text(f"alter table orders rename to {table_back_name}"))
-        # drop indexes on backup table
+
+    with engine.begin() as connection:
+        # drop indexes on backup table in new session
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
 
