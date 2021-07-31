@@ -47,6 +47,7 @@ USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
+ENV_VAR_PREFIX = 'FREQTRADE__'
 
 
 # Define decimals per coin for outputs

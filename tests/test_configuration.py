@@ -18,8 +18,9 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
+from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
 from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
-from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
@@ -1349,3 +1350,35 @@ def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
     with pytest.raises(OperationalException,
                        match=r"Both 'timeframe' and 'ticker_interval' detected."):
         process_temporary_deprecated_settings(config)
+
+
+def test_flat_vars_to_nested_dict(caplog):
+
+    test_args = {
+        'FREQTRADE__EXCHANGE__SOME_SETTING': 'true',
+        'FREQTRADE__EXCHANGE__SOME_FALSE_SETTING': 'false',
+        'FREQTRADE__EXCHANGE__CONFIG__whatever': 'sometime',
+        'FREQTRADE__ASK_STRATEGY__PRICE_SIDE': 'bid',
+        'FREQTRADE__ASK_STRATEGY__cccc': '500',
+        'FREQTRADE__STAKE_AMOUNT': '200.05',
+        'NOT_RELEVANT': '200.0',  # Will be ignored
+    }
+    expected = {
+        'stake_amount': 200.05,
+        'ask_strategy': {
+            'price_side': 'bid',
+            'cccc': 500,
+        },
+        'exchange': {
+            'config': {
+                'whatever': 'sometime',
+            },
+            'some_setting': True,
+            'some_false_setting': False,
+        }
+    }
+    res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
+    assert res == expected
+
+    assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
+    assert not log_has("Loading variable 'NOT_RELEVANT'", caplog)
