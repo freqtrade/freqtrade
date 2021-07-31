@@ -487,6 +487,13 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
             binance -3x: (1-(66.1663784375 / 59.85)) * 3 = -0.3166104479949876
             kraken  -1x: (1-(66.2311650 / 59.85)) * 1    = -0.106619298245614
             kraken  -3x: (1-(66.2311650 / 59.85)) * 3    = -0.319857894736842
+        open_rate: 2.2, close_rate: 2.0, -3x, binance, short
+            open_value: 30 * 2.2 - 30 * 2.2 * 0.0025 = 65.835 quote
+            amount_closed: 30 + 0.000625 = 30.000625 crypto
+            close_value: (30.000625 * 2.0) + (30.000625 * 2.0 * 0.0025) = 60.151253125
+            total_profit: 65.835 - 60.151253125 = 5.683746874999997
+            total_profit_ratio: (1-(60.151253125/65.835)) * 3 = 0.2589996297562085
+
     """
 
     trade = Trade(
@@ -532,7 +539,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
     trade = Trade(
         id=226531,
         pair='ETH/BTC',
-        stake_amount=60.0,
+        stake_amount=20.0,
         open_rate=2.0,
         amount=30.0,
         is_open=True,
@@ -545,11 +552,31 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPERDAY
     )
+    trade.open_order_id = 'something'
+    trade.update(limit_sell_order_usdt)
+
+    assert trade.open_order_id is None
+    assert trade.open_rate == 2.20
+    assert trade.close_profit is None
+    assert trade.close_date is None
+
+    assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=226531, "
+                      r"pair=ETH/BTC, amount=30.00000000, "
+                      r"is_short=True, leverage=3.0, open_rate=2.20000000, open_since=.*\).",
+                      caplog)
+    caplog.clear()
+
+    trade.open_order_id = 'something'
     trade.update(limit_buy_order_usdt)
+    assert trade.open_order_id is None
+    assert trade.close_rate == 2.00
+    assert trade.close_profit == round(0.2589996297562085, 8)
+    assert trade.close_date is not None
     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=226531, "
                       r"pair=ETH/BTC, amount=30.00000000, "
-                      r"is_short=True, leverage=3.0, open_rate=2.00000000, open_since=.*\).",
+                      r"is_short=True, leverage=3.0, open_rate=2.20000000, open_since=.*\).",
                       caplog)
+    caplog.clear()
 
 
 @pytest.mark.usefixtures("init_persistence")
