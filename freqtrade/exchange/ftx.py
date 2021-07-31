@@ -5,7 +5,7 @@ from typing import Any, Dict
 import ccxt
 
 from freqtrade.enums import LiqFormula
-#from freqtrade.enums import InterestMode, LiqFormula
+# from freqtrade.enums import InterestMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
