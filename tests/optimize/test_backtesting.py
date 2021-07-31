@@ -739,6 +739,9 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     # 100 buys signals
     results = result['results']
     assert len(results) == 100
+    # Cached data should be 200 (no change since required_startup is 0)
+    assert len(backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]) == 200
+
     # One trade was force-closed at the end
     assert len(results.loc[results['is_open']]) == 0
 
@@ -793,6 +796,10 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results['results'], '5m', 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
     assert len(evaluate_result_multi(results['results'], '5m', 3)) == 0
+
+    # Cached data correctly removed amounts
+    removed_candles = len(data[pair]) - 1 - backtesting.strategy.startup_candle_count
+    assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
 
     backtest_conf = {
         'processed': processed,
