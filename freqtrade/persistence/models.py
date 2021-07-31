@@ -511,20 +511,6 @@ class LocalTrade():
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
 
-    def is_opening_trade(self, side) -> bool:
-        """
-        Determines if the trade is an opening (long buy or short sell) trade
-        :param side (string): the side (buy/sell) that order happens on
-        """
-        return (side == 'buy' and not self.is_short) or (side == 'sell' and self.is_short)
-
-    def is_closing_trade(self, side) -> bool:
-        """
-        Determines if the trade is an closing (long sell or short buy) trade
-        :param side (string): the side (buy/sell) that order happens on
-        """
-        return (side == 'sell' and not self.is_short) or (side == 'buy' and self.is_short)
-
     def update(self, order: Dict) -> None:
         """
         Updates this entity with amount and actual open/close rates.
