@@ -357,10 +357,6 @@ class LocalTrade():
 
         self.isolated_liq = isolated_liq
 
-    def set_is_short(self, is_short: bool):
-        self.is_short = is_short
-        self.recalc_open_trade_value()
-
     def __repr__(self):
         open_since = self.open_date.strftime(DATETIME_PRINT_FORMAT) if self.is_open else 'closed'
         leverage = self.leverage or 1.0

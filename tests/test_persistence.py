@@ -140,7 +140,8 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.07
 
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
@@ -246,7 +247,8 @@ def test_interest(market_buy_order_usdt, fee):
     trade.interest_mode = InterestMode.HOURSPER4
     assert float(trade.calculate_interest()) == 0.040
     # Short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # binace
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert float(trade.calculate_interest()) == 0.000625
@@ -256,7 +258,8 @@ def test_interest(market_buy_order_usdt, fee):
 
     # 5hr, long
     trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     # binance
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert round(float(trade.calculate_interest()), 8) == round(0.004166666666666667, 8)
@@ -264,7 +267,8 @@ def test_interest(market_buy_order_usdt, fee):
     trade.interest_mode = InterestMode.HOURSPER4
     assert float(trade.calculate_interest()) == 0.06
     # short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # binace
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
@@ -273,7 +277,8 @@ def test_interest(market_buy_order_usdt, fee):
     assert float(trade.calculate_interest()) == 0.045
 
     # 0.00025 interest, 5hr, long
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     # binance
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert round(float(trade.calculate_interest(interest_rate=0.00025)),
@@ -282,7 +287,8 @@ def test_interest(market_buy_order_usdt, fee):
     trade.interest_mode = InterestMode.HOURSPER4
     assert isclose(float(trade.calculate_interest(interest_rate=0.00025)), 0.03)
     # short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # binace
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert round(float(trade.calculate_interest(interest_rate=0.00025)),
@@ -292,7 +298,8 @@ def test_interest(market_buy_order_usdt, fee):
     assert float(trade.calculate_interest(interest_rate=0.00025)) == 0.0225
 
     # 5x leverage, 0.0005 interest, 5hr, long
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     trade.leverage = 5.0
     # binance
     trade.interest_mode = InterestMode.HOURSPERDAY
@@ -301,7 +308,8 @@ def test_interest(market_buy_order_usdt, fee):
     trade.interest_mode = InterestMode.HOURSPER4
     assert float(trade.calculate_interest()) == round(0.07200000000000001, 8)
     # short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # binace
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
@@ -310,7 +318,8 @@ def test_interest(market_buy_order_usdt, fee):
     assert float(trade.calculate_interest()) == 0.045
 
     # 1x leverage, 0.0005 interest, 5hr
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     trade.leverage = 1.0
     # binance
     trade.interest_mode = InterestMode.HOURSPERDAY
@@ -319,7 +328,8 @@ def test_interest(market_buy_order_usdt, fee):
     trade.interest_mode = InterestMode.HOURSPER4
     assert float(trade.calculate_interest()) == 0.0
     # short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # binace
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert float(trade.calculate_interest()) == 0.003125
@@ -405,11 +415,13 @@ def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee, caplog):
         exchange='binance',
     )
     assert trade.borrowed == 0
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     assert trade.borrowed == 30.0
     trade.leverage = 3.0
     assert trade.borrowed == 30.0
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     assert trade.borrowed == 40.0
 
 
@@ -616,7 +628,8 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_close_trade_value() == 65.795
     assert trade.calc_profit() == 5.645
     assert trade.calc_profit_ratio() == round(0.2815461346633419, 8)
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # 3x leverage, short, kraken
     assert trade._calc_open_trade_value() == 59.850
     assert trade.calc_close_trade_value() == 66.231165
@@ -761,19 +774,22 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
 
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == 60.15
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.85
     trade.leverage = 3
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert trade._calc_open_trade_value() == 59.85
-    trade.set_is_short(False)
+    trade.is_short = False
+    trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 60.15
 
     # Get the open rate price with a custom fee rate
     trade.fee_open = 0.003
 
     assert trade._calc_open_trade_value() == 60.18
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.82
 
 
@@ -811,7 +827,8 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.735
 
     # 3x leverage kraken, short
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.2626875
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 75.300225
 
@@ -1021,7 +1038,8 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit(fee=0.0025) == 5.645
 
     # 3x leverage, short ###################################################
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # 2.1 quote - Higher than open rate
     trade.interest_mode = InterestMode.HOURSPERDAY  # binance
     assert trade.calc_profit(rate=2.1, fee=0.0025) == round(-3.308815781249997, 8)
@@ -1123,7 +1141,8 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit_ratio() == round(0.2815461346633419, 8)
 
     # 3x leverage, short ###################################################
-    trade.set_is_short(True)
+    trade.is_short = True
+    trade.recalc_open_trade_value()
     # 2.1 quote - Higher than open rate
     trade.interest_mode = InterestMode.HOURSPERDAY  # binance
     assert trade.calc_profit_ratio(rate=2.1) == round(-0.1658554276315789, 8)
