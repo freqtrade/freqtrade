@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 from datetime import datetime, timedelta, timezone
+from math import isclose
 from pathlib import Path
 from types import FunctionType
 from unittest.mock import MagicMock
@@ -64,40 +65,37 @@ def test_init_dryrun_db(default_conf, tmpdir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
+def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, caplog):
     """
-    On this test we will buy and sell a crypto currency.
+        On this test we will buy and sell a crypto currency.
+        fee: 0.25% quote
+        open_rate: 2.00 quote
+        close_rate: 2.20 quote
+        amount: = 30.0 crypto
+        stake_amount
+            60.0  quote
+        borrowed
+             0 quote
+        open_value: (amount * open_rate) + (amount * open_rate * fee)
+             30 * 2 + 30 * 2 * 0.0025 = 60.15 quote
+        close_value:
+            (amount * close_rate) - (amount * close_rate * fee) - interest
+            (30.00 * 2.20) - (30.00 * 2.20 * 0.0025) = 65.835
+        total_profit:
+            close_value - open_value
+            65.835 - 60.15             = 5.685
+        total_profit_ratio:
+            ((close_value/open_value) - 1) * leverage
+            ((65.835 / 60.15) - 1)  * 1 = 0.0945137157107232
 
-    Buy
-    - Buy: 90.99181073 Crypto at 0.00001099 BTC
-        (90.99181073*0.00001099 = 0.0009999 BTC)
-    - Buying fee: 0.25%
-    - Total cost of buy trade: 0.001002500 BTC
-        ((90.99181073*0.00001099) + ((90.99181073*0.00001099)*0.0025))
-
-    Sell
-    - Sell: 90.99181073 Crypto at 0.00001173 BTC
-        (90.99181073*0.00001173 = 0,00106733394 BTC)
-    - Selling fee: 0.25%
-    - Total cost of sell trade: 0.001064666 BTC
-        ((90.99181073*0.00001173) - ((90.99181073*0.00001173)*0.0025))
-
-    Profit/Loss: +0.000062166 BTC
-        (Sell:0.001064666 - Buy:0.001002500)
-    Profit/Loss percentage: 0.0620
-        ((0.001064666/0.001002500)-1 = 6.20%)
-
-    :param limit_buy_order:
-    :param limit_sell_order:
-    :return:
     """
 
     trade = Trade(
         id=2,
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.01,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         is_open=True,
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
@@ -109,35 +107,36 @@ def test_update_with_binance(limit_buy_order, limit_sell_order, fee, caplog):
     assert trade.close_date is None
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order)
+    trade.update(limit_buy_order_usdt)
     assert trade.open_order_id is None
-    assert trade.open_rate == 0.00001099
+    assert trade.open_rate == 2.00
     assert trade.close_profit is None
     assert trade.close_date is None
     assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
-                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
+                      r"pair=ADA/USDT, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
     caplog.clear()
     trade.open_order_id = 'something'
-    trade.update(limit_sell_order)
+    trade.update(limit_sell_order_usdt)
     assert trade.open_order_id is None
-    assert trade.close_rate == 0.00001173
-    assert trade.close_profit == 0.06201058
+    assert trade.close_rate == 2.20
+    assert trade.close_profit == round(0.0945137157107232, 8)
     assert trade.close_date is not None
     assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
-                      r"pair=ETH/BTC, amount=90.99181073, open_rate=0.00001099, open_since=.*\).",
+                      r"pair=ADA/USDT, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
                       caplog)
+    caplog.clear()
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
+def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee, caplog):
     trade = Trade(
         id=1,
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.01,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -146,61 +145,60 @@ def test_update_market_order(market_buy_order, market_sell_order, fee, caplog):
     )
 
     trade.open_order_id = 'something'
-    trade.update(market_buy_order)
+    trade.update(market_buy_order_usdt)
     assert trade.open_order_id is None
-    assert trade.open_rate == 0.00004099
+    assert trade.open_rate == 2.0
     assert trade.close_profit is None
     assert trade.close_date is None
     assert log_has_re(r"MARKET_BUY has been fulfilled for Trade\(id=1, "
-                      r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
+                      r"pair=ADA/USDT, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
     caplog.clear()
     trade.is_open = True
     trade.open_order_id = 'something'
-    trade.update(market_sell_order)
+    trade.update(market_sell_order_usdt)
     assert trade.open_order_id is None
-    assert trade.close_rate == 0.00004173
-    assert trade.close_profit == 0.01297561
+    assert trade.close_rate == 2.2
+    assert trade.close_profit == round(0.0945137157107232, 8)
     assert trade.close_date is not None
     assert log_has_re(r"MARKET_SELL has been fulfilled for Trade\(id=1, "
-                      r"pair=ETH/BTC, amount=91.99181073, open_rate=0.00004099, open_since=.*\).",
+                      r"pair=ADA/USDT, amount=30.00000000, open_rate=2.00000000, open_since=.*\).",
                       caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_buy_order, limit_sell_order, fee):
+def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.01,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
     )
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order)
-    assert trade._calc_open_trade_value() == 0.0010024999999225068
+    trade.update(limit_buy_order_usdt)
+    assert trade._calc_open_trade_value() == 60.15
+    trade.update(limit_sell_order_usdt)
+    assert isclose(trade.calc_close_trade_value(), 65.835)
 
-    trade.update(limit_sell_order)
-    assert trade.calc_close_trade_value() == 0.0010646656050132426
-
-    # Profit in BTC
-    assert trade.calc_profit() == 0.00006217
+    # Profit in USDT
+    assert trade.calc_profit() == 5.685
 
     # Profit in percent
-    assert trade.calc_profit_ratio() == 0.06201058
+    assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_trade_close(limit_buy_order, limit_sell_order, fee):
+def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.01,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         is_open=True,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -210,9 +208,9 @@ def test_trade_close(limit_buy_order, limit_sell_order, fee):
     assert trade.close_profit is None
     assert trade.close_date is None
     assert trade.is_open is True
-    trade.close(0.02)
+    trade.close(2.2)
     assert trade.is_open is False
-    assert trade.close_profit == 0.99002494
+    assert trade.close_profit == round(0.0945137157107232, 8)
     assert trade.close_date is not None
 
     new_date = arrow.Arrow(2020, 2, 2, 15, 6, 1).datetime,
@@ -220,34 +218,34 @@ def test_trade_close(limit_buy_order, limit_sell_order, fee):
     # Close should NOT update close_date if the trade has been closed already
     assert trade.is_open is False
     trade.close_date = new_date
-    trade.close(0.02)
+    trade.close(2.2)
     assert trade.close_date == new_date
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price_exception(limit_buy_order, fee):
+def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        open_rate=0.1,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
     )
 
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order)
+    trade.update(limit_buy_order_usdt)
     assert trade.calc_close_trade_value() == 0.0
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_open_order(limit_buy_order):
+def test_update_open_order(limit_buy_order_usdt):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=1.00,
-        open_rate=0.01,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
         fee_open=0.1,
         fee_close=0.1,
         exchange='binance',
@@ -257,8 +255,8 @@ def test_update_open_order(limit_buy_order):
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    limit_buy_order['status'] = 'open'
-    trade.update(limit_buy_order)
+    limit_buy_order_usdt['status'] = 'open'
+    trade.update(limit_buy_order_usdt)
 
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -266,127 +264,203 @@ def test_update_open_order(limit_buy_order):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_invalid_order(limit_buy_order):
+def test_update_invalid_order(limit_buy_order_usdt):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=1.00,
-        amount=5,
-        open_rate=0.001,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        amount=30.0,
+        open_rate=2.0,
         fee_open=0.1,
         fee_close=0.1,
         exchange='binance',
     )
-    limit_buy_order['type'] = 'invalid'
+    limit_buy_order_usdt['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
-        trade.update(limit_buy_order)
+        trade.update(limit_buy_order_usdt)
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value(limit_buy_order, fee):
+def test_calc_open_trade_value(limit_buy_order_usdt, fee):
+    """
+        fee: 0.25 %, 0.3% quote
+        open_rate: 2.00 quote
+        amount: = 30.0 crypto
+        stake_amount
+            60.0  quote
+        open_value: (amount * open_rate) + (amount * open_rate * fee)
+        0.25% fee
+            30 * 2 + 30 * 2 * 0.0025 = 60.15 quote
+        0.3% fee
+            30 * 2 + 30 * 2 * 0.003  = 60.18 quote
+    """
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        amount=30.0,
+        open_rate=2.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
     )
     trade.open_order_id = 'open_trade'
-    trade.update(limit_buy_order)  # Buy @ 0.00001099
+    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
 
     # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == 0.0010024999999225068
+    assert trade._calc_open_trade_value() == 60.15
     trade.fee_open = 0.003
     # Get the open rate price with a custom fee rate
-    assert trade._calc_open_trade_value() == 0.001002999999922468
+    assert trade._calc_open_trade_value() == 60.18
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(limit_buy_order, limit_sell_order, fee):
+def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        amount=30.0,
+        open_rate=2.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
     )
     trade.open_order_id = 'close_trade'
-    trade.update(limit_buy_order)  # Buy @ 0.00001099
+    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
 
     # Get the close rate price with a custom close rate and a regular fee rate
-    assert trade.calc_close_trade_value(rate=0.00001234) == 0.0011200318470471794
-
+    assert trade.calc_close_trade_value(rate=2.5) == 74.8125
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert trade.calc_close_trade_value(rate=0.00001234, fee=0.003) == 0.0011194704275749754
-
+    assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.775
     # Test when we apply a Sell order, and ask price with a custom fee rate
-    trade.update(limit_sell_order)
-    assert trade.calc_close_trade_value(fee=0.005) == 0.0010619972701635854
+    trade.update(limit_sell_order_usdt)
+    assert trade.calc_close_trade_value(fee=0.005) == 65.67
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(limit_buy_order, limit_sell_order, fee):
+def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
+    """
+        arguments:
+            fee:
+                0.25% quote
+                0.30% quote
+            open_rate: 2.0 quote
+            close_rate:
+                1.9 quote
+                2.1 quote
+                2.2 quote
+            amount: = 30.0 crypto
+            stake_amount
+                60.0  quote
+        open_value: (amount * open_rate) + (amount * open_rate * fee)
+          0.0025 fee
+            30 * 2 + 30 * 2 * 0.0025 = 60.15 quote
+            30 * 2 - 30 * 2 * 0.0025 = 59.85 quote
+          0.003 fee: Is only applied to close rate in this test
+        close_value:
+            equations:
+                (amount_closed * close_rate) - (amount_closed * close_rate * fee)
+            2.1 quote
+                (30.00 * 2.1) - (30.00 * 2.1 * 0.0025)   = 62.8425
+            1.9 quote
+                (30.00 * 1.9) - (30.00 * 1.9 * 0.0025)   = 56.8575
+            2.2 quote
+                (30.00 * 2.20) - (30.00 * 2.20 * 0.0025) = 65.835
+        total_profit:
+            equations:
+                close_value - open_value
+            2.1 quote
+                62.8425 - 60.15 = 2.6925
+            1.9 quote
+                56.8575 - 60.15 = -3.2925
+            2.2 quote
+                65.835  - 60.15 = 5.685
+        total_profit_ratio:
+            equations:
+                ((close_value/open_value) - 1) * leverage
+            2.1 quote
+                (62.8425 / 60.15) - 1 = 0.04476309226932673
+            1.9 quote
+                (56.8575 / 60.15) - 1 = -0.05473815461346632
+            2.2 quote
+                (65.835 / 60.15) - 1  = 0.0945137157107232
+        fee: 0.003
+            close_value:
+                2.1 quote: (30.00 * 2.1) - (30.00 * 2.1 * 0.003) = 62.811
+                1.9 quote: (30.00 * 1.9) - (30.00 * 1.9 * 0.003) = 56.829
+                2.2 quote: (30.00 * 2.2) - (30.00 * 2.2 * 0.003) = 65.802
+            total_profit
+                fee: 0.003
+                    2.1 quote: 62.811 - 60.15 = 2.6610000000000014
+                    1.9 quote: 56.829 - 60.15 = -3.320999999999998
+                    2.2 quote: 65.802 - 60.15 = 5.652000000000008
+            total_profit_ratio
+                fee: 0.003
+                    2.1 quote: (62.811 / 60.15) - 1 = 0.04423940149625927
+                    1.9 quote: (56.829 / 60.15) - 1 = -0.05521197007481293
+                    2.2 quote: (65.802 / 60.15) - 1 = 0.09396508728179565
+    """
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        amount=30.0,
+        open_rate=2.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
     )
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order)  # Buy @ 0.00001099
+    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
 
     # Custom closing rate and regular fee rate
-    # Higher than open rate
-    assert trade.calc_profit(rate=0.00001234) == 0.00011753
-    # Lower than open rate
-    assert trade.calc_profit(rate=0.00000123) == -0.00089086
+    # Higher than open rate - 2.1 quote
+    assert trade.calc_profit(rate=2.1) == 2.6925
+    # Lower than open rate - 1.9 quote
+    assert trade.calc_profit(rate=1.9) == round(-3.292499999999997, 8)
 
-    # Custom closing rate and custom fee rate
-    # Higher than open rate
-    assert trade.calc_profit(rate=0.00001234, fee=0.003) == 0.00011697
-    # Lower than open rate
-    assert trade.calc_profit(rate=0.00000123, fee=0.003) == -0.00089092
+    # fee 0.003
+    # Higher than open rate - 2.1 quote
+    assert trade.calc_profit(rate=2.1, fee=0.003) == 2.661
+    # Lower than open rate - 1.9 quote
+    assert trade.calc_profit(rate=1.9, fee=0.003) == round(-3.320999999999998, 8)
 
-    # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
-    trade.update(limit_sell_order)
-    assert trade.calc_profit() == 0.00006217
+    # Test when we apply a Sell order. Sell higher than open rate @ 2.2
+    trade.update(limit_sell_order_usdt)
+    assert trade.calc_profit() == round(5.684999999999995, 8)
 
     # Test with a custom fee rate on the close trade
-    assert trade.calc_profit(fee=0.003) == 0.00006163
+    assert trade.calc_profit(fee=0.003) == round(5.652000000000008, 8)
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit_ratio(limit_buy_order, limit_sell_order, fee):
+def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
-        open_rate=0.00001099,
+        pair='ADA/USDT',
+        stake_amount=60.0,
+        amount=30.0,
+        open_rate=2.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange='binance'
     )
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order)  # Buy @ 0.00001099
+    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
 
-    # Get percent of profit with a custom rate (Higher than open rate)
-    assert trade.calc_profit_ratio(rate=0.00001234) == 0.11723875
+    # Higher than open rate - 2.1 quote
+    assert trade.calc_profit_ratio(rate=2.1) == round(0.04476309226932673, 8)
+    # Lower than open rate - 1.9 quote
+    assert trade.calc_profit_ratio(rate=1.9) == round(-0.05473815461346632, 8)
 
-    # Get percent of profit with a custom rate (Lower than open rate)
-    assert trade.calc_profit_ratio(rate=0.00000123) == -0.88863828
+    # fee 0.003
+    # Higher than open rate - 2.1 quote
+    assert trade.calc_profit_ratio(rate=2.1, fee=0.003) == round(0.04423940149625927, 8)
+    # Lower than open rate - 1.9 quote
+    assert trade.calc_profit_ratio(rate=1.9, fee=0.003) == round(-0.05521197007481293, 8)
 
-    # Test when we apply a Sell order. Sell higher than open rate @ 0.00001173
-    trade.update(limit_sell_order)
-    assert trade.calc_profit_ratio() == 0.06201058
+    # Test when we apply a Sell order. Sell higher than open rate @ 2.2
+    trade.update(limit_sell_order_usdt)
+    assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
 
     # Test with a custom fee rate on the close trade
-    assert trade.calc_profit_ratio(fee=0.003) == 0.06147824
+    assert trade.calc_profit_ratio(fee=0.003) == round(0.09396508728179565, 8)
 
     trade.open_trade_value = 0.0
     assert trade.calc_profit_ratio(fee=0.003) == 0.0
@@ -397,7 +471,7 @@ def test_clean_dry_run_db(default_conf, fee):
 
     # Simulate dry_run entries
     trade = Trade(
-        pair='ETH/BTC',
+        pair='ADA/USDT',
         stake_amount=0.001,
         amount=123.0,
         fee_open=fee.return_value,
@@ -664,9 +738,9 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
 
 def test_adjust_stop_loss(fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=30.0,
+        amount=30,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -716,9 +790,9 @@ def test_adjust_stop_loss(fee):
 
 def test_adjust_min_max_rates(fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
-        amount=5,
+        pair='ADA/USDT',
+        stake_amount=30.0,
+        amount=30.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -897,11 +971,11 @@ def test_to_json(default_conf, fee):
 def test_stoploss_reinitialization(default_conf, fee):
     init_db(default_conf['db_url'])
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
+        pair='ADA/USDT',
+        stake_amount=30.0,
         fee_open=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
-        amount=10,
+        amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
@@ -956,11 +1030,11 @@ def test_stoploss_reinitialization(default_conf, fee):
 
 def test_update_fee(fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
+        pair='ADA/USDT',
+        stake_amount=30.0,
         fee_open=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
-        amount=10,
+        amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,
@@ -995,11 +1069,11 @@ def test_update_fee(fee):
 
 def test_fee_updated(fee):
     trade = Trade(
-        pair='ETH/BTC',
-        stake_amount=0.001,
+        pair='ADA/USDT',
+        stake_amount=30.0,
         fee_open=fee.return_value,
         open_date=arrow.utcnow().shift(hours=-2).datetime,
-        amount=10,
+        amount=30.0,
         fee_close=fee.return_value,
         exchange='binance',
         open_rate=1,

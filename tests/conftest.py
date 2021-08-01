@@ -812,7 +812,7 @@ def shitcoinmarkets(markets):
             "future": False,
             "active": True
         },
-        })
+    })
     return shitmarkets
 
 
@@ -1115,7 +1115,7 @@ def order_book_l2_usd():
             [25.576, 262.016],
             [25.577, 178.557],
             [25.578, 78.614]
-            ],
+        ],
         'timestamp': None,
         'datetime': None,
         'nonce': 2372149736
@@ -2084,3 +2084,88 @@ def saved_hyperopt_results():
                                                                          ].total_seconds()
 
     return hyperopt_res
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order_usdt_open():
+    return {
+        'id': 'mocked_limit_buy',
+        'type': 'limit',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 2.00,
+        'amount': 30.0,
+        'filled': 0.0,
+        'cost': 60.0,
+        'remaining': 30.0,
+        'status': 'open'
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_buy_order_usdt(limit_buy_order_usdt_open):
+    order = deepcopy(limit_buy_order_usdt_open)
+    order['status'] = 'closed'
+    order['filled'] = order['amount']
+    order['remaining'] = 0.0
+    return order
+
+
+@pytest.fixture
+def limit_sell_order_usdt_open():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'limit',
+        'side': 'sell',
+        'pair': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'timestamp': arrow.utcnow().int_timestamp,
+        'price': 2.20,
+        'amount': 30.0,
+        'filled': 0.0,
+        'remaining': 30.0,
+        'status': 'open'
+    }
+
+
+@pytest.fixture
+def limit_sell_order_usdt(limit_sell_order_usdt_open):
+    order = deepcopy(limit_sell_order_usdt_open)
+    order['remaining'] = 0.0
+    order['filled'] = order['amount']
+    order['status'] = 'closed'
+    return order
+
+
+@pytest.fixture(scope='function')
+def market_buy_order_usdt():
+    return {
+        'id': 'mocked_market_buy',
+        'type': 'market',
+        'side': 'buy',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 2.00,
+        'amount': 30.0,
+        'filled': 30.0,
+        'remaining': 0.0,
+        'status': 'closed'
+    }
+
+
+@pytest.fixture
+def market_sell_order_usdt():
+    return {
+        'id': 'mocked_limit_sell',
+        'type': 'market',
+        'side': 'sell',
+        'symbol': 'mocked',
+        'datetime': arrow.utcnow().isoformat(),
+        'price': 2.20,
+        'amount': 30.0,
+        'filled': 30.0,
+        'remaining': 0.0,
+        'status': 'closed'
+    }
