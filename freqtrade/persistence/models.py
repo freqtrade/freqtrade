@@ -545,10 +545,11 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.exit_side == order['side']:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                # TODO-mg: On shorts, you buy a little bit more than the amount (amount + interest)
-                # This wll only print the original amount
+                # TODO-lev: On shorts, you buy a little bit more than the amount (amount + interest)
+                # TODO-lev: This wll only print the original amount
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))  # TODO-mg: Double check this
+            # TODO-lev: Double check this
+            self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -883,8 +884,8 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)  # TODO-mg: Change to close_reason
-    sell_order_status = Column(String(100), nullable=True)  # TODO-mg: Change to close_order_status
+    sell_reason = Column(String(100), nullable=True)  # TODO-lev: Change to close_reason
+    sell_order_status = Column(String(100), nullable=True)  # TODO-lev: Change to close_order_status
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
