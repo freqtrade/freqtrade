@@ -26,47 +26,60 @@ class LiqFormula(Enum):
             raise OperationalException(
                 f"Freqtrade does not support {trading_mode.value} on {self.name}")
         else:
-            raise OperationalException(f"{self.name} does not support {trading_mode.value}")
+            raise OperationalException(f"{self.name} does not support {trading_mode.value} trading")
+
+    def __binance(self, trading_mode: TradingMode):
+        # TODO-mg: Additional arguments, fill in formulas
+
+        if trading_mode == TradingMode.CROSS_MARGIN:
+            # TODO-mg: perform a calculation based on this formula
+            # https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
+            self.__exception(trading_mode)
+        elif trading_mode == TradingMode.ISOLATED_MARGIN:
+            self.__exception(trading_mode)  # Likely won't be implemented
+        elif trading_mode == TradingMode.CROSS_FUTURES:
+            # TODO-mg: perform a calculation based on this formula
+            # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+            self.__exception(trading_mode)
+        elif trading_mode == TradingMode.ISOLATED_FUTURES:
+            # TODO-mg: perform a calculation based on this formula
+            # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+            self.__exception(trading_mode)
+        else:
+            self.__exception(trading_mode)
+
+    def __kraken(self, trading_mode: TradingMode):
+        # TODO-mg: Additional arguments, fill in formulas
+
+        if trading_mode == TradingMode.CROSS_MARGIN:
+            self.__exception(trading_mode)
+            # TODO-mg: perform a calculation based on this formula
+            # https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
+        elif trading_mode == TradingMode.CROSS_FUTURES:
+            # TODO-mg: implement
+            self.__exception(trading_mode)
+        elif trading_mode == TradingMode.ISOLATED_MARGIN or \
+                trading_mode == TradingMode.ISOLATED_FUTURES:
+            self.__exception(trading_mode, True)
+        else:
+            self.__exception(trading_mode)
+
+    def __ftx(self, trading_mode: TradingMode):
+        # TODO-mg: Additional arguments, fill in formulas
+        self.__exception(trading_mode)
 
     def __call__(self, **k):
-        trading_mode: TradingMode = k.trading_mode
 
-        # * Cross Margin
-        if trading_mode == TradingMode.CROSS:
-            if self.name == "BINANCE":
-                # TODO: perform a calculation based on this formula
-                # https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
-                self.__exception(trading_mode)
-            elif self.name == "KRAKEN":
-                # TODO: perform a calculation based on this formula
-                # https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
-                self.__exception(trading_mode)
-            elif self.name == "FTX":
-                self.__exception(trading_mode)
+        trading_mode: TradingMode = k['trading_mode']
 
-        # * Isolated Margin
-        elif trading_mode == TradingMode.ISOLATED:
-            if self.name == "KRAKEN":  # Kraken doesn't have isolated margin
-                self.__exception(trading_mode, False)
-            else:
-                self.__exception(trading_mode)
+        if trading_mode == TradingMode.SPOT:
+            return None
 
-        # * Cross Futures
-        elif trading_mode == TradingMode.CROSS_FUTURES:
-            if self.name == "BINANCE":
-                # TODO: perform a calculation based on this formula
-                # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-                self.__exception(trading_mode)
-            else:
-                self.__exception(trading_mode)
-
-        # * Isolated Futures
-        elif trading_mode == TradingMode.ISOLATED_FUTURES:
-            if self.name == "BINANCE":
-                # TODO: perform a calculation based on this formula
-                # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-                self.__exception(trading_mode)
-            elif self.name == "KRAKEN":  # Kraken doesn't have isolated margin
-                self.__exception(trading_mode, False)
-            else:
-                self.__exception(trading_mode)
+        if self.name == "BINANCE":
+            return self.__binance(trading_mode)
+        elif self.name == "KRAKEN":
+            return self.__kraken(trading_mode)
+        elif self.name == "FTX":
+            return self.__ftx(trading_mode)
+        else:
+            self.__exception(trading_mode)
