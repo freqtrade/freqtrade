@@ -122,6 +122,8 @@ class Backtesting:
 
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        # Add maximum startup candle count to configuration for informative pairs support
+        self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         self.progress = BTProgress()
