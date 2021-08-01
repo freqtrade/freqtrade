@@ -169,7 +169,6 @@ class FreqtradeBot(LoggingMixin):
         with self._sell_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
-            self.check_handle_custom_entryprice_outdated()
 
         # Protect from collisions with forcesell.
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
@@ -919,70 +918,6 @@ class FreqtradeBot(LoggingMixin):
                                                                  trade=trade,
                                                                  order=order))):
                 self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['TIMEOUT'])
-
-    def _check_entryprice_outdated(self, side: str, order: dict) -> bool:
-        """
-        Check if entry price is outdated by comparing it to the new prefered entry price
-        , and if the order is still open and price outdated
-        """
-        #print("check_entryprice_outdated")
-        if self.config.get('use_custom_entry_price', False):
-            order_prefered_entry_price = order['price'] # order['trade']
-
-            #print(order)
-            #order_open_rate_requested = order.trade['open_rate_requested']
-            #print("order_trade_object : {}".format(order['trade']))
-
-            # get pep from strategy data provider
-            pair = order['symbol']
-            old_prefered_entry_price = order_prefered_entry_price
-            #new_prefered_entry_price = self.strategy.custom_info[pair]['pep_long'].iloc[-1] #buy_limit_requested
-            new_prefered_entry_price = self.strategy.entryprice
-
-            old_prefered_entry_price_rounded = self.exchange.price_to_precision(pair, order_prefered_entry_price)
-            new_prefered_entry_price_rounded = self.exchange.price_to_precision(pair, new_prefered_entry_price)
-
-            if old_prefered_entry_price_rounded != new_prefered_entry_price_rounded:
-                print("order['symbol']: {}".format(order['symbol']))
-                print("new_prefered_entry_price: {}, old_prefered_entry_price: {}".format(new_prefered_entry_price, old_prefered_entry_price))
-                print("rounded new pep: {}, rounded old pep: {}".format(new_prefered_entry_price_rounded, old_prefered_entry_price_rounded))
-                print("Delta in prefered entry price, order to cancel")
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def check_handle_custom_entryprice_outdated(self) -> None:
-        """
-        Check if any orders prefered entryprice change and cancel if necessary
-        :return: None
-        """
-
-        for trade in Trade.get_open_order_trades():
-            try:
-                if not trade.open_order_id:
-                    continue
-                order = self.exchange.fetch_order(trade.open_order_id, trade.pair)
-            except (ExchangeError):
-                logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
-                continue
-
-            fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
-
-            # Refresh entryprice value if order is open
-            if (order['status'] == 'open'):
-                self.strategy.entryprice = strategy_safe_wrapper(self.strategy.custom_entry_price)(
-                    pair=trade.pair, current_time=datetime.now(timezone.utc),
-                    current_rate=trade.open_rate_requested)
-    
-            if (order['side'] == 'buy' and (order['status'] == 'open') and (
-                self._check_entryprice_outdated('buy', order))):
-                self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['ENTRYPRICECHANGED'])
-
-            elif (order['side'] == 'sell' and (order['status'] == 'open') and (
-                self._check_entryprice_outdated('sell', order))):
-                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['EXITPRICECHANGED'])
 
     def cancel_all_open_orders(self) -> None:
         """

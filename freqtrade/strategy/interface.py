@@ -69,10 +69,6 @@ class IStrategy(ABC, HyperStrategyMixin):
     # associated stoploss
     stoploss: float
 
-    # custom order price
-    entryprice: Optional[float] = None
-    exitprice: Optional[float] = None
-
     # trailing stoploss
     trailing_stop: bool = False
     trailing_stop_positive: Optional[float] = None
@@ -284,7 +280,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
-    def custom_entry_price(self, pair: str, current_time: datetime, current_rate: float,
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
                             **kwargs) -> float:
         """
         Custom entry price logic, returning the new entry price.
@@ -296,11 +292,11 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New entry price value if provided
         """
-        return self.entryprice
+        return proposed_rate
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:

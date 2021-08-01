@@ -373,7 +373,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def custom_entry_price(self, pair: str, current_time: datetime,
-                            current_rate, **kwargs) -> float:
+                            proposed_rate, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
@@ -393,7 +393,7 @@ However, freqtrade also offers a custom callback for both order types, which all
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
 
-## Custom order timeout example
+### Custom order timeout example
 
 A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
 It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.
