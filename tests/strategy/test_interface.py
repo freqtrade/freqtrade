@@ -38,20 +38,15 @@ def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
     mocked_history['buy'] = 0
     mocked_history.loc[1, 'sell'] = 1
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True, None)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, True)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 1
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False, None)
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False)
     mocked_history.loc[1, 'sell'] = 0
     mocked_history.loc[1, 'buy'] = 0
 
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
-    mocked_history.loc[1, 'sell'] = 0
-    mocked_history.loc[1, 'buy'] = 1
-    mocked_history.loc[1, 'buy_tag'] = 'buy_signal_01'
-
-    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (True, False, 'buy_signal_01')
+    assert _STRATEGY.get_signal('ETH/BTC', '5m', mocked_history) == (False, False)
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
@@ -68,21 +63,15 @@ def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False, None) == _STRATEGY.get_signal(
-        'foo', default_conf['timeframe'], DataFrame()
-    )
+    assert (False, False) == _STRATEGY.get_signal('foo', default_conf['timeframe'], DataFrame())
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
-    assert (False, False, None) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
+    assert (False, False) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
     caplog.clear()
 
-    assert (False, False, None) == _STRATEGY.get_signal(
-        'baz',
-        default_conf['timeframe'],
-        DataFrame([])
-    )
+    assert (False, False) == _STRATEGY.get_signal('baz', default_conf['timeframe'], DataFrame([]))
     assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
@@ -118,11 +107,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False, None) == _STRATEGY.get_signal(
-        'xyz',
-        default_conf['timeframe'],
-        mocked_history
-    )
+    assert (False, False) == _STRATEGY.get_signal('xyz', default_conf['timeframe'], mocked_history)
     assert log_has('Outdated history for pair xyz. Last tick is 16 minutes old', caplog)
 
 
@@ -432,13 +417,13 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
 
 @pytest.mark.parametrize(
-    'current_rate, exp_custom_entry', 'expected_result', 'use_custom_entry_price', 'custom_entry' [
-        # Profit, adjusted stoploss(absolute), profit for 2nd call, enable trailing,
+    'current_rate, expected_result, use_custom_entry_price, custom_entry', [
+        # current rate, expected result value, profit for 2nd call, enable trailing,
         #   enable custom stoploss, expected after 1st call, expected after 2nd call
-        (99, 98, False, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # custom_entry_price pice - (price * 0.01)
-        (97.8, 98, True, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # price stayed under entry price
-        (97.8, 98, True, True, lambda current_rate, **kwargs: current_rate + (current_rate * 0.01)), # entry price over current price
-        (99.9, 98, True, False, None), # feature not activated
+        (99, False, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # custom_entry_price pice - (price * 0.01)
+        (97.8, True, True, lambda current_rate, **kwargs: current_rate - (current_rate * 0.01)), # price stayed under entry price
+        (97.8, True, True, lambda current_rate, **kwargs: current_rate + (current_rate * 0.01)), # entry price over current price
+        (99.9, True, False, None), # feature not activated
     ])
 def test_entry_price_reached(default_conf, current_rate, exp_custom_entry, candle_ohlc,
                              expected_result, use_custom_entry_price, custom_entry) -> None:
