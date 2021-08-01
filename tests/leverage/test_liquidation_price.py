@@ -14,7 +14,7 @@ def test_liquidation_formula():
     assert LiqFormula.BINANCE(
         trading_mode=spot
     ) is None
-    # TODO-mg: Uncomment these assertions and make them real calculation tests
+    # TODO-lev: Uncomment these assertions and make them real calculation tests
     # assert LiqFormula.BINANCE(
     #   trading_mode=cross_margin
     # ) == 1.0  #Replace 1.0 with real value
@@ -31,26 +31,26 @@ def test_liquidation_formula():
     assert LiqFormula.KRAKEN(
         trading_mode=spot
     ) is None
-    # TODO-mg: Uncomment these assertions and make them real calculation tests
+    # TODO-lev: Uncomment these assertions and make them real calculation tests
     # assert LiqFormula.KRAKEN(
     #   trading_mode=cross_margin
     # ) == 1.0
     # LiqFormula.KRAKEN(
     #   trading_mode=isolated_margin
     # )
-    # asset exception thrown #TODO-mg: Check that exception is thrown
+    # asset exception thrown #TODO-lev: Check that exception is thrown
     # assert LiqFormula.KRAKEN(
     #   trading_mode=cross_futures
     # ) == 1.0
     # LiqFormula.KRAKEN(
     #   trading_mode=isolated_futures
     # )
-    # asset exception thrown #TODO-mg: Check that exception is thrown
+    # asset exception thrown #TODO-lev: Check that exception is thrown
 
     assert LiqFormula.FTX(
         trading_mode=spot
     ) is None
-    # TODO-mg: Uncomment these assertions and make them real calculation tests
+    # TODO-lev: Uncomment these assertions and make them real calculation tests
     # assert LiqFormula.FTX(
     #   trading_mode=cross_margin
     # ) == 1.0
