@@ -1,9 +1,12 @@
 # from decimal import Decimal
+from freqtrade.exceptions import OperationalException
+from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums.collateral import Collateral
 from enum import Enum
 
-from freqtrade.enums.collateral import Collateral
-from freqtrade.enums.tradingmode import TradingMode
-from freqtrade.exceptions import OperationalException
+<< << << < HEAD
+== == == =
+>>>>>> > eab5bb8a(integrated liqformula into persistence/models, addjusted calc_close_value to change based on trading mode)
 
 
 # from math import ceil
