@@ -26,6 +26,7 @@ class RangeStabilityFilter(IPairList):
 
         self._days = pairlistconfig.get('lookback_days', 10)
         self._min_rate_of_change = pairlistconfig.get('min_rate_of_change', 0.01)
+        self._max_rate_of_change = pairlistconfig.get('max_rate_of_change', None)
         self._refresh_period = pairlistconfig.get('refresh_period', 1440)
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
@@ -50,8 +51,12 @@ class RangeStabilityFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
+        max_rate_desc = ""
+        if self._max_rate_of_change:
+            max_rate_desc = (f" and above {self._max_rate_of_change}")
         return (f"{self.name} - Filtering pairs with rate of change below "
-                f"{self._min_rate_of_change} over the last {plural(self._days, 'day')}.")
+                f"{self._min_rate_of_change}{max_rate_desc} over the "
+                f"last {plural(self._days, 'day')}.")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
@@ -104,6 +109,16 @@ class RangeStabilityFilter(IPairList):
                               f"which is below the threshold of {self._min_rate_of_change}.",
                               logger.info)
                 result = False
+            if self._max_rate_of_change:
+                if pct_change <= self._max_rate_of_change:
+                    result = True
+                else:
+                    self.log_once(
+                        f"Removed {pair} from whitelist, because rate of change "
+                        f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                        f"which is above the threshold of {self._max_rate_of_change}.",
+                        logger.info)
+                    result = False
             self._pair_cache[pair] = result
 
         return result
