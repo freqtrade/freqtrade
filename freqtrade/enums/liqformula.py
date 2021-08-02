@@ -3,16 +3,17 @@ from enum import Enum
 # from math import ceil
 from typing import Optional
 
-from freqtrade.enums import TradingMode
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import OperationalException
 
 
 class LiqFormula(Enum):
     """Equations to calculate liquidation price"""
 
-    BINANCE = "BINANCE"
-    KRAKEN = "KRAKEN"
+    BINANCE = "Binance"
+    KRAKEN = "Kraken"
     FTX = "FTX"
+    NONE = None
 
     def __exception(self, trading_mode: TradingMode, freq_specific: Optional[bool] = True):
         """
@@ -72,7 +73,7 @@ class LiqFormula(Enum):
 
         trading_mode: TradingMode = k['trading_mode']
 
-        if trading_mode == TradingMode.SPOT:
+        if trading_mode == TradingMode.SPOT or self.name == "NONE":
             return None
 
         if self.name == "BINANCE":
