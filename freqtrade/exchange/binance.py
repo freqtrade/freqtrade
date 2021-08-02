@@ -25,6 +25,7 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
     interest_mode: InterestMode = InterestMode.HOURSPERDAY
+    liq_formula: LiqFormula = LiqFormula.BINANCE
 
     maintenance_margin_formula = LiqFormula.BINANCE
 

@@ -5,6 +5,7 @@ from typing import Any, Dict
 import ccxt
 
 from freqtrade.enums import LiqFormula
+#from freqtrade.enums import InterestMode, LiqFormula
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -21,8 +22,8 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
-
-    maintenance_margin_formula = LiqFormula.FTX
+    #interest_mode: InterestMode = InterestMode.HOURSPERDAY
+    liq_formula: LiqFormula = LiqFormula.FTX
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

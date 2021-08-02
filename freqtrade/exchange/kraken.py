@@ -24,6 +24,7 @@ class Kraken(Exchange):
         "trades_pagination_arg": "since",
     }
     interest_mode: InterestMode = InterestMode.HOURSPER4
+    liq_formula: LiqFormula = LiqFormula.KRAKEN
 
     maintenance_margin_formula = LiqFormula.KRAKEN
 

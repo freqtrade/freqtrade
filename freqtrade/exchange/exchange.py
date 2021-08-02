@@ -71,6 +71,7 @@ class Exchange:
     _ft_has: Dict = {}
     liq_formula: LiqFormula
     interest_mode: InterestMode = InterestMode.NONE
+    liq_formula: LiqFormula = LiqFormula.NONE
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
