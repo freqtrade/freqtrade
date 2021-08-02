@@ -264,17 +264,14 @@ class Hyperopt:
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
-        Used Optimize function. Called once per epoch to optimize whatever is configured.
+        Used Optimize function.
+        Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
         # Apply parameters
-        if HyperoptTools.has_space(self.config, 'roi'):
-            self.backtesting.strategy.minimal_roi = (  # type: ignore
-                self.custom_hyperopt.generate_roi_table(params_dict))
-
         if HyperoptTools.has_space(self.config, 'buy'):
             self.backtesting.strategy.advise_buy = (  # type: ignore
                 self.custom_hyperopt.buy_strategy_generator(params_dict))
@@ -282,6 +279,10 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'sell'):
             self.backtesting.strategy.advise_sell = (  # type: ignore
                 self.custom_hyperopt.sell_strategy_generator(params_dict))
+
+        if HyperoptTools.has_space(self.config, 'roi'):
+            self.backtesting.strategy.minimal_roi = (  # type: ignore
+                self.custom_hyperopt.generate_roi_table(params_dict))
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
