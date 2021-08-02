@@ -319,7 +319,7 @@ class LocalTrade():
         for key in kwargs:
             setattr(self, key, kwargs[key])
         if self.isolated_liq:
-            self.set_isolated_liq(self.isolated_liq)
+            self.set_isolated_liq(isolated_liq=self.isolated_liq)
         self.recalc_open_trade_value()
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
@@ -351,7 +351,10 @@ class LocalTrade():
             Assures stop_loss is not passed the liquidation price
         """
 
-        isolated_liq: float == self.liq_formula(trading_mode=self.trading_mode, **k)
+        if k['isolated_liq']:
+            isolated_liq: float = k['isolated_liq']
+        else:
+            isolated_liq: float == self.liq_formula(trading_mode=self.trading_mode, **k)
 
         if self.stop_loss is not None:
             if self.is_short:
@@ -689,12 +692,13 @@ class LocalTrade():
             return 0.0
 
         amount = Decimal(self.amount)
+        trading_mode = self.trading_mode or TradingMode.SPOT
 
-        if self.trading_mode == TradingMode.SPOT:
+        if trading_mode == TradingMode.SPOT:
             return float(self._calc_base_close(amount, rate, fee))
 
-        elif (self.trading_mode == TradingMode.CROSS_MARGIN or
-              self.trading_mode == TradingMode.ISOLATED_MARGIN):
+        elif (trading_mode == TradingMode.CROSS_MARGIN or
+              trading_mode == TradingMode.ISOLATED_MARGIN):
 
             interest = self.calculate_interest(interest_rate)
 
@@ -705,8 +709,8 @@ class LocalTrade():
                 # Currency already owned for longs, no need to purchase
                 return float(self._calc_base_close(amount, rate, fee) - interest)
 
-        elif (self.trading_mode == TradingMode.CROSS_FUTURES or
-              self.trading_mode == TradingMode.ISOLATED_FUTURES):
+        elif (trading_mode == TradingMode.CROSS_FUTURES or
+              trading_mode == TradingMode.ISOLATED_FUTURES):
             # TODO-lev: implement
             raise OperationalException("Futures is not yet available using freqtrade")
         else:
@@ -924,7 +928,10 @@ class Trade(_DECL_BASE, LocalTrade):
     interest_rate = Column(Float, nullable=False, default=0.0)
     isolated_liq = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
+
+    trading_mode = Column(Enum(TradingMode), default=TradingMode.SPOT)
     interest_mode = Column(Enum(InterestMode), nullable=True)
+    liq_formula = Column(Enum(LiqFormula), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):

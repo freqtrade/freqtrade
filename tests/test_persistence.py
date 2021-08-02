@@ -11,7 +11,7 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 
 from freqtrade import constants
-from freqtrade.enums import InterestMode
+from freqtrade.enums import InterestMode, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
@@ -91,7 +91,7 @@ def test_enter_exit_side(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test__set_stop_loss_isolated_liq(fee):
+def test_set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -106,7 +106,7 @@ def test__set_stop_loss_isolated_liq(fee):
         is_short=False,
         leverage=2.0
     )
-    trade.set_isolated_liq(0.09)
+    trade.set_isolated_liq(isolated_liq=0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -116,12 +116,12 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.08)
+    trade.set_isolated_liq(isolated_liq=0.08)
     assert trade.isolated_liq == 0.08
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.11)
+    trade.set_isolated_liq(isolated_liq=0.11)
     assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
@@ -145,7 +145,7 @@ def test__set_stop_loss_isolated_liq(fee):
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
-    trade.set_isolated_liq(0.09)
+    trade.set_isolated_liq(isolated_liq=0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -155,12 +155,12 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.1)
+    trade.set_isolated_liq(isolated_liq=0.1)
     assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.07)
+    trade.set_isolated_liq(isolated_liq=0.07)
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
@@ -237,7 +237,8 @@ def test_interest(market_buy_order_usdt, fee):
         exchange='kraken',
         leverage=3.0,
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY
+        interest_mode=InterestMode.HOURSPERDAY,
+        trading_mode=TradingMode.CROSS_MARGIN
     )
 
     # 10min, 3x leverage
@@ -506,7 +507,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange='binance'
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -550,7 +551,8 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         is_short=True,
         leverage=3.0,
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY
+        interest_mode=InterestMode.HOURSPERDAY,
+        trading_mode=TradingMode.CROSS_MARGIN
     )
     trade.open_order_id = 'something'
     trade.update(limit_sell_order_usdt)
@@ -642,7 +644,9 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert isclose(trade.calc_close_trade_value(), 65.835)
     assert trade.calc_profit() == 5.685
     assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
+
     # 3x leverage, binance
+    trade.trading_mode = TradingMode.ISOLATED_MARGIN
     trade.leverage = 3
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert trade._calc_open_trade_value() == 60.15
@@ -801,12 +805,19 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
 
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == 60.15
+
+    # Margin
+    trade.trading_mode = TradingMode.CROSS_MARGIN
     trade.is_short = True
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.85
+
+    # 3x short margin leverage
     trade.leverage = 3
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert trade._calc_open_trade_value() == 59.85
+
+    # 3x long margin leverage
     trade.is_short = False
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 60.15
@@ -844,6 +855,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert trade.calc_close_trade_value(fee=0.005) == 65.67
 
     # 3x leverage binance
+    trade.trading_mode = TradingMode.CROSS_MARGIN
     trade.leverage = 3.0
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 74.81166667
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 74.77416667
@@ -1044,6 +1056,8 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade.open_trade_value = 0.0
     trade.open_trade_value = trade._calc_open_trade_value()
 
+    # Margin
+    trade.trading_mode = TradingMode.CROSS_MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # Higher than open rate - 2.1 quote
@@ -1147,6 +1161,8 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit_ratio(fee=0.003) == 0.0
     trade.open_trade_value = trade._calc_open_trade_value()
 
+    # Margin
+    trade.trading_mode = TradingMode.CROSS_MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # 2.1 quote - Higher than open rate
@@ -1579,7 +1595,7 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
-    trade.set_isolated_liq(0.63)
+    trade.set_isolated_liq(isolated_liq=0.63)
     trade.adjust_stop_loss(0.59, -0.1)
     assert trade.stop_loss == 0.63
     assert trade.isolated_liq == 0.63
@@ -1899,7 +1915,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
     # Stoploss can't go above liquidation price
-    trade_adj.set_isolated_liq(1.0)
+    trade_adj.set_isolated_liq(isolated_liq=1.0)
     trade.adjust_stop_loss(0.97, -0.04)
     assert trade_adj.stop_loss == 1.0
     assert trade_adj.stop_loss == 1.0
