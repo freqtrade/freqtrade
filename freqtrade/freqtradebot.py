@@ -16,7 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, State
+from freqtrade.enums import RPCMessageType, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -105,11 +105,26 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
+        if self.config.get('trading_mode') == "cross_margin":
+            self.trading_mode = TradingMode.CROSS_MARGIN
+        elif self.config.get('trading_mode') == "isolated_margin":
+            self.trading_mode = TradingMode.ISOLATED_MARGIN
+        elif self.config.get('trading_mode') == "cross_futures":
+            self.trading_mode = TradingMode.CROSS_FUTURES
+        elif self.config.get('trading_mode') == "isolated_futures":
+            self.trading_mode = TradingMode.ISOLATED_FUTURES
+        else:
+            self.trading_mode = TradingMode.SPOT
+
         # Start calculating maintenance margin if on cross margin
         # TODO: Add margin_mode to freqtrade.configuration?
-        if self.config.get('leverage_type') == "cross" or \
-                self.config.get('leverage_type') == "cross_futures":
-            self.maintenance_margin = MaintenanceMargin(self.exchange.liq_formula)
+        if self.trading_mode == TradingMode.CROSS_MARGIN or \
+                self.trading_mode == TradingMode.CROSS_FUTURES:
+
+            self.maintenance_margin = MaintenanceMargin(
+                liq_formula=self.exchange.liq_formula,
+                trading_mode=self.trading_mode
+            )
             self.maintenance_margin.run
 
     def notify_status(self, msg: str) -> None:
@@ -633,14 +648,16 @@ class FreqtradeBot(LoggingMixin):
                 is_short=is_short
             )
 
-            # TODO-mg: if margin == isolated
-            isolated_liq = self.exchange.get_isolated_liq(
-                pair=pair,
-                open_rate=enter_limit_filled_price,
-                amount=amount,
-                leverage=leverage,
-                is_short=is_short
-            )
+            if self.trading_mode == TradingMode.ISOLATED_MARGIN or \
+                    self.trading_mode == TradingMode.ISOLATED_FUTURES:
+
+                isolated_liq = self.exchange.liq_formula(
+                    trading_mode=self.trading_mode,
+                    open_rate=enter_limit_filled_price,
+                    amount=amount,
+                    leverage=leverage,
+                    is_short=is_short
+                )
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
@@ -664,7 +681,9 @@ class FreqtradeBot(LoggingMixin):
             is_short=is_short,
             interest_rate=interest_rate,
             interest_mode=self.exchange.interest_mode,
-            isolated_liq=isolated_liq
+            isolated_liq=isolated_liq,
+            trading_mode=self.trading_mode,
+            liq_formula=self.exchange.liq_formula,
         )
         trade.orders.append(order_obj)
 

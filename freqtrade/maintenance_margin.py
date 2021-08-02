@@ -1,25 +1,29 @@
 from typing import List
 
-from freqtrade.enums import LiqFormula
+from freqtrade.enums import LiqFormula, TradingMode
 from freqtrade.persistence import Trade
 
 
 class MaintenanceMargin:
 
     trades: List[Trade]
-    formula: LiqFormula
+    liq_formula: LiqFormula
+    trading_mode: TradingMode
 
     @property
     def margin_level(self):
-        return self.formula()  # TODO: Add args to formula
+        return self.liq_formula(
+            trading_mode=self.trading_mode
+            # TODO: Add args to formula
+        )
 
     @property
     def liq_level(self):    # This may be a constant value and may not need a function
         return              # If constant, would need to be recalculated after each new trade
 
-    def __init__(self, formula: LiqFormula):
-        self.formula = formula
-        return
+    def __init__(self, liq_formula: LiqFormula, trading_mode: TradingMode):
+        self.liq_formula = liq_formula
+        self.trading_mode = trading_mode
 
     def add_new_trade(self, trade):
         return
