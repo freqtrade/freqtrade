@@ -102,16 +102,17 @@ class Hyperopt:
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
-        # Populate functions here (hasattr is slow so should not be run during "regular" operations)
-        if hasattr(self.custom_hyperopt, 'populate_indicators'):
-            self.backtesting.strategy.advise_indicators = (  # type: ignore
-                self.custom_hyperopt.populate_indicators)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.strategy.advise_buy = (  # type: ignore
-                self.custom_hyperopt.populate_buy_trend)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.strategy.advise_sell = (  # type: ignore
-                self.custom_hyperopt.populate_sell_trend)  # type: ignore
+        if not self.auto_hyperopt:
+            # Populate "fallback" functions here (hasattr is slow so should not be run during "regular" operations)
+            if hasattr(self.custom_hyperopt, 'populate_indicators'):
+                self.backtesting.strategy.advise_indicators = (  # type: ignore
+                    self.custom_hyperopt.populate_indicators)  # type: ignore
+            if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+                self.backtesting.strategy.advise_buy = (  # type: ignore
+                    self.custom_hyperopt.populate_buy_trend)  # type: ignore
+            if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+                self.backtesting.strategy.advise_sell = (  # type: ignore
+                    self.custom_hyperopt.populate_sell_trend)  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
