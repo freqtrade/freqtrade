@@ -425,8 +425,12 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
         "USDT", ['NANO/USDT']),
     ([{"method": "StaticPairList"},
       {"method": "RangeStabilityFilter", "lookback_days": 10,
-       "min_rate_of_change": 0.01, "max_rate_of_change": 0.99, "refresh_period": 1440}],
+       "min_rate_of_change": 0.01, "refresh_period": 1440}],
      "BTC", ['ETH/BTC', 'TKN/BTC', 'HOT/BTC']),
+    ([{"method": "StaticPairList"},
+      {"method": "RangeStabilityFilter", "lookback_days": 10,
+       "max_rate_of_change": 0.01, "refresh_period": 1440}],
+     "BTC", []),  # All removed because of max_rate_of_change being 0.017
     ([{"method": "StaticPairList"},
       {"method": "VolatilityFilter", "lookback_days": 3,
        "min_volatility": 0.002, "max_volatility": 0.004, "refresh_period": 1440}],
@@ -985,6 +989,12 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
      None,
      "PriceFilter requires max_value to be >= 0"
      ),  # OperationalException expected
+    ({"method": "RangeStabilityFilter", "lookback_days": 10,
+      "min_rate_of_change": 0.01},
+     "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "
+     "0.01 over the last days.'}]",
+        None
+     ),
     ({"method": "RangeStabilityFilter", "lookback_days": 10,
      "min_rate_of_change": 0.01, "max_rate_of_change": 0.99},
      "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate of change below "

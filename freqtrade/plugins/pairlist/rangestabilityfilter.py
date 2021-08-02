@@ -51,9 +51,12 @@ class RangeStabilityFilter(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
+        max_rate_desc = ""
+        if self._max_rate_of_change:
+            max_rate_desc = (f" and above {self._max_rate_of_change}")
         return (f"{self.name} - Filtering pairs with rate of change below "
-                f"{self._min_rate_of_change} and above "
-                f"{self._max_rate_of_change} over the last {plural(self._days, 'day')}.")
+                f"{self._min_rate_of_change}{max_rate_desc} over the "
+                f"last {plural(self._days, 'day')}.")
 
     def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
         """
