@@ -16,10 +16,11 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, State
+from freqtrade.enums import RPCMessageType, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.maintenance_margin import MaintenanceMargin
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -101,6 +102,17 @@ class FreqtradeBot(LoggingMixin):
         # Protect sell-logic from forcesell and vice versa
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
+
+        if self.config.get("trading_mode"):
+            self.trading_mode = TradingMode(self.config.get("trading_mode"))
+
+        # Start calculating maintenance margin if on cross margin
+        # TODO: Add margin_mode to freqtrade.configuration?
+        if self.config.get('collateral') == "cross":
+            self.maintenance_margin = MaintenanceMargin(
+                exchange_name=self.exchange.name,
+                trading_mode=self.trading_mode)
+            self.maintenance_margin.run
 
     def notify_status(self, msg: str) -> None:
         """
