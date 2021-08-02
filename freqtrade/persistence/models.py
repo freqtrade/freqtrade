@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import InterestMode, SellType
+from freqtrade.enums import InterestMode, LiqFormula, SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
@@ -264,12 +264,15 @@ class LocalTrade():
     buy_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
-    # Margin trading properties
+    # Leverage trading properties
     interest_rate: float = 0.0
     isolated_liq: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
+
+    trading_mode: TradingMode = TradingMode.SPOT
     interest_mode: InterestMode = InterestMode.NONE
+    liq_formula: LiqFormula = LiqFormula.NONE
 
     @property
     def has_no_leverage(self) -> bool:
@@ -342,11 +345,14 @@ class LocalTrade():
             self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
-    def set_isolated_liq(self, isolated_liq: float):
+    def set_isolated_liq(self, **k):
         """
             Method you should use to set self.liquidation price.
             Assures stop_loss is not passed the liquidation price
         """
+
+        isolated_liq: float == self.liq_formula(trading_mode=self.trading_mode, **k)
+
         if self.stop_loss is not None:
             if self.is_short:
                 self.stop_loss = min(self.stop_loss, isolated_liq)
@@ -651,7 +657,19 @@ class LocalTrade():
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
 
+        # TODO-lev: Pass trading mode to interest_mode maybe
         return self.interest_mode(borrowed=borrowed, rate=rate, hours=hours)
+
+    def _calc_base_close(self, amount: Decimal, rate: Optional[float] = None,
+                         fee: Optional[float] = None) -> Decimal:
+
+        close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
+        fees = close_trade * Decimal(fee or self.fee_close)
+
+        if self.is_short:
+            return close_trade + fees
+        else:
+            return close_trade - fees
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None,
@@ -666,23 +684,34 @@ class LocalTrade():
             If interest_rate is not set self.interest_rate will be used
         :return: Price in BTC of the open trade
         """
+
         if rate is None and not self.close_rate:
             return 0.0
 
-        interest = self.calculate_interest(interest_rate)
-        if self.is_short:
-            amount = Decimal(self.amount) + Decimal(interest)
-        else:
-            # Currency already owned for longs, no need to purchase
-            amount = Decimal(self.amount)
+        amount = Decimal(self.amount)
 
-        close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
-        fees = close_trade * Decimal(fee or self.fee_close)
+        if self.trading_mode == TradingMode.SPOT:
+            return float(self._calc_base_close(amount, rate, fee))
 
-        if self.is_short:
-            return float(close_trade + fees)
+        elif (self.trading_mode == TradingMode.CROSS_MARGIN or
+              self.trading_mode == TradingMode.ISOLATED_MARGIN):
+
+            interest = self.calculate_interest(interest_rate)
+
+            if self.is_short:
+                amount = amount + interest
+                return float(self._calc_base_close(amount, rate, fee))
+            else:
+                # Currency already owned for longs, no need to purchase
+                return float(self._calc_base_close(amount, rate, fee) - interest)
+
+        elif (self.trading_mode == TradingMode.CROSS_FUTURES or
+              self.trading_mode == TradingMode.ISOLATED_FUTURES):
+            # TODO-lev: implement
+            raise OperationalException("Futures is not yet available using freqtrade")
         else:
-            return float(close_trade - fees - interest)
+            raise OperationalException(
+                f"{self.trading_mode.value} trading is not yet available using freqtrade")
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None,
