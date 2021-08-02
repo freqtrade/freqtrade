@@ -17,12 +17,13 @@ from freqtrade.constants import BuySell, LongShort
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (ExitCheckTuple, ExitType, RPCMessageType, RunMode, SignalDirection,
-                             State, TradingMode)
+from freqtrade.enums import (ExitCheckTuple, ExitType, MarginMode, RPCMessageType, RunMode,
+                             SignalDirection, State, TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
+from freqtrade.maintenance_margin import MaintenanceMargin
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -104,7 +105,11 @@ class FreqtradeBot(LoggingMixin):
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
         self.trading_mode: TradingMode = self.config.get('trading_mode', TradingMode.SPOT)
-
+        self.margin_mode: MarginMode = (
+            MarginMode(config.get('margin_mode'))
+            if config.get('margin_mode')
+            else MarginMode.NONE
+        )
         self._schedule = Scheduler()
 
         if self.trading_mode == TradingMode.FUTURES:
@@ -124,6 +129,16 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
         self.protections = ProtectionManager(self.config, self.strategy.protections)
+
+        # Start calculating maintenance margin if on cross margin
+        # TODO-lev: finish the below...
+        if self.margin_mode == MarginMode.CROSS:
+
+            self.maintenance_margin = MaintenanceMargin(
+                exchange_name=self.exchange.name,
+                trading_mode=self.trading_mode)
+
+            self.maintenance_margin.run()
 
     def notify_status(self, msg: str) -> None:
         """
@@ -721,6 +736,10 @@ class FreqtradeBot(LoggingMixin):
 
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
+
+        if self.margin_mode == MarginMode.CROSS:
+            self.maintenance_margin.add_new_trade(trade)
+
         Trade.query.session.add(trade)
         Trade.commit()
 
@@ -1501,9 +1520,20 @@ class FreqtradeBot(LoggingMixin):
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
+
         Trade.commit()
 
+        self._remove_maintenance_trade(trade)
+
         return True
+
+    def _remove_maintenance_trade(self, trade: Trade):
+        """
+            Removes a trade from the maintenance margin object
+            :param trade: The trade to remove from the maintenance margin
+        """
+        if self.margin_mode == MarginMode.CROSS:
+            self.maintenance_margin.remove_trade(trade)
 
     def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False) -> None:
         """
