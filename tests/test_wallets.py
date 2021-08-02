@@ -125,7 +125,7 @@ def test_get_trade_stake_amount_no_stake_amount(default_conf, mocker) -> None:
                         (1,    None, 50, 66.66666),
                         (0.99, None, 49.5, 66.0),
                         (0.50, None, 25, 33.3333),
-                        # Tests with capital ignore balance_ratio
+    # Tests with capital ignore balance_ratio
                         (1,    100, 50, 0.0),
                         (0.99, 200, 50, 66.66666),
                         (0.99, 150, 50, 50),
@@ -138,7 +138,7 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        buy=MagicMock(return_value=limit_buy_order_open),
+        create_order=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee
     )
 

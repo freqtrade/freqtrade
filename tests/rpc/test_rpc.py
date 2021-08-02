@@ -859,7 +859,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
-        buy=buy_mm
+        create_order=buy_mm
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)

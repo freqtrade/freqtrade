@@ -514,9 +514,9 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
-        order = self.exchange.buy(pair=pair, ordertype=order_type,
-                                  amount=amount, rate=buy_limit_requested,
-                                  time_in_force=time_in_force)
+        order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
+                                           amount=amount, rate=buy_limit_requested,
+                                           time_in_force=time_in_force)
         order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
         order_id = order['id']
         order_status = order.get('status', None)
@@ -1106,11 +1106,11 @@ class FreqtradeBot(LoggingMixin):
 
         try:
             # Execute sell and update trade record
-            order = self.exchange.sell(pair=trade.pair,
-                                       ordertype=order_type,
-                                       amount=amount, rate=limit,
-                                       time_in_force=time_in_force
-                                       )
+            order = self.exchange.create_order(pair=trade.pair,
+                                               ordertype=order_type, side="sell",
+                                               amount=amount, rate=limit,
+                                               time_in_force=time_in_force
+                                               )
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
             # Try to figure out what went wrong
