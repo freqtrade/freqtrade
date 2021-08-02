@@ -532,6 +532,42 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
+    def leverage_prep(
+        self,
+        pair: str,
+        open_rate: float,
+        amount: float,
+        leverage: float,
+        is_short: bool
+    ):  # -> (float, Optional[float]):
+
+        interest_rate = 0.0
+        isolated_liq = None
+
+        if leverage > 1.0:
+            interest_rate = self.exchange.get_interest_rate(
+                pair=pair,
+                open_rate=open_rate,
+                is_short=is_short
+            )
+
+            if self.trading_mode == TradingMode.ISOLATED_MARGIN or \
+                    self.trading_mode == TradingMode.ISOLATED_FUTURES:
+
+                isolated_liq = self.exchange.liq_formula(
+                    trading_mode=self.trading_mode,
+                    open_rate=open_rate,
+                    amount=amount,
+                    leverage=leverage,
+                    is_short=is_short
+                )
+
+        if self.trading_mode == TradingMode.CROSS_FUTURES or \
+                self.trading_mode == TradingMode.ISOLATED_FUTURES:
+            self.exchange.set_leverage(pair=pair, leverage=leverage)
+
+        return interest_rate, isolated_liq
+
     def execute_enter(
         self,
         pair: str,
@@ -598,6 +634,7 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"User requested abortion of {name.lower()}ing {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
+
         order = self.exchange.create_order(pair=pair, ordertype=order_type, side=side,
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
@@ -638,26 +675,13 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
-        interest_rate = 0.0
-        isolated_liq = None
-
-        if leverage > 1.0:
-            interest_rate = self.exchange.get_interest_rate(
-                pair=pair,
-                open_rate=enter_limit_filled_price,
-                is_short=is_short
-            )
-
-            if self.trading_mode == TradingMode.ISOLATED_MARGIN or \
-                    self.trading_mode == TradingMode.ISOLATED_FUTURES:
-
-                isolated_liq = self.exchange.liq_formula(
-                    trading_mode=self.trading_mode,
-                    open_rate=enter_limit_filled_price,
-                    amount=amount,
-                    leverage=leverage,
-                    is_short=is_short
-                )
+        interest_rate, isolated_liq = self.leverage_prep(
+            leverage=leverage,
+            pair=pair,
+            amount=amount,
+            open_rate=enter_limit_filled_price,
+            is_short=is_short
+        )
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')

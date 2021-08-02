@@ -1,8 +1,7 @@
 """ Bittrex exchange subclass """
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
 
@@ -24,28 +23,3 @@ class Bittrex(Exchange):
         },
         "l2_limit_range": [1, 25, 500],
     }
-
-    def setup_leveraged_enter(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-        raise OperationalException("Bittrex does not support leveraged trading")
-
-    def complete_leveraged_exit(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-        raise OperationalException("Bittrex does not support leveraged trading")
-
-    def get_isolated_liq(self, pair: str, open_rate: float,
-                         amount: float, leverage: float, is_short: bool) -> float:
-        # TODO-mg: implement
-        raise OperationalException("Bittrex does not support margin trading")

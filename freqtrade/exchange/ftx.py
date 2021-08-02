@@ -160,9 +160,3 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
-
-    def get_isolated_liq(self, pair: str, open_rate: float,
-                         amount: float, leverage: float, is_short: bool) -> float:
-        # TODO-mg: implement
-        raise OperationalException(
-            "Isolated margin trading not yet implemented on FTX, would you like to implement it?")

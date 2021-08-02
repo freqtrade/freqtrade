@@ -707,8 +707,7 @@ class Exchange:
 
     def get_max_leverage(self, pair: str, stake_amount: float, price: float) -> float:
         """
-        Gets the maximum leverage available on this pair that is below the config leverage
-        but higher than the config min_leverage
+        Gets the maximum leverage available on this pair
         """
 
         raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
@@ -757,26 +756,6 @@ class Exchange:
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    def setup_leveraged_enter(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
-
-    def complete_leveraged_exit(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
@@ -1542,18 +1521,12 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    def transfer(self, asset: str, amount: float, frm: str, to: str, pair: Optional[str]):
-        self._api.transfer(asset, amount, frm, to)
-
-    def get_isolated_liq(self, pair: str, open_rate: float,
-                         amount: float, leverage: float, is_short: bool) -> float:
-        raise OperationalException(
-            f"Isolated margin is not available on {self.name} using freqtrade"
-        )
-
     def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
         # TODO-mg: implement
         return 0.0005
+
+    def set_leverage(self, pair, leverage):
+        self._api.set_leverage(symbol=pair, leverage=leverage)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
