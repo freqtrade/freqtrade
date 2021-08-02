@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 import ccxt
 
@@ -94,104 +94,6 @@ class Binance(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    def transfer(self, asset: str, amount: float, frm: str, to: str, pair: Optional[str]):
-        res = self._api.sapi_post_margin_isolated_transfer({
-            "asset": asset,
-            "amount": amount,
-            "transFrom": frm,
-            "transTo": to,
-            "symbol": pair
-        })
-        logger.info(f"Transfer response: {res}")
-
-    def borrow(self, asset: str, amount: float, pair: str):
-        res = self._api.sapi_post_margin_loan({
-            "asset": asset,
-            "isIsolated": True,
-            "symbol": pair,
-            "amount": amount
-        })  # borrow from binance
-        logger.info(f"Borrow response: {res}")
-
-    def repay(self, asset: str, amount: float, pair: str):
-        res = self._api.sapi_post_margin_repay({
-            "asset": asset,
-            "isIsolated": True,
-            "symbol": pair,
-            "amount": amount
-        })  # borrow from binance
-        logger.info(f"Borrow response: {res}")
-
-    def setup_leveraged_enter(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-        if not quote_currency or not is_short:
-            raise OperationalException(
-                "quote_currency and is_short are required arguments to setup_leveraged_enter"
-                " when trading with leverage on binance"
-            )
-        open_rate = 2  # TODO-mg: get the real open_rate, or real stake_amount
-        stake_amount = amount * open_rate
-        if is_short:
-            borrowed = stake_amount * ((leverage-1)/leverage)
-        else:
-            borrowed = amount
-
-        self.transfer(  # Transfer to isolated margin
-            asset=quote_currency,
-            amount=stake_amount,
-            frm='SPOT',
-            to='ISOLATED_MARGIN',
-            pair=pair
-        )
-
-        self.borrow(
-            asset=quote_currency,
-            amount=borrowed,
-            pair=pair
-        )  # borrow from binance
-
-    def complete_leveraged_exit(
-        self,
-        pair: str,
-        leverage: float,
-        amount: float,
-        quote_currency: Optional[str],
-        is_short: Optional[bool]
-    ):
-
-        if not quote_currency or not is_short:
-            raise OperationalException(
-                "quote_currency and is_short are required arguments to setup_leveraged_enter"
-                " when trading with leverage on binance"
-            )
-
-        open_rate = 2  # TODO-mg: get the real open_rate, or real stake_amount
-        stake_amount = amount * open_rate
-        if is_short:
-            borrowed = stake_amount * ((leverage-1)/leverage)
-        else:
-            borrowed = amount
-
-        self.repay(
-            asset=quote_currency,
-            amount=borrowed,
-            pair=pair
-        )  # repay binance
-
-        self.transfer(  # Transfer to isolated margin
-            asset=quote_currency,
-            amount=stake_amount,
-            frm='ISOLATED_MARGIN',
-            to='SPOT',
-            pair=pair
-        )
 
     def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         return stake_amount / leverage
