@@ -281,7 +281,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.stoploss
 
     def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
-                            **kwargs) -> float:
+                           **kwargs) -> float:
         """
         Custom entry price logic, returning the new entry price.
 
@@ -654,8 +654,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         return SellCheckTuple(sell_type=SellType.NONE)
 
     def entry_price_reached(self, pair: str, current_rate: float,
-                          current_time: datetime, low: float = None,
-                          high: float = None, side: str = "long") -> bool:
+                            current_time: datetime, low: float = None,
+                            high: float = None) -> bool:
         """
         Based on current candle low ,decides if entry price was reached
         :param current_rate: current rate
@@ -668,23 +668,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                     )(pair=pair,
                                                       current_time=current_time,
                                                       current_rate=current_rate)
-            # Sanity check - error cases will return None
-            if side == "long":
+
+            if entry_price_value is not None:
                 if entry_price_value > low:
                     return True
                 else:
-                    logger.info(f"Entry failed because entry price {entry_price_value} \
-                                higher than candle low in long side")
                     return False
-            
-            elif side == "short":
-                if entry_price_value < high:
-                    return True
-                else:
-                    logger.info(f"Entry failed because entry price {entry_price_value} \
-                                higher than candle high in short side")
-                    return False
-
             else:
                 logger.warning("CustomEntryPrice function did not return valid entry price")
                 return False
