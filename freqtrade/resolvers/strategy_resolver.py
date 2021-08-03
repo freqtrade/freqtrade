@@ -79,7 +79,6 @@ class StrategyResolver(IResolver):
                       ("trailing_stop_positive_offset",   0.0),
                       ("trailing_only_offset_is_reached", None),
                       ("use_custom_stoploss",             None),
-                      ("use_custom_entry_price",          None),
                       ("process_only_new_candles",        None),
                       ("order_types",                     None),
                       ("order_time_in_force",             None),

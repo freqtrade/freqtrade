@@ -908,7 +908,6 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
 def test_execute_buy_custom_entry_price(mocker, default_conf, fee, limit_buy_order_open) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    default_conf.update({'use_custom_entry_price': True})
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     stake_amount = 3

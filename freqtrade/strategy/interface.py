@@ -288,7 +288,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
         When not implemented by a strategy, returns None, orderbook is used to set entry price
-        Only called when use_custom_entry_price is set to True.
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
@@ -662,21 +661,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param low: Low value of this candle, only set in backtesting
         :param high: High value of this candle, only set in backtesting
         """
+        entry_price_value = strategy_safe_wrapper(self.custom_entry_price, default_retval=None)(
+                                                  pair=pair,
+                                                  current_time=current_time,
+                                                  current_rate=current_rate)
 
-        if self.use_custom_entry_price:
-            entry_price_value = strategy_safe_wrapper(self.custom_entry_price, default_retval=None)(
-                pair=pair,
-                current_time=current_time,
-                current_rate=current_rate)
-
-            if entry_price_value is not None:
-                if entry_price_value > low:
-                    return True
-                else:
-                    return False
+        if entry_price_value is not None:
+            if entry_price_value > low:
+                return True
             else:
-                logger.warning("CustomEntryPrice function did not return valid entry price")
                 return False
+        else:
+            logger.warning("CustomEntryPrice function did not return valid entry price")
+            return False
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
