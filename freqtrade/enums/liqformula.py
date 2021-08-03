@@ -38,13 +38,21 @@ class LiqFormula(Enum):
 def exception(name: str, trading_mode: TradingMode, collateral: Collateral):
     """
         Raises an exception if exchange used doesn't support desired leverage mode
-        :param trading_mode: cross, isolated, cross_futures or isolated_futures
+        :param name: Name of the exchange
+        :param trading_mode: spot, margin, futures
+        :param collateral: cross, isolated
     """
     raise OperationalException(
         f"{name} does not support {collateral.value} {trading_mode.value} trading")
 
 
 def binance(name: str, trading_mode: TradingMode, collateral: Collateral):
+    """
+        Calculates the liquidation price on Binance
+        :param name: Name of the exchange
+        :param trading_mode: spot, margin, futures
+        :param collateral: cross, isolated
+    """
     # TODO-lev: Additional arguments, fill in formulas
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
@@ -65,6 +73,12 @@ def binance(name: str, trading_mode: TradingMode, collateral: Collateral):
 
 
 def kraken(name: str, trading_mode: TradingMode, collateral: Collateral):
+    """
+        Calculates the liquidation price on Kraken
+        :param name: Name of the exchange
+        :param trading_mode: spot, margin, futures
+        :param collateral: cross, isolated
+    """
     # TODO-lev: Additional arguments, fill in formulas
 
     if collateral == Collateral.CROSS:
@@ -80,6 +94,12 @@ def kraken(name: str, trading_mode: TradingMode, collateral: Collateral):
 
 
 def ftx(name: str, trading_mode: TradingMode, collateral: Collateral):
+    """
+        Calculates the liquidation price on FTX
+        :param name: Name of the exchange
+        :param trading_mode: spot, margin, futures
+        :param collateral: cross, isolated
+    """
     if collateral == Collateral.CROSS:
         # TODO-lev: Additional arguments, fill in formulas
         exception(name, trading_mode, collateral)
