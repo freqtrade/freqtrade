@@ -49,12 +49,18 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     strategy = get_column_def(cols, 'strategy', 'null')
     buy_tag = get_column_def(cols, 'buy_tag', 'null')
 
+    trading_mode = get_column_def(cols, 'trading_mode', 'null')
     leverage = get_column_def(cols, 'leverage', '1.0')
-    interest_rate = get_column_def(cols, 'interest_rate', '0.0')
     isolated_liq = get_column_def(cols, 'isolated_liq', 'null')
-    # sqlite does not support literals for booleans
     is_short = get_column_def(cols, 'is_short', '0')
+    liq_formula = get_column_def(cols, 'liq_formula', 'null')
+    # sqlite does not support literals for booleans
     interest_mode = get_column_def(cols, 'interest_mode', 'null')
+    interest_rate = get_column_def(cols, 'interest_rate', '0.0')
+
+    funding_fee = get_column_def(cols, 'funding_fee', '0.0')
+    last_funding_adjustment = get_column_def(cols, 'last_funding_adjustment', 'null')
+
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -66,7 +72,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
-    # TODO-mg: update to exit order status
+    # TODO-lev: update to exit order status
     sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
@@ -92,7 +98,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, interest_rate, isolated_liq, is_short, interest_mode
+            trading_mode, leverage, isolated_liq, is_short, liq_formula, interest_mode,
+            interest_rate, funding_fee, last_funding_adjustment
             )
         select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
@@ -109,9 +116,10 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {sell_order_status} sell_order_status,
             {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
-            {leverage} leverage, {interest_rate} interest_rate,
-            {isolated_liq} isolated_liq, {is_short} is_short,
-            {interest_mode} interest_mode
+            {trading_mode} trading_mode, {leverage} leverage, {isolated_liq} isolated_liq,
+            {is_short} is_short, {liq_formula} liq_formula, {interest_mode} interest_mode,
+            {interest_rate} interest_rate, {funding_fee} funding_fee,
+            {last_funding_adjustment} last_funding_adjustment
             from {table_back_name}
             """))
 
@@ -171,7 +179,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
     # Check for latest column
-    if not has_column(cols, 'is_short'):
+    if not has_column(cols, 'buy_tag'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!
