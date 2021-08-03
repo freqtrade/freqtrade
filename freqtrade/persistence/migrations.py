@@ -47,6 +47,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     min_rate = get_column_def(cols, 'min_rate', 'null')
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
+    buy_tag = get_column_def(cols, 'buy_tag', 'null')
 
     leverage = get_column_def(cols, 'leverage', '1.0')
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
@@ -54,7 +55,6 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     # sqlite does not support literals for booleans
     is_short = get_column_def(cols, 'is_short', '0')
     interest_mode = get_column_def(cols, 'interest_mode', 'null')
-    buy_tag = get_column_def(cols, 'buy_tag', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
