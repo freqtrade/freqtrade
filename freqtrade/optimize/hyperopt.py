@@ -103,7 +103,8 @@ class Hyperopt:
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
         if not self.auto_hyperopt:
-            # Populate "fallback" functions here (hasattr is slow so should not be run during "regular" operations)
+            # Populate "fallback" functions here
+            # (hasattr is slow so should not be run during "regular" operations)
             if hasattr(self.custom_hyperopt, 'populate_indicators'):
                 self.backtesting.strategy.advise_indicators = (  # type: ignore
                     self.custom_hyperopt.populate_indicators)  # type: ignore
