@@ -1,11 +1,12 @@
-from freqtrade.enums import LiqFormula, TradingMode
-from freqtrade.exceptions import OperationalException
+from typing import List
+
+from freqtrade.enums import LiqFormula
 from freqtrade.persistence import Trade
 
 
 class MaintenanceMargin:
 
-    trades: list[Trade]
+    trades: List[Trade]
     formula: LiqFormula
 
     @property
@@ -16,12 +17,8 @@ class MaintenanceMargin:
     def liq_level(self):    # This may be a constant value and may not need a function
         return              # If constant, would need to be recalculated after each new trade
 
-    def __init__(self, formula: LiqFormula, trading_mode: TradingMode):
-        if (
-            trading_mode != TradingMode.CROSS_MARGIN or
-            trading_mode != TradingMode.CROSS_FUTURES
-        ):
-            raise OperationalException("Maintenance margin should only be used for cross trading")
+    def __init__(self, formula: LiqFormula):
+        self.formula = formula
         return
 
     def add_new_trade(self, trade):

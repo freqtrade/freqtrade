@@ -238,7 +238,7 @@ def test_interest(market_buy_order_usdt, fee):
         leverage=3.0,
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPERDAY,
-        trading_mode=TradingMode.CROSS_MARGIN
+        trading_mode=TradingMode.MARGIN
     )
 
     # 10min, 3x leverage
@@ -552,7 +552,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         leverage=3.0,
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPERDAY,
-        trading_mode=TradingMode.CROSS_MARGIN
+        trading_mode=TradingMode.MARGIN
     )
     trade.open_order_id = 'something'
     trade.update(limit_sell_order_usdt)
@@ -646,7 +646,7 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
 
     # 3x leverage, binance
-    trade.trading_mode = TradingMode.ISOLATED_MARGIN
+    trade.trading_mode = TradingMode.MARGIN
     trade.leverage = 3
     trade.interest_mode = InterestMode.HOURSPERDAY
     assert trade._calc_open_trade_value() == 60.15
@@ -807,7 +807,7 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
     assert trade._calc_open_trade_value() == 60.15
 
     # Margin
-    trade.trading_mode = TradingMode.CROSS_MARGIN
+    trade.trading_mode = TradingMode.MARGIN
     trade.is_short = True
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.85
@@ -855,7 +855,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert trade.calc_close_trade_value(fee=0.005) == 65.67
 
     # 3x leverage binance
-    trade.trading_mode = TradingMode.CROSS_MARGIN
+    trade.trading_mode = TradingMode.MARGIN
     trade.leverage = 3.0
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 74.81166667
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 74.77416667
@@ -1057,7 +1057,7 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade.open_trade_value = trade._calc_open_trade_value()
 
     # Margin
-    trade.trading_mode = TradingMode.CROSS_MARGIN
+    trade.trading_mode = TradingMode.MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # Higher than open rate - 2.1 quote
@@ -1162,7 +1162,7 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade.open_trade_value = trade._calc_open_trade_value()
 
     # Margin
-    trade.trading_mode = TradingMode.CROSS_MARGIN
+    trade.trading_mode = TradingMode.MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # 2.1 quote - Higher than open rate

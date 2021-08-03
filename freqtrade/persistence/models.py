@@ -697,8 +697,7 @@ class LocalTrade():
         if trading_mode == TradingMode.SPOT:
             return float(self._calc_base_close(amount, rate, fee))
 
-        elif (trading_mode == TradingMode.CROSS_MARGIN or
-              trading_mode == TradingMode.ISOLATED_MARGIN):
+        elif (trading_mode == TradingMode.MARGIN):
 
             interest = self.calculate_interest(interest_rate)
 
@@ -709,8 +708,7 @@ class LocalTrade():
                 # Currency already owned for longs, no need to purchase
                 return float(self._calc_base_close(amount, rate, fee) - interest)
 
-        elif (trading_mode == TradingMode.CROSS_FUTURES or
-              trading_mode == TradingMode.ISOLATED_FUTURES):
+        elif (trading_mode == TradingMode.FUTURES):
             # TODO-lev: implement
             raise OperationalException("Futures is not yet available using freqtrade")
         else:

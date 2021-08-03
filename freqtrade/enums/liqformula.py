@@ -9,6 +9,9 @@ from freqtrade.exceptions import OperationalException
 # from math import ceil
 
 
+# from math import ceil
+
+
 class LiqFormula(Enum):
     """Equations to calculate liquidation price"""
 
