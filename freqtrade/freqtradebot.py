@@ -481,11 +481,10 @@ class FreqtradeBot(LoggingMixin):
             # Calculate price
             buy_limit_requested = self.exchange.get_rate(pair, refresh=True, side="buy")
             if self.config.get('use_custom_entry_price', False):
-                buy_rate = self.exchange.get_rate(pair, refresh=True, side="buy")
                 custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                            default_retval=stake_amount)(
                     pair=pair, current_time=datetime.now(timezone.utc),
-                    current_rate=buy_rate)
+                    current_rate=buy_limit_requested)
 
                 buy_limit_requested = custom_entry_price
 
