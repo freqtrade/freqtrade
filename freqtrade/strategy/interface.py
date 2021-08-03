@@ -664,7 +664,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         entry_price_value = strategy_safe_wrapper(self.custom_entry_price, default_retval=None)(
                                                   pair=pair,
                                                   current_time=current_time,
-                                                  current_rate=current_rate)
+                                                  proposed_rate=current_rate)
 
         if entry_price_value is not None:
             if entry_price_value > low:

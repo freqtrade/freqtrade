@@ -483,7 +483,7 @@ class FreqtradeBot(LoggingMixin):
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                current_rate=buy_limit_requested)
+                proposed_rate=buy_limit_requested)
 
             buy_limit_requested = custom_entry_price
 
