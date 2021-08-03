@@ -433,8 +433,6 @@ SCHEMA_MINIMAL_REQUIRED = [
 
 CANCEL_REASON = {
     "TIMEOUT": "cancelled due to timeout",
-    "ENTRYPRICECHANGED": "Custom entry price changed",
-    "EXITPRICECHANGED": "Custom exit price changed",
     "PARTIALLY_FILLED_KEEP_OPEN": "partially filled - keeping order open",
     "PARTIALLY_FILLED": "partially filled",
     "FULLY_CANCELLED": "fully cancelled",
