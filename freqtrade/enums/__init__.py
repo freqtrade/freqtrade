@@ -1,5 +1,6 @@
 # flake8: noqa: F401
 from freqtrade.enums.backteststate import BacktestState
+from freqtrade.enums.collateral import Collateral
 from freqtrade.enums.interestmode import InterestMode
 from freqtrade.enums.liqformula import LiqFormula
 from freqtrade.enums.rpcmessagetype import RPCMessageType
