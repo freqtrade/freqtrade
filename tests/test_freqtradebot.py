@@ -904,7 +904,8 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
 
-def test_execute_buy_custom_entry_price(mocker, default_conf, fee, limit_buy_order, limit_buy_order_open) -> None:
+
+def test_execute_buy_custom_entry_price(mocker, default_conf, fee, limit_buy_order_open) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     default_conf.update({'use_custom_entry_price': True})
