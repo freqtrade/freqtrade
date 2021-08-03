@@ -16,10 +16,11 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, State
+from freqtrade.enums import RPCMessageType, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.leverage.funding_fee import FundingFee
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -101,6 +102,11 @@ class FreqtradeBot(LoggingMixin):
         # Protect sell-logic from forcesell and vice versa
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
+
+        self.trading_mode = TradingMode.SPOT
+        if self.trading_mode == TradingMode.FUTURES:
+            self.funding_fee = FundingFee()
+            self.funding_fee.start()
 
     def notify_status(self, msg: str) -> None:
         """
@@ -559,6 +565,10 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
+        funding_fee = (self.funding_fee.initial_funding_fee(amount)
+                       if self.trading_mode == TradingMode.FUTURES
+                       else None)
+
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -576,9 +586,14 @@ class FreqtradeBot(LoggingMixin):
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
             buy_tag=buy_tag,
-            timeframe=timeframe_to_minutes(self.config['timeframe'])
+            timeframe=timeframe_to_minutes(self.config['timeframe']),
+            funding_fee=funding_fee,
+            trading_mode=self.trading_mode
         )
         trade.orders.append(order_obj)
+
+        if self.trading_mode == TradingMode.FUTURES:
+            self.funding_fee.add_new_trade(trade)
 
         # Update fees if order is closed
         if order_status == 'closed':

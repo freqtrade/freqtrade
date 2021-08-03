@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 
 from freqtrade import constants
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
@@ -90,7 +91,7 @@ def test_enter_exit_side(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test__set_stop_loss_isolated_liq(fee):
+def test_set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -236,6 +237,7 @@ def test_interest(market_buy_order_usdt, fee):
         exchange='binance',
         leverage=3.0,
         interest_rate=0.0005,
+        trading_mode=TradingMode.MARGIN
     )
 
     # 10min, 3x leverage
@@ -548,6 +550,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         is_short=True,
         leverage=3.0,
         interest_rate=0.0005,
+        trading_mode=TradingMode.MARGIN
     )
     trade.open_order_id = 'something'
     trade.update(limit_sell_order_usdt)
@@ -639,6 +642,7 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_profit() == 5.685
     assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
     # 3x leverage, binance
+    trade.trading_mode = TradingMode.MARGIN
     trade.leverage = 3
     trade.exchange = "binance"
     assert trade._calc_open_trade_value() == 60.15
@@ -796,12 +800,19 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
 
     # Get the open rate price with the standard fee rate
     assert trade._calc_open_trade_value() == 60.15
+
+    # Margin
+    trade.trading_mode = TradingMode.MARGIN
     trade.is_short = True
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.85
+
+    # 3x short margin leverage
     trade.leverage = 3
     trade.exchange = "binance"
     assert trade._calc_open_trade_value() == 59.85
+
+    # 3x long margin leverage
     trade.is_short = False
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 60.15
@@ -838,6 +849,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert trade.calc_close_trade_value(fee=0.005) == 65.67
 
     # 3x leverage binance
+    trade.trading_mode = TradingMode.MARGIN
     trade.leverage = 3.0
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 74.81166667
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 74.77416667
@@ -1037,6 +1049,8 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade.open_trade_value = 0.0
     trade.open_trade_value = trade._calc_open_trade_value()
 
+    # Margin
+    trade.trading_mode = TradingMode.MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # Higher than open rate - 2.1 quote
@@ -1139,6 +1153,8 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.calc_profit_ratio(fee=0.003) == 0.0
     trade.open_trade_value = trade._calc_open_trade_value()
 
+    # Margin
+    trade.trading_mode = TradingMode.MARGIN
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # 2.1 quote - Higher than open rate
@@ -1707,6 +1723,9 @@ def test_to_json(default_conf, fee):
                       'interest_rate': None,
                       'isolated_liq': None,
                       'is_short': None,
+                      'trading_mode': None,
+                      'funding_fee': None,
+                      'last_funding_adjustment': None
                       }
 
     # Simulate dry_run entries
@@ -1778,6 +1797,9 @@ def test_to_json(default_conf, fee):
                       'interest_rate': None,
                       'isolated_liq': None,
                       'is_short': None,
+                      'trading_mode': None,
+                      'funding_fee': None,
+                      'last_funding_adjustment': None
                       }
 
 
@@ -2197,6 +2219,7 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
+        'last_funding_adjustment'
     )
 
     # Parent (LocalTrade) should have the same attributes

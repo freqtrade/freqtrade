@@ -8,7 +8,7 @@ import pytest
 from numpy import isnan
 
 from freqtrade.edge import PairInfo
-from freqtrade.enums import State
+from freqtrade.enums import State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
@@ -108,10 +108,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-        'leverage': 1.0,
-        'interest_rate': 0.0,
+        'trading_mode': TradingMode.SPOT,
         'isolated_liq': None,
         'is_short': False,
+        'leverage': 1.0,
+        'interest_rate': 0.0,
+        'funding_fee': None,
+        'last_funding_adjustment': None,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -179,10 +182,13 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
-        'leverage': 1.0,
-        'interest_rate': 0.0,
+        'trading_mode': TradingMode.SPOT,
         'isolated_liq': None,
         'is_short': False,
+        'leverage': 1.0,
+        'interest_rate': 0.0,
+        'funding_fee': None,
+        'last_funding_adjustment': None,
     }
 
 

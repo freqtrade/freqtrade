@@ -41,3 +41,6 @@ colorama==0.4.4
 # Building config files interactively
 questionary==1.10.0
 prompt-toolkit==3.0.20
+
+#Futures
+schedule==1.1.0
