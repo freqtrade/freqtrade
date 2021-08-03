@@ -48,7 +48,7 @@ fi
 # Tag image for upload and next build step
 docker tag freqtrade:$TAG ${CACHE_IMAGE}:$TAG
 
-docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
+docker build --cache-from freqtrade:${TAG} --build-arg sourceimage=${CACHE_IMAGE} --build-arg sourcetag=${TAG} -t freqtrade:${TAG_PLOT} -f docker/Dockerfile.plot .
 
 docker tag freqtrade:$TAG_PLOT ${CACHE_IMAGE}:$TAG_PLOT
 

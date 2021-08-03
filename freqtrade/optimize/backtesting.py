@@ -15,7 +15,7 @@ from freqtrade.configuration import TimeRange, remove_credentials, validate_conf
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
-from freqtrade.data.converter import trim_dataframes
+from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import BacktestState, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -43,6 +43,7 @@ CLOSE_IDX = 3
 SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
+BUY_TAG_IDX = 7
 
 
 class Backtesting:
@@ -116,8 +117,13 @@ class Backtesting:
 
         self.wallets = Wallets(self.config, self.exchange, log=False)
 
+        self.timerange = TimeRange.parse_timerange(
+            None if self.config.get('timerange') is None else str(self.config.get('timerange')))
+
         # Get maximum required startup period
         self.required_startup = max([strat.startup_candle_count for strat in self.strategylist])
+        # Add maximum startup candle count to configuration for informative pairs support
+        self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
         self.progress = BTProgress()
@@ -154,14 +160,11 @@ class Backtesting:
         """
         self.progress.init_step(BacktestState.DATALOAD, 1)
 
-        timerange = TimeRange.parse_timerange(None if self.config.get(
-            'timerange') is None else str(self.config.get('timerange')))
-
         data = history.load_data(
             datadir=self.config['datadir'],
             pairs=self.pairlists.whitelist,
             timeframe=self.timeframe,
-            timerange=timerange,
+            timerange=self.timerange,
             startup_candles=self.required_startup,
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
@@ -174,11 +177,11 @@ class Backtesting:
                     f'({(max_date - min_date).days} days).')
 
         # Adjust startts forward if not enough data is available
-        timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
-                                            self.required_startup, min_date)
+        self.timerange.adjust_start_if_necessary(timeframe_to_seconds(self.timeframe),
+                                                 self.required_startup, min_date)
 
         self.progress.set_new_value(1)
-        return data, timerange
+        return data, self.timerange
 
     def prepare_backtest(self, enable_protections):
         """
@@ -217,23 +220,34 @@ class Backtesting:
         for pair, pair_data in processed.items():
             self.check_abort()
             self.progress.increment()
+            has_buy_tag = 'buy_tag' in pair_data
+            headers = headers + ['buy_tag'] if has_buy_tag else headers
             if not pair_data.empty:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
                 pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
+                if has_buy_tag:
+                    pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair})[headers].copy()
-
+                self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair}).copy()
+            # Trim startup period from analyzed dataframe
+            df_analyzed = trim_dataframe(df_analyzed, self.timerange,
+                                         startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
             df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
+            if has_buy_tag:
+                df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
+            # Update dataprovider cache
+            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
-            data[pair] = df_analyzed.values.tolist()
+            data[pair] = df_analyzed[headers].values.tolist()
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
@@ -262,7 +276,7 @@ class Backtesting:
                     # Worst case: price reaches stop_positive_offset and dives down.
                     stop_rate = (sell_row[OPEN_IDX] *
                                  (1 + abs(self.strategy.trailing_stop_positive_offset) -
-                                 abs(self.strategy.trailing_stop_positive)))
+                                  abs(self.strategy.trailing_stop_positive)))
                 else:
                     # Worst case: price ticks tiny bit above open and dives down.
                     stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct))
@@ -358,6 +372,7 @@ class Backtesting:
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
+            has_buy_tag = len(row) >= BUY_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -367,6 +382,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
+                buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
                 exchange='backtesting',
             )
             return trade
@@ -422,10 +438,6 @@ class Backtesting:
         """
         trades: List[LocalTrade] = []
         self.prepare_backtest(enable_protections)
-
-        # Update dataprovider cache
-        for pair, dataframe in processed.items():
-            self.dataprovider._set_cached_df(pair, self.timeframe, dataframe)
 
         # Use dict of lists with data for performance
         # (looping lists is a lot faster than pandas DataFrames)
@@ -537,14 +549,15 @@ class Backtesting:
         preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
 
         # Trim startup period from analyzed dataframe
-        preprocessed = trim_dataframes(preprocessed, timerange, self.required_startup)
+        preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
 
-        if not preprocessed:
+        if not preprocessed_tmp:
             raise OperationalException(
                 "No data left after adjusting for startup candles.")
 
-        min_date, max_date = history.get_timerange(preprocessed)
-
+        # Use preprocessed_tmp for date generation (the trimmed dataframe).
+        # Backtesting will re-trim the dataframes after buy/sell signal generation.
+        min_date, max_date = history.get_timerange(preprocessed_tmp)
         logger.info(f'Backtesting with data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days).')

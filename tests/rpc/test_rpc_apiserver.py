@@ -442,7 +442,7 @@ def test_api_balance(botclient, mocker, rpc_balance):
 
 def test_api_count(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -504,7 +504,7 @@ def test_api_locks(botclient):
 
 def test_api_show_config(botclient, mocker):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
 
     rc = client_get(client, f"{BASE_URI}/show_config")
     assert_response(rc)
@@ -522,7 +522,7 @@ def test_api_show_config(botclient, mocker):
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -540,7 +540,7 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
 
 def test_api_trades(botclient, mocker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=markets)
@@ -568,7 +568,7 @@ def test_api_trades(botclient, mocker, fee, markets):
 
 def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=markets),
@@ -588,7 +588,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
 
 def test_api_delete_trade(botclient, mocker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     stoploss_mock = MagicMock()
     cancel_mock = MagicMock()
     mocker.patch.multiple(
@@ -656,13 +656,13 @@ def test_api_logs(botclient):
         # Help debugging random test failure
         print(f"rc={rc.json()}")
         print(f"rc1={rc1.json()}")
-    assert rc1.json()['log_count'] == 5
+    assert rc1.json()['log_count'] > 2
     assert len(rc1.json()['logs']) == rc1.json()['log_count']
 
 
 def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -678,7 +678,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
 @pytest.mark.usefixtures("init_persistence")
 def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -729,7 +729,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
 @pytest.mark.usefixtures("init_persistence")
 def test_api_stats(botclient, mocker, ticker, fee, markets,):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -757,7 +757,7 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
 
 def test_api_performance(botclient, fee):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
 
     trade = Trade(
         pair='LTC/ETH',
@@ -803,7 +803,7 @@ def test_api_performance(botclient, fee):
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -875,6 +875,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
+        'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
     }
@@ -1029,6 +1030,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': 'DefaultStrategy',
+        'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
         }
@@ -1044,7 +1046,7 @@ def test_api_forcesell(botclient, mocker, ticker, fee, markets):
         markets=PropertyMock(return_value=markets),
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
-    patch_get_signal(ftbot, (True, False))
+    patch_get_signal(ftbot, (True, False, None))
 
     rc = client_post(client, f"{BASE_URI}/forcesell",
                      data='{"tradeid": "1"}')
@@ -1185,8 +1187,10 @@ def test_api_plot_config(botclient):
     assert_response(rc)
     assert rc.json() == {}
 
-    ftbot.strategy.plot_config = {'main_plot': {'sma': {}},
-                                  'subplots': {'RSI': {'rsi': {'color': 'red'}}}}
+    ftbot.strategy.plot_config = {
+        'main_plot': {'sma': {}},
+        'subplots': {'RSI': {'rsi': {'color': 'red'}}}
+    }
     rc = client_get(client, f"{BASE_URI}/plot_config")
     assert_response(rc)
     assert rc.json() == ftbot.strategy.plot_config

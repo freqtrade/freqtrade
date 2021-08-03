@@ -221,10 +221,10 @@ If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio
 
 #### RangeStabilityFilter
 
-Removes pairs where the difference between lowest low and highest high over `lookback_days` days is below `min_rate_of_change`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
+Removes pairs where the difference between lowest low and highest high over `lookback_days` days is below `min_rate_of_change` or above `max_rate_of_change`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
 In the below example:
-If the trading range over the last 10 days is <1%, remove the pair from the whitelist.
+If the trading range over the last 10 days is <1% or >99%, remove the pair from the whitelist.
 
 ```json
 "pairlists": [
@@ -232,6 +232,7 @@ If the trading range over the last 10 days is <1%, remove the pair from the whit
         "method": "RangeStabilityFilter",
         "lookback_days": 10,
         "min_rate_of_change": 0.01,
+        "max_rate_of_change": 0.99,
         "refresh_period": 1440
     }
 ]
@@ -239,6 +240,7 @@ If the trading range over the last 10 days is <1%, remove the pair from the whit
 
 !!! Tip
     This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
+    Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.
 
 #### VolatilityFilter
 

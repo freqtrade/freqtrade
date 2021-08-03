@@ -110,7 +110,7 @@ DELETE FROM trades WHERE id = 31;
 Freqtrade supports PostgreSQL by using SQLAlchemy, which supports multiple different database systems.
 
 Installation:
-`pip install psycopg2`
+`pip install psycopg2-binary`
 
 Usage:
 `... --db-url postgresql+psycopg2://<username>:<password>@localhost:5432/<database>`

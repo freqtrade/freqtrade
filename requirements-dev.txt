@@ -13,7 +13,7 @@ pytest-asyncio==0.15.1
 pytest-cov==2.12.1
 pytest-mock==3.6.1
 pytest-random-order==1.0.4
-isort==5.9.2
+isort==5.9.3
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==6.1.0
@@ -21,5 +21,5 @@ nbconvert==6.1.0
 # mypy types
 types-cachetools==0.1.9
 types-filelock==0.1.4
-types-requests==2.25.0
+types-requests==2.25.1
 types-tabulate==0.1.1

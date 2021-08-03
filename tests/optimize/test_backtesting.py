@@ -496,6 +496,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
         0,  # Sell
         0.00099,  # Low
         0.0012,  # High
+        '',  # Buy Signal Name
     ]
     trade = backtesting._enter_trade(pair, row=row)
     assert isinstance(trade, LocalTrade)
@@ -583,6 +584,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.1038, 0.10302485],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
+         'buy_tag': [None, None],
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
@@ -727,6 +729,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
                                         pair='UNITTEST/BTC', datadir=testdatadir)
     default_conf['timeframe'] = '1m'
     backtesting = Backtesting(default_conf)
+    backtesting.required_startup = 0
     backtesting._set_strategy(backtesting.strategylist[0])
     backtesting.strategy.advise_buy = _trend_alternate  # Override
     backtesting.strategy.advise_sell = _trend_alternate  # Override
@@ -736,6 +739,9 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     # 100 buys signals
     results = result['results']
     assert len(results) == 100
+    # Cached data should be 200 (no change since required_startup is 0)
+    assert len(backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]) == 200
+
     # One trade was force-closed at the end
     assert len(results.loc[results['is_open']]) == 0
 
@@ -790,6 +796,10 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results['results'], '5m', 2)) > 0
     # make sure we don't have trades with more than configured max_open_trades
     assert len(evaluate_result_multi(results['results'], '5m', 3)) == 0
+
+    # Cached data correctly removed amounts
+    removed_candles = len(data[pair]) - 1 - backtesting.strategy.startup_candle_count
+    assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
 
     backtest_conf = {
         'processed': processed,
@@ -857,7 +867,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'locks': [],
         'rejected_signals': 20,
         'final_balance': 1000,
-        })
+    })
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)

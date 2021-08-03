@@ -29,7 +29,6 @@ from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
 
 tests_start_time = arrow.get(2018, 10, 3)
 timeframe_in_minute = 60
-_ohlc = {'date': 0, 'buy': 1, 'open': 2, 'high': 3, 'low': 4, 'close': 5, 'sell': 6, 'volume': 7}
 
 # Helpers for this test file
 
