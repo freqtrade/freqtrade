@@ -4,7 +4,8 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy, RealParameter
+from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
+                                RealParameter)
 
 
 class HyperoptableStrategy(IStrategy):
@@ -64,16 +65,17 @@ class HyperoptableStrategy(IStrategy):
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
     sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
                                     load=False)
+    protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
     @property
     def protections(self):
         prot = []
-
-        prot.append({
-            "method": "CooldownPeriod",
-            "stop_duration_candles": self.protection_cooldown_lookback.value
-        })
+        if self.protection_enabled.value:
+            prot.append({
+                "method": "CooldownPeriod",
+                "stop_duration_candles": self.protection_cooldown_lookback.value
+            })
         return prot
 
     def informative_pairs(self):

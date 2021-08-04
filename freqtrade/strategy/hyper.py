@@ -270,6 +270,28 @@ class CategoricalParameter(BaseParameter):
             return [self.value]
 
 
+class BooleanParameter(CategoricalParameter):
+
+    def __init__(self, *, default: Optional[Any] = None,
+                 space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
+        """
+        Initialize hyperopt-optimizable Boolean Parameter.
+        It's a shortcut to `CategoricalParameter([True, False])`.
+        :param default: A default value. If not specified, first item from specified space will be
+         used.
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
+         name is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
+        :param kwargs: Extra parameters to skopt.space.Categorical.
+        """
+
+        categories = [True, False]
+        super().__init__(categories=categories, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
+
+
 class HyperStrategyMixin(object):
     """
     A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell

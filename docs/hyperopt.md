@@ -253,7 +253,7 @@ We continue to define hyperoptable parameters:
 class MyAwesomeStrategy(IStrategy):
     buy_adx = DecimalParameter(20, 40, decimals=1, default=30.1, space="buy")
     buy_rsi = IntParameter(20, 40, default=30, space="buy")
-    buy_adx_enabled = CategoricalParameter([True, False], default=True, space="buy")
+    buy_adx_enabled = BooleanParameter(default=True, space="buy")
     buy_rsi_enabled = CategoricalParameter([True, False], default=False, space="buy")
     buy_trigger = CategoricalParameter(["bb_lower", "macd_cross_signal"], default="bb_lower", space="buy")
 ```
@@ -316,6 +316,7 @@ There are four parameter types each suited for different purposes.
 * `DecimalParameter` - defines a floating point parameter with a limited number of decimals (default 3). Should be preferred instead of `RealParameter` in most cases.
 * `RealParameter` - defines a floating point parameter with upper and lower boundaries and no precision limit. Rarely used as it creates a space with a near infinite number of possibilities.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
+* `BooleanParameter` - Shorthand for `CategoricalParameter([True, False])` - great for "enable" parameters.
 
 !!! Tip "Disabling parameter optimization"
     Each parameter takes two boolean parameters:
@@ -336,8 +337,8 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import IStrategy
-from freqtrade.strategy import CategoricalParameter, DecimalParameter, IntParameter
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+                                IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class MyAwesomeStrategy(IStrategy):
@@ -425,8 +426,8 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import IStrategy
-from freqtrade.strategy import CategoricalParameter, DecimalParameter, IntParameter
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+                                IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class MyAwesomeStrategy(IStrategy):
@@ -435,7 +436,7 @@ class MyAwesomeStrategy(IStrategy):
     # Define the parameter spaces
     cooldown_lookback = IntParameter(2, 48, default=5, space="protection", optimize=True)
     stop_duration = IntParameter(12, 200, default=5, space="protection", optimize=True)
-    use_stop_protection = CategoricalParameter([True, False], default=True, space="protection", optimize=True)
+    use_stop_protection = BooleanParameter(default=True, space="protection", optimize=True)
 
 
     @property

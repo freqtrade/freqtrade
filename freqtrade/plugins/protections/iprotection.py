@@ -25,6 +25,9 @@ class IProtection(LoggingMixin, ABC):
     def __init__(self, config: Dict[str, Any], protection_config: Dict[str, Any]) -> None:
         self._config = config
         self._protection_config = protection_config
+        self._stop_duration_candles: Optional[int] = None
+        self._lookback_period_candles: Optional[int] = None
+
         tf_in_min = timeframe_to_minutes(config['timeframe'])
         if 'stop_duration_candles' in protection_config:
             self._stop_duration_candles = int(protection_config.get('stop_duration_candles', 1))
