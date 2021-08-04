@@ -247,6 +247,8 @@ class Hyperopt:
         if self.auto_hyperopt and HyperoptTools.has_space(self.config, 'protection'):
             # Protections can only be optimized when using the Parameter interface
             logger.debug("Hyperopt has 'protection' space")
+            # Enable Protections if protection space is selected.
+            self.config['enable_protections'] = True
             self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
