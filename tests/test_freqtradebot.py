@@ -904,6 +904,15 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
 
+    # In case of custom entry price
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5566'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: 0.77
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[6]
+    assert trade
+    assert trade.open_rate_requested == 0.77
+
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
