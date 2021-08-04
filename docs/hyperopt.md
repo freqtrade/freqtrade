@@ -433,7 +433,7 @@ class MyAwesomeStrategy(IStrategy):
     stoploss = -0.05
     timeframe = '15m'
     # Define the parameter spaces
-    coolback_lookback = IntParameter(2, 48, default=5, space="protection", optimize=True)
+    cooldown_lookback = IntParameter(2, 48, default=5, space="protection", optimize=True)
     stop_duration = IntParameter(12, 200, default=5, space="protection", optimize=True)
     use_stop_protection = CategoricalParameter([True, False], default=True, space="protection", optimize=True)
 
@@ -444,7 +444,7 @@ class MyAwesomeStrategy(IStrategy):
 
         prot.append({
             "method": "CooldownPeriod",
-            "stop_duration_candles": self.coolback_lookback.value
+            "stop_duration_candles": self.cooldown_lookback.value
         })
         if self.use_stop_protection.value:
             prot.append({

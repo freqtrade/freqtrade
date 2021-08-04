@@ -64,6 +64,17 @@ class HyperoptableStrategy(IStrategy):
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
     sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
                                     load=False)
+    protection_cooldown_lookback = IntParameter([0, 50], default=30)
+
+    @property
+    def protections(self):
+        prot = []
+
+        prot.append({
+            "method": "CooldownPeriod",
+            "stop_duration_candles": self.protection_cooldown_lookback.value
+        })
+        return prot
 
     def informative_pairs(self):
         """

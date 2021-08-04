@@ -294,7 +294,8 @@ class HyperStrategyMixin(object):
         :return:
         """
         if category not in ('buy', 'sell', 'protection', None):
-            raise OperationalException('Category must be one of: "buy", "sell", "protection", None.')
+            raise OperationalException(
+                'Category must be one of: "buy", "sell", "protection", None.')
 
         if category is None:
             params = self.ft_buy_params + self.ft_sell_params + self.ft_protection_params

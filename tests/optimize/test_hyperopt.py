@@ -1003,6 +1003,8 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
         'user_data_dir': Path(tmpdir),
+        'hyperopt_random_state': 42,
+        'spaces': ['buy', 'sell', 'protection']
     })
     hyperopt = Hyperopt(hyperopt_conf)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
@@ -1010,12 +1012,18 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
 
     assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value == 74
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value == 30
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)
     # Range from 0 - 50 (inclusive)
     assert len(list(buy_rsi_range)) == 51
 
     hyperopt.start()
+    # All values should've changed.
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value != 30
+    assert hyperopt.backtesting.strategy.buy_rsi.value != 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value != 74
 
 
 def test_SKDecimal():
