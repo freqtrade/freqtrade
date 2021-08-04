@@ -69,7 +69,6 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
-    liq_formula: LiqFormula
     interest_mode: InterestMode = InterestMode.NONE
     liq_formula: LiqFormula = LiqFormula.NONE
 

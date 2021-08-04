@@ -22,7 +22,7 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
-    #interest_mode: InterestMode = InterestMode.HOURSPERDAY
+    # interest_mode: InterestMode = InterestMode.HOURSPERDAY
     liq_formula: LiqFormula = LiqFormula.FTX
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:

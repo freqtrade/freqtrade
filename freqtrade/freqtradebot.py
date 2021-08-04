@@ -16,7 +16,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, State, TradingMode
+from freqtrade.enums import Collateral, RPCMessageType, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -41,6 +41,9 @@ class FreqtradeBot(LoggingMixin):
     Freqtrade is the main class of the bot.
     This is from here the bot start its logic.
     """
+
+    trading_mode: TradingMode = TradingMode.SPOT
+    collateral_type: Optional[Collateral] = None
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
@@ -105,21 +108,17 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        if self.config.get('trading_mode') == "cross_margin":
-            self.trading_mode = TradingMode.CROSS_MARGIN
-        elif self.config.get('trading_mode') == "isolated_margin":
-            self.trading_mode = TradingMode.ISOLATED_MARGIN
-        elif self.config.get('trading_mode') == "cross_futures":
-            self.trading_mode = TradingMode.CROSS_FUTURES
-        elif self.config.get('trading_mode') == "isolated_futures":
-            self.trading_mode = TradingMode.ISOLATED_FUTURES
-        else:
-            self.trading_mode = TradingMode.SPOT
+        trading_mode = self.config.get('trading_mode')
+        collateral_type = self.config.get('collateral_type')
+        if trading_mode:
+            self.trading_mode = TradingMode(trading_mode)
+
+        if collateral_type:
+            self.collateral_type = Collateral(collateral_type)
 
         # Start calculating maintenance margin if on cross margin
         # TODO: Add margin_mode to freqtrade.configuration?
-        if self.trading_mode == TradingMode.CROSS_MARGIN or \
-                self.trading_mode == TradingMode.CROSS_FUTURES:
+        if self.collateral_type == Collateral.CROSS:
 
             self.maintenance_margin = MaintenanceMargin(
                 liq_formula=self.exchange.liq_formula,
@@ -551,8 +550,7 @@ class FreqtradeBot(LoggingMixin):
                 is_short=is_short
             )
 
-            if self.trading_mode == TradingMode.ISOLATED_MARGIN or \
-                    self.trading_mode == TradingMode.ISOLATED_FUTURES:
+            if self.collateral_type == Collateral.ISOLATED:
 
                 isolated_liq = self.exchange.liq_formula(
                     trading_mode=self.trading_mode,
@@ -562,8 +560,7 @@ class FreqtradeBot(LoggingMixin):
                     is_short=is_short
                 )
 
-        if self.trading_mode == TradingMode.CROSS_FUTURES or \
-                self.trading_mode == TradingMode.ISOLATED_FUTURES:
+        if self.trading_mode == TradingMode.FUTURES:
             self.exchange.set_leverage(pair=pair, leverage=leverage)
 
         return interest_rate, isolated_liq
