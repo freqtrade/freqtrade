@@ -297,6 +297,23 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return proposed_rate
 
+    def custom_exit_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                          **kwargs) -> float:
+        """
+        Custom exit price logic, returning the new exit price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set exit price
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New exit price value if provided
+        """
+        return proposed_rate
+
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
