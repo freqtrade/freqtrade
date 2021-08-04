@@ -1004,7 +1004,7 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
         'strategy': 'HyperoptableStrategy',
         'user_data_dir': Path(tmpdir),
         'hyperopt_random_state': 42,
-        'spaces': ['buy', 'sell', 'protection']
+        'spaces': ['all']
     })
     hyperopt = Hyperopt(hyperopt_conf)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)

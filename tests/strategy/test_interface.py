@@ -734,7 +734,7 @@ def test_auto_hyperopt_interface(default_conf):
     assert isinstance(all_params, dict)
     assert len(all_params['buy']) == 2
     assert len(all_params['sell']) == 2
-    assert all_params['count'] == 4
+    assert all_params['count'] == 5
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
