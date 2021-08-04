@@ -652,29 +652,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         # logger.debug(f"{trade.pair} - No sell signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
 
-    def entry_price_reached(self, pair: str, current_rate: float,
-                            current_time: datetime, low: float = None,
-                            high: float = None) -> bool:
-        """
-        Based on current candle low ,decides if entry price was reached
-        :param current_rate: current rate
-        :param low: Low value of this candle, only set in backtesting
-        :param high: High value of this candle, only set in backtesting
-        """
-        entry_price_value = strategy_safe_wrapper(self.custom_entry_price, default_retval=None)(
-                                                  pair=pair,
-                                                  current_time=current_time,
-                                                  proposed_rate=current_rate)
-
-        if entry_price_value is not None:
-            if entry_price_value > low:
-                return True
-            else:
-                return False
-        else:
-            logger.warning("CustomEntryPrice function did not return valid entry price")
-            return False
-
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, low: float = None,
