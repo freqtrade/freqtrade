@@ -469,6 +469,10 @@ You can then run hyperopt as follows:
     The protection space is not part of the default space, and is only available with the Parameters Hyperopt interface, not with the legacy hyperopt interface (which required separate hyperopt files).
     Freqtrade will also automatically change the "--enable-protections" flag if the protection space is selected.
 
+!!! Warning
+    If protections are defined as property, entries from the configuration will be ignored.
+    It is therefore recommended to not define protections in the configuration.
+
 ### Migrating from previous property setups
 
 A migration from a previous setup is pretty simple, and can be accomplished by converting the protections entry to a property.
