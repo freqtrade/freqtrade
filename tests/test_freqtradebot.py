@@ -2434,6 +2434,7 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
 
     freqtrade.check_handle_timedout()
     assert log_has_re(r"Cannot query order for Trade\(id=1, pair=ETH/BTC, amount=90.99181073, "
+                      r"is_short=False, leverage=1.0, "
                       r"open_rate=0.00001099, open_since="
                       f"{open_trade.open_date.strftime('%Y-%m-%d %H:%M:%S')}"
                       r"\) due to Traceback \(most recent call last\):\n*",
@@ -3619,9 +3620,11 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
-    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
-                   caplog)
+    assert log_has(
+        'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, is_short=False,'
+        ' leverage=1.0, open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
+        caplog
+    )
 
 
 def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fee, fee,
@@ -3666,9 +3669,12 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount
-    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) failed: myTrade-Dict empty found',
-                   caplog)
+    assert log_has(
+        'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+        'is_short=False, leverage=1.0, open_rate=0.24544100, open_since=closed) failed: '
+        'myTrade-Dict empty found',
+        caplog
+    )
 
 
 def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, fee, mocker):
@@ -3752,9 +3758,11 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.001)
-    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
-                   caplog)
+    assert log_has(
+        'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, is_short=False,'
+        ' leverage=1.0, open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
+        caplog
+    )
 
     assert trade.fee_open == 0.001
     assert trade.fee_close == 0.001
@@ -3788,9 +3796,11 @@ def test_get_real_amount_multi2(default_conf, trades_for_order3, buy_order_fee, 
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, buy_order_fee) == amount - (amount * 0.0005)
-    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
-                   caplog)
+    assert log_has(
+        'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, is_short=False,'
+        ' leverage=1.0, open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
+        caplog
+    )
     # Overall fee is average of both trade's fee
     assert trade.fee_open == 0.001518575
     assert trade.fee_open_cost is not None
@@ -3822,9 +3832,11 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
 
     # Amount is reduced by "fee"
     assert freqtrade.get_real_amount(trade, limit_buy_order) == amount - 0.004
-    assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                   'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
-                   caplog)
+    assert log_has(
+        'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, is_short=False,'
+        ' leverage=1.0, open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
+        caplog
+    )
 
 
 def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, fee, mocker):

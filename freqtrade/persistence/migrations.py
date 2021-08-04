@@ -48,6 +48,13 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
     buy_tag = get_column_def(cols, 'buy_tag', 'null')
+
+    leverage = get_column_def(cols, 'leverage', '1.0')
+    interest_rate = get_column_def(cols, 'interest_rate', '0.0')
+    isolated_liq = get_column_def(cols, 'isolated_liq', 'null')
+    # sqlite does not support literals for booleans
+    is_short = get_column_def(cols, 'is_short', '0')
+    interest_mode = get_column_def(cols, 'interest_mode', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -59,6 +66,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
+    # TODO-mg: update to exit order status
     sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
@@ -83,7 +91,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
-            timeframe, open_trade_value, close_profit_abs
+            timeframe, open_trade_value, close_profit_abs,
+            leverage, interest_rate, isolated_liq, is_short, interest_mode
             )
         select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
@@ -99,7 +108,10 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
             {sell_order_status} sell_order_status,
             {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
-            {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
+            {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
+            {leverage} leverage, {interest_rate} interest_rate,
+            {isolated_liq} isolated_liq, {is_short} is_short,
+            {interest_mode} interest_mode
             from {table_back_name}
             """))
 
@@ -134,14 +146,16 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
 
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
+    leverage = get_column_def(cols, 'leverage', '1.0')
+    # sqlite does not support literals for booleans
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
-            order_date, order_filled_date, order_update_date)
+            order_date, order_filled_date, order_update_date, leverage)
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, null average, remaining, cost,
-            order_date, order_filled_date, order_update_date
+            order_date, order_filled_date, order_update_date, {leverage} leverage
             from {table_back_name}
             """))
 
@@ -157,7 +171,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
     # Check for latest column
-    if not has_column(cols, 'buy_tag'):
+    if not has_column(cols, 'is_short'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!
@@ -170,9 +184,11 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     else:
         cols_order = inspector.get_columns('orders')
 
-        if not has_column(cols_order, 'average'):
+        # Last added column of order table
+        # To determine if migrations need to run
+        if not has_column(cols_order, 'leverage'):
             tabs = get_table_names_for_table(inspector, 'orders')
             # Empty for now - as there is only one iteration of the orders table so far.
             table_back_name = get_backup_name(tabs, 'orders_bak')
 
-            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols)
+            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols_order)
