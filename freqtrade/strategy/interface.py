@@ -288,10 +288,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         time. This method is not called when sell signal is set.
 
         This method should be overridden to create sell signals that depend on trade parameters. For
-        example you could implement a stoploss relative to candle when trade was opened, or a custom
-        1:2 risk-reward ROI.
+        example you could implement a sell relative to the candle when the trade was opened,
+        or a custom 1:2 risk-reward ROI.
 
-        Custom sell reason max length is 64. Exceeding this limit will raise OperationalException.
+        Custom sell reason max length is 64. Exceeding characters will be removed.
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
