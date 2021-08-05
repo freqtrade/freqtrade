@@ -357,13 +357,13 @@ See [Dataframe access](#dataframe-access) for more information about dataframe u
 
 ---
 
-## Custom order entry price rules
+## Custom order price rules
 
 By default, freqtrade use the orderbook to automatically set an order price, you also have the option to create custom order prices based on your strategy.
 
-You can use this feature by setting the `use_custom_entry_price` option to `true` in config and creating a custom_entry_price function.
+You can use this feature by creating a custom_entry_price function in your strategy file to customize entry prices and custom_exit_price for exits.
 
-### Custom order entry price exemple
+### Custom order entry and exit price exemple
 ``` python
 from datetime import datetime, timedelta, timezone
 from freqtrade.persistence import Trade
@@ -373,13 +373,23 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def custom_entry_price(self, pair: str, current_time: datetime,
-                            proposed_rate, **kwargs) -> float:
+                           proposed_rate, **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
-        entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
+        proposed_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
         
-        return entryprice
+        return proposed_entryprice
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                timeframe=self.timeframe)
+        proposed_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
+        
+        return proposed_exitprice
 
 ```
 
