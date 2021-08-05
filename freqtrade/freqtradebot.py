@@ -1082,6 +1082,14 @@ class FreqtradeBot(LoggingMixin):
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
+        # set custom_exit_price if available
+        current_profit = trade.calc_profit_ratio(limit)
+        limit = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                      default_retval=limit)(
+            pair=trade.pair, trade=trade,
+            current_time=datetime.now(timezone.utc),
+            proposed_rate=limit, current_profit=current_profit)
+
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
             try:

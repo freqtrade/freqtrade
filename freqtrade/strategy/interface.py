@@ -299,7 +299,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
-                          current_rate: float, current_profit: float, **kwargs) -> float:
+                          current_profit: float, **kwargs) -> float:
         """
         Custom exit price logic, returning the new exit price.
 
