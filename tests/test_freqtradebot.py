@@ -2724,6 +2724,70 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
     } == last_msg
 
 
+def test_execute_sell_custom_exit_price(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
+    rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
+    )
+    patch_whitelist(mocker, default_conf)
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
+
+    # Create some test data
+    freqtrade.enter_positions()
+    rpc_mock.reset_mock()
+
+    trade = Trade.query.first()
+    assert trade
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 0
+
+    # Increase the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_sell_up
+    )
+
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
+
+    # Set a custom exit price
+    freqtrade.strategy.custom_exit_price = lambda **kwargs: 1.170e-05
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'],
+                           sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
+
+    # Sell price must be different to default bid price
+
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+
+    assert rpc_mock.call_count == 1
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'trade_id': 1,
+        'type': RPCMessageType.SELL,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'gain': 'profit',
+        'limit': 1.170e-05,
+        'amount': 91.07468123,
+        'order_type': 'limit',
+        'open_rate': 1.098e-05,
+        'current_rate': 1.173e-05,
+        'profit_amount': 6.041e-05,
+        'profit_ratio': 0.06025919,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+        'sell_reason': SellType.SELL_SIGNAL.value,
+        'open_date': ANY,
+        'close_date': ANY,
+        'close_rate': ANY,
+    } == last_msg
+
+
 def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
                                                         ticker_sell_down, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
