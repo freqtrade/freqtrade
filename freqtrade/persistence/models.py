@@ -16,6 +16,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.enums import InterestMode, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.leverage import liquidation_price
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -236,7 +237,7 @@ class LocalTrade():
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float = 0.0  # TODO: This should probably be computed
+    stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -316,7 +317,7 @@ class LocalTrade():
         for key in kwargs:
             setattr(self, key, kwargs[key])
         if self.isolated_liq:
-            self.set_isolated_liq(self.isolated_liq)
+            self.set_isolated_liq(isolated_liq=self.isolated_liq)
         self.recalc_open_trade_value()
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
@@ -342,11 +343,19 @@ class LocalTrade():
             self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
-    def set_isolated_liq(self, isolated_liq: float):
+    def set_isolated_liq(self, **k):
         """
             Method you should use to set self.liquidation price.
             Assures stop_loss is not passed the liquidation price
         """
+        if k['isolated_liq']:
+            isolated_liq: float = k['isolated_liq']
+        else:
+            isolated_liq: float = liquidation_price(
+                exchange=self.exchange_name,
+                **k
+            )
+
         if self.stop_loss is not None:
             if self.is_short:
                 self.stop_loss = min(self.stop_loss, isolated_liq)

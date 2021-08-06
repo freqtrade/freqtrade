@@ -91,7 +91,7 @@ def test_enter_exit_side(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test__set_stop_loss_isolated_liq(fee):
+def test_set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -106,7 +106,7 @@ def test__set_stop_loss_isolated_liq(fee):
         is_short=False,
         leverage=2.0
     )
-    trade.set_isolated_liq(0.09)
+    trade.set_isolated_liq(isolated_liq=0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -116,12 +116,12 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.08)
+    trade.set_isolated_liq(isolated_liq=0.08)
     assert trade.isolated_liq == 0.08
     assert trade.stop_loss == 0.1
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.11)
+    trade.set_isolated_liq(isolated_liq=0.11)
     assert trade.isolated_liq == 0.11
     assert trade.stop_loss == 0.11
     assert trade.initial_stop_loss == 0.09
@@ -145,7 +145,7 @@ def test__set_stop_loss_isolated_liq(fee):
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
-    trade.set_isolated_liq(0.09)
+    trade.set_isolated_liq(isolated_liq=0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -155,12 +155,12 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.1)
+    trade.set_isolated_liq(isolated_liq=0.1)
     assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.07)
+    trade.set_isolated_liq(isolated_liq=0.07)
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
@@ -234,7 +234,7 @@ def test_interest(market_buy_order_usdt, fee):
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='kraken',
+        exchange='binance',
         leverage=3.0,
         interest_rate=0.0005,
         interest_mode=InterestMode.HOURSPERDAY
@@ -506,7 +506,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange='binance'
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -1575,11 +1575,11 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    assert round(trade.stop_loss, 8) == 0.66  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
-    trade.set_isolated_liq(0.63)
+    trade.set_isolated_liq(isolated_liq=0.63)
     trade.adjust_stop_loss(0.59, -0.1)
     assert trade.stop_loss == 0.63
     assert trade.isolated_liq == 0.63
@@ -1899,7 +1899,7 @@ def test_stoploss_reinitialization_short(default_conf, fee):
     assert trade_adj.initial_stop_loss == 1.04
     assert trade_adj.initial_stop_loss_pct == 0.04
     # Stoploss can't go above liquidation price
-    trade_adj.set_isolated_liq(1.0)
+    trade_adj.set_isolated_liq(isolated_liq=1.0)
     trade.adjust_stop_loss(0.97, -0.04)
     assert trade_adj.stop_loss == 1.0
     assert trade_adj.stop_loss == 1.0
