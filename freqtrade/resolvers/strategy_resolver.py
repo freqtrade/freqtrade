@@ -50,7 +50,7 @@ class StrategyResolver(IResolver):
             if 'timeframe' not in config:
                 logger.warning(
                     "DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'."
-                    )
+                )
                 strategy.timeframe = strategy.ticker_interval
 
         if strategy._ft_params_from_file:

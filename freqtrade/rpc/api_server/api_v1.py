@@ -199,8 +199,8 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
                  config=Depends(get_config)):
     config = deepcopy(config)
     config.update({
-            'strategy': strategy,
-        })
+        'strategy': strategy,
+    })
     return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
 
 

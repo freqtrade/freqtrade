@@ -115,7 +115,7 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
     if conf.get('stoploss') == 0.0:
         raise OperationalException(
             'The config stoploss needs to be different from 0 to avoid problems with sell orders.'
-            )
+        )
     # Skip if trailing stoploss is not activated
     if not conf.get('trailing_stop', False):
         return
@@ -180,7 +180,7 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
             raise OperationalException(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"
-                )
+            )
 
         if ('lookback_period' in prot and 'lookback_period_candles' in prot):
             raise OperationalException(

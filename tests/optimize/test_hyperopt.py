@@ -399,7 +399,7 @@ def test_hyperopt_format_results(hyperopt):
         'rejected_signals': 2,
         'backtest_start_time': 1619718665,
         'backtest_end_time': 1619718665,
-        }
+    }
     results_metrics = generate_strategy_stats({'XRP/BTC': None}, '', bt_result,
                                               Arrow(2017, 11, 14, 19, 32, 00),
                                               Arrow(2017, 12, 14, 19, 32, 00), market_change=0)

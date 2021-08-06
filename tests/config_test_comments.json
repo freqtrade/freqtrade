@@ -6,8 +6,8 @@
      */
     "stake_currency": "BTC",
     "stake_amount": 0.05,
-    "fiat_display_currency": "USD",             // C++-style comment
-    "amount_reserve_percent" : 0.05,		// And more, tabs before this comment
+    "fiat_display_currency": "USD", // C++-style comment
+    "amount_reserve_percent": 0.05, // And more, tabs before this comment
     "dry_run": false,
     "timeframe": "5m",
     "trailing_stop": false,
@@ -15,15 +15,15 @@
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
     "minimal_roi": {
-        "40":  0.0,
-        "30":  0.01,
-        "20":  0.02,
-        "0":  0.04
+        "40": 0.0,
+        "30": 0.01,
+        "20": 0.02,
+        "0": 0.04
     },
     "stoploss": -0.10,
     "unfilledtimeout": {
         "buy": 10,
-        "sell": 30,				// Trailing comma should also be accepted now
+        "sell": 30, // Trailing comma should also be accepted now
     },
     "bid_strategy": {
         "use_order_book": false,
@@ -34,7 +34,7 @@
             "bids_to_ask_delta": 1
         }
     },
-    "ask_strategy":{
+    "ask_strategy": {
         "use_order_book": false,
         "order_book_min": 1,
         "order_book_max": 9
@@ -64,7 +64,9 @@
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "password": "",
-        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
         "ccxt_async_config": {
             "enableRateLimit": false,
             "rateLimit": 500,
@@ -103,8 +105,8 @@
         "remove_pumps": false
     },
     "telegram": {
-// We can now comment out some settings
-//        "enabled": true,
+        // We can now comment out some settings
+        //        "enabled": true,
         "enabled": false,
         "token": "your_telegram_token",
         "chat_id": "your_telegram_chat_id"

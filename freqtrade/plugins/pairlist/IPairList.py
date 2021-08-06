@@ -144,7 +144,7 @@ class IPairList(LoggingMixin, ABC):
         markets = self._exchange.markets
         if not markets:
             raise OperationalException(
-                    'Markets not loaded. Make sure that exchange is initialized correctly.')
+                'Markets not loaded. Make sure that exchange is initialized correctly.')
 
         sanitized_whitelist: List[str] = []
         for pair in pairlist:

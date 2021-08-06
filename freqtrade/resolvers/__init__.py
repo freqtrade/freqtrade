@@ -8,6 +8,3 @@ from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from freqtrade.resolvers.pairlist_resolver import PairListResolver
 from freqtrade.resolvers.protection_resolver import ProtectionResolver
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
-
-
-
