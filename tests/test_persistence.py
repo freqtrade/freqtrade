@@ -11,7 +11,6 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 
 from freqtrade import constants
-from freqtrade.enums import InterestMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
@@ -145,7 +144,7 @@ def test__set_stop_loss_isolated_liq(fee):
     trade.stop_loss = None
     trade.initial_stop_loss = None
 
-    trade.set_isolated_liq(0.09)
+    trade.set_isolated_liq(isolated_liq=0.09)
     assert trade.isolated_liq == 0.09
     assert trade.stop_loss == 0.09
     assert trade.initial_stop_loss == 0.09
@@ -155,12 +154,12 @@ def test__set_stop_loss_isolated_liq(fee):
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.1)
+    trade.set_isolated_liq(isolated_liq=0.1)
     assert trade.isolated_liq == 0.1
     assert trade.stop_loss == 0.08
     assert trade.initial_stop_loss == 0.09
 
-    trade.set_isolated_liq(0.07)
+    trade.set_isolated_liq(isolated_liq=0.07)
     assert trade.isolated_liq == 0.07
     assert trade.stop_loss == 0.07
     assert trade.initial_stop_loss == 0.09
@@ -234,26 +233,25 @@ def test_interest(market_buy_order_usdt, fee):
         open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='kraken',
+        exchange='binance',
         leverage=3.0,
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY
     )
 
     # 10min, 3x leverage
     # binance
     assert round(float(trade.calculate_interest()), 8) == round(0.0008333333333333334, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.040
     # Short
     trade.is_short = True
     trade.recalc_open_trade_value()
     # binace
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert float(trade.calculate_interest()) == 0.000625
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert isclose(float(trade.calculate_interest()), 0.030)
 
     # 5hr, long
@@ -261,40 +259,40 @@ def test_interest(market_buy_order_usdt, fee):
     trade.is_short = False
     trade.recalc_open_trade_value()
     # binance
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest()), 8) == round(0.004166666666666667, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.06
     # short
     trade.is_short = True
     trade.recalc_open_trade_value()
     # binace
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.045
 
     # 0.00025 interest, 5hr, long
     trade.is_short = False
     trade.recalc_open_trade_value()
     # binance
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest(interest_rate=0.00025)),
                  8) == round(0.0020833333333333333, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert isclose(float(trade.calculate_interest(interest_rate=0.00025)), 0.03)
     # short
     trade.is_short = True
     trade.recalc_open_trade_value()
     # binace
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest(interest_rate=0.00025)),
                  8) == round(0.0015624999999999999, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest(interest_rate=0.00025)) == 0.0225
 
     # 5x leverage, 0.0005 interest, 5hr, long
@@ -302,19 +300,19 @@ def test_interest(market_buy_order_usdt, fee):
     trade.recalc_open_trade_value()
     trade.leverage = 5.0
     # binance
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest()), 8) == 0.005
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == round(0.07200000000000001, 8)
     # short
     trade.is_short = True
     trade.recalc_open_trade_value()
     # binace
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.045
 
     # 1x leverage, 0.0005 interest, 5hr
@@ -322,19 +320,19 @@ def test_interest(market_buy_order_usdt, fee):
     trade.recalc_open_trade_value()
     trade.leverage = 1.0
     # binance
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert float(trade.calculate_interest()) == 0.0
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.0
     # short
     trade.is_short = True
     trade.recalc_open_trade_value()
     # binace
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert float(trade.calculate_interest()) == 0.003125
     # kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert float(trade.calculate_interest()) == 0.045
 
 
@@ -506,7 +504,7 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange='binance'
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -550,7 +548,6 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
         is_short=True,
         leverage=3.0,
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'something'
     trade.update(limit_sell_order_usdt)
@@ -628,7 +625,6 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
         amount=30.0,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
@@ -644,12 +640,12 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
     # 3x leverage, binance
     trade.leverage = 3
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert trade._calc_open_trade_value() == 60.15
     assert round(trade.calc_close_trade_value(), 8) == 65.83416667
     assert trade.calc_profit() == round(5.684166670000003, 8)
     assert trade.calc_profit_ratio() == round(0.2834995845386534, 8)
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     # 3x leverage, kraken
     assert trade._calc_open_trade_value() == 60.15
     assert trade.calc_close_trade_value() == 65.795
@@ -662,7 +658,7 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_close_trade_value() == 66.231165
     assert trade.calc_profit() == round(-6.381165000000003, 8)
     assert trade.calc_profit_ratio() == round(-0.319857894736842, 8)
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     # 3x leverage, short, binance
     assert trade._calc_open_trade_value() == 59.85
     assert trade.calc_close_trade_value() == 66.1663784375
@@ -675,7 +671,7 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert trade.calc_profit() == round(-6.316378437500013, 8)
     assert trade.calc_profit_ratio() == round(-0.1055368159983292, 8)
     # 1x leverage, short, kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert trade._calc_open_trade_value() == 59.850
     assert trade.calc_close_trade_value() == 66.231165
     assert trade.calc_profit() == -6.381165
@@ -694,7 +690,6 @@ def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         fee_close=fee.return_value,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY,
         exchange='binance',
     )
     assert trade.close_profit is None
@@ -805,7 +800,7 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
     trade.recalc_open_trade_value()
     assert trade._calc_open_trade_value() == 59.85
     trade.leverage = 3
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert trade._calc_open_trade_value() == 59.85
     trade.is_short = False
     trade.recalc_open_trade_value()
@@ -832,7 +827,6 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
         fee_close=fee.return_value,
         exchange='binance',
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.open_order_id = 'close_trade'
     trade.update(limit_buy_order_usdt)
@@ -849,7 +843,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 74.77416667
 
     # 3x leverage kraken
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert trade.calc_close_trade_value(rate=2.5) == 74.7725
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.735
 
@@ -860,7 +854,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 75.300225
 
     # 3x leverage binance, short
-    trade.interest_mode = InterestMode.HOURSPERDAY
+    trade.exchange = "binance"
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.18906641
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 75.22656719
 
@@ -870,7 +864,7 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee
     assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 75.22656719
 
     # 1x leverage kraken, short
-    trade.interest_mode = InterestMode.HOURSPER4
+    trade.exchange = "kraken"
     assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.2626875
     assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 75.300225
 
@@ -1013,7 +1007,6 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         open_rate=2.0,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance'
@@ -1047,62 +1040,62 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # Higher than open rate - 2.1 quote
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=2.1, fee=0.0025) == 2.69166667
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=2.1, fee=0.0025) == 2.6525
 
     # 1.9 quote
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=1.9, fee=0.0025) == -3.29333333
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=1.9, fee=0.0025) == -3.3325
 
     # 2.2 quote
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(fee=0.0025) == 5.68416667
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(fee=0.0025) == 5.645
 
     # 3x leverage, short ###################################################
     trade.is_short = True
     trade.recalc_open_trade_value()
     # 2.1 quote - Higher than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=2.1, fee=0.0025) == round(-3.308815781249997, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=2.1, fee=0.0025) == -3.3706575
 
     # 1.9 quote - Lower than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=1.9, fee=0.0025) == round(2.7063095312499996, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=1.9, fee=0.0025) == 2.6503575
 
     # Test when we apply a Sell order. Uses sell order used above
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(fee=0.0025) == round(-6.316378437499999, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(fee=0.0025) == -6.381165
 
     # 1x leverage, short ###################################################
     trade.leverage = 1.0
     # 2.1 quote - Higher than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=2.1, fee=0.0025) == round(-3.308815781249997, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=2.1, fee=0.0025) == -3.3706575
 
     # 1.9 quote - Lower than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(rate=1.9, fee=0.0025) == round(2.7063095312499996, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(rate=1.9, fee=0.0025) == 2.6503575
 
     # Test when we apply a Sell order. Uses sell order used above
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit(fee=0.0025) == round(-6.316378437499999, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit(fee=0.0025) == -6.381165
 
 
@@ -1115,7 +1108,6 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         open_rate=2.0,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPERDAY,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance'
@@ -1150,62 +1142,62 @@ def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     # 3x leverage, long ###################################################
     trade.leverage = 3.0
     # 2.1 quote - Higher than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio(rate=2.1) == round(0.13424771421446402, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=2.1) == round(0.13229426433915248, 8)
 
     # 1.9 quote - Lower than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio(rate=1.9) == round(-0.16425602643391513, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=1.9) == round(-0.16620947630922667, 8)
 
     # Test when we apply a Sell order. Uses sell order used above
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio() == round(0.2834995845386534, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio() == round(0.2815461346633419, 8)
 
     # 3x leverage, short ###################################################
     trade.is_short = True
     trade.recalc_open_trade_value()
     # 2.1 quote - Higher than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio(rate=2.1) == round(-0.1658554276315789, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=2.1) == round(-0.16895526315789455, 8)
 
     # 1.9 quote - Lower than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio(rate=1.9) == round(0.13565461309523819, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=1.9) == round(0.13285000000000002, 8)
 
     # Test when we apply a Sell order. Uses sell order used above
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio() == round(-0.3166104479949876, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio() == round(-0.319857894736842, 8)
 
     # 1x leverage, short ###################################################
     trade.leverage = 1.0
     # 2.1 quote - Higher than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"  # binance
     assert trade.calc_profit_ratio(rate=2.1) == round(-0.05528514254385963, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=2.1) == round(-0.05631842105263152, 8)
 
     # 1.9 quote - Lower than open rate
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"
     assert trade.calc_profit_ratio(rate=1.9) == round(0.045218204365079395, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio(rate=1.9) == round(0.04428333333333334, 8)
 
     # Test when we apply a Sell order. Uses sell order used above
-    trade.interest_mode = InterestMode.HOURSPERDAY  # binance
+    trade.exchange = "binance"
     assert trade.calc_profit_ratio() == round(-0.1055368159983292, 8)
-    trade.interest_mode = InterestMode.HOURSPER4    # kraken
+    trade.exchange = "kraken"
     assert trade.calc_profit_ratio() == round(-0.106619298245614, 8)
 
 
@@ -1542,7 +1534,6 @@ def test_adjust_stop_loss_short(fee):
         open_rate=1,
         max_rate=1,
         is_short=True,
-        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.adjust_stop_loss(trade.open_rate, 0.05, True)
     assert trade.stop_loss == 1.05
@@ -1575,7 +1566,7 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    assert round(trade.stop_loss, 8) == 0.66  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
@@ -1859,7 +1850,6 @@ def test_stoploss_reinitialization_short(default_conf, fee):
         max_rate=1,
         is_short=True,
         leverage=3.0,
-        interest_mode=InterestMode.HOURSPERDAY
     )
     trade.adjust_stop_loss(trade.open_rate, -0.05, True)
     assert trade.stop_loss == 1.05

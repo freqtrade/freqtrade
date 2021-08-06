@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
@@ -14,8 +14,9 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import InterestMode, SellType
+from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -236,7 +237,7 @@ class LocalTrade():
     close_rate_requested: Optional[float] = None
     close_profit: Optional[float] = None
     close_profit_abs: Optional[float] = None
-    stake_amount: float = 0.0  # TODO: This should probably be computed
+    stake_amount: float = 0.0
     amount: float = 0.0
     amount_requested: Optional[float] = None
     open_date: datetime
@@ -269,7 +270,6 @@ class LocalTrade():
     isolated_liq: Optional[float] = None
     is_short: bool = False
     leverage: float = 1.0
-    interest_mode: InterestMode = InterestMode.NONE
 
     @property
     def has_no_leverage(self) -> bool:
@@ -650,7 +650,7 @@ class LocalTrade():
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
 
-        return self.interest_mode(borrowed=borrowed, rate=rate, hours=hours)
+        return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None,
@@ -894,7 +894,6 @@ class Trade(_DECL_BASE, LocalTrade):
     interest_rate = Column(Float, nullable=False, default=0.0)
     isolated_liq = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
-    interest_mode = Column(Enum(InterestMode), nullable=True)
     # End of margin trading properties
 
     def __init__(self, **kwargs):
