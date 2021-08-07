@@ -444,9 +444,9 @@ class Hyperopt:
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
                 with progressbar.ProgressBar(
-                         max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
-                         widgets=widgets
-                     ) as pbar:
+                    max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                    widgets=widgets
+                ) as pbar:
                     EVALS = ceil(self.total_epochs / jobs)
                     for i in range(EVALS):
                         # Correct the number of epochs to be processed for the last

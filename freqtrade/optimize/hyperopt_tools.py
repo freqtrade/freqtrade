@@ -203,7 +203,7 @@ class HyperoptTools():
             elif space == "roi":
                 result = result[:-1] + f'{appendix}\n'
                 minimal_roi_result = rapidjson.dumps({
-                        str(k): v for k, v in (space_params or no_params).items()
+                    str(k): v for k, v in (space_params or no_params).items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
             elif space == "trailing":

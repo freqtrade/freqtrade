@@ -31,7 +31,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
         filename = Path.joinpath(
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-            ).with_suffix(recordfilename.suffix)
+        ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -173,7 +173,7 @@ def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
     for strategy, results in all_results.items():
         tabular_data.append(_generate_result_line(
             results['results'], results['config']['dry_run_wallet'], strategy)
-            )
+        )
         try:
             max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
                                                                   value_col='profit_ratio')
@@ -604,7 +604,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                          strat_results['stake_currency'])
         stake_amount = round_coin_value(
             strat_results['stake_amount'], strat_results['stake_currency']
-            ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
+        ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 
         message = ("No trades made. "
                    f"Your starting balance was {start_balance}, "
