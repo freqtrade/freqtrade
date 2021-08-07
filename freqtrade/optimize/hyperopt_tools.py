@@ -82,8 +82,8 @@ class HyperoptTools():
         """
         Tell if the space value is contained in the configuration
         """
-        # The 'trailing' space is not included in the 'default' set of spaces
-        if space == 'trailing':
+        # 'trailing' and 'protection spaces are not included in the 'default' set of spaces
+        if space in ('trailing', 'protection'):
             return any(s in config['spaces'] for s in [space, 'all'])
         else:
             return any(s in config['spaces'] for s in [space, 'all', 'default'])
@@ -149,7 +149,7 @@ class HyperoptTools():
 
         if print_json:
             result_dict: Dict = {}
-            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+            for s in ['buy', 'sell', 'protection', 'roi', 'stoploss', 'trailing']:
                 HyperoptTools._params_update_for_json(result_dict, params, non_optimized, s)
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
@@ -158,6 +158,8 @@ class HyperoptTools():
                                                non_optimized)
             HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:",
                                                non_optimized)
+            HyperoptTools._params_pretty_print(params, 'protection',
+                                               "Protection hyperspace params:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'roi', "ROI table:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:", non_optimized)

@@ -66,6 +66,7 @@ class Hyperopt:
     def __init__(self, config: Dict[str, Any]) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
+        self.protection_space: List[Dimension] = []
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
@@ -191,6 +192,8 @@ class Hyperopt:
             result['buy'] = {p.name: params.get(p.name) for p in self.buy_space}
         if HyperoptTools.has_space(self.config, 'sell'):
             result['sell'] = {p.name: params.get(p.name) for p in self.sell_space}
+        if HyperoptTools.has_space(self.config, 'protection'):
+            result['protection'] = {p.name: params.get(p.name) for p in self.protection_space}
         if HyperoptTools.has_space(self.config, 'roi'):
             result['roi'] = {str(k): v for k, v in
                              self.custom_hyperopt.generate_roi_table(params).items()}
@@ -241,6 +244,12 @@ class Hyperopt:
         """
         Assign the dimensions in the hyperoptimization space.
         """
+        if self.auto_hyperopt and HyperoptTools.has_space(self.config, 'protection'):
+            # Protections can only be optimized when using the Parameter interface
+            logger.debug("Hyperopt has 'protection' space")
+            # Enable Protections if protection space is selected.
+            self.config['enable_protections'] = True
+            self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
@@ -261,8 +270,8 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
-        self.dimensions = (self.buy_space + self.sell_space + self.roi_space +
-                           self.stoploss_space + self.trailing_space)
+        self.dimensions = (self.buy_space + self.sell_space + self.protection_space
+                           + self.roi_space + self.stoploss_space + self.trailing_space)
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
@@ -281,6 +290,12 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'sell'):
             self.backtesting.strategy.advise_sell = (  # type: ignore
                 self.custom_hyperopt.sell_strategy_generator(params_dict))
+
+        if HyperoptTools.has_space(self.config, 'protection'):
+            for attr_name, attr in self.backtesting.strategy.enumerate_parameters('protection'):
+                if attr.optimize:
+                    # noinspection PyProtectedMember
+                    attr.value = params_dict[attr_name]
 
         if HyperoptTools.has_space(self.config, 'roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore

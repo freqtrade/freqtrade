@@ -577,6 +577,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                    "20.0": 0.02,
                                    "50.0": 0.01,
                                    "110.0": 0},
+                           'protection': {},
                            'sell': {'sell-adx-enabled': False,
                                     'sell-adx-value': 0,
                                     'sell-fastd-enabled': True,
@@ -592,7 +593,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                         'trailing_stop_positive': 0.02,
                                         'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
-        'params_not_optimized': {'buy': {}, 'sell': {}},
+        'params_not_optimized': {'buy': {}, 'protection': {}, 'sell': {}},
         'results_metrics': ANY,
         'total_profit': 3.1e-08
     }
@@ -1002,6 +1003,8 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
         'user_data_dir': Path(tmpdir),
+        'hyperopt_random_state': 42,
+        'spaces': ['all']
     })
     hyperopt = Hyperopt(hyperopt_conf)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
@@ -1009,12 +1012,18 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
 
     assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value == 74
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value == 30
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)
     # Range from 0 - 50 (inclusive)
     assert len(list(buy_rsi_range)) == 51
 
     hyperopt.start()
+    # All values should've changed.
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value != 30
+    assert hyperopt.backtesting.strategy.buy_rsi.value != 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value != 74
 
 
 def test_SKDecimal():
