@@ -58,7 +58,7 @@ This option must be configured along with `exchange.skip_pair_validation` in the
 
 When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), `VolumePairList` considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.
 
-When used on the leading position of the chain of Pairlist Handlers, it does not consider `pair_whitelist` configuration setting, but selects the top assets from all available markets (with matching stake-currency) on the exchange.
+When used in the leading position of the chain of Pairlist Handlers, the `pair_whitelist` configuration setting is ignored. Instead, `VolumePairList` selects the top assets from all available markets with matching stake-currency on the exchange.
 
 The `refresh_period` setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
 The pairlist cache (`refresh_period`) on `VolumePairList` is only applicable to generating pairlists.
@@ -74,10 +74,13 @@ Filtering instances (not the first position in the list) will not apply any cach
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
+        "min_value": 0,
         "refresh_period": 1800
     }
 ],
 ```
+
+You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
 
 `VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
 
@@ -89,6 +92,7 @@ For convenience `lookback_days` can be specified, which will imply that 1d candl
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
+        "min_value": 0,
         "refresh_period": 86400,
         "lookback_days": 7
     }
