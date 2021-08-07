@@ -1330,7 +1330,7 @@ def test_process_removed_setting(mocker, default_conf, caplog):
                                 'sectionB', 'somesetting')
 
 
-def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
+def test_process_deprecated_ticker_interval(default_conf, caplog):
     message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
     config = deepcopy(default_conf)
     process_temporary_deprecated_settings(config)
@@ -1350,6 +1350,17 @@ def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
     with pytest.raises(OperationalException,
                        match=r"Both 'timeframe' and 'ticker_interval' detected."):
         process_temporary_deprecated_settings(config)
+
+
+def test_process_deprecated_protections(default_conf, caplog):
+    message = "DEPRECATED: Setting 'protections' in the configuration is deprecated."
+    config = deepcopy(default_conf)
+    process_temporary_deprecated_settings(config)
+    assert not log_has(message, caplog)
+
+    config['protections'] = []
+    process_temporary_deprecated_settings(config)
+    assert log_has(message, caplog)
 
 
 def test_flat_vars_to_nested_dict(caplog):

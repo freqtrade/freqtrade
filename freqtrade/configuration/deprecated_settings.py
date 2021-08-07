@@ -110,3 +110,6 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                 "Please remove 'ticker_interval' from your configuration to continue operating."
             )
         config['timeframe'] = config['ticker_interval']
+
+    if 'protections' in config:
+        logger.warning("DEPRECATED: Setting 'protections' in the configuration is deprecated.")
