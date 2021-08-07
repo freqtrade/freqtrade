@@ -270,6 +270,28 @@ class CategoricalParameter(BaseParameter):
             return [self.value]
 
 
+class BooleanParameter(CategoricalParameter):
+
+    def __init__(self, *, default: Optional[Any] = None,
+                 space: Optional[str] = None, optimize: bool = True, load: bool = True, **kwargs):
+        """
+        Initialize hyperopt-optimizable Boolean Parameter.
+        It's a shortcut to `CategoricalParameter([True, False])`.
+        :param default: A default value. If not specified, first item from specified space will be
+         used.
+        :param space: A parameter category. Can be 'buy' or 'sell'. This parameter is optional if
+         parameter field
+         name is prefixed with 'buy_' or 'sell_'.
+        :param optimize: Include parameter in hyperopt optimizations.
+        :param load: Load parameter value from {space}_params.
+        :param kwargs: Extra parameters to skopt.space.Categorical.
+        """
+
+        categories = [True, False]
+        super().__init__(categories=categories, default=default, space=space, optimize=optimize,
+                         load=load, **kwargs)
+
+
 class HyperStrategyMixin(object):
     """
     A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
@@ -283,6 +305,7 @@ class HyperStrategyMixin(object):
         self.config = config
         self.ft_buy_params: List[BaseParameter] = []
         self.ft_sell_params: List[BaseParameter] = []
+        self.ft_protection_params: List[BaseParameter] = []
 
         self._load_hyper_params(config.get('runmode') == RunMode.HYPEROPT)
 
@@ -292,11 +315,12 @@ class HyperStrategyMixin(object):
         :param category:
         :return:
         """
-        if category not in ('buy', 'sell', None):
-            raise OperationalException('Category must be one of: "buy", "sell", None.')
+        if category not in ('buy', 'sell', 'protection', None):
+            raise OperationalException(
+                'Category must be one of: "buy", "sell", "protection", None.')
 
         if category is None:
-            params = self.ft_buy_params + self.ft_sell_params
+            params = self.ft_buy_params + self.ft_sell_params + self.ft_protection_params
         else:
             params = getattr(self, f"ft_{category}_params")
 
@@ -324,9 +348,10 @@ class HyperStrategyMixin(object):
         params: Dict = {
             'buy': list(cls.detect_parameters('buy')),
             'sell': list(cls.detect_parameters('sell')),
+            'protection': list(cls.detect_parameters('protection')),
         }
         params.update({
-            'count': len(params['buy'] + params['sell'])
+            'count': len(params['buy'] + params['sell'] + params['protection'])
         })
 
         return params
@@ -340,9 +365,12 @@ class HyperStrategyMixin(object):
         self._ft_params_from_file = params
         buy_params = deep_merge_dicts(params.get('buy', {}), getattr(self, 'buy_params', {}))
         sell_params = deep_merge_dicts(params.get('sell', {}), getattr(self, 'sell_params', {}))
+        protection_params = deep_merge_dicts(params.get('protection', {}),
+                                             getattr(self, 'protection_params', {}))
 
         self._load_params(buy_params, 'buy', hyperopt)
         self._load_params(sell_params, 'sell', hyperopt)
+        self._load_params(protection_params, 'protection', hyperopt)
 
     def load_params_from_file(self) -> Dict:
         filename_str = getattr(self, '__file__', '')
@@ -397,7 +425,8 @@ class HyperStrategyMixin(object):
         """
         params = {
             'buy': {},
-            'sell': {}
+            'sell': {},
+            'protection': {},
         }
         for name, p in self.enumerate_parameters():
             if not p.optimize or not p.in_space:

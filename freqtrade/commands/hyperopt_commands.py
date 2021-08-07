@@ -187,7 +187,7 @@ def _hyperopt_filter_epochs_trade_count(epochs: List, filteroptions: dict) -> Li
             x for x in epochs
             if x['results_metrics'].get(
                 'trade_count', x['results_metrics'].get('total_trades')
-                ) < filteroptions['filter_max_trades']
+            ) < filteroptions['filter_max_trades']
         ]
     return epochs
 
@@ -239,7 +239,7 @@ def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
             x for x in epochs
             if x['results_metrics'].get(
                 'avg_profit', x['results_metrics'].get('profit_mean', 0) * 100
-                ) < filteroptions['filter_max_avg_profit']
+            ) < filteroptions['filter_max_avg_profit']
         ]
     if filteroptions['filter_min_total_profit'] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)
@@ -247,7 +247,7 @@ def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
             x for x in epochs
             if x['results_metrics'].get(
                 'profit', x['results_metrics'].get('profit_total_abs', 0)
-                ) > filteroptions['filter_min_total_profit']
+            ) > filteroptions['filter_min_total_profit']
         ]
     if filteroptions['filter_max_total_profit'] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)
@@ -255,7 +255,7 @@ def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
             x for x in epochs
             if x['results_metrics'].get(
                 'profit', x['results_metrics'].get('profit_total_abs', 0)
-                ) < filteroptions['filter_max_total_profit']
+            ) < filteroptions['filter_max_total_profit']
         ]
     return epochs
 

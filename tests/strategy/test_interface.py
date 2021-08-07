@@ -16,8 +16,8 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
-                                      IntParameter, RealParameter)
+from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
+                                      DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -717,6 +717,17 @@ def test_hyperopt_parameters():
     assert len(list(catpar.range)) == 3
     assert list(catpar.range) == ['buy_rsi', 'buy_macd', 'buy_none']
 
+    boolpar = BooleanParameter(default=True, space='buy')
+    assert boolpar.value is True
+    assert isinstance(boolpar.get_space(''), Categorical)
+    assert isinstance(boolpar.range, list)
+    assert len(list(boolpar.range)) == 1
+
+    boolpar.in_space = True
+    assert len(list(boolpar.range)) == 2
+
+    assert list(boolpar.range) == [True, False]
+
 
 def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategy'})
@@ -734,7 +745,8 @@ def test_auto_hyperopt_interface(default_conf):
     assert isinstance(all_params, dict)
     assert len(all_params['buy']) == 2
     assert len(all_params['sell']) == 2
-    assert all_params['count'] == 4
+    # Number of Hyperoptable parameters
+    assert all_params['count'] == 6
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 
