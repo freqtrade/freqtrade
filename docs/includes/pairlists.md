@@ -113,6 +113,7 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
         "method": "VolumePairList",
         "number_assets": 20,
         "sort_key": "quoteVolume",
+        "min_value": 0,
         "refresh_period": 3600,
         "lookback_timeframe": "1h",
         "lookback_period": 72
