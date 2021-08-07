@@ -280,7 +280,7 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
-                            },
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},
