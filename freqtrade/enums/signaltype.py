@@ -7,6 +7,8 @@ class SignalType(Enum):
     """
     BUY = "buy"
     SELL = "sell"
+    SHORT = "short"
+    EXIT_SHORT = "exit_short"
 
 
 class SignalTagType(Enum):
