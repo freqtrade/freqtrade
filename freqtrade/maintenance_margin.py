@@ -15,7 +15,7 @@ class MaintenanceMargin:
     def margin_level(self):
         # This is the current value of all assets,
         # and if you pass below liq_level, you are liquidated
-        # TODO: Add args to formula
+        # TODO-lev: Add args to formula
         return liquidation_price(
             trading_mode=self.trading_mode,
             exchange_name=self.exchange_name
