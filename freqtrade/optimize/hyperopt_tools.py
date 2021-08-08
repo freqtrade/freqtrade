@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import rapidjson
@@ -15,6 +15,7 @@ from pandas import isna, json_normalize
 from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
+from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +130,31 @@ class HyperoptTools():
                     "of Freqtrade and cannot be loaded.")
             logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
         return epochs
+
+    @staticmethod
+    def load_filtered_results(results_file: Path, config: Dict[str, Any]) -> Tuple[List, int]:
+        filteroptions = {
+            'only_best': config.get('hyperopt_list_best', False),
+            'only_profitable': config.get('hyperopt_list_profitable', False),
+            'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
+            'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
+            'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
+            'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
+            'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
+            'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
+            'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
+            'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
+            'filter_min_objective': config.get('hyperopt_list_min_objective', None),
+            'filter_max_objective': config.get('hyperopt_list_max_objective', None),
+        }
+
+        # Previous evaluations
+        epochs = HyperoptTools.load_previous_results(results_file)
+        total_epochs = len(epochs)
+
+        epochs = hyperopt_filter_epochs(epochs, filteroptions)
+
+        return epochs, total_epochs
 
     @staticmethod
     def show_epoch_details(results, total_epochs: int, print_json: bool,
