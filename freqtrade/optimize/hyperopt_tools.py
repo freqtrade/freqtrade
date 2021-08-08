@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import rapidjson
@@ -15,6 +15,7 @@ from pandas import isna, json_normalize
 from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
+from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +130,31 @@ class HyperoptTools():
                     "of Freqtrade and cannot be loaded.")
             logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
         return epochs
+
+    @staticmethod
+    def load_filtered_results(results_file: Path, config: Dict[str, Any]) -> Tuple[List, int]:
+        filteroptions = {
+            'only_best': config.get('hyperopt_list_best', False),
+            'only_profitable': config.get('hyperopt_list_profitable', False),
+            'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
+            'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
+            'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
+            'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
+            'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
+            'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
+            'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
+            'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
+            'filter_min_objective': config.get('hyperopt_list_min_objective', None),
+            'filter_max_objective': config.get('hyperopt_list_max_objective', None),
+        }
+
+        # Previous evaluations
+        epochs = HyperoptTools.load_previous_results(results_file)
+        total_epochs = len(epochs)
+
+        epochs = hyperopt_filter_epochs(epochs, filteroptions)
+
+        return epochs, total_epochs
 
     @staticmethod
     def show_epoch_details(results, total_epochs: int, print_json: bool,
@@ -433,21 +459,14 @@ class HyperoptTools():
         trials['Best'] = ''
         trials['Stake currency'] = config['stake_currency']
 
-        if 'results_metrics.total_trades' in trials:
-            base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
-                            'results_metrics.profit_mean', 'results_metrics.profit_median',
-                            'results_metrics.profit_total',
-                            'Stake currency',
-                            'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
-                            'loss', 'is_initial_point', 'is_best']
-            perc_multi = 100
-        else:
-            perc_multi = 1
-            base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
-                            'results_metrics.avg_profit', 'results_metrics.median_profit',
-                            'results_metrics.total_profit',
-                            'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
-                            'loss', 'is_initial_point', 'is_best']
+        base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
+                        'results_metrics.profit_mean', 'results_metrics.profit_median',
+                        'results_metrics.profit_total',
+                        'Stake currency',
+                        'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
+                        'loss', 'is_initial_point', 'is_best']
+        perc_multi = 100
+
         param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
@@ -475,11 +494,6 @@ class HyperoptTools():
         trials['Avg profit'] = trials['Avg profit'].apply(
             lambda x: f'{x * perc_multi:,.2f}%' if not isna(x) else ""
         )
-        if perc_multi == 1:
-            trials['Avg duration'] = trials['Avg duration'].apply(
-                lambda x: f'{x:,.1f} m' if isinstance(
-                    x, float) else f"{x.total_seconds() // 60:,.1f} m" if not isna(x) else ""
-            )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: f'{x:,.5f}' if x != 100000 else ""
         )
