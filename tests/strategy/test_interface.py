@@ -552,6 +552,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 def test_is_pair_locked(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
     PairLocks.timeframe = default_conf['timeframe']
+    PairLocks.use_db = True
     strategy = StrategyResolver.load_strategy(default_conf)
     # No lock should be present
     assert len(PairLocks.get_pair_locks(None)) == 0
