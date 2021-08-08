@@ -7,8 +7,6 @@ class SignalType(Enum):
     """
     BUY = "buy"
     SELL = "sell"
-    SHORT = "short"
-    EXIT_SHORT = "exit_short"
 
 
 class SignalTagType(Enum):
@@ -16,4 +14,3 @@ class SignalTagType(Enum):
     Enum for signal columns
     """
     BUY_TAG = "buy_tag"
-    SHORT_TAG = "short_tag"
