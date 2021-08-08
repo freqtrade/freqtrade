@@ -44,5 +44,5 @@ class UvicornServer(uvicorn.Server):
             time.sleep(1e-3)
 
     def cleanup(self):
-        self.should_exit = True
+        self.should_sell = True
         self.thread.join()

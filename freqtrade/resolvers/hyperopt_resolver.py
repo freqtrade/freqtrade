@@ -51,6 +51,7 @@ class HyperOptResolver(IResolver):
         if not hasattr(hyperopt, 'populate_sell_trend'):
             logger.info("Hyperopt class does not provide populate_sell_trend() method. "
                         "Using populate_sell_trend from the strategy.")
+        # TODO-lev: Short equivelents?
         return hyperopt
 
 

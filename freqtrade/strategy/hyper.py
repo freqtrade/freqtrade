@@ -22,6 +22,8 @@ from freqtrade.exceptions import OperationalException
 
 logger = logging.getLogger(__name__)
 
+# TODO-lev: This file
+
 
 class BaseParameter(ABC):
     """

@@ -106,6 +106,66 @@ class DefaultHyperOpt(IHyperOpt):
         ]
 
     @staticmethod
+    def short_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the short strategy parameters to be used by Hyperopt.
+        """
+        def populate_short_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
+            """
+            Buy strategy Hyperopt will build and use.
+            """
+            conditions = []
+
+            # GUARDS AND TRENDS
+            if 'mfi-enabled' in params and params['mfi-enabled']:
+                conditions.append(dataframe['mfi'] > params['mfi-value'])
+            if 'fastd-enabled' in params and params['fastd-enabled']:
+                conditions.append(dataframe['fastd'] > params['fastd-value'])
+            if 'adx-enabled' in params and params['adx-enabled']:
+                conditions.append(dataframe['adx'] < params['adx-value'])
+            if 'rsi-enabled' in params and params['rsi-enabled']:
+                conditions.append(dataframe['rsi'] > params['rsi-value'])
+
+            # TRIGGERS
+            if 'trigger' in params:
+                if params['trigger'] == 'bb_upper':
+                    conditions.append(dataframe['close'] > dataframe['bb_upperband'])
+                if params['trigger'] == 'macd_cross_signal':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['macd'], dataframe['macdsignal']
+                    ))
+                if params['trigger'] == 'sar_reversal':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['close'], dataframe['sar']
+                    ))
+
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'short'] = 1
+
+            return dataframe
+
+        return populate_short_trend
+
+    @staticmethod
+    def short_indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching short strategy parameters.
+        """
+        return [
+            Integer(75, 90, name='mfi-value'),
+            Integer(55, 85, name='fastd-value'),
+            Integer(50, 80, name='adx-value'),
+            Integer(60, 80, name='rsi-value'),
+            Categorical([True, False], name='mfi-enabled'),
+            Categorical([True, False], name='fastd-enabled'),
+            Categorical([True, False], name='adx-enabled'),
+            Categorical([True, False], name='rsi-enabled'),
+            Categorical(['bb_upper', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+        ]
+
+    @staticmethod
     def sell_strategy_generator(params: Dict[str, Any]) -> Callable:
         """
         Define the sell strategy parameters to be used by Hyperopt.
@@ -149,6 +209,49 @@ class DefaultHyperOpt(IHyperOpt):
         return populate_sell_trend
 
     @staticmethod
+    def exit_short_strategy_generator(params: Dict[str, Any]) -> Callable:
+        """
+        Define the exit_short strategy parameters to be used by Hyperopt.
+        """
+        def populate_exit_short_trend(dataframe: DataFrame, metadata: dict) -> DataFrame:
+            """
+            Exit_short strategy Hyperopt will build and use.
+            """
+            conditions = []
+
+            # GUARDS AND TRENDS
+            if 'exit-short-mfi-enabled' in params and params['exit-short-mfi-enabled']:
+                conditions.append(dataframe['mfi'] < params['exit-short-mfi-value'])
+            if 'exit-short-fastd-enabled' in params and params['exit-short-fastd-enabled']:
+                conditions.append(dataframe['fastd'] < params['exit-short-fastd-value'])
+            if 'exit-short-adx-enabled' in params and params['exit-short-adx-enabled']:
+                conditions.append(dataframe['adx'] > params['exit-short-adx-value'])
+            if 'exit-short-rsi-enabled' in params and params['exit-short-rsi-enabled']:
+                conditions.append(dataframe['rsi'] < params['exit-short-rsi-value'])
+
+            # TRIGGERS
+            if 'exit-short-trigger' in params:
+                if params['exit-short-trigger'] == 'exit-short-bb_lower':
+                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['exit-short-trigger'] == 'exit-short-macd_cross_signal':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['macdsignal'], dataframe['macd']
+                    ))
+                if params['exit-short-trigger'] == 'exit-short-sar_reversal':
+                    conditions.append(qtpylib.crossed_below(
+                        dataframe['sar'], dataframe['close']
+                    ))
+
+            if conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, conditions),
+                    'exit_short'] = 1
+
+            return dataframe
+
+        return populate_exit_short_trend
+
+    @staticmethod
     def sell_indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching sell strategy parameters.
@@ -165,6 +268,25 @@ class DefaultHyperOpt(IHyperOpt):
             Categorical(['sell-bb_upper',
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'], name='sell-trigger')
+        ]
+
+    @staticmethod
+    def exit_short_indicator_space() -> List[Dimension]:
+        """
+        Define your Hyperopt space for searching exit short strategy parameters.
+        """
+        return [
+            Integer(1, 25, name='exit_short-mfi-value'),
+            Integer(1, 50, name='exit_short-fastd-value'),
+            Integer(1, 50, name='exit_short-adx-value'),
+            Integer(1, 40, name='exit_short-rsi-value'),
+            Categorical([True, False], name='exit_short-mfi-enabled'),
+            Categorical([True, False], name='exit_short-fastd-enabled'),
+            Categorical([True, False], name='exit_short-adx-enabled'),
+            Categorical([True, False], name='exit_short-rsi-enabled'),
+            Categorical(['exit_short-bb_lower',
+                         'exit_short-macd_cross_signal',
+                         'exit_short-sar_reversal'], name='exit_short-trigger')
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -196,6 +318,40 @@ class DefaultHyperOpt(IHyperOpt):
                     dataframe['macdsignal'], dataframe['macd']
                 )) &
                 (dataframe['fastd'] > 54)
+            ),
+            'sell'] = 1
+
+        return dataframe
+
+    def populate_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators. Should be a copy of same method from strategy.
+        Must align to populate_indicators in this file.
+        Only used when --spaces does not include short space.
+        """
+        dataframe.loc[
+            (
+                (dataframe['close'] > dataframe['bb_upperband']) &
+                (dataframe['mfi'] < 84) &
+                (dataframe['adx'] > 75) &
+                (dataframe['rsi'] < 79)
+            ),
+            'buy'] = 1
+
+        return dataframe
+
+    def populate_exit_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators. Should be a copy of same method from strategy.
+        Must align to populate_indicators in this file.
+        Only used when --spaces does not include exit_short space.
+        """
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(
+                    dataframe['macdsignal'], dataframe['macd']
+                )) &
+                (dataframe['fastd'] < 46)
             ),
             'sell'] = 1
 

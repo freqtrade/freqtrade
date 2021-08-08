@@ -156,17 +156,21 @@ def test_ignore_expired_candle(default_conf):
     # Add 1 candle length as the "latest date" defines candle open.
     current_time = latest_date + timedelta(seconds=80 + 300)
 
-    assert strategy.ignore_expired_candle(latest_date=latest_date,
-                                          current_time=current_time,
-                                          timeframe_seconds=300,
-                                          buy=True) is True
+    assert strategy.ignore_expired_candle(
+        latest_date=latest_date,
+        current_time=current_time,
+        timeframe_seconds=300,
+        enter=True
+    ) is True
 
     current_time = latest_date + timedelta(seconds=30 + 300)
 
-    assert not strategy.ignore_expired_candle(latest_date=latest_date,
-                                              current_time=current_time,
-                                              timeframe_seconds=300,
-                                              buy=True) is True
+    assert not strategy.ignore_expired_candle(
+        latest_date=latest_date,
+        current_time=current_time,
+        timeframe_seconds=300,
+        enter=True
+    ) is True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
@@ -478,20 +482,20 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
-    buy_mock = MagicMock(side_effect=lambda x, meta: x)
-    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    enter_mock = MagicMock(side_effect=lambda x, meta, is_short: x)
+    exit_mock = MagicMock(side_effect=lambda x, meta, is_short: x)
     mocker.patch.multiple(
         'freqtrade.strategy.interface.IStrategy',
         advise_indicators=ind_mock,
-        advise_buy=buy_mock,
-        advise_sell=sell_mock,
+        advise_enter=enter_mock,
+        advise_exit=exit_mock,
 
     )
     strategy = DefaultStrategy({})
     strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
-    assert buy_mock.call_count == 1
-    assert buy_mock.call_count == 1
+    assert enter_mock.call_count == 2
+    assert enter_mock.call_count == 2
 
     assert log_has('TA Analysis Launched', caplog)
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
@@ -500,8 +504,8 @@ def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
     strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 2
-    assert buy_mock.call_count == 2
-    assert buy_mock.call_count == 2
+    assert enter_mock.call_count == 4
+    assert enter_mock.call_count == 4
     assert log_has('TA Analysis Launched', caplog)
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
 
@@ -509,13 +513,13 @@ def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
 def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     ind_mock = MagicMock(side_effect=lambda x, meta: x)
-    buy_mock = MagicMock(side_effect=lambda x, meta: x)
-    sell_mock = MagicMock(side_effect=lambda x, meta: x)
+    enter_mock = MagicMock(side_effect=lambda x, meta, is_short: x)
+    exit_mock = MagicMock(side_effect=lambda x, meta, is_short: x)
     mocker.patch.multiple(
         'freqtrade.strategy.interface.IStrategy',
         advise_indicators=ind_mock,
-        advise_buy=buy_mock,
-        advise_sell=sell_mock,
+        advise_enter=enter_mock,
+        advise_exit=exit_mock,
 
     )
     strategy = DefaultStrategy({})
@@ -528,8 +532,8 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
     assert 'close' in ret.columns
     assert isinstance(ret, DataFrame)
     assert ind_mock.call_count == 1
-    assert buy_mock.call_count == 1
-    assert buy_mock.call_count == 1
+    assert enter_mock.call_count == 2  # Once for buy, once for short
+    assert enter_mock.call_count == 2
     assert log_has('TA Analysis Launched', caplog)
     assert not log_has('Skipping TA Analysis for already analyzed candle', caplog)
     caplog.clear()
@@ -537,8 +541,8 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
     ret = strategy._analyze_ticker_internal(ohlcv_history, {'pair': 'ETH/BTC'})
     # No analysis happens as process_only_new_candles is true
     assert ind_mock.call_count == 1
-    assert buy_mock.call_count == 1
-    assert buy_mock.call_count == 1
+    assert enter_mock.call_count == 2
+    assert enter_mock.call_count == 2
     # only skipped analyze adds buy and sell columns, otherwise it's all mocked
     assert 'buy' in ret.columns
     assert 'sell' in ret.columns
@@ -743,10 +747,10 @@ def test_auto_hyperopt_interface(default_conf):
     assert strategy.sell_minusdi.value == 0.5
     all_params = strategy.detect_all_parameters()
     assert isinstance(all_params, dict)
-    assert len(all_params['buy']) == 2
-    assert len(all_params['sell']) == 2
-    # Number of Hyperoptable parameters
-    assert all_params['count'] == 6
+    # TODO-lev: Should these be 4,4 and 10?
+    assert len(all_params['buy']) == 4
+    assert len(all_params['sell']) == 4
+    assert all_params['count'] == 10
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 

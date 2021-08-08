@@ -85,3 +85,34 @@ class TestStrategyLegacy(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def populate_short_trend(self, dataframe: DataFrame) -> DataFrame:
+        """
+        Based on TA indicators, populates the buy signal for the given dataframe
+        :param dataframe: DataFrame
+        :return: DataFrame with buy column
+        """
+        dataframe.loc[
+            (
+                (dataframe['adx'] > 30) &
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &
+                (dataframe['volume'] > 0)
+            ),
+            'buy'] = 1
+
+        return dataframe
+
+    def populate_exit_short_trend(self, dataframe: DataFrame) -> DataFrame:
+        """
+        Based on TA indicators, populates the sell signal for the given dataframe
+        :param dataframe: DataFrame
+        :return: DataFrame with buy column
+        """
+        dataframe.loc[
+            (
+                (dataframe['adx'] > 70) &
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &
+                (dataframe['volume'] > 0)
+            ),
+            'sell'] = 1
+        return dataframe

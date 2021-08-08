@@ -62,6 +62,8 @@ class IStrategy(ABC, HyperStrategyMixin):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
+    _short_fun_len: int = 0
+    _exit_short_fun_len: int = 0
     _ft_params_from_file: Dict = {}
     # associated minimal roi
     minimal_roi: Dict
@@ -135,7 +137,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Populate indicators that will be used in the Buy and Sell strategy
+        Populate indicators that will be used in the Buy, Sell, Short, Exit_short strategy
         :param dataframe: DataFrame with data from the exchange
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
@@ -143,7 +145,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return dataframe
 
     @abstractmethod
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_enter_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the buy signal for the given dataframe
         :param dataframe: DataFrame
@@ -153,7 +155,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return dataframe
 
     @abstractmethod
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the sell signal for the given dataframe
         :param dataframe: DataFrame
@@ -164,9 +166,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
-        Check buy timeout function callback.
-        This method can be used to override the buy-timeout.
-        It is called whenever a limit buy order has been created,
+        Check enter timeout function callback.
+        This method can be used to override the enter-timeout.
+        It is called whenever a limit buy/short order has been created,
         and is not yet fully filled.
         Configuration options in `unfilledtimeout` will be verified before this,
         so ensure to set these timeouts high enough.
@@ -176,16 +178,16 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the buy-order is cancelled.
+        :return bool: When True is returned, then the buy/short-order is cancelled.
         """
         return False
 
     def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
-        Check sell timeout function callback.
-        This method can be used to override the sell-timeout.
-        It is called whenever a limit sell order has been created,
-        and is not yet fully filled.
+        Check exit timeout function callback.
+        This method can be used to override the exit-timeout.
+        It is called whenever a (long) limit sell order or (short) limit buy
+        has been created, and is not yet fully filled.
         Configuration options in `unfilledtimeout` will be verified before this,
         so ensure to set these timeouts high enough.
 
@@ -194,7 +196,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the sell-order is cancelled.
+        :return bool: When True is returned, then the (long)sell/(short)buy-order is cancelled.
         """
         return False
 
@@ -210,7 +212,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a buy order.
+        Called right before placing a buy/short order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -218,7 +220,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be bought.
+        :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
@@ -234,7 +236,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                            rate: float, time_in_force: str, sell_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a regular sell order.
+        Called right before placing a regular sell/exit_short order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -242,18 +244,18 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be sold.
+        :param pair: Pair for trade that's about to be exited.
         :param trade: trade object.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Sell reason.
+        :param sell_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the sell-order is placed on the exchange.
+        :return bool: When True, then the sell-order/exit_short-order is placed on the exchange.
             False aborts the process
         """
         return True
@@ -283,15 +285,15 @@ class IStrategy(ABC, HyperStrategyMixin):
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
-        Custom sell signal logic indicating that specified position should be sold. Returning a
-        string or True from this method is equal to setting sell signal on a candle at specified
-        time. This method is not called when sell signal is set.
+        Custom exit signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting exit signal on a candle at specified
+        time. This method is not called when exit signal is set.
 
-        This method should be overridden to create sell signals that depend on trade parameters. For
-        example you could implement a sell relative to the candle when the trade was opened,
+        This method should be overridden to create exit signals that depend on trade parameters. For
+        example you could implement an exit relative to the candle when the trade was opened,
         or a custom 1:2 risk-reward ROI.
 
-        Custom sell reason max length is 64. Exceeding characters will be removed.
+        Custom exit reason max length is 64. Exceeding characters will be removed.
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
@@ -299,7 +301,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
         None or False.
         """
         return None
@@ -371,7 +373,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         Checks if a pair is currently locked
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
         and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
-        of 2 seconds for a buy to happen on an old signal.
+        of 2 seconds for a buy/short to happen on an old signal.
         :param pair: "Pair to check"
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
@@ -387,15 +389,17 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
-        add several TA indicators and buy signal to it
+        add several TA indicators and buy/short signal to it
         :param dataframe: Dataframe containing data from exchange
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         logger.debug("TA Analysis Launched")
         dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+        dataframe = self.advise_enter(dataframe, metadata, is_short=False)
+        dataframe = self.advise_exit(dataframe, metadata, is_short=False)
+        dataframe = self.advise_enter(dataframe, metadata, is_short=True)
+        dataframe = self.advise_exit(dataframe, metadata, is_short=True)
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -422,7 +426,10 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
+            dataframe['short'] = 0
+            dataframe['exit_short'] = 0
             dataframe['buy_tag'] = None
+            dataframe['short_tag'] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -482,6 +489,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if dataframe is None:
             message = "No dataframe returned (return statement missing?)."
         elif 'buy' not in dataframe:
+            # TODO-lev: Something?
             message = "Buy column not set."
         elif df_len != len(dataframe):
             message = message_template.format("length")
@@ -499,15 +507,18 @@ class IStrategy(ABC, HyperStrategyMixin):
         self,
         pair: str,
         timeframe: str,
-        dataframe: DataFrame
+        dataframe: DataFrame,
+        is_short: bool = False
     ) -> Tuple[bool, bool, Optional[str]]:
         """
-        Calculates current signal based based on the buy / sell columns of the dataframe.
-        Used by Bot to get the signal to buy or sell
+        Calculates current signal based based on the buy/short or sell/exit_short
+        columns of the dataframe.
+        Used by Bot to get the signal to buy, sell, short, or exit_short
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
-        :return: (Buy, Sell) A bool-tuple indicating buy/sell signal
+        :return: (Buy, Sell)/(Short, Exit_short) A bool-tuple indicating
+        (buy/sell)/(short/exit_short) signal
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
@@ -528,42 +539,49 @@ class IStrategy(ABC, HyperStrategyMixin):
             )
             return False, False, None
 
-        buy = latest[SignalType.BUY.value] == 1
+        (enter_type, enter_tag) = (
+            (SignalType.SHORT, SignalTagType.SHORT_TAG)
+            if is_short else
+            (SignalType.BUY, SignalTagType.BUY_TAG)
+        )
+        exit_type = SignalType.EXIT_SHORT if is_short else SignalType.SELL
 
-        sell = False
-        if SignalType.SELL.value in latest:
-            sell = latest[SignalType.SELL.value] == 1
+        enter = latest[enter_type.value] == 1
 
-        buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+        exit = False
+        if exit_type.value in latest:
+            exit = latest[exit_type.value] == 1
 
-        logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
-                     latest['date'], pair, str(buy), str(sell))
+        enter_tag_value = latest.get(enter_tag.value, None)
+
+        logger.debug(f'trigger: %s (pair=%s) {enter_type.value}=%s {exit_type.value}=%s',
+                     latest['date'], pair, str(enter), str(exit))
         timeframe_seconds = timeframe_to_seconds(timeframe)
         if self.ignore_expired_candle(latest_date=latest_date,
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
-                                      buy=buy):
-            return False, sell, buy_tag
-        return buy, sell, buy_tag
+                                      enter=enter):
+            return False, exit, enter_tag_value
+        return enter, exit, enter_tag_value
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
-                              timeframe_seconds: int, buy: bool):
-        if self.ignore_buying_expired_candle_after and buy:
+                              timeframe_seconds: int, enter: bool):
+        if self.ignore_buying_expired_candle_after and enter:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
         else:
             return False
 
-    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
+    def should_sell(self, trade: Trade, rate: float, date: datetime, enter: bool,
+                    exit: bool, low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
-        This function evaluates if one of the conditions required to trigger a sell
-        has been reached, which can either be a stop-loss, ROI or sell-signal.
-        :param low: Only used during backtesting to simulate stoploss
-        :param high: Only used during backtesting, to simulate ROI
+        This function evaluates if one of the conditions required to trigger a sell/exit_short
+        has been reached, which can either be a stop-loss, ROI or exit-signal.
+        :param low: Only used during backtesting to simulate (long)stoploss/(short)ROI
+        :param high: Only used during backtesting, to simulate (short)stoploss/(long)ROI
         :param force_stoploss: Externally provided stoploss
-        :return: True if trade should be sold, False otherwise
+        :return: True if trade should be exited, False otherwise
         """
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
@@ -578,8 +596,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
+        # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
+        roi_reached = (not (enter and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
@@ -592,10 +610,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif self.use_sell_signal and not buy:
-            if sell:
+        elif self.use_sell_signal and not enter:
+            if exit:
                 sell_signal = SellType.SELL_SIGNAL
             else:
+                trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
                     current_profit=current_profit)
@@ -603,18 +622,18 @@ class IStrategy(ABC, HyperStrategyMixin):
                     sell_signal = SellType.CUSTOM_SELL
                     if isinstance(custom_reason, str):
                         if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
-                            logger.warning(f'Custom sell reason returned from custom_sell is too '
-                                           f'long and was trimmed to {CUSTOM_SELL_MAX_LENGTH} '
-                                           f'characters.')
+                            logger.warning(f'Custom {trade_type} reason returned from '
+                                           f'custom_{trade_type} is too long and was trimmed'
+                                           f'to {CUSTOM_SELL_MAX_LENGTH} characters.')
                             custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
                     else:
                         custom_reason = None
-            # TODO: return here if sell-signal should be favored over ROI
+            # TODO: return here if exit-signal should be favored over ROI
 
         # Start evaluations
         # Sequence:
         # ROI (if not stoploss)
-        # Sell-signal
+        # Exit-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
@@ -632,7 +651,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             return stoplossflag
 
         # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No sell signal.")
+        # logger.debug(f"{trade.pair} - No exit signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
@@ -641,7 +660,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                           high: float = None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
-        decides to sell or not
+        decides to exit or not
         :param current_profit: current profit as ratio
         :param low: Low value of this candle, only set in backtesting
         :param high: High value of this candle, only set in backtesting
@@ -651,7 +670,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if self.use_custom_stoploss and trade.stop_loss < (low or current_rate):
+        dir_correct = (
+            trade.stop_loss < (low or current_rate) and not trade.is_short or
+            trade.stop_loss > (low or current_rate) and trade.is_short
+        )
+
+        if self.use_custom_stoploss and dir_correct:
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
@@ -735,7 +759,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advise_buy or advise_sell!
+        Does not run advise_enter or advise_exit!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Has positive effects on memory usage for whatever reason - also when
@@ -746,7 +770,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Populate indicators that will be used in the Buy and Sell strategy
+        Populate indicators that will be used in the Buy, Sell, short, exit_short strategy
         This method should not be overridden.
         :param dataframe: Dataframe with data from the exchange
         :param metadata: Additional information, like the currently traded pair
@@ -760,37 +784,60 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return self.populate_indicators(dataframe, metadata)
 
-    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_enter(
+        self,
+        dataframe: DataFrame,
+        metadata: dict,
+        is_short: bool = False
+    ) -> DataFrame:
         """
-        Based on TA indicators, populates the buy signal for the given dataframe
+        Based on TA indicators, populates the buy/short signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the
             currently traded pair
         :return: DataFrame with buy column
         """
-        logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
+        (type, fun_len) = (
+            ("short", self._short_fun_len)
+            if is_short else
+            ("buy", self._buy_fun_len)
+        )
 
-        if self._buy_fun_len == 2:
+        logger.debug(f"Populating {type} signals for pair {metadata.get('pair')}.")
+
+        if fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_buy_trend(dataframe)  # type: ignore
+            return self.populate_enter_trend(dataframe)  # type: ignore
         else:
-            return self.populate_buy_trend(dataframe, metadata)
+            return self.populate_enter_trend(dataframe, metadata)
 
-    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_exit(
+        self,
+        dataframe: DataFrame,
+        metadata: dict,
+        is_short: bool = False
+    ) -> DataFrame:
         """
-        Based on TA indicators, populates the sell signal for the given dataframe
+        Based on TA indicators, populates the sell/exit_short signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the
             currently traded pair
         :return: DataFrame with sell column
         """
-        logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
-        if self._sell_fun_len == 2:
+
+        (type, fun_len) = (
+            ("exit_short", self._exit_short_fun_len)
+            if is_short else
+            ("sell", self._sell_fun_len)
+        )
+
+        logger.debug(f"Populating {type} signals for pair {metadata.get('pair')}.")
+        if fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_sell_trend(dataframe)  # type: ignore
+            return self.populate_exit_trend(dataframe)  # type: ignore
         else:
-            return self.populate_sell_trend(dataframe, metadata)
+            return self.populate_exit_trend(dataframe, metadata)

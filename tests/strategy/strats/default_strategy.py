@@ -154,3 +154,48 @@ class DefaultStrategy(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def populate_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the short signal for the given dataframe
+        :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
+        :return: DataFrame with short column
+        """
+        dataframe.loc[
+            (
+                (dataframe['rsi'] > 65) &
+                (dataframe['fastd'] > 65) &
+                (dataframe['adx'] < 70) &
+                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
+            ) |
+            (
+                (dataframe['adx'] < 35) &
+                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
+            ),
+            'short'] = 1
+
+        return dataframe
+
+    def populate_exit_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        """
+        Based on TA indicators, populates the exit_short signal for the given dataframe
+        :param dataframe: DataFrame
+        :param metadata: Additional information, like the currently traded pair
+        :return: DataFrame with exit_short column
+        """
+        dataframe.loc[
+            (
+                (
+                    (qtpylib.crossed_below(dataframe['rsi'], 30)) |
+                    (qtpylib.crossed_below(dataframe['fastd'], 30))
+                ) &
+                (dataframe['adx'] < 90) &
+                (dataframe['minus_di'] < 0)  # TODO-lev: what to do here
+            ) |
+            (
+                (dataframe['adx'] > 30) &
+                (dataframe['minus_di'] < 0.5)   # TODO-lev: what to do here
+            ),
+            'exit_short'] = 1
+        return dataframe
