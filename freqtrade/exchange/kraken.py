@@ -4,7 +4,6 @@ from typing import Any, Dict
 
 import ccxt
 
-from freqtrade.enums import ExchangeName
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -15,8 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class Kraken(Exchange):
-
-    exchange_name: ExchangeName = ExchangeName.KRAKEN
 
     _params: Dict = {"trading_agreement": "agree"}
     _ft_has: Dict = {
