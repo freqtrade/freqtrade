@@ -732,7 +732,6 @@ class Exchange:
             order = self._api.create_order(pair, ordertype, side,
                                            amount, rate_for_order, params)
             self._log_exchange_response('create_order', order)
-
             return order
 
         except ccxt.InsufficientFunds as e:
@@ -1520,6 +1519,15 @@ class Exchange:
     def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
         # TODO-mg: implement
         return 0.0005
+
+    def set_leverage(self, pair, leverage):
+        """
+            Binance Futures must set the leverage before making a futures trade, in order to not
+            have the same leverage on every trade
+            # TODO-lev: This may be the case for any futures exchange, or even margin trading on
+            # TODO-lev: some exchanges, so check this
+        """
+        self._api.set_leverage(symbol=pair, leverage=leverage)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
