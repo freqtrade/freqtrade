@@ -228,25 +228,25 @@ def test_assert_df(ohlcv_history, caplog):
     _STRATEGY.disable_dataframe_checks = False
 
 
-def test_ohlcvdata_to_dataframe(default_conf, testdatadir) -> None:
+def test_advise_all_indicators(default_conf, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
-    processed = strategy.ohlcvdata_to_dataframe(data)
+    processed = strategy.advise_all_indicators(data)
     assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
 
 
-def test_ohlcvdata_to_dataframe_copy(mocker, default_conf, testdatadir) -> None:
+def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
     aimock = mocker.patch('freqtrade.strategy.interface.IStrategy.advise_indicators')
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
-    strategy.ohlcvdata_to_dataframe(data)
+    strategy.advise_all_indicators(data)
     assert aimock.call_count == 1
     # Ensure that a copy of the dataframe is passed to advice_indicators
     assert aimock.call_args_list[0][0][0] is not data

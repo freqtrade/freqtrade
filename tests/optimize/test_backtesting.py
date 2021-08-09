@@ -85,7 +85,7 @@ def simple_backtest(config, contour, mocker, testdatadir) -> None:
     backtesting._set_strategy(backtesting.strategylist[0])
 
     data = load_data_test(contour, testdatadir)
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     assert isinstance(processed, dict)
     results = backtesting.backtest(
@@ -107,7 +107,7 @@ def _make_backtest_conf(mocker, datadir, conf=None, pair='UNITTEST/BTC'):
     patch_exchange(mocker)
     backtesting = Backtesting(conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     return {
         'processed': processed,
@@ -289,7 +289,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     backtesting._set_strategy(backtesting.strategylist[0])
     assert backtesting.config == default_conf
     assert backtesting.timeframe == '5m'
-    assert callable(backtesting.strategy.ohlcvdata_to_dataframe)
+    assert callable(backtesting.strategy.advise_all_indicators)
     assert callable(backtesting.strategy.advise_buy)
     assert callable(backtesting.strategy.advise_sell)
     assert isinstance(backtesting.strategy.dp, DataProvider)
@@ -335,14 +335,14 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
                              fill_up_missing=True)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     assert len(processed['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    processed2 = strategy.ohlcvdata_to_dataframe(data)
+    processed2 = strategy.advise_all_indicators(data)
     assert processed['UNITTEST/BTC'].equals(processed2['UNITTEST/BTC'])
 
 
@@ -549,7 +549,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     result = backtesting.backtest(
         processed=processed,
@@ -614,7 +614,7 @@ def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
     data = history.load_data(datadir=testdatadir, timeframe='1m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     results = backtesting.backtest(
         processed=processed,
@@ -633,7 +633,7 @@ def test_processed(default_conf, mocker, testdatadir) -> None:
     backtesting._set_strategy(backtesting.strategylist[0])
 
     dict_of_tickerrows = load_data_test('raise', testdatadir)
-    dataframes = backtesting.strategy.ohlcvdata_to_dataframe(dict_of_tickerrows)
+    dataframes = backtesting.strategy.advise_all_indicators(dict_of_tickerrows)
     dataframe = dataframes['UNITTEST/BTC']
     cols = dataframe.columns
     # assert the dataframe got some of the indicator columns
@@ -782,7 +782,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
     backtesting.strategy.advise_sell = _trend_alternate_hold  # Override
 
-    processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
+    processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     backtest_conf = {
         'processed': processed,

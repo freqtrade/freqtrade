@@ -533,7 +533,8 @@ class Backtesting:
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 
-    def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
+    def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, DataFrame],
+                              timerange: TimeRange):
         self.progress.init_step(BacktestState.ANALYZE, 0)
 
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
@@ -552,7 +553,7 @@ class Backtesting:
             max_open_trades = 0
 
         # need to reprocess data every time to populate signals
-        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
+        preprocessed = self.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe
         preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)
