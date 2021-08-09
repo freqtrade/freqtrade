@@ -90,18 +90,6 @@ class HyperoptTools():
             return any(s in config['spaces'] for s in [space, 'all', 'default'])
 
     @staticmethod
-    def _read_results_pickle(results_file: Path) -> List:
-        """
-        Read hyperopt results from pickle file
-        LEGACY method - new files are written as json and cannot be read with this method.
-        """
-        from joblib import load
-
-        logger.info(f"Reading pickled epochs from '{results_file}'")
-        data = load(results_file)
-        return data
-
-    @staticmethod
     def _read_results(results_file: Path) -> List:
         """
         Read hyperopt results from file
@@ -120,7 +108,10 @@ class HyperoptTools():
         epochs: List = []
         if results_file.is_file() and results_file.stat().st_size > 0:
             if results_file.suffix == '.pickle':
-                epochs = HyperoptTools._read_results_pickle(results_file)
+                raise OperationalException(
+                    "Legacy hyperopt results are no longer supported."
+                    "Please rerun hyperopt or use an older version to load this file."
+                )
             else:
                 epochs = HyperoptTools._read_results(results_file)
             # Detection of some old format, without 'is_best' field saved
