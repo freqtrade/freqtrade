@@ -535,6 +535,8 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     trade = backtesting._enter_trade(pair, row=row)
     assert trade is None
 
+    backtesting.cleanup()
+
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_sell_signal'] = False
