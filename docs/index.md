@@ -47,7 +47,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 Exchanges confirmed working by the community:
 
 - [X] [Bitvavo](https://bitvavo.com/)
-- [X] [Kukoin](https://www.kucoin.com/)
+- [X] [Kucoin](https://www.kucoin.com/)
 
 ## Requirements
 
