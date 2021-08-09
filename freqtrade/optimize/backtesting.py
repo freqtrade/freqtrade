@@ -466,6 +466,8 @@ class Backtesting:
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 try:
+                    # Row is treated as "current incomplete candle".
+                    # Buy / sell signals are shifted by 1 to compensate for this.
                     row = data[pair][row_index]
                 except IndexError:
                     # missing Data for one pair at the end.
@@ -476,8 +478,8 @@ class Backtesting:
                 if row[DATE_IDX] > tmp:
                     continue
 
-                row_index += 1
                 self.dataprovider._set_dataframe_max_index(row_index)
+                row_index += 1
                 indexes[pair] = row_index
 
                 # without positionstacking, we can only have one open trade per pair.
