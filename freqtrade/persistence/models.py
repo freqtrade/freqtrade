@@ -265,11 +265,13 @@ class LocalTrade():
     buy_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
+    # Leverage trading properties
+    is_short: bool = False
+    isolated_liq: Optional[float] = None
+    leverage: float = 1.0
+
     # Margin trading properties
     interest_rate: float = 0.0
-    isolated_liq: Optional[float] = None
-    is_short: bool = False
-    leverage: float = 1.0
 
     @property
     def has_no_leverage(self) -> bool:
@@ -471,12 +473,12 @@ class LocalTrade():
 
         if self.is_short:
             new_loss = float(current_price * (1 + abs(stoploss)))
-            # If trading on margin, don't set the stoploss below the liquidation price
+            # If trading with leverage, don't set the stoploss below the liquidation price
             if self.isolated_liq:
                 new_loss = min(self.isolated_liq, new_loss)
         else:
             new_loss = float(current_price * (1 - abs(stoploss)))
-            # If trading on margin, don't set the stoploss below the liquidation price
+            # If trading with leverage, don't set the stoploss below the liquidation price
             if self.isolated_liq:
                 new_loss = max(self.isolated_liq, new_loss)
 
@@ -497,7 +499,8 @@ class LocalTrade():
             lower_stop = new_loss < self.stop_loss
 
             # stop losses only walk up, never down!,
-            #   ? But adding more to a margin account would create a lower liquidation price,
+            # TODO-lev
+            #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):
                 logger.debug(f"{self.pair} - Adjusting stoploss...")
@@ -545,10 +548,11 @@ class LocalTrade():
         elif order_type in ('market', 'limit') and self.exit_side == order['side']:
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
-                # TODO-mg: On shorts, you buy a little bit more than the amount (amount + interest)
+                # TODO-lev: On shorts, you buy a little bit more than the amount (amount + interest)
                 # This wll only print the original amount
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
-            self.close(safe_value_fallback(order, 'average', 'price'))  # TODO-mg: Double check this
+            # TODO-lev: Double check this
+            self.close(safe_value_fallback(order, 'average', 'price'))
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
@@ -883,18 +887,19 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)  # TODO-mg: Change to close_reason
-    sell_order_status = Column(String(100), nullable=True)  # TODO-mg: Change to close_order_status
+    sell_reason = Column(String(100), nullable=True)  # TODO-lev: Change to close_reason
+    sell_order_status = Column(String(100), nullable=True)  # TODO-lev: Change to close_order_status
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
-    # Margin trading properties
+    # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
-    interest_rate = Column(Float, nullable=False, default=0.0)
-    isolated_liq = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
-    # End of margin trading properties
+    isolated_liq = Column(Float, nullable=True)
+
+    # Margin Trading Properties
+    interest_rate = Column(Float, nullable=False, default=0.0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
