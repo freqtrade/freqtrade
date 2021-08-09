@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
+from datetime import timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
@@ -741,8 +742,13 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     # 100 buys signals
     results = result['results']
     assert len(results) == 100
-    # Cached data should be 200 (no change since required_startup is 0)
-    assert len(backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]) == 200
+    # Cached data should be 199 (missing 1 candle at the start)
+    analyzed_df = backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]
+    assert len(analyzed_df) == 199
+    # Expect last candle to be 1 below end date (as the last candle is assumed as "incomplete"
+    # during backtesting)
+    expected_last_candle_date = backtest_conf['end_date'] - timedelta(minutes=1)
+    assert analyzed_df.iloc[-1]['date'].to_pydatetime() == expected_last_candle_date
 
     # One trade was force-closed at the end
     assert len(results.loc[results['is_open']]) == 0
@@ -774,7 +780,8 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     data = trim_dictlist(data, -500)
 
     # Remove data for one pair from the beginning of the data
-    data[pair] = data[pair][tres:].reset_index()
+    if tres > 0:
+        data[pair] = data[pair][tres:].reset_index()
     default_conf['timeframe'] = '5m'
 
     backtesting = Backtesting(default_conf)
@@ -800,8 +807,11 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     assert len(evaluate_result_multi(results['results'], '5m', 3)) == 0
 
     # Cached data correctly removed amounts
-    removed_candles = len(data[pair]) - 1 - backtesting.strategy.startup_candle_count
+    offset = 2 if tres == 0 else 1
+    removed_candles = len(data[pair]) - offset - backtesting.strategy.startup_candle_count
     assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
+    assert len(backtesting.dataprovider.get_analyzed_dataframe(
+        'NXT/BTC', '5m')[0]) == len(data['NXT/BTC']) - 2 - backtesting.strategy.startup_candle_count
 
     backtest_conf = {
         'processed': processed,
