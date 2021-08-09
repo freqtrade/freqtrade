@@ -1575,7 +1575,7 @@ def test_adjust_stop_loss_short(fee):
     assert trade.initial_stop_loss_pct == 0.05
     #  Initial is true but stop_loss set - so doesn't do anything
     trade.adjust_stop_loss(0.3, -0.1, True)
-    assert round(trade.stop_loss, 8) == 0.66  # TODO-mg: What is this test?
+    assert round(trade.stop_loss, 8) == 0.66
     assert trade.initial_stop_loss == 1.05
     assert trade.initial_stop_loss_pct == 0.05
     assert trade.stop_loss_pct == 0.1
