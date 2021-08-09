@@ -1,26 +1,65 @@
-# from decimal import Decimal
+from decimal import Decimal
 
-# from freqtrade.enums import Collateral, TradingMode
-# from freqtrade.leverage import interest
+from freqtrade.leverage import interest
+
+
 # from freqtrade.exceptions import OperationalException
-# binance = "binance"
-# kraken = "kraken"
-# ftx = "ftx"
-# other = "bittrex"
+binance = "binance"
+kraken = "kraken"
+ftx = "ftx"
+other = "bittrex"
 
 
 def test_interest():
-    return
+
+    borrowed = Decimal(60.0)
+    interest_rate = Decimal(0.0005)
+    interest_rate_2 = Decimal(0.00025)
+    ten_mins = Decimal(1/6)
+    five_hours = Decimal(5.0)
+
     # Binance
-    # assert interest(binance, borrowed=60, rate=0.0005,
-    #                    hours = 1/6) == round(0.0008333333333333334, 8)
-    # TODO-lev: The below tests
-    # assert interest(binance, borrowed=60, rate=0.00025, hours=5.0) == 1.0
+    assert float(interest(
+        exchange_name=binance,
+        borrowed=borrowed,
+        rate=interest_rate,
+        hours=ten_mins
+    )) == 0.00125
 
-    # # Kraken
-    # assert interest(kraken, borrowed=60, rate=0.0005, hours=1.0) == 1.0
-    # assert interest(kraken, borrowed=60, rate=0.00025, hours=5.0) == 1.0
+    assert float(interest(
+        exchange_name=binance,
+        borrowed=borrowed,
+        rate=interest_rate_2,
+        hours=five_hours
+    )) == 0.003125
 
-    # # FTX
-    # assert interest(ftx, borrowed=60, rate=0.0005, hours=1.0) == 1.0
-    # assert interest(ftx, borrowed=60, rate=0.00025, hours=5.0) == 1.0
+    # Kraken
+    assert float(interest(
+        exchange_name=kraken,
+        borrowed=borrowed,
+        rate=interest_rate,
+        hours=ten_mins
+    )) == 0.06
+
+    assert float(interest(
+        exchange_name=kraken,
+        borrowed=borrowed,
+        rate=interest_rate_2,
+        hours=five_hours
+    )) == 0.045
+
+    # FTX
+    # TODO-lev
+    # assert float(interest(
+    #     exchange_name=ftx,
+    #     borrowed=borrowed,
+    #     rate=interest_rate,
+    #     hours=ten_mins
+    # )) == 0.00125
+
+    # assert float(interest(
+    #     exchange_name=ftx,
+    #     borrowed=borrowed,
+    #     rate=interest_rate_2,
+    #     hours=five_hours
+    # )) == 0.003125
