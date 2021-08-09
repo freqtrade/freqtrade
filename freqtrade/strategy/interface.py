@@ -589,7 +589,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
+        if ((self.sell_profit_only and current_profit <= self.sell_profit_offset) 
+            or (current_profit >= 0 and current_profit <= self.sell_profit_offset)):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
         elif self.use_sell_signal and not buy:
