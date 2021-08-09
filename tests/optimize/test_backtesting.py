@@ -584,7 +584,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],
          'stop_loss_ratio': [-0.1, -0.1],
-         'min_rate': [0.1038, 0.10302485],
+         'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
          'buy_tag': [None, None],

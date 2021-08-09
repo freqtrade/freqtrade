@@ -354,12 +354,12 @@ class LocalTrade():
         LocalTrade.trades_open = []
         LocalTrade.total_profit = 0
 
-    def adjust_min_max_rates(self, current_price: float) -> None:
+    def adjust_min_max_rates(self, current_price: float, current_price_low: float) -> None:
         """
         Adjust the max_rate and min_rate.
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
-        self.min_rate = min(current_price, self.min_rate or self.open_rate)
+        self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
     def _set_new_stoploss(self, new_loss: float, stoploss: float):
         """Assign new stop value"""

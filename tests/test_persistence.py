@@ -799,24 +799,29 @@ def test_adjust_min_max_rates(fee):
         open_rate=1,
     )
 
-    trade.adjust_min_max_rates(trade.open_rate)
+    trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     assert trade.max_rate == 1
     assert trade.min_rate == 1
 
     # check min adjusted, max remained
-    trade.adjust_min_max_rates(0.96)
+    trade.adjust_min_max_rates(0.96, 0.96)
     assert trade.max_rate == 1
     assert trade.min_rate == 0.96
 
     # check max adjusted, min remains
-    trade.adjust_min_max_rates(1.05)
+    trade.adjust_min_max_rates(1.05, 1.05)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
 
     # current rate "in the middle" - no adjustment
-    trade.adjust_min_max_rates(1.03)
+    trade.adjust_min_max_rates(1.03, 1.03)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
+
+    # current rate "in the middle" - no adjustment
+    trade.adjust_min_max_rates(1.10, 0.91)
+    assert trade.max_rate == 1.10
+    assert trade.min_rate == 0.91
 
 
 @pytest.mark.usefixtures("init_persistence")

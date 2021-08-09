@@ -398,7 +398,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         exchange='binance',
         open_rate=1,
     )
-    trade.adjust_min_max_rates(trade.open_rate)
+    trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing
     strategy.trailing_stop_positive = -0.05
     strategy.use_custom_stoploss = custom
