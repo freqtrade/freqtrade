@@ -164,6 +164,8 @@ def test_get_balances_prod(default_conf, mocker):
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
                            "get_balances", "fetch_balance")
 
+# TODO-lev: All these stoploss tests with shorts
+
 
 @pytest.mark.parametrize('ordertype', ['market', 'limit'])
 def test_stoploss_order_kraken(default_conf, mocker, ordertype):

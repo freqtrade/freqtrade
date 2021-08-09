@@ -30,7 +30,7 @@ class Binance(Exchange):
         Returns True if adjustment is necessary.
         :param side: "buy" or "sell"
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
         return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
 
     @retrier(retries=0)
@@ -42,7 +42,7 @@ class Binance(Exchange):
         It may work with a limited number of other exchanges, but this has not been tested yet.
         :param side: "buy" or "sell"
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
         # Limit price threshold: As limit price should always be below stop-price
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         rate = stop_price * limit_price_pct

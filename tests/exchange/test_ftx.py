@@ -13,6 +13,8 @@ from .test_exchange import ccxt_exceptionhandlers
 
 STOPLOSS_ORDERTYPE = 'stop'
 
+# TODO-lev: All these stoploss tests with shorts
+
 
 def test_stoploss_order_ftx(default_conf, mocker):
     api_mock = MagicMock()

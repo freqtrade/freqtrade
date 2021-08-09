@@ -36,7 +36,7 @@ class Ftx(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
         return order['type'] == 'stop' and stop_loss > float(order['price'])
 
     @retrier(retries=0)
@@ -48,7 +48,7 @@ class Ftx(Exchange):
 
         Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
 
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         limit_rate = stop_price * limit_price_pct

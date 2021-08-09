@@ -72,7 +72,7 @@ class Kraken(Exchange):
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
         return (order['type'] in ('stop-loss', 'stop-loss-limit')
                 and stop_loss > float(order['price']))
 
@@ -83,7 +83,7 @@ class Kraken(Exchange):
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
         """
-        # TODO-mg: Short support
+        # TODO-lev: Short support
         params = self._params.copy()
 
         if order_types.get('stoploss', 'market') == 'limit':
