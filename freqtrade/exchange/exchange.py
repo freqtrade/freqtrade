@@ -543,7 +543,7 @@ class Exchange:
 
     def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
                                   leverage: Optional[float] = 1.0) -> Optional[float]:
-        # TODO-mg: Using leverage makes the min stake amount lower (on binance at least)
+        # TODO-lev: Using leverage makes the min stake amount lower (on binance at least)
         try:
             market = self.markets[pair]
         except KeyError:
@@ -1550,7 +1550,7 @@ class Exchange:
                                           until=until, from_id=from_id))
 
     def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
-        # TODO-mg: implement
+        # TODO-lev: implement
         return 0.0005
 
     def set_leverage(self, pair, leverage):

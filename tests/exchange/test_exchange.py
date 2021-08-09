@@ -116,6 +116,8 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._api.headers == {'hello': 'world'}
     Exchange._headers = {}
 
+    # TODO-lev: Test with options
+
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
@@ -307,6 +309,7 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
+    # TODO-lev: Test with leverage
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
@@ -425,6 +428,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
+    # TODO-lev: Test with leverage
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
@@ -443,6 +447,11 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
         8
     )
+
+
+def apply_leverage_to_stake_amount():
+    # TODO-lev
+    return
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -2933,3 +2942,18 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
+
+
+def test_get_max_leverage():
+    # TODO-lev
+    return
+
+
+def test_get_interest_rate():
+    # TODO-lev
+    return
+
+
+def test_set_leverage():
+    # TODO-lev
+    return
