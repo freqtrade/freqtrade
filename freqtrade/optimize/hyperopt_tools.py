@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import rapidjson
@@ -90,37 +90,33 @@ class HyperoptTools():
             return any(s in config['spaces'] for s in [space, 'all', 'default'])
 
     @staticmethod
-    def _read_results(results_file: Path) -> List:
+    def _read_results(results_file: Path, batch_size: int = 10) -> Iterator[List[Any]]:
         """
-        Read hyperopt results from file
+        Stream hyperopt results from file
         """
         import rapidjson
         logger.info(f"Reading epochs from '{results_file}'")
         with results_file.open('r') as f:
-            data = [rapidjson.loads(line) for line in f]
-        return data
+            data = []
+            for line in f:
+                data += [rapidjson.loads(line)]
+                if len(data) >= batch_size:
+                    yield data
+                    data = []
+        yield data
 
     @staticmethod
-    def load_previous_results(results_file: Path) -> List:
-        """
-        Load data for epochs from the file if we have one
-        """
-        epochs: List = []
+    def _test_hyperopt_results_exist(results_file) -> bool:
         if results_file.is_file() and results_file.stat().st_size > 0:
             if results_file.suffix == '.pickle':
                 raise OperationalException(
                     "Legacy hyperopt results are no longer supported."
                     "Please rerun hyperopt or use an older version to load this file."
                 )
-            else:
-                epochs = HyperoptTools._read_results(results_file)
-            # Detection of some old format, without 'is_best' field saved
-            if epochs[0].get('is_best') is None:
-                raise OperationalException(
-                    "The file with HyperoptTools results is incompatible with this version "
-                    "of Freqtrade and cannot be loaded.")
-            logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
-        return epochs
+            return True
+        else:
+            # No file found.
+            return False
 
     @staticmethod
     def load_filtered_results(results_file: Path, config: Dict[str, Any]) -> Tuple[List, int]:
@@ -138,12 +134,24 @@ class HyperoptTools():
             'filter_min_objective': config.get('hyperopt_list_min_objective', None),
             'filter_max_objective': config.get('hyperopt_list_max_objective', None),
         }
+        if not HyperoptTools._test_hyperopt_results_exist(results_file):
+            # No file found.
+            return [], 0
 
-        # Previous evaluations
-        epochs = HyperoptTools.load_previous_results(results_file)
-        total_epochs = len(epochs)
+        epochs = []
+        total_epochs = 0
+        for epochs_tmp in HyperoptTools._read_results(results_file):
+            if total_epochs == 0 and epochs_tmp[0].get('is_best') is None:
+                raise OperationalException(
+                    "The file with HyperoptTools results is incompatible with this version "
+                    "of Freqtrade and cannot be loaded.")
+            total_epochs += len(epochs_tmp)
+            epochs += hyperopt_filter_epochs(epochs_tmp, filteroptions, log=False)
 
-        epochs = hyperopt_filter_epochs(epochs, filteroptions)
+        logger.info(f"Loaded {total_epochs} previous evaluations from disk.")
+
+        # Final filter run ...
+        epochs = hyperopt_filter_epochs(epochs, filteroptions, log=True)
 
         return epochs, total_epochs
 
