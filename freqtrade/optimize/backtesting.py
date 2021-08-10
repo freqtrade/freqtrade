@@ -246,10 +246,10 @@ class Backtesting:
             if has_buy_tag:
                 df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
 
-            df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
-
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+
+            df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
@@ -478,9 +478,9 @@ class Backtesting:
                 if row[DATE_IDX] > tmp:
                     continue
 
-                self.dataprovider._set_dataframe_max_index(row_index)
                 row_index += 1
                 indexes[pair] = row_index
+                self.dataprovider._set_dataframe_max_index(row_index)
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
