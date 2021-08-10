@@ -941,8 +941,16 @@ def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
 def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmpdir):
     csv_file = Path(tmpdir) / "test.csv"
     mocker.patch(
-        'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-        MagicMock(return_value=saved_hyperopt_results)
+        'freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist',
+        return_value=True
+        )
+
+    def fake_iterator(*args, **kwargs):
+        yield from [saved_hyperopt_results]
+
+    mocker.patch(
+        'freqtrade.optimize.hyperopt_tools.HyperoptTools._read_results',
+        side_effect=fake_iterator
     )
 
     args = [
@@ -1175,8 +1183,16 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmpdir):
 
 def test_hyperopt_show(mocker, capsys, saved_hyperopt_results):
     mocker.patch(
-        'freqtrade.optimize.hyperopt_tools.HyperoptTools.load_previous_results',
-        MagicMock(return_value=saved_hyperopt_results)
+        'freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist',
+        return_value=True
+    )
+
+    def fake_iterator(*args, **kwargs):
+        yield from [saved_hyperopt_results]
+
+    mocker.patch(
+        'freqtrade.optimize.hyperopt_tools.HyperoptTools._read_results',
+        side_effect=fake_iterator
     )
     mocker.patch('freqtrade.commands.hyperopt_commands.show_backtest_result')
 

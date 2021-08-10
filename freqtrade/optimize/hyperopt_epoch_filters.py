@@ -7,7 +7,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
+def hyperopt_filter_epochs(epochs: List, filteroptions: dict, log: bool = True) -> List:
     """
     Filter our items from the list of hyperopt results
     """
@@ -24,11 +24,11 @@ def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
     epochs = _hyperopt_filter_epochs_profit(epochs, filteroptions)
 
     epochs = _hyperopt_filter_epochs_objective(epochs, filteroptions)
-
-    logger.info(f"{len(epochs)} " +
-                ("best " if filteroptions['only_best'] else "") +
-                ("profitable " if filteroptions['only_profitable'] else "") +
-                "epochs found.")
+    if log:
+        logger.info(f"{len(epochs)} " +
+                    ("best " if filteroptions['only_best'] else "") +
+                    ("profitable " if filteroptions['only_profitable'] else "") +
+                    "epochs found.")
     return epochs
 
 
