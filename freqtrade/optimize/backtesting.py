@@ -504,7 +504,7 @@ class Backtesting:
                         open_trades[pair].append(trade)
                         LocalTrade.add_bt_trade(trade)
 
-                for trade in open_trades[pair]:
+                for trade in list(open_trades[pair]):
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occurred
