@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 
-from freqtrade.enums import InterestMode
 from freqtrade.persistence.models import Order, Trade
 
 
@@ -380,11 +379,10 @@ def short_trade(fee):
         open_order_id='dry_run_exit_short_12345',
         strategy='DefaultStrategy',
         timeframe=5,
-        sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
+        sell_reason='sell_signal',  # TODO-lev: Update to exit/close reason
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         # close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
-        is_short=True,
-        interest_mode=InterestMode.HOURSPERDAY
+        is_short=True
     )
     o = Order.parse_from_ccxt_object(short_order(), 'ETC/BTC', 'sell')
     trade.orders.append(o)
@@ -470,11 +468,10 @@ def leverage_trade(fee):
         open_order_id='dry_run_leverage_buy_12368',
         strategy='DefaultStrategy',
         timeframe=5,
-        sell_reason='sell_signal',  # TODO-mg: Update to exit/close reason
+        sell_reason='sell_signal',  # TODO-lev: Update to exit/close reason
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=300),
         close_date=datetime.now(tz=timezone.utc),
-        interest_rate=0.0005,
-        interest_mode=InterestMode.HOURSPER4
+        interest_rate=0.0005
     )
     o = Order.parse_from_ccxt_object(leverage_order(), 'DOGE/BTC', 'sell')
     trade.orders.append(o)

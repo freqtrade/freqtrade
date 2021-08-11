@@ -54,7 +54,6 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     isolated_liq = get_column_def(cols, 'isolated_liq', 'null')
     # sqlite does not support literals for booleans
     is_short = get_column_def(cols, 'is_short', '0')
-    interest_mode = get_column_def(cols, 'interest_mode', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -66,7 +65,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     close_profit_abs = get_column_def(
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
-    # TODO-mg: update to exit order status
+    # TODO-lev: update to exit order status
     sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
@@ -92,7 +91,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stoploss_order_id, stoploss_last_update,
             max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
             timeframe, open_trade_value, close_profit_abs,
-            leverage, interest_rate, isolated_liq, is_short, interest_mode
+            leverage, interest_rate, isolated_liq, is_short
             )
         select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
@@ -110,8 +109,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {leverage} leverage, {interest_rate} interest_rate,
-            {isolated_liq} isolated_liq, {is_short} is_short,
-            {interest_mode} interest_mode
+            {isolated_liq} isolated_liq, {is_short} is_short
             from {table_back_name}
             """))
 
