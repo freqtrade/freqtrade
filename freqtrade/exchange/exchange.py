@@ -618,6 +618,8 @@ class Exchange:
         if self.exchange_has('fetchL2OrderBook'):
             ob = self.fetch_l2_order_book(pair, 20)
             ob_type = 'asks' if side == 'buy' else 'bids'
+            slippage = 0.05
+            max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
             filled_amount = 0
@@ -626,7 +628,9 @@ class Exchange:
                 book_entry_coin_volume = book_entry[1]
                 if remaining_amount > 0:
                     if remaining_amount < book_entry_coin_volume:
+                        # Orderbook at this slot bigger than remaining amount
                         filled_amount += remaining_amount * book_entry_price
+                        break
                     else:
                         filled_amount += book_entry_coin_volume * book_entry_price
                     remaining_amount -= book_entry_coin_volume
@@ -635,7 +639,14 @@ class Exchange:
             else:
                 # If remaining_amount wasn't consumed completely (break was not called)
                 filled_amount += remaining_amount * book_entry_price
-            forecast_avg_filled_price = filled_amount / amount
+            forecast_avg_filled_price = max(filled_amount, 0) / amount
+            # Limit max. slippage to specified value
+            if side == 'buy':
+                forecast_avg_filled_price = min(forecast_avg_filled_price, max_slippage_val)
+
+            else:
+                forecast_avg_filled_price = max(forecast_avg_filled_price, max_slippage_val)
+
             return self.price_to_precision(pair, forecast_avg_filled_price)
 
         return rate
