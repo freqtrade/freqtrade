@@ -485,11 +485,7 @@ class FreqtradeBot(LoggingMixin):
                 pair=pair, current_time=datetime.now(timezone.utc),
                 proposed_rate=proposed_buy_rate)
 
-            if custom_entry_price and (isinstance(custom_entry_price, int)
-                                       or isinstance(custom_entry_price, float)):
-                buy_limit_requested = custom_entry_price
-            else:
-                buy_limit_requested = proposed_buy_rate
+            buy_limit_requested = self.get_valid_price(custom_entry_price, proposed_buy_rate)
 
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
@@ -1087,12 +1083,15 @@ class FreqtradeBot(LoggingMixin):
             limit = trade.stop_loss
 
         # set custom_exit_price if available
+        proposed_limit_rate = limit
         current_profit = trade.calc_profit_ratio(limit)
-        limit = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                      default_retval=limit)(
+        custom_exit_price = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                  default_retval=proposed_limit_rate)(
             pair=trade.pair, trade=trade,
             current_time=datetime.now(timezone.utc),
-            proposed_rate=limit, current_profit=current_profit)
+            proposed_rate=proposed_limit_rate, current_profit=current_profit)
+
+        limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
@@ -1393,3 +1392,17 @@ class FreqtradeBot(LoggingMixin):
                                               amount=amount, fee_abs=fee_abs)
         else:
             return amount
+
+    def get_valid_price(self, custom_price: float, proposed_price: float) -> float:
+        """
+        Return the valid price.
+        Check if the custom price is of the good type if not return proposed_price
+        :return: valid price for the order
+        """
+        if custom_price and (isinstance(custom_price, int)
+                             or isinstance(custom_price, float)):
+            valid_price = custom_price
+        else:
+            valid_price = proposed_price
+
+        return valid_price
