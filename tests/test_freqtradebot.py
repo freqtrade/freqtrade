@@ -913,6 +913,30 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     assert trade
     assert trade.open_rate_requested == 0.77
 
+    # In case of custom entry price set to None
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5567'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: None
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=MagicMock(return_value=10),
+    )
+
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[7]
+    assert trade
+    assert trade.open_rate_requested == 10
+
+    # In case of custom entry price not float type
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5568'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[8]
+    assert trade
+    assert trade.open_rate_requested == 10
+
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)

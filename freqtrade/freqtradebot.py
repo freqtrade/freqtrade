@@ -479,13 +479,17 @@ class FreqtradeBot(LoggingMixin):
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.exchange.get_rate(pair, refresh=True, side="buy")
+            proposed_buy_rate = self.exchange.get_rate(pair, refresh=True, side="buy")
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
-                                                       default_retval=buy_limit_requested)(
+                                                       default_retval=proposed_buy_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=buy_limit_requested)
+                proposed_rate=proposed_buy_rate)
 
-            buy_limit_requested = custom_entry_price
+            if custom_entry_price and (isinstance(custom_entry_price, int)
+                                       or isinstance(custom_entry_price, float)):
+                buy_limit_requested = custom_entry_price
+            else:
+                buy_limit_requested = proposed_buy_rate
 
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
