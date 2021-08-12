@@ -1399,9 +1399,13 @@ class FreqtradeBot(LoggingMixin):
         Check if the custom price is of the good type if not return proposed_price
         :return: valid price for the order
         """
-        if custom_price and (isinstance(custom_price, int)
-                             or isinstance(custom_price, float)):
-            valid_price = custom_price
+        if custom_price:
+            if isinstance(custom_price, int):
+                valid_price = float(custom_price)
+            elif isinstance(custom_price, float):
+                valid_price = custom_price
+            else:
+                valid_price = proposed_price
         else:
             valid_price = proposed_price
 
