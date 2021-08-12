@@ -161,7 +161,7 @@ class Order(_DECL_BASE):
         self.ft_is_open = True
         if self.status in ('closed', 'canceled', 'cancelled'):
             self.ft_is_open = False
-            if order.get('filled', 0) > 0:
+            if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 

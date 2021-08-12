@@ -1224,6 +1224,11 @@ def test_update_order_from_ccxt(caplog):
     assert o.ft_is_open
     assert o.order_filled_date is None
 
+    # Order is unfilled, "filled" not set
+    # https://github.com/freqtrade/freqtrade/issues/5404
+    ccxt_order.update({'filled': None, 'remaining': 20.0, 'status': 'canceled'})
+    o.update_from_ccxt_object(ccxt_order)
+
     # Order has been closed
     ccxt_order.update({'filled': 20.0, 'remaining': 0.0, 'status': 'closed'})
     o.update_from_ccxt_object(ccxt_order)
