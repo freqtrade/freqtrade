@@ -363,6 +363,9 @@ By default, freqtrade use the orderbook to automatically set an order price, you
 
 You can use this feature by creating a custom_entry_price function in your strategy file to customize entry prices and custom_exit_price for exits.
 
+!!!Note
+If your custom pricing function return None or an invalid value, a default entry or exit price will be chosen based on the current rate.
+
 ### Custom order entry and exit price exemple
 ``` python
 from datetime import datetime, timedelta, timezone
