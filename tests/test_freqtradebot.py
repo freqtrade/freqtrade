@@ -4596,19 +4596,23 @@ def test_get_valid_price(mocker, default_conf) -> None:
     freqtrade = FreqtradeBot(default_conf)
 
     custom_price_string = "10"
+    custom_price_badstring = "10abc"
     custom_price_float = 10.0
     custom_price_int = 10
 
     proposed_price = 12.2
 
     valid_price_from_string = freqtrade.get_valid_price(custom_price_string, proposed_price)
+    valid_price_from_badstring = freqtrade.get_valid_price(custom_price_badstring, proposed_price)
     valid_price_from_int = freqtrade.get_valid_price(custom_price_int, proposed_price)
     valid_price_from_float = freqtrade.get_valid_price(custom_price_float, proposed_price)
 
     assert isinstance(valid_price_from_string, float)
+    assert isinstance(valid_price_from_badstring, float)
     assert isinstance(valid_price_from_int, float)
     assert isinstance(valid_price_from_float, float)
 
-    assert valid_price_from_string == proposed_price
+    assert valid_price_from_string == custom_price_float
+    assert valid_price_from_badstring == proposed_price
     assert valid_price_from_int == custom_price_int
     assert valid_price_from_float == custom_price_float

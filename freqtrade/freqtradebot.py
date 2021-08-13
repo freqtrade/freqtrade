@@ -1400,11 +1400,9 @@ class FreqtradeBot(LoggingMixin):
         :return: valid price for the order
         """
         if custom_price:
-            if isinstance(custom_price, int):
+            try:
                 valid_price = float(custom_price)
-            elif isinstance(custom_price, float):
-                valid_price = custom_price
-            else:
+            except ValueError:
                 valid_price = proposed_price
         else:
             valid_price = proposed_price
