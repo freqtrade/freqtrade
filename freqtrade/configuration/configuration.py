@@ -243,7 +243,7 @@ class Configuration:
                 pass
 
         self._args_to_config(config, argname='timeframe_detail',
-                             logstring='Parameter --detail-timeframe detected, '
+                             logstring='Parameter --timeframe-detail detected, '
                              'using {} for intra-candle backtesting ...')
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
