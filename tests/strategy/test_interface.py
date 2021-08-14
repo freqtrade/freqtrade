@@ -16,8 +16,8 @@ from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.hyper import (BaseParameter, CategoricalParameter, DecimalParameter,
-                                      IntParameter, RealParameter)
+from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
+                                      DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
@@ -228,25 +228,25 @@ def test_assert_df(ohlcv_history, caplog):
     _STRATEGY.disable_dataframe_checks = False
 
 
-def test_ohlcvdata_to_dataframe(default_conf, testdatadir) -> None:
+def test_advise_all_indicators(default_conf, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
-    processed = strategy.ohlcvdata_to_dataframe(data)
+    processed = strategy.advise_all_indicators(data)
     assert len(processed['UNITTEST/BTC']) == 102  # partial candle was removed
 
 
-def test_ohlcvdata_to_dataframe_copy(mocker, default_conf, testdatadir) -> None:
+def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
     aimock = mocker.patch('freqtrade.strategy.interface.IStrategy.advise_indicators')
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], timerange=timerange,
                      fill_up_missing=True)
-    strategy.ohlcvdata_to_dataframe(data)
+    strategy.advise_all_indicators(data)
     assert aimock.call_count == 1
     # Ensure that a copy of the dataframe is passed to advice_indicators
     assert aimock.call_args_list[0][0][0] is not data
@@ -398,7 +398,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
         exchange='binance',
         open_rate=1,
     )
-    trade.adjust_min_max_rates(trade.open_rate)
+    trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing
     strategy.trailing_stop_positive = -0.05
     strategy.use_custom_stoploss = custom
@@ -552,6 +552,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 def test_is_pair_locked(default_conf):
     default_conf.update({'strategy': 'DefaultStrategy'})
     PairLocks.timeframe = default_conf['timeframe']
+    PairLocks.use_db = True
     strategy = StrategyResolver.load_strategy(default_conf)
     # No lock should be present
     assert len(PairLocks.get_pair_locks(None)) == 0
@@ -717,6 +718,17 @@ def test_hyperopt_parameters():
     assert len(list(catpar.range)) == 3
     assert list(catpar.range) == ['buy_rsi', 'buy_macd', 'buy_none']
 
+    boolpar = BooleanParameter(default=True, space='buy')
+    assert boolpar.value is True
+    assert isinstance(boolpar.get_space(''), Categorical)
+    assert isinstance(boolpar.range, list)
+    assert len(list(boolpar.range)) == 1
+
+    boolpar.in_space = True
+    assert len(list(boolpar.range)) == 2
+
+    assert list(boolpar.range) == [True, False]
+
 
 def test_auto_hyperopt_interface(default_conf):
     default_conf.update({'strategy': 'HyperoptableStrategy'})
@@ -734,7 +746,8 @@ def test_auto_hyperopt_interface(default_conf):
     assert isinstance(all_params, dict)
     assert len(all_params['buy']) == 2
     assert len(all_params['sell']) == 2
-    assert all_params['count'] == 4
+    # Number of Hyperoptable parameters
+    assert all_params['count'] == 6
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')
 

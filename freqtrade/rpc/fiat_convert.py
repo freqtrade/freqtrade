@@ -62,7 +62,7 @@ class CryptoToFiatConverter:
             # If the request is not a 429 error we want to raise the normal error
             logger.error(
                 "Could not load FIAT Cryptocurrency map for the following problem: {}".format(
-                  request_exception
+                    request_exception
                 )
             )
         except (Exception) as exception:

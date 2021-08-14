@@ -15,6 +15,10 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 !!! Note "Backtesting"
     Protections are supported by backtesting and hyperopt, but must be explicitly enabled by using the `--enable-protections` flag.
 
+!!! Warning "Setting protections from the configuration"
+    Setting protections from the configuration via `"protections": [],` key should be considered deprecated and will be removed in a future version.
+    It is also no longer guaranteed that your protections apply to the strategy in cases where the strategy defines [protections as property](hyperopt.md#optimizing-protections).
+
 ### Available Protections
 
 * [`StoplossGuard`](#stoploss-guard) Stop trading if a certain amount of stoploss occurred within a certain time window.
@@ -47,15 +51,17 @@ This applies across all pairs, unless `only_per_pair` is set to true, which will
 The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.
 
 ``` python
-protections = [
-    {
-        "method": "StoplossGuard",
-        "lookback_period_candles": 24,
-        "trade_limit": 4,
-        "stop_duration_candles": 4,
-        "only_per_pair": False
-    }
-]
+@property
+def protections(self):
+    return [
+        {
+            "method": "StoplossGuard",
+            "lookback_period_candles": 24,
+            "trade_limit": 4,
+            "stop_duration_candles": 4,
+            "only_per_pair": False
+        }
+    ]
 ```
 
 !!! Note
@@ -69,15 +75,17 @@ protections = [
 The below sample stops trading for 12 candles if max-drawdown is > 20% considering all pairs - with a minimum of `trade_limit` trades - within the last 48 candles. If desired, `lookback_period` and/or `stop_duration` can be used.
 
 ``` python
-protections = [
-      {
-        "method": "MaxDrawdown",
-        "lookback_period_candles": 48,
-        "trade_limit": 20,
-        "stop_duration_candles": 12,
-        "max_allowed_drawdown": 0.2
-      },
-]
+@property
+def protections(self):
+    return  [
+        {
+            "method": "MaxDrawdown",
+            "lookback_period_candles": 48,
+            "trade_limit": 20,
+            "stop_duration_candles": 12,
+            "max_allowed_drawdown": 0.2
+        },
+    ]
 ```
 
 #### Low Profit Pairs
@@ -88,15 +96,17 @@ If that ratio is below `required_profit`, that pair will be locked for `stop_dur
 The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.
 
 ``` python
-protections = [
-    {
-        "method": "LowProfitPairs",
-        "lookback_period_candles": 6,
-        "trade_limit": 2,
-        "stop_duration": 60,
-        "required_profit": 0.02
-    }
-]
+@property
+def protections(self):
+    return [
+        {
+            "method": "LowProfitPairs",
+            "lookback_period_candles": 6,
+            "trade_limit": 2,
+            "stop_duration": 60,
+            "required_profit": 0.02
+        }
+    ]
 ```
 
 #### Cooldown Period
@@ -106,12 +116,14 @@ protections = [
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 
 ``` python
-protections = [
-    {
-        "method": "CooldownPeriod",
-        "stop_duration_candles": 2
-    }
-]
+@property
+def protections(self):
+    return  [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration_candles": 2
+        }
+    ]
 ```
 
 !!! Note
@@ -136,39 +148,42 @@ from freqtrade.strategy import IStrategy
 
 class AwesomeStrategy(IStrategy)
     timeframe = '1h'
-    protections = [
-        {
-            "method": "CooldownPeriod",
-            "stop_duration_candles": 5
-        },
-        {
-            "method": "MaxDrawdown",
-            "lookback_period_candles": 48,
-            "trade_limit": 20,
-            "stop_duration_candles": 4,
-            "max_allowed_drawdown": 0.2
-        },
-        {
-            "method": "StoplossGuard",
-            "lookback_period_candles": 24,
-            "trade_limit": 4,
-            "stop_duration_candles": 2,
-            "only_per_pair": False
-        },
-        {
-            "method": "LowProfitPairs",
-            "lookback_period_candles": 6,
-            "trade_limit": 2,
-            "stop_duration_candles": 60,
-            "required_profit": 0.02
-        },
-        {
-            "method": "LowProfitPairs",
-            "lookback_period_candles": 24,
-            "trade_limit": 4,
-            "stop_duration_candles": 2,
-            "required_profit": 0.01
-        }
-    ]
+    
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 5
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": 48,
+                "trade_limit": 20,
+                "stop_duration_candles": 4,
+                "max_allowed_drawdown": 0.2
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 24,
+                "trade_limit": 4,
+                "stop_duration_candles": 2,
+                "only_per_pair": False
+            },
+            {
+                "method": "LowProfitPairs",
+                "lookback_period_candles": 6,
+                "trade_limit": 2,
+                "stop_duration_candles": 60,
+                "required_profit": 0.02
+            },
+            {
+                "method": "LowProfitPairs",
+                "lookback_period_candles": 24,
+                "trade_limit": 4,
+                "stop_duration_candles": 2,
+                "required_profit": 0.01
+            }
+        ]
     # ...
 ```

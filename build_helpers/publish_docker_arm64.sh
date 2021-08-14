@@ -74,7 +74,5 @@ fi
 
 docker images
 
-if [ $? -ne 0 ]; then
-    echo "failed building image"
-    return 1
-fi
+# Cleanup old images from arm64 node.
+docker image prune -a --force --filter "until=24h"

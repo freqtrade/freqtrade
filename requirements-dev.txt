@@ -19,7 +19,7 @@ isort==5.9.3
 nbconvert==6.1.0
 
 # mypy types
-types-cachetools==0.1.9
-types-filelock==0.1.4
-types-requests==2.25.1
-types-tabulate==0.1.1
+types-cachetools==0.1.10
+types-filelock==0.1.5
+types-requests==2.25.6
+types-tabulate==0.8.2

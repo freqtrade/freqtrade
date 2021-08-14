@@ -381,7 +381,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -399,7 +399,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -424,7 +424,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='5m',

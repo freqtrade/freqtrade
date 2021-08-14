@@ -253,7 +253,7 @@ We continue to define hyperoptable parameters:
 class MyAwesomeStrategy(IStrategy):
     buy_adx = DecimalParameter(20, 40, decimals=1, default=30.1, space="buy")
     buy_rsi = IntParameter(20, 40, default=30, space="buy")
-    buy_adx_enabled = CategoricalParameter([True, False], default=True, space="buy")
+    buy_adx_enabled = BooleanParameter(default=True, space="buy")
     buy_rsi_enabled = CategoricalParameter([True, False], default=False, space="buy")
     buy_trigger = CategoricalParameter(["bb_lower", "macd_cross_signal"], default="bb_lower", space="buy")
 ```
@@ -316,6 +316,7 @@ There are four parameter types each suited for different purposes.
 * `DecimalParameter` - defines a floating point parameter with a limited number of decimals (default 3). Should be preferred instead of `RealParameter` in most cases.
 * `RealParameter` - defines a floating point parameter with upper and lower boundaries and no precision limit. Rarely used as it creates a space with a near infinite number of possibilities.
 * `CategoricalParameter` - defines a parameter with a predetermined number of choices.
+* `BooleanParameter` - Shorthand for `CategoricalParameter([True, False])` - great for "enable" parameters.
 
 !!! Tip "Disabling parameter optimization"
     Each parameter takes two boolean parameters:
@@ -326,7 +327,7 @@ There are four parameter types each suited for different purposes.
 !!! Warning
     Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.
 
-### Optimizing an indicator parameter
+## Optimizing an indicator parameter
 
 Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
 
@@ -336,8 +337,8 @@ from functools import reduce
 
 import talib.abstract as ta
 
-from freqtrade.strategy import IStrategy
-from freqtrade.strategy import CategoricalParameter, DecimalParameter, IntParameter
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+                                IStrategy, IntParameter)
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class MyAwesomeStrategy(IStrategy):
@@ -412,6 +413,98 @@ While this strategy is most likely too simple to provide consistent profit, it s
     By doing the calculation of all possible indicators in `populate_indicators()`, the calculation of the indicator happens only once for every parameter.  
     While this may slow down the hyperopt startup speed, the overall performance will increase as the Hyperopt execution itself may pick the same value for multiple epochs (changing other values).
     You should however try to use space ranges as small as possible. Every new column will require more memory, and every possibility hyperopt can try will increase the search space.
+
+## Optimizing protections
+
+Freqtrade can also optimize protections. How you optimize protections is up to you, and the following should be considered as example only.
+
+The strategy will simply need to define the "protections" entry as property returning a list of protection configurations.
+
+``` python
+from pandas import DataFrame
+from functools import reduce
+
+import talib.abstract as ta
+
+from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter, 
+                                IStrategy, IntParameter)
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+class MyAwesomeStrategy(IStrategy):
+    stoploss = -0.05
+    timeframe = '15m'
+    # Define the parameter spaces
+    cooldown_lookback = IntParameter(2, 48, default=5, space="protection", optimize=True)
+    stop_duration = IntParameter(12, 200, default=5, space="protection", optimize=True)
+    use_stop_protection = BooleanParameter(default=True, space="protection", optimize=True)
+
+
+    @property
+    def protections(self):
+        prot = []
+
+        prot.append({
+            "method": "CooldownPeriod",
+            "stop_duration_candles": self.cooldown_lookback.value
+        })
+        if self.use_stop_protection.value:
+            prot.append({
+                "method": "StoplossGuard",
+                "lookback_period_candles": 24 * 3,
+                "trade_limit": 4,
+                "stop_duration_candles": self.stop_duration.value,
+                "only_per_pair": False
+            })
+
+        return protection
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # ...
+        
+```
+
+You can then run hyperopt as follows:
+`freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy MyAwesomeStrategy --spaces protection`
+
+!!! Note
+    The protection space is not part of the default space, and is only available with the Parameters Hyperopt interface, not with the legacy hyperopt interface (which required separate hyperopt files).
+    Freqtrade will also automatically change the "--enable-protections" flag if the protection space is selected.
+
+!!! Warning
+    If protections are defined as property, entries from the configuration will be ignored.
+    It is therefore recommended to not define protections in the configuration.
+
+### Migrating from previous property setups
+
+A migration from a previous setup is pretty simple, and can be accomplished by converting the protections entry to a property.
+In simple terms, the following configuration will be converted to the below.
+
+``` python
+class MyAwesomeStrategy(IStrategy):
+    protections = [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration_candles": 4
+        }
+    ]
+```
+
+Result
+
+``` python
+class MyAwesomeStrategy(IStrategy):
+    
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 4
+            }
+        ]
+```
+
+You will then obviously also change potential interesting entries to parameters to allow hyper-optimization.
 
 ## Loss-functions
 

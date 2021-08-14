@@ -351,7 +351,7 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     del hyperopt_conf['timeframe']
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -399,7 +399,7 @@ def test_hyperopt_format_results(hyperopt):
         'rejected_signals': 2,
         'backtest_start_time': 1619718665,
         'backtest_end_time': 1619718665,
-        }
+    }
     results_metrics = generate_strategy_stats({'XRP/BTC': None}, '', bt_result,
                                               Arrow(2017, 11, 14, 19, 32, 00),
                                               Arrow(2017, 12, 14, 19, 32, 00), market_change=0)
@@ -426,7 +426,7 @@ def test_hyperopt_format_results(hyperopt):
 
 def test_populate_indicators(hyperopt, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
-    dataframes = hyperopt.backtesting.strategy.ohlcvdata_to_dataframe(data)
+    dataframes = hyperopt.backtesting.strategy.advise_all_indicators(data)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -438,7 +438,7 @@ def test_populate_indicators(hyperopt, testdatadir) -> None:
 
 def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
-    dataframes = hyperopt.backtesting.strategy.ohlcvdata_to_dataframe(data)
+    dataframes = hyperopt.backtesting.strategy.advise_all_indicators(data)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -463,7 +463,7 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
 
 def test_sell_strategy_generator(hyperopt, testdatadir) -> None:
     data = load_data(testdatadir, '1m', ['UNITTEST/BTC'], fill_up_missing=True)
-    dataframes = hyperopt.backtesting.strategy.ohlcvdata_to_dataframe(data)
+    dataframes = hyperopt.backtesting.strategy.advise_all_indicators(data)
     dataframe = hyperopt.custom_hyperopt.populate_indicators(dataframes['UNITTEST/BTC'],
                                                              {'pair': 'UNITTEST/BTC'})
 
@@ -577,6 +577,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                    "20.0": 0.02,
                                    "50.0": 0.01,
                                    "110.0": 0},
+                           'protection': {},
                            'sell': {'sell-adx-enabled': False,
                                     'sell-adx-value': 0,
                                     'sell-fastd-enabled': True,
@@ -592,7 +593,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                         'trailing_stop_positive': 0.02,
                                         'trailing_stop_positive_offset': 0.07}},
         'params_dict': optimizer_param,
-        'params_not_optimized': {'buy': {}, 'sell': {}},
+        'params_not_optimized': {'buy': {}, 'protection': {}, 'sell': {}},
         'results_metrics': ANY,
         'total_profit': 3.1e-08
     }
@@ -659,7 +660,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
                           })
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -712,7 +713,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
     hyperopt_conf.update({'print_json': True})
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -760,7 +761,7 @@ def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
                           })
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     hyperopt.start()
@@ -804,7 +805,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
     hyperopt_conf.update({'spaces': 'roi stoploss'})
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     del hyperopt.custom_hyperopt.__class__.buy_strategy_generator
@@ -843,7 +844,7 @@ def test_simplified_interface_all_failed(mocker, hyperopt_conf) -> None:
     hyperopt_conf.update({'spaces': 'all', })
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     del hyperopt.custom_hyperopt.__class__.buy_strategy_generator
@@ -885,7 +886,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     hyperopt_conf.update({'spaces': 'buy'})
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     # TODO: sell_strategy_generator() is actually not called because
@@ -939,7 +940,7 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     hyperopt_conf.update({'spaces': 'sell', })
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     # TODO: buy_strategy_generator() is actually not called because
@@ -984,7 +985,7 @@ def test_simplified_interface_failed(mocker, hyperopt_conf, method, space) -> No
     hyperopt_conf.update({'spaces': space})
 
     hyperopt = Hyperopt(hyperopt_conf)
-    hyperopt.backtesting.strategy.ohlcvdata_to_dataframe = MagicMock()
+    hyperopt.backtesting.strategy.advise_all_indicators = MagicMock()
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     delattr(hyperopt.custom_hyperopt.__class__, method)
@@ -1002,6 +1003,8 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     hyperopt_conf.update({
         'strategy': 'HyperoptableStrategy',
         'user_data_dir': Path(tmpdir),
+        'hyperopt_random_state': 42,
+        'spaces': ['all']
     })
     hyperopt = Hyperopt(hyperopt_conf)
     assert isinstance(hyperopt.custom_hyperopt, HyperOptAuto)
@@ -1009,12 +1012,18 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
 
     assert hyperopt.backtesting.strategy.buy_rsi.in_space is True
     assert hyperopt.backtesting.strategy.buy_rsi.value == 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value == 74
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value == 30
     buy_rsi_range = hyperopt.backtesting.strategy.buy_rsi.range
     assert isinstance(buy_rsi_range, range)
     # Range from 0 - 50 (inclusive)
     assert len(list(buy_rsi_range)) == 51
 
     hyperopt.start()
+    # All values should've changed.
+    assert hyperopt.backtesting.strategy.protection_cooldown_lookback.value != 30
+    assert hyperopt.backtesting.strategy.buy_rsi.value != 35
+    assert hyperopt.backtesting.strategy.sell_rsi.value != 74
 
 
 def test_SKDecimal():

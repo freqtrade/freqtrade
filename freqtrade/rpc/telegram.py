@@ -77,7 +77,6 @@ class Telegram(RPCHandler):
     """  This class handles all telegram communication """
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
-
         """
         Init the Telegram call, and init the super class RPCHandler
         :param rpc: instance of RPC Helper class
@@ -270,7 +269,7 @@ class Telegram(RPCHandler):
         noti = ''
         if msg_type == RPCMessageType.SELL:
             sell_noti = self._config['telegram'] \
-              .get('notification_settings', {}).get(str(msg_type), {})
+                .get('notification_settings', {}).get(str(msg_type), {})
             # For backward compatibility sell still can be string
             if isinstance(sell_noti, str):
                 noti = sell_noti
@@ -278,7 +277,7 @@ class Telegram(RPCHandler):
                 noti = sell_noti.get(str(msg['sell_reason']), default_noti)
         else:
             noti = self._config['telegram'] \
-              .get('notification_settings', {}).get(str(msg_type), default_noti)
+                .get('notification_settings', {}).get(str(msg_type), default_noti)
 
         if noti == 'off':
             logger.info(f"Notification '{msg_type}' not sent.")
@@ -541,7 +540,7 @@ class Telegram(RPCHandler):
                 f"`{first_trade_date}`\n"
                 f"*Latest Trade opened:* `{latest_trade_date}\n`"
                 f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
-                )
+            )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
@@ -576,13 +575,14 @@ class Telegram(RPCHandler):
         sell_reasons_msg = tabulate(
             sell_reasons_tabulate,
             headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
-            )
+        )
         durations = stats['durations']
-        duration_msg = tabulate([
-            ['Wins', str(timedelta(seconds=durations['wins']))
-             if durations['wins'] != 'N/A' else 'N/A'],
-            ['Losses', str(timedelta(seconds=durations['losses']))
-             if durations['losses'] != 'N/A' else 'N/A']
+        duration_msg = tabulate(
+            [
+                ['Wins', str(timedelta(seconds=durations['wins']))
+                 if durations['wins'] != 'N/A' else 'N/A'],
+                ['Losses', str(timedelta(seconds=durations['losses']))
+                 if durations['losses'] != 'N/A' else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )
@@ -1100,7 +1100,7 @@ class Telegram(RPCHandler):
         if reload_able:
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton("Refresh", callback_data=callback_path)],
-                ])
+            ])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
         msg += "\nUpdated: {}".format(datetime.now().ctime())

@@ -35,7 +35,7 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Calls `check_buy_timeout()` strategy callback for open buy orders.
   * Calls `check_sell_timeout()` strategy callback for open sell orders.
 * Verifies existing positions and eventually places sell orders.
-  * Considers stoploss, ROI and sell-signal.
+  * Considers stoploss, ROI and sell-signal, `custom_sell()` and `custom_stoploss()`.
   * Determine sell-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
   * Before a sell order is placed, `confirm_trade_exit()` strategy callback is called.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
@@ -53,9 +53,10 @@ This loop will be repeated again and again until the bot is stopped.
 * Load historic data for configured pairlist.
 * Calls `bot_loop_start()` once.
 * Calculate indicators (calls `populate_indicators()` once per pair).
-* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair)
-* Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy)
+* Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
+  * Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
+  * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
 * Generate backtest report output
 
 !!! Note

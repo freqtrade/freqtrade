@@ -28,13 +28,13 @@ class PairListManager():
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
             pairlist_handler = PairListResolver.load_pairlist(
-                    pairlist_handler_config['method'],
-                    exchange=exchange,
-                    pairlistmanager=self,
-                    config=config,
-                    pairlistconfig=pairlist_handler_config,
-                    pairlist_pos=len(self._pairlist_handlers)
-                    )
+                pairlist_handler_config['method'],
+                exchange=exchange,
+                pairlistmanager=self,
+                config=config,
+                pairlistconfig=pairlist_handler_config,
+                pairlist_pos=len(self._pairlist_handlers)
+            )
             self._tickers_needed |= pairlist_handler.needstickers
             self._pairlist_handlers.append(pairlist_handler)
 
