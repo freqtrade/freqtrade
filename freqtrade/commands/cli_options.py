@@ -135,7 +135,7 @@ AVAILABLE_CLI_OPTIONS = {
         help='Override the value of the `stake_amount` configuration setting.',
     ),
     # Backtesting
-    "detail_timeframe": Arg(
+    "timeframe_detail": Arg(
         '--timeframe-detail',
         help='Specify detail timeframe for backtesting (`1m`, `5m`, `30m`, `1h`, `1d`).',
     ),
