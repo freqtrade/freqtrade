@@ -376,7 +376,7 @@ class Backtesting:
         return None
 
     def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
-        if self.timeframe_detail:
+        if self.timeframe_detail and trade.pair in self.detail_data:
             sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
             sell_candle_end = sell_candle_time + timedelta(minutes=self.timeframe_min)
 
@@ -385,6 +385,9 @@ class Backtesting:
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
              ]
+            if len(detail_data) == 0:
+                # Fall back to "regular" data if no detail data was found for this candle
+                return self._get_sell_trade_entry_for_candle(trade, sell_row)
             detail_data['buy'] = sell_row[BUY_IDX]
             detail_data['sell'] = sell_row[SELL_IDX]
             headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']

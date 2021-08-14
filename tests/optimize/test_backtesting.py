@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
@@ -500,7 +500,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     pair = 'UNITTEST/BTC'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
-        1,  # Sell
+        1,  # Buy
         0.001,  # Open
         0.0011,  # Close
         0,  # Sell
@@ -546,6 +546,88 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is None
 
     backtesting.cleanup()
+
+
+def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    default_conf['timeframe_detail'] = '1m'
+    default_conf['max_open_trades'] = 2
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    pair = 'UNITTEST/BTC'
+    row = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=4, minute=55, tzinfo=timezone.utc),
+        1,  # Buy
+        200,  # Open
+        201,  # Close
+        0,  # Sell
+        195,  # Low
+        201.5,  # High
+        '',  # Buy Signal Name
+    ]
+
+    trade = backtesting._enter_trade(pair, row=row)
+    assert isinstance(trade, LocalTrade)
+
+    row_sell = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
+        0,  # Buy
+        200,  # Open
+        201,  # Close
+        0,  # Sell
+        195,  # Low
+        210.5,  # High
+        '',  # Buy Signal Name
+    ]
+    row_detail = pd.DataFrame(
+        [
+            [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
+                1, 200, 199, 0, 197, 200.1, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=1, tzinfo=timezone.utc),
+                0, 199, 199.5, 0, 199, 199.7, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=2, tzinfo=timezone.utc),
+                0, 199.5, 200.5, 0, 199, 200.8, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=3, tzinfo=timezone.utc),
+                0, 200.5, 210.5, 0, 193, 210.5, '',  # ROI sell (?)
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=4, tzinfo=timezone.utc),
+                0, 200, 199, 0, 193, 200.1, '',
+            ],
+        ], columns=["date", "buy", "open", "close", "sell", "low", "high", "buy_tag"]
+    )
+
+    # No data available.
+    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    assert res is not None
+    assert res.sell_reason == SellType.ROI.value
+    assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
+
+    # Enter new trade
+    trade = backtesting._enter_trade(pair, row=row)
+    assert isinstance(trade, LocalTrade)
+    # Assign empty ... no result.
+    backtesting.detail_data[pair] = pd.DataFrame(
+        [], columns=["date", "buy", "open", "close", "sell", "low", "high", "buy_tag"])
+
+    res = backtesting._get_sell_trade_entry(trade, row)
+    assert res is None
+
+    # Assign backtest-detail data
+    backtesting.detail_data[pair] = row_detail
+
+    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    assert res is not None
+    assert res.sell_reason == SellType.ROI.value
+    # Sell at minute 3 (not available above!)
+    assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
+    assert round(res.close_rate, 3) == round(209.0225, 3)
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -1127,7 +1209,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
         '--timeframe-detail', '1m',
         '--strategy-list',
         'DefaultStrategy'
-        ]
+    ]
     args = get_args(args)
     start_backtesting(args)
 
