@@ -359,14 +359,15 @@ See [Dataframe access](#dataframe-access) for more information about dataframe u
 
 ## Custom order price rules
 
-By default, freqtrade use the orderbook to automatically set an order price, you also have the option to create custom order prices based on your strategy.
+By default, freqtrade use the orderbook to automatically set an order price([Relevant documentation](configuration.md#prices-used-for-orders)), you also have the option to create custom order prices based on your strategy.
 
-You can use this feature by creating a custom_entry_price function in your strategy file to customize entry prices and custom_exit_price for exits.
+You can use this feature by creating a `custom_entry_price()` function in your strategy file to customize entry prices and custom_exit_price for exits.
 
-!!!Note
-If your custom pricing function return None or an invalid value, a default entry or exit price will be chosen based on the current rate.
+!!! Note
+    If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
 
-### Custom order entry and exit price exemple
+### Custom order entry and exit price example
+
 ``` python
 from datetime import datetime, timedelta, timezone
 from freqtrade.persistence import Trade
@@ -380,9 +381,9 @@ class AwesomeStrategy(IStrategy):
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
-        proposed_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
+        new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
         
-        return proposed_entryprice
+        return new_entryprice
 
     def custom_exit_price(self, pair: str, trade: Trade,
                           current_time: datetime, proposed_rate: float,
@@ -390,12 +391,17 @@ class AwesomeStrategy(IStrategy):
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
-        proposed_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
+        new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
         
-        return proposed_exitprice
+        return new_exitprice
 
 ```
 
+!!! Warning
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders.
+
+!!! Warning "No backtesting support"
+    Custom entry-prices are currently not supported during backtesting.
 
 ## Custom order timeout rules
 

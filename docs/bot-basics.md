@@ -36,11 +36,12 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Calls `check_sell_timeout()` strategy callback for open sell orders.
 * Verifies existing positions and eventually places sell orders.
   * Considers stoploss, ROI and sell-signal.
-  * Determine sell-price based on `ask_strategy` configuration setting.
+  * Determine sell-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
   * Before a sell order is placed, `confirm_trade_exit()` strategy callback is called.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
 * Verifies buy signal trying to enter new positions.
-  * Determine buy-price based on `bid_strategy` configuration setting.
+  * Determine buy-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
+  * Determine stake size by calling the `custom_stake_amount()` callback.
   * Before a buy order is placed, `confirm_trade_entry()` strategy callback is called.
 
 This loop will be repeated again and again until the bot is stopped.
