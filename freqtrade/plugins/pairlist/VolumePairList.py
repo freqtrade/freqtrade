@@ -126,7 +126,7 @@ class VolumePairList(IPairList):
             pairlist = [s['symbol'] for s in filtered_tickers]
 
             pairlist = self.filter_pairlist(pairlist, tickers)
-            self._pair_cache['pairlist'] = pairlist
+            self._pair_cache['pairlist'] = pairlist.copy()
 
         return pairlist
 
