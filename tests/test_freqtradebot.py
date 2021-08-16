@@ -905,13 +905,14 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
         freqtrade.execute_buy(pair, stake_amount)
 
     # In case of custom entry price
+    mocker.patch('freqtrade.exchange.Exchange.get_rate', return_value=0.50)
     limit_buy_order['status'] = 'open'
     limit_buy_order['id'] = '5566'
-    freqtrade.strategy.custom_entry_price = lambda **kwargs: 0.77
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: 0.508
     assert freqtrade.execute_buy(pair, stake_amount)
     trade = Trade.query.all()[6]
     assert trade
-    assert trade.open_rate_requested == 0.77
+    assert trade.open_rate_requested == 0.508
 
     # In case of custom entry price set to None
     limit_buy_order['status'] = 'open'
