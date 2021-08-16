@@ -109,6 +109,10 @@ def test_api_ui_fallback(botclient):
     rc = client_get(client, "/something")
     assert rc.status_code == 200
 
+    rc = client_get(client, '%2F%2F%2Fetc/passwd')
+    assert rc.status_code == 200
+    assert '`freqtrade install-ui`' in rc.text
+
 
 def test_api_ui_version(botclient, mocker):
     ftbot, client = botclient
