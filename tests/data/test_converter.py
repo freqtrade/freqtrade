@@ -119,7 +119,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
     # 3rd candle has been filled
     row = data2.loc[2, :]
     assert row['volume'] == 0
-    # close shoult match close of previous candle
+    # close should match close of previous candle
     assert row['close'] == data.loc[1, 'close']
     assert row['open'] == row['close']
     assert row['high'] == row['close']
