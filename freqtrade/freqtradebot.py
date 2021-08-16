@@ -1401,10 +1401,21 @@ class FreqtradeBot(LoggingMixin):
         """
         if custom_price:
             try:
-                valid_price = float(custom_price)
+                valid_custom_price = float(custom_price)
             except ValueError:
-                valid_price = proposed_price
+                valid_custom_price = proposed_price
         else:
-            valid_price = proposed_price
+            valid_custom_price = proposed_price
+
+        cust_p_max_dist_pct = self.config.get('custom_price_max_distance_percent', 2.0)
+        min_custom_price_allowed = proposed_price - ((proposed_price * cust_p_max_dist_pct) / 100)
+        max_custom_price_allowed = proposed_price + ((proposed_price * cust_p_max_dist_pct) / 100)
+
+        if valid_custom_price > max_custom_price_allowed:
+            valid_price = max_custom_price_allowed
+        elif valid_custom_price < min_custom_price_allowed:
+            valid_price = min_custom_price_allowed
+        else:
+            valid_price = valid_custom_price
 
         return valid_price

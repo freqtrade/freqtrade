@@ -4594,18 +4594,24 @@ def test_get_valid_price(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
+    freqtrade.config['custom_price_max_distance_percent'] = 2.0
 
     custom_price_string = "10"
     custom_price_badstring = "10abc"
     custom_price_float = 10.0
     custom_price_int = 10
 
-    proposed_price = 12.2
+    custom_price_over_max_alwd = 11.0
+    custom_price_under_min_alwd = 9.0
+    proposed_price = 10.1
 
     valid_price_from_string = freqtrade.get_valid_price(custom_price_string, proposed_price)
     valid_price_from_badstring = freqtrade.get_valid_price(custom_price_badstring, proposed_price)
     valid_price_from_int = freqtrade.get_valid_price(custom_price_int, proposed_price)
     valid_price_from_float = freqtrade.get_valid_price(custom_price_float, proposed_price)
+
+    valid_price_at_max_alwd = freqtrade.get_valid_price(custom_price_over_max_alwd, proposed_price)
+    valid_price_at_min_alwd = freqtrade.get_valid_price(custom_price_under_min_alwd, proposed_price)
 
     assert isinstance(valid_price_from_string, float)
     assert isinstance(valid_price_from_badstring, float)
@@ -4616,3 +4622,9 @@ def test_get_valid_price(mocker, default_conf) -> None:
     assert valid_price_from_badstring == proposed_price
     assert valid_price_from_int == custom_price_int
     assert valid_price_from_float == custom_price_float
+
+    assert valid_price_at_max_alwd != custom_price_over_max_alwd
+    assert valid_price_at_max_alwd > proposed_price
+
+    assert valid_price_at_min_alwd != custom_price_under_min_alwd
+    assert valid_price_at_min_alwd < proposed_price
