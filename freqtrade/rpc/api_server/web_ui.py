@@ -37,8 +37,11 @@ async def index_html(rest_of_path: str):
     if rest_of_path.startswith('api') or rest_of_path.startswith('.'):
         raise HTTPException(status_code=404, detail="Not Found")
     uibase = Path(__file__).parent / 'ui/installed/'
-    if (uibase / rest_of_path).is_file():
-        return FileResponse(str(uibase / rest_of_path))
+    filename = uibase / rest_of_path
+    # It's security relevant to check "relative_to".
+    # Without this, Directory-traversal is possible.
+    if filename.is_file() and filename.is_relative_to(uibase):
+        return FileResponse(str(filename))
 
     index_file = uibase / 'index.html'
     if not index_file.is_file():
