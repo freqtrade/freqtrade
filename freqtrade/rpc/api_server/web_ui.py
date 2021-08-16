@@ -29,6 +29,15 @@ async def ui_version():
     }
 
 
+def is_relative_to(path, base) -> bool:
+    # Helper function simulating behaviour of is_relative_to, which was only added in python 3.9
+    try:
+        path.relative_to(base)
+    except ValueError:
+        pass
+    return False
+
+
 @router_ui.get('/{rest_of_path:path}', include_in_schema=False)
 async def index_html(rest_of_path: str):
     """
@@ -40,7 +49,7 @@ async def index_html(rest_of_path: str):
     filename = uibase / rest_of_path
     # It's security relevant to check "relative_to".
     # Without this, Directory-traversal is possible.
-    if filename.is_file() and filename.is_relative_to(uibase):
+    if filename.is_file() and is_relative_to(filename, uibase):
         return FileResponse(str(filename))
 
     index_file = uibase / 'index.html'
