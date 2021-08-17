@@ -983,7 +983,7 @@ class FreqtradeBot(LoggingMixin):
             # if trade is partially complete, edit the stake details for the trade
             # and close the order
             # cancel_order may not contain the full order dict, so we need to fallback
-            # to the order dict aquired before cancelling.
+            # to the order dict acquired before cancelling.
             # we need to fall back to the values from order if corder does not contain these keys.
             trade.amount = filled_amount
             trade.stake_amount = trade.amount * trade.open_rate

@@ -120,5 +120,6 @@ class RangeStabilityFilter(IPairList):
                         logger.info)
                     result = False
             self._pair_cache[pair] = result
-
+        else:
+            self.log_once(f"Removed {pair} from whitelist, no candles found.", logger.info)
         return result

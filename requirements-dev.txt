@@ -6,7 +6,7 @@
 coveralls==3.2.0
 flake8==3.9.2
 flake8-type-annotations==0.1.0
-flake8-tidy-imports==4.3.0
+flake8-tidy-imports==4.4.1
 mypy==0.910
 pytest==6.2.4
 pytest-asyncio==0.15.1

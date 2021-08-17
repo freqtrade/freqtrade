@@ -228,7 +228,7 @@ graph = generate_candlestick_graph(pair=pair,
 # Show graph inline
 # graph.show()
 
-# Render graph in a seperate window
+# Render graph in a separate window
 graph.show(renderer="browser")
 
 ```

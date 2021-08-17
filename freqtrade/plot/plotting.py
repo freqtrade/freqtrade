@@ -538,7 +538,7 @@ def load_and_plot_trades(config: Dict[str, Any]):
     - Initializes plot-script
     - Get candle (OHLCV) data
     - Generate Dafaframes populated with indicators and signals based on configured strategy
-    - Load trades excecuted during the selected period
+    - Load trades executed during the selected period
     - Generate Plotly plot objects
     - Generate plot files
     :return: None

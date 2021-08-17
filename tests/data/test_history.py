@@ -200,15 +200,15 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     assert start_ts == test_data[0][0] - 1000
 
     # timeframe starts in the center of the cached data
-    # should return the chached data w/o the last item
+    # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
     data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
 
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
 
-    # timeframe starts after the chached data
-    # should return the chached data w/o the last item
+    # timeframe starts after the cached data
+    # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 100, 0)
     data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
     assert_frame_equal(data, test_data_df.iloc[:-1])
