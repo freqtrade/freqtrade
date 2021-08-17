@@ -5,7 +5,7 @@ e.g BTC to USD
 
 import datetime
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from cachetools.ttl import TTLCache
 from pycoingecko import CoinGeckoAPI
@@ -25,8 +25,7 @@ class CryptoToFiatConverter:
     """
     __instance = None
     _coingekko: CoinGeckoAPI = None
-
-    _cryptomap: Dict = {}
+    _coinlistings: List[Dict] = []
     _backoff: float = 0.0
 
     def __new__(cls):
@@ -49,9 +48,8 @@ class CryptoToFiatConverter:
 
     def _load_cryptomap(self) -> None:
         try:
-            coinlistings = self._coingekko.get_coins_list()
-            # Create mapping table from symbol to coingekko_id
-            self._cryptomap = {x['symbol']: x['id'] for x in coinlistings}
+            # Use list-comprehension to ensure we get a list.
+            self._coinlistings = [x for x in self._coingekko.get_coins_list()]
         except RequestException as request_exception:
             if "429" in str(request_exception):
                 logger.warning(
@@ -68,6 +66,24 @@ class CryptoToFiatConverter:
         except (Exception) as exception:
             logger.error(
                 f"Could not load FIAT Cryptocurrency map for the following problem: {exception}")
+
+    def _get_gekko_id(self, crypto_symbol):
+        if not self._coinlistings:
+            if self._backoff <= datetime.datetime.now().timestamp():
+                self._load_cryptomap()
+                # Still not loaded.
+                if not self._coinlistings:
+                    return None
+            else:
+                return None
+        found = [x for x in self._coinlistings if x['symbol'] == crypto_symbol]
+        if len(found) == 1:
+            return found[0]['id']
+
+        if len(found) > 0:
+            # Wrong!
+            logger.warning(f"Found multiple mappings in goingekko for {crypto_symbol}.")
+            return None
 
     def convert_amount(self, crypto_amount: float, crypto_symbol: str, fiat_symbol: str) -> float:
         """
@@ -143,22 +159,14 @@ class CryptoToFiatConverter:
         if crypto_symbol == fiat_symbol:
             return 1.0
 
-        if self._cryptomap == {}:
-            if self._backoff <= datetime.datetime.now().timestamp():
-                self._load_cryptomap()
-                # return 0.0 if we still don't have data to check, no reason to proceed
-                if self._cryptomap == {}:
-                    return 0.0
-            else:
-                return 0.0
+        _gekko_id = self._get_gekko_id(crypto_symbol)
 
-        if crypto_symbol not in self._cryptomap:
+        if not _gekko_id:
             # return 0 for unsupported stake currencies (fiat-convert should not break the bot)
             logger.warning("unsupported crypto-symbol %s - returning 0.0", crypto_symbol)
             return 0.0
 
         try:
-            _gekko_id = self._cryptomap[crypto_symbol]
             return float(
                 self._coingekko.get_price(
                     ids=_gekko_id,

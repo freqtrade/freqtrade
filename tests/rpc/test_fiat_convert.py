@@ -22,7 +22,7 @@ def test_fiat_convert_is_supported(mocker):
 def test_fiat_convert_find_price(mocker):
     fiat_convert = CryptoToFiatConverter()
 
-    fiat_convert._cryptomap = {}
+    fiat_convert._coinlistings = {}
     fiat_convert._backoff = 0
     mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._load_cryptomap',
                  return_value=None)
@@ -44,7 +44,7 @@ def test_fiat_convert_find_price(mocker):
 
 
 def test_fiat_convert_unsupported_crypto(mocker, caplog):
-    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._cryptomap', return_value=[])
+    mocker.patch('freqtrade.rpc.fiat_convert.CryptoToFiatConverter._coinlistings', return_value=[])
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._find_price(crypto_symbol='CRYPTO_123', fiat_symbol='EUR') == 0.0
     assert log_has('unsupported crypto-symbol CRYPTO_123 - returning 0.0', caplog)
@@ -88,9 +88,9 @@ def test_fiat_convert_two_FIAT(mocker):
 def test_loadcryptomap(mocker):
 
     fiat_convert = CryptoToFiatConverter()
-    assert len(fiat_convert._cryptomap) == 2
+    assert len(fiat_convert._coinlistings) == 2
 
-    assert fiat_convert._cryptomap["btc"] == "bitcoin"
+    assert fiat_convert._get_gekko_id("btc") == "bitcoin"
 
 
 def test_fiat_init_network_exception(mocker):
@@ -102,11 +102,10 @@ def test_fiat_init_network_exception(mocker):
     )
     # with pytest.raises(RequestEsxception):
     fiat_convert = CryptoToFiatConverter()
-    fiat_convert._cryptomap = {}
+    fiat_convert._coinlistings = {}
     fiat_convert._load_cryptomap()
 
-    length_cryptomap = len(fiat_convert._cryptomap)
-    assert length_cryptomap == 0
+    assert len(fiat_convert._coinlistings) == 0
 
 
 def test_fiat_convert_without_network(mocker):
@@ -132,11 +131,10 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     )
     # with pytest.raises(RequestEsxception):
     fiat_convert = CryptoToFiatConverter()
-    fiat_convert._cryptomap = {}
+    fiat_convert._coinlistings = {}
     fiat_convert._load_cryptomap()
 
-    length_cryptomap = len(fiat_convert._cryptomap)
-    assert length_cryptomap == 0
+    assert len(fiat_convert._coinlistings) == 0
     assert fiat_convert._backoff > datetime.datetime.now().timestamp()
     assert log_has(
         'Too many requests for Coingecko API, backing off and trying again later.',
@@ -144,20 +142,33 @@ def test_fiat_too_many_requests_response(mocker, caplog):
     )
 
 
+def test_fiat_multiple_coins(mocker, caplog):
+    fiat_convert = CryptoToFiatConverter()
+    fiat_convert._coinlistings = [
+        {'id': 'helium', 'symbol': 'hnt', 'name': 'Helium'},
+        {'id': 'hymnode', 'symbol': 'hnt', 'name': 'Hymnode'},
+        {'id': 'bitcoin', 'symbol': 'btc', 'name': 'Bitcoin'},
+    ]
+
+    assert fiat_convert._get_gekko_id('btc') == 'bitcoin'
+    assert fiat_convert._get_gekko_id('hnt') is None
+
+    assert log_has('Found multiple mappings in goingekko for hnt.', caplog)
+
+
 def test_fiat_invalid_response(mocker, caplog):
     # Because CryptoToFiatConverter is a Singleton we reset the listings
-    listmock = MagicMock(return_value="{'novalidjson':DEADBEEFf}")
+    listmock = MagicMock(return_value=None)
     mocker.patch.multiple(
         'freqtrade.rpc.fiat_convert.CoinGeckoAPI',
         get_coins_list=listmock,
     )
     # with pytest.raises(RequestEsxception):
     fiat_convert = CryptoToFiatConverter()
-    fiat_convert._cryptomap = {}
+    fiat_convert._coinlistings = []
     fiat_convert._load_cryptomap()
 
-    length_cryptomap = len(fiat_convert._cryptomap)
-    assert length_cryptomap == 0
+    assert len(fiat_convert._coinlistings) == 0
     assert log_has_re('Could not load FIAT Cryptocurrency map for the following problem: .*',
                       caplog)
 
