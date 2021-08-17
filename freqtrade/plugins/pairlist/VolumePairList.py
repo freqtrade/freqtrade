@@ -115,7 +115,7 @@ class VolumePairList(IPairList):
         pairlist = self._pair_cache.get('pairlist')
         if pairlist:
             # Item found - no refresh necessary
-            return pairlist
+            return pairlist.copy()
         else:
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
