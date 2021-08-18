@@ -163,7 +163,7 @@ function update() {
 # Reset Develop or Stable branch
 function reset() {
     echo "----------------------------"
-    echo "Reseting branch and virtual env"
+    echo "Resetting branch and virtual env"
     echo "----------------------------"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
