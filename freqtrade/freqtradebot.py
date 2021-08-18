@@ -479,7 +479,13 @@ class FreqtradeBot(LoggingMixin):
             buy_limit_requested = price
         else:
             # Calculate price
-            buy_limit_requested = self.exchange.get_rate(pair, refresh=True, side="buy")
+            proposed_buy_rate = self.exchange.get_rate(pair, refresh=True, side="buy")
+            custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
+                                                       default_retval=proposed_buy_rate)(
+                pair=pair, current_time=datetime.now(timezone.utc),
+                proposed_rate=proposed_buy_rate)
+
+            buy_limit_requested = self.get_valid_price(custom_entry_price, proposed_buy_rate)
 
         if not buy_limit_requested:
             raise PricingError('Could not determine buy price.')
@@ -1076,6 +1082,17 @@ class FreqtradeBot(LoggingMixin):
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
+        # set custom_exit_price if available
+        proposed_limit_rate = limit
+        current_profit = trade.calc_profit_ratio(limit)
+        custom_exit_price = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                  default_retval=proposed_limit_rate)(
+            pair=trade.pair, trade=trade,
+            current_time=datetime.now(timezone.utc),
+            proposed_rate=proposed_limit_rate, current_profit=current_profit)
+
+        limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
+
         # First cancelling stoploss on exchange ...
         if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
             try:
@@ -1375,3 +1392,26 @@ class FreqtradeBot(LoggingMixin):
                                               amount=amount, fee_abs=fee_abs)
         else:
             return amount
+
+    def get_valid_price(self, custom_price: float, proposed_price: float) -> float:
+        """
+        Return the valid price.
+        Check if the custom price is of the good type if not return proposed_price
+        :return: valid price for the order
+        """
+        if custom_price:
+            try:
+                valid_custom_price = float(custom_price)
+            except ValueError:
+                valid_custom_price = proposed_price
+        else:
+            valid_custom_price = proposed_price
+
+        cust_p_max_dist_r = self.config.get('custom_price_max_distance_ratio', 0.02)
+        min_custom_price_allowed = proposed_price - (proposed_price * cust_p_max_dist_r)
+        max_custom_price_allowed = proposed_price + (proposed_price * cust_p_max_dist_r)
+
+        # Bracket between min_custom_price_allowed and max_custom_price_allowed
+        return max(
+            min(valid_custom_price, max_custom_price_allowed),
+            min_custom_price_allowed)
