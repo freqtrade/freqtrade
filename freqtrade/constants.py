@@ -191,7 +191,7 @@ CONF_SCHEMA = {
             },
             'required': ['price_side']
         },
-        'custom_price_max_distance_percent': {
+        'custom_price_max_distance_ratio': {
            'type': 'number', 'minimum': 0.0
         },
         'order_types': {

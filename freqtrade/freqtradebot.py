@@ -1407,9 +1407,9 @@ class FreqtradeBot(LoggingMixin):
         else:
             valid_custom_price = proposed_price
 
-        cust_p_max_dist_pct = self.config.get('custom_price_max_distance_percent', 2.0)
-        min_custom_price_allowed = proposed_price - ((proposed_price * cust_p_max_dist_pct) / 100)
-        max_custom_price_allowed = proposed_price + ((proposed_price * cust_p_max_dist_pct) / 100)
+        cust_p_max_dist_r = self.config.get('custom_price_max_distance_ratio', 0.02)
+        min_custom_price_allowed = proposed_price - (proposed_price * cust_p_max_dist_r)
+        max_custom_price_allowed = proposed_price + (proposed_price * cust_p_max_dist_r)
 
         if valid_custom_price > max_custom_price_allowed:
             valid_price = max_custom_price_allowed

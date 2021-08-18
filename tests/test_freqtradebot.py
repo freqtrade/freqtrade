@@ -4595,7 +4595,7 @@ def test_get_valid_price(mocker, default_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade.config['custom_price_max_distance_percent'] = 2.0
+    freqtrade.config['custom_price_max_distance_ratio'] = 0.02
 
     custom_price_string = "10"
     custom_price_badstring = "10abc"
