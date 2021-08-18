@@ -1411,11 +1411,7 @@ class FreqtradeBot(LoggingMixin):
         min_custom_price_allowed = proposed_price - (proposed_price * cust_p_max_dist_r)
         max_custom_price_allowed = proposed_price + (proposed_price * cust_p_max_dist_r)
 
-        if valid_custom_price > max_custom_price_allowed:
-            valid_price = max_custom_price_allowed
-        elif valid_custom_price < min_custom_price_allowed:
-            valid_price = min_custom_price_allowed
-        else:
-            valid_price = valid_custom_price
-
-        return valid_price
+        # Bracket between min_custom_price_allowed and max_custom_price_allowed
+        return max(
+            min(valid_custom_price, max_custom_price_allowed),
+            min_custom_price_allowed)

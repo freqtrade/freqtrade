@@ -4624,8 +4624,8 @@ def test_get_valid_price(mocker, default_conf) -> None:
     assert valid_price_from_int == custom_price_int
     assert valid_price_from_float == custom_price_float
 
-    assert valid_price_at_max_alwd != custom_price_over_max_alwd
+    assert valid_price_at_max_alwd < custom_price_over_max_alwd
     assert valid_price_at_max_alwd > proposed_price
 
-    assert valid_price_at_min_alwd != custom_price_under_min_alwd
+    assert valid_price_at_min_alwd > custom_price_under_min_alwd
     assert valid_price_at_min_alwd < proposed_price
