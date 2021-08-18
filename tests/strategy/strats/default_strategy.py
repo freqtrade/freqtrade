@@ -130,6 +130,19 @@ class DefaultStrategy(IStrategy):
             ),
             'buy'] = 1
 
+        dataframe.loc[
+            (
+                (dataframe['rsi'] > 65) &
+                (dataframe['fastd'] > 65) &
+                (dataframe['adx'] < 70) &
+                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
+            ) |
+            (
+                (dataframe['adx'] < 35) &
+                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
+            ),
+            'enter_short'] = 1
+
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -153,37 +166,7 @@ class DefaultStrategy(IStrategy):
                 (dataframe['minus_di'] > 0.5)
             ),
             'sell'] = 1
-        return dataframe
 
-    def populate_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the short signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with short column
-        """
-        dataframe.loc[
-            (
-                (dataframe['rsi'] > 65) &
-                (dataframe['fastd'] > 65) &
-                (dataframe['adx'] < 70) &
-                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
-            ) |
-            (
-                (dataframe['adx'] < 35) &
-                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
-            ),
-            'short'] = 1
-
-        return dataframe
-
-    def populate_exit_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the exit_short signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with exit_short column
-        """
         dataframe.loc[
             (
                 (
@@ -198,4 +181,5 @@ class DefaultStrategy(IStrategy):
                 (dataframe['minus_di'] < 0.5)   # TODO-lev: what to do here
             ),
             'exit_short'] = 1
+
         return dataframe

@@ -1,5 +1,6 @@
 import pandas as pd
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 
 
@@ -83,7 +84,13 @@ def stoploss_from_open(
     if current_profit == -1:
         return 1
 
-    stoploss = 1-((1+open_relative_stop)/(1+current_profit))  # TODO-lev: Is this right?
+    if for_short is True:
+        # TODO-lev: How would this be calculated for short
+        raise OperationalException(
+            "Freqtrade hasn't figured out how to calculated stoploss on shorts")
+        # stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+    else:
+        stoploss = 1-((1+open_relative_stop)/(1+current_profit))
 
     # negative stoploss values indicate the requested stop price is higher than the current price
     if for_short:

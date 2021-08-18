@@ -29,7 +29,7 @@ class SampleStrategy(IStrategy):
 
     You must keep:
     - the lib in the section "Do not remove these libs"
-    - the methods: populate_indicators, populate_buy_trend, populate_sell_trend, populate_short_trend, populate_exit_short_trend
+    - the methods: populate_indicators, populate_buy_trend, populate_sell_trend
     You should keep:
     - timeframe, minimal_roi, stoploss, trailing_*
     """
@@ -356,6 +356,16 @@ class SampleStrategy(IStrategy):
             ),
             'buy'] = 1
 
+        dataframe.loc[
+            (
+                # Signal: RSI crosses above 70
+                (qtpylib.crossed_above(dataframe['rsi'], self.short_rsi.value)) &
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            'enter_short'] = 1
+
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -374,38 +384,13 @@ class SampleStrategy(IStrategy):
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1
-        return dataframe
 
-    def populate_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the short signal for the given dataframe
-        :param dataframe: DataFrame populated with indicators
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with short column
-        """
-        dataframe.loc[
-            (
-                # Signal: RSI crosses above 70
-                (qtpylib.crossed_above(dataframe['rsi'], self.short_rsi.value)) &
-                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
-                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
-            ),
-            'short'] = 1
-        return dataframe
-
-    def populate_exit_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the exit_short signal for the given dataframe
-        :param dataframe: DataFrame populated with indicators
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with exit_short column
-        """
         dataframe.loc[
             (
                 # Signal: RSI crosses above 30
                 (qtpylib.crossed_above(dataframe['rsi'], self.exit_short_rsi.value)) &
-                (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
+                # Guard: tema below BB middle
+                (dataframe['tema'] <= dataframe['bb_middleband']) &
                 (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),

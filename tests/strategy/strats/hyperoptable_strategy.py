@@ -60,7 +60,7 @@ class HyperoptableStrategy(IStrategy):
         'sell_minusdi': 0.4
     }
 
-    short_params = {
+    enter_short_params = {
         'short_rsi': 65,
     }
 
@@ -87,8 +87,8 @@ class HyperoptableStrategy(IStrategy):
             })
         return prot
 
-    short_rsi = IntParameter([50, 100], default=70, space='sell')
-    short_plusdi = RealParameter(low=0, high=1, default=0.5, space='sell')
+    enter_short_rsi = IntParameter([50, 100], default=70, space='sell')
+    enter_short_plusdi = RealParameter(low=0, high=1, default=0.5, space='sell')
     exit_short_rsi = IntParameter(low=0, high=50, default=30, space='buy')
     exit_short_minusdi = DecimalParameter(low=0, high=1, default=0.4999, decimals=3, space='buy',
                                           load=False)
@@ -175,6 +175,19 @@ class HyperoptableStrategy(IStrategy):
             ),
             'buy'] = 1
 
+        dataframe.loc[
+            (
+                (dataframe['rsi'] > self.enter_short_rsi.value) &
+                (dataframe['fastd'] > 65) &
+                (dataframe['adx'] < 70) &
+                (dataframe['plus_di'] < self.enter_short_plusdi.value)
+            ) |
+            (
+                (dataframe['adx'] < 35) &
+                (dataframe['plus_di'] < self.enter_short_plusdi.value)
+            ),
+            'enter_short'] = 1
+
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -198,37 +211,7 @@ class HyperoptableStrategy(IStrategy):
                 (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
             'sell'] = 1
-        return dataframe
 
-    def populate_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the short signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with short column
-        """
-        dataframe.loc[
-            (
-                (dataframe['rsi'] > self.short_rsi.value) &
-                (dataframe['fastd'] > 65) &
-                (dataframe['adx'] < 70) &
-                (dataframe['plus_di'] < self.short_plusdi.value)
-            ) |
-            (
-                (dataframe['adx'] < 35) &
-                (dataframe['plus_di'] < self.short_plusdi.value)
-            ),
-            'short'] = 1
-
-        return dataframe
-
-    def populate_exit_short_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the exit_short signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with exit_short column
-        """
         dataframe.loc[
             (
                 (
@@ -243,4 +226,5 @@ class HyperoptableStrategy(IStrategy):
                 (dataframe['minus_di'] < self.exit_short_minusdi.value)
             ),
             'exit_short'] = 1
+
         return dataframe

@@ -110,7 +110,7 @@ class Hyperopt:
                 self.backtesting.strategy.advise_indicators = (  # type: ignore
                     self.custom_hyperopt.populate_indicators)  # type: ignore
             if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-                self.backtesting.strategy.advise_enter = (  # type: ignore
+                self.backtesting.strategy.advise_buy = (  # type: ignore
                     self.custom_hyperopt.populate_buy_trend)  # type: ignore
             if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
                 self.backtesting.strategy.advise_sell = (  # type: ignore
@@ -283,14 +283,15 @@ class Hyperopt:
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
         # Apply parameters
-        # TODO-lev: These don't take a side, how can I pass is_short=True/False to it
         if HyperoptTools.has_space(self.config, 'buy'):
-            self.backtesting.strategy.advise_enter = (  # type: ignore
-                self.custom_hyperopt.buy_strategy_generator(params_dict))
+            self.backtesting.strategy.advise_buy = (  # type: ignore
+                self.custom_hyperopt.buy_strategy_generator(params_dict)
+            )
 
         if HyperoptTools.has_space(self.config, 'sell'):
-            self.backtesting.strategy.advise_exit = (  # type: ignore
-                self.custom_hyperopt.sell_strategy_generator(params_dict))
+            self.backtesting.strategy.advise_sell = (  # type: ignore
+                self.custom_hyperopt.sell_strategy_generator(params_dict)
+            )
 
         if HyperoptTools.has_space(self.config, 'protection'):
             for attr_name, attr in self.backtesting.strategy.enumerate_parameters('protection'):

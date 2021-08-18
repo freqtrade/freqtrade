@@ -366,8 +366,8 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
     # Should be called for historical candle data
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_enter")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -451,6 +451,10 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
             'fastd-value': 20,
             'mfi-value': 20,
             'rsi-value': 20,
+            'short-adx-value': 80,
+            'short-fastd-value': 80,
+            'short-mfi-value': 80,
+            'short-rsi-value': 80,
             'adx-enabled': True,
             'fastd-enabled': True,
             'mfi-enabled': True,
@@ -476,6 +480,10 @@ def test_sell_strategy_generator(hyperopt, testdatadir) -> None:
             'sell-fastd-value': 75,
             'sell-mfi-value': 80,
             'sell-rsi-value': 20,
+            'exit-short-adx-value': 80,
+            'exit-short-fastd-value': 25,
+            'exit-short-mfi-value': 20,
+            'exit-short-rsi-value': 80,
             'sell-adx-enabled': True,
             'sell-fastd-enabled': True,
             'sell-mfi-enabled': True,
@@ -534,6 +542,10 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'fastd-value': 35,
         'mfi-value': 0,
         'rsi-value': 0,
+        'short-adx-value': 100,
+        'short-fastd-value': 65,
+        'short-mfi-value': 100,
+        'short-rsi-value': 100,
         'adx-enabled': False,
         'fastd-enabled': True,
         'mfi-enabled': False,
@@ -543,6 +555,10 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
         'sell-fastd-value': 75,
         'sell-mfi-value': 0,
         'sell-rsi-value': 0,
+        'exit-short-adx-value': 100,
+        'exit-short-fastd-value': 25,
+        'exit-short-mfi-value': 100,
+        'exit-short-rsi-value': 100,
         'sell-adx-enabled': False,
         'sell-fastd-enabled': True,
         'sell-mfi-enabled': False,
@@ -569,12 +585,16 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                 ),
         'params_details': {'buy': {'adx-enabled': False,
                                    'adx-value': 0,
+                                   'short-adx-value': 100,
                                    'fastd-enabled': True,
                                    'fastd-value': 35,
+                                   'short-fastd-value': 65,
                                    'mfi-enabled': False,
                                    'mfi-value': 0,
+                                   'short-mfi-value': 100,
                                    'rsi-enabled': False,
                                    'rsi-value': 0,
+                                   'short-rsi-value': 100,
                                    'trigger': 'macd_cross_signal'},
                            'roi': {"0": 0.12000000000000001,
                                    "20.0": 0.02,
@@ -583,12 +603,16 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                            'protection': {},
                            'sell': {'sell-adx-enabled': False,
                                     'sell-adx-value': 0,
+                                    'exit-short-adx-value': 100,
                                     'sell-fastd-enabled': True,
                                     'sell-fastd-value': 75,
+                                    'exit-short-fastd-value': 25,
                                     'sell-mfi-enabled': False,
                                     'sell-mfi-value': 0,
+                                    'exit-short-mfi-value': 100,
                                     'sell-rsi-enabled': False,
                                     'sell-rsi-value': 0,
+                                    'exit-short-rsi-value': 100,
                                     'sell-trigger': 'macd_cross_signal'},
                            'stoploss': {'stoploss': -0.4},
                            'trailing': {'trailing_only_offset_is_reached': False,
@@ -825,8 +849,8 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
 
-    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_enter")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -906,8 +930,8 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
     assert dumper.called
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_enter")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")
@@ -960,8 +984,8 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
     assert dumper.called
     assert dumper.call_count == 1
     assert dumper2.call_count == 1
-    assert hasattr(hyperopt.backtesting.strategy, "advise_exit")
-    assert hasattr(hyperopt.backtesting.strategy, "advise_enter")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_sell")
+    assert hasattr(hyperopt.backtesting.strategy, "advise_buy")
     assert hasattr(hyperopt, "max_open_trades")
     assert hyperopt.max_open_trades == hyperopt_conf['max_open_trades']
     assert hasattr(hyperopt, "position_stacking")

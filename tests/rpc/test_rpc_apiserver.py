@@ -264,7 +264,7 @@ def test_api_UvicornServer(mocker):
     assert thread_mock.call_count == 1
 
     s.cleanup()
-    assert s.should_sell is True
+    assert s.should_exit is True
 
 
 def test_api_UvicornServer_run(mocker):

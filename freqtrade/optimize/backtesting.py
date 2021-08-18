@@ -231,8 +231,13 @@ class Backtesting:
                 if has_buy_tag:
                     pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
 
-            df_analyzed = self.strategy.advise_exit(
-                self.strategy.advise_enter(pair_data, {'pair': pair}), {'pair': pair}).copy()
+            df_analyzed = self.strategy.advise_sell(
+                self.strategy.advise_buy(
+                    pair_data,
+                    {'pair': pair}
+                ),
+                {'pair': pair}
+            ).copy()
             # Trim startup period from analyzed dataframe
             df_analyzed = trim_dataframe(df_analyzed, self.timerange,
                                          startup_candles=self.required_startup)

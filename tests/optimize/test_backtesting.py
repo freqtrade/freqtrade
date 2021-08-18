@@ -290,8 +290,8 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
     assert backtesting.config == default_conf
     assert backtesting.timeframe == '5m'
     assert callable(backtesting.strategy.ohlcvdata_to_dataframe)
-    assert callable(backtesting.strategy.advise_enter)
-    assert callable(backtesting.strategy.advise_exit)
+    assert callable(backtesting.strategy.advise_buy)
+    assert callable(backtesting.strategy.advise_sell)
     assert isinstance(backtesting.strategy.dp, DataProvider)
     get_fee.assert_called()
     assert backtesting.fee == 0.5
@@ -700,8 +700,8 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    backtesting.strategy.advise_enter = fun  # Override
-    backtesting.strategy.advise_exit = fun  # Override
+    backtesting.strategy.advise_buy = fun  # Override
+    backtesting.strategy.advise_sell = fun  # Override
     result = backtesting.backtest(**backtest_conf)
     assert result['results'].empty
 
@@ -716,8 +716,8 @@ def test_backtest_only_sell(mocker, default_conf, testdatadir):
     backtest_conf = _make_backtest_conf(mocker, conf=default_conf, datadir=testdatadir)
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    backtesting.strategy.advise_enter = fun  # Override
-    backtesting.strategy.advise_exit = fun  # Override
+    backtesting.strategy.advise_buy = fun  # Override
+    backtesting.strategy.advise_sell = fun  # Override
     result = backtesting.backtest(**backtest_conf)
     assert result['results'].empty
 
@@ -731,8 +731,8 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     backtesting = Backtesting(default_conf)
     backtesting.required_startup = 0
     backtesting._set_strategy(backtesting.strategylist[0])
-    backtesting.strategy.advise_enter = _trend_alternate  # Override
-    backtesting.strategy.advise_exit = _trend_alternate  # Override
+    backtesting.strategy.advise_buy = _trend_alternate  # Override
+    backtesting.strategy.advise_sell = _trend_alternate  # Override
     result = backtesting.backtest(**backtest_conf)
     # 200 candles in backtest data
     # won't buy on first (shifted by 1)
@@ -777,8 +777,8 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
-    backtesting.strategy.advise_enter = _trend_alternate_hold  # Override
-    backtesting.strategy.advise_exit = _trend_alternate_hold  # Override
+    backtesting.strategy.advise_buy = _trend_alternate_hold  # Override
+    backtesting.strategy.advise_sell = _trend_alternate_hold  # Override
 
     processed = backtesting.strategy.ohlcvdata_to_dataframe(data)
     min_date, max_date = get_timerange(processed)
