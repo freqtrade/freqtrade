@@ -242,13 +242,13 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be sold.
+        :param pair: Pair for trade that's about to be exited.
         :param trade: trade object.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Sell reason.
+        :param sell_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
@@ -283,15 +283,15 @@ class IStrategy(ABC, HyperStrategyMixin):
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
-        Custom sell signal logic indicating that specified position should be sold. Returning a
-        string or True from this method is equal to setting sell signal on a candle at specified
-        time. This method is not called when sell signal is set.
+        Custom exit signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting exit signal on a candle at specified
+        time. This method is not called when exit signal is set.
 
-        This method should be overridden to create sell signals that depend on trade parameters. For
-        example you could implement a sell relative to the candle when the trade was opened,
+        This method should be overridden to create exit signals that depend on trade parameters. For
+        example you could implement an exit relative to the candle when the trade was opened,
         or a custom 1:2 risk-reward ROI.
 
-        Custom sell reason max length is 64. Exceeding characters will be removed.
+        Custom exit reason max length is 64. Exceeding characters will be removed.
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
@@ -299,7 +299,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        :return: To execute exit, return a string with custom sell reason or True. Otherwise return
         None or False.
         """
         return None
@@ -528,27 +528,34 @@ class IStrategy(ABC, HyperStrategyMixin):
             )
             return False, False, None
 
-        buy = latest[SignalType.BUY.value] == 1
+        enter = latest[SignalType.BUY.value] == 1
 
-        sell = False
+        exit = False
         if SignalType.SELL.value in latest:
-            sell = latest[SignalType.SELL.value] == 1
+            exit = latest[SignalType.SELL.value] == 1
 
         buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
 
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
-                     latest['date'], pair, str(buy), str(sell))
+                     latest['date'], pair, str(enter), str(exit))
         timeframe_seconds = timeframe_to_seconds(timeframe)
-        if self.ignore_expired_candle(latest_date=latest_date,
-                                      current_time=datetime.now(timezone.utc),
-                                      timeframe_seconds=timeframe_seconds,
-                                      buy=buy):
-            return False, sell, buy_tag
-        return buy, sell, buy_tag
+        if self.ignore_expired_candle(
+            latest_date=latest_date,
+            current_time=datetime.now(timezone.utc),
+            timeframe_seconds=timeframe_seconds,
+            enter=enter
+        ):
+            return False, exit, buy_tag
+        return enter, exit, buy_tag
 
-    def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
-                              timeframe_seconds: int, buy: bool):
-        if self.ignore_buying_expired_candle_after and buy:
+    def ignore_expired_candle(
+        self,
+        latest_date: datetime,
+        current_time: datetime,
+        timeframe_seconds: int,
+        enter: bool
+    ):
+        if self.ignore_buying_expired_candle_after and enter:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after
         else:
@@ -559,7 +566,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell
-        has been reached, which can either be a stop-loss, ROI or sell-signal.
+        has been reached, which can either be a stop-loss, ROI or exit-signal.
         :param low: Only used during backtesting to simulate stoploss
         :param high: Only used during backtesting, to simulate ROI
         :param force_stoploss: Externally provided stoploss
@@ -578,7 +585,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
+        # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
         roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
@@ -609,12 +616,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
                     else:
                         custom_reason = None
-            # TODO: return here if sell-signal should be favored over ROI
+            # TODO: return here if exit-signal should be favored over ROI
 
         # Start evaluations
         # Sequence:
         # ROI (if not stoploss)
-        # Sell-signal
+        # Exit-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
@@ -632,7 +639,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             return stoplossflag
 
         # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No sell signal.")
+        # logger.debug(f"{trade.pair} - No exit signal.")
         return SellCheckTuple(sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
@@ -769,7 +776,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             currently traded pair
         :return: DataFrame with buy column
         """
-        logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
+
+        logger.debug(f"Populating enter signals for pair {metadata.get('pair')}.")
 
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
@@ -787,7 +795,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             currently traded pair
         :return: DataFrame with sell column
         """
-        logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")
+
+        logger.debug(f"Populating exit signals for pair {metadata.get('pair')}.")
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
