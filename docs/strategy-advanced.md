@@ -400,8 +400,8 @@ class AwesomeStrategy(IStrategy):
 !!! Warning
     Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
 
-_Exemple_
-If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98.
+!!! Exemple
+    If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98.
 
 !!! Warning "No backtesting support"
     Custom entry-prices are currently not supported during backtesting.
