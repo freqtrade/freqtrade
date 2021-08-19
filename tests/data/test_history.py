@@ -133,8 +133,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC')
     assert file.is_file()
     assert log_has_re(
-        'Download history data for pair: "MEME/BTC", timeframe: 1m '
-        'and store in .*', caplog
+        'Download history data for pair: "MEME/BTC" (0/1), timeframe: 1m '
+        'and store in', caplog
     )
 
 
@@ -278,8 +278,10 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
-    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
-    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
+    _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
+                           timeframe='1m')
+    _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
+                           timeframe='3m')
     assert json_dump_mock.call_count == 2
 
 
