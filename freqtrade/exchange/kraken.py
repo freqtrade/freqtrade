@@ -1,6 +1,6 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import ccxt
 
@@ -127,3 +127,42 @@ class Kraken(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def fill_leverage_brackets(self):
+        """
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        # TODO-lev: Not sure if this works correctly for futures
+        leverages = {}
+        for pair, market in self._api.load_markets().items():
+            info = market['info']
+            leverage_buy = info['leverage_buy']
+            leverage_sell = info['leverage_sell']
+            if len(info['leverage_buy']) > 0 or len(info['leverage_sell']) > 0:
+                if leverage_buy != leverage_sell:
+                    print(f"\033[91m The buy leverage != the sell leverage for {pair}."
+                          "please let freqtrade know because this has never happened before"
+                          )
+                    if max(leverage_buy) < max(leverage_sell):
+                        leverages[pair] = leverage_buy
+                    else:
+                        leverages[pair] = leverage_sell
+                else:
+                    leverages[pair] = leverage_buy
+        self._leverage_brackets = leverages
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: Here for super class, not needed on Kraken
+        """
+        return float(max(self._leverage_brackets[pair]))
+
+    def set_leverage(self, pair, leverage):
+        """
+            Kraken set's the leverage as an option it the order object, so it doesn't do
+            anything in this function
+        """
+        return

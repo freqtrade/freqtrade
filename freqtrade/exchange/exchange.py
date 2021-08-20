@@ -69,6 +69,8 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
+    _leverage_brackets: Dict
+
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
         Initializes this module with the given config,
@@ -155,6 +157,16 @@ class Exchange:
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
+
+        leverage = config.get('leverage_mode')
+        if leverage is not False:
+            try:
+                # TODO-lev: This shouldn't need to happen, but for some reason I get that the
+                # TODO-lev: method isn't implemented
+                self.fill_leverage_brackets()
+            except Exception as error:
+                logger.debug(error)
+                logger.debug("Could not load leverage_brackets")
 
     def __del__(self):
         """
@@ -346,6 +358,7 @@ class Exchange:
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
+            self.fill_leverage_brackets()
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -561,12 +574,12 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return self.apply_leverage_to_stake_amount(
+        return self._apply_leverage_to_stake_amount(
             max(min_stake_amounts) * amount_reserve_percent,
             leverage or 1.0
         )
 
-    def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
+    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         """
         # * Should be implemented by child classes if leverage affects the stake_amount
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
@@ -700,14 +713,6 @@ class Exchange:
             # Gracefully handle errors with dry-run orders.
             raise InvalidOrderException(
                 f'Tried to get an invalid dry-run-order (id: {order_id}). Message: {e}') from e
-
-    def get_max_leverage(self, pair: str, stake_amount: float, price: float) -> float:
-        """
-        Gets the maximum leverage available on this pair
-        """
-
-        raise OperationalException(f"Leverage is not available on {self.name} using freqtrade")
-        return 1.0
 
     # Order handling
 
@@ -1520,13 +1525,32 @@ class Exchange:
         # TODO-lev: implement
         return 0.0005
 
+    def fill_leverage_brackets(self):
+        """
+            #TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        raise OperationalException(
+            f"{self.name.capitalize()}.fill_leverage_brackets has not been implemented.")
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        """
+        raise OperationalException(
+            f"{self.name.capitalize()}.get_max_leverage has not been implemented.")
+
     def set_leverage(self, pair, leverage):
         """
-            Binance Futures must set the leverage before making a futures trade, in order to not
+            Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
-            # TODO-lev: This may be the case for any futures exchange, or even margin trading on
-            # TODO-lev: some exchanges, so check this
         """
+        raise OperationalException(
+            f"{self.name.capitalize()}.set_leverage has not been implemented.")
+
         self._api.set_leverage(symbol=pair, leverage=leverage)
 
 

@@ -1,6 +1,6 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import ccxt
 
@@ -156,3 +156,30 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
+
+    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
+        # TODO-lev: implement
+        return stake_amount
+
+    def fill_leverage_brackets(self):
+        """
+            FTX leverage is static across the account, and doesn't change from pair to pair,
+            so _leverage_brackets doesn't need to be set
+        """
+        return
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at, which is always 20 on ftx
+            :param pair: Here for super method, not used on FTX
+            :nominal_value: Here for super method, not used on FTX
+        """
+        return 20.0
+
+    def set_leverage(self, pair, leverage):
+        """
+            Sets the leverage used for the user's account
+            :param pair: Here for super method, not used on FTX
+            :param leverage:
+        """
+        self._api.private_post_account_leverage({'leverage': leverage})

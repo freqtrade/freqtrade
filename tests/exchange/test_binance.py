@@ -106,3 +106,48 @@ def test_stoploss_adjust_binance(mocker, default_conf):
     # Test with invalid order case
     order['type'] = 'stop_loss'
     assert not exchange.stoploss_adjust(1501, order, side="sell")
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("BNB/BUSD", 0.0, 40.0),
+    ("BNB/USDT", 100.0, 153.84615384615384),
+    ("BTC/USDT", 170.30, 250.0),
+    ("BNB/BUSD", 999999.9, 10.0),
+    ("BNB/USDT", 5000000.0, 6.666666666666667),
+    ("BTC/USDT", 300000000.1, 2.0),
+])
+def test_get_max_leverage_binance(
+    default_conf,
+    mocker,
+    pair,
+    nominal_value,
+    max_lev
+):
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange._leverage_brackets = {
+        'BNB/BUSD': [[0.0, 0.025],
+                     [100000.0, 0.05],
+                     [500000.0, 0.1],
+                     [1000000.0, 0.15],
+                     [2000000.0, 0.25],
+                     [5000000.0, 0.5]],
+        'BNB/USDT': [[0.0, 0.0065],
+                     [10000.0, 0.01],
+                     [50000.0, 0.02],
+                     [250000.0, 0.05],
+                     [1000000.0, 0.1],
+                     [2000000.0, 0.125],
+                     [5000000.0, 0.15],
+                     [10000000.0, 0.25]],
+        'BTC/USDT': [[0.0, 0.004],
+                     [50000.0, 0.005],
+                     [250000.0, 0.01],
+                     [1000000.0, 0.025],
+                     [5000000.0, 0.05],
+                     [20000000.0, 0.1],
+                     [50000000.0, 0.125],
+                     [100000000.0, 0.15],
+                     [200000000.0, 0.25],
+                     [300000000.0, 0.5]],
+    }
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
