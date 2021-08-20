@@ -42,6 +42,11 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
+    'gateio': {
+        'pair': 'BTC/USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
