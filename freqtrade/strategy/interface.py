@@ -655,12 +655,20 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
+            if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+                sell_reason = f'{SellType.ROI} ({trade.buy_tag})'
+                return SellCheckTuple(sell_type=SellType.ROI, sell_reason=sell_reason)
             return SellCheckTuple(sell_type=SellType.ROI)
 
         if sell_signal != SellType.NONE:
             logger.debug(f"{trade.pair} - Sell signal received. "
                          f"sell_type=SellType.{sell_signal.name}" +
                          (f", custom_reason={custom_reason}" if custom_reason else ""))
+            if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+                if custom_reason:
+                    custom_reason += f' ({trade.buy_tag})'
+                else:
+                    custom_reason = f'{sell_signal} ({trade.buy_tag})'
             return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
@@ -725,10 +733,15 @@ class IStrategy(ABC, HyperStrategyMixin):
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
+            sell_reason = None
+            if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+                sell_reason = f'{sell_type} ({trade.buy_tag})'
 
             # If initial stoploss is not the same as current one then it is trailing.
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
+                if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+                    sell_reason = f'{sell_type} ({trade.buy_tag})'
                 logger.debug(
                     f"{trade.pair} - HIT STOP: current price at {(low or current_rate):.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
@@ -736,6 +749,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                     f"trade opened at {trade.open_rate:.6f}")
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
+
+            if sell_reason is not None:
+                return SellCheckTuple(sell_type=sell_type, sell_reason=sell_reason)
 
             return SellCheckTuple(sell_type=sell_type)
 
