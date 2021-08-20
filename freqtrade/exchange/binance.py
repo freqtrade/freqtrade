@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 import ccxt
 
@@ -96,5 +96,43 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
+    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         return stake_amount / leverage
+
+    def fill_leverage_brackets(self):
+        """
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        leverage_brackets = self._api.load_leverage_brackets()
+        for pair, brackets in leverage_brackets.items:
+            self.leverage_brackets[pair] = [
+                [
+                    min_amount,
+                    float(margin_req)
+                ] for [
+                    min_amount,
+                    margin_req
+                ] in brackets
+            ]
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        """
+        pair_brackets = self._leverage_brackets[pair]
+        max_lev = 1.0
+        for [min_amount, margin_req] in pair_brackets:
+            print(nominal_value, min_amount)
+            if nominal_value >= min_amount:
+                max_lev = 1/margin_req
+        return max_lev
+
+    def set_leverage(self, pair, leverage):
+        """
+            Binance Futures must set the leverage before making a futures trade, in order to not
+            have the same leverage on every trade
+        """
+        self._api.set_leverage(symbol=pair, leverage=leverage)

@@ -449,11 +449,6 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     )
 
 
-def apply_leverage_to_stake_amount():
-    # TODO-lev
-    return
-
-
 def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario
@@ -2944,7 +2939,61 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
-def test_get_max_leverage():
+@pytest.mark.parametrize('exchange,stake_amount,leverage,min_stake_with_lev', [
+    ('binance', 9.0, 3.0, 3.0),
+    ('binance', 20.0, 5.0, 4.0),
+    ('binance', 100.0, 100.0, 1.0),
+    # Kraken
+    ('kraken', 9.0, 3.0, 9.0),
+    ('kraken', 20.0, 5.0, 20.0),
+    ('kraken', 100.0, 100.0, 100.0),
+    # FTX
+    # TODO-lev: - implement FTX tests
+    # ('ftx', 9.0, 3.0, 10.0),
+    # ('ftx', 20.0, 5.0, 20.0),
+    # ('ftx', 100.0, 100.0, 100.0),
+])
+def test_apply_leverage_to_stake_amount(
+    exchange,
+    stake_amount,
+    leverage,
+    min_stake_with_lev,
+    mocker,
+    default_conf
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange)
+    assert exchange._apply_leverage_to_stake_amount(stake_amount, leverage) == min_stake_with_lev
+
+
+@pytest.mark.parametrize('exchange_name,pair,nominal_value,max_lev', [
+    # Kraken
+    ("kraken", "ADA/BTC", 0.0, 3.0),
+    ("kraken", "BTC/EUR", 100.0, 5.0),
+    ("kraken", "ZEC/USD", 173.31, 2.0),
+    # FTX
+    ("ftx", "ADA/BTC", 0.0, 20.0),
+    ("ftx", "BTC/EUR", 100.0, 20.0),
+    ("ftx", "ZEC/USD", 173.31, 20.0),
+    # Binance tests this method inside it's own test file
+])
+def test_get_max_leverage(
+    default_conf,
+    mocker,
+    exchange_name,
+    pair,
+    nominal_value,
+    max_lev
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    exchange._leverage_brackets = {
+        'ADA/BTC': ['2', '3'],
+        'BTC/EUR': ['2', '3', '4', '5'],
+        'ZEC/USD': ['2']
+    }
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
+
+
+def test_fill_leverage_brackets():
     # TODO-lev
     return
 
