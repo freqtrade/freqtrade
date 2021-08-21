@@ -182,4 +182,12 @@ class Ftx(Exchange):
             :param pair: Here for super method, not used on FTX
             :param leverage:
         """
-        self._api.private_post_account_leverage({'leverage': leverage})
+        try:
+            self._api.private_post_account_leverage({'leverage': leverage})
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                 f'{e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
