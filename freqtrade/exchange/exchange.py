@@ -540,7 +540,6 @@ class Exchange:
 
     def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
                                   leverage: Optional[float] = 1.0) -> Optional[float]:
-        # TODO-lev: Using leverage makes the min stake amount lower (on binance at least)
         try:
             market = self.markets[pair]
         except KeyError:
@@ -1550,8 +1549,6 @@ class Exchange:
         """
         raise OperationalException(
             f"{self.name.capitalize()}.set_leverage has not been implemented.")
-
-        self._api.set_leverage(symbol=pair, leverage=leverage)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
