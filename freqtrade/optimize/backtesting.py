@@ -232,10 +232,7 @@ class Backtesting:
                     pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(
-                    pair_data,
-                    {'pair': pair}
-                ),
+                self.strategy.advise_buy(pair_data, {'pair': pair}),
                 {'pair': pair}
             ).copy()
             # Trim startup period from analyzed dataframe

@@ -58,10 +58,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     return dataframe
 
 
-def stoploss_from_open(
-    open_relative_stop: float,
-    current_profit: float
-) -> float:
+def stoploss_from_open(open_relative_stop: float, current_profit: float) -> float:
     """
 
     Given the current profit, and a desired stop loss value relative to the open price,

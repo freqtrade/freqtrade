@@ -46,7 +46,7 @@ class SampleHyperOpt(IHyperOpt):
     """
 
     @staticmethod
-    def buy_indicator_space() -> List[Dimension]:
+    def indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching buy strategy parameters.
         """
