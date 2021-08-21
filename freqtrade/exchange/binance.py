@@ -134,22 +134,6 @@ class Binance(Exchange):
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
         for [min_amount, margin_req] in pair_brackets:
-            print(nominal_value, min_amount)
             if nominal_value >= min_amount:
                 max_lev = 1/margin_req
         return max_lev
-
-    def set_leverage(self, pair, leverage):
-        """
-            Binance Futures must set the leverage before making a futures trade, in order to not
-            have the same leverage on every trade
-        """
-        try:
-            self._api.set_leverage(symbol=pair, leverage=leverage)
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e

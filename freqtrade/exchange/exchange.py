@@ -1575,13 +1575,20 @@ class Exchange:
         raise OperationalException(
             f"{self.name.capitalize()}.get_max_leverage has not been implemented.")
 
-    def set_leverage(self, pair, leverage):
+    def set_leverage(self, leverage: float, pair: Optional[str]):
         """
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
         """
-        raise OperationalException(
-            f"{self.name.capitalize()}.set_leverage has not been implemented.")
+        try:
+            self._api.set_leverage(symbol=pair, leverage=leverage)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
