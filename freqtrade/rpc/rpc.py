@@ -321,9 +321,7 @@ class RPC:
         # Sell reason
         sell_reasons = {}
         for trade in trades:
-            sell_reason = trade.sell_reason
-            if trade.buy_tag:
-                sell_reason += f' ({trade.buy_tag})'
+            sell_reason = trade.sell_reason  + (f' ({trade.buy_tag})' if trade.buy_tag else '')
             if sell_reason not in sell_reasons:
                 sell_reasons[sell_reason] = {
                     'wins': 0, 'losses': 0, 'draws': 0}
