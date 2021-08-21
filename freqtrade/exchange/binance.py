@@ -103,17 +103,26 @@ class Binance(Exchange):
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
         """
-        leverage_brackets = self._api.load_leverage_brackets()
-        for pair, brackets in leverage_brackets.items:
-            self.leverage_brackets[pair] = [
-                [
-                    min_amount,
-                    float(margin_req)
-                ] for [
-                    min_amount,
-                    margin_req
-                ] in brackets
-            ]
+        try:
+            leverage_brackets = self._api.load_leverage_brackets()
+            for pair, brackets in leverage_brackets.items:
+                self.leverage_brackets[pair] = [
+                    [
+                        min_amount,
+                        float(margin_req)
+                    ] for [
+                        min_amount,
+                        margin_req
+                    ] in brackets
+                ]
+
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                 f'{e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
@@ -134,4 +143,12 @@ class Binance(Exchange):
             Binance Futures must set the leverage before making a futures trade, in order to not
             have the same leverage on every trade
         """
-        self._api.set_leverage(symbol=pair, leverage=leverage)
+        try:
+            self._api.set_leverage(symbol=pair, leverage=leverage)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e

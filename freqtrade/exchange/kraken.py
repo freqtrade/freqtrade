@@ -135,22 +135,30 @@ class Kraken(Exchange):
         """
         # TODO-lev: Not sure if this works correctly for futures
         leverages = {}
-        for pair, market in self._api.load_markets().items():
-            info = market['info']
-            leverage_buy = info['leverage_buy']
-            leverage_sell = info['leverage_sell']
-            if len(info['leverage_buy']) > 0 or len(info['leverage_sell']) > 0:
-                if leverage_buy != leverage_sell:
-                    print(f"\033[91m The buy leverage != the sell leverage for {pair}."
-                          "please let freqtrade know because this has never happened before"
-                          )
-                    if max(leverage_buy) < max(leverage_sell):
-                        leverages[pair] = leverage_buy
+        try:
+            for pair, market in self._api.load_markets().items():
+                info = market['info']
+                leverage_buy = info['leverage_buy']
+                leverage_sell = info['leverage_sell']
+                if len(info['leverage_buy']) > 0 or len(info['leverage_sell']) > 0:
+                    if leverage_buy != leverage_sell:
+                        logger.warning(f"The buy leverage != the sell leverage for {pair}. Please"
+                                       "let freqtrade know because this has never happened before"
+                                       )
+                        if max(leverage_buy) < max(leverage_sell):
+                            leverages[pair] = leverage_buy
+                        else:
+                            leverages[pair] = leverage_sell
                     else:
-                        leverages[pair] = leverage_sell
-                else:
-                    leverages[pair] = leverage_buy
-        self._leverage_brackets = leverages
+                        leverages[pair] = leverage_buy
+            self._leverage_brackets = leverages
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                 f'{e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
