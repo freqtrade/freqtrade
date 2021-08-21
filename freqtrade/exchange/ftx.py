@@ -175,19 +175,3 @@ class Ftx(Exchange):
             :nominal_value: Here for super method, not used on FTX
         """
         return 20.0
-
-    def set_leverage(self, pair, leverage):
-        """
-            Sets the leverage used for the user's account
-            :param pair: Here for super method, not used on FTX
-            :param leverage:
-        """
-        try:
-            self._api.private_post_account_leverage({'leverage': leverage})
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                 f'{e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
