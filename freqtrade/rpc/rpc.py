@@ -321,9 +321,13 @@ class RPC:
         # Sell reason
         sell_reasons = {}
         for trade in trades:
-            if trade.sell_reason not in sell_reasons:
-                sell_reasons[trade.sell_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
-            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
+            sell_reason = trade.sell_reason
+            if trade.buy_tag:
+                sell_reason += f' ({trade.buy_tag})'
+            if sell_reason not in sell_reasons:
+                sell_reasons[sell_reason] = {
+                    'wins': 0, 'losses': 0, 'draws': 0}
+            sell_reasons[sell_reason][trade_win_loss(trade)] += 1
 
         # Duration
         dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
