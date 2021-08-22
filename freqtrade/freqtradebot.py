@@ -1381,7 +1381,9 @@ class FreqtradeBot(LoggingMixin):
         if fee_currency:
             # fee_rate should use mean
             fee_rate = sum(fee_rate_array) / float(len(fee_rate_array)) if fee_rate_array else None
-            trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
+            if fee_rate is not None and fee_rate < 0.02:
+                # Only update if fee-rate is < 2%
+                trade.update_fee(fee_cost, fee_currency, fee_rate, order.get('side', ''))
 
         if not isclose(amount, order_amount, abs_tol=constants.MATH_CLOSE_PREC):
             logger.warning(f"Amount {amount} does not match amount {trade.amount}")
