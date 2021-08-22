@@ -31,8 +31,11 @@ class Binance(Exchange):
         Returns True if adjustment is necessary.
         :param side: "buy" or "sell"
         """
-        # TODO-lev: Short support
-        return order['type'] == 'stop_loss_limit' and stop_loss > float(order['info']['stopPrice'])
+
+        return order['type'] == 'stop_loss_limit' and (
+            side == "sell" and stop_loss > float(order['info']['stopPrice']) or
+            side == "buy" and stop_loss < float(order['info']['stopPrice'])
+        )
 
     @retrier(retries=0)
     def stoploss(self, pair: str, amount: float,
@@ -43,7 +46,6 @@ class Binance(Exchange):
         It may work with a limited number of other exchanges, but this has not been tested yet.
         :param side: "buy" or "sell"
         """
-        # TODO-lev: Short support
         # Limit price threshold: As limit price should always be below stop-price
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         rate = stop_price * limit_price_pct
@@ -52,14 +54,16 @@ class Binance(Exchange):
 
         stop_price = self.price_to_precision(pair, stop_price)
 
+        bad_stop_price = (stop_price <= rate) if side == "sell" else (stop_price >= rate)
+
         # Ensure rate is less than stop price
-        if stop_price <= rate:
+        if bad_stop_price:
             raise OperationalException(
-                'In stoploss limit order, stop price should be more than limit price')
+                'In stoploss limit order, stop price should be better than limit price')
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, side, amount, stop_price)
             return dry_order
 
         try:
@@ -70,7 +74,7 @@ class Binance(Exchange):
 
             rate = self.price_to_precision(pair, rate)
 
-            order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
+            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, price=rate, params=params)
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
@@ -78,21 +82,21 @@ class Binance(Exchange):
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             # Errors:
             # `binance Order would trigger immediately.`
             raise InvalidOrderException(
-                f'Could not create {ordertype} sell order on market {pair}. '
-                f'Tried to sell amount {amount} at rate {rate}. '
+                f'Could not create {ordertype} {side} order on market {pair}. '
+                f'Tried to {side} amount {amount} at rate {rate}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
