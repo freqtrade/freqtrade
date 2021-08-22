@@ -193,18 +193,22 @@ class StrategyResolver(IResolver):
                 # register temp path with the bot
                 abs_paths.insert(0, temp.resolve())
 
-        strategy = StrategyResolver._load_object(paths=abs_paths,
-                                                 object_name=strategy_name,
-                                                 add_source=True,
-                                                 kwargs={'config': config},
-                                                 )
+        strategy = StrategyResolver._load_object(
+            paths=abs_paths,
+            object_name=strategy_name,
+            add_source=True,
+            kwargs={'config': config},
+        )
+
         if strategy:
             strategy._populate_fun_len = len(getfullargspec(strategy.populate_indicators).args)
             strategy._buy_fun_len = len(getfullargspec(strategy.populate_buy_trend).args)
             strategy._sell_fun_len = len(getfullargspec(strategy.populate_sell_trend).args)
-            if any(x == 2 for x in [strategy._populate_fun_len,
-                                    strategy._buy_fun_len,
-                                    strategy._sell_fun_len]):
+            if any(x == 2 for x in [
+                strategy._populate_fun_len,
+                strategy._buy_fun_len,
+                strategy._sell_fun_len
+            ]):
                 strategy.INTERFACE_VERSION = 1
 
             return strategy

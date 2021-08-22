@@ -68,15 +68,17 @@ class DefaultHyperOpt(IHyperOpt):
 
             # TRIGGERS
             if 'trigger' in params:
-                if params['trigger'] == 'bb_lower':
+                if params['trigger'] == 'boll':
                     conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
                 if params['trigger'] == 'macd_cross_signal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['macd'], dataframe['macdsignal']
+                        dataframe['macd'],
+                        dataframe['macdsignal']
                     ))
                 if params['trigger'] == 'sar_reversal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['close'], dataframe['sar']
+                        dataframe['close'],
+                        dataframe['sar']
                     ))
 
             if conditions:
@@ -102,7 +104,7 @@ class DefaultHyperOpt(IHyperOpt):
             Categorical([True, False], name='fastd-enabled'),
             Categorical([True, False], name='adx-enabled'),
             Categorical([True, False], name='rsi-enabled'),
-            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+            Categorical(['boll', 'macd_cross_signal', 'sar_reversal'], name='trigger')
         ]
 
     @staticmethod
@@ -128,15 +130,17 @@ class DefaultHyperOpt(IHyperOpt):
 
             # TRIGGERS
             if 'sell-trigger' in params:
-                if params['sell-trigger'] == 'sell-bb_upper':
+                if params['sell-trigger'] == 'sell-boll':
                     conditions.append(dataframe['close'] > dataframe['bb_upperband'])
                 if params['sell-trigger'] == 'sell-macd_cross_signal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['macdsignal'], dataframe['macd']
+                        dataframe['macdsignal'],
+                        dataframe['macd']
                     ))
                 if params['sell-trigger'] == 'sell-sar_reversal':
                     conditions.append(qtpylib.crossed_above(
-                        dataframe['sar'], dataframe['close']
+                        dataframe['sar'],
+                        dataframe['close']
                     ))
 
             if conditions:
@@ -162,9 +166,10 @@ class DefaultHyperOpt(IHyperOpt):
             Categorical([True, False], name='sell-fastd-enabled'),
             Categorical([True, False], name='sell-adx-enabled'),
             Categorical([True, False], name='sell-rsi-enabled'),
-            Categorical(['sell-bb_upper',
+            Categorical(['sell-boll',
                          'sell-macd_cross_signal',
-                         'sell-sar_reversal'], name='sell-trigger')
+                         'sell-sar_reversal'],
+                        name='sell-trigger')
         ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
