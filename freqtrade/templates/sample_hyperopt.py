@@ -59,7 +59,7 @@ class SampleHyperOpt(IHyperOpt):
             Categorical([True, False], name='fastd-enabled'),
             Categorical([True, False], name='adx-enabled'),
             Categorical([True, False], name='rsi-enabled'),
-            Categorical(['bb_lower', 'macd_cross_signal', 'sar_reversal'], name='trigger')
+            Categorical(['boll', 'macd_cross_signal', 'sar_reversal'], name='trigger')
         ]
 
     @staticmethod
@@ -71,37 +71,39 @@ class SampleHyperOpt(IHyperOpt):
             """
             Buy strategy Hyperopt will build and use.
             """
-            conditions = []
+            long_conditions = []
 
             # GUARDS AND TRENDS
             if 'mfi-enabled' in params and params['mfi-enabled']:
-                conditions.append(dataframe['mfi'] < params['mfi-value'])
+                long_conditions.append(dataframe['mfi'] < params['mfi-value'])
             if 'fastd-enabled' in params and params['fastd-enabled']:
-                conditions.append(dataframe['fastd'] < params['fastd-value'])
+                long_conditions.append(dataframe['fastd'] < params['fastd-value'])
             if 'adx-enabled' in params and params['adx-enabled']:
-                conditions.append(dataframe['adx'] > params['adx-value'])
+                long_conditions.append(dataframe['adx'] > params['adx-value'])
             if 'rsi-enabled' in params and params['rsi-enabled']:
-                conditions.append(dataframe['rsi'] < params['rsi-value'])
+                long_conditions.append(dataframe['rsi'] < params['rsi-value'])
 
             # TRIGGERS
             if 'trigger' in params:
-                if params['trigger'] == 'bb_lower':
-                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                if params['trigger'] == 'boll':
+                    long_conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
                 if params['trigger'] == 'macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['macd'], dataframe['macdsignal']
+                    long_conditions.append(qtpylib.crossed_above(
+                        dataframe['macd'],
+                        dataframe['macdsignal']
                     ))
                 if params['trigger'] == 'sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['close'], dataframe['sar']
+                    long_conditions.append(qtpylib.crossed_above(
+                        dataframe['close'],
+                        dataframe['sar']
                     ))
 
             # Check that volume is not 0
-            conditions.append(dataframe['volume'] > 0)
+            long_conditions.append(dataframe['volume'] > 0)
 
-            if conditions:
+            if long_conditions:
                 dataframe.loc[
-                    reduce(lambda x, y: x & y, conditions),
+                    reduce(lambda x, y: x & y, long_conditions),
                     'buy'] = 1
 
             return dataframe
@@ -122,9 +124,11 @@ class SampleHyperOpt(IHyperOpt):
             Categorical([True, False], name='sell-fastd-enabled'),
             Categorical([True, False], name='sell-adx-enabled'),
             Categorical([True, False], name='sell-rsi-enabled'),
-            Categorical(['sell-bb_upper',
+            Categorical(['sell-boll',
                          'sell-macd_cross_signal',
-                         'sell-sar_reversal'], name='sell-trigger')
+                         'sell-sar_reversal'],
+                        name='sell-trigger'
+                        )
         ]
 
     @staticmethod
@@ -136,37 +140,39 @@ class SampleHyperOpt(IHyperOpt):
             """
             Sell strategy Hyperopt will build and use.
             """
-            conditions = []
+            exit_long_conditions = []
 
             # GUARDS AND TRENDS
             if 'sell-mfi-enabled' in params and params['sell-mfi-enabled']:
-                conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
+                exit_long_conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
             if 'sell-fastd-enabled' in params and params['sell-fastd-enabled']:
-                conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
+                exit_long_conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
             if 'sell-adx-enabled' in params and params['sell-adx-enabled']:
-                conditions.append(dataframe['adx'] < params['sell-adx-value'])
+                exit_long_conditions.append(dataframe['adx'] < params['sell-adx-value'])
             if 'sell-rsi-enabled' in params and params['sell-rsi-enabled']:
-                conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
+                exit_long_conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
 
             # TRIGGERS
             if 'sell-trigger' in params:
-                if params['sell-trigger'] == 'sell-bb_upper':
-                    conditions.append(dataframe['close'] > dataframe['bb_upperband'])
+                if params['sell-trigger'] == 'sell-boll':
+                    exit_long_conditions.append(dataframe['close'] > dataframe['bb_upperband'])
                 if params['sell-trigger'] == 'sell-macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['macdsignal'], dataframe['macd']
+                    exit_long_conditions.append(qtpylib.crossed_above(
+                        dataframe['macdsignal'],
+                        dataframe['macd']
                     ))
                 if params['sell-trigger'] == 'sell-sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
-                        dataframe['sar'], dataframe['close']
+                    exit_long_conditions.append(qtpylib.crossed_above(
+                        dataframe['sar'],
+                        dataframe['close']
                     ))
 
             # Check that volume is not 0
-            conditions.append(dataframe['volume'] > 0)
+            exit_long_conditions.append(dataframe['volume'] > 0)
 
-            if conditions:
+            if exit_long_conditions:
                 dataframe.loc[
-                    reduce(lambda x, y: x & y, conditions),
+                    reduce(lambda x, y: x & y, exit_long_conditions),
                     'sell'] = 1
 
             return dataframe
