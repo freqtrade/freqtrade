@@ -1384,7 +1384,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
                  side_effect=InvalidOrderException())
     mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
                  return_value=stoploss_order_hanging)
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="buy")
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
     # Still try to create order
@@ -1394,7 +1394,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     caplog.clear()
     cancel_mock = mocker.patch("freqtrade.exchange.Binance.cancel_stoploss_order", MagicMock())
     mocker.patch("freqtrade.exchange.Binance.stoploss", side_effect=ExchangeError())
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="buy")
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
