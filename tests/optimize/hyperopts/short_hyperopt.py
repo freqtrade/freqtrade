@@ -54,37 +54,56 @@ class DefaultHyperOpt(IHyperOpt):
             """
             Buy strategy Hyperopt will build and use.
             """
-            conditions = []
+            long_conditions = []
+            short_conditions = []
 
             # GUARDS AND TRENDS
             if 'mfi-enabled' in params and params['mfi-enabled']:
-                conditions.append(dataframe['mfi'] < params['mfi-value'])
+                long_conditions.append(dataframe['mfi'] < params['mfi-value'])
+                short_conditions.append(dataframe['mfi'] > params['short-mfi-value'])
             if 'fastd-enabled' in params and params['fastd-enabled']:
-                conditions.append(dataframe['fastd'] < params['fastd-value'])
+                long_conditions.append(dataframe['fastd'] < params['fastd-value'])
+                short_conditions.append(dataframe['fastd'] > params['short-fastd-value'])
             if 'adx-enabled' in params and params['adx-enabled']:
-                conditions.append(dataframe['adx'] > params['adx-value'])
+                long_conditions.append(dataframe['adx'] > params['adx-value'])
+                short_conditions.append(dataframe['adx'] < params['short-adx-value'])
             if 'rsi-enabled' in params and params['rsi-enabled']:
-                conditions.append(dataframe['rsi'] < params['rsi-value'])
+                long_conditions.append(dataframe['rsi'] < params['rsi-value'])
+                short_conditions.append(dataframe['rsi'] > params['short-rsi-value'])
 
             # TRIGGERS
             if 'trigger' in params:
                 if params['trigger'] == 'boll':
-                    conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                    long_conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
+                    short_conditions.append(dataframe['close'] > dataframe['bb_upperband'])
                 if params['trigger'] == 'macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
+                    long_conditions.append(qtpylib.crossed_above(
+                        dataframe['macd'],
+                        dataframe['macdsignal']
+                    ))
+                    short_conditions.append(qtpylib.crossed_below(
                         dataframe['macd'],
                         dataframe['macdsignal']
                     ))
                 if params['trigger'] == 'sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
+                    long_conditions.append(qtpylib.crossed_above(
+                        dataframe['close'],
+                        dataframe['sar']
+                    ))
+                    short_conditions.append(qtpylib.crossed_below(
                         dataframe['close'],
                         dataframe['sar']
                     ))
 
-            if conditions:
+            if long_conditions:
                 dataframe.loc[
-                    reduce(lambda x, y: x & y, conditions),
+                    reduce(lambda x, y: x & y, long_conditions),
                     'buy'] = 1
+
+            if short_conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, short_conditions),
+                    'enter_short'] = 1
 
             return dataframe
 
@@ -100,6 +119,10 @@ class DefaultHyperOpt(IHyperOpt):
             Integer(15, 45, name='fastd-value'),
             Integer(20, 50, name='adx-value'),
             Integer(20, 40, name='rsi-value'),
+            Integer(75, 90, name='short-mfi-value'),
+            Integer(55, 85, name='short-fastd-value'),
+            Integer(50, 80, name='short-adx-value'),
+            Integer(60, 80, name='short-rsi-value'),
             Categorical([True, False], name='mfi-enabled'),
             Categorical([True, False], name='fastd-enabled'),
             Categorical([True, False], name='adx-enabled'),
@@ -116,37 +139,56 @@ class DefaultHyperOpt(IHyperOpt):
             """
             Sell strategy Hyperopt will build and use.
             """
-            conditions = []
+            exit_long_conditions = []
+            exit_short_conditions = []
 
             # GUARDS AND TRENDS
             if 'sell-mfi-enabled' in params and params['sell-mfi-enabled']:
-                conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
+                exit_long_conditions.append(dataframe['mfi'] > params['sell-mfi-value'])
+                exit_short_conditions.append(dataframe['mfi'] < params['exit-short-mfi-value'])
             if 'sell-fastd-enabled' in params and params['sell-fastd-enabled']:
-                conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
+                exit_long_conditions.append(dataframe['fastd'] > params['sell-fastd-value'])
+                exit_short_conditions.append(dataframe['fastd'] < params['exit-short-fastd-value'])
             if 'sell-adx-enabled' in params and params['sell-adx-enabled']:
-                conditions.append(dataframe['adx'] < params['sell-adx-value'])
+                exit_long_conditions.append(dataframe['adx'] < params['sell-adx-value'])
+                exit_short_conditions.append(dataframe['adx'] > params['exit-short-adx-value'])
             if 'sell-rsi-enabled' in params and params['sell-rsi-enabled']:
-                conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
+                exit_long_conditions.append(dataframe['rsi'] > params['sell-rsi-value'])
+                exit_short_conditions.append(dataframe['rsi'] < params['exit-short-rsi-value'])
 
             # TRIGGERS
             if 'sell-trigger' in params:
                 if params['sell-trigger'] == 'sell-boll':
-                    conditions.append(dataframe['close'] > dataframe['bb_upperband'])
+                    exit_long_conditions.append(dataframe['close'] > dataframe['bb_upperband'])
+                    exit_short_conditions.append(dataframe['close'] < dataframe['bb_lowerband'])
                 if params['sell-trigger'] == 'sell-macd_cross_signal':
-                    conditions.append(qtpylib.crossed_above(
+                    exit_long_conditions.append(qtpylib.crossed_above(
+                        dataframe['macdsignal'],
+                        dataframe['macd']
+                    ))
+                    exit_short_conditions.append(qtpylib.crossed_below(
                         dataframe['macdsignal'],
                         dataframe['macd']
                     ))
                 if params['sell-trigger'] == 'sell-sar_reversal':
-                    conditions.append(qtpylib.crossed_above(
+                    exit_long_conditions.append(qtpylib.crossed_above(
+                        dataframe['sar'],
+                        dataframe['close']
+                    ))
+                    exit_short_conditions.append(qtpylib.crossed_below(
                         dataframe['sar'],
                         dataframe['close']
                     ))
 
-            if conditions:
+            if exit_long_conditions:
                 dataframe.loc[
-                    reduce(lambda x, y: x & y, conditions),
+                    reduce(lambda x, y: x & y, exit_long_conditions),
                     'sell'] = 1
+
+            if exit_short_conditions:
+                dataframe.loc[
+                    reduce(lambda x, y: x & y, exit_short_conditions),
+                    'exit-short'] = 1
 
             return dataframe
 
@@ -162,6 +204,10 @@ class DefaultHyperOpt(IHyperOpt):
             Integer(50, 100, name='sell-fastd-value'),
             Integer(50, 100, name='sell-adx-value'),
             Integer(60, 100, name='sell-rsi-value'),
+            Integer(1, 25, name='exit-short-mfi-value'),
+            Integer(1, 50, name='exit-short-fastd-value'),
+            Integer(1, 50, name='exit-short-adx-value'),
+            Integer(1, 40, name='exit-short-rsi-value'),
             Categorical([True, False], name='sell-mfi-enabled'),
             Categorical([True, False], name='sell-fastd-enabled'),
             Categorical([True, False], name='sell-adx-enabled'),
@@ -187,6 +233,15 @@ class DefaultHyperOpt(IHyperOpt):
             ),
             'buy'] = 1
 
+        dataframe.loc[
+            (
+                (dataframe['close'] > dataframe['bb_upperband']) &
+                (dataframe['mfi'] < 84) &
+                (dataframe['adx'] > 75) &
+                (dataframe['rsi'] < 79)
+            ),
+            'enter_short'] = 1
+
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -203,5 +258,14 @@ class DefaultHyperOpt(IHyperOpt):
                 (dataframe['fastd'] > 54)
             ),
             'sell'] = 1
+
+        dataframe.loc[
+            (
+                (qtpylib.crossed_below(
+                    dataframe['macdsignal'], dataframe['macd']
+                )) &
+                (dataframe['fastd'] < 46)
+            ),
+            'exit_short'] = 1
 
         return dataframe
