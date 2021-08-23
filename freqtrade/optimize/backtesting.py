@@ -65,8 +65,8 @@ class Backtesting:
         remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
-
-        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+        self._exchange_name = self.config['exchange']['name']
+        self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
         self.dataprovider = DataProvider(self.config, None)
 
         if self.config.get('strategy_list', None):
@@ -388,7 +388,7 @@ class Backtesting:
                 fee_close=self.fee,
                 is_open=True,
                 buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
-                exchange='backtesting',
+                exchange=self._exchange_name,
             )
             return trade
         return None
