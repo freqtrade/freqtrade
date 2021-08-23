@@ -77,7 +77,7 @@ class Kraken(Exchange):
                 (side == "buy" and stop_loss < float(order['price']))
                 ))
 
-    @ retrier(retries=0)
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float,
                  stop_price: float, order_types: Dict, side: str) -> Dict:
         """
@@ -135,7 +135,7 @@ class Kraken(Exchange):
         """
         leverages = {}
         try:
-            for pair, market in self._api.load_markets().items():
+            for pair, market in self.markets.items():
                 info = market['info']
                 leverage_buy = info['leverage_buy']
                 leverage_sell = info['leverage_sell']
