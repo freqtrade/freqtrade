@@ -553,15 +553,22 @@ class IStrategy(ABC, HyperStrategyMixin):
         logger.debug(f'trigger: %s (pair=%s) {enter_type.value}=%s {exit_type.value}=%s',
                      latest['date'], pair, str(enter), str(exit))
         timeframe_seconds = timeframe_to_seconds(timeframe)
-        if self.ignore_expired_candle(latest_date=latest_date,
-                                      current_time=datetime.now(timezone.utc),
-                                      timeframe_seconds=timeframe_seconds,
-                                      enter=enter):
+        if self.ignore_expired_candle(
+            latest_date=latest_date,
+            current_time=datetime.now(timezone.utc),
+            timeframe_seconds=timeframe_seconds,
+            enter=enter
+        ):
             return False, exit, enter_tag_value
         return enter, exit, enter_tag_value
 
-    def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
-                              timeframe_seconds: int, enter: bool):
+    def ignore_expired_candle(
+        self,
+        latest_date: datetime,
+        current_time: datetime,
+        timeframe_seconds: int,
+        enter: bool
+    ):
         if self.ignore_buying_expired_candle_after and enter:
             time_delta = current_time - (latest_date + timedelta(seconds=timeframe_seconds))
             return time_delta.total_seconds() > self.ignore_buying_expired_candle_after

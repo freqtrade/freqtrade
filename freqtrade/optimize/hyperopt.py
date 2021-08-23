@@ -285,13 +285,11 @@ class Hyperopt:
         # Apply parameters
         if HyperoptTools.has_space(self.config, 'buy'):
             self.backtesting.strategy.advise_buy = (  # type: ignore
-                self.custom_hyperopt.buy_strategy_generator(params_dict)
-            )
+                self.custom_hyperopt.buy_strategy_generator(params_dict))
 
         if HyperoptTools.has_space(self.config, 'sell'):
             self.backtesting.strategy.advise_sell = (  # type: ignore
-                self.custom_hyperopt.sell_strategy_generator(params_dict)
-            )
+                self.custom_hyperopt.sell_strategy_generator(params_dict))
 
         if HyperoptTools.has_space(self.config, 'protection'):
             for attr_name, attr in self.backtesting.strategy.enumerate_parameters('protection'):

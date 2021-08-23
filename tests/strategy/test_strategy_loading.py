@@ -385,13 +385,13 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
-    buydf = strategy.advise_buy(result, metadata=metadata)
-    assert isinstance(buydf, DataFrame)
-    assert 'buy' in buydf.columns
+    enterdf = strategy.advise_buy(result, metadata=metadata)
+    assert isinstance(enterdf, DataFrame)
+    assert 'buy' in enterdf.columns
 
-    selldf = strategy.advise_sell(result, metadata=metadata)
-    assert isinstance(selldf, DataFrame)
-    assert 'sell' in selldf
+    exitdf = strategy.advise_sell(result, metadata=metadata)
+    assert isinstance(exitdf, DataFrame)
+    assert 'sell' in exitdf
 
     assert log_has("DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'.",
                    caplog)

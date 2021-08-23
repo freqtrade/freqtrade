@@ -750,6 +750,7 @@ def test_auto_hyperopt_interface(default_conf):
     # TODO-lev: Should these be 4,4 and 10?
     assert len(all_params['buy']) == 4
     assert len(all_params['sell']) == 4
+    # Number of Hyperoptable parameters
     assert all_params['count'] == 10
 
     strategy.__class__.sell_rsi = IntParameter([0, 10], default=5, space='buy')

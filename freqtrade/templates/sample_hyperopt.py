@@ -46,7 +46,7 @@ class SampleHyperOpt(IHyperOpt):
     """
 
     @staticmethod
-    def buy_indicator_space() -> List[Dimension]:
+    def indicator_space() -> List[Dimension]:
         """
         Define your Hyperopt space for searching buy strategy parameters.
         """
@@ -63,8 +63,7 @@ class SampleHyperOpt(IHyperOpt):
             Categorical([True, False], name='fastd-enabled'),
             Categorical([True, False], name='adx-enabled'),
             Categorical([True, False], name='rsi-enabled'),
-            Categorical(['boll', 'macd_cross_signal', 'sar_reversal'], name='trigger'),
-
+            Categorical(['boll', 'macd_cross_signal', 'sar_reversal'], name='trigger')
         ]
 
     @staticmethod
@@ -157,7 +156,7 @@ class SampleHyperOpt(IHyperOpt):
                          'sell-macd_cross_signal',
                          'sell-sar_reversal'],
                         name='sell-trigger'
-                        ),
+                        )
         ]
 
     @staticmethod
