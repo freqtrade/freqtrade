@@ -5,9 +5,9 @@ class SignalType(Enum):
     """
     Enum to distinguish between buy and sell signals
     """
-    BUY = "buy"
-    SELL = "sell"
-    SHORT = "short"
+    BUY = "buy"   # To be renamed to enter_long
+    SELL = "sell"  # To be renamed to exit_long
+    SHORT = "short"  # Should be "enter_short"
     EXIT_SHORT = "exit_short"
 
 

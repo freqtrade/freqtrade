@@ -207,6 +207,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pass
 
+    # TODO-lev: add side
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
@@ -304,6 +305,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
+    # TODO-lev: add side
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
                             **kwargs) -> float:
@@ -804,7 +806,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                           "the current function headers!", DeprecationWarning)
             return self.populate_buy_trend(dataframe)  # type: ignore
         else:
-            return self.populate_buy_trend(dataframe, metadata)
+            df = self.populate_buy_trend(dataframe, metadata)
+            # TODO-lev: IF both buy and enter_long exist, this will fail.
+            df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
+
+            return df
 
     def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -822,7 +828,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                           "the current function headers!", DeprecationWarning)
             return self.populate_sell_trend(dataframe)  # type: ignore
         else:
-            return self.populate_sell_trend(dataframe, metadata)
+            df = self.populate_sell_trend(dataframe, metadata)
+            # TODO-lev: IF both sell and exit_long exist, this will fail at a later point
+            return df.rename({'sell': 'exit_long'}, axis='columns')
 
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float,
