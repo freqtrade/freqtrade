@@ -30,7 +30,7 @@ function check_installed_python() {
             check_installed_pip
             return
         fi
-    done 
+    done
 
     echo "No usable python found. Please make sure to have python3.7 or newer installed"
     exit 1
@@ -48,16 +48,27 @@ function updateenv() {
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
     ${PYTHON} -m pip install --upgrade pip
-    read -p "Do you want to install dependencies for dev [y/N]? "
+    if [[ "$1" == "auto" ]]
+    then
+      REPLY="n"
+    else
+      read -p "Do you want to install dependencies for dev [y/N]? "
+    fi
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS=requirements-dev.txt
     else
         REQUIREMENTS=requirements.txt
     fi
+
     REQUIREMENTS_HYPEROPT=""
     REQUIREMENTS_PLOT=""
-     read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
+    if [[ "$1" == "auto" ]]
+    then
+      REPLY="y"
+    else
+      read -p "Do you want to install plotting dependencies (plotly) [y/N]? "
+    fi
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         REQUIREMENTS_PLOT="-r requirements-plot.txt"
@@ -67,12 +78,18 @@ function updateenv() {
         ${PYTHON} -m pip install --upgrade cython
     else
         # Is not Raspberry
-        read -p "Do you want to install hyperopt dependencies [y/N]? "
+        if [[ "$1" == "auto" ]]
+        then
+          REPLY="y"
+        else
+          read -p "Do you want to install hyperopt dependencies [y/N]? "
+        fi
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
             REQUIREMENTS_HYPEROPT="-r requirements-hyperopt.txt"
         fi
     fi
+
 
     ${PYTHON} -m pip install --upgrade -r ${REQUIREMENTS} ${REQUIREMENTS_HYPEROPT} ${REQUIREMENTS_PLOT}
     if [ $? -ne 0 ]; then
@@ -110,8 +127,8 @@ function install_talib() {
     cd ..
 }
 
-function install_mac_newer_python_dependencies() {    
-    
+function install_mac_newer_python_dependencies() {
+
     if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
     then
         echo "-------------------------"
@@ -126,7 +143,7 @@ function install_mac_newer_python_dependencies() {
         echo "Installing c-blosc"
         echo "-------------------------"
         brew install c-blosc
-    fi    
+    fi
 }
 
 # Install bot MacOS
@@ -140,7 +157,7 @@ function install_macos() {
     fi
     #Gets number after decimal in python version
     version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')
-    
+
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
     fi
@@ -157,7 +174,7 @@ function install_debian() {
 # Upgrade the bot
 function update() {
     git pull
-    updateenv
+    updateenv $1
 }
 
 # Reset Develop or Stable branch
@@ -169,7 +186,13 @@ function reset() {
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
 
-        read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
+        if [[ "$1" == "auto" ]]
+        then
+          REPLY="n"
+        else
+          read -p "Reset git branch? (This will remove all changes you made!) [y/N]? "
+        fi
+
         if [[ $REPLY =~ ^[Yy]$ ]]; then
 
             git fetch -a
@@ -198,7 +221,7 @@ function reset() {
         echo "Could not create virtual environment. Leaving now"
         exit 1
     fi
-    updateenv
+    updateenv $1
 }
 
 function config() {
@@ -212,6 +235,7 @@ function install() {
     echo "-------------------------"
     echo "Installing mandatory dependencies"
     echo "-------------------------"
+    SET_DEFAULT=$1
 
     if [ "$(uname -s)" == "Darwin" ]
     then
@@ -228,8 +252,8 @@ function install() {
         sleep 10
     fi
     echo
-    reset
-    config
+    reset $SET_DEFAULT
+    config $SET_DEFAULT
     echo "-------------------------"
     echo "Run the bot !"
     echo "-------------------------"
@@ -249,11 +273,12 @@ function plot() {
 
 function help() {
     echo "usage:"
-    echo "	-i,--install    Install freqtrade from scratch"
-    echo "	-u,--update     Command git pull to update."
-    echo "	-r,--reset      Hard reset your develop/stable branch."
-    echo "	-c,--config     Easy config generator (Will override your existing file)."
-    echo "	-p,--plot       Install dependencies for Plotting scripts."
+    echo "	-a,--auto-install    Install freqtrade from scratch"
+    echo "	-i,--install         Install freqtrade from scratch"
+    echo "	-u,--update          Command git pull to update."
+    echo "	-r,--reset           Hard reset your develop/stable branch."
+    echo "	-c,--config          Easy config generator (Will override your existing file)."
+    echo "	-p,--plot            Install dependencies for Plotting scripts."
 }
 
 # Verify if 3.7 or 3.8 is installed
@@ -262,6 +287,9 @@ check_installed_python
 case $* in
 --install|-i)
 install
+;;
+--auto-install|-a)
+install "auto"
 ;;
 --config|-c)
 config
