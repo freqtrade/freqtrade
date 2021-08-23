@@ -309,7 +309,6 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
-    # TODO-lev: Test with leverage
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
@@ -381,7 +380,12 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert isclose(result, 2 * (1+0.05) / (1-abs(stoploss)))
+    expected_result = 2 * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
+    assert isclose(result, expected_result/3)
+    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -393,7 +397,12 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, 2 * 2 * (1+0.05) / (1-abs(stoploss)))
+    expected_result = 2 * 2 * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
+    assert isclose(result, expected_result/5)
+    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -405,7 +414,12 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
+    expected_result = max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
+    assert isclose(result, expected_result/10)
+    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -417,18 +431,32 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
+    expected_result = max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
+    assert isclose(result, expected_result/7.0)
+    # TODO-lev: Min stake for base, kraken and ftx
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * 1.5)
+    expected_result = max(8, 2 * 2) * 1.5
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
+    assert isclose(result, expected_result/8.0)
+    # TODO-lev: Min stake for base, kraken and ftx
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
-    assert isclose(result, max(8, 2 * 2) * 1.5)
+    expected_result = max(8, 2 * 2) * 1.5
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
+    assert isclose(result, expected_result/12)
+    # TODO-lev: Min stake for base, kraken and ftx
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
-    # TODO-lev: Test with leverage
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
     markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
@@ -443,10 +471,11 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(
-        max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
-        8
-    )
+    expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
+    assert round(result, 8) == round(expected_result, 8)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
+    assert round(result, 8) == round(expected_result/3, 8)
+    # TODO-lev: Min stake for base, kraken and ftx
 
 
 def test_set_sandbox(default_conf, mocker):
