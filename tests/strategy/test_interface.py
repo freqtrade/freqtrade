@@ -156,17 +156,21 @@ def test_ignore_expired_candle(default_conf):
     # Add 1 candle length as the "latest date" defines candle open.
     current_time = latest_date + timedelta(seconds=80 + 300)
 
-    assert strategy.ignore_expired_candle(latest_date=latest_date,
-                                          current_time=current_time,
-                                          timeframe_seconds=300,
-                                          buy=True) is True
+    assert strategy.ignore_expired_candle(
+        latest_date=latest_date,
+        current_time=current_time,
+        timeframe_seconds=300,
+        enter=True
+    ) is True
 
     current_time = latest_date + timedelta(seconds=30 + 300)
 
-    assert not strategy.ignore_expired_candle(latest_date=latest_date,
-                                              current_time=current_time,
-                                              timeframe_seconds=300,
-                                              buy=True) is True
+    assert not strategy.ignore_expired_candle(
+        latest_date=latest_date,
+        current_time=current_time,
+        timeframe_seconds=300,
+        enter=True
+    ) is True
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
