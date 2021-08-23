@@ -218,7 +218,6 @@ def test_strategy_override_process_only_new_candles(caplog, default_conf):
 def test_strategy_override_order_types(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
-    # TODO-lev: Maybe change
     order_types = {
         'buy': 'market',
         'sell': 'limit',
