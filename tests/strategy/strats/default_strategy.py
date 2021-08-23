@@ -130,19 +130,6 @@ class DefaultStrategy(IStrategy):
             ),
             'buy'] = 1
 
-        dataframe.loc[
-            (
-                (dataframe['rsi'] > 65) &
-                (dataframe['fastd'] > 65) &
-                (dataframe['adx'] < 70) &
-                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
-            ) |
-            (
-                (dataframe['adx'] < 35) &
-                (dataframe['plus_di'] < 0.5)  # TODO-lev: What to do here
-            ),
-            'enter_short'] = 1
-
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -166,20 +153,4 @@ class DefaultStrategy(IStrategy):
                 (dataframe['minus_di'] > 0.5)
             ),
             'sell'] = 1
-
-        dataframe.loc[
-            (
-                (
-                    (qtpylib.crossed_below(dataframe['rsi'], 30)) |
-                    (qtpylib.crossed_below(dataframe['fastd'], 30))
-                ) &
-                (dataframe['adx'] < 90) &
-                (dataframe['minus_di'] < 0)  # TODO-lev: what to do here
-            ) |
-            (
-                (dataframe['adx'] > 30) &
-                (dataframe['minus_di'] < 0.5)   # TODO-lev: what to do here
-            ),
-            'exit_short'] = 1
-
         return dataframe

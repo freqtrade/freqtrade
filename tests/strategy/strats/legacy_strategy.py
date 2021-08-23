@@ -84,5 +84,4 @@ class TestStrategyLegacy(IStrategy):
                 (dataframe['volume'] > 0)
             ),
             'sell'] = 1
-
         return dataframe

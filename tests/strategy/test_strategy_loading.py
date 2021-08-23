@@ -119,11 +119,9 @@ def test_strategy(result, default_conf):
 
     dataframe = strategy.advise_buy(df_indicators, metadata=metadata)
     assert 'buy' in dataframe.columns
-    assert 'enter_short' in dataframe.columns
 
     dataframe = strategy.advise_sell(df_indicators, metadata=metadata)
     assert 'sell' in dataframe.columns
-    assert 'exit_short' in dataframe.columns
 
 
 def test_strategy_override_minimal_roi(caplog, default_conf):
@@ -415,9 +413,7 @@ def test_strategy_interface_versioning(result, monkeypatch, default_conf):
     enterdf = strategy.advise_buy(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
     assert 'buy' in enterdf.columns
-    assert 'enter_short' in enterdf.columns
 
     exitdf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
     assert 'sell' in exitdf
-    assert 'exit_short' in exitdf.columns
