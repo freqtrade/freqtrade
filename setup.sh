@@ -273,7 +273,7 @@ function plot() {
 
 function help() {
     echo "usage:"
-    echo "	-a,--auto-install    Install freqtrade from scratch"
+    echo "	-a,--auto-install    Install freqtrade from scratch without interaction"
     echo "	-i,--install         Install freqtrade from scratch"
     echo "	-u,--update          Command git pull to update."
     echo "	-r,--reset           Hard reset your develop/stable branch."
