@@ -50,7 +50,6 @@ class Ftx(Exchange):
 
         Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
-
         limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
         limit_rate = stop_price * limit_price_pct
 
