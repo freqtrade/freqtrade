@@ -423,8 +423,7 @@ class FreqtradeBot(LoggingMixin):
         (buy, sell, buy_tag) = self.strategy.get_signal(
             pair,
             self.strategy.timeframe,
-            analyzed_df,
-            False
+            analyzed_df
         )
 
         if buy and not sell:
