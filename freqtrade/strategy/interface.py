@@ -807,8 +807,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             return self.populate_buy_trend(dataframe)  # type: ignore
         else:
             df = self.populate_buy_trend(dataframe, metadata)
-            # TODO-lev: IF both buy and enter_long exist, this will fail.
-            df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
+            if 'enter_long' not in df.columns:
+                df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
 
             return df
 
@@ -829,8 +829,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             return self.populate_sell_trend(dataframe)  # type: ignore
         else:
             df = self.populate_sell_trend(dataframe, metadata)
-            # TODO-lev: IF both sell and exit_long exist, this will fail at a later point
-            return df.rename({'sell': 'exit_long'}, axis='columns')
+            if 'exit_long' not in df.columns:
+                df = df.rename({'sell': 'exit_long'}, axis='columns')
+            return df
 
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float,
