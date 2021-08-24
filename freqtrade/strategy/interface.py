@@ -666,8 +666,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False
 
     def should_exit(self, trade: Trade, rate: float, date: datetime, *,
-                    enter_long: bool, enter_short: bool,
-                    exit_long: bool,  exit_short: bool,
+                    enter: bool, exit_: bool,
                     low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
@@ -678,9 +677,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param force_stoploss: Externally provided stoploss
         :return: True if trade should be exited, False otherwise
         """
-
-        enter = enter_short if trade.is_short else enter_long
-        exit_ = exit_short if trade.is_short else exit_long
 
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)

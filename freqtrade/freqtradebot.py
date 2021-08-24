@@ -858,7 +858,7 @@ class FreqtradeBot(LoggingMixin):
         Check and execute trade exit
         """
         should_exit: SellCheckTuple = self.strategy.should_exit(
-            trade, sell_rate, datetime.now(timezone.utc), enter, exit_,
+            trade, sell_rate, datetime.now(timezone.utc), enter=enter, exit_=exit_,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
