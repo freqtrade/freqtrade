@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalTagType, SignalType, SignalDirection
+from freqtrade.enums import SellType, SignalDirection, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date

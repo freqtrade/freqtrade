@@ -710,7 +710,7 @@ class FreqtradeBot(LoggingMixin):
             (enter, exit_) = self.strategy.get_exit_signal(
                 trade.pair,
                 self.strategy.timeframe,
-                analyzed_df
+                analyzed_df, is_short=trade.is_short
             )
 
         # TODO-lev: side should depend on trade side.
