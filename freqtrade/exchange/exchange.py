@@ -618,6 +618,8 @@ class Exchange:
         if self.exchange_has('fetchL2OrderBook'):
             ob = self.fetch_l2_order_book(pair, 20)
             ob_type = 'asks' if side == 'buy' else 'bids'
+            slippage = 0.05
+            max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
             filled_amount = 0
@@ -626,7 +628,9 @@ class Exchange:
                 book_entry_coin_volume = book_entry[1]
                 if remaining_amount > 0:
                     if remaining_amount < book_entry_coin_volume:
+                        # Orderbook at this slot bigger than remaining amount
                         filled_amount += remaining_amount * book_entry_price
+                        break
                     else:
                         filled_amount += book_entry_coin_volume * book_entry_price
                     remaining_amount -= book_entry_coin_volume
@@ -635,7 +639,14 @@ class Exchange:
             else:
                 # If remaining_amount wasn't consumed completely (break was not called)
                 filled_amount += remaining_amount * book_entry_price
-            forecast_avg_filled_price = filled_amount / amount
+            forecast_avg_filled_price = max(filled_amount, 0) / amount
+            # Limit max. slippage to specified value
+            if side == 'buy':
+                forecast_avg_filled_price = min(forecast_avg_filled_price, max_slippage_val)
+
+            else:
+                forecast_avg_filled_price = max(forecast_avg_filled_price, max_slippage_val)
+
             return self.price_to_precision(pair, forecast_avg_filled_price)
 
         return rate
@@ -1242,7 +1253,7 @@ class Exchange:
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
 
         input_coroutines = []
-
+        cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
             if (((pair, timeframe) not in self._klines)
@@ -1254,6 +1265,7 @@ class Exchange:
                     "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
                     pair, timeframe
                 )
+                cached_pairs.append((pair, timeframe))
 
         results = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -1276,6 +1288,10 @@ class Exchange:
             results_df[(pair, timeframe)] = ohlcv_df
             if cache:
                 self._klines[(pair, timeframe)] = ohlcv_df
+        # Return cached klines
+        for pair, timeframe in cached_pairs:
+            results_df[(pair, timeframe)] = self.klines((pair, timeframe), copy=False)
+
         return results_df
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
@@ -1486,7 +1502,7 @@ class Exchange:
         :returns List of trade data
         """
         if not self.exchange_has("fetchTrades"):
-            raise OperationalException("This exchange does not suport downloading Trades.")
+            raise OperationalException("This exchange does not support downloading Trades.")
 
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,

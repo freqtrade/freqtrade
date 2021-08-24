@@ -15,6 +15,7 @@ from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges,
                                          timeframe_to_seconds, validate_exchange,
                                          validate_exchanges)
 from freqtrade.exchange.ftx import Ftx
+from freqtrade.exchange.gateio import Gateio
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin

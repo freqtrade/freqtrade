@@ -151,7 +151,7 @@ class Edge:
         # Fake run-mode to Edge
         prior_rm = self.config['runmode']
         self.config['runmode'] = RunMode.EDGE
-        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
+        preprocessed = self.strategy.advise_all_indicators(data)
         self.config['runmode'] = prior_rm
 
         # Print timeframe

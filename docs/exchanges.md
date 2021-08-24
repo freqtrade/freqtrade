@@ -105,7 +105,7 @@ To use subaccounts with FTX, you need to edit the configuration and add the foll
 
 ## Kucoin
 
-Kucoin requries a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
 
 ```json
 "exchange": {

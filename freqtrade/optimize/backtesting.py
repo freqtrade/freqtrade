@@ -133,6 +133,9 @@ class Backtesting:
         self.abort = False
 
     def __del__(self):
+        self.cleanup()
+
+    def cleanup(self):
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
@@ -219,7 +222,7 @@ class Backtesting:
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
         headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                   'enter_short', 'exit_short']
+                   'enter_short', 'exit_short', 'long_tag', 'short_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -227,21 +230,15 @@ class Backtesting:
         for pair, pair_data in processed.items():
             self.check_abort()
             self.progress.increment()
-            has_buy_tag = 'long_tag' in pair_data
-            has_short_tag = 'short_tag' in pair_data
-            headers = headers + ['long_tag'] if has_buy_tag else headers
-            headers = headers + ['short_tag'] if has_short_tag else headers
+
             if not pair_data.empty:
                 # Cleanup from prior runs
                 pair_data.loc[:, 'buy'] = 0  # TODO: Should be renamed to enter_long
                 pair_data.loc[:, 'enter_short'] = 0
                 pair_data.loc[:, 'sell'] = 0  # TODO: should be renamed to exit_long
                 pair_data.loc[:, 'exit_short'] = 0
-                # pair_data.loc[:, 'sell'] = 0
-                if has_buy_tag:
-                    pair_data.loc[:, 'long_tag'] = None  # cleanup if buy_tag is exist
-                if has_short_tag:
-                    pair_data.loc[:, 'short_tag'] = None  # cleanup if short_tag is exist
+                pair_data.loc[:, 'long_tag'] = None  # cleanup if buy_tag is exist
+                pair_data.loc[:, 'short_tag'] = None  # cleanup if short_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}),
@@ -256,13 +253,14 @@ class Backtesting:
             df_analyzed.loc[:, 'enter_short'] = df_analyzed.loc[:, 'enter_short'].shift(1)
             df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
             df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
-            if has_buy_tag:
-                df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
+            df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
 
             df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+
+            df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
@@ -337,13 +335,14 @@ class Backtesting:
 
     def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
         # TODO: short exits
+        sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
-                                         sell_row[DATE_IDX].to_pydatetime(), sell_row[BUY_IDX],
+                                         sell_candle_time, sell_row[BUY_IDX],
                                          sell_row[SELL_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
         if sell.sell_flag:
-            trade.close_date = sell_row[DATE_IDX].to_pydatetime()
+            trade.close_date = sell_candle_time
             trade.sell_reason = sell.sell_reason
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
@@ -355,7 +354,7 @@ class Backtesting:
                     rate=closerate,
                     time_in_force=time_in_force,
                     sell_reason=sell.sell_reason,
-                    current_time=sell_row[DATE_IDX].to_pydatetime()):
+                    current_time=sell_candle_time):
                 return None
 
             trade.close(closerate, show_msg=False)
@@ -494,6 +493,8 @@ class Backtesting:
             for i, pair in enumerate(data):
                 row_index = indexes[pair]
                 try:
+                    # Row is treated as "current incomplete candle".
+                    # Buy / sell signals are shifted by 1 to compensate for this.
                     row = data[pair][row_index]
                 except IndexError:
                     # missing Data for one pair at the end.
@@ -505,8 +506,8 @@ class Backtesting:
                     continue
 
                 row_index += 1
-                self.dataprovider._set_dataframe_max_index(row_index)
                 indexes[pair] = row_index
+                self.dataprovider._set_dataframe_max_index(row_index)
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
@@ -530,7 +531,7 @@ class Backtesting:
                         open_trades[pair].append(trade)
                         LocalTrade.add_bt_trade(trade)
 
-                for trade in open_trades[pair]:
+                for trade in list(open_trades[pair]):
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occurred
@@ -561,7 +562,8 @@ class Backtesting:
             'final_balance': self.wallets.get_total(self.strategy.config['stake_currency']),
         }
 
-    def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, Any], timerange: TimeRange):
+    def backtest_one_strategy(self, strat: IStrategy, data: Dict[str, DataFrame],
+                              timerange: TimeRange):
         self.progress.init_step(BacktestState.ANALYZE, 0)
 
         logger.info("Running backtesting for Strategy %s", strat.get_strategy_name())
@@ -580,7 +582,7 @@ class Backtesting:
             max_open_trades = 0
 
         # need to reprocess data every time to populate signals
-        preprocessed = self.strategy.ohlcvdata_to_dataframe(data)
+        preprocessed = self.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe
         preprocessed_tmp = trim_dataframes(preprocessed, timerange, self.required_startup)

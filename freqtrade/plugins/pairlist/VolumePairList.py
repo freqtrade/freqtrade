@@ -4,6 +4,7 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
+from functools import partial
 from typing import Any, Dict, List
 
 import arrow
@@ -115,7 +116,7 @@ class VolumePairList(IPairList):
         pairlist = self._pair_cache.get('pairlist')
         if pairlist:
             # Item found - no refresh necessary
-            return pairlist
+            return pairlist.copy()
         else:
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
@@ -126,7 +127,7 @@ class VolumePairList(IPairList):
             pairlist = [s['symbol'] for s in filtered_tickers]
 
             pairlist = self.filter_pairlist(pairlist, tickers)
-            self._pair_cache['pairlist'] = pairlist
+            self._pair_cache['pairlist'] = pairlist.copy()
 
         return pairlist
 
@@ -203,7 +204,7 @@ class VolumePairList(IPairList):
 
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
-        pairs = self.verify_blacklist(pairs, logger.info)
+        pairs = self.verify_blacklist(pairs, partial(self.log_once, logmethod=logger.info))
         # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 

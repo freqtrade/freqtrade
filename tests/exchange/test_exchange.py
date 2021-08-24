@@ -984,16 +984,21 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order['fee']
 
 
-@pytest.mark.parametrize("side,amount,endprice", [
-    ("buy", 1, 25.566),
-    ("buy", 100, 25.5672),  # Requires interpolation
-    ("buy", 1000, 25.575),  # More than orderbook return
-    ("sell", 1, 25.563),
-    ("sell", 100, 25.5625),  # Requires interpolation
-    ("sell", 1000, 25.5555),  # More than orderbook return
+@pytest.mark.parametrize("side,rate,amount,endprice", [
+    # spread is 25.263-25.266
+    ("buy", 25.564, 1, 25.566),
+    ("buy", 25.564, 100, 25.5672),  # Requires interpolation
+    ("buy", 25.590, 100, 25.5672),  # Price above spread ... average is lower
+    ("buy", 25.564, 1000, 25.575),  # More than orderbook return
+    ("buy", 24.000, 100000, 25.200),  # Run into max_slippage of 5%
+    ("sell", 25.564, 1, 25.563),
+    ("sell", 25.564, 100, 25.5625),  # Requires interpolation
+    ("sell", 25.510, 100, 25.5625),  # price below spread - average is higher
+    ("sell", 25.564, 1000, 25.5555),  # More than orderbook return
+    ("sell", 27, 10000, 25.65),  # max-slippage 5%
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_dry_run_order_market_fill(default_conf, mocker, side, amount, endprice,
+def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amount, endprice,
                                           exchange_name, order_book_l2_usd):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -1003,7 +1008,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, amount, en
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=25.5)
+        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=rate)
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -1559,13 +1564,16 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_latest_ohlcv(pairs, cache=False)
+    res = exchange.refresh_latest_ohlcv(pairs, cache=False)
     # No caching
     assert not exchange._klines
+
+    assert len(res) == len(pairs)
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     exchange._api_async.fetch_ohlcv.reset_mock()
 
-    exchange.refresh_latest_ohlcv(pairs)
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert len(res) == len(pairs)
 
     assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
     assert exchange._klines
@@ -1582,12 +1590,16 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
                    f"timeframe {pairs[0][1]} ...",
                    caplog)
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
+                                        cache=False)
+    assert len(res) == 3
 
 
 @pytest.mark.asyncio
@@ -2177,7 +2189,7 @@ def test_get_historic_trades_notsupported(default_conf, mocker, caplog, exchange
     pair = 'ETH/BTC'
 
     with pytest.raises(OperationalException,
-                       match="This exchange does not suport downloading Trades."):
+                       match="This exchange does not support downloading Trades."):
         exchange.get_historic_trades(pair, since=trades_history[0][0],
                                      until=trades_history[-1][0])
 
