@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalTagType, SignalType
+from freqtrade.enums import SellType, SignalTagType, SignalType, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -538,22 +538,18 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 raise StrategyError(message)
 
-    def get_signal(
+    def get_latest_candle(
         self,
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-        is_short: bool = False
-    ) -> Tuple[bool, bool, Optional[str]]:
+    ) -> Tuple[Optional[DataFrame], arrow.Arrow]:
         """
-        Calculates current signal based based on the buy/short or sell/exit_short
-        columns of the dataframe.
-        Used by Bot to get the signal to buy, sell, short, or exit_short
+        Get the latest candle. Used only during real mode
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
-        :return: (Buy, Sell)/(Short, Exit_short) A bool-tuple indicating
-        (buy/sell)/(short/exit_short) signal
+        :return: (None, None) or (Dataframe, latest_date) - corresponding to the last candle
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
@@ -572,34 +568,89 @@ class IStrategy(ABC, HyperStrategyMixin):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
+            return None, None
+        return latest, latest_date
+
+    def get_exit_signal(
+        self,
+        pair: str,
+        timeframe: str,
+        dataframe: DataFrame,
+        is_short: bool = None
+    ) -> Tuple[bool, bool]:
+        """
+        Calculates current exit signal based based on the buy/short or sell/exit_short
+        columns of the dataframe.
+        Used by Bot to get the signal to exit.
+        depending on is_short, looks at "short" or "long" columns.
+        :param pair: pair in format ANT/BTC
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
+        :param is_short: Indicating existing trade direction.
+        :return: (enter, exit) A bool-tuple with enter / exit values.
+        """
+        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        if latest is None:
             return False, False, None
 
-        (enter_type, enter_tag) = (
-            (SignalType.SHORT, SignalTagType.SHORT_TAG)
-            if is_short else
-            (SignalType.BUY, SignalTagType.BUY_TAG)
-        )
-        exit_type = SignalType.EXIT_SHORT if is_short else SignalType.SELL
+        if is_short:
+            enter = latest[SignalType.SHORT] == 1
+            exit_ = latest[SignalType.EXIT_SHORT] == 1
+        else:
+            enter = latest[SignalType.BUY] == 1
+            exit_ = latest[SignalType.SELL] == 1
 
-        enter = latest[enter_type.value] == 1
+        logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) "
+                     f"enter={enter} exit={exit_}")
 
-        exit = False
-        if exit_type.value in latest:
-            exit = latest[exit_type.value] == 1
+        return enter, exit_
 
-        enter_tag_value = latest.get(enter_tag.value, None)
+    def get_enter_signal(
+        self,
+        pair: str,
+        timeframe: str,
+        dataframe: DataFrame,
+    ) -> Tuple[Optional[SignalDirection], Optional[str]]:
+        """
+        Calculates current entry signal based based on the buy/short or sell/exit_short
+        columns of the dataframe.
+        Used by Bot to get the signal to buy, sell, short, or exit_short
+        :param pair: pair in format ANT/BTC
+        :param timeframe: timeframe to use
+        :param dataframe: Analyzed dataframe to get signal from.
+        :return: (SignalDirection, entry_tag)
+        """
+        latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
+        if latest is None:
+            return False, False, None
 
-        logger.debug(f'trigger: %s (pair=%s) {enter_type.value}=%s {exit_type.value}=%s',
-                     latest['date'], pair, str(enter), str(exit))
+        enter_long = latest[SignalType.BUY] == 1
+        exit_long = latest[SignalType.SELL] == 1
+        enter_short = latest[SignalType.SHORT] == 1
+        exit_short = latest[SignalType.EXIT_SHORT] == 1
+
+        enter_signal: Optional[SignalDirection] = None
+        enter_tag_value = None
+        if enter_long == 1 and not any([exit_long, enter_short]):
+            enter_signal = SignalDirection.LONG
+            enter_tag_value = latest.get(SignalTagType.BUY_TAG, None)
+        if enter_short == 1 and not any([exit_short, enter_long]):
+            enter_signal = SignalDirection.SHORT
+            enter_tag_value = latest.get(SignalTagType.SHORT_TAG, None)
+
         timeframe_seconds = timeframe_to_seconds(timeframe)
+
         if self.ignore_expired_candle(
             latest_date=latest_date,
             current_time=datetime.now(timezone.utc),
             timeframe_seconds=timeframe_seconds,
-            enter=enter
+            enter=enter_signal
         ):
-            return False, exit, enter_tag_value
-        return enter, exit, enter_tag_value
+            return False, enter_tag_value
+
+        logger.debug(f"entry trigger: {latest['date']} (pair={pair}) "
+                     f"enter={enter_long} enter_tag_value={enter_tag_value}")
+        return enter_signal, enter_tag_value
 
     def ignore_expired_candle(
         self,

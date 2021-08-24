@@ -420,19 +420,19 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (enter, exit_, enter_tag) = self.strategy.get_signal(
-            pair,
-            self.strategy.timeframe,
-            analyzed_df
-        )
+        (side, enter_tag) = self.strategy.get_enter_signal(
+            pair, self.strategy.timeframe, analyzed_df
+            )
 
-        if enter and not exit_:
+        if side:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                # TODO-lev: Does the below need to be adjusted for shorts?
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
+                    # TODO-lev: pass in "enter" as side.
                     return self.execute_buy(pair, stake_amount, enter_tag=enter_tag)
                 else:
                     return False
@@ -707,7 +707,7 @@ class FreqtradeBot(LoggingMixin):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell, _) = self.strategy.get_signal(
+            (buy, sell) = self.strategy.get_exit_signal(
                 trade.pair,
                 self.strategy.timeframe,
                 analyzed_df

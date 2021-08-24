@@ -17,3 +17,8 @@ class SignalTagType(Enum):
     """
     BUY_TAG = "buy_tag"
     SHORT_TAG = "short_tag"
+
+
+class SignalDirection(Enum):
+    LONG = 'long'
+    SHORT = 'short'
