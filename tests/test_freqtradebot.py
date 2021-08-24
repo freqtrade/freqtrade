@@ -1954,7 +1954,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     assert nb_trades == 0
 
     # Buy is triggering, so buying ...
-    patch_get_signal(freqtrade, value=(True, False, None))
+    patch_get_signal(freqtrade)
     freqtrade.enter_positions()
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1999,7 +1999,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtrade, value=(True, False, None))
+    patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.enter_positions()
