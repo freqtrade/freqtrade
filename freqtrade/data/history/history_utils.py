@@ -117,10 +117,11 @@ def refresh_data(datadir: Path,
     :param timerange: Limit data to be loaded to this timerange
     """
     data_handler = get_datahandler(datadir, data_format)
-    for pair in pairs:
-        _download_pair_history(pair=pair, timeframe=timeframe,
-                               datadir=datadir, timerange=timerange,
-                               exchange=exchange, data_handler=data_handler)
+    for idx, pair in enumerate(pairs):
+        process = f'{idx}/{len(pairs)}'
+        _download_pair_history(pair=pair, process=process,
+                               timeframe=timeframe, datadir=datadir,
+                               timerange=timerange, exchange=exchange, data_handler=data_handler)
 
 
 def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
@@ -153,13 +154,14 @@ def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optiona
     return data, start_ms
 
 
-def _download_pair_history(datadir: Path,
+def _download_pair_history(pair: str, *,
+                           datadir: Path,
                            exchange: Exchange,
-                           pair: str, *,
-                           new_pairs_days: int = 30,
                            timeframe: str = '5m',
-                           timerange: Optional[TimeRange] = None,
-                           data_handler: IDataHandler = None) -> bool:
+                           process: str = '',
+                           new_pairs_days: int = 30,
+                           data_handler: IDataHandler = None,
+                           timerange: Optional[TimeRange] = None) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -177,7 +179,7 @@ def _download_pair_history(datadir: Path,
 
     try:
         logger.info(
-            f'Download history data for pair: "{pair}", timeframe: {timeframe} '
+            f'Download history data for pair: "{pair}" ({process}), timeframe: {timeframe} '
             f'and store in {datadir}.'
         )
 
@@ -234,7 +236,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     """
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
-    for pair in pairs:
+    for idx, pair in enumerate(pairs, start=1):
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
             logger.info(f"Skipping pair {pair}...")
@@ -247,10 +249,11 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                         f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
-            _download_pair_history(datadir=datadir, exchange=exchange,
-                                   pair=pair, timeframe=str(timeframe),
-                                   new_pairs_days=new_pairs_days,
-                                   timerange=timerange, data_handler=data_handler)
+            process = f'{idx}/{len(pairs)}'
+            _download_pair_history(pair=pair, process=process,
+                                   datadir=datadir, exchange=exchange,
+                                   timerange=timerange, data_handler=data_handler,
+                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days)
     return pairs_not_available
 
 

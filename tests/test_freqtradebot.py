@@ -904,6 +904,40 @@ def test_execute_buy(mocker, default_conf, fee, limit_buy_order, limit_buy_order
     with pytest.raises(PricingError, match="Could not determine buy price."):
         freqtrade.execute_buy(pair, stake_amount)
 
+    # In case of custom entry price
+    mocker.patch('freqtrade.exchange.Exchange.get_rate', return_value=0.50)
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5566'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: 0.508
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[6]
+    assert trade
+    assert trade.open_rate_requested == 0.508
+
+    # In case of custom entry price set to None
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5567'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: None
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=MagicMock(return_value=10),
+    )
+
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[7]
+    assert trade
+    assert trade.open_rate_requested == 10
+
+    # In case of custom entry price not float type
+    limit_buy_order['status'] = 'open'
+    limit_buy_order['id'] = '5568'
+    freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
+    assert freqtrade.execute_buy(pair, stake_amount)
+    trade = Trade.query.all()[8]
+    assert trade
+    assert trade.open_rate_requested == 10
+
 
 def test_execute_buy_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -2716,6 +2750,70 @@ def test_execute_sell_down(default_conf, ticker, fee, ticker_sell_down, mocker) 
     } == last_msg
 
 
+def test_execute_sell_custom_exit_price(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
+    rpc_mock = patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _is_dry_limit_order_filled=MagicMock(return_value=False),
+    )
+    patch_whitelist(mocker, default_conf)
+    freqtrade = FreqtradeBot(default_conf)
+    patch_get_signal(freqtrade)
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
+
+    # Create some test data
+    freqtrade.enter_positions()
+    rpc_mock.reset_mock()
+
+    trade = Trade.query.first()
+    assert trade
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 0
+
+    # Increase the price and sell it
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker_sell_up
+    )
+
+    freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
+
+    # Set a custom exit price
+    freqtrade.strategy.custom_exit_price = lambda **kwargs: 1.170e-05
+
+    freqtrade.execute_sell(trade=trade, limit=ticker_sell_up()['bid'],
+                           sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
+
+    # Sell price must be different to default bid price
+
+    assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+
+    assert rpc_mock.call_count == 1
+    last_msg = rpc_mock.call_args_list[-1][0][0]
+    assert {
+        'trade_id': 1,
+        'type': RPCMessageType.SELL,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'gain': 'profit',
+        'limit': 1.170e-05,
+        'amount': 91.07468123,
+        'order_type': 'limit',
+        'open_rate': 1.098e-05,
+        'current_rate': 1.173e-05,
+        'profit_amount': 6.041e-05,
+        'profit_ratio': 0.06025919,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+        'sell_reason': SellType.SELL_SIGNAL.value,
+        'open_date': ANY,
+        'close_date': ANY,
+        'close_rate': ANY,
+    } == last_msg
+
+
 def test_execute_sell_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
                                                         ticker_sell_down, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -4503,3 +4601,43 @@ def test_refind_lost_order(mocker, default_conf, fee, caplog):
 
     freqtrade.refind_lost_order(trades[4])
     assert log_has(f"Error updating {order['id']}.", caplog)
+
+
+def test_get_valid_price(mocker, default_conf) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+    freqtrade.config['custom_price_max_distance_ratio'] = 0.02
+
+    custom_price_string = "10"
+    custom_price_badstring = "10abc"
+    custom_price_float = 10.0
+    custom_price_int = 10
+
+    custom_price_over_max_alwd = 11.0
+    custom_price_under_min_alwd = 9.0
+    proposed_price = 10.1
+
+    valid_price_from_string = freqtrade.get_valid_price(custom_price_string, proposed_price)
+    valid_price_from_badstring = freqtrade.get_valid_price(custom_price_badstring, proposed_price)
+    valid_price_from_int = freqtrade.get_valid_price(custom_price_int, proposed_price)
+    valid_price_from_float = freqtrade.get_valid_price(custom_price_float, proposed_price)
+
+    valid_price_at_max_alwd = freqtrade.get_valid_price(custom_price_over_max_alwd, proposed_price)
+    valid_price_at_min_alwd = freqtrade.get_valid_price(custom_price_under_min_alwd, proposed_price)
+
+    assert isinstance(valid_price_from_string, float)
+    assert isinstance(valid_price_from_badstring, float)
+    assert isinstance(valid_price_from_int, float)
+    assert isinstance(valid_price_from_float, float)
+
+    assert valid_price_from_string == custom_price_float
+    assert valid_price_from_badstring == proposed_price
+    assert valid_price_from_int == custom_price_int
+    assert valid_price_from_float == custom_price_float
+
+    assert valid_price_at_max_alwd < custom_price_over_max_alwd
+    assert valid_price_at_max_alwd > proposed_price
+
+    assert valid_price_at_min_alwd > custom_price_under_min_alwd
+    assert valid_price_at_min_alwd < proposed_price

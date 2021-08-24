@@ -240,10 +240,17 @@ The `IProtection` parent class provides a helper method for this in `calculate_l
 !!! Note
     This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.
 
+!!! Note
+    Make sure to use an up-to-date version of CCXT before running any of the below tests.
+    You can get the latest version of ccxt by running `pip install -U ccxt` with activated virtual environment.
+    Native docker is not supported for these tests, however the available dev-container will support all required actions and eventually necessary changes.
+
 Most exchanges supported by CCXT should work out of the box.
 
 To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
 Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
+
+Also try to use `freqtrade download-data` for an extended timerange and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
 
 ### Stoploss On Exchange
 

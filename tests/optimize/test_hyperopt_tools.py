@@ -10,7 +10,7 @@ import rapidjson
 from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
-from tests.conftest import log_has, log_has_re
+from tests.conftest import log_has
 
 
 # Functions for recurrent object patching
@@ -20,9 +20,14 @@ def create_results() -> List[Dict]:
 
 
 def test_save_results_saves_epochs(hyperopt, tmpdir, caplog) -> None:
+
+    hyperopt.results_file = Path(tmpdir / 'ut_results.fthypt')
+
+    hyperopt_epochs = HyperoptTools.load_filtered_results(hyperopt.results_file, {})
+    assert hyperopt_epochs == ([], 0)
+
     # Test writing to temp dir and reading again
     epochs = create_results()
-    hyperopt.results_file = Path(tmpdir / 'ut_results.fthypt')
 
     caplog.set_level(logging.DEBUG)
 
@@ -33,36 +38,28 @@ def test_save_results_saves_epochs(hyperopt, tmpdir, caplog) -> None:
     hyperopt._save_result(epochs[0])
     assert log_has(f"2 epochs saved to '{hyperopt.results_file}'.", caplog)
 
-    hyperopt_epochs = HyperoptTools.load_previous_results(hyperopt.results_file)
+    hyperopt_epochs = HyperoptTools.load_filtered_results(hyperopt.results_file, {})
     assert len(hyperopt_epochs) == 2
+    assert hyperopt_epochs[1] == 2
+    assert len(hyperopt_epochs[0]) == 2
 
-
-def test_load_previous_results(testdatadir, caplog) -> None:
-
-    results_file = testdatadir / 'hyperopt_results_SampleStrategy.pickle'
-
-    hyperopt_epochs = HyperoptTools.load_previous_results(results_file)
-
-    assert len(hyperopt_epochs) == 5
-    assert log_has_re(r"Reading pickled epochs from .*", caplog)
-
-    caplog.clear()
-
-    # Modern version
-    results_file = testdatadir / 'strategy_SampleStrategy.fthypt'
-
-    hyperopt_epochs = HyperoptTools.load_previous_results(results_file)
-
-    assert len(hyperopt_epochs) == 5
-    assert log_has_re(r"Reading epochs from .*", caplog)
+    result_gen = HyperoptTools._read_results(hyperopt.results_file, 1)
+    epoch = next(result_gen)
+    assert len(epoch) == 1
+    assert epoch[0] == epochs[0]
+    epoch = next(result_gen)
+    assert len(epoch) == 1
+    epoch = next(result_gen)
+    assert len(epoch) == 0
+    with pytest.raises(StopIteration):
+        next(result_gen)
 
 
 def test_load_previous_results2(mocker, testdatadir, caplog) -> None:
-    mocker.patch('freqtrade.optimize.hyperopt_tools.HyperoptTools._read_results_pickle',
-                 return_value=[{'asdf': '222'}])
     results_file = testdatadir / 'hyperopt_results_SampleStrategy.pickle'
-    with pytest.raises(OperationalException, match=r"The file .* incompatible.*"):
-        HyperoptTools.load_previous_results(results_file)
+    with pytest.raises(OperationalException,
+                       match=r"Legacy hyperopt results are no longer supported.*"):
+        HyperoptTools.load_filtered_results(results_file, {})
 
 
 @pytest.mark.parametrize("spaces, expected_results", [
