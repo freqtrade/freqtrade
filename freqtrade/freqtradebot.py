@@ -420,24 +420,24 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_tag) = self.strategy.get_signal(
+        (enter, exit_, enter_tag) = self.strategy.get_signal(
             pair,
             self.strategy.timeframe,
             analyzed_df
         )
 
-        if buy and not sell:
+        if enter and not exit_:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
+                    return self.execute_buy(pair, stake_amount, enter_tag=enter_tag)
                 else:
                     return False
 
-            return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
+            return self.execute_buy(pair, stake_amount, enter_tag=enter_tag)
         else:
             return False
 
@@ -466,7 +466,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                    forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
+                    forcebuy: bool = False, enter_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -575,7 +575,8 @@ class FreqtradeBot(LoggingMixin):
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            buy_tag=buy_tag,
+            # TODO-lev: compatibility layer for buy_tag (!)
+            buy_tag=enter_tag,
             timeframe=timeframe_to_minutes(self.config['timeframe'])
         )
         trade.orders.append(order_obj)
