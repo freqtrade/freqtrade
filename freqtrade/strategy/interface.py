@@ -614,8 +614,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return False
 
-    def should_sell(self, trade: Trade, rate: float, date: datetime, buy: bool,
-                    sell: bool, low: float = None, high: float = None,
+    def should_exit(self, trade: Trade, rate: float, date: datetime, *,
+                    enter_long: bool, enter_short: bool,
+                    exit_long: bool,  exit_short: bool,
+                    low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger a sell/exit_short
@@ -625,6 +627,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param force_stoploss: Externally provided stoploss
         :return: True if trade should be exited, False otherwise
         """
+
+        enter = enter_short if trade.is_short else enter_long
+        exit_ = exit_short if trade.is_short else exit_long
+
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
@@ -639,7 +645,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_profit = trade.calc_profit_ratio(current_rate)
 
         # if enter signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
+        roi_reached = (not (enter and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
@@ -652,8 +658,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
-        elif self.use_sell_signal and not buy:
-            if sell:
+        elif self.use_sell_signal and not enter:
+            if exit_:
                 sell_signal = SellType.SELL_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
@@ -712,10 +718,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        dir_correct = (
-            trade.stop_loss < (low or current_rate) and not trade.is_short or
-            trade.stop_loss > (low or current_rate) and trade.is_short
-        )
+        dir_correct = (trade.stop_loss < (low or current_rate)
+                       if not trade.is_short else
+                       trade.stop_loss > (high or current_rate)
+                       )
 
         if self.use_custom_stoploss and dir_correct:
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
@@ -735,6 +741,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             sl_offset = self.trailing_stop_positive_offset
 
             # Make sure current_profit is calculated using high for backtesting.
+            # TODO-lev: Check this function - high / low usage must be inversed for short trades!
             high_profit = current_profit if not high else trade.calc_profit_ratio(high)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.

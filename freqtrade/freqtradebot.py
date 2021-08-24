@@ -856,14 +856,14 @@ class FreqtradeBot(LoggingMixin):
         """
         Check and execute sell
         """
-        should_sell = self.strategy.should_sell(
+        should_exit: SellCheckTuple = self.strategy.should_exit(
             trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
-        if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell)
+        if should_exit.sell_flag:
+            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_exit.sell_type}')
+            self.execute_sell(trade, sell_rate, should_exit)
             return True
         return False
 
