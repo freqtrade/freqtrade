@@ -41,10 +41,10 @@ OPEN_IDX = 1
 HIGH_IDX = 2
 LOW_IDX = 3
 CLOSE_IDX = 4
-BUY_IDX = 5
-SELL_IDX = 6
+LONG_IDX = 5
+ELONG_IDX = 6  # Exit long
 SHORT_IDX = 7
-ESHORT_IDX = 8
+ESHORT_IDX = 8  # Exit short
 BUY_TAG_IDX = 9
 SHORT_TAG_IDX = 10
 
@@ -335,8 +335,8 @@ class Backtesting:
         # TODO: short exits
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
-                                         sell_candle_time, sell_row[BUY_IDX],
-                                         sell_row[SELL_IDX],
+                                         sell_candle_time, buy=sell_row[LONG_IDX],
+                                         sell=sell_row[ELONG_IDX],
                                          low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
 
         if sell.sell_flag:
@@ -435,8 +435,8 @@ class Backtesting:
         return False
 
     def check_for_trade_entry(self, row) -> Optional[str]:
-        enter_long = row[BUY_IDX] == 1
-        exit_long = row[SELL_IDX] == 1
+        enter_long = row[LONG_IDX] == 1
+        exit_long = row[ELONG_IDX] == 1
         enter_short = row[SHORT_IDX] == 1
         exit_short = row[ESHORT_IDX] == 1
 
