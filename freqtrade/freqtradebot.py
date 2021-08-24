@@ -700,22 +700,22 @@ class FreqtradeBot(LoggingMixin):
 
         logger.debug('Handling %s ...', trade)
 
-        (buy, sell) = (False, False)
+        (enter, exit_) = (False, False)
 
         if (self.config.get('use_sell_signal', True) or
                 self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell) = self.strategy.get_exit_signal(
+            (enter, exit_) = self.strategy.get_exit_signal(
                 trade.pair,
                 self.strategy.timeframe,
                 analyzed_df
             )
 
-        logger.debug('checking sell')
+        # TODO-lev: side should depend on trade side.
         sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
-        if self._check_and_execute_sell(trade, sell_rate, buy, sell):
+        if self._check_and_execute_exit(trade, sell_rate, enter, exit_):
             return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -852,18 +852,18 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(f"Could not create trailing stoploss order "
                                    f"for pair {trade.pair}.")
 
-    def _check_and_execute_sell(self, trade: Trade, sell_rate: float,
-                                buy: bool, sell: bool) -> bool:
+    def _check_and_execute_exit(self, trade: Trade, sell_rate: float,
+                                enter: bool, exit_: bool) -> bool:
         """
-        Check and execute sell
+        Check and execute trade exit
         """
         should_exit: SellCheckTuple = self.strategy.should_exit(
-            trade, sell_rate, datetime.now(timezone.utc), buy, sell,
+            trade, sell_rate, datetime.now(timezone.utc), enter, exit_,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_exit.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_exit.sell_type}')
+            logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}')
             self.execute_sell(trade, sell_rate, should_exit)
             return True
         return False

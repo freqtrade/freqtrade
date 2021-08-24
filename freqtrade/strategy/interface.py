@@ -543,7 +543,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-    ) -> Tuple[Optional[DataFrame], arrow.Arrow]:
+    ) -> Tuple[Optional[DataFrame], Optional[arrow.Arrow]]:
         """
         Get the latest candle. Used only during real mode
         :param pair: pair in format ANT/BTC
@@ -553,7 +553,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False, None
+            return None, None
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -591,7 +591,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
         if latest is None:
-            return False, False, None
+            return False, False
 
         if is_short:
             enter = latest[SignalType.SHORT] == 1
@@ -621,8 +621,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: (SignalDirection, entry_tag)
         """
         latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
-        if latest is None:
-            return False, False, None
+        if latest is None or latest_date is None:
+            return None, None
 
         enter_long = latest[SignalType.BUY] == 1
         exit_long = latest[SignalType.SELL] == 1
@@ -630,7 +630,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         exit_short = latest[SignalType.EXIT_SHORT] == 1
 
         enter_signal: Optional[SignalDirection] = None
-        enter_tag_value = None
+        enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
             enter_tag_value = latest.get(SignalTagType.BUY_TAG, None)
@@ -641,12 +641,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         timeframe_seconds = timeframe_to_seconds(timeframe)
 
         if self.ignore_expired_candle(
-            latest_date=latest_date,
+            latest_date=latest_date.datetime,
             current_time=datetime.now(timezone.utc),
             timeframe_seconds=timeframe_seconds,
-            enter=enter_signal
+            enter=bool(enter_signal)
         ):
-            return False, enter_tag_value
+            return None, enter_tag_value
 
         logger.debug(f"entry trigger: {latest['date']} (pair={pair}) "
                      f"enter={enter_long} enter_tag_value={enter_tag_value}")
