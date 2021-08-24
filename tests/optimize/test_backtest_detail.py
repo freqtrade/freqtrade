@@ -521,7 +521,7 @@ tc32 = BTContainer(data=[
 tc33 = BTContainer(data=[
     # D   O     H     L     C    V    EL XL ES Xs  BT
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 0, 0, 'buy_signal_01'],
-    [1, 5000, 5500, 5000, 4900, 6172, 0, 0, 0, 0, None],    # enter trade (signal on last candle) and stop
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0, 0, 0, None],  # enter trade and stop
     [2, 4900, 5250, 4500, 5100, 6172, 0, 0, 0, 0, None],
     [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 0, None],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0, None]],

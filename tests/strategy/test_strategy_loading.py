@@ -394,7 +394,8 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
                    caplog)
 
 
-def test_strategy_interface_versioning(result, monkeypatch, default_conf):
+def test_strategy_interface_versioning(result, default_conf):
+    # Tests interface compatibility with Interface version 2.
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
@@ -411,8 +412,11 @@ def test_strategy_interface_versioning(result, monkeypatch, default_conf):
 
     enterdf = strategy.advise_buy(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
-    assert 'buy' in enterdf.columns
+
+    assert 'buy' not in enterdf.columns
+    assert 'enter_long' in enterdf.columns
 
     exitdf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
-    assert 'sell' in exitdf
+    assert 'sell' not in exitdf
+    assert 'exit_long' in exitdf

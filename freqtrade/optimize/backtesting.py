@@ -233,12 +233,12 @@ class Backtesting:
 
             if not pair_data.empty:
                 # Cleanup from prior runs
-                pair_data.loc[:, 'buy'] = 0  # TODO: Should be renamed to enter_long
+                pair_data.loc[:, 'enter_long'] = 0
                 pair_data.loc[:, 'enter_short'] = 0
-                pair_data.loc[:, 'sell'] = 0  # TODO: should be renamed to exit_long
+                pair_data.loc[:, 'exit_long'] = 0
                 pair_data.loc[:, 'exit_short'] = 0
-                pair_data.loc[:, 'long_tag'] = None  # cleanup if buy_tag is exist
-                pair_data.loc[:, 'short_tag'] = None  # cleanup if short_tag is exist
+                pair_data.loc[:, 'long_tag'] = None
+                pair_data.loc[:, 'short_tag'] = None
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}),
@@ -254,8 +254,6 @@ class Backtesting:
             df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
             df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
             df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
-
-            df_analyzed.drop(df_analyzed.head(1).index, inplace=True)
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)

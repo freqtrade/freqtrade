@@ -123,12 +123,14 @@ def _trend(signals, buy_value, sell_value):
     n = len(signals['low'])
     buy = np.zeros(n)
     sell = np.zeros(n)
-    for i in range(0, len(signals['buy'])):
+    for i in range(0, len(signals['enter_long'])):
         if random.random() > 0.5:  # Both buy and sell signals at same timeframe
             buy[i] = buy_value
             sell[i] = sell_value
-    signals['buy'] = buy
-    signals['sell'] = sell
+    signals['enter_long'] = buy
+    signals['exit_long'] = sell
+    signals['enter_short'] = 0
+    signals['exit_short'] = 0
     return signals
 
 
@@ -143,8 +145,10 @@ def _trend_alternate(dataframe=None, metadata=None):
             buy[i] = 1
         else:
             sell[i] = 1
-    signals['buy'] = buy
-    signals['sell'] = sell
+    signals['enter_long'] = buy
+    signals['exit_long'] = sell
+    signals['enter_short'] = 0
+    signals['exit_short'] = 0
     return dataframe
 
 
@@ -499,41 +503,47 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
         0.0012,  # High
         '',  # Buy Signal Name
     ]
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert isinstance(trade, LocalTrade)
     assert trade.stake_amount == 495
 
     # Fake 2 trades, so there's not enough amount for the next trade left.
     LocalTrade.trades_open.append(trade)
     LocalTrade.trades_open.append(trade)
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade is None
     LocalTrade.trades_open.pop()
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade is not None
 
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 123.5
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade
     assert trade.stake_amount == 123.5
 
     # In case of error - use proposed stake
     backtesting.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade
     assert trade.stake_amount == 495
+    assert trade.is_short is False
+
+    trade = backtesting._enter_trade(pair, row=row, direction='short')
+    assert trade
+    assert trade.stake_amount == 495
+    assert trade.is_short is True
 
     # Stake-amount too high!
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=600.0)
 
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade is None
 
     # Stake-amount throwing error
     mocker.patch("freqtrade.wallets.Wallets.get_trade_stake_amount",
                  side_effect=DependencyException)
 
-    trade = backtesting._enter_trade(pair, row=row)
+    trade = backtesting._enter_trade(pair, row=row, direction='long')
     assert trade is None
 
     backtesting.cleanup()
@@ -766,8 +776,10 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
             multi = 20
         else:
             multi = 18
-        dataframe['buy'] = np.where(dataframe.index % multi == 0, 1, 0)
-        dataframe['sell'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
+        dataframe['enter_long'] = np.where(dataframe.index % multi == 0, 1, 0)
+        dataframe['exit_long'] = np.where((dataframe.index + multi - 2) % multi == 0, 1, 0)
+        dataframe['enter_short'] = 0
+        dataframe['exit_short'] = 0
         return dataframe
 
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
