@@ -233,9 +233,12 @@ class Backtesting:
 
             if not pair_data.empty:
                 # Cleanup from prior runs
-                pair_data.loc[:, 'enter_long'] = 0
+                # TODO-lev: The below is not 100% compatible with the interface compatibility layer
+                if 'enter_long' in pair_data.columns:
+                    pair_data.loc[:, 'enter_long'] = 0
                 pair_data.loc[:, 'enter_short'] = 0
-                pair_data.loc[:, 'exit_long'] = 0
+                if 'exit_long' in pair_data.columns:
+                    pair_data.loc[:, 'exit_long'] = 0
                 pair_data.loc[:, 'exit_short'] = 0
                 pair_data.loc[:, 'long_tag'] = None
                 pair_data.loc[:, 'short_tag'] = None
