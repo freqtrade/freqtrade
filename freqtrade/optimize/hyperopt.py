@@ -107,13 +107,25 @@ class Hyperopt:
             # Populate "fallback" functions here
             # (hasattr is slow so should not be run during "regular" operations)
             if hasattr(self.custom_hyperopt, 'populate_indicators'):
-                self.backtesting.strategy.advise_indicators = (  # type: ignore
+                logger.warning(
+                    "DEPRECATED: Using `populate_indicators()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                    )
+                self.backtesting.strategy.populate_indicators = (  # type: ignore
                     self.custom_hyperopt.populate_indicators)  # type: ignore
             if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-                self.backtesting.strategy.advise_buy = (  # type: ignore
+                logger.warning(
+                    "DEPRECATED: Using `populate_buy_trend()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                )
+                self.backtesting.strategy.populate_buy_trend = (  # type: ignore
                     self.custom_hyperopt.populate_buy_trend)  # type: ignore
             if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-                self.backtesting.strategy.advise_sell = (  # type: ignore
+                logger.warning(
+                    "DEPRECATED: Using `populate_sell_trend()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                )
+                self.backtesting.strategy.populate_sell_trend = (  # type: ignore
                     self.custom_hyperopt.populate_sell_trend)  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
