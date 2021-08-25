@@ -19,10 +19,6 @@ isolated = Collateral.ISOLATED
     ('bittrex', "2.0", False, "3.0", spot, None),
     ('bittrex', "2.0", False, "1.0", spot, cross),
     ('bittrex', "2.0", True, "3.0", spot, isolated),
-    ('bittrex', "2.0", False, "3.0", margin, cross),
-    ('bittrex', "2.0", False, "3.0", margin, isolated),
-    ('bittrex', "2.0", False, "3.0", futures, cross),
-    ('bittrex', "2.0", False, "3.0", futures, isolated),
     # Binance
     ('binance', "2.0", False, "3.0", spot, None),
     ('binance', "2.0", False, "1.0", spot, cross),
@@ -55,6 +51,11 @@ def test_liquidation_price_is_none(
 
 
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
+    # Bittrex
+    ('bittrex', "2.0", False, "3.0", margin, cross),
+    ('bittrex', "2.0", False, "3.0", margin, isolated),
+    ('bittrex', "2.0", False, "3.0", futures, cross),
+    ('bittrex', "2.0", False, "3.0", futures, isolated),
     # Binance
     # Binance supports isolated margin, but freqtrade likely won't for a while on Binance
     ('binance', "2.0", True, "3.0", margin, isolated),
