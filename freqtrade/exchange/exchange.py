@@ -1516,6 +1516,20 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
+    def fetch_funding_rates(self):
+        return self._api.fetch_funding_rates()
+
+    # https://www.binance.com/en/support/faq/360033525031
+    def get_funding_fee(
+        self,
+        contract_size: float,
+        mark_price: float,
+        rate: Optional[float],
+        # index_price: float,
+        # interest_rate: float
+    ):
+        raise OperationalException(f"{self.name} has not implemented get_funding_rate")
+
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)

@@ -3,6 +3,7 @@ from typing import List
 
 import schedule
 
+from freqtrade.exchange import Exchange
 from freqtrade.persistence import Trade
 
 
@@ -16,9 +17,13 @@ class FundingFee:
         "07:59:45",
         "15:59:45",
     ]
+    exchange: Exchange
 
     # FTX
     # begin_times = every hour
+
+    def __init__(self, exchange: Exchange):
+        self.exchange = exchange
 
     def _is_time_between(self, begin_time, end_time):
         # If check time is not given, default to current UTC time
@@ -28,27 +33,30 @@ class FundingFee:
         else:  # crosses midnight
             return check_time >= begin_time or check_time <= end_time
 
-    def _apply_funding_fees(self, num_of: int = 1):
-        if num_of == 0:
-            return
+    def _apply_current_funding_fees(self):
+        funding_rates = self.exchange.fetch_funding_rates()
+
         for trade in self.trades:
-            trade.adjust_funding_fee(self._calculate(trade.amount) * num_of)
+            funding_rate = funding_rates[trade.pair]
+            self._apply_fee_to_trade(funding_rate, trade)
 
-    def _calculate(self, amount):
-        # TODO-futures: implement
-        # TODO-futures: Check how other exchages do it and adjust accordingly
-        # https://www.binance.com/en/support/faq/360033525031
-        # mark_price =
-        # contract_size = maybe trade.amount
-        # funding_rate =  # https://www.binance.com/en/futures/funding-history/0
-        # nominal_value = mark_price * contract_size
-        # adjustment = nominal_value * funding_rate
-        # return adjustment
+    def _apply_fee_to_trade(self, funding_rate: dict, trade: Trade):
 
-        # FTX - paid in USD(always)
-        # position size * TWAP of((future - index) / index) / 24
-        # https: // help.ftx.com/hc/en-us/articles/360027946571-Funding
-        return
+        amount = trade.amount
+        mark_price = funding_rate['markPrice']
+        rate = funding_rate['fundingRate']
+        # index_price = funding_rate['indexPrice']
+        # interest_rate = funding_rate['interestRate']
+
+        funding_fee = self.exchange.get_funding_fee(
+            amount,
+            mark_price,
+            rate,
+            # interest_rate
+            # index_price,
+        )
+
+        trade.adjust_funding_fee(funding_fee)
 
     def initial_funding_fee(self, amount) -> float:
         # A funding fee interval is applied immediately if within 30s of an iterval
