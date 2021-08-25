@@ -118,10 +118,12 @@ def test_strategy(result, default_conf):
     assert 'adx' in df_indicators
 
     dataframe = strategy.advise_buy(df_indicators, metadata=metadata)
-    assert 'buy' in dataframe.columns
+    assert 'buy' not in dataframe.columns
+    assert 'enter_long' in dataframe.columns
 
     dataframe = strategy.advise_sell(df_indicators, metadata=metadata)
-    assert 'sell' in dataframe.columns
+    assert 'sell' not in dataframe.columns
+    assert 'exit_long' in dataframe.columns
 
 
 def test_strategy_override_minimal_roi(caplog, default_conf):

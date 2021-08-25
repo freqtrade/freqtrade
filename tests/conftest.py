@@ -193,7 +193,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
     :return: None
     """
     # returns (Signal-direction, signaname)
-    def patched_get_enter_signal(*args, **kwargs):
+    def patched_get_entry_signal(*args, **kwargs):
         direction = None
         if enter_long and not any([exit_long, enter_short]):
             direction = SignalDirection.LONG
@@ -202,7 +202,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
 
         return direction, enter_tag
 
-    freqtrade.strategy.get_enter_signal = patched_get_enter_signal
+    freqtrade.strategy.get_entry_signal = patched_get_entry_signal
 
     def patched_get_exit_signal(pair, timeframe, dataframe, is_short):
         if is_short:

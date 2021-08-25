@@ -594,18 +594,18 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False, False
 
         if is_short:
-            enter = latest[SignalType.SHORT] == 1
-            exit_ = latest[SignalType.EXIT_SHORT] == 1
+            enter = latest.get(SignalType.ENTER_SHORT, 0) == 1
+            exit_ = latest.get(SignalType.EXIT_SHORT, 0) == 1
         else:
-            enter = latest[SignalType.BUY] == 1
-            exit_ = latest[SignalType.SELL] == 1
+            enter = latest[SignalType.ENTER_LONG] == 1
+            exit_ = latest.get(SignalType.EXIT_LONG, 0) == 1
 
         logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) "
                      f"enter={enter} exit={exit_}")
 
         return enter, exit_
 
-    def get_enter_signal(
+    def get_entry_signal(
         self,
         pair: str,
         timeframe: str,
@@ -624,19 +624,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         if latest is None or latest_date is None:
             return None, None
 
-        enter_long = latest[SignalType.BUY] == 1
-        exit_long = latest[SignalType.SELL] == 1
-        enter_short = latest[SignalType.SHORT] == 1
-        exit_short = latest[SignalType.EXIT_SHORT] == 1
+        enter_long = latest[SignalType.ENTER_LONG.value] == 1
+        exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
+        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
+        exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
 
         enter_signal: Optional[SignalDirection] = None
         enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag_value = latest.get(SignalTagType.BUY_TAG, None)
+            enter_tag_value = latest.get(SignalTagType.BUY_TAG.value, None)
         if enter_short == 1 and not any([exit_short, enter_long]):
             enter_signal = SignalDirection.SHORT
-            enter_tag_value = latest.get(SignalTagType.SHORT_TAG, None)
+            enter_tag_value = latest.get(SignalTagType.SHORT_TAG.value, None)
 
         timeframe_seconds = timeframe_to_seconds(timeframe)
 

@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring, C0103
+from freqtrade.enums.signaltype import SignalDirection
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -30,7 +31,7 @@ _STRATEGY = DefaultStrategy(config={})
 _STRATEGY.dp = DataProvider({}, None, None)
 
 
-def test_returns_latest_signal(mocker, default_conf, ohlcv_history):
+def test_returns_latest_signal(default_conf, ohlcv_history):
     ohlcv_history.loc[1, 'date'] = arrow.utcnow()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
@@ -67,18 +68,18 @@ def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
     assert log_has('Empty dataframe for pair ETH/BTC', caplog)
 
 
-def test_get_signal_empty(default_conf, mocker, caplog):
-    assert (False, False, None) == _STRATEGY.get_signal(
+def test_get_signal_empty(default_conf, caplog):
+    assert (None, None) == _STRATEGY.get_latest_candle(
         'foo', default_conf['timeframe'], DataFrame()
     )
     assert log_has('Empty candle (OHLCV) data for pair foo', caplog)
     caplog.clear()
 
-    assert (False, False, None) == _STRATEGY.get_signal('bar', default_conf['timeframe'], None)
+    assert (None, None) == _STRATEGY.get_latest_candle('bar', default_conf['timeframe'], None)
     assert log_has('Empty candle (OHLCV) data for pair bar', caplog)
     caplog.clear()
 
-    assert (False, False, None) == _STRATEGY.get_signal(
+    assert (None, None) == _STRATEGY.get_latest_candle(
         'baz',
         default_conf['timeframe'],
         DataFrame([])
@@ -86,7 +87,7 @@ def test_get_signal_empty(default_conf, mocker, caplog):
     assert log_has('Empty candle (OHLCV) data for pair baz', caplog)
 
 
-def test_get_signal_exception_valueerror(default_conf, mocker, caplog, ohlcv_history):
+def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY.dp, 'ohlcv', return_value=ohlcv_history)
     mocker.patch.object(
@@ -111,14 +112,14 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     ohlcv_history.loc[1, 'date'] = arrow.utcnow().shift(minutes=-16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
-    mocked_history['sell'] = 0
-    mocked_history['buy'] = 0
-    mocked_history.loc[1, 'buy'] = 1
+    mocked_history['exit_long'] = 0
+    mocked_history['enter_long'] = 0
+    mocked_history.loc[1, 'enter_long'] = 1
 
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (False, False, None) == _STRATEGY.get_signal(
+    assert (None, None) == _STRATEGY.get_latest_candle(
         'xyz',
         default_conf['timeframe'],
         mocked_history
@@ -134,13 +135,13 @@ def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
     # mocked_history['sell'] = 0
-    mocked_history['buy'] = 0
-    mocked_history.loc[1, 'buy'] = 1
+    mocked_history['enter_long'] = 0
+    mocked_history.loc[1, 'enter_long'] = 1
 
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY, 'assert_df')
 
-    assert (True, False, None) == _STRATEGY.get_signal(
+    assert (SignalDirection.LONG, None) == _STRATEGY.get_entry_signal(
         'xyz',
         default_conf['timeframe'],
         mocked_history
@@ -453,8 +454,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
 
     now = arrow.utcnow().datetime
     res = strategy.should_exit(trade, 1, now,
-                               enter_long=False, enter_short=False,
-                               exit_long=False, exit_short=False,
+                               enter=False, exit_=False,
                                low=None, high=None)
 
     assert res.sell_flag is False
@@ -462,8 +462,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
 
     strategy.custom_sell = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
-                               enter_long=False, enter_short=False,
-                               exit_long=False, exit_short=False,
+                               enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_flag is True
     assert res.sell_type == SellType.CUSTOM_SELL
@@ -472,8 +471,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     strategy.custom_sell = MagicMock(return_value='hello world')
 
     res = strategy.should_exit(trade, 1, now,
-                               enter_long=False, enter_short=False,
-                               exit_long=False, exit_short=False,
+                               enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
@@ -482,8 +480,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     caplog.clear()
     strategy.custom_sell = MagicMock(return_value='h' * 100)
     res = strategy.should_exit(trade, 1, now,
-                               enter_long=False, enter_short=False,
-                               exit_long=False, exit_short=False,
+                               enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True

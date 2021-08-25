@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (side, enter_tag) = self.strategy.get_enter_signal(
+        (side, enter_tag) = self.strategy.get_entry_signal(
             pair, self.strategy.timeframe, analyzed_df
             )
 
