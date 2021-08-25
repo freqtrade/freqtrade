@@ -1038,7 +1038,7 @@ class Exchange:
             logger.debug(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[conf_strategy['price_side']]
-            if ticker['last']:
+            if ticker['last'] and ticker_rate:
                 if side == 'buy' and ticker_rate > ticker['last']:
                     balance = conf_strategy['ask_last_balance']
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
