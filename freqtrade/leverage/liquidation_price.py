@@ -1,12 +1,17 @@
+from typing import Optional
+
 from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import OperationalException
 
 
 def liquidation_price(
     exchange_name: str,
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
     trading_mode: TradingMode,
-    ** k
-):
+    collateral: Optional[Collateral]
+) -> Optional[float]:
 
     leverage_exchanges = [
         'binance',
@@ -16,21 +21,25 @@ def liquidation_price(
     if trading_mode == TradingMode.SPOT or exchange_name.lower() not in leverage_exchanges:
         return None
 
-    collateral: Collateral = k['collateral']
+    if not collateral:
+        raise OperationalException(
+            "Parameter collateral is required by liquidation_price when trading_mode is "
+            f"{trading_mode}"
+        )
 
     if exchange_name.lower() == "binance":
-        # TODO-lev: Get more variables from **k and pass them to binance
-        return binance(trading_mode, collateral)
+        return binance(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "kraken":
-        # TODO-lev: Get more variables from **k and pass them to kraken
-        return kraken(trading_mode, collateral)
+        return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
-        return ftx(trading_mode, collateral)
-    return
+        return ftx(open_rate, is_short, leverage, trading_mode, collateral)
+    raise OperationalException(
+        f"liquidation_price is not yet implemented for {exchange_name}"
+    )
 
 
 def exception(
-    exchange_name: str,
+    exchange: str,
     trading_mode: TradingMode,
     collateral: Collateral
 ):
@@ -41,10 +50,16 @@ def exception(
         :param collateral: cross, isolated
     """
     raise OperationalException(
-        f"{exchange_name} does not support {collateral.value} {trading_mode.value} trading")
+        f"{exchange} does not support {collateral.value} {trading_mode.value} trading")
 
 
-def binance(trading_mode: TradingMode, collateral: Collateral):
+def binance(
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
+    trading_mode: TradingMode,
+    collateral: Collateral
+):
     """
         Calculates the liquidation price on Binance
         :param name: Name of the exchange
@@ -70,7 +85,13 @@ def binance(trading_mode: TradingMode, collateral: Collateral):
     exception("binance", trading_mode, collateral)
 
 
-def kraken(trading_mode: TradingMode, collateral: Collateral):
+def kraken(
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
+    trading_mode: TradingMode,
+    collateral: Collateral
+):
     """
         Calculates the liquidation price on Kraken
         :param name: Name of the exchange
@@ -91,7 +112,13 @@ def kraken(trading_mode: TradingMode, collateral: Collateral):
     exception("kraken", trading_mode, collateral)
 
 
-def ftx(trading_mode: TradingMode, collateral: Collateral):
+def ftx(
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
+    trading_mode: TradingMode,
+    collateral: Collateral
+):
     """
         Calculates the liquidation price on FTX
         :param name: Name of the exchange
