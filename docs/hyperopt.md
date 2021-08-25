@@ -576,7 +576,8 @@ Legal values are:
 * `roi`: just optimize the minimal profit table for your strategy
 * `stoploss`: search for the best stoploss value
 * `trailing`: search for the best trailing stop values
-* `default`: `all` except `trailing`
+* `protection`: search for the best protection parameters (read the [protections section](#optimizing-protections) on how to properly define these)
+* `default`: `all` except `trailing` and `protection`
 * space-separated list of any of the above values for example `--spaces roi stoploss`
 
 The default Hyperopt Search Space, used when no `--space` command line option is specified, does not include the `trailing` hyperspace. We recommend you to run optimization for the `trailing` hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.
