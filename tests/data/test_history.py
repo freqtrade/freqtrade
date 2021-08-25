@@ -133,8 +133,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC')
     assert file.is_file()
     assert log_has_re(
-        'Download history data for pair: "MEME/BTC", timeframe: 1m '
-        'and store in .*', caplog
+        r'Download history data for pair: "MEME/BTC" \(0/1\), timeframe: 1m '
+        r'and store in .*', caplog
     )
 
 
@@ -200,15 +200,15 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     assert start_ts == test_data[0][0] - 1000
 
     # timeframe starts in the center of the cached data
-    # should return the chached data w/o the last item
+    # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[0][0] / 1000 + 1, 0)
     data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
 
     assert_frame_equal(data, test_data_df.iloc[:-1])
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
 
-    # timeframe starts after the chached data
-    # should return the chached data w/o the last item
+    # timeframe starts after the cached data
+    # should return the cached data w/o the last item
     timerange = TimeRange('date', None, test_data[-1][0] / 1000 + 100, 0)
     data, start_ts = _load_cached_data_for_updating('UNITTEST/BTC', '1m', timerange, data_handler)
     assert_frame_equal(data, test_data_df.iloc[:-1])
@@ -278,8 +278,10 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
         return_value=None)
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=tick)
     exchange = get_patched_exchange(mocker, default_conf)
-    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='1m')
-    _download_pair_history(testdatadir, exchange, pair="UNITTEST/BTC", timeframe='3m')
+    _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
+                           timeframe='1m')
+    _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
+                           timeframe='3m')
     assert json_dump_mock.call_count == 2
 
 
@@ -381,7 +383,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -399,7 +401,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
     default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='1m',
@@ -424,7 +426,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)
-    data = strategy.ohlcvdata_to_dataframe(
+    data = strategy.advise_all_indicators(
         load_data(
             datadir=testdatadir,
             timeframe='5m',

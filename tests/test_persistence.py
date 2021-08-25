@@ -1587,24 +1587,29 @@ def test_adjust_min_max_rates(fee):
         open_rate=1,
     )
 
-    trade.adjust_min_max_rates(trade.open_rate)
+    trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     assert trade.max_rate == 1
     assert trade.min_rate == 1
 
     # check min adjusted, max remained
-    trade.adjust_min_max_rates(0.96)
+    trade.adjust_min_max_rates(0.96, 0.96)
     assert trade.max_rate == 1
     assert trade.min_rate == 0.96
 
     # check max adjusted, min remains
-    trade.adjust_min_max_rates(1.05)
+    trade.adjust_min_max_rates(1.05, 1.05)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
 
     # current rate "in the middle" - no adjustment
-    trade.adjust_min_max_rates(1.03)
+    trade.adjust_min_max_rates(1.03, 1.03)
     assert trade.max_rate == 1.05
     assert trade.min_rate == 0.96
+
+    # current rate "in the middle" - no adjustment
+    trade.adjust_min_max_rates(1.10, 0.91)
+    assert trade.max_rate == 1.10
+    assert trade.min_rate == 0.91
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2098,6 +2103,11 @@ def test_update_order_from_ccxt(caplog):
     assert o.order_date is not None
     assert o.ft_is_open
     assert o.order_filled_date is None
+
+    # Order is unfilled, "filled" not set
+    # https://github.com/freqtrade/freqtrade/issues/5404
+    ccxt_order.update({'filled': None, 'remaining': 20.0, 'status': 'canceled'})
+    o.update_from_ccxt_object(ccxt_order)
 
     # Order has been closed
     ccxt_order.update({'filled': 20.0, 'remaining': 0.0, 'status': 'closed'})
