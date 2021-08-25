@@ -13,12 +13,7 @@ def liquidation_price(
     collateral: Optional[Collateral]
 ) -> Optional[float]:
 
-    leverage_exchanges = [
-        'binance',
-        'kraken',
-        'ftx'
-    ]
-    if trading_mode == TradingMode.SPOT or exchange_name.lower() not in leverage_exchanges:
+    if trading_mode == TradingMode.SPOT:
         return None
 
     if not collateral:
@@ -34,7 +29,7 @@ def liquidation_price(
     elif exchange_name.lower() == "ftx":
         return ftx(open_rate, is_short, leverage, trading_mode, collateral)
     raise OperationalException(
-        f"liquidation_price is not yet implemented for {exchange_name}"
+        f"liquidation_price is not implemented for {exchange_name}"
     )
 
 
