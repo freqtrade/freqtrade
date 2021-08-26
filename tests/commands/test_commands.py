@@ -806,7 +806,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     start_list_strategies(pargs)
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy.py" not in captured.out
+    assert "legacy_strategy_v1.py" not in captured.out
     assert "DefaultStrategy" in captured.out
 
     # Test regular output
@@ -821,7 +821,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     start_list_strategies(pargs)
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
-    assert "legacy_strategy.py" in captured.out
+    assert "legacy_strategy_v1.py" in captured.out
     assert "DefaultStrategy" in captured.out
 
 
