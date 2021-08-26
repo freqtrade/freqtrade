@@ -103,7 +103,7 @@ class FreqtradeBot(LoggingMixin):
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.trading_mode = TradingMode.SPOT
+        self.trading_mode = self.config['trading_mode']
         if self.trading_mode == TradingMode.FUTURES:
             self.funding_fee = FundingFee()
             self.funding_fee.start()
@@ -243,6 +243,10 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
+    def get_funding_fees():
+        if self.trading_mode == TradingMode.FUTURES:
+            return
+
     def update_open_orders(self):
         """
         Updates open orders based on order list kept in the database.
@@ -258,7 +262,6 @@ class FreqtradeBot(LoggingMixin):
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
-
                 self.update_trade_state(order.trade, order.order_id, fo)
 
             except ExchangeError as e:

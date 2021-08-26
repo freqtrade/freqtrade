@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, Optional
+from typing import Dict
 
 import ccxt
 
@@ -89,17 +89,3 @@ class Binance(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    # https://www.binance.com/en/support/faq/360033525031
-    def get_funding_fee(
-        self,
-        contract_size: float,
-        mark_price: float,
-        rate: Optional[float],
-        # index_price: float,
-        # interest_rate: float
-    ):
-        assert isinstance(rate, float)
-        nominal_value = mark_price * contract_size
-        adjustment = nominal_value * rate
-        return adjustment

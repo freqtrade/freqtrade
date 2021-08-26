@@ -1,6 +1,6 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import ccxt
 
@@ -152,18 +152,3 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
-
-    # https://help.ftx.com/hc/en-us/articles/360027946571-Funding
-    def get_funding_fee(
-        self,
-        contract_size: float,
-        mark_price: float,
-        rate: Optional[float],
-        # index_price: float,
-        # interest_rate: float
-    ):
-        """
-            Always paid in USD on FTX # TODO: How do we account for this
-        """
-        (contract_size * mark_price) / 24
-        return
