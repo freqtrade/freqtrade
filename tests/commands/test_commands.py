@@ -807,7 +807,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy_v1.py" not in captured.out
-    assert "DefaultStrategy" in captured.out
+    assert "StrategyTestV2" in captured.out
 
     # Test regular output
     args = [
@@ -822,7 +822,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy_v1.py" in captured.out
-    assert "DefaultStrategy" in captured.out
+    assert "StrategyTestV2" in captured.out
 
 
 def test_start_list_hyperopts(mocker, caplog, capsys):

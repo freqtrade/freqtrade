@@ -18,7 +18,7 @@ def test_search_strategy():
 
     s, _ = StrategyResolver._search_object(
         directory=default_location,
-        object_name='DefaultStrategy',
+        object_name='StrategyTestV2',
         add_source=True,
     )
     assert issubclass(s, IStrategy)
@@ -74,10 +74,10 @@ def test_load_strategy_base64(result, caplog, default_conf):
 
 
 def test_load_strategy_invalid_directory(result, caplog, default_conf):
-    default_conf['strategy'] = 'DefaultStrategy'
+    default_conf['strategy'] = 'StrategyTestV2'
     extra_dir = Path.cwd() / 'some/path'
     with pytest.raises(OperationalException):
-        StrategyResolver._load_strategy('DefaultStrategy', config=default_conf,
+        StrategyResolver._load_strategy('StrategyTestV2', config=default_conf,
                                         extra_dir=extra_dir)
 
     assert log_has_re(r'Path .*' + r'some.*path.*' + r'.* does not exist', caplog)
@@ -100,7 +100,7 @@ def test_load_strategy_noname(default_conf):
 
 
 def test_strategy(result, default_conf):
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
 
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
@@ -127,7 +127,7 @@ def test_strategy(result, default_conf):
 def test_strategy_override_minimal_roi(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'minimal_roi': {
             "20": 0.1,
             "0": 0.5
@@ -144,7 +144,7 @@ def test_strategy_override_minimal_roi(caplog, default_conf):
 def test_strategy_override_stoploss(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'stoploss': -0.5
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -156,7 +156,7 @@ def test_strategy_override_stoploss(caplog, default_conf):
 def test_strategy_override_trailing_stop(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'trailing_stop': True
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -169,7 +169,7 @@ def test_strategy_override_trailing_stop(caplog, default_conf):
 def test_strategy_override_trailing_stop_positive(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'trailing_stop_positive': -0.1,
         'trailing_stop_positive_offset': -0.2
 
@@ -189,7 +189,7 @@ def test_strategy_override_timeframe(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'timeframe': 60,
         'stake_currency': 'ETH'
     })
@@ -205,7 +205,7 @@ def test_strategy_override_process_only_new_candles(caplog, default_conf):
     caplog.set_level(logging.INFO)
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'process_only_new_candles': True
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -225,7 +225,7 @@ def test_strategy_override_order_types(caplog, default_conf):
         'stoploss_on_exchange': True,
     }
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'order_types': order_types
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -239,12 +239,12 @@ def test_strategy_override_order_types(caplog, default_conf):
                    " 'stoploss_on_exchange': True}.", caplog)
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'order_types': {'buy': 'market'}
     })
     # Raise error for invalid configuration
     with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                       match=r"Impossible to load Strategy 'StrategyTestV2'. "
                              r"Order-types mapping is incomplete."):
         StrategyResolver.load_strategy(default_conf)
 
@@ -258,7 +258,7 @@ def test_strategy_override_order_tif(caplog, default_conf):
     }
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'order_time_in_force': order_time_in_force
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -271,12 +271,12 @@ def test_strategy_override_order_tif(caplog, default_conf):
                    " {'buy': 'fok', 'sell': 'gtc'}.", caplog)
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'order_time_in_force': {'buy': 'fok'}
     })
     # Raise error for invalid configuration
     with pytest.raises(ImportError,
-                       match=r"Impossible to load Strategy 'DefaultStrategy'. "
+                       match=r"Impossible to load Strategy 'StrategyTestV2'. "
                              r"Order-time-in-force mapping is incomplete."):
         StrategyResolver.load_strategy(default_conf)
 
@@ -284,7 +284,7 @@ def test_strategy_override_order_tif(caplog, default_conf):
 def test_strategy_override_use_sell_signal(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
     })
     strategy = StrategyResolver.load_strategy(default_conf)
     assert strategy.use_sell_signal
@@ -294,7 +294,7 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
     assert default_conf['use_sell_signal']
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'use_sell_signal': False,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -307,7 +307,7 @@ def test_strategy_override_use_sell_signal(caplog, default_conf):
 def test_strategy_override_use_sell_profit_only(caplog, default_conf):
     caplog.set_level(logging.INFO)
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
     })
     strategy = StrategyResolver.load_strategy(default_conf)
     assert not strategy.sell_profit_only
@@ -317,7 +317,7 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
     assert not default_conf['sell_profit_only']
 
     default_conf.update({
-        'strategy': 'DefaultStrategy',
+        'strategy': 'StrategyTestV2',
         'sell_profit_only': True,
     })
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -395,7 +395,7 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
 
 
 def test_strategy_interface_versioning(result, monkeypatch, default_conf):
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
 

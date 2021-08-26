@@ -155,7 +155,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--export', 'none'
     ]
 
@@ -190,7 +190,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--enable-position-stacking',
@@ -240,7 +240,7 @@ def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog)
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--stake-amount', '1',
         '--starting-balance', '2'
     ]
@@ -251,7 +251,7 @@ def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog)
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--stake-amount', '1',
         '--starting-balance', '0.5'
     ]
@@ -269,7 +269,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
     ]
     pargs = get_args(args)
     start_backtesting(pargs)
@@ -302,7 +302,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
 def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     del default_conf['timeframe']
-    default_conf['strategy_list'] = ['DefaultStrategy',
+    default_conf['strategy_list'] = ['StrategyTestV2',
                                      'SampleStrategy']
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
@@ -340,7 +340,7 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     assert len(processed['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     processed2 = strategy.advise_all_indicators(data)
@@ -473,7 +473,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     Backtesting(default_conf)
 
     # Multiple strategies
-    default_conf['strategy_list'] = ['DefaultStrategy', 'TestStrategyLegacyV1']
+    default_conf['strategy_list'] = ['StrategyTestV2', 'TestStrategyLegacyV1']
     with pytest.raises(OperationalException,
                        match='PrecisionFilter not allowed for backtesting multiple strategies.'):
         Backtesting(default_conf)
@@ -837,7 +837,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--datadir', str(testdatadir),
         '--timeframe', '1m',
         '--timerange', '1510694220-1510700340',
@@ -908,7 +908,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'TestStrategyLegacyV1',
     ]
     args = get_args(args)
@@ -931,7 +931,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'Backtesting with data from 2017-11-14 21:17:00 '
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
-        'Running backtesting for Strategy DefaultStrategy',
+        'Running backtesting for Strategy StrategyTestV2',
         'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 
@@ -1012,7 +1012,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'TestStrategyLegacyV1',
     ]
     args = get_args(args)
@@ -1029,7 +1029,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'Backtesting with data from 2017-11-14 21:17:00 '
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
-        'Running backtesting for Strategy DefaultStrategy',
+        'Running backtesting for Strategy StrategyTestV2',
         'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 

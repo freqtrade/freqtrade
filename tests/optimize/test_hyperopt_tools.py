@@ -167,7 +167,7 @@ def test__pprint_dict():
 
 def test_get_strategy_filename(default_conf):
 
-    x = HyperoptTools.get_strategy_filename(default_conf, 'DefaultStrategy')
+    x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV2')
     assert isinstance(x, Path)
     assert x == Path(__file__).parents[1] / 'strategy/strats/default_strategy.py'
 
@@ -177,7 +177,7 @@ def test_get_strategy_filename(default_conf):
 
 def test_export_params(tmpdir):
 
-    filename = Path(tmpdir) / "DefaultStrategy.json"
+    filename = Path(tmpdir) / "StrategyTestV2.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -205,12 +205,12 @@ def test_export_params(tmpdir):
         }
 
     }
-    HyperoptTools.export_params(params, "DefaultStrategy", filename)
+    HyperoptTools.export_params(params, "StrategyTestV2", filename)
 
     assert filename.is_file()
 
     content = rapidjson.load(filename.open('r'))
-    assert content['strategy_name'] == 'DefaultStrategy'
+    assert content['strategy_name'] == 'StrategyTestV2'
     assert 'params' in content
     assert "buy" in content["params"]
     assert "sell" in content["params"]
@@ -223,7 +223,7 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
     default_conf['disableparamexport'] = False
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
-    filename = Path(tmpdir) / "DefaultStrategy.json"
+    filename = Path(tmpdir) / "StrategyTestV2.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -252,16 +252,16 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
         FTHYPT_FILEVERSION: 2,
 
     }
-    HyperoptTools.try_export_params(default_conf, "DefaultStrategy22", params)
+    HyperoptTools.try_export_params(default_conf, "StrategyTestV222", params)
 
     assert log_has("Strategy not found, not exporting parameter file.", caplog)
     assert export_mock.call_count == 0
     caplog.clear()
 
-    HyperoptTools.try_export_params(default_conf, "DefaultStrategy", params)
+    HyperoptTools.try_export_params(default_conf, "StrategyTestV2", params)
 
     assert export_mock.call_count == 1
-    assert export_mock.call_args_list[0][0][1] == 'DefaultStrategy'
+    assert export_mock.call_args_list[0][0][1] == 'StrategyTestV2'
     assert export_mock.call_args_list[0][0][2].name == 'default_strategy.json'
 
 
