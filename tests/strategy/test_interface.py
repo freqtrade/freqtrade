@@ -22,7 +22,7 @@ from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
-from .strats.default_strategy import StrategyTestV2
+from .strats.strategy_test_v2 import StrategyTestV2
 
 
 # Avoid to reinit the same object again and again

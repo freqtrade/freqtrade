@@ -169,7 +169,7 @@ def test_get_strategy_filename(default_conf):
 
     x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV2')
     assert isinstance(x, Path)
-    assert x == Path(__file__).parents[1] / 'strategy/strats/default_strategy.py'
+    assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v2.py'
 
     x = HyperoptTools.get_strategy_filename(default_conf, 'NonExistingStrategy')
     assert x is None
@@ -262,7 +262,7 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
 
     assert export_mock.call_count == 1
     assert export_mock.call_args_list[0][0][1] == 'StrategyTestV2'
-    assert export_mock.call_args_list[0][0][2].name == 'default_strategy.json'
+    assert export_mock.call_args_list[0][0][2].name == 'strategy_test_v2.json'
 
 
 def test_params_print(capsys):

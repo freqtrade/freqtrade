@@ -4,10 +4,10 @@ from pandas import DataFrame
 
 from freqtrade.persistence.models import Trade
 
-from .strats.default_strategy import StrategyTestV2
+from .strats.strategy_test_v2 import StrategyTestV2
 
 
-def test_default_strategy_structure():
+def test_strategy_test_v2_structure():
     assert hasattr(StrategyTestV2, 'minimal_roi')
     assert hasattr(StrategyTestV2, 'stoploss')
     assert hasattr(StrategyTestV2, 'timeframe')
@@ -16,7 +16,7 @@ def test_default_strategy_structure():
     assert hasattr(StrategyTestV2, 'populate_sell_trend')
 
 
-def test_default_strategy(result, fee):
+def test_strategy_test_v2(result, fee):
     strategy = StrategyTestV2({})
 
     metadata = {'pair': 'ETH/BTC'}

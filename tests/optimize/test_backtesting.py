@@ -694,7 +694,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
-    # Override the default buy trend function in our default_strategy
+    # Override the default buy trend function in our StrategyTestV2
     def fun(dataframe=None, pair=None):
         buy_value = 1
         sell_value = 1
@@ -710,7 +710,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
 
 
 def test_backtest_only_sell(mocker, default_conf, testdatadir):
-    # Override the default buy trend function in our default_strategy
+    # Override the default buy trend function in our StrategyTestV2
     def fun(dataframe=None, pair=None):
         buy_value = 0
         sell_value = 1

@@ -1217,8 +1217,8 @@ def test_api_strategies(botclient):
 
     assert_response(rc)
     assert rc.json() == {'strategies': [
-        'StrategyTestV2',
         'HyperoptableStrategy',
+        'StrategyTestV2',
         'TestStrategyLegacyV1'
     ]}
 
@@ -1231,7 +1231,7 @@ def test_api_strategy(botclient):
     assert_response(rc)
     assert rc.json()['strategy'] == 'StrategyTestV2'
 
-    data = (Path(__file__).parents[1] / "strategy/strats/default_strategy.py").read_text()
+    data = (Path(__file__).parents[1] / "strategy/strats/strategy_test_v2.py").read_text()
     assert rc.json()['code'] == data
 
     rc = client_get(client, f"{BASE_URI}/strategy/NoStrat")
