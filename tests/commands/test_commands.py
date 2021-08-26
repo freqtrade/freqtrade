@@ -839,7 +839,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestHyperoptLegacy" not in captured.out
     assert "legacy_hyperopt.py" not in captured.out
-    assert "DefaultHyperOpt" in captured.out
+    assert "HyperoptTestSepFile" in captured.out
     assert "test_hyperopt.py" not in captured.out
 
     # Test regular output
@@ -854,7 +854,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestHyperoptLegacy" not in captured.out
     assert "legacy_hyperopt.py" not in captured.out
-    assert "DefaultHyperOpt" in captured.out
+    assert "HyperoptTestSepFile" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):

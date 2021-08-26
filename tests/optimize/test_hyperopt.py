@@ -22,7 +22,7 @@ from freqtrade.strategy.hyper import IntParameter
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
-from .hyperopts.default_hyperopt import DefaultHyperOpt
+from .hyperopts.hyperopt_test_sep_file import HyperoptTestSepFile
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -31,7 +31,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
     ]
 
     config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
@@ -63,7 +63,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--timerange', ':100',
@@ -115,7 +115,7 @@ def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--stake-amount', '1',
         '--starting-balance', '2'
     ]
@@ -136,7 +136,7 @@ def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None
 def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
-    hyperopt = DefaultHyperOpt
+    hyperopt = HyperoptTestSepFile
     delattr(hyperopt, 'populate_indicators')
     delattr(hyperopt, 'populate_buy_trend')
     delattr(hyperopt, 'populate_sell_trend')
@@ -144,7 +144,7 @@ def test_hyperoptresolver(mocker, default_conf, caplog) -> None:
         'freqtrade.resolvers.hyperopt_resolver.HyperOptResolver.load_object',
         MagicMock(return_value=hyperopt(default_conf))
     )
-    default_conf.update({'hyperopt': 'DefaultHyperOpt'})
+    default_conf.update({'hyperopt': 'HyperoptTestSepFile'})
     x = HyperOptResolver.load_hyperopt(default_conf)
     assert not hasattr(x, 'populate_indicators')
     assert not hasattr(x, 'populate_buy_trend')
@@ -184,7 +184,7 @@ def test_start_not_installed(mocker, default_conf, import_fails) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--hyperopt-path',
         str(Path(__file__).parent / "hyperopts"),
         '--epochs', '5',
@@ -205,7 +205,7 @@ def test_start(mocker, hyperopt_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
@@ -229,7 +229,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
@@ -247,7 +247,7 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'DefaultHyperOpt',
+        '--hyperopt', 'HyperoptTestSepFile',
         '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]
