@@ -613,7 +613,7 @@ class RPC:
         stakeamount = self._freqtrade.wallets.get_trade_stake_amount(pair)
 
         # execute buy
-        if self._freqtrade.execute_buy(pair, stakeamount, price, forcebuy=True):
+        if self._freqtrade.execute_entry(pair, stakeamount, price, forcebuy=True):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade

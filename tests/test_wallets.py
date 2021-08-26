@@ -157,13 +157,13 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     assert result == result1
 
     # create one trade, order amount should be 'balance / (max_open_trades - num_open_trades)'
-    freqtrade.execute_buy('ETH/USDT', result)
+    freqtrade.execute_entry('ETH/USDT', result)
 
     result = freqtrade.wallets.get_trade_stake_amount('LTC/USDT')
     assert result == result1
 
     # create 2 trades, order amount should be None
-    freqtrade.execute_buy('LTC/BTC', result)
+    freqtrade.execute_entry('LTC/BTC', result)
 
     result = freqtrade.wallets.get_trade_stake_amount('XRP/USDT')
     assert result == 0

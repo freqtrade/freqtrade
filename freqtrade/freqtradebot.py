@@ -433,11 +433,11 @@ class FreqtradeBot(LoggingMixin):
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
+                    return self.execute_entry(pair, stake_amount, buy_tag=buy_tag)
                 else:
                     return False
 
-            return self.execute_buy(pair, stake_amount, buy_tag=buy_tag)
+            return self.execute_entry(pair, stake_amount, buy_tag=buy_tag)
         else:
             return False
 
@@ -465,8 +465,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def execute_buy(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                    forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
+    def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None,
+                      forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
