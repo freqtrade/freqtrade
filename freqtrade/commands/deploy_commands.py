@@ -126,8 +126,6 @@ def start_new_hyperopt(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if 'hyperopt' in args and args['hyperopt']:
-        if args['hyperopt'] == 'DefaultHyperopt':
-            raise OperationalException("DefaultHyperopt is not allowed as name.")
 
         new_path = config['user_data_dir'] / USERPATH_HYPEROPTS / (args['hyperopt'] + '.py')
 
