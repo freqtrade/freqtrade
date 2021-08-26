@@ -162,7 +162,7 @@ AVAILABLE_CLI_OPTIONS = {
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
-        '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
+        '(so `backtest-data.json` becomes `backtest-data-SampleStrategy.json`',
         nargs='+',
     ),
     "export": Arg(

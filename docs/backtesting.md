@@ -62,7 +62,7 @@ optional arguments:
                         this together with `--export trades`, the strategy-
                         name is injected into the filename (so `backtest-
                         data.json` becomes `backtest-data-
-                        DefaultStrategy.json`
+                        SampleStrategy.json`
   --export {none,trades}
                         Export backtest results (default: trades).
   --export-filename PATH

@@ -404,7 +404,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -441,7 +441,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
         '--ticker-interval', '1m',
@@ -498,7 +498,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--export', 'trades',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'TestStrategy'
     ]
 

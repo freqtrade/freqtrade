@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.default_hyperopt_loss import ShortTradeDurHyperOptLoss
+from freqtrade.optimize.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
 
