@@ -473,7 +473,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     Backtesting(default_conf)
 
     # Multiple strategies
-    default_conf['strategy_list'] = ['DefaultStrategy', 'TestStrategyLegacy']
+    default_conf['strategy_list'] = ['DefaultStrategy', 'TestStrategyLegacyV1']
     with pytest.raises(OperationalException,
                        match='PrecisionFilter not allowed for backtesting multiple strategies.'):
         Backtesting(default_conf)
@@ -909,7 +909,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--disable-max-market-positions',
         '--strategy-list',
         'DefaultStrategy',
-        'TestStrategyLegacy',
+        'TestStrategyLegacyV1',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -932,7 +932,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
-        'Running backtesting for Strategy TestStrategyLegacy',
+        'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 
     for line in exists:
@@ -1013,7 +1013,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--disable-max-market-positions',
         '--strategy-list',
         'DefaultStrategy',
-        'TestStrategyLegacy',
+        'TestStrategyLegacyV1',
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -1030,7 +1030,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
         'Running backtesting for Strategy DefaultStrategy',
-        'Running backtesting for Strategy TestStrategyLegacy',
+        'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 
     for line in exists:

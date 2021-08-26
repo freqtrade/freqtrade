@@ -816,7 +816,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacy" in captured.out
+    assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy.py" not in captured.out
     assert "DefaultStrategy" in captured.out
 
@@ -831,7 +831,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacy" in captured.out
+    assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy.py" in captured.out
     assert "DefaultStrategy" in captured.out
 

@@ -330,7 +330,7 @@ def test_strategy_override_use_sell_profit_only(caplog, default_conf):
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_deprecate_populate_indicators(result, default_conf):
     default_location = Path(__file__).parent / "strats"
-    default_conf.update({'strategy': 'TestStrategyLegacy',
+    default_conf.update({'strategy': 'TestStrategyLegacyV1',
                          'strategy_path': default_location})
     strategy = StrategyResolver.load_strategy(default_conf)
     with warnings.catch_warnings(record=True) as w:
@@ -365,7 +365,7 @@ def test_deprecate_populate_indicators(result, default_conf):
 def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"
     del default_conf['timeframe']
-    default_conf.update({'strategy': 'TestStrategyLegacy',
+    default_conf.update({'strategy': 'TestStrategyLegacyV1',
                          'strategy_path': default_location})
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
