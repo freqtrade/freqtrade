@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -16,7 +16,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.leverage.interest import interest
+from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -57,7 +57,7 @@ def init_db(db_url: str, clean_open_orders: bool = False) -> None:
                                    f"is no valid database URL! (See {_SQL_DOCS_URL})")
 
     # https://docs.sqlalchemy.org/en/13/orm/contextual.html#thread-local-scope
-    # Scoped sessions proxy reque sts to the appropriate thread-local session.
+    # Scoped sessions proxy requests to the appropriate thread-local session.
     # We should use the scoped_session object - not a seperately initialized version
     Trade._session = scoped_session(sessionmaker(bind=engine, autoflush=True))
     Trade.query = Trade._session.query_property()
@@ -91,12 +91,6 @@ def clean_dry_run_db() -> None:
         if 'dry_run' in trade.open_order_id:
             trade.open_order_id = None
     Trade.commit()
-
-
-def hour_rounder(t):
-    # Rounds to nearest hour by adding a timedelta hour if minute >= 30
-    return (
-        t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(hours=t.minute//30))
 
 
 class Order(_DECL_BASE):
@@ -282,8 +276,7 @@ class LocalTrade():
     interest_rate: float = 0.0
 
     # Futures properties
-    funding_fee: Optional[float] = None
-    last_funding_adjustment: Optional[datetime] = None
+    funding_fees: Optional[float] = None
 
     @property
     def has_no_leverage(self) -> bool:
@@ -451,9 +444,7 @@ class LocalTrade():
             'isolated_liq': self.isolated_liq,
             'is_short': self.is_short,
             'trading_mode': self.trading_mode,
-            'funding_fee': self.funding_fee,
-            'last_funding_adjustment': (self.last_funding_adjustment.strftime(DATETIME_PRINT_FORMAT)
-                                        if self.last_funding_adjustment else None),
+            'funding_fees': self.funding_fees,
             'open_order_id': self.open_order_id,
         }
 
@@ -530,10 +521,6 @@ class LocalTrade():
             f"stop_loss={self.stop_loss:.8f}. "
             f"Trailing stoploss saved us: "
             f"{float(self.stop_loss) - float(self.initial_stop_loss):.8f}.")
-
-    def adjust_funding_fee(self, adjustment):
-        self.funding_fee = self.funding_fee + adjustment
-        self.last_funding_adjustment = datetime.utcnow()
 
     def update(self, order: Dict) -> None:
         """
@@ -673,7 +660,6 @@ class LocalTrade():
         rate = Decimal(interest_rate or self.interest_rate)
         borrowed = Decimal(self.borrowed)
 
-        # TODO-lev: Pass trading mode to interest maybe
         return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
 
     def _calc_base_close(self, amount: Decimal, rate: Optional[float] = None,
@@ -721,11 +707,8 @@ class LocalTrade():
                 return float(self._calc_base_close(amount, rate, fee) - total_interest)
 
         elif (trading_mode == TradingMode.FUTURES):
-            funding_fee = self.funding_fee or 0.0
-            if self.is_short:
-                return float(self._calc_base_close(amount, rate, fee)) + funding_fee
-            else:
-                return float(self._calc_base_close(amount, rate, fee)) - funding_fee
+            funding_fees = self.funding_fees or 0.0
+            return float(self._calc_base_close(amount, rate, fee)) + funding_fees
         else:
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
@@ -938,16 +921,16 @@ class Trade(_DECL_BASE, LocalTrade):
 
     trading_mode = Column(Enum(TradingMode))
 
+    # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
-    isolated_liq = Column(Float, nullable=True)
     is_short = Column(Boolean, nullable=False, default=False)
+    isolated_liq = Column(Float, nullable=True)
 
-    # Margin properties
+    # Margin Trading Properties
     interest_rate = Column(Float, nullable=False, default=0.0)
 
     # Futures properties
-    funding_fee = Column(Float, nullable=True, default=None)
-    last_funding_adjustment = Column(DateTime, nullable=True)
+    funding_fees = Column(Float, nullable=True, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

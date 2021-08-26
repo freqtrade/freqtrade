@@ -3,7 +3,7 @@ from math import isclose
 
 import pytest
 
-from freqtrade.leverage.interest import interest
+from freqtrade.leverage import interest
 
 
 ten_mins = Decimal(1/6)

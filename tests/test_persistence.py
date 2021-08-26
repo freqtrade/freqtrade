@@ -1724,8 +1724,7 @@ def test_to_json(default_conf, fee):
                       'isolated_liq': None,
                       'is_short': None,
                       'trading_mode': None,
-                      'funding_fee': None,
-                      'last_funding_adjustment': None
+                      'funding_fees': None,
                       }
 
     # Simulate dry_run entries
@@ -1798,8 +1797,7 @@ def test_to_json(default_conf, fee):
                       'isolated_liq': None,
                       'is_short': None,
                       'trading_mode': None,
-                      'funding_fee': None,
-                      'last_funding_adjustment': None
+                      'funding_fees': None,
                       }
 
 
@@ -2219,7 +2217,6 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
-        'last_funding_adjustment'
     )
 
     # Parent (LocalTrade) should have the same attributes

@@ -20,7 +20,6 @@ from freqtrade.enums import RPCMessageType, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
-from freqtrade.leverage.funding_fee import FundingFee
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -103,10 +102,10 @@ class FreqtradeBot(LoggingMixin):
         self._sell_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.trading_mode = self.config['trading_mode']
-        if self.trading_mode == TradingMode.FUTURES:
-            self.funding_fee = FundingFee()
-            self.funding_fee.start()
+        if 'trading_mode' in self.config:
+            self.trading_mode = self.config['trading_mode']
+        else:
+            self.trading_mode = TradingMode.SPOT
 
     def notify_status(self, msg: str) -> None:
         """
@@ -243,9 +242,10 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
-    def get_funding_fees():
+    def add_funding_fees(self, trade: Trade):
         if self.trading_mode == TradingMode.FUTURES:
-            return
+            funding_fees = self.exchange.get_funding_fees(trade.pair, trade.open_date)
+            trade.funding_fees = funding_fees
 
     def update_open_orders(self):
         """
@@ -262,6 +262,7 @@ class FreqtradeBot(LoggingMixin):
             try:
                 fo = self.exchange.fetch_order_or_stoploss_order(order.order_id, order.ft_pair,
                                                                  order.ft_order_side == 'stoploss')
+
                 self.update_trade_state(order.trade, order.order_id, fo)
 
             except ExchangeError as e:
@@ -568,10 +569,6 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             buy_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
-        funding_fee = (self.funding_fee.initial_funding_fee(amount)
-                       if self.trading_mode == TradingMode.FUTURES
-                       else None)
-
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -590,13 +587,9 @@ class FreqtradeBot(LoggingMixin):
             strategy=self.strategy.get_strategy_name(),
             buy_tag=buy_tag,
             timeframe=timeframe_to_minutes(self.config['timeframe']),
-            funding_fee=funding_fee,
             trading_mode=self.trading_mode
         )
         trade.orders.append(order_obj)
-
-        if self.trading_mode == TradingMode.FUTURES:
-            self.funding_fee.add_new_trade(trade)
 
         # Update fees if order is closed
         if order_status == 'closed':

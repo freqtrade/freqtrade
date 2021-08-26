@@ -61,8 +61,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     interest_rate = get_column_def(cols, 'interest_rate', '0.0')
 
     # Futures properties
-    funding_fee = get_column_def(cols, 'funding_fee', '0.0')
-    last_funding_adjustment = get_column_def(cols, 'last_funding_adjustment', 'null')
+    funding_fees = get_column_def(cols, 'funding_fees', '0.0')
 
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
@@ -102,7 +101,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, isolated_liq, is_short,
-            interest_rate, funding_fee, last_funding_adjustment
+            interest_rate, funding_fees
             )
         select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
@@ -121,7 +120,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {isolated_liq} isolated_liq,
             {is_short} is_short, {interest_rate} interest_rate,
-            {funding_fee} funding_fee, {last_funding_adjustment} last_funding_adjustment
+            {funding_fees} funding_fees
             from {table_back_name}
             """))
 
