@@ -745,7 +745,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Selling the trade forcefully')
-            self.execute_sell(trade, trade.stop_loss, sell_reason=SellCheckTuple(
+            self.execute_trade_exit(trade, trade.stop_loss, sell_reason=SellCheckTuple(
                 sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
@@ -863,7 +863,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_sell.sell_flag:
             logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_sell(trade, sell_rate, should_sell)
+            self.execute_trade_exit(trade, sell_rate, should_sell)
             return True
         return False
 
@@ -1064,9 +1064,9 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_sell(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
+    def execute_trade_exit(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
         """
-        Executes a limit sell for the given trade and limit
+        Executes a trade exit for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sell_reason: Reason the sell was triggered
