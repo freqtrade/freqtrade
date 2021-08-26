@@ -510,17 +510,6 @@ def test_start_new_strategy(mocker, caplog):
         start_new_strategy(get_args(args))
 
 
-def test_start_new_strategy_DefaultStrat(mocker, caplog):
-    args = [
-        "new-strategy",
-        "--strategy",
-        "DefaultStrategy"
-    ]
-    with pytest.raises(OperationalException,
-                       match=r"DefaultStrategy is not allowed as name\."):
-        start_new_strategy(get_args(args))
-
-
 def test_start_new_strategy_no_arg(mocker, caplog):
     args = [
         "new-strategy",

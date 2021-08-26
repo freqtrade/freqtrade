@@ -74,8 +74,6 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
-        if args["strategy"] == "DefaultStrategy":
-            raise OperationalException("DefaultStrategy is not allowed as name.")
 
         new_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args['strategy'] + '.py')
 
