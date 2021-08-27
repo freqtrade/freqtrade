@@ -9,3 +9,4 @@ from freqtrade.enums.selltype import SellType
 from freqtrade.enums.signaltype import SignalDirection, SignalTagType, SignalType
 from freqtrade.enums.state import State
 from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums.marginmode import MarginMode
