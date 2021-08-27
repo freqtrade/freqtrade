@@ -945,7 +945,7 @@ class FreqtradeBot(LoggingMixin):
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
-        if order['status'] not in ('cancelled', 'canceled', 'closed'):
+        if order['status'] not in constants.NON_OPEN_EXCHANGE_STATES:
             filled_val = order.get('filled', 0.0) or 0.0
             filled_stake = filled_val * trade.open_rate
             minstake = self.exchange.get_min_pair_stake_amount(
@@ -961,7 +961,7 @@ class FreqtradeBot(LoggingMixin):
             # Avoid race condition where the order could not be cancelled coz its already filled.
             # Simply bailing here is the only safe way - as this order will then be
             # handled in the next iteration.
-            if corder.get('status') not in ('cancelled', 'canceled', 'closed'):
+            if corder.get('status') not in constants.NON_OPEN_EXCHANGE_STATES:
                 logger.warning(f"Order {trade.open_order_id} for {trade.pair} not cancelled.")
                 return False
         else:
@@ -1142,7 +1142,7 @@ class FreqtradeBot(LoggingMixin):
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
-        if order.get('status', 'unknown') == 'closed':
+        if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
         Trade.commit()
 
