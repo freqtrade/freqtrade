@@ -335,7 +335,7 @@ Once the optimized parameters and conditions have been implemented into your str
 
 To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same configuration and parameters (timerange, timeframe, ...) used for hyperopt `--dmmp`/`--disable-max-market-positions` and `--eps`/`--enable-position-stacking` for Backtesting.
 
-Should results don't match, please double-check to make sure you transferred all conditions correctly.
+Should results not match, please double-check to make sure you transferred all conditions correctly.
 Pay special care to the stoploss (and trailing stoploss) parameters, as these are often set in configuration files, which override changes to the strategy.
 You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like `stoploss` or `trailing_stop`).
 
