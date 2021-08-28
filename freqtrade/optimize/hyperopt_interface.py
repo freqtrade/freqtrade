@@ -57,6 +57,13 @@ class IHyperOpt(ABC):
         """
         raise OperationalException(_format_exception_message('sell_strategy_generator', 'sell'))
 
+    def protection_space(self) -> List[Dimension]:
+        """
+        Create a protection space.
+        Only supported by the Parameter interface.
+        """
+        raise OperationalException(_format_exception_message('indicator_space', 'protection'))
+
     def indicator_space(self) -> List[Dimension]:
         """
         Create an indicator space.

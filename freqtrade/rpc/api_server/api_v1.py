@@ -199,8 +199,8 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
                  config=Depends(get_config)):
     config = deepcopy(config)
     config.update({
-            'strategy': strategy,
-        })
+        'strategy': strategy,
+    })
     return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
 
 
@@ -223,11 +223,11 @@ def list_strategies(config=Depends(get_config)):
 @router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
 def get_strategy(strategy: str, config=Depends(get_config)):
 
-    config = deepcopy(config)
+    config_ = deepcopy(config)
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
     try:
-        strategy_obj = StrategyResolver._load_strategy(strategy, config,
-                                                       extra_dir=config.get('strategy_path'))
+        strategy_obj = StrategyResolver._load_strategy(strategy, config_,
+                                                       extra_dir=config_.get('strategy_path'))
     except OperationalException:
         raise HTTPException(status_code=404, detail='Strategy not found')
 

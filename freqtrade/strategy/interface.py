@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalType
+from freqtrade.enums import SellType, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -280,6 +280,43 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return self.stoploss
 
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           **kwargs) -> float:
+        """
+        Custom entry price logic, returning the new entry price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set entry price
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+        """
+        return proposed_rate
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+        """
+        Custom exit price logic, returning the new exit price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set exit price
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New exit price value if provided
+        """
+        return proposed_rate
+
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
@@ -288,10 +325,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         time. This method is not called when sell signal is set.
 
         This method should be overridden to create sell signals that depend on trade parameters. For
-        example you could implement a stoploss relative to candle when trade was opened, or a custom
-        1:2 risk-reward ROI.
+        example you could implement a sell relative to the candle when the trade was opened,
+        or a custom 1:2 risk-reward ROI.
 
-        Custom sell reason max length is 64. Exceeding this limit will raise OperationalException.
+        Custom sell reason max length is 64. Exceeding characters will be removed.
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
@@ -422,6 +459,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
+            dataframe['buy_tag'] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -482,8 +520,6 @@ class IStrategy(ABC, HyperStrategyMixin):
             message = "No dataframe returned (return statement missing?)."
         elif 'buy' not in dataframe:
             message = "Buy column not set."
-        elif 'sell' not in dataframe:
-            message = "Sell column not set."
         elif df_len != len(dataframe):
             message = message_template.format("length")
         elif df_close != dataframe["close"].iloc[-1]:
@@ -496,7 +532,12 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 raise StrategyError(message)
 
-    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(
+        self,
+        pair: str,
+        timeframe: str,
+        dataframe: DataFrame
+    ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
@@ -507,7 +548,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False
+            return False, False, None
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -522,9 +563,16 @@ class IStrategy(ABC, HyperStrategyMixin):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False
+            return False, False, None
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+        buy = latest[SignalType.BUY.value] == 1
+
+        sell = False
+        if SignalType.SELL.value in latest:
+            sell = latest[SignalType.SELL.value] == 1
+
+        buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
@@ -532,8 +580,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell
-        return buy, sell
+            return False, sell, buy_tag
+        return buy, sell, buy_tag
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
@@ -557,7 +605,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        trade.adjust_min_max_rates(high or current_rate)
+        trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
@@ -721,7 +769,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
         Does not run advise_buy or advise_sell!

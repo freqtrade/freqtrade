@@ -114,6 +114,36 @@ class AwesomeStrategy(IStrategy):
 
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
+## Buy Tag
+
+When your strategy has multiple buy signals, you can name the signal that triggered.
+Then you can access you buy signal on `custom_sell`
+
+```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            (dataframe['rsi'] < 35) &
+            (dataframe['volume'] > 0)
+        ),
+        ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+
+    return dataframe
+
+def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+    if trade.buy_tag == 'buy_signal_rsi' and last_candle['rsi'] > 80:
+        return 'sell_signal_rsi'
+    return None
+
+```
+
+!!! Note
+    `buy_tag` is limited to 100 characters, remaining data will be truncated.
+
+
 ## Custom stoploss
 
 The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
@@ -326,6 +356,55 @@ class AwesomeStrategy(IStrategy):
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ---
+
+## Custom order price rules
+
+By default, freqtrade use the orderbook to automatically set an order price([Relevant documentation](configuration.md#prices-used-for-orders)), you also have the option to create custom order prices based on your strategy.
+
+You can use this feature by creating a `custom_entry_price()` function in your strategy file to customize entry prices and `custom_exit_price()` for exits.
+
+!!! Note
+    If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
+
+### Custom order entry and exit price example
+
+``` python
+from datetime import datetime, timedelta, timezone
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def custom_entry_price(self, pair: str, current_time: datetime,
+                           proposed_rate, **kwargs) -> float:
+
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                timeframe=self.timeframe)
+        new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
+        
+        return new_entryprice
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                timeframe=self.timeframe)
+        new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
+        
+        return new_exitprice
+
+```
+
+!!! Warning
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
+
+!!! Example
+    If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98.
+
+!!! Warning "No backtesting support"
+    Custom entry-prices are currently not supported during backtesting.
 
 ## Custom order timeout rules
 

@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import rapidjson
@@ -15,6 +15,7 @@ from pandas import isna, json_normalize
 from freqtrade.constants import FTHYPT_FILEVERSION, USERPATH_STRATEGIES
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import deep_merge_dicts, round_coin_value, round_dict, safe_value_fallback2
+from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
 
 
 logger = logging.getLogger(__name__)
@@ -82,53 +83,77 @@ class HyperoptTools():
         """
         Tell if the space value is contained in the configuration
         """
-        # The 'trailing' space is not included in the 'default' set of spaces
-        if space == 'trailing':
+        # 'trailing' and 'protection spaces are not included in the 'default' set of spaces
+        if space in ('trailing', 'protection'):
             return any(s in config['spaces'] for s in [space, 'all'])
         else:
             return any(s in config['spaces'] for s in [space, 'all', 'default'])
 
     @staticmethod
-    def _read_results_pickle(results_file: Path) -> List:
+    def _read_results(results_file: Path, batch_size: int = 10) -> Iterator[List[Any]]:
         """
-        Read hyperopt results from pickle file
-        LEGACY method - new files are written as json and cannot be read with this method.
-        """
-        from joblib import load
-
-        logger.info(f"Reading pickled epochs from '{results_file}'")
-        data = load(results_file)
-        return data
-
-    @staticmethod
-    def _read_results(results_file: Path) -> List:
-        """
-        Read hyperopt results from file
+        Stream hyperopt results from file
         """
         import rapidjson
         logger.info(f"Reading epochs from '{results_file}'")
         with results_file.open('r') as f:
-            data = [rapidjson.loads(line) for line in f]
-        return data
+            data = []
+            for line in f:
+                data += [rapidjson.loads(line)]
+                if len(data) >= batch_size:
+                    yield data
+                    data = []
+        yield data
 
     @staticmethod
-    def load_previous_results(results_file: Path) -> List:
-        """
-        Load data for epochs from the file if we have one
-        """
-        epochs: List = []
+    def _test_hyperopt_results_exist(results_file) -> bool:
         if results_file.is_file() and results_file.stat().st_size > 0:
             if results_file.suffix == '.pickle':
-                epochs = HyperoptTools._read_results_pickle(results_file)
-            else:
-                epochs = HyperoptTools._read_results(results_file)
-            # Detection of some old format, without 'is_best' field saved
-            if epochs[0].get('is_best') is None:
+                raise OperationalException(
+                    "Legacy hyperopt results are no longer supported."
+                    "Please rerun hyperopt or use an older version to load this file."
+                )
+            return True
+        else:
+            # No file found.
+            return False
+
+    @staticmethod
+    def load_filtered_results(results_file: Path, config: Dict[str, Any]) -> Tuple[List, int]:
+        filteroptions = {
+            'only_best': config.get('hyperopt_list_best', False),
+            'only_profitable': config.get('hyperopt_list_profitable', False),
+            'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
+            'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
+            'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
+            'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
+            'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
+            'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
+            'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
+            'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
+            'filter_min_objective': config.get('hyperopt_list_min_objective', None),
+            'filter_max_objective': config.get('hyperopt_list_max_objective', None),
+        }
+        if not HyperoptTools._test_hyperopt_results_exist(results_file):
+            # No file found.
+            return [], 0
+
+        epochs = []
+        total_epochs = 0
+        for epochs_tmp in HyperoptTools._read_results(results_file):
+            if total_epochs == 0 and epochs_tmp[0].get('is_best') is None:
                 raise OperationalException(
                     "The file with HyperoptTools results is incompatible with this version "
                     "of Freqtrade and cannot be loaded.")
-            logger.info(f"Loaded {len(epochs)} previous evaluations from disk.")
-        return epochs
+            total_epochs += len(epochs_tmp)
+            epochs += hyperopt_filter_epochs(epochs_tmp, filteroptions, log=False)
+
+        logger.info(f"Loaded {total_epochs} previous evaluations from disk.")
+
+        # Final filter run ...
+        epochs = hyperopt_filter_epochs(epochs, filteroptions, log=True)
+
+        return epochs, total_epochs
 
     @staticmethod
     def show_epoch_details(results, total_epochs: int, print_json: bool,
@@ -149,7 +174,7 @@ class HyperoptTools():
 
         if print_json:
             result_dict: Dict = {}
-            for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+            for s in ['buy', 'sell', 'protection', 'roi', 'stoploss', 'trailing']:
                 HyperoptTools._params_update_for_json(result_dict, params, non_optimized, s)
             print(rapidjson.dumps(result_dict, default=str, number_mode=rapidjson.NM_NATIVE))
 
@@ -158,6 +183,8 @@ class HyperoptTools():
                                                non_optimized)
             HyperoptTools._params_pretty_print(params, 'sell', "Sell hyperspace params:",
                                                non_optimized)
+            HyperoptTools._params_pretty_print(params, 'protection',
+                                               "Protection hyperspace params:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'roi', "ROI table:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'stoploss', "Stoploss:", non_optimized)
             HyperoptTools._params_pretty_print(params, 'trailing', "Trailing stop:", non_optimized)
@@ -203,7 +230,7 @@ class HyperoptTools():
             elif space == "roi":
                 result = result[:-1] + f'{appendix}\n'
                 minimal_roi_result = rapidjson.dumps({
-                        str(k): v for k, v in (space_params or no_params).items()
+                    str(k): v for k, v in (space_params or no_params).items()
                 }, default=str, indent=4, number_mode=rapidjson.NM_NATIVE)
                 result += f"minimal_roi = {minimal_roi_result}"
             elif space == "trailing":
@@ -431,21 +458,14 @@ class HyperoptTools():
         trials['Best'] = ''
         trials['Stake currency'] = config['stake_currency']
 
-        if 'results_metrics.total_trades' in trials:
-            base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
-                            'results_metrics.profit_mean', 'results_metrics.profit_median',
-                            'results_metrics.profit_total',
-                            'Stake currency',
-                            'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
-                            'loss', 'is_initial_point', 'is_best']
-            perc_multi = 100
-        else:
-            perc_multi = 1
-            base_metrics = ['Best', 'current_epoch', 'results_metrics.trade_count',
-                            'results_metrics.avg_profit', 'results_metrics.median_profit',
-                            'results_metrics.total_profit',
-                            'Stake currency', 'results_metrics.profit', 'results_metrics.duration',
-                            'loss', 'is_initial_point', 'is_best']
+        base_metrics = ['Best', 'current_epoch', 'results_metrics.total_trades',
+                        'results_metrics.profit_mean', 'results_metrics.profit_median',
+                        'results_metrics.profit_total',
+                        'Stake currency',
+                        'results_metrics.profit_total_abs', 'results_metrics.holding_avg',
+                        'loss', 'is_initial_point', 'is_best']
+        perc_multi = 100
+
         param_metrics = [("params_dict."+param) for param in results[0]['params_dict'].keys()]
         trials = trials[base_metrics + param_metrics]
 
@@ -473,11 +493,6 @@ class HyperoptTools():
         trials['Avg profit'] = trials['Avg profit'].apply(
             lambda x: f'{x * perc_multi:,.2f}%' if not isna(x) else ""
         )
-        if perc_multi == 1:
-            trials['Avg duration'] = trials['Avg duration'].apply(
-                lambda x: f'{x:,.1f} m' if isinstance(
-                    x, float) else f"{x.total_seconds() // 60:,.1f} m" if not isna(x) else ""
-            )
         trials['Objective'] = trials['Objective'].apply(
             lambda x: f'{x:,.5f}' if x != 100000 else ""
         )

@@ -66,6 +66,7 @@ class Hyperopt:
     def __init__(self, config: Dict[str, Any]) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
+        self.protection_space: List[Dimension] = []
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
@@ -102,16 +103,30 @@ class Hyperopt:
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
 
-        # Populate functions here (hasattr is slow so should not be run during "regular" operations)
-        if hasattr(self.custom_hyperopt, 'populate_indicators'):
-            self.backtesting.strategy.advise_indicators = (  # type: ignore
-                self.custom_hyperopt.populate_indicators)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.strategy.advise_buy = (  # type: ignore
-                self.custom_hyperopt.populate_buy_trend)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.strategy.advise_sell = (  # type: ignore
-                self.custom_hyperopt.populate_sell_trend)  # type: ignore
+        if not self.auto_hyperopt:
+            # Populate "fallback" functions here
+            # (hasattr is slow so should not be run during "regular" operations)
+            if hasattr(self.custom_hyperopt, 'populate_indicators'):
+                logger.warning(
+                    "DEPRECATED: Using `populate_indicators()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                    )
+                self.backtesting.strategy.populate_indicators = (  # type: ignore
+                    self.custom_hyperopt.populate_indicators)  # type: ignore
+            if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
+                logger.warning(
+                    "DEPRECATED: Using `populate_buy_trend()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                )
+                self.backtesting.strategy.populate_buy_trend = (  # type: ignore
+                    self.custom_hyperopt.populate_buy_trend)  # type: ignore
+            if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
+                logger.warning(
+                    "DEPRECATED: Using `populate_sell_trend()` in the hyperopt file is deprecated. "
+                    "Please move these methods to your strategy."
+                )
+                self.backtesting.strategy.populate_sell_trend = (  # type: ignore
+                    self.custom_hyperopt.populate_sell_trend)  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -189,6 +204,8 @@ class Hyperopt:
             result['buy'] = {p.name: params.get(p.name) for p in self.buy_space}
         if HyperoptTools.has_space(self.config, 'sell'):
             result['sell'] = {p.name: params.get(p.name) for p in self.sell_space}
+        if HyperoptTools.has_space(self.config, 'protection'):
+            result['protection'] = {p.name: params.get(p.name) for p in self.protection_space}
         if HyperoptTools.has_space(self.config, 'roi'):
             result['roi'] = {str(k): v for k, v in
                              self.custom_hyperopt.generate_roi_table(params).items()}
@@ -239,6 +256,12 @@ class Hyperopt:
         """
         Assign the dimensions in the hyperoptimization space.
         """
+        if self.auto_hyperopt and HyperoptTools.has_space(self.config, 'protection'):
+            # Protections can only be optimized when using the Parameter interface
+            logger.debug("Hyperopt has 'protection' space")
+            # Enable Protections if protection space is selected.
+            self.config['enable_protections'] = True
+            self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
@@ -259,22 +282,19 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
-        self.dimensions = (self.buy_space + self.sell_space + self.roi_space +
-                           self.stoploss_space + self.trailing_space)
+        self.dimensions = (self.buy_space + self.sell_space + self.protection_space
+                           + self.roi_space + self.stoploss_space + self.trailing_space)
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
-        Used Optimize function. Called once per epoch to optimize whatever is configured.
+        Used Optimize function.
+        Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
         # Apply parameters
-        if HyperoptTools.has_space(self.config, 'roi'):
-            self.backtesting.strategy.minimal_roi = (  # type: ignore
-                self.custom_hyperopt.generate_roi_table(params_dict))
-
         if HyperoptTools.has_space(self.config, 'buy'):
             self.backtesting.strategy.advise_buy = (  # type: ignore
                 self.custom_hyperopt.buy_strategy_generator(params_dict))
@@ -282,6 +302,16 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'sell'):
             self.backtesting.strategy.advise_sell = (  # type: ignore
                 self.custom_hyperopt.sell_strategy_generator(params_dict))
+
+        if HyperoptTools.has_space(self.config, 'protection'):
+            for attr_name, attr in self.backtesting.strategy.enumerate_parameters('protection'):
+                if attr.optimize:
+                    # noinspection PyProtectedMember
+                    attr.value = params_dict[attr_name]
+
+        if HyperoptTools.has_space(self.config, 'roi'):
+            self.backtesting.strategy.minimal_roi = (  # type: ignore
+                self.custom_hyperopt.generate_roi_table(params_dict))
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
@@ -376,18 +406,17 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
 
-        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
+        preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
-        # Trim startup period from analyzed dataframe
+        # Trim startup period from analyzed dataframe to get correct dates for output.
         processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
-
         self.min_date, self.max_date = get_timerange(processed)
 
         logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(self.max_date - self.min_date).days} days)..')
-
-        dump(processed, self.data_pickle_file)
+        # Store non-trimmed data - will be trimmed after signal generation.
+        dump(preprocessed, self.data_pickle_file)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
@@ -442,9 +471,9 @@ class Hyperopt:
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
                 with progressbar.ProgressBar(
-                         max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
-                         widgets=widgets
-                     ) as pbar:
+                    max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                    widgets=widgets
+                ) as pbar:
                     EVALS = ceil(self.total_epochs / jobs)
                     for i in range(EVALS):
                         # Correct the number of epochs to be processed for the last

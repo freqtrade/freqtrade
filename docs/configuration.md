@@ -11,6 +11,37 @@ Per default, the bot loads the configuration from the `config.json` file, locate
 
 You can specify a different configuration file used by the bot with the `-c/--config` command-line option.
 
+If you used the [Quick start](installation.md/#quick-start) method for installing 
+the bot, the installation script should have already created the default configuration file (`config.json`) for you.
+
+If the default configuration file is not created we recommend to use `freqtrade new-config --config config.json` to generate a basic configuration file.
+
+The Freqtrade configuration file is to be written in JSON format.
+
+Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
+
+Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates the syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
+
+### Environment variables
+
+Set options in the Freqtrade configuration via environment variables.
+This takes priority over the corresponding value in configuration or strategy.
+
+Environment variables must be prefixed with  `FREQTRADE__` to be loaded to the freqtrade configuration.
+
+`__` serves as level separator, so the format used should correspond to `FREQTRADE__{section}__{key}`.
+As such - an environment variable defined as  `export FREQTRADE__STAKE_AMOUNT=200` would result in `{stake_amount: 200}`.
+
+A more complex example might be `export FREQTRADE__EXCHANGE__KEY=<yourExchangeKey>` to keep your exchange key secret. This will move the value to the `exchange.key` section of the configuration.
+Using this scheme, all configuration settings will also be available as environment variables.
+
+Please note that Environment variables will overwrite corresponding settings in your configuration, but command line Arguments will always win.
+
+!!! Note
+    Environment variables detected are logged at startup - so if you can't find why a value is not what you think it should be based on the configuration, make sure it's not loaded from an environment variable.
+
+### Multiple configuration files
+
 Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.
 
 !!! Tip "Use multiple configuration files to keep secrets secret"
@@ -22,17 +53,6 @@ Multiple configuration files can be specified and used by the bot or the bot can
     The 2nd file should only specify what you intend to override.
     If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, `config-private.json`).
 
-If you used the [Quick start](installation.md/#quick-start) method for installing 
-the bot, the installation script should have already created the default configuration file (`config.json`) for you.
-
-If the default configuration file is not created we recommend you to use `freqtrade new-config --config config.json` to generate a basic configuration file.
-
-The Freqtrade configuration file is to be written in JSON format.
-
-Additionally to the standard JSON syntax, you may use one-line `// ...` and multi-line `/* ... */` comments in your configuration files and trailing commas in the lists of parameters.
-
-Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates the syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.
-
 ## Configuration parameters
 
 The table below will list all configuration parameters available.
@@ -41,6 +61,7 @@ Freqtrade can also load many options via command line (CLI) arguments (check out
 The prevalence for all Options is as follows:
 
 - CLI arguments override any other option
+- [Environment Variables](#environment-variables)
 - Configuration files are used in sequence (the last file wins) and override Strategy configurations.
 - Strategy configurations are only used if they are not set via configuration or command-line arguments. These options are marked with [Strategy Override](#parameters-in-the-strategy) in the below table.
 
@@ -84,11 +105,12 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `ask_strategy.order_book_top` | Bot will use the top N rate in Order Book "price_side" to sell. I.e. a value of 2 will allow the bot to pick the 2nd ask rate in [Order Book Asks](#sell-price-with-orderbook-enabled)<br>*Defaults to `1`.* <br> **Datatype:** Positive Integer
 | `use_sell_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `sell_profit_only` | Wait until the bot reaches `sell_profit_offset` before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
-| `sell_profit_offset` | Sell-signal is only active above this value. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
+| `sell_profit_offset` | Sell-signal is only active above this value. Only active in combination with `sell_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
 | `ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_sell_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
 | `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
+| `custom_price_max_distance_ratio` | Configure maximum distance ratio between current and custom entry or exit price. <br>*Defaults to `0.02` 2%).*<br> **Datatype:** Positive float
 | `exchange.name` | **Required.** Name of the exchange class to use. [List below](#user-content-what-values-for-exchangename). <br> **Datatype:** String
 | `exchange.sandbox` | Use the 'sandbox' version of the exchange, where the exchange provides a sandbox for risk-free integration. See [here](sandbox-testing.md) in more details.<br> **Datatype:** Boolean
 | `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -526,9 +548,10 @@ Once you will be happy with your bot performance running in the Dry-run mode, yo
 
 ## Switch to production mode
 
-In production mode, the bot will engage your money. Be careful, since a wrong
-strategy can lose all your money. Be aware of what you are doing when
-you run it in production mode.
+In production mode, the bot will engage your money. Be careful, since a wrong strategy can lose all your money.
+Be aware of what you are doing when you run it in production mode.
+
+When switching to Production mode, please make sure to use a different / fresh database to avoid dry-run trades messing with your exchange money and eventually tainting your statistics.
 
 ### Setup your exchange account
 

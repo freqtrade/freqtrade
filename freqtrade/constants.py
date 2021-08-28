@@ -47,6 +47,9 @@ USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
+ENV_VAR_PREFIX = 'FREQTRADE__'
+
+NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
 
 
 # Define decimals per coin for outputs
@@ -190,6 +193,9 @@ CONF_SCHEMA = {
             },
             'required': ['price_side']
         },
+        'custom_price_max_distance_ratio': {
+           'type': 'number', 'minimum': 0.0
+        },
         'order_types': {
             'type': 'object',
             'properties': {
@@ -279,7 +285,7 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
-                            },
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},

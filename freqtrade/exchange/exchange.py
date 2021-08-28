@@ -19,7 +19,8 @@ from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRU
                                             decimal_to_precision)
 from pandas import DataFrame
 
-from freqtrade.constants import DEFAULT_AMOUNT_RESERVE_PERCENT, ListPairsWithTimeframes
+from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
+                                 ListPairsWithTimeframes)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
@@ -618,6 +619,8 @@ class Exchange:
         if self.exchange_has('fetchL2OrderBook'):
             ob = self.fetch_l2_order_book(pair, 20)
             ob_type = 'asks' if side == 'buy' else 'bids'
+            slippage = 0.05
+            max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
             filled_amount = 0
@@ -626,7 +629,9 @@ class Exchange:
                 book_entry_coin_volume = book_entry[1]
                 if remaining_amount > 0:
                     if remaining_amount < book_entry_coin_volume:
+                        # Orderbook at this slot bigger than remaining amount
                         filled_amount += remaining_amount * book_entry_price
+                        break
                     else:
                         filled_amount += book_entry_coin_volume * book_entry_price
                     remaining_amount -= book_entry_coin_volume
@@ -635,7 +640,14 @@ class Exchange:
             else:
                 # If remaining_amount wasn't consumed completely (break was not called)
                 filled_amount += remaining_amount * book_entry_price
-            forecast_avg_filled_price = filled_amount / amount
+            forecast_avg_filled_price = max(filled_amount, 0) / amount
+            # Limit max. slippage to specified value
+            if side == 'buy':
+                forecast_avg_filled_price = min(forecast_avg_filled_price, max_slippage_val)
+
+            else:
+                forecast_avg_filled_price = max(forecast_avg_filled_price, max_slippage_val)
+
             return self.price_to_precision(pair, forecast_avg_filled_price)
 
         return rate
@@ -689,7 +701,16 @@ class Exchange:
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, params: Dict = {}) -> Dict:
+                     rate: float, time_in_force: str = 'gtc') -> Dict:
+
+        if self._config['dry_run']:
+            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
+            return dry_order
+
+        params = self._params.copy()
+        if time_in_force != 'gtc' and ordertype != 'market':
+            params.update({'timeInForce': time_in_force})
+
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
             amount = self.amount_to_precision(pair, amount)
@@ -719,32 +740,6 @@ class Exchange:
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    def buy(self, pair: str, ordertype: str, amount: float,
-            rate: float, time_in_force: str) -> Dict:
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, "buy", amount, rate)
-            return dry_order
-
-        params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
-
-        return self.create_order(pair, ordertype, 'buy', amount, rate, params)
-
-    def sell(self, pair: str, ordertype: str, amount: float,
-             rate: float, time_in_force: str = 'gtc') -> Dict:
-
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, "sell", amount, rate)
-            return dry_order
-
-        params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
-
-        return self.create_order(pair, ordertype, 'sell', amount, rate, params)
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """
@@ -810,7 +805,7 @@ class Exchange:
         :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
-        return (order.get('status') in ('closed', 'canceled', 'cancelled')
+        return (order.get('status') in NON_OPEN_EXCHANGE_STATES
                 and order.get('filled') == 0.0)
 
     @retrier
@@ -1044,7 +1039,7 @@ class Exchange:
             logger.debug(f"Using Last {conf_strategy['price_side'].capitalize()} / Last Price")
             ticker = self.fetch_ticker(pair)
             ticker_rate = ticker[conf_strategy['price_side']]
-            if ticker['last']:
+            if ticker['last'] and ticker_rate:
                 if side == 'buy' and ticker_rate > ticker['last']:
                     balance = conf_strategy['ask_last_balance']
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
@@ -1259,7 +1254,7 @@ class Exchange:
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
 
         input_coroutines = []
-
+        cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
             if (((pair, timeframe) not in self._klines)
@@ -1271,6 +1266,7 @@ class Exchange:
                     "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
                     pair, timeframe
                 )
+                cached_pairs.append((pair, timeframe))
 
         results = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -1293,6 +1289,10 @@ class Exchange:
             results_df[(pair, timeframe)] = ohlcv_df
             if cache:
                 self._klines[(pair, timeframe)] = ohlcv_df
+        # Return cached klines
+        for pair, timeframe in cached_pairs:
+            results_df[(pair, timeframe)] = self.klines((pair, timeframe), copy=False)
+
         return results_df
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
@@ -1503,7 +1503,7 @@ class Exchange:
         :returns List of trade data
         """
         if not self.exchange_has("fetchTrades"):
-            raise OperationalException("This exchange does not suport downloading Trades.")
+            raise OperationalException("This exchange does not support downloading Trades.")
 
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,

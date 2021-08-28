@@ -18,8 +18,9 @@ from freqtrade.configuration.deprecated_settings import (check_conflicting_setti
                                                          process_deprecated_setting,
                                                          process_removed_setting,
                                                          process_temporary_deprecated_settings)
+from freqtrade.configuration.environment_vars import flat_vars_to_nested_dict
 from freqtrade.configuration.load_config import load_config_file, load_file, log_config_error_range
-from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL
+from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
@@ -403,7 +404,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -440,7 +441,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
         '--ticker-interval', '1m',
@@ -497,7 +498,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--export', 'trades',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'TestStrategy'
     ]
 
@@ -1129,17 +1130,17 @@ def test_pairlist_resolving_fallback(mocker):
 
 
 @pytest.mark.parametrize("setting", [
-        ("ask_strategy", "use_sell_signal", True,
-         None, "use_sell_signal", False),
-        ("ask_strategy", "sell_profit_only", True,
-         None, "sell_profit_only", False),
-        ("ask_strategy", "sell_profit_offset", 0.1,
-         None, "sell_profit_offset", 0.01),
-        ("ask_strategy", "ignore_roi_if_buy_signal", True,
-         None, "ignore_roi_if_buy_signal", False),
-        ("ask_strategy", "ignore_buying_expired_candle_after", 5,
-         None, "ignore_buying_expired_candle_after", 6),
-    ])
+    ("ask_strategy", "use_sell_signal", True,
+     None, "use_sell_signal", False),
+    ("ask_strategy", "sell_profit_only", True,
+     None, "sell_profit_only", False),
+    ("ask_strategy", "sell_profit_offset", 0.1,
+     None, "sell_profit_offset", 0.01),
+    ("ask_strategy", "ignore_roi_if_buy_signal", True,
+     None, "ignore_roi_if_buy_signal", False),
+    ("ask_strategy", "ignore_buying_expired_candle_after", 5,
+     None, "ignore_buying_expired_candle_after", 6),
+])
 def test_process_temporary_deprecated_settings(mocker, default_conf, setting, caplog):
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -1179,10 +1180,10 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
 
 
 @pytest.mark.parametrize("setting", [
-        ("experimental", "use_sell_signal", False),
-        ("experimental", "sell_profit_only", True),
-        ("experimental", "ignore_roi_if_buy_signal", True),
-    ])
+    ("experimental", "use_sell_signal", False),
+    ("experimental", "sell_profit_only", True),
+    ("experimental", "ignore_roi_if_buy_signal", True),
+])
 def test_process_removed_settings(mocker, default_conf, setting):
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -1329,7 +1330,7 @@ def test_process_removed_setting(mocker, default_conf, caplog):
                                 'sectionB', 'somesetting')
 
 
-def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
+def test_process_deprecated_ticker_interval(default_conf, caplog):
     message = "DEPRECATED: Please use 'timeframe' instead of 'ticker_interval."
     config = deepcopy(default_conf)
     process_temporary_deprecated_settings(config)
@@ -1349,3 +1350,46 @@ def test_process_deprecated_ticker_interval(mocker, default_conf, caplog):
     with pytest.raises(OperationalException,
                        match=r"Both 'timeframe' and 'ticker_interval' detected."):
         process_temporary_deprecated_settings(config)
+
+
+def test_process_deprecated_protections(default_conf, caplog):
+    message = "DEPRECATED: Setting 'protections' in the configuration is deprecated."
+    config = deepcopy(default_conf)
+    process_temporary_deprecated_settings(config)
+    assert not log_has(message, caplog)
+
+    config['protections'] = []
+    process_temporary_deprecated_settings(config)
+    assert log_has(message, caplog)
+
+
+def test_flat_vars_to_nested_dict(caplog):
+
+    test_args = {
+        'FREQTRADE__EXCHANGE__SOME_SETTING': 'true',
+        'FREQTRADE__EXCHANGE__SOME_FALSE_SETTING': 'false',
+        'FREQTRADE__EXCHANGE__CONFIG__whatever': 'sometime',
+        'FREQTRADE__ASK_STRATEGY__PRICE_SIDE': 'bid',
+        'FREQTRADE__ASK_STRATEGY__cccc': '500',
+        'FREQTRADE__STAKE_AMOUNT': '200.05',
+        'NOT_RELEVANT': '200.0',  # Will be ignored
+    }
+    expected = {
+        'stake_amount': 200.05,
+        'ask_strategy': {
+            'price_side': 'bid',
+            'cccc': 500,
+        },
+        'exchange': {
+            'config': {
+                'whatever': 'sometime',
+            },
+            'some_setting': True,
+            'some_false_setting': False,
+        }
+    }
+    res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)
+    assert res == expected
+
+    assert log_has("Loading variable 'FREQTRADE__EXCHANGE__SOME_SETTING'", caplog)
+    assert not log_has("Loading variable 'NOT_RELEVANT'", caplog)

@@ -11,6 +11,7 @@ from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
+from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_config_file, load_file
 from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
 from freqtrade.exceptions import OperationalException
@@ -71,6 +72,11 @@ class Configuration:
 
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
+
+        # Load environment variables
+        env_data = enironment_vars_to_dict()
+        config = deep_merge_dicts(env_data, config)
+
         config['config_files'] = files
         # Normalize config
         if 'internals' not in config:

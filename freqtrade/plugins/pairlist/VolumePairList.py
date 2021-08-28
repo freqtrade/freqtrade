@@ -4,6 +4,7 @@ Volume PairList provider
 Provides dynamic pair list based on trade volumes
 """
 import logging
+from functools import partial
 from typing import Any, Dict, List
 
 import arrow
@@ -115,18 +116,18 @@ class VolumePairList(IPairList):
         pairlist = self._pair_cache.get('pairlist')
         if pairlist:
             # Item found - no refresh necessary
-            return pairlist
+            return pairlist.copy()
         else:
             # Use fresh pairlist
             # Check if pair quote currency equals to the stake currency.
             filtered_tickers = [
-                    v for k, v in tickers.items()
-                    if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and v[self._sort_key] is not None)]
+                v for k, v in tickers.items()
+                if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
+                    and v[self._sort_key] is not None)]
             pairlist = [s['symbol'] for s in filtered_tickers]
 
             pairlist = self.filter_pairlist(pairlist, tickers)
-            self._pair_cache['pairlist'] = pairlist
+            self._pair_cache['pairlist'] = pairlist.copy()
 
         return pairlist
 
@@ -197,13 +198,13 @@ class VolumePairList(IPairList):
 
         if self._min_value > 0:
             filtered_tickers = [
-                    v for v in filtered_tickers if v[self._sort_key] > self._min_value]
+                v for v in filtered_tickers if v[self._sort_key] > self._min_value]
 
         sorted_tickers = sorted(filtered_tickers, reverse=True, key=lambda t: t[self._sort_key])
 
         # Validate whitelist to only have active market pairs
         pairs = self._whitelist_for_active_markets([s['symbol'] for s in sorted_tickers])
-        pairs = self.verify_blacklist(pairs, logger.info)
+        pairs = self.verify_blacklist(pairs, partial(self.log_once, logmethod=logger.info))
         # Limit pairlist to the requested number of pairs
         pairs = pairs[:self._number_pairs]
 

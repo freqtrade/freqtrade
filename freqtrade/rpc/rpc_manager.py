@@ -15,6 +15,7 @@ class RPCManager:
     """
     Class to manage RPC objects (Telegram, API, ...)
     """
+
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
         self.registered_modules: List[RPCHandler] = []

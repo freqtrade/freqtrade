@@ -123,9 +123,9 @@ def test_parse_args_backtesting_custom() -> None:
         '-c', 'test_conf.json',
         '--ticker-interval', '1m',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'SampleStrategy'
-        ]
+    ]
     call_args = Arguments(args).get_parsed_arg()
     assert call_args['config'] == ['test_conf.json']
     assert call_args['verbosity'] == 0

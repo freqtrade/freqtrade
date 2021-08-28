@@ -44,7 +44,7 @@ def main(sysargv: List[str] = None) -> None:
                 "as `freqtrade trade [options...]`.\n"
                 "To see the full list of options available, please use "
                 "`freqtrade --help` or `freqtrade <command> --help`."
-                )
+            )
 
     except SystemExit as e:
         return_code = e

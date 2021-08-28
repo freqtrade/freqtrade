@@ -38,7 +38,7 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
         # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
         informative['date_merge'] = (
             informative["date"] + pd.to_timedelta(minutes_inf, 'm') - pd.to_timedelta(minutes, 'm')
-            )
+        )
     else:
         raise ValueError("Tried to merge a faster timeframe to a slower timeframe."
                          "This would create new rows, and can throw off your regular indicators.")

@@ -627,7 +627,7 @@ FreqUI will also show the backtesting results.
 
 ```
 usage: freqtrade webserver [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
-                           [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                           [--userdir PATH]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -647,12 +647,6 @@ Common arguments:
                         Path to directory with historical backtesting data.
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
-
-Strategy arguments:
-  -s NAME, --strategy NAME
-                        Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
 
 ```
 
