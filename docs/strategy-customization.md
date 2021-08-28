@@ -781,6 +781,8 @@ Printing more than a few rows is also possible (simply use  `print(dataframe)` i
 
 ## Common mistakes when developing strategies
 
+### Peeking into the future while backtesting
+
 Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
 This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.
 
@@ -790,6 +792,33 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
+
+### Performance warning
+
+When executing a strategy, one can sometimes be greeted by the following in the logs
+
+> PerformanceWarning: DataFrame is highly fragmented.
+
+This is a warning from [`pandas`](https://github.com/pandas-dev/pandas) and as the warning continues to say:
+ use `pd.concat(axis=1)`. For example
+
+```python
+for i in range(100):
+   dataframe[i] = ta.indicator(dataframe, param=i)
+```
+
+should be rewritten to
+
+```python
+frames = [dataframe]
+for i in range(100):
+    frames.append({
+        str(i): ta.indicator(dataframe, param=i)
+    })
+
+# Append columns to existing dataframe
+merged_frame = pd.concat(frames, axis=1)
+```
 
 ## Further strategy ideas
 
