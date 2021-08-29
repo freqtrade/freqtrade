@@ -66,16 +66,22 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "stake_amount",
-            "message": "Please insert your stake amount:",
+            "message": f"Please insert your stake amount (Integer or '{UNLIMITED_STAKE_AMOUNT}'):",
             "default": "0.01",
             "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_float(val),
+            "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
+            if val == UNLIMITED_STAKE_AMOUNT
+            else val
         },
         {
             "type": "text",
             "name": "max_open_trades",
             "message": f"Please insert max_open_trades (Integer or '{UNLIMITED_STAKE_AMOUNT}'):",
             "default": "3",
-            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val)
+            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val),
+            "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
+            if val == UNLIMITED_STAKE_AMOUNT
+            else val
         },
         {
             "type": "text",
