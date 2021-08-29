@@ -456,7 +456,7 @@ class MyAwesomeStrategy(IStrategy):
                 "only_per_pair": False
             })
 
-        return protection
+        return prot
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # ...
