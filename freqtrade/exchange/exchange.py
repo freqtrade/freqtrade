@@ -352,9 +352,16 @@ class Exchange:
     def validate_stakecurrency(self, stake_currency: str) -> None:
         """
         Checks stake-currency against available currencies on the exchange.
+        Only runs on startup. If markets have not been loaded, there's been a problem with
+        the connection to the exchange.
         :param stake_currency: Stake-currency to validate
         :raise: OperationalException if stake-currency is not available.
         """
+        if not self._markets:
+            raise OperationalException(
+                'Could not load markets, therefore cannot start. '
+                'Please investigate the above error for more details.'
+                )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
