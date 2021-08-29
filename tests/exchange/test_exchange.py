@@ -557,7 +557,7 @@ def test_reload_markets_exception(default_conf, mocker, caplog):
 
 
 @pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
-def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
+def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
     default_conf['stake_currency'] = stake_currency
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
@@ -571,7 +571,7 @@ def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
     Exchange(default_conf)
 
 
-def test_validate_stake_currency_error(default_conf, mocker, caplog):
+def test_validate_stakecurrency_error(default_conf, mocker, caplog):
     default_conf['stake_currency'] = 'XRP'
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
@@ -585,6 +585,13 @@ def test_validate_stake_currency_error(default_conf, mocker, caplog):
     with pytest.raises(OperationalException,
                        match=r'XRP is not available as stake on .*'
                        'Available currencies are: BTC, ETH, USDT'):
+        Exchange(default_conf)
+
+    type(api_mock).load_markets = MagicMock(side_effect=ccxt.NetworkError('No connection.'))
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+
+    with pytest.raises(OperationalException,
+                       match=r'Could not load markets, therefore cannot start\. Please.*'):
         Exchange(default_conf)
 
 
