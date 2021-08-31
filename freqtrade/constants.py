@@ -49,6 +49,8 @@ USERPATH_NOTEBOOKS = 'notebooks'
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
+NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
+
 
 # Define decimals per coin for outputs
 # Only used for outputs.
@@ -190,6 +192,9 @@ CONF_SCHEMA = {
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
             },
             'required': ['price_side']
+        },
+        'custom_price_max_distance_ratio': {
+           'type': 'number', 'minimum': 0.0
         },
         'order_types': {
             'type': 'object',

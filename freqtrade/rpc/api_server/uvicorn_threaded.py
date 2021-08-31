@@ -32,8 +32,11 @@ class UvicornServer(uvicorn.Server):
             asyncio_setup()
         else:
             asyncio.set_event_loop(uvloop.new_event_loop())
-
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # When running in a thread, we'll not have an eventloop yet.
+            loop = asyncio.new_event_loop()
         loop.run_until_complete(self.serve(sockets=sockets))
 
     @contextlib.contextmanager

@@ -64,34 +64,53 @@ def test_load_previous_results2(mocker, testdatadir, caplog) -> None:
 
 @pytest.mark.parametrize("spaces, expected_results", [
     (['buy'],
-     {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False}),
+     {'buy': True, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
+      'protection': False}),
     (['sell'],
-     {'buy': False, 'sell': True, 'roi': False, 'stoploss': False, 'trailing': False}),
+     {'buy': False, 'sell': True, 'roi': False, 'stoploss': False, 'trailing': False,
+      'protection': False}),
     (['roi'],
-     {'buy': False, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False}),
+     {'buy': False, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False,
+      'protection': False}),
     (['stoploss'],
-     {'buy': False, 'sell': False, 'roi': False, 'stoploss': True, 'trailing': False}),
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': True, 'trailing': False,
+      'protection': False}),
     (['trailing'],
-     {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': True}),
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': True,
+      'protection': False}),
     (['buy', 'sell', 'roi', 'stoploss'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
+      'protection': False}),
     (['buy', 'sell', 'roi', 'stoploss', 'trailing'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
+      'protection': False}),
     (['buy', 'roi'],
-     {'buy': True, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False}),
+     {'buy': True, 'sell': False, 'roi': True, 'stoploss': False, 'trailing': False,
+      'protection': False}),
     (['all'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
+      'protection': True}),
     (['default'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
+      'protection': False}),
     (['default', 'trailing'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
+      'protection': False}),
     (['all', 'buy'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
+      'protection': True}),
     (['default', 'buy'],
-     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False}),
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': False,
+      'protection': False}),
+    (['all'],
+     {'buy': True, 'sell': True, 'roi': True, 'stoploss': True, 'trailing': True,
+      'protection': True}),
+    (['protection'],
+     {'buy': False, 'sell': False, 'roi': False, 'stoploss': False, 'trailing': False,
+      'protection': True}),
 ])
 def test_has_space(hyperopt_conf, spaces, expected_results):
-    for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing']:
+    for s in ['buy', 'sell', 'roi', 'stoploss', 'trailing', 'protection']:
         hyperopt_conf.update({'spaces': spaces})
         assert HyperoptTools.has_space(hyperopt_conf, s) == expected_results[s]
 
@@ -148,9 +167,9 @@ def test__pprint_dict():
 
 def test_get_strategy_filename(default_conf):
 
-    x = HyperoptTools.get_strategy_filename(default_conf, 'DefaultStrategy')
+    x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV2')
     assert isinstance(x, Path)
-    assert x == Path(__file__).parents[1] / 'strategy/strats/default_strategy.py'
+    assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v2.py'
 
     x = HyperoptTools.get_strategy_filename(default_conf, 'NonExistingStrategy')
     assert x is None
@@ -158,7 +177,7 @@ def test_get_strategy_filename(default_conf):
 
 def test_export_params(tmpdir):
 
-    filename = Path(tmpdir) / "DefaultStrategy.json"
+    filename = Path(tmpdir) / "StrategyTestV2.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -186,12 +205,12 @@ def test_export_params(tmpdir):
         }
 
     }
-    HyperoptTools.export_params(params, "DefaultStrategy", filename)
+    HyperoptTools.export_params(params, "StrategyTestV2", filename)
 
     assert filename.is_file()
 
     content = rapidjson.load(filename.open('r'))
-    assert content['strategy_name'] == 'DefaultStrategy'
+    assert content['strategy_name'] == 'StrategyTestV2'
     assert 'params' in content
     assert "buy" in content["params"]
     assert "sell" in content["params"]
@@ -204,7 +223,7 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
     default_conf['disableparamexport'] = False
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
-    filename = Path(tmpdir) / "DefaultStrategy.json"
+    filename = Path(tmpdir) / "StrategyTestV2.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -233,17 +252,17 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
         FTHYPT_FILEVERSION: 2,
 
     }
-    HyperoptTools.try_export_params(default_conf, "DefaultStrategy22", params)
+    HyperoptTools.try_export_params(default_conf, "StrategyTestV222", params)
 
     assert log_has("Strategy not found, not exporting parameter file.", caplog)
     assert export_mock.call_count == 0
     caplog.clear()
 
-    HyperoptTools.try_export_params(default_conf, "DefaultStrategy", params)
+    HyperoptTools.try_export_params(default_conf, "StrategyTestV2", params)
 
     assert export_mock.call_count == 1
-    assert export_mock.call_args_list[0][0][1] == 'DefaultStrategy'
-    assert export_mock.call_args_list[0][0][2].name == 'default_strategy.json'
+    assert export_mock.call_args_list[0][0][1] == 'StrategyTestV2'
+    assert export_mock.call_args_list[0][0][2].name == 'strategy_test_v2.json'
 
 
 def test_params_print(capsys):

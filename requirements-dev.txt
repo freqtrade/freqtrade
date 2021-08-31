@@ -6,7 +6,7 @@
 coveralls==3.2.0
 flake8==3.9.2
 flake8-type-annotations==0.1.0
-flake8-tidy-imports==4.3.0
+flake8-tidy-imports==4.4.1
 mypy==0.910
 pytest==6.2.4
 pytest-asyncio==0.15.1
@@ -19,7 +19,7 @@ isort==5.9.3
 nbconvert==6.1.0
 
 # mypy types
-types-cachetools==0.1.10
+types-cachetools==4.2.0
 types-filelock==0.1.5
 types-requests==2.25.6
 types-tabulate==0.8.2

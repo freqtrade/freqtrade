@@ -7,9 +7,9 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy.interface import IStrategy
 
 
-class DefaultStrategy(IStrategy):
+class StrategyTestV2(IStrategy):
     """
-    Default Strategy provided by freqtrade bot.
+    Strategy used by tests freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
     Please look at the SampleStrategy in the user_data/strategy directory
     or strategy repository https://github.com/freqtrade/freqtrade-strategies
