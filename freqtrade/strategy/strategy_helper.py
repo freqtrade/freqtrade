@@ -115,18 +115,18 @@ def get_buy_candle(dataframe, trade: Trade, timeframe: str, now: datetime = None
 
 def find_candle_datetime(dataframe: pd.DataFrame, timeframe: str, query_date: datetime, pair: str, now: datetime = None):
     result = None
-    candle = find_candle_datetime_safer(dataframe, query_date)
-    # candle = find_candle_datetime_faster(dataframe, timeframe, query_date, now)
-    result = candle if candle.empty else candle.squeeze()
+    try:
+        candle = find_candle_datetime_safer(dataframe, query_date)
+        result = candle if candle.empty else candle.squeeze()
+    # query_date may not exist yet, e.g. if using trade.open_date
+    except KeyError:
+        result = None
     return result
 
 
 def find_candle_datetime_safer(dataframe: pd.DataFrame, query_date: datetime):
     df = dataframe[['date']].set_index('date')
 
-    try:
-        date_mask = df.index.unique().get_loc(query_date, method='ffill')
-        candle = dataframe.iloc[date_mask]  # use iloc because date_mask maybe :int
-    except KeyError:  # trade.open_date may not exist yet
-        candle = pd.DataFrame(index=dataframe.index)
+    date_mask = df.index.unique().get_loc(query_date, method='ffill')
+    candle = dataframe.iloc[date_mask]  # use iloc because date_mask maybe :int
     return candle
