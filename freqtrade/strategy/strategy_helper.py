@@ -121,15 +121,6 @@ def find_candle_datetime(dataframe: pd.DataFrame, timeframe: str, query_date: da
     return result
 
 
-def find_candle_datetime_faster(dataframe: pd.DataFrame, timeframe: str, query_date: datetime, now: datetime = None):
-    if(now and now == query_date):
-        candle = dataframe.iloc[-1]
-    else:
-        candle_date = timeframe_to_prev_date(timeframe, query_date)
-        candle = dataframe.loc[dataframe.date == candle_date]
-    return candle
-
-
 def find_candle_datetime_safer(dataframe: pd.DataFrame, query_date: datetime):
     df = dataframe[['date']].set_index('date')
 
