@@ -1,7 +1,7 @@
+from datetime import datetime, timedelta
 import pandas as pd
 
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
-from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 
