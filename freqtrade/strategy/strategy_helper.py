@@ -105,12 +105,12 @@ def get_buy_candle(dataframe, trade: Trade, timeframe: str, now: datetime = None
     """
     trade_open = trade.open_date_utc
     one_frame = timedelta(minutes=timeframe_to_minutes(timeframe))
-    trade_candle = find_candle_datetime(dataframe,
-                                        timeframe,
-                                        query_date=trade_open - one_frame,
-                                        pair=trade.pair,
-                                        now=now)
-    return trade_candle
+    buy_candle = find_candle_datetime(dataframe,
+                                      timeframe,
+                                      query_date=trade_open - one_frame,
+                                      pair=trade.pair,
+                                      now=now)
+    return buy_candle
 
 
 def find_candle_datetime(dataframe: pd.DataFrame, timeframe: str, query_date: datetime, pair: str, now: datetime = None):
