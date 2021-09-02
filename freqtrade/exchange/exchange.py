@@ -54,6 +54,9 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
+    # Additional headers - added to the ccxt object
+    _headers: Dict = {}
+
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
     # or by specifying them in the configuration.
@@ -169,7 +172,7 @@ class Exchange:
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
-                   ccxt_kwargs: dict = None) -> ccxt.Exchange:
+                   ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
         ccxt instance.
@@ -188,6 +191,10 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
+        if self._headers:
+            # Inject static headers after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
 
