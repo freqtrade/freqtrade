@@ -1557,6 +1557,9 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def set_margin_mode(self, symbol, marginType, params={}):
+        self._api.set_margin_mode(symbol, marginType, params)
+
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
