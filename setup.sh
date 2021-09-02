@@ -119,6 +119,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install hdf5
     fi
+    export HDF5_DIR=$(brew --prefix)
 
     if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
     then
@@ -127,6 +128,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install c-blosc
     fi    
+    export CBLOSC_DIR=$(brew --prefix)
 }
 
 # Install bot MacOS

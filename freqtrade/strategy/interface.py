@@ -120,6 +120,8 @@ class IStrategy(ABC, HyperStrategyMixin):
     # and wallets - access to the current balance.
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
+    # Filled from configuration
+    stake_currency: str
     # container variable for strategy source code
     __source__: str = ''
 

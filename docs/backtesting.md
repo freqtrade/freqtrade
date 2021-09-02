@@ -18,6 +18,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [-p PAIRS [PAIRS ...]] [--eps] [--dmmp]
                              [--enable-protections]
                              [--dry-run-wallet DRY_RUN_WALLET]
+                             [--timeframe-detail TIMEFRAME_DETAIL]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export {none,trades}] [--export-filename PATH]
 
@@ -55,6 +56,9 @@ optional arguments:
   --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
                         Starting balance, used for backtesting / hyperopt and
                         dry-runs.
+  --timeframe-detail TIMEFRAME_DETAIL
+                        Specify detail timeframe for backtesting (`1m`, `5m`,
+                        `30m`, `1h`, `1d`).
   --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
                         Provide a space-separated list of strategies to
                         backtest. Please note that ticker-interval needs to be
@@ -62,7 +66,7 @@ optional arguments:
                         this together with `--export trades`, the strategy-
                         name is injected into the filename (so `backtest-
                         data.json` becomes `backtest-data-
-                        DefaultStrategy.json`
+                        SampleStrategy.json`
   --export {none,trades}
                         Export backtest results (default: trades).
   --export-filename PATH
@@ -425,7 +429,12 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
 
-### Assumptions made by backtesting
+### Further backtest-result analysis
+
+To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
+You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
+
+## Assumptions made by backtesting
 
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
@@ -456,10 +465,30 @@ Also, keep in mind that past results don't guarantee future success.
 
 In addition to the above assumptions, strategy authors should carefully read the [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) section, to avoid using data in backtesting which is not available in real market conditions.
 
-### Further backtest-result analysis
+### Improved backtest accuracy
 
-To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
+One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).
+So assuming you run backtesting with a 1h timeframe, there will be 4 prices for that candle (Open, High, Low, Close).
+
+While backtesting does take some assumptions (read above) about this - this can never be perfect, and will always be biased in one way or the other.
+To mitigate this, freqtrade can use a lower (faster) timeframe to simulate intra-candle movements.
+
+To utilize this, you can append `--timeframe-detail 5m` to your regular backtesting command.
+
+``` bash
+freqtrade backtesting --strategy AwesomeStrategy --timeframe 1h --timeframe-detail 5m
+```
+
+This will load 1h data as well as 5m data for the timeframe. The strategy will be analyzed with the 1h timeframe - and for every "open trade candle" (candles where a trade is open) the 5m data will be used to simulate intra-candle movements.
+All callback functions (`custom_sell()`, `custom_stoploss()`, ... ) will be running for each 5m candle once the trade is opened (so 12 times in the above example of 1h timeframe, and 5m detailed timeframe).
+
+`--timeframe-detail` must be smaller than the original timeframe, otherwise backtesting will fail to start.
+
+Obviously this will require more memory (5m data is bigger than 1h data), and will also impact runtime (depending on the amount of trades and trade durations).
+Also, data must be available / downloaded already.
+
+!!! Tip
+    You can use this function as the last part of strategy development, to ensure your strategy is not exploiting one of the [backtesting assumptions](#assumptions-made-by-backtesting). Strategies that perform similarly well with this mode have a good chance to perform well in dry/live modes too (although only forward-testing (dry-mode) can really confirm a strategy).
 
 ## Backtesting multiple strategies
 
