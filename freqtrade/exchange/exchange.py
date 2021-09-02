@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 import ccxt
@@ -1516,15 +1516,28 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    def get_funding_fees(self, pair: str, since: datetime):
+    @retrier
+    def get_funding_fees(self, pair: str, since: Union[datetime, int]) -> float:
+        """
+            Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+            :param pair: (e.g. ADA/USDT)
+            :param since: The earliest time of consideration for calculating funding fees,
+                in unix time or as a datetime
+        """
+
+        if not self.exchange_has("fetchFundingHistory"):
+            raise OperationalException(
+                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+
+        if type(since) is datetime:
+            since = int(since.strftime('%s'))
+
         try:
             funding_history = self._api.fetch_funding_history(
                 pair=pair,
                 since=since
             )
-            # TODO: sum all the funding fees in funding_history together
-            funding_fees = funding_history
-            return funding_fees
+            return sum(fee['amount'] for fee in funding_history)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
