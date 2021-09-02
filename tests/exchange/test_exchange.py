@@ -2926,3 +2926,36 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
+
+
+@pytest.mark.parametrize("exchange_name,method_name,is_callable", [
+    ("binance", "set_margin_mode", True),
+    ("kraken", "set_margin_mode", False),
+    ("ftx", "set_margin_mode", False),
+    ("bittrex", "set_margin_mode", False),
+    ("binance", "not_a_real_method", False),
+    ("kraken", "not_a_real_method", False),
+    ("ftx", "not_a_real_method", False),
+    ("bittrex", "not_a_real_method", False),
+    ("binance", "create_order", True),
+    ("kraken", "create_order", True),
+    ("ftx", "create_order", True),
+    ("bittrex", "create_order", True),
+])
+def test_throw_exception_if_method_not_on_exchange(
+    mocker,
+    default_conf,
+    caplog,
+    exchange_name,
+    method_name,
+    is_callable
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    warning = f"{method_name}() has not been implemented on ccxt.{exchange_name.capitalize()}"
+    if not is_callable:
+        with pytest.raises(OperationalException) as e:
+            exchange.throw_exception_if_method_not_on_exchange(method_name)
+        assert e.value.args[0] == warning
+    else:
+        # Running the method will fail the test if an exception is thrown
+        exchange.throw_exception_if_method_not_on_exchange(method_name)

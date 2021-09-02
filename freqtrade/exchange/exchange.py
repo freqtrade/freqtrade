@@ -228,6 +228,16 @@ class Exchange:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
 
+    def throw_exception_if_method_not_on_exchange(self, method_name: str):
+        """
+            Throws exception if method is implemented by the current exchange on ccxt
+            :param method_name: The method that may/may not exist for this exchange class
+        """
+        # api_method = hasattr(self._api, method_name, None)
+        if not self._api.describe()['has'][method_name]:
+            raise OperationalException(
+                f"{method_name}() has not been implemented on ccxt.{self.name}")
+
     def _log_exchange_response(self, endpoint, response) -> None:
         """ Log exchange responses """
         if self.log_responses:
@@ -361,7 +371,7 @@ class Exchange:
             raise OperationalException(
                 'Could not load markets, therefore cannot start. '
                 'Please investigate the above error for more details.'
-                )
+            )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
