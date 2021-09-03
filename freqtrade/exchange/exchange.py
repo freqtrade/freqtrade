@@ -63,6 +63,7 @@ class Exchange:
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
@@ -723,7 +724,8 @@ class Exchange:
 
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
+            param = self._ft_has.get('time_in_force_parameter', '')
+            params.update({param: time_in_force})
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange

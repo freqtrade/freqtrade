@@ -4,6 +4,9 @@ This page combines common gotchas and informations which are exchange-specific a
 
 ## Binance
 
+Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
+
+
 !!! Tip "Stoploss on Exchange"
     Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
 
@@ -114,6 +117,8 @@ Kucoin requires a passphrase for each api key, you will therefore need to add th
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
 ```
+
+Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 ### Kucoin Blacklists
 
