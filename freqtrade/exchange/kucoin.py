@@ -21,4 +21,6 @@ class Kucoin(Exchange):
     _ft_has: Dict = {
         "l2_limit_range": [20, 100],
         "l2_limit_range_required": False,
+        "order_time_in_force": ['gtc', 'fok', 'ioc'],
+        "time_in_force_parameter": "timeInForce",
     }
