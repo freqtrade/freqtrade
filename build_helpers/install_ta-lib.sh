@@ -13,7 +13,7 @@ if [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
   && ./configure --prefix=${INSTALL_LOC}/ \
   && make -j$(nproc) \
   && which sudo && sudo make install || make install \
-  && cd ..
+  && cd .. && rm -rf ./ta-lib/
 else
   echo "TA-lib already installed, skipping installation"
 fi
