@@ -38,6 +38,7 @@ class RPCManager:
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
             apiserver = ApiServer(config)
+            apiserver.start_api()
             apiserver.add_rpc_handler(self._rpc)
             self.registered_modules.append(apiserver)
 

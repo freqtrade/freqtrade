@@ -320,6 +320,7 @@ def test_api_run(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(default_conf)
+    apiserver.start_api()
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     assert server_mock.call_count == 1
@@ -395,6 +396,7 @@ def test_api_cleanup(default_conf, mocker, caplog):
     mocker.patch('freqtrade.rpc.api_server.webserver.UvicornServer', server_mock)
 
     apiserver = ApiServer(default_conf)
+    apiserver.start_api()
     apiserver.add_rpc_handler(RPC(get_patched_freqtradebot(mocker, default_conf)))
 
     apiserver.cleanup()
