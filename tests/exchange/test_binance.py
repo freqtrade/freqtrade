@@ -145,3 +145,67 @@ def test_get_max_leverage_binance(default_conf, mocker, pair, nominal_value, max
                      [300000000.0, 0.5]],
     }
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
+
+
+def test_fill_leverage_brackets_binance(default_conf, mocker):
+    api_mock = MagicMock()
+    api_mock.load_leverage_brackets = MagicMock(return_value={{
+        'ADA/BUSD': [[0.0, '0.025'],
+                     [100000.0, '0.05'],
+                     [500000.0, '0.1'],
+                     [1000000.0, '0.15'],
+                     [2000000.0, '0.25'],
+                     [5000000.0, '0.5']],
+        'BTC/USDT': [[0.0, '0.004'],
+                     [50000.0, '0.005'],
+                     [250000.0, '0.01'],
+                     [1000000.0, '0.025'],
+                     [5000000.0, '0.05'],
+                     [20000000.0, '0.1'],
+                     [50000000.0, '0.125'],
+                     [100000000.0, '0.15'],
+                     [200000000.0, '0.25'],
+                     [300000000.0, '0.5']],
+        "ZEC/USDT": [[0.0, '0.01'],
+                     [5000.0, '0.025'],
+                     [25000.0, '0.05'],
+                     [100000.0, '0.1'],
+                     [250000.0, '0.125'],
+                     [1000000.0, '0.5']],
+
+    }})
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
+
+    assert exchange._leverage_brackets == {
+        'ADA/BUSD': [[0.0, '0.025'],
+                     [100000.0, '0.05'],
+                     [500000.0, '0.1'],
+                     [1000000.0, '0.15'],
+                     [2000000.0, '0.25'],
+                     [5000000.0, '0.5']],
+        'BTC/USDT': [[0.0, '0.004'],
+                     [50000.0, '0.005'],
+                     [250000.0, '0.01'],
+                     [1000000.0, '0.025'],
+                     [5000000.0, '0.05'],
+                     [20000000.0, '0.1'],
+                     [50000000.0, '0.125'],
+                     [100000000.0, '0.15'],
+                     [200000000.0, '0.25'],
+                     [300000000.0, '0.5']],
+        "ZEC/USDT": [[0.0, '0.01'],
+                     [5000.0, '0.025'],
+                     [25000.0, '0.05'],
+                     [100000.0, '0.1'],
+                     [250000.0, '0.125'],
+                     [1000000.0, '0.5']],
+    }
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "fill_leverage_brackets",
+        "fill_leverage_brackets"
+    )
