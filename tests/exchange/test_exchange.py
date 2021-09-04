@@ -2978,10 +2978,9 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     ('kraken', 20.0, 5.0, 20.0),
     ('kraken', 100.0, 100.0, 100.0),
     # FTX
-    # TODO-lev: - implement FTX tests
-    # ('ftx', 9.0, 3.0, 10.0),
-    # ('ftx', 20.0, 5.0, 20.0),
-    # ('ftx', 100.0, 100.0, 100.0),
+    ('ftx', 9.0, 3.0, 9.0),
+    ('ftx', 20.0, 5.0, 20.0),
+    ('ftx', 100.0, 100.0, 100.0)
 ])
 def test_apply_leverage_to_stake_amount(
     exchange,
@@ -2995,101 +2994,7 @@ def test_apply_leverage_to_stake_amount(
     assert exchange._apply_leverage_to_stake_amount(stake_amount, leverage) == min_stake_with_lev
 
 
-@pytest.mark.parametrize('exchange_name,pair,nominal_value,max_lev', [
-    # Kraken
-    ("kraken", "ADA/BTC", 0.0, 3.0),
-    ("kraken", "BTC/EUR", 100.0, 5.0),
-    ("kraken", "ZEC/USD", 173.31, 2.0),
-    # FTX
-    ("ftx", "ADA/BTC", 0.0, 20.0),
-    ("ftx", "BTC/EUR", 100.0, 20.0),
-    ("ftx", "ZEC/USD", 173.31, 20.0),
-    # Binance tests this method inside it's own test file
-])
-def test_get_max_leverage(
-    default_conf,
-    mocker,
-    exchange_name,
-    pair,
-    nominal_value,
-    max_lev
-):
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    exchange._leverage_brackets = {
-        'ADA/BTC': ['2', '3'],
-        'BTC/EUR': ['2', '3', '4', '5'],
-        'ZEC/USD': ['2']
-    }
-    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
-
-
 def test_fill_leverage_brackets():
-    api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock(return_value=[
-        {
-            'amount': 0.14542341,
-            'code': 'USDT',
-            'datetime': '2021-09-01T08:00:01.000Z',
-            'id': '485478',
-            'info': {'asset': 'USDT',
-                     'income': '0.14542341',
-                     'incomeType': 'FUNDING_FEE',
-                     'info': 'FUNDING_FEE',
-                     'symbol': 'XRPUSDT',
-                     'time': '1630512001000',
-                     'tradeId': '',
-                     'tranId': '4854789484855218760'},
-            'symbol': 'XRP/USDT',
-            'timestamp': 1630512001000
-        },
-        {
-            'amount': -0.14642341,
-            'code': 'USDT',
-            'datetime': '2021-09-01T16:00:01.000Z',
-            'id': '485479',
-            'info': {'asset': 'USDT',
-                     'income': '-0.14642341',
-                     'incomeType': 'FUNDING_FEE',
-                     'info': 'FUNDING_FEE',
-                     'symbol': 'XRPUSDT',
-                     'time': '1630512001000',
-                     'tradeId': '',
-                     'tranId': '4854789484855218760'},
-            'symbol': 'XRP/USDT',
-            'timestamp': 1630512001000
-        }
-    ])
-    type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
-
-    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
-    unix_time = int(date_time.strftime('%s'))
-    expected_fees = -0.001  # 0.14542341 + -0.14642341
-    fees_from_datetime = exchange.get_funding_fees(
-        pair='XRP/USDT',
-        since=date_time
-    )
-    fees_from_unix_time = exchange.get_funding_fees(
-        pair='XRP/USDT',
-        since=unix_time
-    )
-
-    assert(isclose(expected_fees, fees_from_datetime))
-    assert(isclose(expected_fees, fees_from_unix_time))
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        exchange_name,
-        "get_funding_fees",
-        "fetch_funding_history",
-        pair="XRP/USDT",
-        since=unix_time
-    )
-
-    # TODO-lev
     return
 
 

@@ -193,3 +193,13 @@ def test_get_order_id(mocker, default_conf):
         }
     }
     assert exchange.get_order_id_conditional(order) == '1111'
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("ADA/BTC", 0.0, 20.0),
+    ("BTC/EUR", 100.0, 20.0),
+    ("ZEC/USD", 173.31, 20.0),
+])
+def test_get_max_leverage_ftx(default_conf, mocker, pair, nominal_value, max_lev):
+    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
