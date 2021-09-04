@@ -255,3 +255,18 @@ def test_stoploss_adjust_kraken(mocker, default_conf):
     # Test with invalid order case ...
     order['type'] = 'stop_loss_limit'
     assert not exchange.stoploss_adjust(1501, order, side="sell")
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("ADA/BTC", 0.0, 3.0),
+    ("BTC/EUR", 100.0, 5.0),
+    ("ZEC/USD", 173.31, 2.0),
+])
+def test_get_max_leverage_kraken(default_conf, mocker, pair, nominal_value, max_lev):
+    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
+    exchange._leverage_brackets = {
+        'ADA/BTC': ['2', '3'],
+        'BTC/EUR': ['2', '3', '4', '5'],
+        'ZEC/USD': ['2']
+    }
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev

@@ -116,13 +116,7 @@ def test_stoploss_adjust_binance(mocker, default_conf):
     ("BNB/USDT", 5000000.0, 6.666666666666667),
     ("BTC/USDT", 300000000.1, 2.0),
 ])
-def test_get_max_leverage_binance(
-    default_conf,
-    mocker,
-    pair,
-    nominal_value,
-    max_lev
-):
+def test_get_max_leverage_binance(default_conf, mocker, pair, nominal_value, max_lev):
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_brackets = {
         'BNB/BUSD': [[0.0, 0.025],
