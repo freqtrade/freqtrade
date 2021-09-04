@@ -22,6 +22,7 @@ from pandas import DataFrame
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
                                  ListPairsWithTimeframes)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
+from freqtrade.enums import Collateral
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -1590,8 +1591,24 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def set_margin_mode(self, symbol, marginType, params={}):
-        self._api.set_margin_mode(symbol, marginType, params)
+    def set_margin_mode(self, symbol: str, collateral: Collateral, params: dict = {}):
+        '''
+            Set's the margin mode on the exchange to cross or isolated for a specific pair
+            :param symbol: base/quote currency pair (e.g. "ADA/USDT")
+        '''
+        if not self.exchange_has("setMarginMode"):
+            # Some exchanges only support one collateral type
+            return
+
+        try:
+            self._api.set_margin_mode(symbol, collateral.value, params)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
