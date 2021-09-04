@@ -1554,9 +1554,9 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    def get_interest_rate(self, pair: str, open_rate: float, is_short: bool) -> float:
+    def get_interest_rate(self, pair: str, maker_or_taker: str, is_short: bool) -> float:
         # TODO-lev: implement
-        return 0.0005
+        return (0.0005, 0.0005)
 
     def fill_leverage_brackets(self):
         """
