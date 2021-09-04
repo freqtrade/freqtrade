@@ -434,11 +434,11 @@ class FreqtradeBot(LoggingMixin):
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
                     # TODO-lev: pass in "enter" as side.
 
-                    return self.execute_entry(pair, stake_amount, buy_tag=enter_tag)
+                    return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
                 else:
                     return False
 
-            return self.execute_entry(pair, stake_amount, buy_tag=enter_tag)
+            return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
         else:
             return False
 

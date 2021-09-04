@@ -596,11 +596,11 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False, False
 
         if is_short:
-            enter = latest.get(SignalType.ENTER_SHORT, 0) == 1
-            exit_ = latest.get(SignalType.EXIT_SHORT, 0) == 1
+            enter = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
+            exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
         else:
-            enter = latest[SignalType.ENTER_LONG] == 1
-            exit_ = latest.get(SignalType.EXIT_LONG, 0) == 1
+            enter = latest[SignalType.ENTER_LONG.value] == 1
+            exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
 
         logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) "
                      f"enter={enter} exit={exit_}")
