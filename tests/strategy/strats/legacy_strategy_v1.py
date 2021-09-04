@@ -10,7 +10,7 @@ from freqtrade.strategy.interface import IStrategy
 # --------------------------------
 
 # This class is a sample. Feel free to customize it.
-class TestStrategyLegacy(IStrategy):
+class TestStrategyLegacyV1(IStrategy):
     """
     This is a test strategy using the legacy function headers, which will be
     removed in a future update.

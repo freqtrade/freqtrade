@@ -23,11 +23,11 @@ from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
-from .strats.default_strategy import DefaultStrategy
+from .strats.strategy_test_v2 import StrategyTestV2
 
 
 # Avoid to reinit the same object again and again
-_STRATEGY = DefaultStrategy(config={})
+_STRATEGY = StrategyTestV2(config={})
 _STRATEGY.dp = DataProvider({}, None, None)
 
 
@@ -149,7 +149,7 @@ def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
 
 
 def test_ignore_expired_candle(default_conf):
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     strategy.ignore_buying_expired_candle_after = 60
 
@@ -234,7 +234,7 @@ def test_assert_df(ohlcv_history, caplog):
 
 
 def test_advise_all_indicators(default_conf, testdatadir) -> None:
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
@@ -245,7 +245,7 @@ def test_advise_all_indicators(default_conf, testdatadir) -> None:
 
 
 def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     aimock = mocker.patch('freqtrade.strategy.interface.IStrategy.advise_indicators')
     timerange = TimeRange.parse_timerange('1510694220-1510700340')
@@ -263,7 +263,7 @@ def test_min_roi_reached(default_conf, fee) -> None:
     min_roi_list = [{20: 0.05, 55: 0.01, 0: 0.1},
                     {0: 0.1, 20: 0.05, 55: 0.01}]
     for roi in min_roi_list:
-        default_conf.update({'strategy': 'DefaultStrategy'})
+        default_conf.update({'strategy': 'StrategyTestV2'})
         strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
@@ -302,7 +302,7 @@ def test_min_roi_reached2(default_conf, fee) -> None:
                      },
                     ]
     for roi in min_roi_list:
-        default_conf.update({'strategy': 'DefaultStrategy'})
+        default_conf.update({'strategy': 'StrategyTestV2'})
         strategy = StrategyResolver.load_strategy(default_conf)
         strategy.minimal_roi = roi
         trade = Trade(
@@ -337,7 +337,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
                30: 0.05,
                55: 0.30,
                }
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     strategy.minimal_roi = min_roi
     trade = Trade(
@@ -390,7 +390,7 @@ def test_min_roi_reached3(default_conf, fee) -> None:
 def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, trailing, custom,
                            profit2, adjusted2, expected2, custom_stop) -> None:
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
@@ -438,7 +438,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
 
 def test_custom_sell(default_conf, fee, caplog) -> None:
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
 
     strategy = StrategyResolver.load_strategy(default_conf)
     trade = Trade(
@@ -500,7 +500,7 @@ def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
         advise_sell=sell_mock,
 
     )
-    strategy = DefaultStrategy({})
+    strategy = StrategyTestV2({})
     strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -531,7 +531,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
         advise_sell=sell_mock,
 
     )
-    strategy = DefaultStrategy({})
+    strategy = StrategyTestV2({})
     strategy.dp = DataProvider({}, None, None)
     strategy.process_only_new_candles = True
 
@@ -563,7 +563,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
 
 @pytest.mark.usefixtures("init_persistence")
 def test_is_pair_locked(default_conf):
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     PairLocks.timeframe = default_conf['timeframe']
     PairLocks.use_db = True
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -616,7 +616,7 @@ def test_is_pair_locked(default_conf):
 
 
 def test_is_informative_pairs_callback(default_conf):
-    default_conf.update({'strategy': 'TestStrategyLegacy'})
+    default_conf.update({'strategy': 'TestStrategyLegacyV1'})
     strategy = StrategyResolver.load_strategy(default_conf)
     # Should return empty
     # Uses fallback to base implementation

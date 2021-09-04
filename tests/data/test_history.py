@@ -380,7 +380,7 @@ def test_file_dump_json_tofile(testdatadir) -> None:
 def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.advise_all_indicators(
@@ -398,7 +398,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
 def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.advise_all_indicators(
@@ -422,7 +422,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
 def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)

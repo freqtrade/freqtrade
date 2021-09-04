@@ -1,9 +1,9 @@
 numpy==1.21.2
 pandas==1.3.2
 
-ccxt==1.55.28
+ccxt==1.55.56
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==3.4.7
+cryptography==3.4.8
 aiohttp==3.7.4.post0
 SQLAlchemy==1.4.23
 python-telegram-bot==13.7
@@ -31,7 +31,7 @@ python-rapidjson==1.4
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.68.0
+fastapi==0.68.1
 uvicorn==0.15.0
 pyjwt==2.1.0
 aiofiles==0.7.0

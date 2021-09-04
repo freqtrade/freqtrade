@@ -70,7 +70,6 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     indicators1 = {"ema10": {}}
     indicators2 = {"macd": {"color": "red"}}
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
@@ -112,7 +111,6 @@ def test_add_areas(default_conf, testdatadir, caplog):
                              "fill_to": "macdhist"}}
 
     ind_plain = {"macd": {"fill_to": "macdhist"}}
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
@@ -239,7 +237,6 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
