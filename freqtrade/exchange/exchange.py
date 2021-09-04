@@ -70,7 +70,7 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    _leverage_brackets: Dict
+    _leverage_brackets: Dict = {}
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """

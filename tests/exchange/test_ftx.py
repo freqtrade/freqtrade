@@ -195,6 +195,12 @@ def test_get_order_id(mocker, default_conf):
     assert exchange.get_order_id_conditional(order) == '1111'
 
 
+def test_fill_leverage_brackets(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
+    exchange.fill_leverage_brackets()
+    assert bool(exchange._leverage_brackets) is False
+
+
 @pytest.mark.parametrize('pair,nominal_value,max_lev', [
     ("ADA/BTC", 0.0, 20.0),
     ("BTC/EUR", 100.0, 20.0),
