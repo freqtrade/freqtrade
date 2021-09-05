@@ -365,8 +365,8 @@ class Backtesting:
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
-        enter = sell_row[LONG_IDX] if trade.is_short else sell_row[SHORT_IDX]
-        exit_ = sell_row[ELONG_IDX] if trade.is_short else sell_row[ESHORT_IDX]
+        enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
+        exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]
         sell = self.strategy.should_exit(
             trade, sell_row[OPEN_IDX], sell_candle_time,  # type: ignore
             enter=enter, exit_=exit_,
