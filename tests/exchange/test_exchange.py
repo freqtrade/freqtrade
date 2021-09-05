@@ -591,7 +591,7 @@ def test_reload_markets_exception(default_conf, mocker, caplog):
 
 
 @pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
-def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
+def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
     default_conf['stake_currency'] = stake_currency
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
@@ -605,7 +605,7 @@ def test_validate_stake_currency(default_conf, stake_currency, mocker, caplog):
     Exchange(default_conf)
 
 
-def test_validate_stake_currency_error(default_conf, mocker, caplog):
+def test_validate_stakecurrency_error(default_conf, mocker, caplog):
     default_conf['stake_currency'] = 'XRP'
     api_mock = MagicMock()
     type(api_mock).load_markets = MagicMock(return_value={
@@ -619,6 +619,13 @@ def test_validate_stake_currency_error(default_conf, mocker, caplog):
     with pytest.raises(OperationalException,
                        match=r'XRP is not available as stake on .*'
                        'Available currencies are: BTC, ETH, USDT'):
+        Exchange(default_conf)
+
+    type(api_mock).load_markets = MagicMock(side_effect=ccxt.NetworkError('No connection.'))
+    mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
+
+    with pytest.raises(OperationalException,
+                       match=r'Could not load markets, therefore cannot start\. Please.*'):
         Exchange(default_conf)
 
 
@@ -1018,16 +1025,21 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order['fee']
 
 
-@pytest.mark.parametrize("side,amount,endprice", [
-    ("buy", 1, 25.566),
-    ("buy", 100, 25.5672),  # Requires interpolation
-    ("buy", 1000, 25.575),  # More than orderbook return
-    ("sell", 1, 25.563),
-    ("sell", 100, 25.5625),  # Requires interpolation
-    ("sell", 1000, 25.5555),  # More than orderbook return
+@pytest.mark.parametrize("side,rate,amount,endprice", [
+    # spread is 25.263-25.266
+    ("buy", 25.564, 1, 25.566),
+    ("buy", 25.564, 100, 25.5672),  # Requires interpolation
+    ("buy", 25.590, 100, 25.5672),  # Price above spread ... average is lower
+    ("buy", 25.564, 1000, 25.575),  # More than orderbook return
+    ("buy", 24.000, 100000, 25.200),  # Run into max_slippage of 5%
+    ("sell", 25.564, 1, 25.563),
+    ("sell", 25.564, 100, 25.5625),  # Requires interpolation
+    ("sell", 25.510, 100, 25.5625),  # price below spread - average is higher
+    ("sell", 25.564, 1000, 25.5555),  # More than orderbook return
+    ("sell", 27, 10000, 25.65),  # max-slippage 5%
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_create_dry_run_order_market_fill(default_conf, mocker, side, amount, endprice,
+def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amount, endprice,
                                           exchange_name, order_book_l2_usd):
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
@@ -1037,7 +1049,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, amount, en
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=25.5)
+        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=rate)
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -1593,13 +1605,16 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
     # empty dicts
     assert not exchange._klines
-    exchange.refresh_latest_ohlcv(pairs, cache=False)
+    res = exchange.refresh_latest_ohlcv(pairs, cache=False)
     # No caching
     assert not exchange._klines
+
+    assert len(res) == len(pairs)
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     exchange._api_async.fetch_ohlcv.reset_mock()
 
-    exchange.refresh_latest_ohlcv(pairs)
+    res = exchange.refresh_latest_ohlcv(pairs)
+    assert len(res) == len(pairs)
 
     assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
     assert exchange._klines
@@ -1616,12 +1631,16 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
                    f"timeframe {pairs[0][1]} ...",
                    caplog)
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
+                                        cache=False)
+    assert len(res) == 3
 
 
 @pytest.mark.asyncio
@@ -1871,6 +1890,31 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
     rate = exchange.get_rate(pair, refresh=False, side="sell")
     assert rate == expected
     assert log_has("Using cached sell rate for ETH/BTC.", caplog)
+
+
+@pytest.mark.parametrize("entry,side,ask,bid,last,last_ab,expected", [
+    ('buy', 'ask', None, 4, 4,  0, 4),  # ask not available
+    ('buy', 'ask', None, None, 4,  0, 4),  # ask not available
+    ('buy', 'bid', 6, None, 4,  0, 5),  # bid not available
+    ('buy', 'bid', None, None, 4,  0, 5),  # No rate available
+    ('sell', 'ask', None, 4, 4,  0, 4),  # ask not available
+    ('sell', 'ask', None, None, 4,  0, 4),  # ask not available
+    ('sell', 'bid', 6, None, 4,  0, 5),  # bid not available
+    ('sell', 'bid', None, None, 4,  0, 5),  # bid not available
+])
+def test_get_ticker_rate_error(mocker, entry, default_conf, caplog, side, ask, bid,
+                               last, last_ab, expected) -> None:
+    caplog.set_level(logging.DEBUG)
+    default_conf['bid_strategy']['ask_last_balance'] = last_ab
+    default_conf['bid_strategy']['price_side'] = side
+    default_conf['ask_strategy']['price_side'] = side
+    default_conf['ask_strategy']['ask_last_balance'] = last_ab
+    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': ask, 'last': last, 'bid': bid})
+
+    with pytest.raises(PricingError):
+        exchange.get_rate('ETH/BTC', refresh=True, side=entry)
 
 
 @pytest.mark.parametrize('side,expected', [

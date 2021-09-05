@@ -120,6 +120,8 @@ class IStrategy(ABC, HyperStrategyMixin):
     # and wallets - access to the current balance.
     dp: Optional[DataProvider] = None
     wallets: Optional[Wallets] = None
+    # Filled from configuration
+    stake_currency: str
     # container variable for strategy source code
     __source__: str = ''
 
@@ -279,6 +281,43 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return float: New stoploss value, relative to the current_rate
         """
         return self.stoploss
+
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           **kwargs) -> float:
+        """
+        Custom entry price logic, returning the new entry price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set entry price
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+        """
+        return proposed_rate
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+        """
+        Custom exit price logic, returning the new exit price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set exit price
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New exit price value if provided
+        """
+        return proposed_rate
 
     def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
@@ -577,7 +616,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        trade.adjust_min_max_rates(high or current_rate)
+        trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
@@ -741,7 +780,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
-    def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
         Does not run advise_buy or advise_sell!

@@ -119,6 +119,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install hdf5
     fi
+    export HDF5_DIR=$(brew --prefix)
 
     if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
     then
@@ -127,6 +128,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install c-blosc
     fi    
+    export CBLOSC_DIR=$(brew --prefix)
 }
 
 # Install bot MacOS
@@ -163,7 +165,7 @@ function update() {
 # Reset Develop or Stable branch
 function reset() {
     echo "----------------------------"
-    echo "Reseting branch and virtual env"
+    echo "Resetting branch and virtual env"
     echo "----------------------------"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]

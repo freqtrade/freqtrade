@@ -135,6 +135,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Override the value of the `stake_amount` configuration setting.',
     ),
     # Backtesting
+    "timeframe_detail": Arg(
+        '--timeframe-detail',
+        help='Specify detail timeframe for backtesting (`1m`, `5m`, `30m`, `1h`, `1d`).',
+    ),
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -162,7 +166,7 @@ AVAILABLE_CLI_OPTIONS = {
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
-        '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
+        '(so `backtest-data.json` becomes `backtest-data-SampleStrategy.json`',
         nargs='+',
     ),
     "export": Arg(

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
@@ -164,9 +164,9 @@ class Order(_DECL_BASE):
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
         self.ft_is_open = True
-        if self.status in ('closed', 'canceled', 'cancelled'):
+        if self.status in NON_OPEN_EXCHANGE_STATES:
             self.ft_is_open = False
-            if order.get('filled', 0) > 0:
+            if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
@@ -451,12 +451,12 @@ class LocalTrade():
         LocalTrade.trades_open = []
         LocalTrade.total_profit = 0
 
-    def adjust_min_max_rates(self, current_price: float) -> None:
+    def adjust_min_max_rates(self, current_price: float, current_price_low: float) -> None:
         """
         Adjust the max_rate and min_rate.
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
-        self.min_rate = min(current_price, self.min_rate or self.open_rate)
+        self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
     def adjust_stop_loss(self, current_price: float, stoploss: float,
                          initial: bool = False) -> None:
