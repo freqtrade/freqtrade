@@ -3031,6 +3031,30 @@ def test_get_interest_rate(
         pair, maker_or_taker, is_short) == (borrow_rate, interest_rate)
 
 
+@pytest.mark.parametrize("exchange_name", [("binance"), ("ftx"), ("kraken")])
+@pytest.mark.parametrize("maker_or_taker", [("maker"), ("taker")])
+@pytest.mark.parametrize("is_short", [(True), (False)])
+def test_get_interest_rate_exceptions(mocker, default_conf, exchange_name, maker_or_taker, is_short):
+
+    # api_mock = MagicMock()
+    # # TODO-lev: get_interest_rate currently not implemented on CCXT, so this may need to be renamed
+    # api_mock.get_interest_rate = MagicMock()
+    # type(api_mock).has = PropertyMock(return_value={'getInterestRate': True})
+
+    # ccxt_exceptionhandlers(
+    #     mocker,
+    #     default_conf,
+    #     api_mock,
+    #     exchange_name,
+    #     "get_interest_rate",
+    #     "get_interest_rate",
+    #     pair="XRP/USDT",
+    #     is_short=is_short,
+    #     maker_or_taker="maker_or_taker"
+    # )
+    return
+
+
 @pytest.mark.parametrize("collateral", [
     (Collateral.CROSS),
     (Collateral.ISOLATED)
