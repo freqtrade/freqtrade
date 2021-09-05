@@ -2998,8 +2998,8 @@ def test_set_leverage(mocker, default_conf, exchange_name, collateral):
         exchange_name,
         "set_leverage",
         "set_leverage",
-        symbol="XRP/USDT",
-        collateral=collateral
+        pair="XRP/USDT",
+        leverage=5.0
     )
 
 
@@ -3021,6 +3021,6 @@ def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
         exchange_name,
         "set_margin_mode",
         "set_margin_mode",
-        symbol="XRP/USDT",
+        pair="XRP/USDT",
         collateral=collateral
     )

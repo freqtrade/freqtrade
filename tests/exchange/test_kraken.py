@@ -274,7 +274,7 @@ def test_get_max_leverage_kraken(default_conf, mocker, pair, nominal_value, max_
 
 def test_fill_leverage_brackets_kraken(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.load_markets = MagicMock(return_value={{
+    api_mock.load_markets = MagicMock(return_value={
         "ADA/BTC": {'active': True,
                     'altname': 'ADAXBT',
                     'base': 'ADA',
@@ -483,7 +483,7 @@ def test_fill_leverage_brackets_kraken(default_conf, mocker):
                                         [5000000, 0.0012],
                                         [10000000, 0.0001]]}}
 
-    }})
+    })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kraken")
 
     assert exchange._leverage_brackets == {

@@ -149,7 +149,7 @@ def test_get_max_leverage_binance(default_conf, mocker, pair, nominal_value, max
 
 def test_fill_leverage_brackets_binance(default_conf, mocker):
     api_mock = MagicMock()
-    api_mock.load_leverage_brackets = MagicMock(return_value={{
+    api_mock.load_leverage_brackets = MagicMock(return_value={
         'ADA/BUSD': [[0.0, '0.025'],
                      [100000.0, '0.05'],
                      [500000.0, '0.1'],
@@ -173,7 +173,7 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
                      [250000.0, '0.125'],
                      [1000000.0, '0.5']],
 
-    }})
+    })
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
 
     assert exchange._leverage_brackets == {
