@@ -135,7 +135,7 @@ class Kraken(Exchange):
         """
         leverages = {}
         try:
-            for pair, market in self._api.markets.items():
+            for pair, market in self.markets.items():
                 info = market['info']
                 leverage_buy = info['leverage_buy']
                 leverage_sell = info['leverage_sell']
