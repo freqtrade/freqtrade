@@ -10,7 +10,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.enums import Collateral
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
@@ -3034,10 +3034,16 @@ def test_get_interest_rate(
 @pytest.mark.parametrize("exchange_name", [("binance"), ("ftx"), ("kraken")])
 @pytest.mark.parametrize("maker_or_taker", [("maker"), ("taker")])
 @pytest.mark.parametrize("is_short", [(True), (False)])
-def test_get_interest_rate_exceptions(mocker, default_conf, exchange_name, maker_or_taker, is_short):
+def test_get_interest_rate_exceptions(
+    mocker,
+    default_conf,
+    exchange_name,
+    maker_or_taker,
+    is_short
+):
 
     # api_mock = MagicMock()
-    # # TODO-lev: get_interest_rate currently not implemented on CCXT, so this may need to be renamed
+    # # TODO-lev: get_interest_rate currently not implemented on CCXT, so this may be renamed
     # api_mock.get_interest_rate = MagicMock()
     # type(api_mock).has = PropertyMock(return_value={'getInterestRate': True})
 
@@ -3099,3 +3105,52 @@ def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
         pair="XRP/USDT",
         collateral=collateral
     )
+
+
+@pytest.mark.parametrize("exchange_name, trading_mode, collateral, exception_thrown", [
+    ("binance", TradingMode.SPOT, None, False),
+    ("binance", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.SPOT, None, False),
+    ("kraken", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("ftx", TradingMode.SPOT, None, False),
+    ("ftx", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("ftx", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("bittrex", TradingMode.SPOT, None, False),
+    ("bittrex", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("bittrex", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
+
+    # TODO-lev: Remove once implemented
+    ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
+
+    # TODO-lev: Uncomment once implemented
+    # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("ftx", TradingMode.MARGIN, Collateral.ISOLATED, False),
+    # ("ftx", TradingMode.FUTURES, Collateral.ISOLATED, False)
+])
+def test_validate_trading_mode_and_collateral(
+    default_conf,
+    mocker,
+    exchange_name,
+    trading_mode,
+    collateral,
+    exception_thrown
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    if (exception_thrown):
+        with pytest.raises(OperationalException):
+            exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+    else:
+        exchange.validate_trading_mode_and_collateral(trading_mode, collateral)

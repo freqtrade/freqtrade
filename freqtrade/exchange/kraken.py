@@ -1,9 +1,10 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -23,6 +24,12 @@ class Kraken(Exchange):
         "trades_pagination_arg": "since",
     }
 
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: No CCXT support
+    ]
+
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
         Check if the market symbol is tradable by Freqtrade.
@@ -33,7 +40,7 @@ class Kraken(Exchange):
         return (parent_check and
                 market.get('darkpool', False) is False)
 
-    @retrier
+    @ retrier
     def get_balances(self) -> dict:
         if self._config['dry_run']:
             return {}
@@ -48,8 +55,8 @@ class Kraken(Exchange):
 
             orders = self._api.fetch_open_orders()
             order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
-                           x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
-                           # Don't remove the below comment, this can be important for debugging
+                          x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
+                          # Don't remove the below comment, this can be important for debugging
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:
@@ -77,7 +84,7 @@ class Kraken(Exchange):
                 (side == "buy" and stop_loss < float(order['price']))
                 ))
 
-    @retrier(retries=0)
+    @ retrier(retries=0)
     def stoploss(self, pair: str, amount: float,
                  stop_price: float, order_types: Dict, side: str) -> Dict:
         """
