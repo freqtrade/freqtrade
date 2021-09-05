@@ -1,9 +1,10 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 import ccxt
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -23,6 +24,13 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.ISOLATED)  # TODO-lev: Uncomment once supported
+    ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """

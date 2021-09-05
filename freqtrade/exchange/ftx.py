@@ -1,9 +1,10 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -20,6 +21,12 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: Uncomment once supported
+    ]
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

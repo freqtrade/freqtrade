@@ -22,7 +22,7 @@ from pandas import DataFrame
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
                                  ListPairsWithTimeframes)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
-from freqtrade.enums import Collateral
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -72,6 +72,10 @@ class Exchange:
     _ft_has: Dict = {}
 
     _leverage_brackets: Dict = {}
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+    ]
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
@@ -138,6 +142,26 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
+        trading_mode: TradingMode = (
+            TradingMode(config.get('trading_mode'))
+            if config.get('trading_mode')
+            else TradingMode.SPOT
+        )
+        collateral: Optional[Collateral] = (
+            Collateral(config.get('collateral'))
+            if config.get('collateral')
+            else None
+        )
+
+        if trading_mode != TradingMode.SPOT:
+            try:
+                # TODO-lev: This shouldn't need to happen, but for some reason I get that the
+                # TODO-lev: method isn't implemented
+                self.fill_leverage_brackets()
+            except Exception as error:
+                logger.debug(error)
+                logger.debug("Could not load leverage_brackets")
+
         logger.info('Using Exchange "%s"', self.name)
 
         if validate:
@@ -155,20 +179,10 @@ class Exchange:
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0),
                                                    config.get('timeframe', ''))
-
+            self.validate_trading_mode_and_collateral(trading_mode, collateral)
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
-
-        leverage = config.get('leverage_mode')
-        if leverage is not False:
-            try:
-                # TODO-lev: This shouldn't need to happen, but for some reason I get that the
-                # TODO-lev: method isn't implemented
-                self.fill_leverage_brackets()
-            except Exception as error:
-                logger.debug(error)
-                logger.debug("Could not load leverage_brackets")
 
     def __del__(self):
         """
@@ -376,7 +390,7 @@ class Exchange:
             raise OperationalException(
                 'Could not load markets, therefore cannot start. '
                 'Please investigate the above error for more details.'
-                )
+            )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
@@ -487,6 +501,25 @@ class Exchange:
             raise OperationalException(
                 f"This strategy requires {startup_candles} candles to start. "
                 f"{self.name} only provides {candle_limit} for {timeframe}.")
+
+    def validate_trading_mode_and_collateral(
+        self,
+        trading_mode: TradingMode,
+        collateral: Optional[Collateral]  # Only None when trading_mode = TradingMode.SPOT
+    ):
+        """
+            Checks if freqtrade can perform trades using the configured
+            trading mode(Margin, Futures) and Collateral(Cross, Isolated)
+            Throws OperationalException:
+                If the trading_mode/collateral type are not supported by freqtrade on this exchange
+        """
+        if trading_mode != TradingMode.SPOT and (
+            (trading_mode, collateral) not in self._supported_trading_mode_collateral_pairs
+        ):
+            collateral_value = collateral and collateral.value
+            raise OperationalException(
+                f"Freqtrade does not support {collateral_value} {trading_mode.value} on {self.name}"
+            )
 
     def exchange_has(self, endpoint: str) -> bool:
         """
