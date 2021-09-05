@@ -87,7 +87,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
             # syslog config. The messages should be equal for this.
             handler_sl.setFormatter(Formatter('%(name)s - %(levelname)s - %(message)s'))
             logging.root.addHandler(handler_sl)
-        elif s[0] == 'journald':
+        elif s[0] == 'journald':  # pragma: no cover
             try:
                 from systemd.journal import JournaldLogHandler
             except ImportError:
