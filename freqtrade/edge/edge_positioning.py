@@ -159,7 +159,8 @@ class Edge:
         logger.info(f'Measuring data from {min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(max_date - min_date).days} days)..')
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'high', 'low']
+        #  TODO-lev: Should edge support shorts? needs to be investigated further...
+        headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long']
 
         trades: list = []
         for pair, pair_data in preprocessed.items():
@@ -387,8 +388,8 @@ class Edge:
         return final
 
     def _find_trades_for_stoploss_range(self, df, pair, stoploss_range):
-        buy_column = df['buy'].values
-        sell_column = df['sell'].values
+        buy_column = df['enter_long'].values
+        sell_column = df['exit_long'].values
         date_column = df['date'].values
         ohlc_columns = df[['open', 'high', 'low', 'close']].values
 
