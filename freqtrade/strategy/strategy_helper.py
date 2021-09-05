@@ -8,6 +8,9 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 
 
+PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
+
+
 class InformativeData(NamedTuple):
     asset: Optional[str]
     timeframe: str
@@ -118,8 +121,7 @@ def stoploss_from_absolute(stop_rate: float, current_rate: float) -> float:
 
 def informative(timeframe: str, asset: str = '',
                 fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
-                ffill: bool = True) -> Callable[[Callable[[Any, DataFrame, dict], DataFrame]],
-                                                Callable[[Any, DataFrame, dict], DataFrame]]:
+                ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
     """
     A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
     define informative indicators.
@@ -131,24 +133,32 @@ def informative(timeframe: str, asset: str = '',
             dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
             return dataframe
 
-    :param timeframe: Informative timeframe. Must always be higher than strategy timeframe.
+    :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
     :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
     current pair.
     :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
-    specified, defaults to {asset}_{name}_{timeframe} if asset is specified, or {name}_{timeframe}
-    otherwise.
-    * {asset}: name of informative asset, provided in lower-case, with / replaced with _. Stake
-    currency is not included in this string.
-    * {name}: user-specified dataframe column name.
-    * {timeframe}: informative timeframe.
-    :param ffill: ffill dataframe after mering informative pair.
+    specified, defaults to:
+    * {base}_{column}_{timeframe} if asset is specified and quote currency does match stake
+    curerncy.
+    * {base}_{quote}_{column}_{timeframe} if asset is specified and quote currency does not match
+    stake curerncy.
+    * {column}_{timeframe} if asset is not specified.
+    Format string supports these format variables:
+    * {asset} - full name of the asset, for example 'BTC/USDT'.
+    * {base} - base currency in lower case, for example 'eth'.
+    * {BASE} - same as {base}, except in upper case.
+    * {quote} - quote currency in lower case, for example 'usdt'.
+    * {QUOTE} - same as {quote}, except in upper case.
+    * {column} - name of dataframe column.
+    * {timeframe} - timeframe of informative dataframe.
+    :param ffill: ffill dataframe after merging informative pair.
     """
     _asset = asset
     _timeframe = timeframe
     _fmt = fmt
     _ffill = ffill
 
-    def decorator(fn: Callable[[Any, DataFrame, dict], DataFrame]):
+    def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, '_ft_informative', [])
         informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill))
         setattr(fn, '_ft_informative', informative_pairs)

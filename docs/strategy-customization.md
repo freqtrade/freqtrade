@@ -681,9 +681,47 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ### *@informative()*
 
+``` python
+def informative(timeframe: str, asset: str = '',
+                fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
+    """
+    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
+    define informative indicators.
+
+    Example usage:
+
+        @informative('1h')
+        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+    :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
+    :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
+    current pair.
+    :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
+    specified, defaults to:
+    * {base}_{column}_{timeframe} if asset is specified and quote currency does match stake
+    curerncy. 
+    * {base}_{quote}_{column}_{timeframe} if asset is specified and quote currency does not match 
+    stake curerncy. 
+    * {column}_{timeframe} if asset is not specified.
+    Format string supports these format variables:
+    * {asset} - full name of the asset, for example 'BTC/USDT'.
+    * {base} - base currency in lower case, for example 'eth'.
+    * {BASE} - same as {base}, except in upper case.
+    * {quote} - quote currency in lower case, for example 'usdt'.
+    * {QUOTE} - same as {quote}, except in upper case.
+    * {column} - name of dataframe column.
+    * {timeframe} - timeframe of informative dataframe.
+    :param ffill: ffill dataframe after merging informative pair.
+    """
+```
+
 In most common case it is possible to easily define informative pairs by using a decorator. All decorated `populate_indicators_*` methods run in isolation,
 not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main `populate_indicators()` method.
-When hyperopting, please follow instructions of [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter).
+When hyperopting, use of hyperoptable parameter `.value` attribute is not supported. Please use `.range` attribute. See [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter)
+for more information.
 
 ??? Example "Fast and easy way to define informative pairs"
 
@@ -725,17 +763,9 @@ When hyperopting, please follow instructions of [optimizing an indicator paramet
             return dataframe
     
         # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
-        # column names. Format string supports these format variables:
-        # * {asset} - full name of the asset, for example 'BTC/USDT'.
-        # * {base} - base currency in lower case, for example 'eth'.
-        # * {BASE} - same as {base}, except in upper case.
-        # * {quote} - quote currency in lower case, for example 'usdt'.
-        # * {QUOTE} - same as {quote}, except in upper case.
-        # * {column} - name of dataframe column.
-        # * {timeframe} - timeframe of informative dataframe.
-        # A callable `fmt(**kwargs) -> str` may be specified, to implement custom formatting.
-        # Available in populate_indicators and other methods as 'rsi_upper'.
-        @informative('1h', 'BTC/{stake}', '{name}')
+        # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
+        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
+        @informative('1h', 'BTC/{stake}', '{column}')
         def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
             return dataframe
@@ -748,8 +778,6 @@ When hyperopting, please follow instructions of [optimizing an indicator paramet
             return dataframe
 
     ```
-
-    See docstring of `@informative()` decorator for more information.
 
 !!! Note
     Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs

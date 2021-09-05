@@ -6,7 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
@@ -19,7 +19,8 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
-from freqtrade.strategy.strategy_helper import (InformativeData, _create_and_merge_informative_pair,
+from freqtrade.strategy.strategy_helper import (InformativeData, PopulateIndicators,
+                                                _create_and_merge_informative_pair,
                                                 _format_pair_name)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
@@ -138,20 +139,23 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         # Gather informative pairs from @informative-decorated methods.
         self._ft_informative: Dict[
-            Tuple[str, str], Tuple[InformativeData,
-                                   Callable[[Any, DataFrame, dict], DataFrame]]] = {}
+            Tuple[str, str], Tuple[InformativeData, PopulateIndicators]] = {}
         for attr_name in dir(self.__class__):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
                 continue
-            ft_informative = getattr(cls_method, '_ft_informative', [])
+            ft_informative = getattr(cls_method, '_ft_informative', None)
             if not isinstance(ft_informative, list):
                 # Type check is required because mocker would return a mock object that evaluates to
                 # True, confusing this code.
                 continue
+            strategy_timeframe_minutes = timeframe_to_minutes(self.timeframe)
             for informative_data in ft_informative:
                 asset = informative_data.asset
                 timeframe = informative_data.timeframe
+                if timeframe_to_minutes(timeframe) < strategy_timeframe_minutes:
+                    raise OperationalException('Informative timeframe must be equal or higher than '
+                                               'strategy timeframe!')
                 if asset:
                     pair = _format_pair_name(self.config, asset)
                     if (pair, timeframe) in self._ft_informative:
@@ -164,10 +168,6 @@ class IStrategy(ABC, HyperStrategyMixin):
                             raise OperationalException(f'Informative pair {pair} {timeframe} can '
                                                        f'not be defined more than once!')
                         self._ft_informative[(pair, timeframe)] = (informative_data, cls_method)
-
-    def _format_pair(self, pair: str) -> str:
-        return pair.format(stake_currency=self.config['stake_currency'],
-                           stake=self.config['stake_currency']).upper()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
