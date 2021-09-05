@@ -123,7 +123,7 @@ def _trend(signals, buy_value, sell_value):
     n = len(signals['low'])
     buy = np.zeros(n)
     sell = np.zeros(n)
-    for i in range(0, len(signals['enter_long'])):
+    for i in range(0, len(signals['date'])):
         if random.random() > 0.5:  # Both buy and sell signals at same timeframe
             buy[i] = buy_value
             sell[i] = sell_value
