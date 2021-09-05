@@ -1554,10 +1554,23 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    def get_interest_rate(self, pair: str, maker_or_taker: str, is_short: bool) -> float:
+    @retrier
+    def get_interest_rate(
+        self,
+        pair: str,
+        maker_or_taker: str,
+        is_short: bool
+    ) -> Tuple[float, float]:
+        """
+            :param pair: base/quote currency pair
+            :param maker_or_taker: "maker" if limit order, "taker" if market order
+            :param is_short: True if requesting base interest, False if requesting quote interest
+            :return: (open_interest, rollover_interest)
+        """
         # TODO-lev: implement
         return (0.0005, 0.0005)
 
+    @retrier
     def fill_leverage_brackets(self):
         """
             #TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
@@ -1576,6 +1589,7 @@ class Exchange:
         raise OperationalException(
             f"{self.name.capitalize()}.get_max_leverage has not been implemented.")
 
+    @retrier
     def set_leverage(self, leverage: float, pair: Optional[str]):
         """
             Set's the leverage before making a trade, in order to not
@@ -1591,7 +1605,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def set_margin_mode(self, symbol: str, collateral: Collateral, params: dict = {}):
+    @retrier
+    def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         '''
             Set's the margin mode on the exchange to cross or isolated for a specific pair
             :param symbol: base/quote currency pair (e.g. "ADA/USDT")
@@ -1601,7 +1616,7 @@ class Exchange:
             return
 
         try:
-            self._api.set_margin_mode(symbol, collateral.value, params)
+            self._api.set_margin_mode(pair, collateral.value, params)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
