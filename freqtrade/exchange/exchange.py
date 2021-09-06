@@ -158,13 +158,7 @@ class Exchange:
         )
 
         if trading_mode != TradingMode.SPOT:
-            try:
-                # TODO-lev: This shouldn't need to happen, but for some reason I get that the
-                # TODO-lev: method isn't implemented
-                self.fill_leverage_brackets()
-            except Exception as error:
-                logger.debug(error)
-                logger.debug("Could not load leverage_brackets")
+            self.fill_leverage_brackets()
 
         logger.info('Using Exchange "%s"', self.name)
 

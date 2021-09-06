@@ -111,6 +111,7 @@ class Binance(Exchange):
     def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         return stake_amount / leverage
 
+    @retrier
     def fill_leverage_brackets(self):
         """
             Assigns property _leverage_brackets to a dictionary of information about the leverage
@@ -118,8 +119,8 @@ class Binance(Exchange):
         """
         try:
             leverage_brackets = self._api.load_leverage_brackets()
-            for pair, brackets in leverage_brackets.items:
-                self.leverage_brackets[pair] = [
+            for pair, brackets in leverage_brackets.items():
+                self._leverage_brackets[pair] = [
                     [
                         min_amount,
                         float(margin_req)

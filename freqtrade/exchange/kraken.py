@@ -141,30 +141,24 @@ class Kraken(Exchange):
             allowed on each pair
         """
         leverages = {}
-        try:
-            for pair, market in self.markets.items():
-                info = market['info']
-                leverage_buy = info['leverage_buy']
-                leverage_sell = info['leverage_sell']
-                if len(info['leverage_buy']) > 0 or len(info['leverage_sell']) > 0:
-                    if leverage_buy != leverage_sell:
-                        logger.warning(f"The buy leverage != the sell leverage for {pair}. Please"
-                                       "let freqtrade know because this has never happened before"
-                                       )
-                        if max(leverage_buy) < max(leverage_sell):
-                            leverages[pair] = leverage_buy
-                        else:
-                            leverages[pair] = leverage_sell
-                    else:
+
+        for pair, market in self.markets.items():
+            info = market['info']
+            leverage_buy = info['leverage_buy'] if 'leverage_buy' in info else []
+            leverage_sell = info['leverage_sell'] if 'leverage_sell' in info else []
+            if len(leverage_buy) > 0 or len(leverage_sell) > 0:
+                if leverage_buy != leverage_sell:
+                    logger.warning(
+                        f"The buy({leverage_buy}) and sell({leverage_sell}) leverage are not equal"
+                        "{pair}. Please let freqtrade know because this has never happened before"
+                    )
+                    if max(leverage_buy) < max(leverage_sell):
                         leverages[pair] = leverage_buy
-            self._leverage_brackets = leverages
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                 f'{e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+                    else:
+                        leverages[pair] = leverage_sell
+                else:
+                    leverages[pair] = leverage_buy
+        self._leverage_brackets = leverages
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
@@ -176,7 +170,7 @@ class Kraken(Exchange):
 
     def set_leverage(self, pair, leverage):
         """
-            Kraken set's the leverage as an option it the order object, so it doesn't do
+            Kraken set's the leverage as an option in the order object, so it doesn't do
             anything in this function
         """
         return
