@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 import ccxt
 

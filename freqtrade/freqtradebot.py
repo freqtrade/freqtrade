@@ -242,11 +242,6 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
-    def add_funding_fees(self, trade: Trade):
-        if self.trading_mode == TradingMode.FUTURES:
-            funding_fees = self.exchange.get_funding_fees(trade.pair, trade.open_date)
-            trade.funding_fees = funding_fees
-
     def update_open_orders(self):
         """
         Updates open orders based on order list kept in the database.

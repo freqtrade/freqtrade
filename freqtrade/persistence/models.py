@@ -16,7 +16,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.leverage import interest
+from freqtrade.leverage import funding_fees, interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -707,6 +707,7 @@ class LocalTrade():
                 return float(self._calc_base_close(amount, rate, fee) - total_interest)
 
         elif (trading_mode == TradingMode.FUTURES):
+            self.add_funding_fees()
             funding_fees = self.funding_fees or 0.0
             return float(self._calc_base_close(amount, rate, fee)) + funding_fees
         else:
@@ -784,6 +785,16 @@ class LocalTrade():
             return orders[-1]
         else:
             return None
+
+    def add_funding_fees(self):
+        if self.trading_mode == TradingMode.FUTURES:
+            self.funding_fees = funding_fees(
+                self.exchange,
+                self.pair,
+                self.amount,
+                self.open_date_utc,
+                self.close_date_utc
+            )
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
