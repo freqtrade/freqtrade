@@ -3085,7 +3085,7 @@ def test_set_leverage(mocker, default_conf, exchange_name, collateral):
 def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
 
     api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock()
+    api_mock.set_margin_mode = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setMarginMode': True})
 
     ccxt_exceptionhandlers(
@@ -3130,8 +3130,8 @@ def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
     # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("ftx", TradingMode.MARGIN, Collateral.ISOLATED, False),
-    # ("ftx", TradingMode.FUTURES, Collateral.ISOLATED, False)
+    # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False)
 ])
 def test_validate_trading_mode_and_collateral(
     default_conf,

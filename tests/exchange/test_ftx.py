@@ -209,4 +209,4 @@ def test_fill_leverage_brackets_ftx(default_conf, mocker):
     # FTX only has one account wide leverage, so there's no leverage brackets
     exchange = get_patched_exchange(mocker, default_conf, id="ftx")
     exchange.fill_leverage_brackets()
-    assert bool(exchange._leverage_brackets) is False
+    assert exchange._leverage_brackets == {}
