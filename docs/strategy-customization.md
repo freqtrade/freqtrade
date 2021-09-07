@@ -702,9 +702,9 @@ def informative(timeframe: str, asset: str = '',
     :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
     specified, defaults to:
     * {base}_{column}_{timeframe} if asset is specified and quote currency does match stake
-    curerncy. 
+    currency. 
     * {base}_{quote}_{column}_{timeframe} if asset is specified and quote currency does not match 
-    stake curerncy. 
+    stake currency. 
     * {column}_{timeframe} if asset is not specified.
     Format string supports these format variables:
     * {asset} - full name of the asset, for example 'BTC/USDT'.

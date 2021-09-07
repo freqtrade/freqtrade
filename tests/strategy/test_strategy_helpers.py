@@ -155,11 +155,12 @@ def test_informative_decorator(mocker, default_conf):
     }
     from .strats.informative_decorator_strategy import InformativeDecoratorTest
     default_conf['stake_currency'] = 'USDT'
-    InformativeDecoratorTest.dp = DataProvider({}, None, None)
-    mocker.patch.object(InformativeDecoratorTest.dp, 'current_whitelist', return_value=[
-        'XRP/USDT', 'LTC/USDT'
-    ])
     strategy = InformativeDecoratorTest(config=default_conf)
+    strategy.dp = DataProvider({}, None, None)
+    mocker.patch.object(strategy.dp, 'current_whitelist', return_value=[
+        'XRP/USDT', 'LTC/USDT', 'BTC/USDT'
+    ])
+    strategy._initialize()
 
     assert len(strategy._ft_informative) == 8
     informative_pairs = [('XRP/USDT', '1h'), ('LTC/USDT', '1h'), ('XRP/USDT', '30m'),

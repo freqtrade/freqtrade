@@ -139,9 +139,9 @@ def informative(timeframe: str, asset: str = '',
     :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
     specified, defaults to:
     * {base}_{column}_{timeframe} if asset is specified and quote currency does match stake
-    curerncy.
+    currency.
     * {base}_{quote}_{column}_{timeframe} if asset is specified and quote currency does not match
-    stake curerncy.
+    stake currency.
     * {column}_{timeframe} if asset is not specified.
     Format string supports these format variables:
     * {asset} - full name of the asset, for example 'BTC/USDT'.
@@ -203,11 +203,10 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame,
     # fmt='{base}_{quote}_{column}_{timeframe}' format or similar.
     if not fmt:
         fmt = '{column}_{timeframe}'                # Informatives of current pair
-        if asset != metadata['pair']:
-            if quote == config['stake_currency']:
-                fmt = '{base}_' + fmt               # Informatives of other pair
-            else:
-                fmt = '{base}_{quote}_' + fmt       # Informatives of different quote currency
+        if quote != config['stake_currency']:
+            fmt = '{quote}_' + fmt                  # Informatives of different quote currency
+        if informative_data.asset:
+            fmt = '{base}_' + fmt                   # Informatives of other pair
 
     inf_metadata = {'pair': asset, 'timeframe': timeframe}
     inf_dataframe = dp.get_pair_dataframe(asset, timeframe)

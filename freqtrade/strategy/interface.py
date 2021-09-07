@@ -137,9 +137,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
         super().__init__(config)
 
+    def _initialize(self):
+        """
+        Late initialization tasks, which may depend on availability of dataprovider/wallets/etc.
+        """
         # Gather informative pairs from @informative-decorated methods.
         self._ft_informative: Dict[
-            Tuple[str, str], Tuple[InformativeData, PopulateIndicators]] = {}
+            Tuple[str, str], List[Tuple[InformativeData, PopulateIndicators]]] = {}
         for attr_name in dir(self.__class__):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
@@ -158,16 +162,19 @@ class IStrategy(ABC, HyperStrategyMixin):
                                                'strategy timeframe!')
                 if asset:
                     pair = _format_pair_name(self.config, asset)
-                    if (pair, timeframe) in self._ft_informative:
-                        raise OperationalException(f'Informative pair {pair} {timeframe} can not '
-                                                   f'be defined more than once!')
-                    self._ft_informative[(pair, timeframe)] = (informative_data, cls_method)
-                elif self.dp is not None:
+                    try:
+                        self._ft_informative[(pair, timeframe)].append(
+                            (informative_data, cls_method))
+                    except KeyError:
+                        self._ft_informative[(pair, timeframe)] = [(informative_data, cls_method)]
+                else:
                     for pair in self.dp.current_whitelist():
-                        if (pair, timeframe) in self._ft_informative:
-                            raise OperationalException(f'Informative pair {pair} {timeframe} can '
-                                                       f'not be defined more than once!')
-                        self._ft_informative[(pair, timeframe)] = (informative_data, cls_method)
+                        try:
+                            self._ft_informative[(pair, timeframe)].append(
+                                (informative_data, cls_method))
+                        except KeyError:
+                            self._ft_informative[(pair, timeframe)] = \
+                                [(informative_data, cls_method)]
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -838,11 +845,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
 
         # call populate_indicators_Nm() which were tagged with @informative decorator.
-        for (pair, timeframe), (informative_data, populate_fn) in self._ft_informative.items():
-            if not informative_data.asset and pair != metadata['pair']:
-                continue
-            dataframe = _create_and_merge_informative_pair(
-                self, dataframe, metadata, informative_data, populate_fn)
+        for (pair, timeframe), informatives in self._ft_informative.items():
+            for (informative_data, populate_fn) in informatives:
+                if not informative_data.asset and pair != metadata['pair']:
+                    continue
+                dataframe = _create_and_merge_informative_pair(
+                    self, dataframe, metadata, informative_data, populate_fn)
 
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
