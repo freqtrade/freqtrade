@@ -1226,6 +1226,7 @@ class Exchange:
                                         ) -> List:
         """
         Download historic ohlcv
+        :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
@@ -1234,13 +1235,6 @@ class Exchange:
             one_call,
             arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
         )
-        if self._ft_has.get('ohlcv_initial_call', False) and is_new_pair:
-            x = await self._async_get_candle_history(pair, timeframe, 0)
-            if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
-                # Set starting date to first available candle.
-                since_ms = x[2][0][0]
-                logger.info(f"Candle-data available starting with {since_ms}.")
-
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
