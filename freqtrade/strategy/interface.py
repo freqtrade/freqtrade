@@ -424,7 +424,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Internal method which gathers all informative pairs (user or automatically defined).
         """
         informative_pairs = self.informative_pairs()
-        informative_pairs += list(self._ft_informative.keys())
+        if hasattr(self, '_ft_informative'):
+            informative_pairs += list(self._ft_informative.keys())
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
@@ -844,13 +845,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
 
-        # call populate_indicators_Nm() which were tagged with @informative decorator.
-        for (pair, timeframe), informatives in self._ft_informative.items():
-            for (informative_data, populate_fn) in informatives:
-                if not informative_data.asset and pair != metadata['pair']:
-                    continue
-                dataframe = _create_and_merge_informative_pair(
-                    self, dataframe, metadata, informative_data, populate_fn)
+        if hasattr(self, '_ft_informative'):
+            # call populate_indicators_Nm() which were tagged with @informative decorator.
+            for (pair, timeframe), informatives in self._ft_informative.items():
+                for (informative_data, populate_fn) in informatives:
+                    if not informative_data.asset and pair != metadata['pair']:
+                        continue
+                    dataframe = _create_and_merge_informative_pair(
+                        self, dataframe, metadata, informative_data, populate_fn)
 
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
