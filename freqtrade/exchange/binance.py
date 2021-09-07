@@ -20,6 +20,7 @@ class Binance(Exchange):
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
         "ohlcv_candle_limit": 1000,
+        "ohlcv_initial_call": True,
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],

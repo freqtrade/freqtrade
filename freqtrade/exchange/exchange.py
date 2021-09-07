@@ -1194,7 +1194,7 @@ class Exchange:
     # Historic data
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
-                           since_ms: int) -> List:
+                           since_ms: int, is_new_pair: bool = False) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1206,7 +1206,7 @@ class Exchange:
         """
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                           since_ms=since_ms))
+                                           since_ms=since_ms, is_new_pair=is_new_pair))
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
                                  since_ms: int) -> DataFrame:
@@ -1221,9 +1221,9 @@ class Exchange:
         return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
                                   drop_incomplete=self._ohlcv_partial_candle)
 
-    async def _async_get_historic_ohlcv(self, pair: str,
-                                        timeframe: str,
-                                        since_ms: int) -> List:
+    async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
+                                        since_ms: int, is_new_pair: bool
+                                        ) -> List:
         """
         Download historic ohlcv
         """
@@ -1234,6 +1234,13 @@ class Exchange:
             one_call,
             arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
         )
+        if self._ft_has.get('ohlcv_initial_call', False) and is_new_pair:
+            x = await self._async_get_candle_history(pair, timeframe, 0)
+            if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
+                # Set starting date to first available candle.
+                since_ms = x[2][0][0]
+                logger.info(f"Candle-data available starting with {since_ms}.")
+
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
