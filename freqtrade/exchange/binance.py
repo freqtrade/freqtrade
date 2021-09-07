@@ -104,7 +104,7 @@ class Binance(Exchange):
             if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[2][0][0]
-                logger.info(f"Candle-data available starting with "
+                logger.info(f"Candle-data for {pair} available starting with "
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
         return await super()._async_get_historic_ohlcv(
             pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
