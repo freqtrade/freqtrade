@@ -567,7 +567,7 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        with self._freqtrade._sell_lock:
+        with self._freqtrade._exit_lock:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
@@ -629,7 +629,7 @@ class RPC:
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.
         """
-        with self._freqtrade._sell_lock:
+        with self._freqtrade._exit_lock:
             c_count = 0
             trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
             if not trade:

@@ -99,7 +99,7 @@ class FreqtradeBot(LoggingMixin):
         self.state = State[initial_state.upper()] if initial_state else State.STOPPED
 
         # Protect sell-logic from forcesell and vice versa
-        self._sell_lock = Lock()
+        self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
     def notify_status(self, msg: str) -> None:
@@ -166,14 +166,14 @@ class FreqtradeBot(LoggingMixin):
 
         self.strategy.analyze(self.active_pair_whitelist)
 
-        with self._sell_lock:
+        with self._exit_lock:
             # Check and handle any timed out open orders
             self.check_handle_timedout()
 
         # Protect from collisions with forcesell.
         # Without this, freqtrade my try to recreate stoploss_on_exchange orders
         # while selling is in process, since telegram messages arrive in an different thread.
-        with self._sell_lock:
+        with self._exit_lock:
             trades = Trade.get_open_trades()
             # First process current opened trades (positions)
             self.exit_positions(trades)
