@@ -2928,69 +2928,69 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
-# @pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
-# def test_get_funding_fees(default_conf, mocker, exchange_name):
-#     api_mock = MagicMock()
-#     api_mock.fetch_funding_history = MagicMock(return_value=[
-#         {
-#             'amount': 0.14542341,
-#             'code': 'USDT',
-#             'datetime': '2021-09-01T08:00:01.000Z',
-#             'id': '485478',
-#             'info': {'asset': 'USDT',
-#                      'income': '0.14542341',
-#                      'incomeType': 'FUNDING_FEE',
-#                      'info': 'FUNDING_FEE',
-#                      'symbol': 'XRPUSDT',
-#                      'time': '1630512001000',
-#                      'tradeId': '',
-#                      'tranId': '4854789484855218760'},
-#             'symbol': 'XRP/USDT',
-#             'timestamp': 1630512001000
-#         },
-#         {
-#             'amount': -0.14642341,
-#             'code': 'USDT',
-#             'datetime': '2021-09-01T16:00:01.000Z',
-#             'id': '485479',
-#             'info': {'asset': 'USDT',
-#                      'income': '-0.14642341',
-#                      'incomeType': 'FUNDING_FEE',
-#                      'info': 'FUNDING_FEE',
-#                      'symbol': 'XRPUSDT',
-#                      'time': '1630512001000',
-#                      'tradeId': '',
-#                      'tranId': '4854789484855218760'},
-#             'symbol': 'XRP/USDT',
-#             'timestamp': 1630512001000
-#         }
-#     ])
-#     type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
+@pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
+def test_get_funding_fees(default_conf, mocker, exchange_name):
+    api_mock = MagicMock()
+    api_mock.fetch_funding_history = MagicMock(return_value=[
+        {
+            'amount': 0.14542341,
+            'code': 'USDT',
+            'datetime': '2021-09-01T08:00:01.000Z',
+            'id': '485478',
+            'info': {'asset': 'USDT',
+                     'income': '0.14542341',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630512001000',
+                     'tradeId': '',
+                     'tranId': '4854789484855218760'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630512001000
+        },
+        {
+            'amount': -0.14642341,
+            'code': 'USDT',
+            'datetime': '2021-09-01T16:00:01.000Z',
+            'id': '485479',
+            'info': {'asset': 'USDT',
+                     'income': '-0.14642341',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630512001000',
+                     'tradeId': '',
+                     'tranId': '4854789484855218760'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630512001000
+        }
+    ])
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
 
-#     # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
-#     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-#     date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
-#     unix_time = int(date_time.strftime('%s'))
-#     expected_fees = -0.001  # 0.14542341 + -0.14642341
-#     fees_from_datetime = exchange.get_funding_fees(
-#         pair='XRP/USDT',
-#         since=date_time
-#     )
-#     fees_from_unix_time = exchange.get_funding_fees(
-#         pair='XRP/USDT',
-#         since=unix_time
-#     )
+    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
+    unix_time = int(date_time.strftime('%s'))
+    expected_fees = -0.001  # 0.14542341 + -0.14642341
+    fees_from_datetime = exchange.get_funding_fees(
+        pair='XRP/USDT',
+        since=date_time
+    )
+    fees_from_unix_time = exchange.get_funding_fees(
+        pair='XRP/USDT',
+        since=unix_time
+    )
 
-#     assert(isclose(expected_fees, fees_from_datetime))
-#     assert(isclose(expected_fees, fees_from_unix_time))
+    assert(isclose(expected_fees, fees_from_datetime))
+    assert(isclose(expected_fees, fees_from_unix_time))
 
-#     ccxt_exceptionhandlers(
-#         mocker,
-#         default_conf,
-#         api_mock,
-#         exchange_name,
-#         "get_funding_fees",
-#         "fetch_funding_history",
-#         pair="XRP/USDT",
-#         since=unix_time
-#     )
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        exchange_name,
+        "get_funding_fees",
+        "fetch_funding_history",
+        pair="XRP/USDT",
+        since=unix_time
+    )
