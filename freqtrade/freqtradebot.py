@@ -912,7 +912,7 @@ class FreqtradeBot(LoggingMixin):
                                              default_retval=False)(pair=trade.pair,
                                                                    trade=trade,
                                                                    order=order))):
-                self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
@@ -921,7 +921,7 @@ class FreqtradeBot(LoggingMixin):
                                            default_retval=False)(pair=trade.pair,
                                                                  trade=trade,
                                                                  order=order))):
-                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -937,13 +937,13 @@ class FreqtradeBot(LoggingMixin):
                 continue
 
             if order['side'] == 'buy':
-                self.handle_cancel_buy(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+                self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
 
             elif order['side'] == 'sell':
-                self.handle_cancel_sell(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
+                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['ALL_CANCELLED'])
         Trade.commit()
 
-    def handle_cancel_buy(self, trade: Trade, order: Dict, reason: str) -> bool:
+    def handle_cancel_enter(self, trade: Trade, order: Dict, reason: str) -> bool:
         """
         Buy cancel - cancel order
         :return: True if order was fully cancelled
@@ -1004,7 +1004,7 @@ class FreqtradeBot(LoggingMixin):
                                   reason=reason)
         return was_trade_fully_canceled
 
-    def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
+    def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
         """
         Sell cancel - cancel order and update trade
         :return: Reason for cancel
