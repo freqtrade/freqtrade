@@ -386,7 +386,7 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ]
+            ]
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
