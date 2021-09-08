@@ -58,6 +58,8 @@ class SampleStrategy(IStrategy):
     # Hyperoptable parameters
     buy_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
     sell_rsi = IntParameter(low=50, high=100, default=70, space='sell', optimize=True, load=True)
+    short_rsi = IntParameter(low=51, high=100, default=70, space='sell', optimize=True, load=True)
+    exit_short_rsi = IntParameter(low=1, high=50, default=30, space='buy', optimize=True, load=True)
 
     # Optimal timeframe for the strategy.
     timeframe = '5m'
@@ -354,6 +356,16 @@ class SampleStrategy(IStrategy):
             ),
             'buy'] = 1
 
+        dataframe.loc[
+            (
+                # Signal: RSI crosses above 70
+                (qtpylib.crossed_above(dataframe['rsi'], self.short_rsi.value)) &
+                (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            'enter_short'] = 1
+
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -372,4 +384,16 @@ class SampleStrategy(IStrategy):
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
             'sell'] = 1
+
+        dataframe.loc[
+            (
+                # Signal: RSI crosses above 30
+                (qtpylib.crossed_above(dataframe['rsi'], self.exit_short_rsi.value)) &
+                # Guard: tema below BB middle
+                (dataframe['tema'] <= dataframe['bb_middleband']) &
+                (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
+                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+            ),
+            'exit_short'] = 1
+
         return dataframe
