@@ -1199,7 +1199,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert trade.stoploss_order_id is None
     assert trade.sell_reason == SellType.EMERGENCY_SELL.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
-    assert log_has("Selling the trade forcefully", caplog)
+    assert log_has("Exiting the trade forcefully", caplog)
 
     # Should call a market sell
     assert create_order_mock.call_count == 2
@@ -1670,7 +1670,7 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
                            MagicMock(return_value=False))
     n = freqtrade.enter_positions()
     assert n == 0
-    assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
+    assert log_has('Found no enter signals for whitelisted currencies. Trying again...', caplog)
     # create_trade should be called once for every pair in the whitelist.
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
     caplog.clear()
@@ -1733,7 +1733,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     )
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    assert log_has('Unable to sell trade ETH/BTC: ', caplog)
+    assert log_has('Unable to exit trade ETH/BTC: ', caplog)
     caplog.clear()
 
 
@@ -3366,7 +3366,7 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     caplog.clear()
 
 
-def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
+def test_safe_exit_amount_error(default_conf, fee, caplog, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
@@ -3383,8 +3383,8 @@ def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    with pytest.raises(DependencyException, match=r"Not enough amount to sell."):
-        assert freqtrade._safe_sell_amount(trade.pair, trade.amount)
+    with pytest.raises(DependencyException, match=r"Not enough amount to exit."):
+        assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 
 def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog) -> None:
