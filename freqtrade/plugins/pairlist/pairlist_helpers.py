@@ -17,7 +17,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
     if keep_invalid:
         for pair_wc in wildcardpl:
             try:
-                comp = re.compile(pair_wc)
+                comp = re.compile(pair_wc, re.IGNORECASE)
                 result_partial = [
                     pair for pair in available_pairs if re.fullmatch(comp, pair)
                 ]
@@ -33,7 +33,7 @@ def expand_pairlist(wildcardpl: List[str], available_pairs: List[str],
     else:
         for pair_wc in wildcardpl:
             try:
-                comp = re.compile(pair_wc)
+                comp = re.compile(pair_wc, re.IGNORECASE)
                 result += [
                     pair for pair in available_pairs if re.fullmatch(comp, pair)
                 ]

@@ -403,8 +403,11 @@ class RPC:
         # Doing the sum is not right - overall profit needs to be based on initial capital
         profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
         starting_balance = self._freqtrade.wallets.get_starting_balance()
-        profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
-        profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
+        profit_closed_ratio_fromstart = 0
+        profit_all_ratio_fromstart = 0
+        if starting_balance:
+            profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
+            profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
 
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,

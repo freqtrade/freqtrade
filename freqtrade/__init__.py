@@ -22,7 +22,7 @@ if __version__ == 'develop':
         #  subprocess.check_output(
         #     ['git', 'log', '--format="%h"', '-n 1'],
         #     stderr=subprocess.DEVNULL).decode("utf-8").rstrip().strip('"')
-    except Exception:
+    except Exception:  # pragma: no cover
         # git not available, ignore
         try:
             # Try Fallback to freqtrade_commit file (created by CI while building docker image)
