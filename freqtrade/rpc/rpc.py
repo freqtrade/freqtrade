@@ -36,6 +36,7 @@ class RPCException(Exception):
 
     raise RPCException('*Status:* `no active trade`')
     """
+    # TODO-lev: Add new configuration options introduced with leveraged/short trading
 
     def __init__(self, message: str) -> None:
         super().__init__(self)
