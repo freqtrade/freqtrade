@@ -852,7 +852,7 @@ class FreqtradeBot(LoggingMixin):
                                    f"for pair {trade.pair}.")
 
     def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                enter: bool, exit_: bool) -> bool:
+                                buy: bool, sell: bool) -> bool:
         """
         Check and execute exit
         """
