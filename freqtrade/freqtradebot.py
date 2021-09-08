@@ -4,6 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
+import schedule
 from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
@@ -106,6 +107,11 @@ class FreqtradeBot(LoggingMixin):
             self.trading_mode = self.config['trading_mode']
         else:
             self.trading_mode = TradingMode.SPOT
+
+        if self.trading_mode == TradingMode.FUTURES:
+            for time_slot in self.exchange.funding_fee_times:
+                schedule.every().day.at(time_slot).do(self.update_funding_fees())
+                self.wallets.update()
 
     def notify_status(self, msg: str) -> None:
         """
@@ -242,6 +248,12 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
+    def update_funding_fees(self):
+        if self.trading_mode == TradingMode.FUTURES:
+            for trade in Trade.get_open_trades():
+                funding_fees = self.exchange.get_funding_fees(trade.pair, trade.open_date)
+                trade.funding_fees = funding_fees
+
     def update_open_orders(self):
         """
         Updates open orders based on order list kept in the database.
@@ -263,6 +275,9 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError as e:
 
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
+
+        if self.trading_mode == TradingMode.FUTURES:
+            schedule.run_pending()
 
     def update_closed_trades_without_assigned_fees(self):
         """
@@ -566,6 +581,12 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        open_date = datetime.utcnow()
+        if self.trading_mode == TradingMode.FUTURES:
+            funding_fees = self.exchange.get_funding_fees(pair, open_date)
+        else:
+            funding_fees = 0.0
+
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
@@ -576,13 +597,14 @@ class FreqtradeBot(LoggingMixin):
             fee_close=fee,
             open_rate=buy_limit_filled_price,
             open_rate_requested=buy_limit_requested,
-            open_date=datetime.utcnow(),
+            open_date=open_date,
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
             buy_tag=buy_tag,
             timeframe=timeframe_to_minutes(self.config['timeframe']),
-            trading_mode=self.trading_mode
+            trading_mode=self.trading_mode,
+            funding_fees=funding_fees
         )
         trade.orders.append(order_obj)
 
