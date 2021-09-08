@@ -955,7 +955,7 @@ class FreqtradeBot(LoggingMixin):
         Buy cancel - cancel order
         :return: True if order was fully cancelled
         """
-        # TODO-lev: Pay back borrowed/interest and transfer back on margin trades
+        # TODO-lev: Pay back borrowed/interest and transfer back on leveraged trades
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
