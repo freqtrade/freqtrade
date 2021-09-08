@@ -515,7 +515,9 @@ class FreqtradeBot(LoggingMixin):
         order_type = self.strategy.order_types['buy']
         if forcebuy:
             # Forcebuy can define a different ordertype
+            # TODO-lev: get a forceshort? What is this
             order_type = self.strategy.order_types.get('forcebuy', order_type)
+        # TODO-lev: Will this work for shorting?
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=buy_limit_requested,
@@ -600,7 +602,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_enter(self, trade: Trade, order_type: str) -> None:
         """
-        Sends rpc notification when a buy occurred.
+        Sends rpc notification when a buy/short occurred.
         """
         msg = {
             'trade_id': trade.id,
@@ -766,8 +768,8 @@ class FreqtradeBot(LoggingMixin):
         Check if trade is fulfilled in which case the stoploss
         on exchange should be added immediately if stoploss on exchange
         is enabled.
-        # TODO-mg: liquidation price will always be on exchange, even though
-        # TODO-mg: stoploss_on_exchange might not be enabled
+        # TODO-lev: liquidation price will always be on exchange, even though
+        # TODO-lev: stoploss_on_exchange might not be enabled
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
