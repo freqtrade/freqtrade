@@ -296,9 +296,9 @@ class FreqtradeBot(LoggingMixin):
         if sell_order:
             self.refind_lost_order(trade)
         else:
-            self.reupdate_buy_order_fees(trade)
+            self.reupdate_enter_order_fees(trade)
 
-    def reupdate_buy_order_fees(self, trade: Trade):
+    def reupdate_enter_order_fees(self, trade: Trade):
         """
         Get buy order from database, and try to reupdate.
         Handles trades where the initial fee-update did not work.
