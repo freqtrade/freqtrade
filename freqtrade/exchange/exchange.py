@@ -1518,7 +1518,7 @@ class Exchange:
                                           until=until, from_id=from_id))
 
     # https://www.binance.com/en/support/faq/360033525031
-    def fetch_funding_rate(self):
+    def fetch_funding_rate(self, pair):
         if not self.exchange_has("fetchFundingHistory"):
             raise OperationalException(
                 f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
