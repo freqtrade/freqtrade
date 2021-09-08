@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-from freqtrade.enums.signaltype import SignalDirection
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,6 +12,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import SellType
+from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
@@ -47,8 +47,8 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history.loc[1, 'exit_long'] = 0
     mocked_history.loc[1, 'enter_long'] = 1
 
-    assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history
-        ) == (SignalDirection.LONG, None)
+    assert _STRATEGY.get_entry_signal(
+        'ETH/BTC', '5m', mocked_history) == (SignalDirection.LONG, None)
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False)
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
     mocked_history.loc[1, 'exit_long'] = 0
