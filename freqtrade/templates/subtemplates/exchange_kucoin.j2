@@ -1,18 +1,15 @@
-"order_types": {
-    "buy": "limit",
-    "sell": "limit",
-    "emergencysell": "limit",
-    "stoploss": "limit",
-    "stoploss_on_exchange": false
-},
 "exchange": {
     "name": "{{ exchange_name | lower }}",
     "key": "{{ exchange_key }}",
     "secret": "{{ exchange_secret }}",
-    "ccxt_config": {"enableRateLimit": true},
+    "password": "{{ exchange_key_password }}",
+    "ccxt_config": {
+        "enableRateLimit": true
+        "rateLimit": 200
+    },
     "ccxt_async_config": {
         "enableRateLimit": true,
-        "rateLimit": 500
+        "rateLimit": 200
     },
     "pair_whitelist": [
     ],

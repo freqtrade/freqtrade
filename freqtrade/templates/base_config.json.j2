@@ -1,3 +1,10 @@
+{%set volume_pairlist = '{
+            "method": "VolumePairList",
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "min_value": 0,
+            "refresh_period": 1800
+        }' %}
 {
     "max_open_trades": {{ max_open_trades }},
     "stake_currency": "{{ stake_currency }}",
@@ -29,7 +36,7 @@
     },
     {{ exchange | indent(4) }},
     "pairlists": [
-        {"method": "StaticPairList"}
+        {{ '{"method": "StaticPairList"}' if exchange_name == 'bittrex' else  volume_pairlist }}
     ],
     "edge": {
         "enabled": false,
