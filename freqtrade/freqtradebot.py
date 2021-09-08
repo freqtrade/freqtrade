@@ -385,7 +385,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning('Unable to create trade for %s: %s', pair, exception)
 
         if not trades_created:
-            logger.debug("Found no buy signals for whitelisted currencies. Trying again...")
+            logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
 
         return trades_created
 
@@ -681,7 +681,7 @@ class FreqtradeBot(LoggingMixin):
                     trades_closed += 1
 
             except DependencyException as exception:
-                logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
+                logger.warning('Unable to exit trade %s: %s', trade.pair, exception)
 
         # Updating wallets if any trade occurred
         if trades_closed:
@@ -1062,7 +1062,7 @@ class FreqtradeBot(LoggingMixin):
             return wallet_amount
         else:
             raise DependencyException(
-                f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
+                f"Not enough amount to exit trade. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
     def execute_trade_exit(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
         """
