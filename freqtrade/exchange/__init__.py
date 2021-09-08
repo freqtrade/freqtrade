@@ -8,7 +8,7 @@ from freqtrade.exchange.binance import Binance
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.coinbasepro import Coinbasepro
-from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges, hours_to_time,
+from freqtrade.exchange.exchange import (available_exchanges, ccxt_exchanges,
                                          is_exchange_known_ccxt, is_exchange_officially_supported,
                                          market_is_active, timeframe_to_minutes, timeframe_to_msecs,
                                          timeframe_to_next_date, timeframe_to_prev_date,

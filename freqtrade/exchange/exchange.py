@@ -1556,15 +1556,6 @@ class Exchange:
             raise OperationalException(e) from e
 
 
-def hours_to_time(hours: List[int]) -> List[time]:
-    '''
-        :param hours: a list of hours as a time of day (e.g. [1, 16] is 01:00 and 16:00 o'clock)
-        :return: a list of datetime time objects that correspond to the hours in hours
-    '''
-    # TODO-lev: These must be utc time
-    return [datetime.strptime(str(t), '%H').time() for t in hours]
-
-
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
 

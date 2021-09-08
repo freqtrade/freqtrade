@@ -6,9 +6,9 @@ import ccxt
 from datetime import time
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Exchange, hours_to_time
+from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-
+from freqtrade.utils import hours_to_time
 
 logger = logging.getLogger(__name__)
 
