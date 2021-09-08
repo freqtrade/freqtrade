@@ -37,13 +37,16 @@ logger = logging.getLogger(__name__)
 
 # Indexes for backtest tuples
 DATE_IDX = 0
-BUY_IDX = 1
-OPEN_IDX = 2
-CLOSE_IDX = 3
-SELL_IDX = 4
-LOW_IDX = 5
-HIGH_IDX = 6
-BUY_TAG_IDX = 7
+OPEN_IDX = 1
+HIGH_IDX = 2
+LOW_IDX = 3
+CLOSE_IDX = 4
+LONG_IDX = 5
+ELONG_IDX = 6  # Exit long
+SHORT_IDX = 7
+ESHORT_IDX = 8  # Exit short
+BUY_TAG_IDX = 9
+SHORT_TAG_IDX = 10
 
 
 class Backtesting:
@@ -65,8 +68,8 @@ class Backtesting:
         remove_credentials(self.config)
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
-
-        self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
+        self._exchange_name = self.config['exchange']['name']
+        self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
         self.dataprovider = DataProvider(self.config, None)
 
         if self.config.get('strategy_list', None):
@@ -246,7 +249,8 @@ class Backtesting:
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag']
+        headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
+                   'enter_short', 'exit_short', 'long_tag', 'short_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -254,10 +258,18 @@ class Backtesting:
         for pair, pair_data in processed.items():
             self.check_abort()
             self.progress.increment()
+
             if not pair_data.empty:
-                pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
-                pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
-                pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
+                # Cleanup from prior runs
+                # TODO-lev: The below is not 100% compatible with the interface compatibility layer
+                if 'enter_long' in pair_data.columns:
+                    pair_data.loc[:, 'enter_long'] = 0
+                pair_data.loc[:, 'enter_short'] = 0
+                if 'exit_long' in pair_data.columns:
+                    pair_data.loc[:, 'exit_long'] = 0
+                pair_data.loc[:, 'exit_short'] = 0
+                pair_data.loc[:, 'long_tag'] = None
+                pair_data.loc[:, 'short_tag'] = None
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}),
@@ -268,9 +280,11 @@ class Backtesting:
                                          startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
-            df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
-            df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
-            df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
+            df_analyzed.loc[:, 'enter_long'] = df_analyzed.loc[:, 'enter_long'].shift(1)
+            df_analyzed.loc[:, 'enter_short'] = df_analyzed.loc[:, 'enter_short'].shift(1)
+            df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
+            df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
+            df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
@@ -351,10 +365,13 @@ class Backtesting:
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
-        sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
-                                         sell_candle_time, sell_row[BUY_IDX],
-                                         sell_row[SELL_IDX],
-                                         low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX])
+        enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
+        exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]
+        sell = self.strategy.should_exit(
+            trade, sell_row[OPEN_IDX], sell_candle_time,  # type: ignore
+            enter=enter, exit_=exit_,
+            low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
+            )
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
@@ -390,9 +407,12 @@ class Backtesting:
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
-            detail_data['buy'] = sell_row[BUY_IDX]
-            detail_data['sell'] = sell_row[SELL_IDX]
-            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+            detail_data['enter_long'] = sell_row[LONG_IDX]
+            detail_data['exit_long'] = sell_row[ELONG_IDX]
+            detail_data['enter_short'] = sell_row[SHORT_IDX]
+            detail_data['exit_short'] = sell_row[ESHORT_IDX]
+            headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
+                       'enter_short', 'exit_short']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)
                 if res:
@@ -403,7 +423,7 @@ class Backtesting:
         else:
             return self._get_sell_trade_entry_for_candle(trade, sell_row)
 
-    def _enter_trade(self, pair: str, row: List) -> Optional[LocalTrade]:
+    def _enter_trade(self, pair: str, row: List, direction: str) -> Optional[LocalTrade]:
         try:
             stake_amount = self.wallets.get_trade_stake_amount(pair, None)
         except DependencyException:
@@ -442,7 +462,8 @@ class Backtesting:
                 fee_close=self.fee,
                 is_open=True,
                 buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
-                exchange='backtesting',
+                exchange=self._exchange_name,
+                is_short=(direction == 'short'),
             )
             return trade
         return None
@@ -475,6 +496,20 @@ class Backtesting:
         # Rejected trade
         self.rejected_trades += 1
         return False
+
+    def check_for_trade_entry(self, row) -> Optional[str]:
+        enter_long = row[LONG_IDX] == 1
+        exit_long = row[ELONG_IDX] == 1
+        enter_short = row[SHORT_IDX] == 1
+        exit_short = row[ESHORT_IDX] == 1
+
+        if enter_long == 1 and not any([exit_long, enter_short]):
+            # Long
+            return 'long'
+        if enter_short == 1 and not any([exit_short, enter_long]):
+            # Short
+            return 'short'
+        return None
 
     def backtest(self, processed: Dict,
                  start_date: datetime, end_date: datetime,
@@ -538,15 +573,15 @@ class Backtesting:
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
+                trade_dir = self.check_for_trade_entry(row)
                 if (
                     (position_stacking or len(open_trades[pair]) == 0)
                     and self.trade_slot_available(max_open_trades, open_trade_count_start)
                     and tmp != end_date
-                    and row[BUY_IDX] == 1
-                    and row[SELL_IDX] != 1
+                    and trade_dir is not None
                     and not PairLocks.is_pair_locked(pair, row[DATE_IDX])
                 ):
-                    trade = self._enter_trade(pair, row)
+                    trade = self._enter_trade(pair, row, trade_dir)
                     if trade:
                         # TODO: hacky workaround to avoid opening > max_open_trades
                         # This emulates previous behaviour - not sure if this is correct

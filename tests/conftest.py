@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from functools import reduce
 from pathlib import Path
+from typing import Optional
 from unittest.mock import MagicMock, Mock, PropertyMock
 
 import arrow
@@ -18,6 +19,7 @@ from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
 from freqtrade.enums import RunMode
+from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -182,13 +184,35 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False, None)) -> None:
+def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
+                     enter_short=False, exit_short=False, enter_tag: Optional[str] = None) -> None:
     """
     :param mocker: mocker to patch IStrategy class
     :param value: which value IStrategy.get_signal() must return
+           (buy, sell, buy_tag)
     :return: None
     """
-    freqtrade.strategy.get_signal = lambda e, s, x: value
+    # returns (Signal-direction, signaname)
+    def patched_get_entry_signal(*args, **kwargs):
+        direction = None
+        if enter_long and not any([exit_long, enter_short]):
+            direction = SignalDirection.LONG
+        if enter_short and not any([exit_short, enter_long]):
+            direction = SignalDirection.SHORT
+
+        return direction, enter_tag
+
+    freqtrade.strategy.get_entry_signal = patched_get_entry_signal
+
+    def patched_get_exit_signal(pair, timeframe, dataframe, is_short):
+        if is_short:
+            return enter_short, exit_short
+        else:
+            return enter_long, exit_long
+
+    # returns (enter, exit)
+    freqtrade.strategy.get_exit_signal = patched_get_exit_signal
+
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 

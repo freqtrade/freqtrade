@@ -42,5 +42,6 @@ def test_strategy_test_v2(result, fee):
                                        rate=20000, time_in_force='gtc', sell_reason='roi',
                                        current_time=datetime.utcnow()) is True
 
+    # TODO-lev: Test for shorts?
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
                                     current_rate=20_000, current_profit=0.05) == strategy.stoploss

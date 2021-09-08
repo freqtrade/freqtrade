@@ -118,10 +118,12 @@ def test_strategy(result, default_conf):
     assert 'adx' in df_indicators
 
     dataframe = strategy.advise_buy(df_indicators, metadata=metadata)
-    assert 'buy' in dataframe.columns
+    assert 'buy' not in dataframe.columns
+    assert 'enter_long' in dataframe.columns
 
     dataframe = strategy.advise_sell(df_indicators, metadata=metadata)
-    assert 'sell' in dataframe.columns
+    assert 'sell' not in dataframe.columns
+    assert 'exit_long' in dataframe.columns
 
 
 def test_strategy_override_minimal_roi(caplog, default_conf):
@@ -394,7 +396,7 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
                    caplog)
 
 
-def test_strategy_interface_versioning(result, monkeypatch, default_conf):
+def test_strategy_interface_versioning(result, default_conf):
     default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
@@ -411,8 +413,11 @@ def test_strategy_interface_versioning(result, monkeypatch, default_conf):
 
     enterdf = strategy.advise_buy(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
-    assert 'buy' in enterdf.columns
+
+    assert 'buy' not in enterdf.columns
+    assert 'enter_long' in enterdf.columns
 
     exitdf = strategy.advise_sell(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
-    assert 'sell' in exitdf
+    assert 'sell' not in exitdf
+    assert 'exit_long' in exitdf

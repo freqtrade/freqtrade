@@ -1,5 +1,6 @@
 import pandas as pd
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 
 
@@ -58,7 +59,11 @@ def merge_informative_pair(dataframe: pd.DataFrame, informative: pd.DataFrame,
     return dataframe
 
 
-def stoploss_from_open(open_relative_stop: float, current_profit: float) -> float:
+def stoploss_from_open(
+    open_relative_stop: float,
+    current_profit: float,
+    for_short: bool = False
+) -> float:
     """
 
     Given the current profit, and a desired stop loss value relative to the open price,
@@ -79,7 +84,16 @@ def stoploss_from_open(open_relative_stop: float, current_profit: float) -> floa
     if current_profit == -1:
         return 1
 
-    stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+    if for_short is True:
+        # TODO-lev: How would this be calculated for short
+        raise OperationalException(
+            "Freqtrade hasn't figured out how to calculated stoploss on shorts")
+        # stoploss = 1-((1+open_relative_stop)/(1+current_profit))
+    else:
+        stoploss = 1-((1+open_relative_stop)/(1+current_profit))
 
     # negative stoploss values indicate the requested stop price is higher than the current price
-    return max(stoploss, 0.0)
+    if for_short:
+        return min(stoploss, 0.0)
+    else:
+        return max(stoploss, 0.0)

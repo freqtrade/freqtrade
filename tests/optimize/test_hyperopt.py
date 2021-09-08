@@ -25,6 +25,9 @@ from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
 from .hyperopts.hyperopt_test_sep_file import HyperoptTestSepFile
 
 
+# TODO-lev: This file
+
+
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 
@@ -448,6 +451,10 @@ def test_buy_strategy_generator(hyperopt, testdatadir) -> None:
             'fastd-value': 20,
             'mfi-value': 20,
             'rsi-value': 20,
+            'short-adx-value': 80,
+            'short-fastd-value': 80,
+            'short-mfi-value': 80,
+            'short-rsi-value': 80,
             'adx-enabled': True,
             'fastd-enabled': True,
             'mfi-enabled': True,
@@ -473,6 +480,10 @@ def test_sell_strategy_generator(hyperopt, testdatadir) -> None:
             'sell-fastd-value': 75,
             'sell-mfi-value': 80,
             'sell-rsi-value': 20,
+            'exit-short-adx-value': 80,
+            'exit-short-fastd-value': 25,
+            'exit-short-mfi-value': 20,
+            'exit-short-rsi-value': 80,
             'sell-adx-enabled': True,
             'sell-fastd-enabled': True,
             'sell-mfi-enabled': True,
