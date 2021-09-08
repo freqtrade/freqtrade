@@ -371,7 +371,7 @@ class Backtesting:
             trade, sell_row[OPEN_IDX], sell_candle_time,  # type: ignore
             enter=enter, exit_=exit_,
             low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
-            )
+        )
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
@@ -403,7 +403,7 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ]
+            ]
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
