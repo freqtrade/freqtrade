@@ -70,7 +70,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         create_stoploss_order=MagicMock(return_value=True),
-        _notify_sell=MagicMock(),
+        _notify_exit=MagicMock(),
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_exit", should_sell_mock)
     wallets_mock = mocker.patch("freqtrade.wallets.Wallets.update", MagicMock())
@@ -154,7 +154,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     mocker.patch.multiple(
         'freqtrade.freqtradebot.FreqtradeBot',
         create_stoploss_order=MagicMock(return_value=True),
-        _notify_sell=MagicMock(),
+        _notify_exit=MagicMock(),
     )
     should_sell_mock = MagicMock(side_effect=[
         SellCheckTuple(sell_type=SellType.NONE),
