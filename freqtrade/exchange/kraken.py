@@ -1,12 +1,12 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import ccxt
-
+from datetime import time
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, hours_to_time
 from freqtrade.exchange.common import retrier
 
 
@@ -22,6 +22,7 @@ class Kraken(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
+    funding_fee_times: List[time] = hours_to_time([0, 4, 8, 12, 16, 20])
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

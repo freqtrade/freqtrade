@@ -1,12 +1,12 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 
 import ccxt
-
+from datetime import time
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, hours_to_time
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
 from freqtrade.misc import safe_value_fallback2
 
@@ -20,6 +20,7 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
+    funding_fee_times: List[time] = hours_to_time(list(range(0, 23)))
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

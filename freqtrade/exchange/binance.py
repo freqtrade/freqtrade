@@ -1,12 +1,12 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, Optional
+from typing import Dict, List
 
 import ccxt
-
+from datetime import time
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, hours_to_time
 from freqtrade.exchange.common import retrier
 
 
@@ -23,6 +23,7 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
+    funding_fee_times: List[time] = hours_to_time([0, 8, 16])
 
     def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
         """

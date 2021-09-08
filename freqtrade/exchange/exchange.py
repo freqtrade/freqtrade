@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -69,6 +69,7 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
+    funding_fee_times: List[time] = []
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
@@ -1523,6 +1524,15 @@ class Exchange:
                 f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
 
         return self._api.fetch_funding_rates()
+
+
+def hours_to_time(hours: List[int]) -> List[time]:
+    '''
+        :param hours: a list of hours as a time of day (e.g. [1, 16] is 01:00 and 16:00 o'clock)
+        :return: a list of datetime time objects that correspond to the hours in hours
+    '''
+    # TODO-lev: These must be utc time
+    return [datetime.strptime(str(t), '%H').time() for t in hours]
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
