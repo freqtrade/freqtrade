@@ -3345,7 +3345,7 @@ def test_sell_not_enough_balance(default_conf, limit_buy_order, limit_buy_order_
     caplog.clear()
 
 
-def test__safe_sell_amount(default_conf, fee, caplog, mocker):
+def test__safe_exit_amount(default_conf, fee, caplog, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
@@ -3365,18 +3365,18 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     patch_get_signal(freqtrade)
 
     wallet_update.reset_mock()
-    assert freqtrade._safe_sell_amount(trade.pair, trade.amount) == amount_wallet
+    assert freqtrade._safe_exit_amount(trade.pair, trade.amount) == amount_wallet
     assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
     assert wallet_update.call_count == 1
     caplog.clear()
     wallet_update.reset_mock()
-    assert freqtrade._safe_sell_amount(trade.pair, amount_wallet) == amount_wallet
+    assert freqtrade._safe_exit_amount(trade.pair, amount_wallet) == amount_wallet
     assert not log_has_re(r'.*Falling back to wallet-amount.', caplog)
     assert wallet_update.call_count == 1
     caplog.clear()
 
 
-def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
+def test__safe_exit_amount_error(default_conf, fee, caplog, mocker):
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
@@ -3394,7 +3394,7 @@ def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     with pytest.raises(DependencyException, match=r"Not enough amount to sell."):
-        assert freqtrade._safe_sell_amount(trade.pair, trade.amount)
+        assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 
 def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog) -> None:

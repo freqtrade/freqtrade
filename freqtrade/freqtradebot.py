@@ -1057,7 +1057,7 @@ class FreqtradeBot(LoggingMixin):
         )
         return reason
 
-    def _safe_sell_amount(self, pair: str, amount: float) -> float:
+    def _safe_exit_amount(self, pair: str, amount: float) -> float:
         """
         Get sellable amount.
         Should be trade.amount - but will fall back to the available amount if necessary.
@@ -1130,7 +1130,7 @@ class FreqtradeBot(LoggingMixin):
             # but we allow this value to be changed)
             order_type = self.strategy.order_types.get("forcesell", order_type)
 
-        amount = self._safe_sell_amount(trade.pair, trade.amount)
+        amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']  # TODO-lev update to exit
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
