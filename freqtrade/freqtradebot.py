@@ -590,11 +590,11 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_buy(trade, order_type)
+        self._notify_enter(trade, order_type)
 
         return True
 
-    def _notify_buy(self, trade: Trade, order_type: str) -> None:
+    def _notify_enter(self, trade: Trade, order_type: str) -> None:
         """
         Sends rpc notification when a buy occurred.
         """
@@ -617,7 +617,7 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_buy_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a buy cancel occurred.
         """
@@ -643,7 +643,7 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_buy_fill(self, trade: Trade) -> None:
+    def _notify_enter_fill(self, trade: Trade) -> None:
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL,
@@ -782,7 +782,7 @@ class FreqtradeBot(LoggingMixin):
             # Lock pair for one candle to prevent immediate rebuys
             self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                     reason='Auto lock')
-            self._notify_sell(trade, "stoploss")
+            self._notify_exit(trade, "stoploss")
             return True
 
         if trade.open_order_id or not trade.is_open:
@@ -994,8 +994,8 @@ class FreqtradeBot(LoggingMixin):
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        self._notify_buy_cancel(trade, order_type=self.strategy.order_types['buy'],
-                                reason=reason)
+        self._notify_enter_cancel(trade, order_type=self.strategy.order_types['buy'],
+                                  reason=reason)
         return was_trade_fully_canceled
 
     def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
@@ -1032,7 +1032,7 @@ class FreqtradeBot(LoggingMixin):
             reason = constants.CANCEL_REASON['PARTIALLY_FILLED_KEEP_OPEN']
 
         self.wallets.update()
-        self._notify_sell_cancel(
+        self._notify_exit_cancel(
             trade,
             order_type=self.strategy.order_types['sell'],
             reason=reason
@@ -1150,11 +1150,11 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
-        self._notify_sell(trade, order_type)
+        self._notify_exit(trade, order_type)
 
         return True
 
-    def _notify_sell(self, trade: Trade, order_type: str, fill: bool = False) -> None:
+    def _notify_exit(self, trade: Trade, order_type: str, fill: bool = False) -> None:
         """
         Sends rpc notification when a sell occurred.
         """
@@ -1196,7 +1196,7 @@ class FreqtradeBot(LoggingMixin):
         # Send the message
         self.rpc.send_msg(msg)
 
-    def _notify_sell_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
+    def _notify_exit_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
         Sends rpc notification when a sell cancel occurred.
         """
@@ -1291,13 +1291,13 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets when order is closed
         if not trade.is_open:
             if not stoploss_order and not trade.open_order_id:
-                self._notify_sell(trade, '', True)
+                self._notify_exit(trade, '', True)
             self.protections.stop_per_pair(trade.pair)
             self.protections.global_stop()
             self.wallets.update()
         elif not trade.open_order_id:
             # Buy fill
-            self._notify_buy_fill(trade)
+            self._notify_enter_fill(trade)
 
         return False
 

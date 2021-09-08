@@ -2485,7 +2485,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> N
     mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade._notify_buy_cancel = MagicMock()
+    freqtrade._notify_enter_cancel = MagicMock()
 
     trade = MagicMock()
     trade.pair = 'LTC/USDT'
@@ -2526,7 +2526,7 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf,
     cancel_order_mock = mocker.patch(
         'freqtrade.exchange.Exchange.cancel_order_with_result',
         return_value=limit_buy_order_canceled_empty)
-    nofiy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot._notify_buy_cancel')
+    nofiy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot._notify_enter_cancel')
     freqtrade = FreqtradeBot(default_conf)
 
     reason = CANCEL_REASON['TIMEOUT']
@@ -2555,7 +2555,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order,
     )
 
     freqtrade = FreqtradeBot(default_conf)
-    freqtrade._notify_buy_cancel = MagicMock()
+    freqtrade._notify_enter_cancel = MagicMock()
 
     trade = MagicMock()
     trade.pair = 'LTC/USDT'
