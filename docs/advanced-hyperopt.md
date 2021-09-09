@@ -80,7 +80,7 @@ To override a pre-defined space (`roi_space`, `generate_roi_table`, `stoploss_sp
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
         # Define a custom stoploss space.
-        def stoploss_space(self):
+        def stoploss_space():
             return [SKDecimal(-0.05, -0.01, decimals=3, name='stoploss')]
 ```
 
