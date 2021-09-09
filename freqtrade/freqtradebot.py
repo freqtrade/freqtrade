@@ -352,7 +352,7 @@ class FreqtradeBot(LoggingMixin):
 
     def enter_positions(self) -> int:
         """
-        Tries to execute long buy/short sell orders for new trades (positions)
+        Tries to execute entry orders for new trades (positions)
         """
         trades_created = 0
 
@@ -600,7 +600,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_buy(self, trade: Trade, order_type: str) -> None:
         """
-        Sends rpc notification when a buy/short occurred.
+        Sends rpc notification when a entry order occurred.
         """
         msg = {
             'trade_id': trade.id,
@@ -623,7 +623,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_buy_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
-        Sends rpc notification when a buy/short cancel occurred.
+        Sends rpc notification when a entry order cancel occurred.
         """
         current_rate = self.exchange.get_rate(trade.pair, refresh=False, side="buy")
 
@@ -669,7 +669,7 @@ class FreqtradeBot(LoggingMixin):
 
     def exit_positions(self, trades: List[Any]) -> int:
         """
-        Tries to execute sell/exit_short orders for open trades (positions)
+        Tries to execute exit orders for open trades (positions)
         """
         trades_closed = 0
         for trade in trades:
@@ -1012,7 +1012,7 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_cancel_sell(self, trade: Trade, order: Dict, reason: str) -> str:
         """
-        Sell/exit_short cancel - cancel order and update trade
+        exit order cancel - cancel order and update trade
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the order
