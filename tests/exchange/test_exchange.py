@@ -2998,69 +2998,6 @@ def test_fill_leverage_brackets():
     return
 
 
-# TODO-lev: These tests don't test anything real, they need to be replaced with real values once
-# get_interest_rates is written
-@pytest.mark.parametrize('exchange_name,pair,maker_or_taker,is_short,borrow_rate,interest_rate', [
-    ('binance', "ADA/USDT", "maker", True, 0.0005, 0.0005),
-    ('binance', "ADA/USDT", "maker", False, 0.0005, 0.0005),
-    ('binance', "ADA/USDT", "taker", True, 0.0005, 0.0005),
-    ('binance', "ADA/USDT", "taker", False, 0.0005, 0.0005),
-    # Kraken
-    ('kraken', "ADA/USDT", "maker", True, 0.0005, 0.0005),
-    ('kraken', "ADA/USDT", "maker", False, 0.0005, 0.0005),
-    ('kraken', "ADA/USDT", "taker", True, 0.0005, 0.0005),
-    ('kraken', "ADA/USDT", "taker", False, 0.0005, 0.0005),
-    # FTX
-    ('ftx', "ADA/USDT", "maker", True, 0.0005, 0.0005),
-    ('ftx', "ADA/USDT", "maker", False, 0.0005, 0.0005),
-    ('ftx', "ADA/USDT", "taker", True, 0.0005, 0.0005),
-    ('ftx', "ADA/USDT", "taker", False, 0.0005, 0.0005),
-])
-def test_get_interest_rate(
-    default_conf,
-    mocker,
-    exchange_name,
-    pair,
-    maker_or_taker,
-    is_short,
-    borrow_rate,
-    interest_rate
-):
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
-    assert exchange.get_interest_rate(
-        pair, maker_or_taker, is_short) == (borrow_rate, interest_rate)
-
-
-@pytest.mark.parametrize("exchange_name", [("binance"), ("ftx"), ("kraken")])
-@pytest.mark.parametrize("maker_or_taker", [("maker"), ("taker")])
-@pytest.mark.parametrize("is_short", [(True), (False)])
-def test_get_interest_rate_exceptions(
-    mocker,
-    default_conf,
-    exchange_name,
-    maker_or_taker,
-    is_short
-):
-
-    # api_mock = MagicMock()
-    # # TODO-lev: get_interest_rate currently not implemented on CCXT, so this may be renamed
-    # api_mock.get_interest_rate = MagicMock()
-    # type(api_mock).has = PropertyMock(return_value={'getInterestRate': True})
-
-    # ccxt_exceptionhandlers(
-    #     mocker,
-    #     default_conf,
-    #     api_mock,
-    #     exchange_name,
-    #     "get_interest_rate",
-    #     "get_interest_rate",
-    #     pair="XRP/USDT",
-    #     is_short=is_short,
-    #     maker_or_taker="maker_or_taker"
-    # )
-    return
-
-
 @pytest.mark.parametrize("collateral", [
     (Collateral.CROSS),
     (Collateral.ISOLATED)

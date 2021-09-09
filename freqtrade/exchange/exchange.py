@@ -1582,31 +1582,6 @@ class Exchange:
                                           until=until, from_id=from_id))
 
     @retrier
-    def get_interest_rate(
-        self,
-        pair: str,
-        maker_or_taker: str,
-        is_short: bool
-    ) -> Tuple[float, float]:
-        """
-            Gets the rate of interest for borrowed currency when margin trading
-            :param pair: base/quote currency pair
-            :param maker_or_taker: "maker" if limit order, "taker" if market order
-            :param is_short: True if requesting base interest, False if requesting quote interest
-            :return: (open_interest, rollover_interest)
-        """
-        try:
-            # TODO-lev: implement, currently there is no ccxt method for this
-            return (0.0005, 0.0005)
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
-    @retrier
     def fill_leverage_brackets(self):
         """
             #TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
