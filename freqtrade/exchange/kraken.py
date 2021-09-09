@@ -40,7 +40,7 @@ class Kraken(Exchange):
         return (parent_check and
                 market.get('darkpool', False) is False)
 
-    @ retrier
+    @retrier
     def get_balances(self) -> dict:
         if self._config['dry_run']:
             return {}
@@ -84,7 +84,7 @@ class Kraken(Exchange):
                 (side == "buy" and stop_loss < float(order['price']))
                 ))
 
-    @ retrier(retries=0)
+    @retrier(retries=0)
     def stoploss(self, pair: str, amount: float,
                  stop_price: float, order_types: Dict, side: str) -> Dict:
         """

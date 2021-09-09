@@ -499,6 +499,7 @@ class LocalTrade():
             lower_stop = new_loss < self.stop_loss
 
             # stop losses only walk up, never down!,
+            # TODO-lev
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
             if (higher_stop and not self.is_short) or (lower_stop and self.is_short):

@@ -2994,10 +2994,6 @@ def test_apply_leverage_to_stake_amount(
     assert exchange._apply_leverage_to_stake_amount(stake_amount, leverage) == min_stake_with_lev
 
 
-def test_fill_leverage_brackets():
-    return
-
-
 @pytest.mark.parametrize("collateral", [
     (Collateral.CROSS),
     (Collateral.ISOLATED)
