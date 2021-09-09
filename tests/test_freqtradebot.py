@@ -107,7 +107,6 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
     freqtrade = FreqtradeBot(conf)
     assert not freqtrade.strategy.order_types['stoploss_on_exchange']
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
-    caplog.clear()
 
 
 def test_order_dict_live(default_conf, mocker, caplog) -> None:
@@ -141,7 +140,6 @@ def test_order_dict_live(default_conf, mocker, caplog) -> None:
     freqtrade = FreqtradeBot(conf)
     assert not freqtrade.strategy.order_types['stoploss_on_exchange']
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
-    caplog.clear()
 
 
 def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
@@ -417,7 +415,6 @@ def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_ord
 
     assert freqtrade.create_trade('ETH/BTC')
     assert log_has_re(r"Stake amount for pair .* is too small.*", caplog)
-    caplog.clear()
 
 
 def test_create_trade_zero_stake_amount(default_conf, ticker, limit_buy_order_open,
@@ -481,7 +478,6 @@ def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order_ope
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has_re(r"No currency pair in active pair whitelist.*", caplog)
-    caplog.clear()
 
 
 def test_enter_positions_no_pairs_in_whitelist(default_conf, ticker, limit_buy_order, fee,
@@ -528,7 +524,6 @@ def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, 
     n = freqtrade.enter_positions()
     assert n == 0
     assert log_has_re(message, caplog)
-    caplog.clear()
 
 
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
@@ -1122,7 +1117,6 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 0
-    caplog.clear()
 
 
 def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
@@ -1162,7 +1156,6 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
     assert log_has_re(r'Stoploss order was cancelled, but unable to recreate one.*', caplog)
     assert trade.stoploss_order_id is None
     assert trade.is_open is True
-    caplog.clear()
 
 
 def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
@@ -1211,7 +1204,6 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert rpc_mock.call_count == 2
     assert rpc_mock.call_args_list[1][0][0]['sell_reason'] == SellType.EMERGENCY_SELL.value
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
-    caplog.clear()
 
 
 def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, fee,
@@ -1438,7 +1430,6 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
-    caplog.clear()
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1673,7 +1664,6 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
     assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
     # create_trade should be called once for every pair in the whitelist.
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
-    caplog.clear()
 
 
 def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
@@ -1713,7 +1703,6 @@ def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
     # test amount modified by fee-logic
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    caplog.clear()
 
 
 def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -1734,7 +1723,6 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     n = freqtrade.exit_positions(trades)
     assert n == 0
     assert log_has('Unable to sell trade ETH/BTC: ', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -1780,7 +1768,6 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     freqtrade.update_trade_state(trade, '123')
 
     assert log_has_re('Found open order for.*', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee,
@@ -1831,7 +1818,6 @@ def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_
     assert trade.amount != amount
     assert trade.amount == limit_buy_order['amount']
     assert log_has_re(r'Applying fee on amount for .*', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state_exception(mocker, default_conf,
@@ -1850,7 +1836,6 @@ def test_update_trade_state_exception(mocker, default_conf,
     )
     freqtrade.update_trade_state(trade, trade.open_order_id)
     assert log_has('Could not update trade amount: ', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None:
@@ -1867,7 +1852,6 @@ def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None
     freqtrade.update_trade_state(trade, trade.open_order_id)
     assert grm_mock.call_count == 0
     assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order_open,
@@ -2036,7 +2020,6 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Required profit reached. sell_type=SellType.ROI",
                    caplog)
-    caplog.clear()
 
 
 def test_handle_trade_use_sell_signal(default_conf, ticker, limit_buy_order_open,
@@ -2069,7 +2052,6 @@ def test_handle_trade_use_sell_signal(default_conf, ticker, limit_buy_order_open
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Sell signal received. sell_type=SellType.SELL_SIGNAL",
                    caplog)
-    caplog.clear()
 
 
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_buy_order_open, limit_sell_order,
@@ -2110,7 +2092,6 @@ def test_bot_loop_start_called_once(mocker, default_conf, caplog):
     assert log_has_re(r'Strategy caused the following exception.*', caplog)
     assert ftbot.strategy.bot_loop_start.call_count == 1
     assert ftbot.strategy.analyze.call_count == 1
-    caplog.clear()
 
 
 def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2225,7 +2206,6 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     nb_trades = len(trades)
     assert nb_trades == 0
     assert log_has_re("Buy order cancelled on exchange for Trade.*", caplog)
-    caplog.clear()
 
 
 def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
@@ -2360,7 +2340,6 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
     assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
-    caplog.clear()
 
 
 def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
@@ -2429,7 +2408,6 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert trades[0].open_order_id is None
     assert trades[0].fee_updated('buy')
     assert pytest.approx(trades[0].fee_open) == 0.001
-    caplog.clear()
 
 
 def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, caplog, fee,
@@ -2470,7 +2448,6 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
                                 limit_buy_order_old_partial['remaining'])
     assert trades[0].open_order_id is None
     assert trades[0].fee_open == fee()
-    caplog.clear()
 
 
 def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocker, caplog) -> None:
@@ -2499,7 +2476,6 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
                       f"{open_trade.open_date.strftime('%Y-%m-%d %H:%M:%S')}"
                       r"\) due to Traceback \(most recent call last\):\n*",
                       caplog)
-    caplog.clear()
 
 
 def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> None:
@@ -2543,7 +2519,6 @@ def test_handle_cancel_buy(mocker, caplog, default_conf, limit_buy_order) -> Non
     mocker.patch('freqtrade.exchange.Exchange.cancel_order_with_result', cancel_order_mock)
     assert not freqtrade.handle_cancel_buy(trade, limit_buy_order, reason)
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
-    caplog.clear()
 
 
 @pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
@@ -2565,7 +2540,6 @@ def test_handle_cancel_buy_exchanges(mocker, caplog, default_conf,
     assert cancel_order_mock.call_count == 0
     assert log_has_re(r'Buy order fully cancelled. Removing .* from database\.', caplog)
     assert nofiy_mock.call_count == 1
-    caplog.clear()
 
 
 @pytest.mark.parametrize('cancelorder', [
@@ -2935,7 +2909,6 @@ def test_execute_trade_exit_sloe_cancel_exception(
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     assert create_order_mock.call_count == 2
     assert log_has('Could not cancel stoploss order abcd', caplog)
-    caplog.clear()
 
 
 def test_execute_trade_exit_with_stoploss_on_exchange(default_conf, ticker, fee, ticker_sell_up,
@@ -3331,7 +3304,6 @@ def test_sell_not_enough_balance(default_conf, limit_buy_order, limit_buy_order_
     assert freqtrade.handle_trade(trade) is True
     assert log_has_re(r'.*Falling back to wallet-amount.', caplog)
     assert trade.amount != amnt
-    caplog.clear()
 
 
 def test__safe_sell_amount(default_conf, fee, caplog, mocker):
@@ -3362,7 +3334,6 @@ def test__safe_sell_amount(default_conf, fee, caplog, mocker):
     assert freqtrade._safe_sell_amount(trade.pair, amount_wallet) == amount_wallet
     assert not log_has_re(r'.*Falling back to wallet-amount.', caplog)
     assert wallet_update.call_count == 1
-    caplog.clear()
 
 
 def test__safe_sell_amount_error(default_conf, fee, caplog, mocker):
@@ -3419,7 +3390,6 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     freqtrade.enter_positions()
 
     assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
-    caplog.clear()
 
 
 def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
@@ -3511,7 +3481,6 @@ def test_trailing_stop_loss(default_conf, limit_buy_order_open, limit_buy_order,
     assert log_has("ETH/BTC - HIT STOP: current price at 0.000012, stoploss is 0.000015, "
                    "initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
-    caplog.clear()
 
 
 def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_order_open, fee,
@@ -3573,7 +3542,6 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_or
         f"ETH/BTC - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
-    caplog.clear()
 
 
 def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_order_open, fee,
@@ -3636,7 +3604,6 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_orde
         f"stoploss is {trade.stop_loss:.6f}, "
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
-    caplog.clear()
 
 
 def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_open, fee,
@@ -3701,7 +3668,6 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
     assert log_has("ETH/BTC - Using positive stoploss: 0.05 offset: 0.055 profit: 0.1218%", caplog)
     assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000117705
-    caplog.clear()
 
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
@@ -3763,7 +3729,6 @@ def test_get_real_amount_quote(default_conf, trades_for_order, buy_order_fee, fe
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
                    'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).',
                    caplog)
-    caplog.clear()
 
 
 def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fee, fee,
@@ -3789,7 +3754,6 @@ def test_get_real_amount_quote_dust(default_conf, trades_for_order, buy_order_fe
     assert walletmock.call_count == 1
     assert log_has_re(r'Fee amount for Trade.* was in base currency '
                       '- Eating Fee 0.008 into dust', caplog)
-    caplog.clear()
 
 
 def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, fee):
@@ -3812,7 +3776,6 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
                    'open_rate=0.24544100, open_since=closed) failed: myTrade-Dict empty found',
                    caplog)
-    caplog.clear()
 
 
 def test_get_real_amount_stake(default_conf, trades_for_order, buy_order_fee, fee, mocker):
@@ -3906,7 +3869,6 @@ def test_get_real_amount_multi(default_conf, trades_for_order2, buy_order_fee, c
     assert trade.fee_open_currency is not None
     assert trade.fee_close_cost is None
     assert trade.fee_close_currency is None
-    caplog.clear()
 
 
 def test_get_real_amount_multi2(default_conf, trades_for_order3, buy_order_fee, caplog, fee,
@@ -3942,7 +3904,6 @@ def test_get_real_amount_multi2(default_conf, trades_for_order3, buy_order_fee, 
     assert trade.fee_open_currency is not None
     assert trade.fee_close_cost is None
     assert trade.fee_close_currency is None
-    caplog.clear()
 
 
 def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee, fee,
@@ -3971,7 +3932,6 @@ def test_get_real_amount_fromorder(default_conf, trades_for_order, buy_order_fee
     assert log_has('Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
                    'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).',
                    caplog)
-    caplog.clear()
 
 
 def test_get_real_amount_invalid_order(default_conf, trades_for_order, buy_order_fee, fee, mocker):
@@ -4215,7 +4175,6 @@ def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None
     with pytest.raises(PricingError):
         freqtrade.exchange.get_rate('ETH/BTC', refresh=True, side="buy")
     assert log_has_re(r'Buy Price at location 1 from orderbook could not be determined.', caplog)
-    caplog.clear()
 
 
 def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
@@ -4286,7 +4245,6 @@ def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_o
         freqtrade.handle_trade(trade)
     assert log_has_re(r'Sell Price at location 1 from orderbook could not be determined\..*',
                       caplog)
-    caplog.clear()
 
 
 def test_startup_state(default_conf, mocker):
@@ -4345,7 +4303,6 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_
     assert log_has_re(r"Unable to create trade for XRP/BTC: "
                       r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",
                       caplog)
-    caplog.clear()
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -4505,7 +4462,6 @@ def test_reupdate_buy_order_fees(mocker, default_conf, fee, caplog):
     assert log_has_re(r"Trying to reupdate buy fees for .*", caplog)
     assert mock_uts.call_count == 0
     assert not log_has_re(r"Updating buy-fee on trade .* for order .*\.", caplog)
-    caplog.clear()
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -4643,7 +4599,6 @@ def test_refind_lost_order(mocker, default_conf, fee, caplog):
 
     freqtrade.refind_lost_order(trades[4])
     assert log_has(f"Error updating {order['id']}.", caplog)
-    caplog.clear()
 
 
 def test_get_valid_price(mocker, default_conf) -> None:
