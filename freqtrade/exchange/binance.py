@@ -1,5 +1,6 @@
 """ Binance exchange subclass """
 import logging
+from datetime import datetime
 from typing import Dict, List, Optional
 
 import ccxt
@@ -90,6 +91,13 @@ class Binance(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def _get_funding_rate(self, pair: str, when: datetime) -> Optional[float]:
+        """
+            Get's the funding_rate for a pair at a specific date and time in the past
+        """
+        # TODO-lev: implement
+        raise OperationalException("_get_funding_rate has not been implement on binance")
 
     def _get_funding_fee(
         self,

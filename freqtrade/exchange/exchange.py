@@ -1555,7 +1555,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def get_mark_price(self, pair: str, when: datetime):
+    def _get_mark_price(self, pair: str, when: datetime):
         """
             Get's the value of the underlying asset for a futures contract
             at a specific date and time in the past
@@ -1563,7 +1563,7 @@ class Exchange:
         # TODO-lev: implement
         raise OperationalException(f"get_mark_price has not been implemented for {self.name}")
 
-    def get_funding_rate(self, pair: str, when: datetime):
+    def _get_funding_rate(self, pair: str, when: datetime):
         """
             Get's the funding_rate for a pair at a specific date and time in the past
         """
@@ -1587,7 +1587,7 @@ class Exchange:
         """
         raise OperationalException(f"Funding fee has not been implemented for {self.name}")
 
-    def get_funding_fee_dates(self, open_date: datetime, close_date: datetime):
+    def _get_funding_fee_dates(self, open_date: datetime, close_date: datetime):
         """
             Get's the date and time of every funding fee that happened between two datetimes
         """
@@ -1619,9 +1619,9 @@ class Exchange:
         """
 
         fees: float = 0
-        for date in self.get_funding_fee_dates(open_date, close_date):
-            funding_rate = self.get_funding_rate(pair, date)
-            mark_price = self.get_mark_price(pair, date)
+        for date in self._get_funding_fee_dates(open_date, close_date):
+            funding_rate = self._get_funding_rate(pair, date)
+            mark_price = self._get_mark_price(pair, date)
             fees += self._get_funding_fee(amount, mark_price, funding_rate)
 
         return fees

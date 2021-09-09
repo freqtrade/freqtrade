@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import ccxt
-
+from datetime import datetime
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -154,6 +154,10 @@ class Ftx(Exchange):
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
+    def _get_funding_rate(self, pair: str, when: datetime) -> Optional[float]:
+        """FTX doesn't use this"""
+        return None
+
     def _get_funding_fee(
         self,
         contract_size: float,
@@ -162,9 +166,9 @@ class Ftx(Exchange):
     ) -> float:
         """
             Calculates a single funding fee
-            Always paid in USD on FTX # TODO: How do we account for this
-            :param contract_size: The amount/quanity
-            :param mark_price: The price of the asset that the contract is based off of
-            :param funding_rate: Must be None on ftx
+            Always paid in USD on FTX  # TODO: How do we account for this
+            : param contract_size: The amount/quanity
+            : param mark_price: The price of the asset that the contract is based off of
+            : param funding_rate: Must be None on ftx
         """
         return (contract_size * mark_price) / 24

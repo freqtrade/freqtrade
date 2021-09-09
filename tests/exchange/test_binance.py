@@ -105,3 +105,11 @@ def test_stoploss_adjust_binance(mocker, default_conf):
     # Test with invalid order case
     order['type'] = 'stop_loss'
     assert not exchange.stoploss_adjust(1501, order)
+
+
+def test_get_funding_rate():
+    return
+
+
+def test__get_funding_fee():
+    return
