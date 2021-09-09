@@ -1721,7 +1721,6 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     n = freqtrade.exit_positions(trades)
     assert n == 0
     assert log_has('Unable to exit trade ETH/BTC: ', caplog)
-    caplog.clear()
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
