@@ -403,8 +403,11 @@ class RPC:
         # Doing the sum is not right - overall profit needs to be based on initial capital
         profit_all_ratio_sum = sum(profit_all_ratio) if profit_all_ratio else 0.0
         starting_balance = self._freqtrade.wallets.get_starting_balance()
-        profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
-        profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
+        profit_closed_ratio_fromstart = 0
+        profit_all_ratio_fromstart = 0
+        if starting_balance:
+            profit_closed_ratio_fromstart = profit_closed_coin_sum / starting_balance
+            profit_all_ratio_fromstart = profit_all_coin_sum / starting_balance
 
         profit_all_fiat = self._fiat_converter.convert_amount(
             profit_all_coin_sum,
@@ -545,12 +548,12 @@ class RPC:
                 order = self._freqtrade.exchange.fetch_order(trade.open_order_id, trade.pair)
 
                 if order['side'] == 'buy':
-                    fully_canceled = self._freqtrade.handle_cancel_buy(
+                    fully_canceled = self._freqtrade.handle_cancel_enter(
                         trade, order, CANCEL_REASON['FORCE_SELL'])
 
                 if order['side'] == 'sell':
                     # Cancel order - so it is placed anew with a fresh price.
-                    self._freqtrade.handle_cancel_sell(trade, order, CANCEL_REASON['FORCE_SELL'])
+                    self._freqtrade.handle_cancel_exit(trade, order, CANCEL_REASON['FORCE_SELL'])
 
             if not fully_canceled:
                 # Get current rate and execute sell
@@ -563,7 +566,7 @@ class RPC:
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
 
-        with self._freqtrade._sell_lock:
+        with self._freqtrade._exit_lock:
             if trade_id == 'all':
                 # Execute sell for all open orders
                 for trade in Trade.get_open_trades():
@@ -625,7 +628,7 @@ class RPC:
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.
         """
-        with self._freqtrade._sell_lock:
+        with self._freqtrade._exit_lock:
             c_count = 0
             trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
             if not trade:
