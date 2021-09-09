@@ -1526,7 +1526,7 @@ class Exchange:
         return self._api.fetch_funding_rates()
 
     @retrier
-    def get_funding_fees(self, pair: str, since: Union[datetime, int]) -> float:
+    def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
             Returns the sum of all funding fees that were exchanged for a pair within a timeframe
             :param pair: (e.g. ADA/USDT)
@@ -1554,6 +1554,23 @@ class Exchange:
                 f'Could not get funding fees due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def _get_funding_fee(
+        self,
+        contract_size: float,
+        mark_price: float,
+        funding_rate: Optional[float],
+        # index_price: float,
+        # interest_rate: float)
+    ) -> float:
+        """
+            Calculates a single funding fee
+            :param contract_size: The amount/quanity
+            :param mark_price: The price of the asset that the contract is based off of
+            :param funding_rate: the interest rate and the premium
+                - premium: varies by price difference between the perpetual contract and mark price
+        """
+        raise OperationalException(f"Funding fee has not been implemented for {self.name}")
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

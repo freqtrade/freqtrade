@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import ccxt
 from datetime import time
@@ -90,3 +90,23 @@ class Binance(Exchange):
                 f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def _get_funding_fee(
+        self,
+        contract_size: float,
+        mark_price: float,
+        funding_rate: Optional[float],
+    ) -> float:
+        """
+            Calculates a single funding fee
+            :param contract_size: The amount/quanity
+            :param mark_price: The price of the asset that the contract is based off of
+            :param funding_rate: the interest rate and the premium
+                - interest rate: 0.03% daily, BNBUSDT, LINKUSDT, and LTCUSDT are 0%
+                - premium: varies by price difference between the perpetual contract and mark price
+        """
+        if funding_rate is None:
+            raise OperationalException("Funding rate cannot be None for Binance._get_funding_fee")
+        nominal_value = mark_price * contract_size
+        adjustment = nominal_value * funding_rate
+        return adjustment
