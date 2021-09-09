@@ -518,6 +518,7 @@ def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, 
     # 0 trades, but it's not because of pairlock.
     assert n == 0
     assert not log_has_re(message, caplog)
+    caplog.clear()
 
     PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=20).datetime, 'Just because')
     n = freqtrade.enter_positions()
@@ -1086,6 +1087,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert log_has_re(r'STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.', caplog)
     assert trade.stoploss_order_id is None
     assert trade.is_open is False
+    caplog.clear()
 
     mocker.patch(
         'freqtrade.exchange.Binance.stoploss',
@@ -1743,10 +1745,12 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     )
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
+    caplog.clear()
     # Add datetime explicitly since sqlalchemy defaults apply only once written to database
     freqtrade.update_trade_state(trade, '123')
     # Test amount not modified by fee-logic
     assert not log_has_re(r'Applying fee to .*', caplog)
+    caplog.clear()
     assert trade.open_order_id is None
     assert trade.amount == limit_buy_order['amount']
 
@@ -3524,6 +3528,7 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_or
     assert log_has("ETH/BTC - Using positive stoploss: 0.01 offset: 0 profit: 0.2666%", caplog)
     assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000138501
+    caplog.clear()
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={
@@ -3584,6 +3589,7 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_orde
     assert log_has("ETH/BTC - Using positive stoploss: 0.01 offset: 0.011 profit: 0.2666%", caplog)
     assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000138501
+    caplog.clear()
 
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={
@@ -3648,6 +3654,7 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
 
     assert not log_has("ETH/BTC - Adjusting stoploss...", caplog)
     assert trade.stop_loss == 0.0000098910
+    caplog.clear()
 
     # price rises above the offset (rises 12% when the offset is 5.5%)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -4339,6 +4346,7 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
 
     freqtrade.update_open_orders()
     assert not log_has_re(r"Error updating Order .*", caplog)
+    caplog.clear()
 
     freqtrade.config['dry_run'] = False
     freqtrade.update_open_orders()
