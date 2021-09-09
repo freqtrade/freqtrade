@@ -624,6 +624,7 @@ class Exchange:
 
     def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         """
+        #TODO-lev: Find out how this works on Kraken and FTX
         # * Should be implemented by child classes if leverage affects the stake_amount
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered

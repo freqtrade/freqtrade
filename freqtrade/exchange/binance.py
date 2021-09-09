@@ -55,7 +55,10 @@ class Binance(Exchange):
         :param side: "buy" or "sell"
         """
         # Limit price threshold: As limit price should always be below stop-price
-        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        limit_price_pct = order_types.get(
+            'stoploss_on_exchange_limit_ratio',
+            0.99 if side == 'sell' else 1.01
+        )
         rate = stop_price * limit_price_pct
 
         ordertype = "stop_loss_limit"
