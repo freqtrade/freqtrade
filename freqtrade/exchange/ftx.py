@@ -1,9 +1,10 @@
 """ FTX exchange subclass """
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import ccxt
-from datetime import datetime
+
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
