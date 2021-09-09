@@ -4,13 +4,13 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-import schedule
 from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
 
 import arrow
+import schedule
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
@@ -251,7 +251,10 @@ class FreqtradeBot(LoggingMixin):
     def update_funding_fees(self):
         if self.trading_mode == TradingMode.FUTURES:
             for trade in Trade.get_open_trades():
-                funding_fees = self.exchange.get_funding_fees(trade.pair, trade.open_date)
+                funding_fees = self.exchange.get_funding_fees_from_exchange(
+                    trade.pair,
+                    trade.open_date
+                )
                 trade.funding_fees = funding_fees
 
     def update_open_orders(self):
@@ -583,7 +586,7 @@ class FreqtradeBot(LoggingMixin):
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         open_date = datetime.utcnow()
         if self.trading_mode == TradingMode.FUTURES:
-            funding_fees = self.exchange.get_funding_fees(pair, open_date)
+            funding_fees = self.exchange.get_funding_fees_from_exchange(pair, open_date)
         else:
             funding_fees = 0.0
 

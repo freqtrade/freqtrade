@@ -2972,11 +2972,11 @@ def test_get_funding_fees(default_conf, mocker, exchange_name):
     date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
     unix_time = int(date_time.strftime('%s'))
     expected_fees = -0.001  # 0.14542341 + -0.14642341
-    fees_from_datetime = exchange.get_funding_fees(
+    fees_from_datetime = exchange.get_funding_fees_from_exchange(
         pair='XRP/USDT',
         since=date_time
     )
-    fees_from_unix_time = exchange.get_funding_fees(
+    fees_from_unix_time = exchange.get_funding_fees_from_exchange(
         pair='XRP/USDT',
         since=unix_time
     )
@@ -2989,7 +2989,7 @@ def test_get_funding_fees(default_conf, mocker, exchange_name):
         default_conf,
         api_mock,
         exchange_name,
-        "get_funding_fees",
+        "get_funding_fees_from_exchange",
         "fetch_funding_history",
         pair="XRP/USDT",
         since=unix_time

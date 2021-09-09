@@ -3,13 +3,13 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import ccxt
-from datetime import time
+
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
 from freqtrade.misc import safe_value_fallback2
-from freqtrade.utils import hours_to_time
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
     }
-    funding_fee_times: List[time] = hours_to_time(list(range(0, 23)))
+    funding_fee_times: List[int] = list(range(0, 23))
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
@@ -159,9 +159,7 @@ class Ftx(Exchange):
         contract_size: float,
         mark_price: float,
         funding_rate: Optional[float],
-        # index_price: float,
-        # interest_rate: float)
-    ):
+    ) -> float:
         """
             Calculates a single funding fee
             Always paid in USD on FTX # TODO: How do we account for this
@@ -169,5 +167,4 @@ class Ftx(Exchange):
             :param mark_price: The price of the asset that the contract is based off of
             :param funding_rate: Must be None on ftx
         """
-        (contract_size * mark_price) / 24
-        return
+        return (contract_size * mark_price) / 24

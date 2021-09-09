@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, time, timezone
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -69,7 +69,7 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
-    funding_fee_times: List[time] = []
+    funding_fee_times: List[int] = []  # hours of the day
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
@@ -1555,6 +1555,21 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def get_mark_price(self, pair: str, when: datetime):
+        """
+            Get's the value of the underlying asset for a futures contract
+            at a specific date and time in the past
+        """
+        # TODO-lev: implement
+        raise OperationalException(f"get_mark_price has not been implemented for {self.name}")
+
+    def get_funding_rate(self, pair: str, when: datetime):
+        """
+            Get's the funding_rate for a pair at a specific date and time in the past
+        """
+        # TODO-lev: implement
+        raise OperationalException(f"get_funding_rate has not been implemented for {self.name}")
+
     def _get_funding_fee(
         self,
         contract_size: float,
@@ -1571,6 +1586,45 @@ class Exchange:
                 - premium: varies by price difference between the perpetual contract and mark price
         """
         raise OperationalException(f"Funding fee has not been implemented for {self.name}")
+
+    def get_funding_fee_dates(self, open_date: datetime, close_date: datetime):
+        """
+            Get's the date and time of every funding fee that happened between two datetimes
+        """
+        open_date = datetime(open_date.year, open_date.month, open_date.day, open_date.hour)
+        close_date = datetime(close_date.year, close_date.month, close_date.day, close_date.hour)
+
+        results = []
+        date_iterator = open_date
+        while date_iterator < close_date:
+            date_iterator += timedelta(hours=1)
+            if date_iterator.hour in self.funding_fee_times:
+                results.append(date_iterator)
+
+        return results
+
+    def calculate_funding_fees(
+        self,
+        pair: str,
+        amount: float,
+        open_date: datetime,
+        close_date: datetime
+    ) -> float:
+        """
+            calculates the sum of all funding fees that occurred for a pair during a futures trade
+            :param pair: The quote/base pair of the trade
+            :param amount: The quantity of the trade
+            :param open_date: The date and time that the trade started
+            :param close_date: The date and time that the trade ended
+        """
+
+        fees: float = 0
+        for date in self.get_funding_fee_dates(open_date, close_date):
+            funding_rate = self.get_funding_rate(pair, date)
+            mark_price = self.get_mark_price(pair, date)
+            fees += self._get_funding_fee(amount, mark_price, funding_rate)
+
+        return fees
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

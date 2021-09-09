@@ -112,7 +112,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'interest_rate': 0.0,
         'isolated_liq': None,
         'is_short': False,
-        'funding_fees': None,
+        'funding_fees': 0.0,
         'trading_mode': TradingMode.SPOT
     }
 
@@ -185,7 +185,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'interest_rate': 0.0,
         'isolated_liq': None,
         'is_short': False,
-        'funding_fees': None,
+        'funding_fees': 0.0,
         'trading_mode': TradingMode.SPOT
     }
 
