@@ -1238,9 +1238,9 @@ class Exchange:
         input_coroutines = [self._async_get_candle_history(
             pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
-        # Combine gathered results
 
         data: List = []
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
         for input_coro in chunks(input_coroutines, 100):
 
             results = await asyncio.gather(*input_coro, return_exceptions=True)
