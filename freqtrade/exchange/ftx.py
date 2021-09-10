@@ -57,7 +57,10 @@ class Ftx(Exchange):
 
         Limit orders are defined by having orderPrice set, otherwise a market order is used.
         """
-        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        limit_price_pct = order_types.get(
+            'stoploss_on_exchange_limit_ratio',
+            0.99 if side == "sell" else 1.01
+        )
         limit_rate = stop_price * limit_price_pct
 
         ordertype = "stop"
@@ -163,10 +166,6 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
-
-    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
-        # TODO-lev: implement
-        return stake_amount
 
     def fill_leverage_brackets(self):
         """

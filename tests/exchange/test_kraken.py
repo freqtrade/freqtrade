@@ -168,7 +168,11 @@ def test_get_balances_prod(default_conf, mocker):
 
 
 @pytest.mark.parametrize('ordertype', ['market', 'limit'])
-def test_stoploss_order_kraken(default_conf, mocker, ordertype):
+@pytest.mark.parametrize('side,limitratio,adjustedprice', [
+    ("buy", 0.99, 217.8),
+    ("sell", 1.01, 222.2),
+])
+def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, limitratio, adjustedprice):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
 
@@ -185,9 +189,9 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype):
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, side="sell",
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, side=side,
                               order_types={'stoploss': ordertype,
-                                           'stoploss_on_exchange_limit_ratio': 0.99
+                                           'stoploss_on_exchange_limit_ratio': limitratio
                                            })
 
     assert 'id' in order
@@ -197,12 +201,12 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype):
     if ordertype == 'limit':
         assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_LIMIT_ORDERTYPE
         assert api_mock.create_order.call_args_list[0][1]['params'] == {
-            'trading_agreement': 'agree', 'price2': 217.8}
+            'trading_agreement': 'agree', 'price2': adjustedprice}
     else:
         assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
         assert api_mock.create_order.call_args_list[0][1]['params'] == {
             'trading_agreement': 'agree'}
-    assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
+    assert api_mock.create_order.call_args_list[0][1]['side'] == side
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     assert api_mock.create_order.call_args_list[0][1]['price'] == 220
 
@@ -210,20 +214,21 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("kraken Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
 
-def test_stoploss_order_dry_run_kraken(default_conf, mocker):
+@pytest.mark.parametrize('side', ['buy', 'sell'])
+def test_stoploss_order_dry_run_kraken(default_conf, mocker, side):
     api_mock = MagicMock()
     default_conf['dry_run'] = True
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
@@ -233,7 +238,7 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
     assert 'id' in order
     assert 'info' in order
@@ -244,17 +249,21 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker):
     assert order['amount'] == 1
 
 
-def test_stoploss_adjust_kraken(mocker, default_conf):
+@pytest.mark.parametrize('sl1,sl2,sl3,side', [
+    (1501, 1499, 1501, "sell"),
+    (1499, 1501, 1499, "buy")
+])
+def test_stoploss_adjust_kraken(mocker, default_conf, sl1, sl2, sl3, side):
     exchange = get_patched_exchange(mocker, default_conf, id='kraken')
     order = {
         'type': STOPLOSS_ORDERTYPE,
         'price': 1500,
     }
-    assert exchange.stoploss_adjust(1501, order, side="sell")
-    assert not exchange.stoploss_adjust(1499, order, side="sell")
+    assert exchange.stoploss_adjust(sl1, order, side=side)
+    assert not exchange.stoploss_adjust(sl2, order, side=side)
     # Test with invalid order case ...
     order['type'] = 'stop_loss_limit'
-    assert not exchange.stoploss_adjust(1501, order, side="sell")
+    assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
 @pytest.mark.parametrize('pair,nominal_value,max_lev', [

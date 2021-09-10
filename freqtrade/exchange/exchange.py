@@ -75,8 +75,6 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    _leverage_brackets: Dict = {}
-
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
@@ -90,6 +88,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
@@ -624,6 +623,7 @@ class Exchange:
 
     def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
         """
+        #TODO-lev: Find out how this works on Kraken and FTX
         # * Should be implemented by child classes if leverage affects the stake_amount
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered
@@ -1580,31 +1580,6 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
-
-    @retrier
-    def get_interest_rate(
-        self,
-        pair: str,
-        maker_or_taker: str,
-        is_short: bool
-    ) -> Tuple[float, float]:
-        """
-            Gets the rate of interest for borrowed currency when margin trading
-            :param pair: base/quote currency pair
-            :param maker_or_taker: "maker" if limit order, "taker" if market order
-            :param is_short: True if requesting base interest, False if requesting quote interest
-            :return: (open_interest, rollover_interest)
-        """
-        try:
-            # TODO-lev: implement, currently there is no ccxt method for this
-            return (0.0005, 0.0005)
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
 
     @retrier
     def fill_leverage_brackets(self):

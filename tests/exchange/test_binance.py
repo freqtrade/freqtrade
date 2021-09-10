@@ -9,12 +9,22 @@ from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
-@pytest.mark.parametrize('limitratio,expected', [
-    (None, 220 * 0.99),
-    (0.99, 220 * 0.99),
-    (0.98, 220 * 0.98),
+@pytest.mark.parametrize('limitratio,exchangelimitratio,expected,side', [
+    (None, 1.05, 220 * 0.99, "sell"),
+    (0.99, 1.05, 220 * 0.99, "sell"),
+    (0.98, 1.05, 220 * 0.98, "sell"),
+    (None, 0.95, 220 * 1.01, "buy"),
+    (1.01, 0.95, 220 * 1.01, "buy"),
+    (1.02, 0.95, 220 * 1.02, "buy"),
 ])
-def test_stoploss_order_binance(default_conf, mocker, limitratio, expected):
+def test_stoploss_order_binance(
+    default_conf,
+    mocker,
+    limitratio,
+    exchangelimitratio,
+    expected,
+    side
+):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
     order_type = 'stop_loss_limit'
@@ -32,20 +42,25 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
     with pytest.raises(OperationalException):
-        order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190, side="sell",
-                                  order_types={'stoploss_on_exchange_limit_ratio': 1.05})
+        order = exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=190,
+            side=side,
+            order_types={'stoploss_on_exchange_limit_ratio': exchangelimitratio}
+        )
 
     api_mock.create_order.reset_mock()
     order_types = {} if limitratio is None else {'stoploss_on_exchange_limit_ratio': limitratio}
     order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
-                              order_types=order_types, side="sell")
+                              order_types=order_types, side=side)
 
     assert 'id' in order
     assert 'info' in order
     assert order['id'] == order_id
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
     assert api_mock.create_order.call_args_list[0][1]['type'] == order_type
-    assert api_mock.create_order.call_args_list[0][1]['side'] == 'sell'
+    assert api_mock.create_order.call_args_list[0][1]['side'] == side
     assert api_mock.create_order.call_args_list[0][1]['amount'] == 1
     # Price should be 1% below stopprice
     assert api_mock.create_order.call_args_list[0][1]['price'] == expected
@@ -55,17 +70,17 @@ def test_stoploss_order_binance(default_conf, mocker, limitratio, expected):
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "binance",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
 
 
 def test_stoploss_order_dry_run_binance(default_conf, mocker):
@@ -94,18 +109,22 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
     assert order['amount'] == 1
 
 
-def test_stoploss_adjust_binance(mocker, default_conf):
+@pytest.mark.parametrize('sl1,sl2,sl3,side', [
+    (1501, 1499, 1501, "sell"),
+    (1499, 1501, 1499, "buy")
+])
+def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     exchange = get_patched_exchange(mocker, default_conf, id='binance')
     order = {
         'type': 'stop_loss_limit',
         'price': 1500,
         'info': {'stopPrice': 1500},
     }
-    assert exchange.stoploss_adjust(1501, order, side="sell")
-    assert not exchange.stoploss_adjust(1499, order, side="sell")
+    assert exchange.stoploss_adjust(sl1, order, side=side)
+    assert not exchange.stoploss_adjust(sl2, order, side=side)
     # Test with invalid order case
     order['type'] = 'stop_loss'
-    assert not exchange.stoploss_adjust(1501, order, side="sell")
+    assert not exchange.stoploss_adjust(sl3, order, side=side)
 
 
 @pytest.mark.parametrize('pair,nominal_value,max_lev', [

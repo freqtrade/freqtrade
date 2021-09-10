@@ -1253,6 +1253,7 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
                                               limit_buy_order, limit_sell_order) -> None:
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -1363,6 +1364,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
 
 def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, caplog,
                                                     limit_buy_order, limit_sell_order) -> None:
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_exchange(mocker)
@@ -1440,6 +1442,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
 def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
                                                  limit_buy_order, limit_sell_order) -> None:
     # When trailing stoploss is set
+    # TODO-lev: test for short
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -1549,7 +1552,7 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
 
 def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                               limit_buy_order, limit_sell_order) -> None:
-
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -1732,7 +1735,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     )
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    assert log_has('Unable to sell trade ETH/BTC: ', caplog)
+    assert log_has('Unable to exit trade ETH/BTC: ', caplog)
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
