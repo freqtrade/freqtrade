@@ -75,8 +75,6 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    _leverage_brackets: Dict = {}
-
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
@@ -90,6 +88,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
