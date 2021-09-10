@@ -756,7 +756,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.execute_trade_exit(trade, trade.stop_loss, sell_reason=SellCheckTuple(
-                sell_type=SellType.EMERGENCY_SELL))
+                sell_type=SellType.EMERGENCY_SELL), side=trade.exit_side)
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -876,7 +876,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_exit.sell_flag:
             logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}')
-            self.execute_trade_exit(trade, exit_rate, should_exit)
+            self.execute_trade_exit(trade, exit_rate, should_exit, side=trade.exit_side)
             return True
         return False
 
@@ -1081,21 +1081,28 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to exit trade. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_trade_exit(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
+    def execute_trade_exit(
+        self,
+        trade: Trade,
+        limit: float,
+        sell_reason: SellCheckTuple,  # TODO-lev update to exit_reason
+        side: str
+    ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sell_reason: Reason the sell was triggered
+        :param side: "buy" or "sell"
         :return: True if it succeeds (supported) False (not supported)
         """
-        sell_type = 'sell'  # TODO-lev: Update to exit
+        exit_type = 'sell'  # TODO-lev: Update to exit
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
-            sell_type = 'stoploss'
+            exit_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
         # we consider the sell price stop price
-        if self.config['dry_run'] and sell_type == 'stoploss' \
+        if self.config['dry_run'] and exit_type == 'stoploss' \
            and self.strategy.order_types['stoploss_on_exchange']:
             limit = trade.stop_loss
 
@@ -1119,7 +1126,7 @@ class FreqtradeBot(LoggingMixin):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        order_type = self.strategy.order_types[sell_type]
+        order_type = self.strategy.order_types[exit_type]
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
@@ -1143,10 +1150,10 @@ class FreqtradeBot(LoggingMixin):
             order = self.exchange.create_order(
                 pair=trade.pair,
                 ordertype=order_type,
-                side="sell",
                 amount=amount,
                 rate=limit,
-                time_in_force=time_in_force
+                time_in_force=time_in_force,
+                side=trade.exit_side
             )
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
@@ -1154,7 +1161,7 @@ class FreqtradeBot(LoggingMixin):
             self.handle_insufficient_funds(trade)
             return False
 
-        order_obj = Order.parse_from_ccxt_object(order, trade.pair, 'sell')
+        order_obj = Order.parse_from_ccxt_object(order, trade.pair, trade.exit_side)
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']

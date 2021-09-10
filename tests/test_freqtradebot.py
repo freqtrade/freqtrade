@@ -2651,6 +2651,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
 
 
+# TODO-lev: Add short tests
 def test_execute_trade_exit_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -2679,15 +2680,16 @@ def test_execute_trade_exit_up(default_conf, ticker, fee, ticker_sell_up, mocker
         fetch_ticker=ticker_sell_up
     )
     # Prevented sell ...
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
     assert rpc_mock.call_count == 0
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
     # Repatch with true
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
-
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
@@ -2739,8 +2741,8 @@ def test_execute_trade_exit_down(default_conf, ticker, fee, ticker_sell_down, mo
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_sell_down
     )
-
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
@@ -2800,8 +2802,8 @@ def test_execute_trade_exit_custom_exit_price(default_conf, ticker, fee, ticker_
 
     # Set a custom exit price
     freqtrade.strategy.custom_exit_price = lambda **kwargs: 1.170e-05
-
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
 
     # Sell price must be different to default bid price
@@ -2863,7 +2865,8 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(default_conf, tick
     # Setting trade stoploss to 0.01
 
     trade.stop_loss = 0.00001099 * 0.99
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
@@ -2919,7 +2922,8 @@ def test_execute_trade_exit_sloe_cancel_exception(
     freqtrade.config['dry_run'] = False
     trade.stoploss_order_id = "abcd"
 
-    freqtrade.execute_trade_exit(trade=trade, limit=1234,
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=1234, side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     assert create_order_mock.call_count == 2
     assert log_has('Could not cancel stoploss order abcd', caplog)
@@ -2970,7 +2974,8 @@ def test_execute_trade_exit_with_stoploss_on_exchange(default_conf, ticker, fee,
         fetch_ticker=ticker_sell_up
     )
 
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     trade = Trade.query.first()
@@ -3078,7 +3083,8 @@ def test_execute_trade_exit_market_order(default_conf, ticker, fee,
     )
     freqtrade.config['order_types']['sell'] = 'market'
 
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
 
     assert not trade.is_open
@@ -3137,8 +3143,9 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf, ticker, fee,
     )
 
     sell_reason = SellCheckTuple(sell_type=SellType.ROI)
+    # TODO-lev: side="buy"
     assert not freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_up()['bid'],
-                                            sell_reason=sell_reason)
+                                            sell_reason=sell_reason, side="sell")
     assert mock_insuf.call_count == 1
 
 
@@ -3394,7 +3401,8 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
         fetch_ticker=ticker_sell_down
     )
 
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'],
+    # TODO-lev: side="buy"
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_sell_down()['bid'], side="sell",
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     trade.close(ticker_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair)
