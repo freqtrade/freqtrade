@@ -718,7 +718,7 @@ class FreqtradeBot(LoggingMixin):
                 analyzed_df, is_short=trade.is_short
             )
 
-        # TODO-lev: side should depend on trade side.
+        logger.debug('checking sell')
         exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
         if self._check_and_execute_exit(trade, exit_rate, enter, exit_):
             return True
@@ -1010,8 +1010,6 @@ class FreqtradeBot(LoggingMixin):
             reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
-        # TODO-lev: Should short and exit_short be an order type?
-
         self._notify_enter_cancel(trade, order_type=self.strategy.order_types['buy'],
                                   reason=reason)
         return was_trade_fully_canceled
