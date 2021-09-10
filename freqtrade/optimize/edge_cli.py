@@ -35,7 +35,6 @@ class EdgeCli:
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
         self.strategy = StrategyResolver.load_strategy(self.config)
         self.strategy.dp = DataProvider(config, None)
-        self.strategy._initialize()
 
         validate_config_consistency(self.config)
 

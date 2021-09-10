@@ -159,7 +159,6 @@ class Backtesting:
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
         self.strategy.order_types['stoploss_on_exchange'] = False
-        strategy._initialize()
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get('enable_protections', False):

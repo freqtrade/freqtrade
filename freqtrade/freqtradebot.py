@@ -87,8 +87,6 @@ class FreqtradeBot(LoggingMixin):
         self.strategy.dp = self.dataprovider
         # Attach Wallets to strategy instance
         self.strategy.wallets = self.wallets
-        # Late initialization (may depend on dp/wallets)
-        self.strategy._initialize()
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \

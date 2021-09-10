@@ -171,14 +171,13 @@ def _format_pair_name(config, pair: str) -> str:
                        stake=config['stake_currency']).upper()
 
 
-def _create_and_merge_informative_pair(strategy, dataframe: DataFrame,
-                                       metadata: dict, informative_data: InformativeData,
-                                       populate_indicators: Callable[[Any, DataFrame, dict],
-                                                                     DataFrame]):
-    asset = informative_data.asset or ''
-    timeframe = informative_data.timeframe
-    fmt = informative_data.fmt
-    ffill = informative_data.ffill
+def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata: dict,
+                                       inf_data: InformativeData,
+                                       populate_indicators: PopulateIndicators):
+    asset = inf_data.asset or ''
+    timeframe = inf_data.timeframe
+    fmt = inf_data.fmt
+    ffill = inf_data.ffill
     config = strategy.config
     dp = strategy.dp
 
@@ -205,7 +204,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame,
         fmt = '{column}_{timeframe}'                # Informatives of current pair
         if quote != config['stake_currency']:
             fmt = '{quote}_' + fmt                  # Informatives of different quote currency
-        if informative_data.asset:
+        if inf_data.asset:
             fmt = '{base}_' + fmt                   # Informatives of other pair
 
     inf_metadata = {'pair': asset, 'timeframe': timeframe}

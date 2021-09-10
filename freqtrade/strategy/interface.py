@@ -121,7 +121,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: Optional[DataProvider] = None
+    dp: DataProvider
     wallets: Optional[Wallets] = None
     # Filled from configuration
     stake_currency: str
@@ -137,44 +137,23 @@ class IStrategy(ABC, HyperStrategyMixin):
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
         super().__init__(config)
 
-    def _initialize(self):
-        """
-        Late initialization tasks, which may depend on availability of dataprovider/wallets/etc.
-        """
         # Gather informative pairs from @informative-decorated methods.
-        self._ft_informative: Dict[
-            Tuple[str, str], List[Tuple[InformativeData, PopulateIndicators]]] = {}
+        self._ft_informative: List[Tuple[InformativeData, PopulateIndicators]] = []
         for attr_name in dir(self.__class__):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
                 continue
-            ft_informative = getattr(cls_method, '_ft_informative', None)
-            if not isinstance(ft_informative, list):
+            informative_data_list = getattr(cls_method, '_ft_informative', None)
+            if not isinstance(informative_data_list, list):
                 # Type check is required because mocker would return a mock object that evaluates to
                 # True, confusing this code.
                 continue
             strategy_timeframe_minutes = timeframe_to_minutes(self.timeframe)
-            for informative_data in ft_informative:
-                asset = informative_data.asset
-                timeframe = informative_data.timeframe
-                if timeframe_to_minutes(timeframe) < strategy_timeframe_minutes:
+            for informative_data in informative_data_list:
+                if timeframe_to_minutes(informative_data.timeframe) < strategy_timeframe_minutes:
                     raise OperationalException('Informative timeframe must be equal or higher than '
                                                'strategy timeframe!')
-                if asset:
-                    pair = _format_pair_name(self.config, asset)
-                    try:
-                        self._ft_informative[(pair, timeframe)].append(
-                            (informative_data, cls_method))
-                    except KeyError:
-                        self._ft_informative[(pair, timeframe)] = [(informative_data, cls_method)]
-                else:
-                    for pair in self.dp.current_whitelist():
-                        try:
-                            self._ft_informative[(pair, timeframe)].append(
-                                (informative_data, cls_method))
-                        except KeyError:
-                            self._ft_informative[(pair, timeframe)] = \
-                                [(informative_data, cls_method)]
+                self._ft_informative.append((informative_data, cls_method))
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -424,8 +403,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         Internal method which gathers all informative pairs (user or automatically defined).
         """
         informative_pairs = self.informative_pairs()
-        if hasattr(self, '_ft_informative'):
-            informative_pairs += list(self._ft_informative.keys())
+        for inf_data, _ in self._ft_informative:
+            if inf_data.asset:
+                pair_tf = (_format_pair_name(self.config, inf_data.asset), inf_data.timeframe)
+                informative_pairs.append(pair_tf)
+            else:
+                for pair in self.dp.current_whitelist():
+                    informative_pairs.append((pair, inf_data.timeframe))
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
@@ -845,14 +829,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
 
-        if hasattr(self, '_ft_informative'):
-            # call populate_indicators_Nm() which were tagged with @informative decorator.
-            for (pair, timeframe), informatives in self._ft_informative.items():
-                for (informative_data, populate_fn) in informatives:
-                    if not informative_data.asset and pair != metadata['pair']:
-                        continue
-                    dataframe = _create_and_merge_informative_pair(
-                        self, dataframe, metadata, informative_data, populate_fn)
+        # call populate_indicators_Nm() which were tagged with @informative decorator.
+        for inf_data, populate_fn in self._ft_informative:
+            dataframe = _create_and_merge_informative_pair(
+                self, dataframe, metadata, inf_data, populate_fn)
 
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
