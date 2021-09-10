@@ -1194,7 +1194,7 @@ class Exchange:
     # Historic data
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
-                           since_ms: int) -> List:
+                           since_ms: int, is_new_pair: bool = False) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1206,7 +1206,7 @@ class Exchange:
         """
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                           since_ms=since_ms))
+                                           since_ms=since_ms, is_new_pair=is_new_pair))
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
                                  since_ms: int) -> DataFrame:
@@ -1221,11 +1221,12 @@ class Exchange:
         return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
                                   drop_incomplete=self._ohlcv_partial_candle)
 
-    async def _async_get_historic_ohlcv(self, pair: str,
-                                        timeframe: str,
-                                        since_ms: int) -> List:
+    async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
+                                        since_ms: int, is_new_pair: bool
+                                        ) -> List:
         """
         Download historic ohlcv
+        :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
