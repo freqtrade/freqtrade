@@ -1551,6 +1551,32 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
     assert 'high' in ret.columns
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
+    ohlcv = [
+        [
+            int((datetime.now(timezone.utc).timestamp() - 1000) * 1000),
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+
+    pair = 'ETH/BTC'
+    res = await exchange._async_get_historic_ohlcv(pair, "5m",
+                                                   1500000000000, is_new_pair=False)
+    # Call with very old timestamp - causes tons of requests
+    assert exchange._api_async.fetch_ohlcv.call_count > 200
+    assert res[0] == ohlcv[0]
+    assert log_has_re(r'Downloaded data for .* with length .*\.', caplog)
+
+
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     ohlcv = [
         [
