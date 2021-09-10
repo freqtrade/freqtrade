@@ -478,7 +478,7 @@ class FreqtradeBot(LoggingMixin):
         delta = f"Delta: {bids_ask_delta}"
 
         logger.info(
-            f"{bids}, {asks}, {delta}, Direction: {side.value}"
+            f"{bids}, {asks}, {delta}, Direction: {side}"
             f"Bid Price: {order_book['bids'][0][0]}, Ask Price: {order_book['asks'][0][0]}, "
             f"Immediate Bid Quantity: {order_book['bids'][0][1]}, "
             f"Immediate Ask Quantity: {order_book['asks'][0][1]}."

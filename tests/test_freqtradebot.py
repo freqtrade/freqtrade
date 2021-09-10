@@ -11,7 +11,7 @@ import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RPCMessageType, RunMode, SellType, State
+from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -631,7 +631,7 @@ def test_process_trade_creation(default_conf, ticker, limit_buy_order, limit_buy
     assert trade.amount == 91.07468123
 
     assert log_has(
-        'Buy signal found: about create a new trade for ETH/BTC with stake_amount: 0.001 ...',
+        'Long signal found: about create a new trade for ETH/BTC with stake_amount: 0.001 ...',
         caplog
     )
 
@@ -2508,6 +2508,8 @@ def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> N
     trade = MagicMock()
     trade.pair = 'LTC/USDT'
     trade.open_rate = 200
+    trade.is_short = False
+    trade.enter_side = "buy"
     limit_buy_order['filled'] = 0.0
     limit_buy_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
@@ -2519,7 +2521,7 @@ def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> N
     limit_buy_order['filled'] = 0.01
     assert not freqtrade.handle_cancel_enter(trade, limit_buy_order, reason)
     assert cancel_order_mock.call_count == 0
-    assert log_has_re("Order .* for .* not cancelled, as the filled amount.* unsellable.*", caplog)
+    assert log_has_re("Order .* for .* not cancelled, as the filled amount.* unexitable.*", caplog)
 
     caplog.clear()
     cancel_order_mock.reset_mock()
@@ -2550,6 +2552,7 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf,
     reason = CANCEL_REASON['TIMEOUT']
     trade = MagicMock()
     trade.pair = 'LTC/ETH'
+    trade.enter_side = "buy"
     assert freqtrade.handle_cancel_enter(trade, limit_buy_order_canceled_empty, reason)
     assert cancel_order_mock.call_count == 0
     assert log_has_re(r'Buy order fully cancelled. Removing .* from database\.', caplog)
@@ -2577,7 +2580,9 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order,
 
     trade = MagicMock()
     trade.pair = 'LTC/USDT'
+    trade.enter_side = "buy"
     trade.open_rate = 200
+    trade.enter_side = "buy"
     limit_buy_order['filled'] = 0.0
     limit_buy_order['status'] = 'open'
     reason = CANCEL_REASON['TIMEOUT']
@@ -3374,7 +3379,7 @@ def test__safe_exit_amount_error(default_conf, fee, caplog, mocker):
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    with pytest.raises(DependencyException, match=r"Not enough amount to exit."):
+    with pytest.raises(DependencyException, match=r"Not enough amount to exit trade."):
         assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 
@@ -4210,7 +4215,7 @@ def test_order_book_bid_strategy_exception(mocker, default_conf, caplog) -> None
     assert log_has_re(r'Buy Price at location 1 from orderbook could not be determined.', caplog)
 
 
-def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
+def test_check_depth_of_market(default_conf, mocker, order_book_l2) -> None:
     """
     test check depth of market
     """
@@ -4227,7 +4232,7 @@ def test_check_depth_of_market_buy(default_conf, mocker, order_book_l2) -> None:
     freqtrade = FreqtradeBot(default_conf)
 
     conf = default_conf['bid_strategy']['check_depth_of_market']
-    assert freqtrade._check_depth_of_market_buy('ETH/BTC', conf) is False
+    assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
 def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_order, fee,
