@@ -92,7 +92,7 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _get_funding_rate(self, pair: str, when: datetime) -> Optional[float]:
+    def _calculate_funding_rate(self, pair: str, premium_index: float) -> Optional[float]:
         """
             Get's the funding_rate for a pair at a specific date and time in the past
         """
@@ -101,9 +101,10 @@ class Binance(Exchange):
 
     def _get_funding_fee(
         self,
+        pair: str,
         contract_size: float,
         mark_price: float,
-        funding_rate: Optional[float],
+        premium_index: Optional[float],
     ) -> float:
         """
             Calculates a single funding fee
@@ -113,8 +114,8 @@ class Binance(Exchange):
                 - interest rate: 0.03% daily, BNBUSDT, LINKUSDT, and LTCUSDT are 0%
                 - premium: varies by price difference between the perpetual contract and mark price
         """
-        if funding_rate is None:
+        if premium_index is None:
             raise OperationalException("Funding rate cannot be None for Binance._get_funding_fee")
         nominal_value = mark_price * contract_size
-        adjustment = nominal_value * funding_rate
+        adjustment = nominal_value * _calculate_funding_rate(pair, premium_index)
         return adjustment

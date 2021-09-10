@@ -1555,14 +1555,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _get_mark_price(self, pair: str, when: datetime):
-        """
-            Get's the value of the underlying asset for a futures contract
-            at a specific date and time in the past
-        """
-        # TODO-lev: implement
-        raise OperationalException(f"get_mark_price has not been implemented for {self.name}")
-
     def _get_funding_rate(self, pair: str, when: datetime):
         """
             Get's the funding_rate for a pair at a specific date and time in the past
