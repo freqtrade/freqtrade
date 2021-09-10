@@ -510,17 +510,6 @@ def test_start_new_strategy(mocker, caplog):
         start_new_strategy(get_args(args))
 
 
-def test_start_new_strategy_DefaultStrat(mocker, caplog):
-    args = [
-        "new-strategy",
-        "--strategy",
-        "DefaultStrategy"
-    ]
-    with pytest.raises(OperationalException,
-                       match=r"DefaultStrategy is not allowed as name\."):
-        start_new_strategy(get_args(args))
-
-
 def test_start_new_strategy_no_arg(mocker, caplog):
     args = [
         "new-strategy",
@@ -549,17 +538,6 @@ def test_start_new_hyperopt(mocker, caplog):
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
     with pytest.raises(OperationalException,
                        match=r".* already exists. Please choose another Hyperopt Name\."):
-        start_new_hyperopt(get_args(args))
-
-
-def test_start_new_hyperopt_DefaultHyperopt(mocker, caplog):
-    args = [
-        "new-hyperopt",
-        "--hyperopt",
-        "DefaultHyperopt"
-    ]
-    with pytest.raises(OperationalException,
-                       match=r"DefaultHyperopt is not allowed as name\."):
         start_new_hyperopt(get_args(args))
 
 
@@ -827,9 +805,9 @@ def test_start_list_strategies(mocker, caplog, capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacy" in captured.out
-    assert "legacy_strategy.py" not in captured.out
-    assert "DefaultStrategy" in captured.out
+    assert "TestStrategyLegacyV1" in captured.out
+    assert "legacy_strategy_v1.py" not in captured.out
+    assert "StrategyTestV2" in captured.out
 
     # Test regular output
     args = [
@@ -842,9 +820,9 @@ def test_start_list_strategies(mocker, caplog, capsys):
     # pargs['config'] = None
     start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestStrategyLegacy" in captured.out
-    assert "legacy_strategy.py" in captured.out
-    assert "DefaultStrategy" in captured.out
+    assert "TestStrategyLegacyV1" in captured.out
+    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
 
 
 def test_start_list_hyperopts(mocker, caplog, capsys):
@@ -861,7 +839,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestHyperoptLegacy" not in captured.out
     assert "legacy_hyperopt.py" not in captured.out
-    assert "DefaultHyperOpt" in captured.out
+    assert "HyperoptTestSepFile" in captured.out
     assert "test_hyperopt.py" not in captured.out
 
     # Test regular output
@@ -876,7 +854,7 @@ def test_start_list_hyperopts(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestHyperoptLegacy" not in captured.out
     assert "legacy_hyperopt.py" not in captured.out
-    assert "DefaultHyperOpt" in captured.out
+    assert "HyperoptTestSepFile" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):

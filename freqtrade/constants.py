@@ -49,6 +49,8 @@ USERPATH_NOTEBOOKS = 'notebooks'
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
+NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
+
 
 # Define decimals per coin for outputs
 # Only used for outputs.

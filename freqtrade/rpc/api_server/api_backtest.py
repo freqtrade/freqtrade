@@ -46,11 +46,14 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             if (
                 not ApiServer._bt
                 or lastconfig.get('timeframe') != strat.timeframe
+                or lastconfig.get('timeframe_detail') != btconfig.get('timeframe_detail')
                 or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)
                 or lastconfig.get('timerange') != btconfig['timerange']
             ):
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
+                if ApiServer._bt.timeframe_detail:
+                    ApiServer._bt.load_bt_data_detail()
 
             # Only reload data if timeframe changed.
             if (

@@ -324,6 +324,7 @@ class PairHistory(BaseModel):
 class BacktestRequest(BaseModel):
     strategy: str
     timeframe: Optional[str]
+    timeframe_detail: Optional[str]
     timerange: Optional[str]
     max_open_trades: Optional[int]
     stake_amount: Optional[Union[float, str]]
