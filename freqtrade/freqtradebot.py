@@ -1141,7 +1141,7 @@ class FreqtradeBot(LoggingMixin):
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
-                current_time=datetime.now(timezone.utc)):  # TODO-lev: Update to exit
+                current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
 
@@ -1165,9 +1165,9 @@ class FreqtradeBot(LoggingMixin):
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
-        trade.sell_order_status = ''  # TODO-lev: Update to exit_order_status
+        trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.sell_reason  # TODO-lev: Update to exit_reason
+        trade.sell_reason = sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1208,7 +1208,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'sell_reason': trade.sell_reason,  # TODO-lev: change to exit_reason
+            'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
@@ -1227,10 +1227,10 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a sell cancel occurred.
         """
-        if trade.sell_order_status == reason:  # TODO-lev: Update to exit_order_status
+        if trade.sell_order_status == reason:
             return
         else:
-            trade.sell_order_status = reason  # TODO-lev: Update to exit_order_status
+            trade.sell_order_status = reason
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)
@@ -1251,7 +1251,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
-            'sell_reason': trade.sell_reason,  # TODO-lev: trade to exit_reason
+            'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date,
             'stake_currency': self.config['stake_currency'],
@@ -1337,7 +1337,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
-            # TODO-lev: won't be in "base"(quote) currency for shorts
+            # TODO-lev: won't be in (quote) currency for shorts
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
         elif fee_abs != 0:
