@@ -79,10 +79,9 @@ class Hyperopt:
 
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
-            self.auto_hyperopt = True
         else:
             raise OperationalException(
-                "Using seperate Hyperopt files has been removed in 2021.9. Please convert "
+                "Using separate Hyperopt files has been removed in 2021.9. Please convert "
                 "your existing Hyperopt file to the new Hyperoptable strategy interface")
 
         self.backtesting._set_strategy(self.backtesting.strategylist[0])

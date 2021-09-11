@@ -9,7 +9,6 @@ from typing import Dict, List
 
 from skopt.space import Categorical, Dimension, Integer
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 from freqtrade.optimize.space import SKDecimal
@@ -17,13 +16,6 @@ from freqtrade.strategy import IStrategy
 
 
 logger = logging.getLogger(__name__)
-
-
-def _format_exception_message(method: str, space: str) -> str:
-    return (f"The '{space}' space is included into the hyperoptimization "
-            f"but {method}() method is not found in your "
-            f"custom Hyperopt class. You should either implement this "
-            f"method or remove the '{space}' space from hyperoptimization.")
 
 
 class IHyperOpt(ABC):
@@ -44,25 +36,6 @@ class IHyperOpt(ABC):
         # Assign ticker_interval to be used in hyperopt
         IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
-
-    def protection_space(self) -> List[Dimension]:
-        """
-        Create a protection space.
-        Only supported by the Parameter interface.
-        """
-        raise OperationalException(_format_exception_message('indicator_space', 'protection'))
-
-    def indicator_space(self) -> List[Dimension]:
-        """
-        Create an indicator space.
-        """
-        raise OperationalException(_format_exception_message('indicator_space', 'buy'))
-
-    def sell_indicator_space(self) -> List[Dimension]:
-        """
-        Create a sell indicator space.
-        """
-        raise OperationalException(_format_exception_message('sell_indicator_space', 'sell'))
 
     def generate_roi_table(self, params: Dict) -> Dict[int, float]:
         """
