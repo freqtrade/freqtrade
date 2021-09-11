@@ -90,7 +90,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
-                    "list-hyperopts", "hyperopt-list", "hyperopt-show",
+                    "hyperopt-list", "hyperopt-show",
                     "plot-dataframe", "plot-profit", "show-trades"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]

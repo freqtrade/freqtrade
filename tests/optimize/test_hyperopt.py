@@ -21,8 +21,6 @@ from freqtrade.strategy.hyper import IntParameter
 from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
-from .hyperopts.hyperopt_test_sep_file import HyperoptTestSepFile
-
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
@@ -30,7 +28,7 @@ def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'HyperoptTestSepFile',
+        '--strategy', 'HyperoptableStrategy',
     ]
 
     config = setup_optimize_configuration(get_args(args), RunMode.HYPEROPT)
@@ -62,7 +60,7 @@ def test_setup_hyperopt_configuration_with_arguments(mocker, default_conf, caplo
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'HyperoptTestSepFile',
+        '--strategy', 'HyperoptableStrategy',
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--timerange', ':100',
@@ -114,7 +112,7 @@ def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'HyperoptTestSepFile',
+        '--strategy', 'HyperoptableStrategy',
         '--stake-amount', '1',
         '--starting-balance', '2'
     ]
@@ -142,9 +140,7 @@ def test_start_not_installed(mocker, default_conf, import_fails) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'HyperoptTestSepFile',
-        '--hyperopt-path',
-        str(Path(__file__).parent / "hyperopts"),
+        '--strategy', 'HyperoptableStrategy',
         '--epochs', '5',
         '--hyperopt-loss', 'SharpeHyperOptLossDaily',
     ]
@@ -203,7 +199,7 @@ def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--hyperopt', 'HyperoptTestSepFile',
+        '--strategy', 'HyperoptableStrategy',
         '--hyperopt-loss', 'SharpeHyperOptLossDaily',
         '--epochs', '5'
     ]

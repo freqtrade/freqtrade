@@ -26,9 +26,7 @@ optional arguments:
 ├── data
 ├── hyperopt_results
 ├── hyperopts
-│   ├── sample_hyperopt_advanced.py
 │   ├── sample_hyperopt_loss.py
-│   └── sample_hyperopt.py
 ├── notebooks
 │   └── strategy_analysis_example.ipynb
 ├── plot

@@ -167,7 +167,7 @@ Since hyperopt uses Bayesian search, running for too many epochs may not produce
 It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.
 
 ```bash
-freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
 ```
 
 ### Why does it take a long time to run hyperopt?
