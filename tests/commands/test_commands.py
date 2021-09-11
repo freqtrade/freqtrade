@@ -12,7 +12,7 @@ from freqtrade.commands import (start_convert_data, start_create_userdir, start_
                                 start_hyperopt_list, start_hyperopt_show, start_install_ui,
                                 start_list_data, start_list_exchanges, start_list_hyperopts,
                                 start_list_markets, start_list_strategies, start_list_timeframes,
-                                start_new_hyperopt, start_new_strategy, start_show_trades,
+                                start_new_strategy, start_show_trades,
                                 start_test_pairlist, start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
@@ -517,37 +517,6 @@ def test_start_new_strategy_no_arg(mocker, caplog):
     with pytest.raises(OperationalException,
                        match="`new-strategy` requires --strategy to be set."):
         start_new_strategy(get_args(args))
-
-
-def test_start_new_hyperopt(mocker, caplog):
-    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-
-    args = [
-        "new-hyperopt",
-        "--hyperopt",
-        "CoolNewhyperopt"
-    ]
-    start_new_hyperopt(get_args(args))
-
-    assert wt_mock.call_count == 1
-    assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
-    assert log_has_re("Writing hyperopt to .*", caplog)
-
-    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    with pytest.raises(OperationalException,
-                       match=r".* already exists. Please choose another Hyperopt Name\."):
-        start_new_hyperopt(get_args(args))
-
-
-def test_start_new_hyperopt_no_arg(mocker):
-    args = [
-        "new-hyperopt",
-    ]
-    with pytest.raises(OperationalException,
-                       match="`new-hyperopt` requires --hyperopt to be set."):
-        start_new_hyperopt(get_args(args))
 
 
 def test_start_install_ui(mocker):

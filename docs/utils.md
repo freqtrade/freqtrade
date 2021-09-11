@@ -111,41 +111,6 @@ Using the advanced template (populates all optional functions and methods)
 freqtrade new-strategy --strategy AwesomeStrategy --template advanced
 ```
 
-## Create new hyperopt
-
-Creates a new hyperopt from a template similar to SampleHyperopt.
-The file will be named inline with your class name, and will not overwrite existing files.
-
-Results will be located in `user_data/hyperopts/<classname>.py`.
-
-``` output
-usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
-                              [--template {full,minimal,advanced}]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --userdir PATH, --user-data-dir PATH
-                        Path to userdata directory.
-  --hyperopt NAME       Specify hyperopt class name which will be used by the
-                        bot.
-  --template {full,minimal,advanced}
-                        Use a template which is either `minimal`, `full`
-                        (containing multiple sample indicators) or `advanced`.
-                        Default: `full`.
-```
-
-### Sample usage of new-hyperopt
-
-```bash
-freqtrade new-hyperopt --hyperopt AwesomeHyperopt
-```
-
-With custom user directory
-
-```bash
-freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
-```
-
 ## List Strategies and List Hyperopts
 
 Use the `list-strategies` subcommand to see all strategies in one particular directory and the `list-hyperopts` subcommand to list custom Hyperopts.
