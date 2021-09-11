@@ -3,42 +3,42 @@ site_url: https://www.freqtrade.io/
 repo_url: https://github.com/freqtrade/freqtrade
 use_directory_urls: True
 nav:
-  - Home: index.md
-  - Quickstart with Docker: docker_quickstart.md
-  - Installation:
-      - Linux/MacOS/Raspberry: installation.md
-      - Windows: windows_installation.md
-  - Freqtrade Basics: bot-basics.md
-  - Configuration: configuration.md
-  - Strategy Customization: strategy-customization.md
-  - Plugins: plugins.md
-  - Stoploss: stoploss.md
-  - Start the bot: bot-usage.md
-  - Control the bot:
-      - Telegram: telegram-usage.md
-      - REST API & FreqUI: rest-api.md
-      - Web Hook: webhook-config.md
-  - Data Downloading: data-download.md
-  - Backtesting: backtesting.md
-  - Leverage: leverage.md
-  - Hyperopt: hyperopt.md
-  - Utility Sub-commands: utils.md
-  - Plotting: plotting.md
-  - Data Analysis:
-      - Jupyter Notebooks: data-analysis.md
-      - Strategy analysis: strategy_analysis_example.md
-  - Exchange-specific Notes: exchanges.md
-  - Advanced Topics:
-      - Advanced Post-installation Tasks: advanced-setup.md
-      - Edge Positioning: edge.md
-      - Advanced Strategy: strategy-advanced.md
-      - Advanced Hyperopt: advanced-hyperopt.md
-      - Sandbox Testing: sandbox-testing.md
-  - FAQ: faq.md
-  - SQL Cheat-sheet: sql_cheatsheet.md
-  - Updating Freqtrade: updating.md
-  - Deprecated Features: deprecated.md
-  - Contributors Guide: developer.md
+    - Home: index.md
+    - Quickstart with Docker: docker_quickstart.md
+    - Installation:
+        - Linux/MacOS/Raspberry: installation.md
+        - Windows: windows_installation.md
+    - Freqtrade Basics: bot-basics.md
+    - Configuration: configuration.md
+    - Strategy Customization: strategy-customization.md
+    - Plugins: plugins.md
+    - Stoploss: stoploss.md
+    - Start the bot: bot-usage.md
+    - Control the bot:
+        - Telegram: telegram-usage.md
+        - REST API & FreqUI: rest-api.md
+        - Web Hook: webhook-config.md
+    - Data Downloading: data-download.md
+    - Backtesting: backtesting.md
+    - Hyperopt: hyperopt.md
+    - Leverage: leverage.md
+    - Utility Sub-commands: utils.md
+    - Plotting: plotting.md
+    - Exchange-specific Notes: exchanges.md
+    - Data Analysis:
+        - Jupyter Notebooks: data-analysis.md
+        - Strategy analysis: strategy_analysis_example.md
+    - Advanced Topics:
+        - Advanced Post-installation Tasks: advanced-setup.md
+        - Edge Positioning: edge.md
+        - Advanced Strategy: strategy-advanced.md
+        - Advanced Hyperopt: advanced-hyperopt.md
+        - Sandbox Testing: sandbox-testing.md
+    - FAQ: faq.md
+    - SQL Cheat-sheet: sql_cheatsheet.md
+    - Updating Freqtrade: updating.md
+    - Deprecated Features: deprecated.md
+    - Contributors Guide: developer.md
 theme:
   name: material
   logo: "images/logo.png"

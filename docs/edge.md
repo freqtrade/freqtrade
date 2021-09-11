@@ -3,7 +3,7 @@
 The `Edge Positioning` module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss.
 
 !!! Warning
-    WHen using `Edge positioning` with a dynamic whitelist (VolumePairList), make sure to also use `AgeFilter` and set it to at least `calculate_since_number_of_days` to avoid problems with missing data.
+    When using `Edge positioning` with a dynamic whitelist (VolumePairList), make sure to also use `AgeFilter` and set it to at least `calculate_since_number_of_days` to avoid problems with missing data.
 
 !!! Note
     `Edge Positioning` only considers *its own* buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.

@@ -739,10 +739,15 @@ def test_auto_hyperopt_interface(default_conf):
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
 
+    with pytest.raises(OperationalException):
+        next(strategy.enumerate_parameters('deadBeef'))
+
     assert strategy.buy_rsi.value == strategy.buy_params['buy_rsi']
     # PlusDI is NOT in the buy-params, so default should be used
     assert strategy.buy_plusdi.value == 0.5
     assert strategy.sell_rsi.value == strategy.sell_params['sell_rsi']
+
+    assert repr(strategy.sell_rsi) == 'IntParameter(74)'
 
     # Parameter is disabled - so value from sell_param dict will NOT be used.
     assert strategy.sell_minusdi.value == 0.5
