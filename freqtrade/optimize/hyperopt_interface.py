@@ -5,7 +5,7 @@ This module defines the interface to apply for hyperopt
 import logging
 import math
 from abc import ABC
-from typing import Any, Callable, Dict, List
+from typing import Dict, List
 
 from skopt.space import Categorical, Dimension, Integer
 
@@ -44,18 +44,6 @@ class IHyperOpt(ABC):
         # Assign ticker_interval to be used in hyperopt
         IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
-
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        """
-        Create a buy strategy generator.
-        """
-        raise OperationalException(_format_exception_message('buy_strategy_generator', 'buy'))
-
-    def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        """
-        Create a sell strategy generator.
-        """
-        raise OperationalException(_format_exception_message('sell_strategy_generator', 'sell'))
 
     def protection_space(self) -> List[Dimension]:
         """

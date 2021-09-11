@@ -22,26 +22,6 @@ class HyperOptAuto(IHyperOpt):
      sell_indicator_space methods, but other hyperopt methods can be overridden as well.
     """
 
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        def populate_buy_trend(dataframe: DataFrame, metadata: dict):
-            for attr_name, attr in self.strategy.enumerate_parameters('buy'):
-                if attr.optimize:
-                    # noinspection PyProtectedMember
-                    attr.value = params[attr_name]
-            return self.strategy.populate_buy_trend(dataframe, metadata)
-
-        return populate_buy_trend
-
-    def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        def populate_sell_trend(dataframe: DataFrame, metadata: dict):
-            for attr_name, attr in self.strategy.enumerate_parameters('sell'):
-                if attr.optimize:
-                    # noinspection PyProtectedMember
-                    attr.value = params[attr_name]
-            return self.strategy.populate_sell_trend(dataframe, metadata)
-
-        return populate_sell_trend
-
     def _get_func(self, name) -> Callable:
         """
         Return a function defined in Strategy.HyperOpt class, or one defined in super() class.
@@ -61,6 +41,7 @@ class HyperOptAuto(IHyperOpt):
                 yield attr.get_space(attr_name)
 
     def _get_indicator_space(self, category, fallback_method_name):
+        # TODO: is this necessary, or can we call "generate_space" directly?
         indicator_space = list(self._generate_indicator_space(category))
         if len(indicator_space) > 0:
             return indicator_space

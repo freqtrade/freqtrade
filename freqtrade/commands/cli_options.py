@@ -209,7 +209,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
