@@ -148,6 +148,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     quote_currencies = args.get('quote_currencies', [])
 
     try:
+        # TODO-lev: Add leverage amount to get markets that support a certain leverage
         pairs = exchange.get_markets(base_currencies=base_currencies,
                                      quote_currencies=quote_currencies,
                                      pairs_only=pairs_only,
