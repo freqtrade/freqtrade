@@ -28,7 +28,7 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
                                        EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED, retrier,
                                        retrier_async)
-from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
@@ -1239,21 +1239,22 @@ class Exchange:
             pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
 
-        results = await asyncio.gather(*input_coroutines, return_exceptions=True)
-
-        # Combine gathered results
         data: List = []
-        for res in results:
-            if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
-                continue
-            # Deconstruct tuple if it's not an exception
-            p, _, new_data = res
-            if p == pair:
-                data.extend(new_data)
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        for input_coro in chunks(input_coroutines, 100):
+
+            results = await asyncio.gather(*input_coro, return_exceptions=True)
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    continue
+                # Deconstruct tuple if it's not an exception
+                p, _, new_data = res
+                if p == pair:
+                    data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        logger.info("Downloaded data for %s with length %s.", pair, len(data))
+        logger.info(f"Downloaded data for {pair} with length {len(data)}.")
         return data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
