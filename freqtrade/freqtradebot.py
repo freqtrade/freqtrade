@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 
@@ -16,7 +16,8 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import RPCMessageType, SellType, SignalDirection, State
+from freqtrade.enums import (Collateral, RPCMessageType, SellType, SignalDirection, State,
+                             TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -103,6 +104,18 @@ class FreqtradeBot(LoggingMixin):
         # Protect exit-logic from forcesell and vice versa
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
+
+        self.trading_mode: TradingMode = TradingMode.SPOT
+        self.collateral_type: Optional[Collateral] = None
+
+        trading_mode = self.config.get('trading_mode')
+        collateral_type = self.config.get('collateral_type')
+
+        if trading_mode:
+            self.trading_mode = TradingMode(trading_mode)
+
+        if collateral_type:
+            self.collateral_type = Collateral(collateral_type)
 
     def notify_status(self, msg: str) -> None:
         """
@@ -490,6 +503,43 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
+    def leverage_prep(
+        self,
+        pair: str,
+        open_rate: float,
+        amount: float,
+        leverage: float,
+        is_short: bool
+    ) -> Tuple[float, Optional[float]]:
+
+        interest_rate = 0.0
+        isolated_liq = None
+
+        # TODO-lev: Uncomment once liq and interest merged in
+        # if TradingMode == TradingMode.MARGIN:
+        #     interest_rate = self.exchange.get_interest_rate(
+        #         pair=pair,
+        #         open_rate=open_rate,
+        #         is_short=is_short
+        #     )
+
+        #     if self.collateral_type == Collateral.ISOLATED:
+
+        #         isolated_liq = liquidation_price(
+        #             exchange_name=self.exchange.name,
+        #             trading_mode=self.trading_mode,
+        #             open_rate=open_rate,
+        #             amount=amount,
+        #             leverage=leverage,
+        #             is_short=is_short
+        #         )
+
+        if self.trading_mode == TradingMode.FUTURES:
+            self.exchange.set_leverage(pair, leverage)
+            self.exchange.set_margin_mode(pair, self.collateral_type)
+
+        return interest_rate, isolated_liq
+
     def execute_entry(
         self,
         pair: str,
@@ -602,6 +652,14 @@ class FreqtradeBot(LoggingMixin):
             amount = safe_value_fallback(order, 'filled', 'amount')
             enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
 
+        interest_rate, isolated_liq = self.leverage_prep(
+            leverage=leverage,
+            pair=pair,
+            amount=amount,
+            open_rate=enter_limit_filled_price,
+            is_short=is_short
+        )
+
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         trade = Trade(
@@ -623,6 +681,8 @@ class FreqtradeBot(LoggingMixin):
             timeframe=timeframe_to_minutes(self.config['timeframe']),
             leverage=leverage,
             is_short=is_short,
+            interest_rate=interest_rate,
+            isolated_liq=isolated_liq,
         )
         trade.orders.append(order_obj)
 
