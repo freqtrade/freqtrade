@@ -172,11 +172,11 @@ class Arguments:
         from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
                                         start_download_data, start_edge, start_hyperopt,
                                         start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                        start_list_data, start_list_exchanges, start_list_hyperopts,
-                                        start_list_markets, start_list_strategies,
-                                        start_list_timeframes, start_new_config, start_new_strategy,
-                                        start_plot_dataframe, start_plot_profit, start_show_trades,
-                                        start_test_pairlist, start_trading, start_webserver)
+                                        start_list_data, start_list_exchanges, start_list_markets,
+                                        start_list_strategies, start_list_timeframes,
+                                        start_new_config, start_new_strategy, start_plot_dataframe,
+                                        start_plot_profit, start_show_trades, start_test_pairlist,
+                                        start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -290,15 +290,6 @@ class Arguments:
         )
         list_exchanges_cmd.set_defaults(func=start_list_exchanges)
         self._build_args(optionlist=ARGS_LIST_EXCHANGES, parser=list_exchanges_cmd)
-
-        # Add list-hyperopts subcommand
-        list_hyperopts_cmd = subparsers.add_parser(
-            'list-hyperopts',
-            help='Print available hyperopt classes.',
-            parents=[_common_parser],
-        )
-        list_hyperopts_cmd.set_defaults(func=start_list_hyperopts)
-        self._build_args(optionlist=ARGS_LIST_HYPEROPTS, parser=list_hyperopts_cmd)
 
         # Add list-markets subcommand
         list_markets_cmd = subparsers.add_parser(
