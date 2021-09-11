@@ -40,7 +40,7 @@ class Kraken(Exchange):
         return (parent_check and
                 market.get('darkpool', False) is False)
 
-    @ retrier
+    @retrier
     def get_balances(self) -> dict:
         if self._config['dry_run']:
             return {}

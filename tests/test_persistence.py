@@ -90,7 +90,7 @@ def test_enter_exit_side(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_set_stop_loss_isolated_liq(fee):
+def test__set_stop_loss_isolated_liq(fee):
     trade = Trade(
         id=2,
         pair='ADA/USDT',
