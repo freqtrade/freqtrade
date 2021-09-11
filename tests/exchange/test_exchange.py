@@ -1568,7 +1568,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     # Monkey-patch async function
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
-    pair = 'ETH/BTC'
+    pair = 'ETH/USDT'
     res = await exchange._async_get_historic_ohlcv(pair, "5m",
                                                    1500000000000, is_new_pair=False)
     # Call with very old timestamp - causes tons of requests
