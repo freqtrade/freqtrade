@@ -9,19 +9,18 @@ from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
-@pytest.mark.parametrize('limitratio,exchangelimitratio,expected,side', [
-    (None, 1.05, 220 * 0.99, "sell"),
-    (0.99, 1.05, 220 * 0.99, "sell"),
-    (0.98, 1.05, 220 * 0.98, "sell"),
-    (None, 0.95, 220 * 1.01, "buy"),
-    (1.01, 0.95, 220 * 1.01, "buy"),
-    (1.02, 0.95, 220 * 1.02, "buy"),
+@pytest.mark.parametrize('limitratio,expected,side', [
+    (None, 220 * 0.99, "sell"),
+    (0.99, 220 * 0.99, "sell"),
+    (0.98, 220 * 0.98, "sell"),
+    (None, 220 * 1.01, "buy"),
+    (0.99, 220 * 1.01, "buy"),
+    (0.98, 220 * 1.02, "buy"),
 ])
 def test_stoploss_order_binance(
     default_conf,
     mocker,
     limitratio,
-    exchangelimitratio,
     expected,
     side
 ):
@@ -47,7 +46,7 @@ def test_stoploss_order_binance(
             amount=1,
             stop_price=190,
             side=side,
-            order_types={'stoploss_on_exchange_limit_ratio': exchangelimitratio}
+            order_types={'stoploss_on_exchange_limit_ratio': 1.05}
         )
 
     api_mock.create_order.reset_mock()

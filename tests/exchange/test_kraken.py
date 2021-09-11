@@ -168,11 +168,11 @@ def test_get_balances_prod(default_conf, mocker):
 
 
 @pytest.mark.parametrize('ordertype', ['market', 'limit'])
-@pytest.mark.parametrize('side,limitratio,adjustedprice', [
-    ("buy", 0.99, 217.8),
-    ("sell", 1.01, 222.2),
+@pytest.mark.parametrize('side,adjustedprice', [
+    ("sell", 217.8),
+    ("buy", 222.2),
 ])
-def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, limitratio, adjustedprice):
+def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, adjustedprice):
     api_mock = MagicMock()
     order_id = 'test_prod_buy_{}'.format(randint(0, 10 ** 6))
 
@@ -189,10 +189,15 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, limitratio
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, side=side,
-                              order_types={'stoploss': ordertype,
-                                           'stoploss_on_exchange_limit_ratio': limitratio
-                                           })
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        side=side,
+        order_types={
+            'stoploss': ordertype,
+            'stoploss_on_exchange_limit_ratio': 0.99
+        })
 
     assert 'id' in order
     assert 'info' in order
@@ -201,7 +206,9 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, limitratio
     if ordertype == 'limit':
         assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_LIMIT_ORDERTYPE
         assert api_mock.create_order.call_args_list[0][1]['params'] == {
-            'trading_agreement': 'agree', 'price2': adjustedprice}
+            'trading_agreement': 'agree',
+            'price2': adjustedprice
+        }
     else:
         assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
         assert api_mock.create_order.call_args_list[0][1]['params'] == {

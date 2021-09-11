@@ -55,8 +55,8 @@ class Kraken(Exchange):
 
             orders = self._api.fetch_open_orders()
             order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
-                          x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
-                          # Don't remove the below comment, this can be important for debugging
+                           x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
+                           # Don't remove the below comment, this can be important for debugging
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:
@@ -96,7 +96,10 @@ class Kraken(Exchange):
         if order_types.get('stoploss', 'market') == 'limit':
             ordertype = "stop-loss-limit"
             limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            limit_rate = stop_price * limit_price_pct
+            if side == "sell":
+                limit_rate = stop_price * limit_price_pct
+            else:
+                limit_rate = stop_price * (2 - limit_price_pct)
             params['price2'] = self.price_to_precision(pair, limit_rate)
         else:
             ordertype = "stop-loss"
@@ -144,13 +147,13 @@ class Kraken(Exchange):
 
         for pair, market in self.markets.items():
             info = market['info']
-            leverage_buy = info['leverage_buy'] if 'leverage_buy' in info else []
-            leverage_sell = info['leverage_sell'] if 'leverage_sell' in info else []
+            leverage_buy = info.get('leverage_buy', [])
+            leverage_sell = info.get('leverage_sell', [])
             if len(leverage_buy) > 0 or len(leverage_sell) > 0:
                 if leverage_buy != leverage_sell:
                     logger.warning(
                         f"The buy({leverage_buy}) and sell({leverage_sell}) leverage are not equal"
-                        "{pair}. Please let freqtrade know because this has never happened before"
+                        "for {pair}. Please notify freqtrade because this has never happened before"
                     )
                     if max(leverage_buy) < max(leverage_sell):
                         leverages[pair] = leverage_buy

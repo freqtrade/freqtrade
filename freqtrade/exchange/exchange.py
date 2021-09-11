@@ -1597,8 +1597,7 @@ class Exchange:
             :param pair: The base/quote currency pair being traded
             :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
-        raise OperationalException(
-            f"{self.name.capitalize()}.get_max_leverage has not been implemented.")
+        return 1.0
 
     @retrier
     def set_leverage(self, leverage: float, pair: Optional[str]):
@@ -1606,6 +1605,10 @@ class Exchange:
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
         """
+        if not self.exchange_has("setLeverage"):
+            # Some exchanges only support one collateral type
+            return
+
         try:
             self._api.set_leverage(symbol=pair, leverage=leverage)
         except ccxt.DDoSProtection as e:

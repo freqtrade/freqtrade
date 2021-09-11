@@ -41,8 +41,8 @@ class Binance(Exchange):
         """
 
         return order['type'] == 'stop_loss_limit' and (
-            side == "sell" and stop_loss > float(order['info']['stopPrice']) or
-            side == "buy" and stop_loss < float(order['info']['stopPrice'])
+            (side == "sell" and stop_loss > float(order['info']['stopPrice'])) or
+            (side == "buy" and stop_loss < float(order['info']['stopPrice']))
         )
 
     @retrier(retries=0)
@@ -55,11 +55,12 @@ class Binance(Exchange):
         :param side: "buy" or "sell"
         """
         # Limit price threshold: As limit price should always be below stop-price
-        limit_price_pct = order_types.get(
-            'stoploss_on_exchange_limit_ratio',
-            0.99 if side == 'sell' else 1.01
-        )
-        rate = stop_price * limit_price_pct
+        limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
+        if side == "sell":
+            # TODO: Name limit_rate in other exchange subclasses
+            rate = stop_price * limit_price_pct
+        else:
+            rate = stop_price * (2 - limit_price_pct)
 
         ordertype = "stop_loss_limit"
 
