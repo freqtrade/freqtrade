@@ -112,9 +112,6 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
-        return stake_amount / leverage
-
     @retrier
     def fill_leverage_brackets(self):
         """

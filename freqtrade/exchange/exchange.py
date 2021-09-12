@@ -630,7 +630,7 @@ class Exchange:
         :param stake_amount: The stake amount for a pair before leverage is considered
         :param leverage: The amount of leverage being used on the current trade
         """
-        return stake_amount
+        return stake_amount / leverage
 
     # Dry-run methods
 

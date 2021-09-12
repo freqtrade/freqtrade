@@ -2969,18 +2969,11 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
+@pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
 @pytest.mark.parametrize('exchange,stake_amount,leverage,min_stake_with_lev', [
-    ('binance', 9.0, 3.0, 3.0),
-    ('binance', 20.0, 5.0, 4.0),
-    ('binance', 100.0, 100.0, 1.0),
-    # Kraken
-    ('kraken', 9.0, 3.0, 3.0),
-    ('kraken', 20.0, 5.0, 4.0),
-    ('kraken', 100.0, 100.0, 1.0),
-    # FTX
-    ('ftx', 9.0, 3.0, 9.0),
-    ('ftx', 20.0, 5.0, 20.0),
-    ('ftx', 100.0, 100.0, 100.0)
+    (9.0, 3.0, 3.0),
+    (20.0, 5.0, 4.0),
+    (100.0, 100.0, 1.0)
 ])
 def test_apply_leverage_to_stake_amount(
     exchange,

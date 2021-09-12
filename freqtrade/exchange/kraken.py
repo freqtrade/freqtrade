@@ -163,15 +163,6 @@ class Kraken(Exchange):
                     leverages[pair] = leverage_buy
         self._leverage_brackets = leverages
 
-    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
-        """
-        Takes the minimum stake amount for a pair with no leverage and returns the minimum
-        stake amount when leverage is considered
-        :param stake_amount: The stake amount for a pair before leverage is considered
-        :param leverage: The amount of leverage being used on the current trade
-        """
-        return stake_amount / leverage
-
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
             Returns the maximum leverage that a pair can be traded at
