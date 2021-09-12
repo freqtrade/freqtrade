@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, PropertyMock
 import ccxt
 import pytest
 
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
 from tests.conftest import get_patched_exchange
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -231,4 +232,26 @@ def test_fill_leverage_brackets_binance(default_conf, mocker):
         "binance",
         "fill_leverage_brackets",
         "load_leverage_brackets"
+    )
+
+
+def test__set_leverage_binance(mocker, default_conf):
+
+    api_mock = MagicMock()
+    api_mock.set_leverage = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
+
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    exchange._set_leverage(3.0, trading_mode=TradingMode.MARGIN)
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "_set_leverage",
+        "set_leverage",
+        pair="XRP/USDT",
+        leverage=5.0,
+        trading_mode=TradingMode.FUTURES
     )

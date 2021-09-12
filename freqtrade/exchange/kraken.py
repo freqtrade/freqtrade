@@ -175,8 +175,8 @@ class Kraken(Exchange):
     def _set_leverage(
         self,
         leverage: float,
-        pair: Optional[str],
-        trading_mode: Optional[TradingMode]
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
     ):
         """
             Kraken set's the leverage as an option in the order object, so we need to
@@ -185,4 +185,5 @@ class Kraken(Exchange):
         if leverage > 1.0:
             self._params['leverage'] = leverage
         else:
-            del self._params['leverage']
+            if 'leverage' in self._params:
+                del self._params['leverage']

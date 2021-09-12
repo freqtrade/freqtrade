@@ -1605,8 +1605,8 @@ class Exchange:
     def _set_leverage(
         self,
         leverage: float,
-        pair: Optional[str],
-        trading_mode: Optional[TradingMode]
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
     ):
         """
             Set's the leverage before making a trade, in order to not
