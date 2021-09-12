@@ -58,6 +58,12 @@ Bittrex does not support market orders. If you have a message at the bot startup
 Bittrex also does not support `VolumePairlist` due to limited / split API constellation at the moment.
 Please use `StaticPairlist`. Other pairlists (other than `VolumePairlist`) should not be affected.
 
+### Volume pairlist
+
+Bittrex does not support the direct usage of VolumePairList. This can however be worked around by using the advanced mode with `lookback_days: 1` (or more), which will emulate 24h volume.
+
+Read more in the [pairlist documentation](plugins.md#volumepairlist-advanced-mode).
+
 ### Restricted markets
 
 Bittrex split its exchange into US and International versions.
