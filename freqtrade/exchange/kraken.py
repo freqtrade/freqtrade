@@ -146,6 +146,7 @@ class Kraken(Exchange):
         leverages = {}
 
         for pair, market in self.markets.items():
+            leverages[pair] = [1]
             info = market['info']
             leverage_buy = info.get('leverage_buy', [])
             leverage_sell = info.get('leverage_sell', [])
@@ -155,12 +156,12 @@ class Kraken(Exchange):
                         f"The buy({leverage_buy}) and sell({leverage_sell}) leverage are not equal"
                         "for {pair}. Please notify freqtrade because this has never happened before"
                     )
-                    if max(leverage_buy) < max(leverage_sell):
-                        leverages[pair] = leverage_buy
+                    if max(leverage_buy) <= max(leverage_sell):
+                        leverages[pair] += [int(lev) for lev in leverage_buy]
                     else:
-                        leverages[pair] = leverage_sell
+                        leverages[pair] += [int(lev) for lev in leverage_sell]
                 else:
-                    leverages[pair] = leverage_buy
+                    leverages[pair] += [int(lev) for lev in leverage_buy]
         self._leverage_brackets = leverages
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
@@ -173,7 +174,7 @@ class Kraken(Exchange):
 
     def set_leverage(self, pair, leverage):
         """
-            Kraken set's the leverage as an option in the order object, so it doesn't do
-            anything in this function
+            Kraken set's the leverage as an option in the order object, so we need to
+            add it to params
         """
-        return
+        self._params['leverage'] = leverage
