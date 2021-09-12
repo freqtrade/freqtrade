@@ -177,9 +177,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
     asset = inf_data.asset or ''
     timeframe = inf_data.timeframe
     fmt = inf_data.fmt
-    ffill = inf_data.ffill
     config = strategy.config
-    dp = strategy.dp
 
     if asset:
         # Insert stake currency if needed.
@@ -208,7 +206,7 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
             fmt = '{base}_' + fmt                   # Informatives of other pair
 
     inf_metadata = {'pair': asset, 'timeframe': timeframe}
-    inf_dataframe = dp.get_pair_dataframe(asset, timeframe)
+    inf_dataframe = strategy.dp.get_pair_dataframe(asset, timeframe)
     inf_dataframe = populate_indicators(strategy, inf_dataframe, inf_metadata)
 
     formatter: Any = None
@@ -233,6 +231,6 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
         raise OperationalException(f'Duplicate column name {date_column} exists in '
                                    f'dataframe! Ensure column names are unique!')
     dataframe = merge_informative_pair(dataframe, inf_dataframe, strategy.timeframe, timeframe,
-                                       ffill=ffill, append_timeframe=False,
+                                       ffill=inf_data.ffill, append_timeframe=False,
                                        date_column=date_column)
     return dataframe

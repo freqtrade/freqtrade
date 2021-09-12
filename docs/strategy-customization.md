@@ -783,7 +783,7 @@ for more information.
     Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
     manually as described [in the DataProvider section](#complete-data-provider-sample).
 
-!!! Warning
+!!! Warning "Duplicate method names"
     Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
     will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
     created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
