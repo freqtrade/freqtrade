@@ -2970,7 +2970,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
 
 
 @pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
-@pytest.mark.parametrize('exchange,stake_amount,leverage,min_stake_with_lev', [
+@pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
     (9.0, 3.0, 3.0),
     (20.0, 5.0, 4.0),
     (100.0, 100.0, 1.0)
@@ -2992,7 +2992,7 @@ def test_apply_leverage_to_stake_amount(
     (Collateral.ISOLATED)
 ])
 @pytest.mark.parametrize("exchange_name", [("ftx"), ("binance")])
-def test_set_leverage(mocker, default_conf, exchange_name, collateral):
+def test__set_leverage(mocker, default_conf, exchange_name, collateral):
 
     api_mock = MagicMock()
     api_mock.set_leverage = MagicMock()
@@ -3003,7 +3003,7 @@ def test_set_leverage(mocker, default_conf, exchange_name, collateral):
         default_conf,
         api_mock,
         exchange_name,
-        "set_leverage",
+        "_set_leverage",
         "set_leverage",
         pair="XRP/USDT",
         leverage=5.0

@@ -771,12 +771,13 @@ class Exchange:
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, time_in_force: str = 'gtc') -> Dict:
+                     rate: float, time_in_force: str = 'gtc', leverage=1.0) -> Dict:
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
             return dry_order
 
+        self._set_leverage(pair, leverage)
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
@@ -1600,7 +1601,7 @@ class Exchange:
         return 1.0
 
     @retrier
-    def set_leverage(self, leverage: float, pair: Optional[str]):
+    def _set_leverage(self, leverage: float, pair: Optional[str]):
         """
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
