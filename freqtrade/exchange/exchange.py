@@ -145,7 +145,7 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
-        trading_mode: TradingMode = (
+        self.trading_mode: TradingMode = (
             TradingMode(config.get('trading_mode'))
             if config.get('trading_mode')
             else TradingMode.SPOT
@@ -156,7 +156,7 @@ class Exchange:
             else None
         )
 
-        if trading_mode != TradingMode.SPOT:
+        if self.trading_mode != TradingMode.SPOT:
             self.fill_leverage_brackets()
 
         logger.info('Using Exchange "%s"', self.name)
@@ -176,7 +176,7 @@ class Exchange:
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0),
                                                    config.get('timeframe', ''))
-            self.validate_trading_mode_and_collateral(trading_mode, collateral)
+            self.validate_trading_mode_and_collateral(self.trading_mode, collateral)
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
@@ -630,7 +630,7 @@ class Exchange:
         :param stake_amount: The stake amount for a pair before leverage is considered
         :param leverage: The amount of leverage being used on the current trade
         """
-        return stake_amount
+        return stake_amount / leverage
 
     # Dry-run methods
 
@@ -771,12 +771,14 @@ class Exchange:
     # Order handling
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, time_in_force: str = 'gtc') -> Dict:
+                     rate: float, time_in_force: str = 'gtc', leverage=1.0) -> Dict:
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
             return dry_order
 
+        if self.trading_mode != TradingMode.SPOT:
+            self._set_leverage(leverage, pair)
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
@@ -1600,7 +1602,12 @@ class Exchange:
         return 1.0
 
     @retrier
-    def set_leverage(self, leverage: float, pair: Optional[str]):
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
+    ):
         """
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade

@@ -112,9 +112,6 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _apply_leverage_to_stake_amount(self, stake_amount: float, leverage: float):
-        return stake_amount / leverage
-
     @retrier
     def fill_leverage_brackets(self):
         """
@@ -154,3 +151,27 @@ class Binance(Exchange):
             if nominal_value >= min_amount:
                 max_lev = 1/margin_req
         return max_lev
+
+    @retrier
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
+    ):
+        """
+            Set's the leverage before making a trade, in order to not
+            have the same leverage on every trade
+        """
+        trading_mode = trading_mode or self.trading_mode
+
+        try:
+            if trading_mode == TradingMode.FUTURES:
+                self._api.set_leverage(symbol=pair, leverage=leverage)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e

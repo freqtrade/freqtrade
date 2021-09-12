@@ -294,7 +294,28 @@ def test_fill_leverage_brackets_kraken(default_conf, mocker):
     exchange.fill_leverage_brackets()
 
     assert exchange._leverage_brackets == {
-        'BLK/BTC': ['2', '3'],
-        'TKN/BTC': ['2', '3', '4', '5'],
-        'ETH/BTC': ['2']
+        'BLK/BTC': [1, 2, 3],
+        'TKN/BTC': [1, 2, 3, 4, 5],
+        'ETH/BTC': [1, 2],
+        'LTC/BTC': [1],
+        'XRP/BTC': [1],
+        'NEO/BTC': [1],
+        'BTT/BTC': [1],
+        'ETH/USDT': [1],
+        'LTC/USDT': [1],
+        'LTC/USD': [1],
+        'XLTCUSDT': [1],
+        'LTC/ETH': [1]
     }
+
+
+def test__set_leverage_kraken(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
+    exchange._set_leverage(1)
+    assert 'leverage' not in exchange._params
+    exchange._set_leverage(3)
+    assert exchange._params['leverage'] == 3
+    exchange._set_leverage(1.0)
+    assert 'leverage' not in exchange._params
+    exchange._set_leverage(3.0)
+    assert exchange._params['leverage'] == 3

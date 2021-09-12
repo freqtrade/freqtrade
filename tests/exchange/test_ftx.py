@@ -1,9 +1,10 @@
 from random import randint
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import ccxt
 import pytest
 
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT
 from tests.conftest import get_patched_exchange
@@ -227,3 +228,26 @@ def test_fill_leverage_brackets_ftx(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id="ftx")
     exchange.fill_leverage_brackets()
     assert exchange._leverage_brackets == {}
+
+
+@pytest.mark.parametrize("trading_mode", [
+    (TradingMode.MARGIN),
+    (TradingMode.FUTURES)
+])
+def test__set_leverage(mocker, default_conf, trading_mode):
+
+    api_mock = MagicMock()
+    api_mock.set_leverage = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "ftx",
+        "_set_leverage",
+        "set_leverage",
+        pair="XRP/USDT",
+        leverage=5.0,
+        trading_mode=trading_mode
+    )

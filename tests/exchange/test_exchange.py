@@ -2969,18 +2969,11 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
-@pytest.mark.parametrize('exchange,stake_amount,leverage,min_stake_with_lev', [
-    ('binance', 9.0, 3.0, 3.0),
-    ('binance', 20.0, 5.0, 4.0),
-    ('binance', 100.0, 100.0, 1.0),
-    # Kraken
-    ('kraken', 9.0, 3.0, 9.0),
-    ('kraken', 20.0, 5.0, 20.0),
-    ('kraken', 100.0, 100.0, 100.0),
-    # FTX
-    ('ftx', 9.0, 3.0, 9.0),
-    ('ftx', 20.0, 5.0, 20.0),
-    ('ftx', 100.0, 100.0, 100.0)
+@pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
+@pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
+    (9.0, 3.0, 3.0),
+    (20.0, 5.0, 4.0),
+    (100.0, 100.0, 1.0)
 ])
 def test_apply_leverage_to_stake_amount(
     exchange,
@@ -2994,12 +2987,12 @@ def test_apply_leverage_to_stake_amount(
     assert exchange._apply_leverage_to_stake_amount(stake_amount, leverage) == min_stake_with_lev
 
 
-@pytest.mark.parametrize("collateral", [
-    (Collateral.CROSS),
-    (Collateral.ISOLATED)
+@pytest.mark.parametrize("exchange_name,trading_mode", [
+    ("binance", TradingMode.FUTURES),
+    ("ftx", TradingMode.MARGIN),
+    ("ftx", TradingMode.FUTURES)
 ])
-@pytest.mark.parametrize("exchange_name", [("ftx"), ("binance")])
-def test_set_leverage(mocker, default_conf, exchange_name, collateral):
+def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
 
     api_mock = MagicMock()
     api_mock.set_leverage = MagicMock()
@@ -3010,10 +3003,11 @@ def test_set_leverage(mocker, default_conf, exchange_name, collateral):
         default_conf,
         api_mock,
         exchange_name,
-        "set_leverage",
+        "_set_leverage",
         "set_leverage",
         pair="XRP/USDT",
-        leverage=5.0
+        leverage=5.0,
+        trading_mode=trading_mode
     )
 
 
@@ -3021,8 +3015,7 @@ def test_set_leverage(mocker, default_conf, exchange_name, collateral):
     (Collateral.CROSS),
     (Collateral.ISOLATED)
 ])
-@pytest.mark.parametrize("exchange_name", [("ftx"), ("binance")])
-def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
+def test_set_margin_mode(mocker, default_conf, collateral):
 
     api_mock = MagicMock()
     api_mock.set_margin_mode = MagicMock()
@@ -3032,7 +3025,7 @@ def test_set_margin_mode(mocker, default_conf, exchange_name, collateral):
         mocker,
         default_conf,
         api_mock,
-        exchange_name,
+        "binance",
         "set_margin_mode",
         "set_margin_mode",
         pair="XRP/USDT",
