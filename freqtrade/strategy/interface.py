@@ -19,9 +19,9 @@ from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
-from freqtrade.strategy.strategy_helper import (InformativeData, PopulateIndicators,
-                                                _create_and_merge_informative_pair,
-                                                _format_pair_name)
+from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
+                                                      _create_and_merge_informative_pair,
+                                                      _format_pair_name)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -121,7 +121,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: DataProvider
+    dp: Optional[DataProvider]
     wallets: Optional[Wallets] = None
     # Filled from configuration
     stake_currency: str
@@ -408,6 +408,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 pair_tf = (_format_pair_name(self.config, inf_data.asset), inf_data.timeframe)
                 informative_pairs.append(pair_tf)
             else:
+                if not self.dp:
+                    raise OperationalException('@informative decorator with unspecified asset '
+                                               'requires DataProvider instance.')
                 for pair in self.dp.current_whitelist():
                     informative_pairs.append((pair, inf_data.timeframe))
         return list(set(informative_pairs))

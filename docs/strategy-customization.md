@@ -652,9 +652,7 @@ In some situations it may be confusing to deal with stops relative to current ra
 
 ??? Example "Returning a stoploss using absolute price from the custom stoploss function"
 
-    Say the open price was $100, and `current_price` is $121 (`current_profit` will be `0.21`).
-
-    If we want a stop price at $107 price we can call `stoploss_from_absolute(107, current_rate)` which will return `0.1157024793`.  11.57% below $121 is $107, which is the same as 7% above $100.
+    If we want to trail a stop price at 2xATR below current proce we can call `stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate)`.
 
     ``` python
 
@@ -664,18 +662,17 @@ In some situations it may be confusing to deal with stops relative to current ra
 
     class AwesomeStrategy(IStrategy):
 
-        # ... populate_* methods
-
         use_custom_stoploss = True
+
+        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
+            return dataframe
 
         def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
                             current_rate: float, current_profit: float, **kwargs) -> float:
-
-            # once the profit has risen above 10%, keep the stoploss at 7% above the open price
-            if current_profit > 0.10:
-                return stoploss_from_absolute(trade.open_rate * 1.07, current_rate)
-
-            return 1
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+            candle = dataframe.iloc[-1].squeeze()
+            return stoploss_from_absolute(current_rate - (candle['atr'] * 2), current_rate)
 
     ```
 
