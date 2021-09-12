@@ -2974,9 +2974,9 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     ('binance', 20.0, 5.0, 4.0),
     ('binance', 100.0, 100.0, 1.0),
     # Kraken
-    ('kraken', 9.0, 3.0, 9.0),
-    ('kraken', 20.0, 5.0, 20.0),
-    ('kraken', 100.0, 100.0, 100.0),
+    ('kraken', 9.0, 3.0, 3.0),
+    ('kraken', 20.0, 5.0, 4.0),
+    ('kraken', 100.0, 100.0, 1.0),
     # FTX
     ('ftx', 9.0, 3.0, 9.0),
     ('ftx', 20.0, 5.0, 20.0),
