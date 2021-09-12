@@ -153,17 +153,20 @@ class Binance(Exchange):
         return max_lev
 
     @retrier
-    def _set_leverage(self, leverage: float, pair: Optional[str]):
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str],
+        trading_mode: Optional[TradingMode]
+    ):
         """
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
         """
-        if not self.exchange_has("setLeverage"):
-            # Some exchanges only support one collateral type
-            return
+        trading_mode = trading_mode or self.trading_mode
 
         try:
-            if self.trading_mode == TradingMode.FUTURES:
+            if trading_mode == TradingMode.FUTURES:
                 self._api.set_leverage(symbol=pair, leverage=leverage)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e

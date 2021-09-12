@@ -778,7 +778,7 @@ class Exchange:
             return dry_order
 
         if self.trading_mode != TradingMode.SPOT:
-            self._set_leverage(pair, leverage)
+            self._set_leverage(leverage, pair)
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
@@ -1602,7 +1602,12 @@ class Exchange:
         return 1.0
 
     @retrier
-    def _set_leverage(self, leverage: float, pair: Optional[str]):
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str],
+        trading_mode: Optional[TradingMode]
+    ):
         """
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
