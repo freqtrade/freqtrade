@@ -151,3 +151,24 @@ class Binance(Exchange):
             if nominal_value >= min_amount:
                 max_lev = 1/margin_req
         return max_lev
+
+    @retrier
+    def _set_leverage(self, leverage: float, pair: Optional[str]):
+        """
+            Set's the leverage before making a trade, in order to not
+            have the same leverage on every trade
+        """
+        if not self.exchange_has("setLeverage"):
+            # Some exchanges only support one collateral type
+            return
+
+        try:
+            if self.trading_mode == TradingMode.FUTURES:
+                self._api.set_leverage(symbol=pair, leverage=leverage)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
