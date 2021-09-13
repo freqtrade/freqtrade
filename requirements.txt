@@ -1,5 +1,5 @@
 numpy==1.21.2
-pandas==1.3.2
+pandas==1.3.3
 
 ccxt==1.55.83
 # Pin cryptography for now due to rust build errors with piwheels
