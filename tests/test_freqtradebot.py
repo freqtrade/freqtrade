@@ -3379,7 +3379,7 @@ def test__safe_exit_amount_error(default_conf, fee, caplog, mocker):
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    with pytest.raises(DependencyException, match=r"Not enough amount to exit trade."):
+    with pytest.raises(DependencyException, match=r"Not enough amount to exit."):
         assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 

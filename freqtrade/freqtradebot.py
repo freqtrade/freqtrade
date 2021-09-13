@@ -371,7 +371,7 @@ class FreqtradeBot(LoggingMixin):
 
     def enter_positions(self) -> int:
         """
-        Tries to execute long buy/short sell orders for new trades (positions)
+        Tries to execute entry orders for new trades (positions)
         """
         trades_created = 0
 
@@ -533,10 +533,6 @@ class FreqtradeBot(LoggingMixin):
         #             leverage=leverage,
         #             is_short=is_short
         #         )
-
-        if self.trading_mode == TradingMode.FUTURES:
-            self.exchange.set_leverage(pair, leverage)
-            self.exchange.set_margin_mode(pair, self.collateral_type)
 
         return interest_rate, isolated_liq
 
@@ -708,7 +704,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_enter(self, trade: Trade, order_type: str) -> None:
         """
-        Sends rpc notification when a buy/short occurred.
+        Sends rpc notification when a entry order occurred.
         """
         msg = {
             'trade_id': trade.id,
@@ -731,7 +727,7 @@ class FreqtradeBot(LoggingMixin):
 
     def _notify_enter_cancel(self, trade: Trade, order_type: str, reason: str) -> None:
         """
-        Sends rpc notification when a buy/short cancel occurred.
+        Sends rpc notification when a entry order cancel occurred.
         """
         current_rate = self.exchange.get_rate(trade.pair, refresh=False, side=trade.enter_side)
         msg_type = RPCMessageType.SHORT_CANCEL if trade.is_short else RPCMessageType.BUY_CANCEL
@@ -778,7 +774,7 @@ class FreqtradeBot(LoggingMixin):
 
     def exit_positions(self, trades: List[Any]) -> int:
         """
-        Tries to execute sell/exit_short orders for open trades (positions)
+        Tries to execute exit orders for open trades (positions)
         """
         trades_closed = 0
         for trade in trades:
@@ -1149,7 +1145,7 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_cancel_exit(self, trade: Trade, order: Dict, reason: str) -> str:
         """
-        Sell/exit_short cancel - cancel order and update trade
+        exit order cancel - cancel order and update trade
         :return: Reason for cancel
         """
         # if trade is not partially completed, just cancel the order
@@ -1275,7 +1271,7 @@ class FreqtradeBot(LoggingMixin):
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, sell_reason=sell_reason.sell_reason,
-                current_time=datetime.now(timezone.utc)):
+                current_time=datetime.now(timezone.utc)):  # TODO-lev: Update to exit
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
 
@@ -1284,10 +1280,10 @@ class FreqtradeBot(LoggingMixin):
             order = self.exchange.create_order(
                 pair=trade.pair,
                 ordertype=order_type,
+                side="sell",
                 amount=amount,
                 rate=limit,
-                time_in_force=time_in_force,
-                side=trade.exit_side
+                time_in_force=time_in_force
             )
         except InsufficientFundsError as e:
             logger.warning(f"Unable to place order {e}.")
