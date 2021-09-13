@@ -197,7 +197,8 @@ def _download_pair_history(pair: str, *,
                                                timeframe=timeframe,
                                                since_ms=since_ms if since_ms else
                                                arrow.utcnow().shift(
-                                                   days=-new_pairs_days).int_timestamp * 1000
+                                                   days=-new_pairs_days).int_timestamp * 1000,
+                                               is_new_pair=data.empty
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
