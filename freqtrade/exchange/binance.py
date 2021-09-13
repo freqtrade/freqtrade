@@ -152,6 +152,10 @@ class Binance(Exchange):
                 max_lev = 1/margin_req
         return max_lev
 
+    def lev_prep(self, pair: str, leverage: float):
+        self.set_margin_mode(pair, self.collateral)
+        self._set_leverage(leverage, pair, self.trading_mode)
+
     @retrier
     def _set_leverage(
         self,

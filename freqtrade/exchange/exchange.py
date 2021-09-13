@@ -150,7 +150,7 @@ class Exchange:
             if config.get('trading_mode')
             else TradingMode.SPOT
         )
-        collateral: Optional[Collateral] = (
+        self.collateral: Optional[Collateral] = (
             Collateral(config.get('collateral'))
             if config.get('collateral')
             else None
@@ -176,7 +176,7 @@ class Exchange:
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0),
                                                    config.get('timeframe', ''))
-            self.validate_trading_mode_and_collateral(self.trading_mode, collateral)
+            self.validate_trading_mode_and_collateral(self.trading_mode, self.collateral)
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
@@ -770,6 +770,10 @@ class Exchange:
 
     # Order handling
 
+    def lev_prep(self, pair: str, leverage: float):
+        self.set_margin_mode(pair, self.collateral)
+        self._set_leverage(leverage, pair)
+
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, time_in_force: str = 'gtc', leverage=1.0) -> Dict:
 
@@ -778,7 +782,7 @@ class Exchange:
             return dry_order
 
         if self.trading_mode != TradingMode.SPOT:
-            self._set_leverage(leverage, pair)
+            self.lev_prep(pair, leverage)
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
