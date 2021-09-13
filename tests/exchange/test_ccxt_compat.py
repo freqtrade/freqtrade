@@ -54,7 +54,7 @@ EXCHANGES = {
 def exchange_conf():
     config = get_default_conf((Path(__file__).parent / "testdata").resolve())
     config['exchange']['pair_whitelist'] = []
-    config['dry_run'] = False
+    # config['dry_run'] = False
     return config
 
 

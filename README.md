@@ -30,6 +30,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [Kraken](https://kraken.com/)
 - [X] [FTX](https://ftx.com)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
