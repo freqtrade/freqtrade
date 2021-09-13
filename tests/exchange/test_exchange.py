@@ -1,5 +1,6 @@
 import copy
 import logging
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from random import randint
@@ -14,7 +15,7 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOr
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
-                                       calculate_backoff)
+                                       calculate_backoff, remove_credentials)
 from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
                                          timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
@@ -76,6 +77,22 @@ def test_init(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     get_patched_exchange(mocker, default_conf)
     assert log_has('Instance is running with dry_run enabled', caplog)
+
+
+def test_remove_credentials(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['dry_run'] = False
+    remove_credentials(conf)
+
+    assert conf['exchange']['key'] != ''
+    assert conf['exchange']['secret'] != ''
+
+    conf['dry_run'] = True
+    remove_credentials(conf)
+    assert conf['exchange']['key'] == ''
+    assert conf['exchange']['secret'] == ''
+    assert conf['exchange']['password'] == ''
+    assert conf['exchange']['uid'] == ''
 
 
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
