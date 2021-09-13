@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 class AgeFilter(IPairList):
 
-    # Checked symbols cache (dictionary of ticker symbol => timestamp)
-    _symbolsChecked: Dict[str, int] = {}
-
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        # Checked symbols cache (dictionary of ticker symbol => timestamp)
+        self._symbolsChecked: Dict[str, int] = {}
 
         self._min_days_listed = pairlistconfig.get('min_days_listed', 10)
         self._max_days_listed = pairlistconfig.get('max_days_listed', None)
