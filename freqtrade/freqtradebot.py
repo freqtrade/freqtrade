@@ -1467,7 +1467,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
-            # TODO-lev: won't be in (quote) currency for shorts
+            # TODO-lev: won't be in base currency for shorts
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
         elif fee_abs != 0:

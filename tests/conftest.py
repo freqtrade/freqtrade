@@ -2115,3 +2115,30 @@ def market_sell_order_usdt():
         'remaining': 0.0,
         'status': 'closed'
     }
+
+
+@pytest.fixture(scope='function')
+def open_order(limit_buy_order_open, limit_sell_order_open):
+    # limit_sell_order_open if is_short else limit_buy_order_open
+    return {
+        True: limit_sell_order_open,
+        False: limit_buy_order_open
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_order(limit_sell_order, limit_buy_order):
+    # limit_sell_order if is_short else limit_buy_order
+    return {
+        True: limit_sell_order,
+        False: limit_buy_order
+    }
+
+
+@pytest.fixture(scope='function')
+def old_order(limit_sell_order_old, limit_buy_order_old):
+    # limit_sell_order_old if is_short else limit_buy_order_old
+    return {
+        True: limit_sell_order_old,
+        False: limit_buy_order_old
+    }

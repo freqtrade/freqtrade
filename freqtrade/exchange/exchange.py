@@ -726,6 +726,7 @@ class Exchange:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
         ob = self.fetch_l2_order_book(pair, 1)
+        breakpoint()
         if side == 'buy':
             price = ob['asks'][0][0]
             logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")

@@ -39,7 +39,19 @@ def patch_RPCManager(mocker) -> MagicMock:
     return rpc_mock
 
 
+def open_order(limit_buy_order_open, limit_sell_order_open, is_short):
+    return limit_sell_order_open if is_short else limit_buy_order_open
+
+
+def limit_order(limit_sell_order, limit_buy_order, is_short):
+    return limit_sell_order if is_short else limit_buy_order
+
+
+def old_order(limit_sell_order_old, limit_buy_order_old, is_short):
+    return limit_sell_order_old if is_short else limit_buy_order_old
+
 # Unit tests
+
 
 def test_freqtradebot_state(mocker, default_conf, markets) -> None:
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
@@ -327,7 +339,12 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker, fee) -> None:
     assert Trade.total_open_trades_stakes() == 1.97502e-03
 
 
-def test_create_trade(default_conf, ticker, limit_buy_order, fee, mocker) -> None:
+@pytest.mark.parametrize("is_short,open_rate", [
+    (False, 0.00001099),
+    (True, 0.00001173)
+])
+def test_create_trade(default_conf, ticker, limit_buy_order, limit_sell_order,
+                      fee, mocker, is_short, open_rate) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -344,6 +361,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order, fee, mocker) -> Non
     freqtrade.create_trade('ETH/BTC')
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade is not None
     assert trade.stake_amount == 0.001
     assert trade.is_open
@@ -351,9 +369,12 @@ def test_create_trade(default_conf, ticker, limit_buy_order, fee, mocker) -> Non
     assert trade.exchange == 'binance'
 
     # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+    if is_short:
+        trade.update(limit_sell_order)
+    else:
+        trade.update(limit_buy_order)
 
-    assert trade.open_rate == 0.00001099
+    assert trade.open_rate == open_rate
     assert trade.amount == 90.99181073
 
     assert whitelist == default_conf['exchange']['pair_whitelist']
@@ -376,15 +397,20 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
         freqtrade.create_trade('ETH/BTC')
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order_open,
-                                     fee, mocker) -> None:
+                                     limit_sell_order_open, fee, mocker, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    buy_mock = MagicMock(return_value=limit_buy_order_open)
+    enter_mock = (
+        MagicMock(return_value=limit_sell_order_open)
+        if is_short else
+        MagicMock(return_value=limit_buy_order_open)
+    )
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        create_order=buy_mock,
+        create_order=enter_mock,
         get_fee=fee,
     )
     default_conf['stake_amount'] = 0.0005
@@ -392,8 +418,13 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order_open,
     patch_get_signal(freqtrade)
 
     freqtrade.create_trade('ETH/BTC')
-    rate, amount = buy_mock.call_args[1]['rate'], buy_mock.call_args[1]['amount']
+    rate, amount = enter_mock.call_args[1]['rate'], enter_mock.call_args[1]['amount']
     assert rate * amount <= default_conf['stake_amount']
+
+# TODO-lev: paramatrize and convert to USDT
+# @pytest.mark.parametrize("stake_amount,leverage", [
+#     "buy, sell"
+# ])
 
 
 def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order_open,
@@ -778,147 +809,159 @@ def test_process_informative_pairs_added(default_conf, ticker, mocker) -> None:
     assert ("ETH/BTC", default_conf["timeframe"]) in refresh_mock.call_args[0][0]
 
 
-def test_execute_entry(mocker, default_conf, fee, limit_buy_order, limit_buy_order_open) -> None:
+@pytest.mark.parametrize("is_short", [True, False])
+def test_execute_entry(mocker, default_conf, fee, limit_buy_order, limit_sell_order,
+                       limit_buy_order_open, limit_sell_order_open, is_short) -> None:
+
+    open_order = limit_sell_order_open if is_short else limit_buy_order_open
+    order = limit_sell_order if is_short else limit_buy_order
+
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
     stake_amount = 2
     bid = 0.11
-    buy_rate_mock = MagicMock(return_value=bid)
-    buy_mm = MagicMock(return_value=limit_buy_order_open)
+    enter_rate_mock = MagicMock(return_value=bid)
+    enter_mm = MagicMock(return_value=open_order)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        get_rate=buy_rate_mock,
+        get_rate=enter_rate_mock,
         fetch_ticker=MagicMock(return_value={
             'bid': 0.00001172,
             'ask': 0.00001173,
             'last': 0.00001172
         }),
-        create_order=buy_mm,
+        create_order=enter_mm,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
     )
     pair = 'ETH/BTC'
 
-    assert not freqtrade.execute_entry(pair, stake_amount)
-    assert buy_rate_mock.call_count == 1
-    assert buy_mm.call_count == 0
+    assert not freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
+    assert enter_rate_mock.call_count == 1
+    assert enter_mm.call_count == 0
     assert freqtrade.strategy.confirm_trade_entry.call_count == 1
-    buy_rate_mock.reset_mock()
+    enter_rate_mock.reset_mock()
 
-    limit_buy_order_open['id'] = '22'
+    open_order['id'] = '22'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_entry(pair, stake_amount)
-    assert buy_rate_mock.call_count == 1
-    assert buy_mm.call_count == 1
-    call_args = buy_mm.call_args_list[0][1]
+    assert enter_rate_mock.call_count == 1
+    assert enter_mm.call_count == 1
+    call_args = enter_mm.call_args_list[0][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
     assert call_args['amount'] == round(stake_amount / bid, 8)
-    buy_rate_mock.reset_mock()
+    enter_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
     # As the order is not fulfilled yet
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
     assert trade.is_open is True
     assert trade.open_order_id == '22'
 
     # Test calling with price
-    limit_buy_order_open['id'] = '33'
+    open_order['id'] = '33'
     fix_price = 0.06
-    assert freqtrade.execute_entry(pair, stake_amount, fix_price)
+    assert freqtrade.execute_entry(pair, stake_amount, fix_price, is_short=is_short)
     # Make sure get_rate wasn't called again
-    assert buy_rate_mock.call_count == 0
+    assert enter_rate_mock.call_count == 0
 
-    assert buy_mm.call_count == 2
-    call_args = buy_mm.call_args_list[1][1]
+    assert enter_mm.call_count == 2
+    call_args = enter_mm.call_args_list[1][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
     assert call_args['amount'] == round(stake_amount / fix_price, 8)
 
     # In case of closed order
-    limit_buy_order['status'] = 'closed'
-    limit_buy_order['price'] = 10
-    limit_buy_order['cost'] = 100
-    limit_buy_order['id'] = '444'
+    order['status'] = 'closed'
+    order['price'] = 10
+    order['cost'] = 100
+    order['id'] = '444'
 
     mocker.patch('freqtrade.exchange.Exchange.create_order',
-                 MagicMock(return_value=limit_buy_order))
-    assert freqtrade.execute_entry(pair, stake_amount)
+                 MagicMock(return_value=order))
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[2]
+    trade.is_short = is_short
     assert trade
     assert trade.open_order_id is None
     assert trade.open_rate == 10
     assert trade.stake_amount == 100
 
     # In case of rejected or expired order and partially filled
-    limit_buy_order['status'] = 'expired'
-    limit_buy_order['amount'] = 90.99181073
-    limit_buy_order['filled'] = 80.99181073
-    limit_buy_order['remaining'] = 10.00
-    limit_buy_order['price'] = 0.5
-    limit_buy_order['cost'] = 40.495905365
-    limit_buy_order['id'] = '555'
+    order['status'] = 'expired'
+    order['amount'] = 90.99181073
+    order['filled'] = 80.99181073
+    order['remaining'] = 10.00
+    order['price'] = 0.5
+    order['cost'] = 40.495905365
+    order['id'] = '555'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
-                 MagicMock(return_value=limit_buy_order))
-    assert freqtrade.execute_entry(pair, stake_amount)
+                 MagicMock(return_value=order))
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[3]
+    trade.is_short = is_short
     assert trade
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
     assert trade.stake_amount == 40.495905365
 
     # Test with custom stake
-    limit_buy_order['status'] = 'open'
-    limit_buy_order['id'] = '556'
+    order['status'] = 'open'
+    order['id'] = '556'
 
     freqtrade.strategy.custom_stake_amount = lambda **kwargs: 150.0
-    assert freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[4]
+    trade.is_short = is_short
     assert trade
     assert trade.stake_amount == 150
 
     # Exception case
-    limit_buy_order['id'] = '557'
+    order['id'] = '557'
     freqtrade.strategy.custom_stake_amount = lambda **kwargs: 20 / 0
-    assert freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[5]
+    trade.is_short = is_short
     assert trade
     assert trade.stake_amount == 2.0
 
     # In case of the order is rejected and not filled at all
-    limit_buy_order['status'] = 'rejected'
-    limit_buy_order['amount'] = 90.99181073
-    limit_buy_order['filled'] = 0.0
-    limit_buy_order['remaining'] = 90.99181073
-    limit_buy_order['price'] = 0.5
-    limit_buy_order['cost'] = 0.0
-    limit_buy_order['id'] = '66'
+    order['status'] = 'rejected'
+    order['amount'] = 90.99181073
+    order['filled'] = 0.0
+    order['remaining'] = 90.99181073
+    order['price'] = 0.5
+    order['cost'] = 0.0
+    order['id'] = '66'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
-                 MagicMock(return_value=limit_buy_order))
-    assert not freqtrade.execute_entry(pair, stake_amount)
+                 MagicMock(return_value=order))
+    assert not freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
 
     # Fail to get price...
     mocker.patch('freqtrade.exchange.Exchange.get_rate', MagicMock(return_value=0.0))
 
-    with pytest.raises(PricingError, match="Could not determine buy price."):
-        freqtrade.execute_entry(pair, stake_amount)
+    with pytest.raises(PricingError, match=f"Could not determine {'sell' if is_short else 'buy'} price."):
+        freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
 
     # In case of custom entry price
     mocker.patch('freqtrade.exchange.Exchange.get_rate', return_value=0.50)
-    limit_buy_order['status'] = 'open'
-    limit_buy_order['id'] = '5566'
+    order['status'] = 'open'
+    order['id'] = '5566'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: 0.508
-    assert freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[6]
+    trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 0.508
 
     # In case of custom entry price set to None
-    limit_buy_order['status'] = 'open'
-    limit_buy_order['id'] = '5567'
+    order['status'] = 'open'
+    order['id'] = '5567'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: None
 
     mocker.patch.multiple(
@@ -926,22 +969,27 @@ def test_execute_entry(mocker, default_conf, fee, limit_buy_order, limit_buy_ord
         get_rate=MagicMock(return_value=10),
     )
 
-    assert freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[7]
+    trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
-    limit_buy_order['status'] = 'open'
-    limit_buy_order['id'] = '5568'
+    order['status'] = 'open'
+    order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
-    assert freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[8]
+    trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
 
 
-def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order,
+                                     limit_sell_order, is_short) -> None:
+    order = limit_sell_order if is_short else limit_buy_order
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -950,7 +998,7 @@ def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order)
             'ask': 0.00001173,
             'last': 0.00001172
         }),
-        create_order=MagicMock(return_value=limit_buy_order),
+        create_order=MagicMock(return_value=order),
         get_rate=MagicMock(return_value=0.11),
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
@@ -959,13 +1007,14 @@ def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order)
     pair = 'ETH/BTC'
 
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=ValueError)
+    # TODO-lev: KeyError happens on short, why?
     assert freqtrade.execute_entry(pair, stake_amount)
 
-    limit_buy_order['id'] = '222'
+    order['id'] = '222'
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=Exception)
     assert freqtrade.execute_entry(pair, stake_amount)
 
-    limit_buy_order['id'] = '2223'
+    order['id'] = '2223'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_entry(pair, stake_amount)
 
@@ -973,11 +1022,14 @@ def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order)
     assert not freqtrade.execute_entry(pair, stake_amount)
 
 
-def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order,
+                                  limit_sell_order, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
+    order = limit_sell_order if is_short else limit_buy_order
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
                  return_value=limit_buy_order['amount'])
@@ -989,6 +1041,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     trade = MagicMock()
+    trade.is_short = is_short
     trade.open_order_id = None
     trade.stoploss_order_id = None
     trade.is_open = True
@@ -1000,9 +1053,12 @@ def test_add_stoploss_on_exchange(mocker, default_conf, limit_buy_order) -> None
     assert trade.is_open is True
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
-                                     limit_buy_order, limit_sell_order) -> None:
+                                     limit_buy_order, limit_sell_order, is_short) -> None:
     stoploss = MagicMock(return_value={'id': 13434334})
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -1013,8 +1069,8 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
     )
@@ -1029,9 +1085,11 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     # should get the stoploss order id immediately
     # and should return false as no trade actually happened
     trade = MagicMock()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = None
+    trade.is_short = is_short
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
@@ -1081,7 +1139,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
         'type': 'stop_loss_limit',
         'price': 3,
         'average': 2,
-        'amount': limit_buy_order['amount'],
+        'amount': enter_order['amount'],
     })
     mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order', stoploss_order_hit)
     assert freqtrade.handle_stoploss_on_exchange(trade) is True
@@ -1120,9 +1178,12 @@ def test_handle_stoploss_on_exchange(mocker, default_conf, fee, caplog,
     assert stoploss.call_count == 0
 
 
-def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog, is_short,
                                          limit_buy_order, limit_sell_order) -> None:
     # Sixth case: stoploss order was cancelled but couldn't create new one
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -1133,8 +1194,8 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
     )
@@ -1148,6 +1209,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
@@ -1159,13 +1221,18 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf, fee, caplog,
     assert trade.is_open is True
 
 
-def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
-                                             limit_buy_order_open, limit_sell_order):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_create_stoploss_order_invalid_order(
+    mocker, default_conf, caplog, fee, limit_buy_order_open,
+    limit_sell_order_open, limit_buy_order, limit_sell_order, is_short
+):
+    open_order = limit_sell_order_open if is_short else limit_buy_order_open
+    order = limit_buy_order if is_short else limit_sell_order
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     create_order_mock = MagicMock(side_effect=[
-        limit_buy_order_open,
-        {'id': limit_sell_order['id']}
+        open_order,
+        {'id': order['id']}
     ])
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1188,6 +1255,7 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
@@ -1207,9 +1275,16 @@ def test_create_stoploss_order_invalid_order(mocker, default_conf, caplog, fee,
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 
-def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, fee,
-                                                  limit_buy_order_open, limit_sell_order):
-    sell_mock = MagicMock(return_value={'id': limit_sell_order['id']})
+@pytest.mark.parametrize("is_short", [False, True])
+def test_create_stoploss_order_insufficient_funds(
+    mocker, default_conf, caplog, fee, limit_buy_order_open, limit_sell_order_open,
+    limit_buy_order, limit_sell_order, is_short
+):
+    exit_order = (
+        MagicMock(return_value={'id': limit_buy_order['id']})
+        if is_short else
+        MagicMock(return_value={'id': limit_sell_order['id']})
+    )
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mock_insuf = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_insufficient_funds')
@@ -1221,8 +1296,8 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            limit_buy_order_open,
-            sell_mock,
+            limit_sell_order_open if is_short else limit_buy_order_open,
+            exit_order,
         ]),
         get_fee=fee,
         fetch_order=MagicMock(return_value={'status': 'canceled'}),
@@ -1236,6 +1311,7 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     # stoploss_orderid was empty before
@@ -1250,11 +1326,13 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
     assert mock_insuf.call_count == 1
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
+def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, is_short,
                                               limit_buy_order, limit_sell_order) -> None:
-    # TODO-lev: test for short
     # When trailing stoploss is set
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -1265,8 +1343,8 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
     )
@@ -1300,6 +1378,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
+    trade.is_short = is_short
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': 100,
@@ -1362,9 +1441,12 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, caplog,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, caplog, is_short,
                                                     limit_buy_order, limit_sell_order) -> None:
-    # TODO-lev: test for short
+
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_exchange(mocker)
@@ -1377,8 +1459,8 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
     )
@@ -1408,6 +1490,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     trade.stoploss_order_id = "abcd"
     trade.stop_loss = 0.2
     trade.stoploss_last_update = arrow.utcnow().shift(minutes=-601).datetime.replace(tzinfo=None)
+    trade.is_short = is_short
 
     stoploss_order_hanging = {
         'id': "abcd",
@@ -1423,7 +1506,8 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
                  side_effect=InvalidOrderException())
     mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
                  return_value=stoploss_order_hanging)
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
+    freqtrade.handle_trailing_stoploss_on_exchange(
+        trade, stoploss_order_hanging, side=("buy" if is_short else "sell"))
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
     # Still try to create order
@@ -1433,16 +1517,21 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     caplog.clear()
     cancel_mock = mocker.patch("freqtrade.exchange.Binance.cancel_stoploss_order", MagicMock())
     mocker.patch("freqtrade.exchange.Binance.stoploss", side_effect=ExchangeError())
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
+    freqtrade.handle_trailing_stoploss_on_exchange(
+        trade, stoploss_order_hanging, side=("buy" if is_short else "sell"))
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
+def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee, is_short,
                                                  limit_buy_order, limit_sell_order) -> None:
+
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
+
     # When trailing stoploss is set
-    # TODO-lev: test for short
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -1453,8 +1542,8 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
     )
@@ -1550,9 +1639,13 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog, is_short,
                                               limit_buy_order, limit_sell_order) -> None:
-    # TODO-lev: test for short
+
+    enter_order = limit_sell_order if is_short else limit_buy_order
+    exit_order = limit_buy_order if is_short else limit_sell_order
+
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -1569,8 +1662,8 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            {'id': limit_buy_order['id']},
-            {'id': limit_sell_order['id']},
+            {'id': enter_order['id']},
+            {'id': exit_order['id']},
         ]),
         get_fee=fee,
         stoploss=stoploss,
@@ -1604,6 +1697,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
+    trade.is_short = is_short
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': 100,
@@ -1692,7 +1786,8 @@ def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
     assert log_has('Unable to create trade for ETH/BTC: ', caplog)
 
 
-def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_exit_positions(mocker, default_conf, limit_buy_order, caplog, is_short) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
@@ -1702,6 +1797,7 @@ def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
                  return_value=limit_buy_order['amount'])
 
     trade = MagicMock()
+    trade.is_short = is_short
     trade.open_order_id = '123'
     trade.open_fee = 0.001
     trades = [trade]
@@ -1718,11 +1814,15 @@ def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
     assert n == 0
 
 
-def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_exit_positions_exception(mocker, default_conf, limit_buy_order,
+                                  limit_sell_order, caplog, is_short) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order)
+    order = limit_sell_order if is_short else limit_buy_order
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
 
     trade = MagicMock()
+    trade.is_short = is_short
     trade.open_order_id = None
     trade.open_fee = 0.001
     trade.pair = 'ETH/BTC'
@@ -1738,14 +1838,17 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     assert log_has('Unable to exit trade ETH/BTC: ', caplog)
 
 
-def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_update_trade_state(mocker, default_conf, limit_buy_order,
+                            limit_sell_order, is_short, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    order = limit_sell_order if is_short else limit_buy_order
 
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-                 return_value=limit_buy_order['amount'])
+                 return_value=order['amount'])
 
     trade = Trade(
         open_order_id=123,
@@ -1755,6 +1858,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
         open_date=arrow.utcnow().datetime,
         amount=11,
         exchange="binance",
+        is_short=is_short
     )
     assert not freqtrade.update_trade_state(trade, None)
     assert log_has_re(r'Orderid for trade .* is empty.', caplog)
@@ -1765,7 +1869,7 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     assert not log_has_re(r'Applying fee to .*', caplog)
     caplog.clear()
     assert trade.open_order_id is None
-    assert trade.amount == limit_buy_order['amount']
+    assert trade.amount == order['amount']
 
     trade.open_order_id = '123'
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
@@ -1783,8 +1887,10 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     assert log_has_re('Found open order for.*', caplog)
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee,
-                                          mocker):
+                                          limit_sell_order, is_short, mocker):
+    order = limit_sell_order if is_short else limit_buy_order
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1801,15 +1907,20 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
         fee_close=fee.return_value,
         open_order_id="123456",
         is_open=True,
+        is_short=is_short
     )
-    freqtrade.update_trade_state(trade, '123456', limit_buy_order)
+    freqtrade.update_trade_state(trade, '123456', order)
     assert trade.amount != amount
-    assert trade.amount == limit_buy_order['amount']
+    assert trade.amount == order['amount']
 
 
-def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_order, fee,
-                                                       limit_buy_order, mocker, caplog):
-    trades_for_order[0]['amount'] = limit_buy_order['amount'] + 1e-14
+@pytest.mark.parametrize("is_short", [False, True])
+def test_update_trade_state_withorderdict_rounding_fee(
+    default_conf, trades_for_order, fee, limit_buy_order, limit_sell_order,
+    mocker, caplog, is_short
+):
+    order = limit_sell_order if is_short else limit_buy_order
+    trades_for_order[0]['amount'] = order['amount'] + 1e-14
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1826,21 +1937,25 @@ def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_
         open_order_id='123456',
         is_open=True,
         open_date=arrow.utcnow().datetime,
+        is_short=is_short
     )
-    freqtrade.update_trade_state(trade, '123456', limit_buy_order)
+    freqtrade.update_trade_state(trade, '123456', order)
     assert trade.amount != amount
-    assert trade.amount == limit_buy_order['amount']
+    assert trade.amount == order['amount']
     assert log_has_re(r'Applying fee on amount for .*', caplog)
 
 
-def test_update_trade_state_exception(mocker, default_conf,
-                                      limit_buy_order, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_update_trade_state_exception(mocker, default_conf, limit_buy_order,
+                                      limit_sell_order, is_short, caplog) -> None:
+    order = limit_sell_order if is_short else limit_buy_order
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=order)
 
     trade = MagicMock()
     trade.open_order_id = '123'
     trade.open_fee = 0.001
+    trade.is_short = is_short
 
     # Test raise of OperationalException exception
     mocker.patch(
@@ -1867,8 +1982,13 @@ def test_update_trade_state_orderexception(mocker, default_conf, caplog) -> None
     assert log_has(f'Unable to fetch order {trade.open_order_id}: ', caplog)
 
 
-def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order_open,
-                                 limit_sell_order, mocker):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_order_open, is_short,
+                                 limit_buy_order_open, limit_buy_order, limit_sell_order, mocker):
+
+    open_order = limit_buy_order_open if is_short else limit_sell_order_open
+    order = limit_buy_order if is_short else limit_sell_order
+
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1876,7 +1996,7 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
     mocker.patch('freqtrade.wallets.Wallets.update', wallet_mock)
 
     patch_exchange(mocker)
-    amount = limit_sell_order["amount"]
+    amount = order["amount"]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     wallet_mock.reset_mock()
     trade = Trade(
@@ -1889,21 +2009,28 @@ def test_update_trade_state_sell(default_conf, trades_for_order, limit_sell_orde
         open_date=arrow.utcnow().datetime,
         open_order_id="123456",
         is_open=True,
+        is_short=is_short
     )
-    order = Order.parse_from_ccxt_object(limit_sell_order_open, 'LTC/ETH', 'sell')
+    order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', ('buy' if is_short else 'sell'))
     trade.orders.append(order)
     assert order.status == 'open'
-    freqtrade.update_trade_state(trade, trade.open_order_id, limit_sell_order)
-    assert trade.amount == limit_sell_order['amount']
-    # Wallet needs to be updated after closing a limit-sell order to reenable buying
+    freqtrade.update_trade_state(trade, trade.open_order_id, order)
+    assert trade.amount == order['amount']
+    # Wallet needs to be updated after closing a limit order to reenable buying
     assert wallet_mock.call_count == 1
     assert not trade.is_open
     # Order is updated by update_trade_state
     assert order.status == 'closed'
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limit_sell_order,
-                      fee, mocker) -> None:
+                      limit_buy_order_open, fee, mocker, is_short) -> None:
+
+    open_order = limit_buy_order_open if is_short else limit_sell_order_open
+    enter_order = limit_buy_order if is_short else limit_sell_order
+    exit_order = limit_sell_order if is_short else limit_buy_order
+
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -1914,8 +2041,8 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limi
             'last': 0.00001172
         }),
         create_order=MagicMock(side_effect=[
-            limit_buy_order,
-            limit_sell_order_open,
+            enter_order,
+            open_order,
         ]),
         get_fee=fee,
     )
@@ -1925,19 +2052,20 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limi
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     time.sleep(0.01)  # Race condition fix
-    trade.update(limit_buy_order)
+    trade.update(enter_order)
     assert trade.is_open is True
     freqtrade.wallets.update()
 
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade) is True
-    assert trade.open_order_id == limit_sell_order['id']
+    assert trade.open_order_id == exit_order['id']
 
-    # Simulate fulfilled LIMIT_SELL order for trade
-    trade.update(limit_sell_order)
+    # Simulate fulfilled LIMIT order for trade
+    trade.update(exit_order)
 
     assert trade.close_rate == 0.00001173
     assert trade.close_profit == 0.06201058
@@ -1945,15 +2073,21 @@ def test_handle_trade(default_conf, limit_buy_order, limit_sell_order_open, limi
     assert trade.close_date is not None
 
 
-def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
-                                    fee, mocker) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_overlapping_signals(
+    default_conf, ticker, limit_buy_order_open,
+    limit_sell_order_open, fee, mocker, is_short
+) -> None:
+
+    open_order = limit_buy_order_open if is_short else limit_sell_order_open
+
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         create_order=MagicMock(side_effect=[
-            limit_buy_order_open,
+            open_order,
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -1967,6 +2101,7 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
 
     # Buy and Sell triggering, so doing nothing ...
     trades = Trade.query.all()
+
     nb_trades = len(trades)
     assert nb_trades == 0
 
@@ -1974,6 +2109,8 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     patch_get_signal(freqtrade)
     freqtrade.enter_positions()
     trades = Trade.query.all()
+    for trade in trades:
+        trades.is_short = is_short
     nb_trades = len(trades)
     assert nb_trades == 1
     assert trades[0].is_open is True
@@ -1982,6 +2119,8 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     patch_get_signal(freqtrade, enter_long=False)
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
+    for trade in trades:
+        trades.is_short = is_short
     nb_trades = len(trades)
     assert nb_trades == 1
     assert trades[0].is_open is True
@@ -1990,6 +2129,8 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     patch_get_signal(freqtrade, enter_long=True, exit_long=True)
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
+    for trade in trades:
+        trades.is_short = is_short
     nb_trades = len(trades)
     assert nb_trades == 1
     assert trades[0].is_open is True
@@ -1997,11 +2138,17 @@ def test_handle_overlapping_signals(default_conf, ticker, limit_buy_order_open,
     # Sell is triggering, guess what : we are Selling!
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     trades = Trade.query.all()
+    for trade in trades:
+        trades.is_short = is_short
     assert freqtrade.handle_trade(trades[0]) is True
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
-                          fee, mocker, caplog) -> None:
+                          limit_sell_order_open, fee, mocker, caplog, is_short) -> None:
+
+    open_order = limit_sell_order_open if is_short else limit_buy_order_open
+
     caplog.set_level(logging.DEBUG)
 
     patch_RPCManager(mocker)
@@ -2009,7 +2156,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         create_order=MagicMock(side_effect=[
-            limit_buy_order_open,
+            open_order,
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -2022,6 +2169,7 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
 
     # FIX: sniffing logs, suggest handle_trade should not execute_trade_exit
@@ -2029,14 +2177,22 @@ def test_handle_trade_roi(default_conf, ticker, limit_buy_order_open,
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
+    # TODO-lev: Change the next line for shorts
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Required profit reached. sell_type=SellType.ROI",
                    caplog)
 
 
-def test_handle_trade_use_sell_signal(default_conf, ticker, limit_buy_order_open,
-                                      limit_sell_order_open, fee, mocker, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_trade_use_sell_signal(
+    default_conf, ticker, limit_buy_order_open,
+    limit_sell_order_open, fee, mocker, caplog, is_short
+) -> None:
+
+    enter_open_order = limit_buy_order_open if is_short else limit_sell_order_open
+    exit_open_order = limit_sell_order_open if is_short else limit_buy_order_open
+
     # use_sell_signal is True buy default
     caplog.set_level(logging.DEBUG)
     patch_RPCManager(mocker)
@@ -2044,8 +2200,8 @@ def test_handle_trade_use_sell_signal(default_conf, ticker, limit_buy_order_open
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
         create_order=MagicMock(side_effect=[
-            limit_buy_order_open,
-            limit_sell_order_open,
+            enter_open_order,
+            exit_open_order,
         ]),
         get_fee=fee,
     )
@@ -2058,23 +2214,31 @@ def test_handle_trade_use_sell_signal(default_conf, ticker, limit_buy_order_open
     trade = Trade.query.first()
     trade.is_open = True
 
+    # TODO-lev: patch for short
     patch_get_signal(freqtrade, enter_long=False, exit_long=False)
     assert not freqtrade.handle_trade(trade)
 
+    # TODO-lev: patch for short
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/BTC - Sell signal received. sell_type=SellType.SELL_SIGNAL",
                    caplog)
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_close_trade(default_conf, ticker, limit_buy_order, limit_buy_order_open, limit_sell_order,
-                     fee, mocker) -> None:
+                     limit_sell_order_open, fee, mocker, is_short) -> None:
+
+    open_order = limit_buy_order_open if is_short else limit_sell_order_open
+    enter_order = limit_buy_order if is_short else limit_sell_order
+    exit_order = limit_sell_order if is_short else limit_buy_order
+
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        create_order=MagicMock(return_value=limit_buy_order_open),
+        create_order=MagicMock(return_value=open_order),
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf)
@@ -2086,8 +2250,8 @@ def test_close_trade(default_conf, ticker, limit_buy_order, limit_buy_order_open
     trade = Trade.query.first()
     assert trade
 
-    trade.update(limit_buy_order)
-    trade.update(limit_sell_order)
+    trade.update(enter_order)
+    trade.update(exit_order)
     assert trade.is_open is False
 
     with pytest.raises(DependencyException, match=r'.*closed trade.*'):
@@ -2107,21 +2271,24 @@ def test_bot_loop_start_called_once(mocker, default_conf, caplog):
     assert ftbot.strategy.analyze.call_count == 1
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_order_old, open_trade,
-                                              fee, mocker) -> None:
+                                              limit_sell_order_old, fee, mocker, is_short) -> None:
+
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
     default_conf["unfilledtimeout"] = {"buy": 1400, "sell": 30}
 
     rpc_mock = patch_RPCManager(mocker)
-    cancel_order_mock = MagicMock(return_value=limit_buy_order_old)
-    cancel_buy_order = deepcopy(limit_buy_order_old)
-    cancel_buy_order['status'] = 'canceled'
-    cancel_order_wr_mock = MagicMock(return_value=cancel_buy_order)
+    cancel_order_mock = MagicMock(return_value=old_order)
+    cancel_enter_order = deepcopy(old_order)
+    cancel_enter_order['status'] = 'canceled'
+    cancel_order_wr_mock = MagicMock(return_value=cancel_enter_order)
 
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        fetch_order=MagicMock(return_value=limit_buy_order_old),
+        fetch_order=MagicMock(return_value=old_order),
         cancel_order_with_result=cancel_order_wr_mock,
         cancel_order=cancel_order_mock,
         get_fee=fee
@@ -2163,17 +2330,19 @@ def test_check_handle_timedout_buy_usercustom(default_conf, ticker, limit_buy_or
     assert freqtrade.strategy.check_buy_timeout.call_count == 1
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, open_trade,
-                                   fee, mocker) -> None:
+                                   limit_sell_order_old, fee, mocker, is_short) -> None:
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
     rpc_mock = patch_RPCManager(mocker)
-    limit_buy_cancel = deepcopy(limit_buy_order_old)
+    limit_buy_cancel = deepcopy(old_order)
     limit_buy_cancel['status'] = 'canceled'
     cancel_order_mock = MagicMock(return_value=limit_buy_cancel)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        fetch_order=MagicMock(return_value=limit_buy_order_old),
+        fetch_order=MagicMock(return_value=old_order),
         cancel_order_with_result=cancel_order_mock,
         get_fee=fee
     )
@@ -2193,17 +2362,19 @@ def test_check_handle_timedout_buy(default_conf, ticker, limit_buy_order_old, op
     assert freqtrade.strategy.check_buy_timeout.call_count == 0
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, open_trade,
-                                    fee, mocker, caplog) -> None:
+                                    limit_sell_order_old, fee, mocker, caplog, is_short) -> None:
     """ Handle Buy order cancelled on exchange"""
+    old_order = limit_sell_order_old if is_short else limit_buy_order_old
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
-    limit_buy_order_old.update({"status": "canceled", 'filled': 0.0})
+    old_order.update({"status": "canceled", 'filled': 0.0})
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
-        fetch_order=MagicMock(return_value=limit_buy_order_old),
+        fetch_order=MagicMock(return_value=old_order),
         cancel_order=cancel_order_mock,
         get_fee=fee
     )
@@ -2218,10 +2389,12 @@ def test_check_handle_cancelled_buy(default_conf, ticker, limit_buy_order_old, o
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    assert log_has_re("Buy order cancelled on exchange for Trade.*", caplog)
+    assert log_has_re(
+        f"{'Sell' if is_short else 'Buy'} order cancelled on exchange for Trade.*", caplog)
 
 
-def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_order_old, open_trade, is_short,
                                              fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2247,7 +2420,8 @@ def test_check_handle_timedout_buy_exception(default_conf, ticker, limit_buy_ord
     assert nb_trades == 1
 
 
-def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_order_old, mocker,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_order_old, mocker, is_short,
                                                open_trade) -> None:
     default_conf["unfilledtimeout"] = {"buy": 1440, "sell": 1440}
     rpc_mock = patch_RPCManager(mocker)
@@ -2296,7 +2470,8 @@ def test_check_handle_timedout_sell_usercustom(default_conf, ticker, limit_sell_
     assert freqtrade.strategy.check_sell_timeout.call_count == 1
 
 
-def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, mocker, is_short,
                                     open_trade) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -2326,7 +2501,8 @@ def test_check_handle_timedout_sell(default_conf, ticker, limit_sell_order_old, 
     assert freqtrade.strategy.check_sell_timeout.call_count == 0
 
 
-def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, open_trade,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old, open_trade, is_short,
                                      mocker, caplog) -> None:
     """ Handle sell order cancelled on exchange"""
     rpc_mock = patch_RPCManager(mocker)
@@ -2355,7 +2531,8 @@ def test_check_handle_cancelled_sell(default_conf, ticker, limit_sell_order_old,
     assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
 
 
-def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old_partial, is_short,
                                        open_trade, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     limit_buy_canceled = deepcopy(limit_buy_order_old_partial)
@@ -2384,7 +2561,8 @@ def test_check_handle_timedout_partial(default_conf, ticker, limit_buy_order_old
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount
 
 
-def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, caplog, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, caplog, fee, is_short,
                                            limit_buy_order_old_partial, trades_for_order,
                                            limit_buy_order_old_partial_canceled, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -2423,7 +2601,8 @@ def test_check_handle_timedout_partial_fee(default_conf, ticker, open_trade, cap
     assert pytest.approx(trades[0].fee_open) == 0.001
 
 
-def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, caplog, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, caplog, fee, is_short,
                                               limit_buy_order_old_partial, trades_for_order,
                                               limit_buy_order_old_partial_canceled, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -2463,7 +2642,7 @@ def test_check_handle_timedout_partial_except(default_conf, ticker, open_trade, 
     assert trades[0].fee_open == fee()
 
 
-def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocker, caplog) -> None:
+def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocker, caplog, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_order_mock = MagicMock()
@@ -2492,7 +2671,8 @@ def test_check_handle_timedout_exception(default_conf, ticker, open_trade, mocke
                       caplog)
 
 
-def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     cancel_buy_order = deepcopy(limit_buy_order)
@@ -2537,9 +2717,10 @@ def test_handle_cancel_enter(mocker, caplog, default_conf, limit_buy_order) -> N
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
                          indirect=['limit_buy_order_canceled_empty'])
-def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf,
+def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf, is_short,
                                        limit_buy_order_canceled_empty) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -2559,13 +2740,14 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf,
     assert nofiy_mock.call_count == 1
 
 
+@pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.parametrize('cancelorder', [
     {},
     {'remaining': None},
     'String Return value',
     123
 ])
-def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order,
+def test_handle_cancel_enter_corder_empty(mocker, default_conf, limit_buy_order, is_short,
                                           cancelorder) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -2656,8 +2838,8 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
 
 
-# TODO-lev: Add short tests
-def test_execute_trade_exit_up(default_conf, ticker, fee, ticker_sell_up, mocker) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_up(default_conf, ticker, fee, ticker_sell_up, mocker, is_short) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2722,7 +2904,8 @@ def test_execute_trade_exit_up(default_conf, ticker, fee, ticker_sell_up, mocker
     } == last_msg
 
 
-def test_execute_trade_exit_down(default_conf, ticker, fee, ticker_sell_down, mocker) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_down(default_conf, ticker, fee, ticker_sell_down, mocker, is_short) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2774,7 +2957,8 @@ def test_execute_trade_exit_down(default_conf, ticker, fee, ticker_sell_down, mo
     } == last_msg
 
 
-def test_execute_trade_exit_custom_exit_price(default_conf, ticker, fee, ticker_sell_up,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_custom_exit_price(default_conf, ticker, fee, ticker_sell_up, is_short,
                                               mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -2839,7 +3023,8 @@ def test_execute_trade_exit_custom_exit_price(default_conf, ticker, fee, ticker_
     } == last_msg
 
 
-def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(default_conf, ticker, fee, is_short,
                                                               ticker_sell_down, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -2934,7 +3119,8 @@ def test_execute_trade_exit_sloe_cancel_exception(
     assert log_has('Could not cancel stoploss order abcd', caplog)
 
 
-def test_execute_trade_exit_with_stoploss_on_exchange(default_conf, ticker, fee, ticker_sell_up,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_with_stoploss_on_exchange(default_conf, ticker, fee, ticker_sell_up, is_short,
                                                       mocker) -> None:
 
     default_conf['exchange']['name'] = 'binance'
@@ -3061,7 +3247,8 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf, tic
     assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
 
 
-def test_execute_trade_exit_market_order(default_conf, ticker, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_market_order(default_conf, ticker, fee, is_short,
                                          ticker_sell_up, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3120,7 +3307,8 @@ def test_execute_trade_exit_market_order(default_conf, ticker, fee,
     } == last_msg
 
 
-def test_execute_trade_exit_insufficient_funds_error(default_conf, ticker, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_execute_trade_exit_insufficient_funds_error(default_conf, ticker, fee, is_short,
                                                      ticker_sell_up, mocker) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_insuf = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_insufficient_funds')
@@ -3154,7 +3342,8 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf, ticker, fee,
     assert mock_insuf.call_count == 1
 
 
-def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                         fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3194,7 +3383,8 @@ def test_sell_profit_only_enable_profit(default_conf, limit_buy_order, limit_buy
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                          fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3228,7 +3418,8 @@ def test_sell_profit_only_disable_profit(default_conf, limit_buy_order, limit_bu
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                       fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3261,7 +3452,8 @@ def test_sell_profit_only_enable_loss(default_conf, limit_buy_order, limit_buy_o
     assert freqtrade.handle_trade(trade) is False
 
 
-def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                        fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3297,7 +3489,8 @@ def test_sell_profit_only_disable_loss(default_conf, limit_buy_order, limit_buy_
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
 
-def test_sell_not_enough_balance(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sell_not_enough_balance(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                  fee, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3383,7 +3576,8 @@ def test__safe_exit_amount_error(default_conf, fee, caplog, mocker):
         assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 
-def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog) -> None:
+@pytest.mark.parametrize("is_short", [False, True])
+def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplog, is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3419,7 +3613,8 @@ def test_locked_pairs(default_conf, ticker, fee, ticker_sell_down, mocker, caplo
     assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
 
 
-def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                   fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3456,7 +3651,8 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order
     assert trade.sell_reason == SellType.ROI.value
 
 
-def test_trailing_stop_loss(default_conf, limit_buy_order_open, limit_buy_order,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_trailing_stop_loss(default_conf, limit_buy_order_open, limit_buy_order, is_short,
                             fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3510,7 +3706,8 @@ def test_trailing_stop_loss(default_conf, limit_buy_order_open, limit_buy_order,
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_order_open, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_order_open, fee, is_short,
                                      caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
@@ -3571,7 +3768,8 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order, limit_buy_or
         f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
 
 
-def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_order_open, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_order_open, fee, is_short,
                                    caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     patch_RPCManager(mocker)
@@ -3633,7 +3831,8 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_orde
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_open, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_open, fee, is_short,
                                  caplog, mocker) -> None:
     buy_price = limit_buy_order['price']
     # buy_price: 0.00001099
@@ -3697,7 +3896,8 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
     assert trade.stop_loss == 0.0000117705
 
 
-def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open, is_short,
                                           fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -4110,7 +4310,8 @@ def test_apply_fee_conditional(default_conf, fee, caplog, mocker,
     assert walletmock.call_count == 1
 
 
-def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, limit_buy_order,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, limit_buy_order, is_short,
                                     fee, mocker, order_book_l2):
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
@@ -4146,7 +4347,8 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, 
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
 
-def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order, is_short,
                                                fee, mocker, order_book_l2):
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     # delta is 100 which is impossible to reach. hence check_depth_of_market will return false
@@ -4235,7 +4437,8 @@ def test_check_depth_of_market(default_conf, mocker, order_book_l2) -> None:
     assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
-def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_order, fee,
+@pytest.mark.parametrize("is_short", [False, True])
+def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_order, fee, is_short,
                                  limit_sell_order_open, mocker, order_book_l2, caplog) -> None:
     """
     test order book ask strategy
@@ -4312,7 +4515,8 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_open, caplog):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_open, caplog, is_short):
     default_conf['dry_run'] = True
     # Initialize to 2 times stake amount
     default_conf['dry_run_wallet'] = 0.002
@@ -4344,7 +4548,8 @@ def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_cancel_all_open_orders(mocker, default_conf, fee, limit_buy_order, limit_sell_order, is_short):
     default_conf['cancel_open_orders_on_exit'] = True
     mocker.patch('freqtrade.exchange.Exchange.fetch_order',
                  side_effect=[
@@ -4404,7 +4609,8 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     def patch_with_fee(order):
@@ -4466,7 +4672,8 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
@@ -4503,7 +4710,8 @@ def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_insufficient_funds(mocker, default_conf, fee):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_insufficient_funds(mocker, default_conf, fee, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
     mock_bof = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.reupdate_enter_order_fees')
@@ -4541,7 +4749,8 @@ def test_handle_insufficient_funds(mocker, default_conf, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_refind_lost_order(mocker, default_conf, fee, caplog):
+@pytest.mark.parametrize("is_short", [False, True])
+def test_refind_lost_order(mocker, default_conf, fee, caplog, is_short):
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
@@ -4677,3 +4886,6 @@ def test_get_valid_price(mocker, default_conf) -> None:
 
     assert valid_price_at_min_alwd > custom_price_under_min_alwd
     assert valid_price_at_min_alwd < proposed_price
+
+
+# TODO-lev def test_leverage_prep()
