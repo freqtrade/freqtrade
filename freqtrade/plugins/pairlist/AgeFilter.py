@@ -8,10 +8,10 @@ from typing import Any, Dict, List, Optional
 import arrow
 from pandas import DataFrame
 
+from freqtrade.configuration import PeriodicCache
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList
-from freqtrade.configuration import PeriodicCache
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class AgeFilter(IPairList):
 
         # Checked symbols cache (dictionary of ticker symbol => timestamp)
         self._symbolsChecked: Dict[str, int] = {}
-        self._too_young_pairs = PeriodicCache(maxsize=1000, ttl=86_400)
+        self._symbolsCheckFailed = PeriodicCache(maxsize=1000, ttl=86_400)
 
         self._min_days_listed = pairlistconfig.get('min_days_listed', 10)
         self._max_days_listed = pairlistconfig.get('max_days_listed', None)
@@ -73,9 +73,10 @@ class AgeFilter(IPairList):
         """
         needed_pairs = [
             (p, '1d') for p in pairlist
-            if p not in self._symbolsChecked and p not in self._too_young_pairs]
+            if p not in self._symbolsChecked and p not in self._symbolsCheckFailed]
         if not needed_pairs:
-            return pairlist
+            # Remove pairs that have been removed before
+            return [p for p in pairlist if p not in self._symbolsCheckFailed]
         logger.info(f"needed pairs {needed_pairs}")
         since_days = -(
             self._max_days_listed if self._max_days_listed else self._min_days_listed
@@ -122,6 +123,6 @@ class AgeFilter(IPairList):
                     " or more than "
                     f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
                 ) if self._max_days_listed else ''), logger.info)
-                self._too_young_pairs[pair] = arrow.utcnow().int_timestamp * 1000
+                self._symbolsCheckFailed[pair] = arrow.utcnow().int_timestamp * 1000
                 return False
         return False
