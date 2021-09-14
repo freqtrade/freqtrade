@@ -821,7 +821,6 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ('ETH/BTC', '1d'): ohlcv_history,
             ('TKN/BTC', '1d'): ohlcv_history,
             ('LTC/BTC', '1d'): ohlcv_history,
-            ('XRP/BTC', '1d'): ohlcv_history.iloc[[0]],
         }
         mocker.patch.multiple(
             'freqtrade.exchange.Exchange',
@@ -837,16 +836,28 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         assert len(freqtrade.pairlists.whitelist) == 3
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
 
-        previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
         # Call to XRP/BTC cached
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
-        # Move to next day
-        t.move_to("2021-09-02 01:00:00 +00:00")
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 2
+
+        ohlcv_data = {
+            ('ETH/BTC', '1d'): ohlcv_history,
+            ('TKN/BTC', '1d'): ohlcv_history,
+            ('LTC/BTC', '1d'): ohlcv_history,
+            ('XRP/BTC', '1d'): ohlcv_history.iloc[[0]],
+        }
+        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count + 1
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+
+        # Move to next day
+        t.move_to("2021-09-02 01:00:00 +00:00")
+        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 3
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
 
         # Move another day with fresh mocks (now the pair is old enough)
         t.move_to("2021-09-03 01:00:00 +00:00")
