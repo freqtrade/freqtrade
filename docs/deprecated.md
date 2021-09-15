@@ -38,3 +38,8 @@ Since only quoteVolume can be compared between assets, the other options (bidVol
 
 Using `order_book_min` and `order_book_max` used to allow stepping the orderbook and trying to find the next ROI slot - trying to place sell-orders early.
 As this does however increase risk and provides no benefit, it's been removed for maintainability purposes in 2021.7.
+
+### Legacy Hyperopt mode
+
+Using separate hyperopt files was deprecated in 2021.4 and was removed in 2021.9.
+Please switch to the new [Parametrized Strategies](hyperopt.md) to benefit from the new hyperopt interface.

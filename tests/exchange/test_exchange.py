@@ -205,7 +205,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
 def test_validate_order_time_in_force(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    # explicitly test bittrex, exchanges implementing other policies need seperate tests
+    # explicitly test bittrex, exchanges implementing other policies need separate tests
     ex = get_patched_exchange(mocker, default_conf, id="bittrex")
     tif = {
         "buy": "gtc",
@@ -2515,7 +2515,7 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
-    # Don't test FTX here - that needs a seperate test
+    # Don't test FTX here - that needs a separate test
     if exchange_name == 'ftx':
         return
     default_conf['dry_run'] = True
