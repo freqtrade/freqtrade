@@ -241,7 +241,7 @@ class Hyperopt:
 
         if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
-            self.buy_space = self.custom_hyperopt.indicator_space()
+            self.buy_space = self.custom_hyperopt.buy_indicator_space()
 
         if HyperoptTools.has_space(self.config, 'sell'):
             logger.debug("Hyperopt has 'sell' space")

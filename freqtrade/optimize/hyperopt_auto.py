@@ -56,7 +56,7 @@ class HyperOptAuto(IHyperOpt):
         else:
             _format_exception_message(category)
 
-    def indicator_space(self) -> List['Dimension']:
+    def buy_indicator_space(self) -> List['Dimension']:
         return self._get_indicator_space('buy')
 
     def sell_indicator_space(self) -> List['Dimension']:
