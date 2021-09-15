@@ -10,10 +10,10 @@ import pytest
 
 from freqtrade.commands import (start_convert_data, start_create_userdir, start_download_data,
                                 start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                start_list_data, start_list_exchanges, start_list_hyperopts,
-                                start_list_markets, start_list_strategies, start_list_timeframes,
-                                start_new_hyperopt, start_new_strategy, start_show_trades,
-                                start_test_pairlist, start_trading, start_webserver)
+                                start_list_data, start_list_exchanges, start_list_markets,
+                                start_list_strategies, start_list_timeframes, start_new_strategy,
+                                start_show_trades, start_test_pairlist, start_trading,
+                                start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
@@ -517,37 +517,6 @@ def test_start_new_strategy_no_arg(mocker, caplog):
         start_new_strategy(get_args(args))
 
 
-def test_start_new_hyperopt(mocker, caplog):
-    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
-    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
-
-    args = [
-        "new-hyperopt",
-        "--hyperopt",
-        "CoolNewhyperopt"
-    ]
-    start_new_hyperopt(get_args(args))
-
-    assert wt_mock.call_count == 1
-    assert "CoolNewhyperopt" in wt_mock.call_args_list[0][0][0]
-    assert log_has_re("Writing hyperopt to .*", caplog)
-
-    mocker.patch('freqtrade.commands.deploy_commands.setup_utils_configuration')
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    with pytest.raises(OperationalException,
-                       match=r".* already exists. Please choose another Hyperopt Name\."):
-        start_new_hyperopt(get_args(args))
-
-
-def test_start_new_hyperopt_no_arg(mocker):
-    args = [
-        "new-hyperopt",
-    ]
-    with pytest.raises(OperationalException,
-                       match="`new-hyperopt` requires --hyperopt to be set."):
-        start_new_hyperopt(get_args(args))
-
-
 def test_start_install_ui(mocker):
     clean_mock = mocker.patch('freqtrade.commands.deploy_commands.clean_ui_subdir')
     get_url_mock = mocker.patch('freqtrade.commands.deploy_commands.get_ui_download_url',
@@ -822,37 +791,20 @@ def test_start_list_strategies(mocker, caplog, capsys):
     assert "legacy_strategy_v1.py" in captured.out
     assert "StrategyTestV2" in captured.out
 
-
-def test_start_list_hyperopts(mocker, caplog, capsys):
-
+    # Test color output
     args = [
-        "list-hyperopts",
-        "--hyperopt-path",
-        str(Path(__file__).parent.parent / "optimize" / "hyperopts"),
-        "-1"
+        "list-strategies",
+        "--strategy-path",
+        str(Path(__file__).parent.parent / "strategy" / "strats"),
     ]
     pargs = get_args(args)
     # pargs['config'] = None
-    start_list_hyperopts(pargs)
+    start_list_strategies(pargs)
     captured = capsys.readouterr()
-    assert "TestHyperoptLegacy" not in captured.out
-    assert "legacy_hyperopt.py" not in captured.out
-    assert "HyperoptTestSepFile" in captured.out
-    assert "test_hyperopt.py" not in captured.out
-
-    # Test regular output
-    args = [
-        "list-hyperopts",
-        "--hyperopt-path",
-        str(Path(__file__).parent.parent / "optimize" / "hyperopts"),
-    ]
-    pargs = get_args(args)
-    # pargs['config'] = None
-    start_list_hyperopts(pargs)
-    captured = capsys.readouterr()
-    assert "TestHyperoptLegacy" not in captured.out
-    assert "legacy_hyperopt.py" not in captured.out
-    assert "HyperoptTestSepFile" in captured.out
+    assert "TestStrategyLegacyV1" in captured.out
+    assert "legacy_strategy_v1.py" in captured.out
+    assert "StrategyTestV2" in captured.out
+    assert "LOAD FAILED" in captured.out
 
 
 def test_start_test_pairlist(mocker, caplog, tickers, default_conf, capsys):
