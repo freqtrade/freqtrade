@@ -10,7 +10,7 @@ from colorama import init as colorama_init
 from tabulate import tabulate
 
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
+from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import market_is_active, validate_exchanges
@@ -92,25 +92,6 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         _print_objs_tabular(strategy_objs, config.get('print_colorized', False))
 
 
-def start_list_hyperopts(args: Dict[str, Any]) -> None:
-    """
-    Print files with HyperOpt custom classes available in the directory
-    """
-    from freqtrade.resolvers.hyperopt_resolver import HyperOptResolver
-
-    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
-
-    directory = Path(config.get('hyperopt_path', config['user_data_dir'] / USERPATH_HYPEROPTS))
-    hyperopt_objs = HyperOptResolver.search_all_objects(directory, not args['print_one_column'])
-    # Sort alphabetically
-    hyperopt_objs = sorted(hyperopt_objs, key=lambda x: x['name'])
-
-    if args['print_one_column']:
-        print('\n'.join([s['name'] for s in hyperopt_objs]))
-    else:
-        _print_objs_tabular(hyperopt_objs, config.get('print_colorized', False))
-
-
 def start_list_timeframes(args: Dict[str, Any]) -> None:
     """
     Print timeframes available on Exchange
@@ -148,6 +129,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     quote_currencies = args.get('quote_currencies', [])
 
     try:
+        # TODO-lev: Add leverage amount to get markets that support a certain leverage
         pairs = exchange.get_markets(base_currencies=base_currencies,
                                      quote_currencies=quote_currencies,
                                      pairs_only=pairs_only,

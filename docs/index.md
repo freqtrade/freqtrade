@@ -40,6 +40,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
 - [X] [Kraken](https://kraken.com/)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested

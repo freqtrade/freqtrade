@@ -444,8 +444,8 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
 ```
 
 !!! Warning
-    This is ongoing work. For now, it is supported only for binance.
-    Please don't change the default value unless you know what you are doing and have researched the impact of using different values.
+    This is ongoing work. For now, it is supported only for binance and kucoin.
+    Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
 ### Exchange configuration
 
