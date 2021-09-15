@@ -29,6 +29,14 @@ from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, m
                                    mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
 
 
+def enter_side(is_short: bool):
+    return "sell" if is_short else "buy"
+
+
+def exit_side(is_short: bool):
+    return "buy" if is_short else "sell"
+
+
 logging.getLogger('').setLevel(logging.INFO)
 
 
@@ -216,7 +224,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, use_db: bool = True):
+def create_mock_trades(fee, is_short: bool, use_db: bool = True):
     """
     Create some fake trades ...
     """
@@ -227,22 +235,22 @@ def create_mock_trades(fee, use_db: bool = True):
             LocalTrade.add_bt_trade(trade)
 
     # Simulate dry_run entries
-    trade = mock_trade_1(fee)
+    trade = mock_trade_1(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_2(fee)
+    trade = mock_trade_2(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_3(fee)
+    trade = mock_trade_3(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_4(fee)
+    trade = mock_trade_4(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_5(fee)
+    trade = mock_trade_5(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_6(fee)
+    trade = mock_trade_6(fee, is_short)
     add_trade(trade)
 
     if use_db:
