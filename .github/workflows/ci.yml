@@ -87,7 +87,7 @@ jobs:
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
@@ -180,7 +180,7 @@ jobs:
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |
@@ -247,7 +247,7 @@ jobs:
       run: |
         cp config_examples/config_bittrex.example.json config.json
         freqtrade create-userdir --userdir user_data
-        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily --print-all
+        freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
 
     - name: Flake8
       run: |

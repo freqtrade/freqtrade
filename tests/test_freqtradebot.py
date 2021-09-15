@@ -1661,7 +1661,7 @@ def test_enter_positions(mocker, default_conf, caplog) -> None:
                            MagicMock(return_value=False))
     n = freqtrade.enter_positions()
     assert n == 0
-    assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
+    assert log_has('Found no enter signals for whitelisted currencies. Trying again...', caplog)
     # create_trade should be called once for every pair in the whitelist.
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
 
@@ -1722,7 +1722,7 @@ def test_exit_positions_exception(mocker, default_conf, limit_buy_order, caplog)
     )
     n = freqtrade.exit_positions(trades)
     assert n == 0
-    assert log_has('Unable to sell trade ETH/BTC: ', caplog)
+    assert log_has('Unable to exit trade ETH/BTC: ', caplog)
 
 
 def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -3354,7 +3354,7 @@ def test__safe_exit_amount_error(default_conf, fee, caplog, mocker):
     )
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
-    with pytest.raises(DependencyException, match=r"Not enough amount to sell."):
+    with pytest.raises(DependencyException, match=r"Not enough amount to exit."):
         assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
 
 

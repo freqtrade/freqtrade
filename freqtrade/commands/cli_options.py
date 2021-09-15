@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-from argparse import ArgumentTypeError
+from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
@@ -203,13 +203,13 @@ AVAILABLE_CLI_OPTIONS = {
     # Hyperopt
     "hyperopt": Arg(
         '--hyperopt',
-        help='Specify hyperopt class name which will be used by the bot.',
+        help=SUPPRESS,
         metavar='NAME',
         required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
