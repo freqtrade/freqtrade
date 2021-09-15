@@ -77,7 +77,7 @@ class AgeFilter(IPairList):
         if not needed_pairs:
             # Remove pairs that have been removed before
             return [p for p in pairlist if p not in self._symbolsCheckFailed]
-        logger.info(f"needed pairs {needed_pairs}")
+
         since_days = -(
             self._max_days_listed if self._max_days_listed else self._min_days_listed
         ) - 1
