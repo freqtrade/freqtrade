@@ -365,10 +365,14 @@ class Hyperopt:
         }
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
+        estimator = self.custom_hyperopt.generate_estimator()
+        logger.info(f"Using estimator {estimator}.")
+        # TODO: Impact of changing acq_optimizer to "sampling" is unclear
+        # (other than that it fails with other optimizers when using custom sklearn regressors)
         return Optimizer(
             dimensions,
-            base_estimator="ET",
-            acq_optimizer="auto",
+            base_estimator=estimator,
+            acq_optimizer="sampling",
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.random_state,
