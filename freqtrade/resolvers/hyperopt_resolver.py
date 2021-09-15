@@ -9,50 +9,11 @@ from typing import Dict
 
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN, USERPATH_HYPEROPTS
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.hyperopt_interface import IHyperOpt
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss
 from freqtrade.resolvers import IResolver
 
 
 logger = logging.getLogger(__name__)
-
-
-class HyperOptResolver(IResolver):
-    """
-    This class contains all the logic to load custom hyperopt class
-    """
-    object_type = IHyperOpt
-    object_type_str = "Hyperopt"
-    user_subdir = USERPATH_HYPEROPTS
-    initial_search_path = None
-
-    @staticmethod
-    def load_hyperopt(config: Dict) -> IHyperOpt:
-        """
-        Load the custom hyperopt class from config parameter
-        :param config: configuration dictionary
-        """
-        if not config.get('hyperopt'):
-            raise OperationalException("No Hyperopt set. Please use `--hyperopt` to specify "
-                                       "the Hyperopt class to use.")
-
-        hyperopt_name = config['hyperopt']
-
-        hyperopt = HyperOptResolver.load_object(hyperopt_name, config,
-                                                kwargs={'config': config},
-                                                extra_dir=config.get('hyperopt_path'))
-
-        if not hasattr(hyperopt, 'populate_indicators'):
-            logger.info("Hyperopt class does not provide populate_indicators() method. "
-                        "Using populate_indicators from the strategy.")
-        if not hasattr(hyperopt, 'populate_buy_trend'):
-            logger.info("Hyperopt class does not provide populate_buy_trend() method. "
-                        "Using populate_buy_trend from the strategy.")
-        if not hasattr(hyperopt, 'populate_sell_trend'):
-            logger.info("Hyperopt class does not provide populate_sell_trend() method. "
-                        "Using populate_sell_trend from the strategy.")
-        # TODO-lev: Short equivelents?
-        return hyperopt
 
 
 class HyperOptLossResolver(IResolver):

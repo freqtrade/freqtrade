@@ -33,7 +33,7 @@ jobs:
     - script:
       - cp config_examples/config_bittrex.example.json config.json
       - freqtrade create-userdir --userdir user_data
-      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt SampleHyperOpt --hyperopt-loss SharpeHyperOptLossDaily
+      - freqtrade hyperopt --datadir tests/testdata -e 5 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily
       name: hyperopt
     - script: flake8
       name: flake8

@@ -8,4 +8,4 @@ scikit-optimize==0.8.1
 filelock==3.0.12
 joblib==1.0.1
 psutil==5.8.0
-progressbar2==3.53.1
+progressbar2==3.53.2

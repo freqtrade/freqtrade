@@ -16,7 +16,7 @@ def hyperopt_conf(default_conf):
     hyperconf.update({
         'datadir': Path(default_conf['datadir']),
         'runmode': RunMode.HYPEROPT,
-        'hyperopt': 'HyperoptTestSepFile',
+        'strategy': 'HyperoptableStrategy',
         'hyperopt_loss': 'ShortTradeDurHyperOptLoss',
                          'hyperopt_path': str(Path(__file__).parent / 'hyperopts'),
                          'epochs': 1,
