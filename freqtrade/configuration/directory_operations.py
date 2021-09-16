@@ -21,6 +21,11 @@ def create_datadir(config: Dict[str, Any], datadir: Optional[str] = None) -> Pat
     if not folder.is_dir():
         folder.mkdir(parents=True)
         logger.info(f'Created data directory: {datadir}')
+
+    intermediate_dir = folder.joinpath('trades-intermediate-parts')
+    if not intermediate_dir.is_dir():
+        intermediate_dir.mkdir(parents=True)
+        logger.info(f'Created intermediate data directory: {intermediate_dir}')
     return folder
 
 

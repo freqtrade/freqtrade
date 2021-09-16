@@ -306,6 +306,7 @@ def _download_trades_history(exchange: Exchange,
                                                   since=since,
                                                   until=until,
                                                   from_id=from_id,
+                                                  datadir=data_handler._datadir
                                                   )
         trades.extend(new_trades[1])
         # Remove duplicates to make sure we're not storing data we don't need
