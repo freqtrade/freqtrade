@@ -4322,7 +4322,6 @@ def test_apply_fee_conditional(default_conf, fee, caplog, mocker,
     assert walletmock.call_count == 1
 
 
-@pytest.mark.parametrize("is_short", [False, True])
 def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, limit_buy_order,
                                     is_short, fee, mocker, order_book_l2):
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
@@ -4359,8 +4358,7 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, 
     assert whitelist == default_conf['exchange']['pair_whitelist']
 
 
-@pytest.mark.parametrize("is_short", [False, True])
-def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order, is_short,
+def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order,
                                                fee, mocker, order_book_l2):
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
     # delta is 100 which is impossible to reach. hence check_depth_of_market will return false
@@ -4449,8 +4447,7 @@ def test_check_depth_of_market(default_conf, mocker, order_book_l2) -> None:
     assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
-@pytest.mark.parametrize("is_short", [False, True])
-def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_order, fee, is_short,
+def test_order_book_ask_strategy(default_conf, limit_buy_order_open, limit_buy_order, fee,
                                  limit_sell_order_open, mocker, order_book_l2, caplog) -> None:
     """
     test order book ask strategy
@@ -4527,9 +4524,7 @@ def test_startup_trade_reinit(default_conf, edge_conf, mocker):
 
 
 @pytest.mark.usefixtures("init_persistence")
-@pytest.mark.parametrize("is_short", [False, True])
-def test_sync_wallet_dry_run(
-        mocker, default_conf, ticker, fee, limit_buy_order_open, caplog, is_short):
+def test_sync_wallet_dry_run(mocker, default_conf, ticker, fee, limit_buy_order_open, caplog):
     default_conf['dry_run'] = True
     # Initialize to 2 times stake amount
     default_conf['dry_run_wallet'] = 0.002

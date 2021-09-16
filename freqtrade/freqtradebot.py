@@ -812,8 +812,10 @@ class FreqtradeBot(LoggingMixin):
         exit_signal_type = "exit_short" if trade.is_short else "exit_long"
 
         # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
-        if (self.config.get('use_sell_signal', True) or
-                self.config.get('ignore_roi_if_buy_signal', False)):
+        if (
+            self.config.get('use_sell_signal', True) or
+            self.config.get('ignore_roi_if_buy_signal', False)
+        ):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
