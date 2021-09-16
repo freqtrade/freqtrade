@@ -5,23 +5,22 @@ Cryptocurrency Exchanges support
 import asyncio
 import http
 import inspect
+import json
 import logging
+import os
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
-import json
-import os
-from pathlib import Path
-from intervaltree import Interval, IntervalTree
-
 import ccxt.async_support as ccxt_async
 from cachetools import TTLCache
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
+from intervaltree import Interval, IntervalTree
 from pandas import DataFrame
 
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
