@@ -1530,7 +1530,7 @@ class Exchange:
                     logger.debug("Cached the intermediate trades in %s", tmpdata_file)
             else:
                 from_id = trades_list[0][1] if trades_list else 0
-                datadir = datadir or ""
+                datadir = datadir or Path(".")
                 tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
                 logger.debug("DID NOT CACHE the intermediate trades in %s with len=%s",
                              tmpdata_file, len(trades_list))
