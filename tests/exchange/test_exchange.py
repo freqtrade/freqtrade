@@ -1,14 +1,18 @@
 import copy
+import json
 import logging
+import os
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import isclose
+from pathlib import Path
 from random import randint
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
 import arrow
 import ccxt
 import pytest
+from intervaltree import Interval
 from pandas import DataFrame
 
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
@@ -2239,6 +2243,79 @@ async def test__async_get_trade_history_time_empty(default_conf, mocker, caplog,
     # first call (using since, not fromId)
     assert fetch_trades_cal[0][0][0] == pair
     assert fetch_trades_cal[0][1]['since'] == trades_history[0][0]
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test__pair_dir(default_conf, mocker, caplog, exchange_name, trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'ETH/BTC'
+    assert "ETH-BTC" == exchange._pair_dir(pair)
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test__intermediate_trades_dir_for_pair(default_conf, mocker, caplog, exchange_name,
+                                           trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'ETH/BTC'
+    datadir = Path("/user_data/data/"+exchange_name)
+    expected = "/user_data/data/"+exchange_name+"/trades-intermediate-parts/ETH-BTC"
+    assert expected == exchange._intermediate_trades_dir_for_pair(datadir, pair)
+
+
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test__intermediate_trades_file(default_conf, mocker, caplog, exchange_name,
+                                   trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'ETH/BTC'
+    datadir = Path("user_data/data/"+exchange_name)
+    expected_file = ("user_data/data/" + exchange_name +
+                     "/trades-intermediate-parts/ETH-BTC/254/ETH-BTC_254648140.json")
+    assert expected_file == exchange._intermediate_trades_file(datadir, pair, "254648140", False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_fetch_trades_from_file(default_conf, mocker, caplog, exchange_name,
+                                             trades_history):
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', return_value=True)
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    pair = 'ETH/BTC'
+    datadir = Path("user_data/data/"+exchange_name)
+    expected_file = ("user_data/data/" + exchange_name +
+                     "/trades-intermediate-parts/ETH-BTC/254/ETH-BTC_254648140.json")
+    assert exchange._intermediate_trades_file(datadir, pair, "254648140", True) == expected_file
+    trades_list_string = """[
+        [1629074942566, "254648140", null, "sell", 0.069655, 0.038, 0.00264689],
+        [1629074942602, "254648141", null, "sell", 0.069655, 0.019, 0.001323445],
+        [1629074942927, "254648142", null, "buy", 0.069656, 0.289, 0.020130584],
+        [1629074943091, "254648143", null, "buy", 0.069653, 0.017, 0.001184101]
+    ]"""
+    with open(expected_file, "w") as text_file:
+        text_file.write(trades_list_string)
+    expected_trades_list = await exchange._async_fetch_trades_from_file(expected_file)
+    assert expected_trades_list == json.loads(trades_list_string)
+
+    expected_interval_tree = await exchange._get_interval_tree_for_pair(datadir, pair)
+    expected_interval = Interval(254648140, 254648143, expected_file)
+    assert len(expected_interval_tree) == 1
+
+    assert len(expected_interval_tree[254648139]) == 0
+
+    assert len(expected_interval_tree[254648140]) == 1
+    assert list(expected_interval_tree[254648140])[0].begin == expected_interval.begin
+    assert list(expected_interval_tree[254648140])[0].end == expected_interval.end
+
+    assert len(expected_interval_tree[254648142]) == 1
+    assert list(expected_interval_tree[254648142])[0].begin == expected_interval.begin
+    assert list(expected_interval_tree[254648142])[0].end == expected_interval.end
+
+    assert len(expected_interval_tree[254648143]) == 0
+    assert len(expected_interval_tree[254648144]) == 0
+
+    os.remove(expected_file)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

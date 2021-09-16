@@ -1388,10 +1388,12 @@ class Exchange:
         return tmpdata_dir
 
     # Returns the intermediate trade file name for a given pair starting with `from_id` trade ID
-    def _intermediate_trades_file(self, datadir: Path, pair: str, from_id: str) -> str:
+    def _intermediate_trades_file(self, datadir: Path, pair: str, from_id: str,
+                                  mkdir: bool = True) -> str:
         tmpdata_file = self._intermediate_trades_dir_for_pair(datadir, pair)
         tmpdata_file = os.path.join(tmpdata_file, str(int(from_id)//1000000))
-        Path(tmpdata_file).mkdir(parents=True, exist_ok=True)
+        if mkdir:
+            Path(tmpdata_file).mkdir(parents=True, exist_ok=True)
         tmpdata_file = os.path.join(tmpdata_file, self._pair_dir(pair)+"_"+str(from_id)+".json")
         return tmpdata_file
 
@@ -1531,7 +1533,7 @@ class Exchange:
             else:
                 from_id = trades_list[0][1] if trades_list else 0
                 datadir = datadir or Path(".")
-                tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
+                tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id, False)
                 logger.debug("DID NOT CACHE the intermediate trades in %s with len=%s",
                              tmpdata_file, len(trades_list))
             return trades_list
