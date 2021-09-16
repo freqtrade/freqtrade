@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -843,6 +843,32 @@ class Trade(_DECL_BASE, LocalTrade):
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
         ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+        return [
+            {
+                'pair': pair,
+                'profit': profit,
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for pair, profit, profit_abs, count in pair_rates
+        ]
+
+    @staticmethod
+    def get_performance(days: int) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, including profit and trade count
+        NOTE: Not supported in Backtesting.
+        """
+        start_date = datetime.today() - timedelta(days)
+        pair_rates = Trade.query.with_entities(
+            Trade.pair,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False) & (Trade.close_date >= start_date))\
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum_abs')) \
             .all()

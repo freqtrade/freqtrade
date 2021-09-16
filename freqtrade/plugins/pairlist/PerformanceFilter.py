@@ -2,11 +2,12 @@
 Performance pair list filter
 """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import pandas as pd
 
 from freqtrade.persistence import Trade
+from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -14,6 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class PerformanceFilter(IPairList):
+
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        self._days = pairlistconfig.get('days', 0)
 
     @property
     def needstickers(self) -> bool:
@@ -40,7 +48,10 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         try:
-            performance = pd.DataFrame(Trade.get_overall_performance())
+            if self._days > 0:
+                performance = pd.DataFrame(Trade.get_performance(self._days))
+            else:
+                performance = pd.DataFrame(Trade.get_overall_performance())
         except AttributeError:
             # Performancefilter does not work in backtesting.
             self.log_once("PerformanceFilter is not available in this mode.", logger.warning)
