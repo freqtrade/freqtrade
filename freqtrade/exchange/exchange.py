@@ -1530,7 +1530,7 @@ class Exchange:
                     logger.debug("Cached the intermediate trades in %s", tmpdata_file)
             else:
                 from_id = trades_list[0][1] if trades_list else 0
-                assert datadir is not None
+                datadir = datadir or ""
                 tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
                 logger.debug("DID NOT CACHE the intermediate trades in %s with len=%s",
                              tmpdata_file, len(trades_list))
@@ -1583,22 +1583,23 @@ class Exchange:
             trades.extend(t[:-1])
         while True:
             assert from_id is not None
-            assert datadir is not None
-            tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
 
             t = []
             success_cache_read = False
-            if os.path.isfile(tmpdata_file):
-                t = await self._async_fetch_trades_from_file(tmpdata_file)
+            if datadir:
+                tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
+                if os.path.isfile(tmpdata_file):
+                    t = await self._async_fetch_trades_from_file(tmpdata_file)
 
-                if len(t) < self.batch_size():
-                    success_cache_read = False
-                    logger.debug("Read from cache %s", tmpdata_file)
-                else:
-                    success_cache_read = True
-                    from_id = t[0][1]
-                    to_id = t[-1][1]
-                    logger.debug("Read from cache %s from %s to %s", tmpdata_file, from_id, to_id)
+                    if len(t) < self.batch_size():
+                        success_cache_read = False
+                        logger.debug("Read from cache %s", tmpdata_file)
+                    else:
+                        success_cache_read = True
+                        from_id = t[0][1]
+                        to_id = t[-1][1]
+                        logger.debug(
+                            "Read from cache %s from %s to %s", tmpdata_file, from_id, to_id)
 
             if not success_cache_read:
                 t = await self._async_fetch_trades(pair,
