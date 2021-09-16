@@ -1567,6 +1567,12 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def _get_premium_index(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
+
+    def _get_mark_price(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
+
     def _get_funding_rate(self, pair: str, when: datetime):
         """
             Get's the funding_rate for a pair at a specific date and time in the past
@@ -1625,9 +1631,14 @@ class Exchange:
 
         fees: float = 0
         for date in self._get_funding_fee_dates(open_date, close_date):
-            funding_rate = self._get_funding_rate(pair, date)
+            premium_index = self._get_premium_index(pair, date)
             mark_price = self._get_mark_price(pair, date)
-            fees += self._get_funding_fee(amount, mark_price, funding_rate)
+            fees += self._get_funding_fee(
+                pair=pair,
+                contract_size=amount,
+                mark_price=mark_price,
+                premium_index=premium_index
+            )
 
         return fees
 
