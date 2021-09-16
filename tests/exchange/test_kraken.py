@@ -305,15 +305,3 @@ def test_fill_leverage_brackets_kraken(default_conf, mocker):
         'XLTCUSDT': [1],
         'LTC/ETH': [1]
     }
-
-
-def test__set_leverage_kraken(default_conf, mocker):
-    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
-    exchange._set_leverage(1)
-    assert 'leverage' not in exchange._params
-    exchange._set_leverage(3)
-    assert exchange._params['leverage'] == 3
-    exchange._set_leverage(1.0)
-    assert 'leverage' not in exchange._params
-    exchange._set_leverage(3.0)
-    assert exchange._params['leverage'] == 3

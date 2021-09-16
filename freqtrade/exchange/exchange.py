@@ -775,6 +775,13 @@ class Exchange:
         self.set_margin_mode(pair, self.collateral)
         self._set_leverage(leverage, pair)
 
+    def _get_params(self, time_in_force: str, ordertype: str, leverage: float) -> Dict:
+        params = self._params.copy()
+        if time_in_force != 'gtc' and ordertype != 'market':
+            param = self._ft_has.get('time_in_force_parameter', '')
+            params.update({param: time_in_force})
+        return params
+
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, time_in_force: str = 'gtc', leverage=1.0) -> Dict:
 
@@ -784,10 +791,8 @@ class Exchange:
 
         if self.trading_mode != TradingMode.SPOT:
             self.lev_prep(pair, leverage)
-        params = self._params.copy()
-        if time_in_force != 'gtc' and ordertype != 'market':
-            param = self._ft_has.get('time_in_force_parameter', '')
-            params.update({param: time_in_force})
+
+        params = self._get_params(time_in_force, ordertype, leverage)
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
