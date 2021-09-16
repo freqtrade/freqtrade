@@ -559,7 +559,7 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
     assert isclose(trade.calc_profit_ratio(), round(profit_ratio, 8))
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     trade = Trade(
         pair='ADA/USDT',
@@ -590,7 +590,7 @@ def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
     assert trade.close_date == new_date
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     trade = Trade(
         pair='ADA/USDT',
@@ -607,7 +607,7 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
     assert trade.calc_close_trade_value() == 0.0
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_update_open_order(limit_buy_order_usdt):
     trade = Trade(
         pair='ADA/USDT',
@@ -631,7 +631,7 @@ def test_update_open_order(limit_buy_order_usdt):
     assert trade.close_date is None
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_update_invalid_order(limit_buy_order_usdt):
     trade = Trade(
         pair='ADA/USDT',
@@ -933,7 +933,7 @@ def test_calc_profit(
     assert trade.calc_profit_ratio(rate=close_rate) == round(profit_ratio, 8)
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_clean_dry_run_db(default_conf, fee):
 
     # Simulate dry_run entries
@@ -1344,8 +1344,8 @@ def test_adjust_min_max_rates(fee):
     assert trade.min_rate == 0.91
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_get_open(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -1356,8 +1356,8 @@ def test_get_open(fee, use_db):
     Trade.use_db = True
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_get_open_lev(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -1368,7 +1368,7 @@ def test_get_open_lev(fee, use_db):
     Trade.use_db = True
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_to_json(default_conf, fee):
 
     # Simulate dry_run entries
@@ -1701,8 +1701,8 @@ def test_fee_updated(fee):
     assert not trade.fee_updated('asfd')
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_total_open_trades_stakes(fee, use_db):
 
     Trade.use_db = use_db
@@ -1716,8 +1716,8 @@ def test_total_open_trades_stakes(fee, use_db):
     Trade.use_db = True
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_get_total_closed_profit(fee, use_db):
 
     Trade.use_db = use_db
@@ -1731,8 +1731,8 @@ def test_get_total_closed_profit(fee, use_db):
     Trade.use_db = True
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize('use_db', [True, False])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('use_db', [True, False])
 def test_get_trades_proxy(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -1764,7 +1764,7 @@ def test_get_trades_backtest():
     Trade.use_db = True
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_get_overall_performance(fee):
 
     create_mock_trades(fee)
@@ -1776,7 +1776,7 @@ def test_get_overall_performance(fee):
     assert 'count' in res[0]
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_get_best_pair(fee):
 
     res = Trade.get_best_pair()
@@ -1789,7 +1789,7 @@ def test_get_best_pair(fee):
     assert res[1] == 0.01
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_get_best_pair_lev(fee):
 
     res = Trade.get_best_pair()
@@ -1802,7 +1802,7 @@ def test_get_best_pair_lev(fee):
     assert res[1] == 0.1713156134055116
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_update_order_from_ccxt(caplog):
     # Most basic order return (only has orderid)
     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ADA/USDT', 'buy')
@@ -1863,7 +1863,7 @@ def test_update_order_from_ccxt(caplog):
     Order.update_orders([o], {'id': '1234'})
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_select_order(fee):
     create_mock_trades(fee)
 
