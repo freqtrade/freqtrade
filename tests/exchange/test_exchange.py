@@ -3044,15 +3044,3 @@ def test_get_funding_fees(default_conf, mocker, exchange_name):
         pair="XRP/USDT",
         since=unix_time
     )
-
-
-def test_get_mark_price():
-    return
-
-
-def test_get_funding_fee_dates():
-    return
-
-
-def test_calculate_funding_fees():
-    return

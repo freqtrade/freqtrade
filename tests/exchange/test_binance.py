@@ -108,14 +108,6 @@ def test_stoploss_adjust_binance(mocker, default_conf):
     assert not exchange.stoploss_adjust(1501, order)
 
 
-def test_get_funding_rate():
-    return
-
-
-def test__get_funding_fee():
-    return
-
-
 @pytest.mark.asyncio
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog):
     ohlcv = [
