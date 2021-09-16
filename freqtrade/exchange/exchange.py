@@ -1637,22 +1637,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def fill_leverage_brackets(self):
-        """
-            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
-        """
-        return
-
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
-        """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
-        """
-        return 1.0
-
     def _get_premium_index(self, pair: str, date: datetime) -> float:
         raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
 
@@ -1683,6 +1667,22 @@ class Exchange:
                 - premium: varies by price difference between the perpetual contract and mark price
         """
         raise OperationalException(f"Funding fee has not been implemented for {self.name}")
+
+    def fill_leverage_brackets(self):
+        """
+            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        return
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        """
+        return 1.0
 
     @retrier
     def _set_leverage(
