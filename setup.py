@@ -52,6 +52,7 @@ setup(
         'requests',
         'urllib3',
         'wrapt',
+        'intervaltree',
         'jsonschema',
         'TA-Lib',
         'technical',
