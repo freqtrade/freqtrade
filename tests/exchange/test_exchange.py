@@ -1,5 +1,6 @@
 import copy
 import logging
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from math import isclose
 from random import randint
@@ -14,7 +15,7 @@ from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOr
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, API_RETRY_COUNT,
-                                       calculate_backoff)
+                                       calculate_backoff, remove_credentials)
 from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes, timeframe_to_msecs,
                                          timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
@@ -78,6 +79,22 @@ def test_init(default_conf, mocker, caplog):
     assert log_has('Instance is running with dry_run enabled', caplog)
 
 
+def test_remove_credentials(default_conf, caplog) -> None:
+    conf = deepcopy(default_conf)
+    conf['dry_run'] = False
+    remove_credentials(conf)
+
+    assert conf['exchange']['key'] != ''
+    assert conf['exchange']['secret'] != ''
+
+    conf['dry_run'] = True
+    remove_credentials(conf)
+    assert conf['exchange']['key'] == ''
+    assert conf['exchange']['secret'] == ''
+    assert conf['exchange']['password'] == ''
+    assert conf['exchange']['uid'] == ''
+
+
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange._load_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
@@ -108,6 +125,13 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert hasattr(ex._api_async, 'TestKWARG')
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert log_has(asynclogmsg, caplog)
+    # Test additional headers case
+    Exchange._headers = {'hello': 'world'}
+    ex = Exchange(conf)
+
+    assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
+    assert ex._api.headers == {'hello': 'world'}
+    Exchange._headers = {}
 
 
 def test_destroy(default_conf, mocker, caplog):
@@ -178,7 +202,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
 
 def test_validate_order_time_in_force(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    # explicitly test bittrex, exchanges implementing other policies need seperate tests
+    # explicitly test bittrex, exchanges implementing other policies need separate tests
     ex = get_patched_exchange(mocker, default_conf, id="bittrex")
     tif = {
         "buy": "gtc",
@@ -1544,6 +1568,32 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
     assert 'high' in ret.columns
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
+    ohlcv = [
+        [
+            int((datetime.now(timezone.utc).timestamp() - 1000) * 1000),
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    # Monkey-patch async function
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+
+    pair = 'ETH/USDT'
+    res = await exchange._async_get_historic_ohlcv(pair, "5m",
+                                                   1500000000000, is_new_pair=False)
+    # Call with very old timestamp - causes tons of requests
+    assert exchange._api_async.fetch_ohlcv.call_count > 200
+    assert res[0] == ohlcv[0]
+    assert log_has_re(r'Downloaded data for .* with length .*\.', caplog)
+
+
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     ohlcv = [
         [
@@ -2431,7 +2481,7 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
-    # Don't test FTX here - that needs a seperate test
+    # Don't test FTX here - that needs a separate test
     if exchange_name == 'ftx':
         return
     default_conf['dry_run'] = True

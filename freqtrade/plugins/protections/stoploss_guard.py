@@ -32,6 +32,7 @@ class StoplossGuard(IProtection):
     def _reason(self) -> str:
         """
         LockReason to use
+        #TODO-lev: check if min is the right word for shorts
         """
         return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
                 f'locking for {self._stop_duration} min.')
@@ -51,6 +52,7 @@ class StoplossGuard(IProtection):
         # if pair:
         #     filters.append(Trade.pair == pair)
         # trades = Trade.get_trades(filters).all()
+        # TODO-lev: Liquidation price?
 
         trades1 = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
         trades = [trade for trade in trades1 if (str(trade.sell_reason) in (

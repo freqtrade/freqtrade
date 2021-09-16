@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from random import randint
 from unittest.mock import MagicMock
 
@@ -5,7 +6,7 @@ import ccxt
 import pytest
 
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
-from tests.conftest import get_patched_exchange
+from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -113,3 +114,35 @@ def test_get_funding_rate():
 
 def test__get_funding_fee():
     return
+
+
+@pytest.mark.asyncio
+async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog):
+    ohlcv = [
+        [
+            int((datetime.now(timezone.utc).timestamp() - 1000) * 1000),
+            1,  # open
+            2,  # high
+            3,  # low
+            4,  # close
+            5,  # volume (in quote currency)
+        ]
+    ]
+
+    exchange = get_patched_exchange(mocker, default_conf, id='binance')
+    # Monkey-patch async function
+    exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
+
+    pair = 'ETH/BTC'
+    res = await exchange._async_get_historic_ohlcv(pair, "5m",
+                                                   1500000000000, is_new_pair=False)
+    # Call with very old timestamp - causes tons of requests
+    assert exchange._api_async.fetch_ohlcv.call_count > 400
+    # assert res == ohlcv
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    res = await exchange._async_get_historic_ohlcv(pair, "5m", 1500000000000, is_new_pair=True)
+
+    # Called twice - one "init" call - and one to get the actual data.
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert res == ohlcv
+    assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)

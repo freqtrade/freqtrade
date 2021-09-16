@@ -161,9 +161,12 @@ class Ftx(Exchange):
 
     def _get_funding_fee(
         self,
+        pair: str,
         contract_size: float,
         mark_price: float,
-        funding_rate: Optional[float],
+        premium_index: Optional[float],
+        # index_price: float,
+        # interest_rate: float)
     ) -> float:
         """
             Calculates a single funding fee

@@ -26,9 +26,9 @@ from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFun
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
 from freqtrade.exchange.common import (API_FETCH_ORDER_RETRY_COUNT, BAD_EXCHANGES,
-                                       EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED, retrier,
-                                       retrier_async)
-from freqtrade.misc import deep_merge_dicts, safe_value_fallback2
+                                       EXCHANGE_HAS_OPTIONAL, EXCHANGE_HAS_REQUIRED,
+                                       remove_credentials, retrier, retrier_async)
+from freqtrade.misc import chunks, deep_merge_dicts, safe_value_fallback2
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
@@ -54,12 +54,16 @@ class Exchange:
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
+    # Additional headers - added to the ccxt object
+    _headers: Dict = {}
+
     # Dict to specify which options each exchange implements
     # This defines defaults, which can be selectively overridden by subclasses using _ft_has
     # or by specifying them in the configuration.
     _ft_has_default: Dict = {
         "stoploss_on_exchange": False,
         "order_time_in_force": ["gtc"],
+        "time_in_force_parameter": "timeInForce",
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
@@ -101,6 +105,7 @@ class Exchange:
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
+        remove_credentials(config)
 
         if config['dry_run']:
             logger.info('Instance is running with dry_run enabled')
@@ -170,7 +175,7 @@ class Exchange:
             asyncio.get_event_loop().run_until_complete(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
-                   ccxt_kwargs: dict = None) -> ccxt.Exchange:
+                   ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
         """
         Initialize ccxt with given config and return valid
         ccxt instance.
@@ -189,6 +194,10 @@ class Exchange:
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
+        if self._headers:
+            # Inject static headers after the above output to not confuse users.
+            ccxt_kwargs = deep_merge_dicts({'headers': self._headers}, ccxt_kwargs)
+        if ccxt_kwargs:
             ex_config.update(ccxt_kwargs)
         try:
 
@@ -717,7 +726,8 @@ class Exchange:
 
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
-            params.update({'timeInForce': time_in_force})
+            param = self._ft_has.get('time_in_force_parameter', '')
+            params.update({param: time_in_force})
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
@@ -1186,7 +1196,7 @@ class Exchange:
     # Historic data
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
-                           since_ms: int) -> List:
+                           since_ms: int, is_new_pair: bool = False) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1198,7 +1208,7 @@ class Exchange:
         """
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
-                                           since_ms=since_ms))
+                                           since_ms=since_ms, is_new_pair=is_new_pair))
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
                                  since_ms: int) -> DataFrame:
@@ -1213,11 +1223,12 @@ class Exchange:
         return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
                                   drop_incomplete=self._ohlcv_partial_candle)
 
-    async def _async_get_historic_ohlcv(self, pair: str,
-                                        timeframe: str,
-                                        since_ms: int) -> List:
+    async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
+                                        since_ms: int, is_new_pair: bool
+                                        ) -> List:
         """
         Download historic ohlcv
+        :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
@@ -1230,21 +1241,22 @@ class Exchange:
             pair, timeframe, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
 
-        results = await asyncio.gather(*input_coroutines, return_exceptions=True)
-
-        # Combine gathered results
         data: List = []
-        for res in results:
-            if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
-                continue
-            # Deconstruct tuple if it's not an exception
-            p, _, new_data = res
-            if p == pair:
-                data.extend(new_data)
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        for input_coro in chunks(input_coroutines, 100):
+
+            results = await asyncio.gather(*input_coro, return_exceptions=True)
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    continue
+                # Deconstruct tuple if it's not an exception
+                p, _, new_data = res
+                if p == pair:
+                    data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        logger.info("Downloaded data for %s with length %s.", pair, len(data))
+        logger.info(f"Downloaded data for {pair} with length {len(data)}.")
         return data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
@@ -1564,9 +1576,10 @@ class Exchange:
 
     def _get_funding_fee(
         self,
+        pair: str,
         contract_size: float,
         mark_price: float,
-        funding_rate: Optional[float],
+        premium_index: Optional[float],
         # index_price: float,
         # interest_rate: float)
     ) -> float:

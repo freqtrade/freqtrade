@@ -11,8 +11,7 @@ import pytest
 from jsonschema import ValidationError
 
 from freqtrade.commands import Arguments
-from freqtrade.configuration import (Configuration, check_exchange, remove_credentials,
-                                     validate_config_consistency)
+from freqtrade.configuration import Configuration, check_exchange, validate_config_consistency
 from freqtrade.configuration.config_validation import validate_config_schema
 from freqtrade.configuration.deprecated_settings import (check_conflicting_settings,
                                                          process_deprecated_setting,
@@ -615,18 +614,6 @@ def test_check_exchange(default_conf, caplog) -> None:
     with pytest.raises(OperationalException,
                        match=r'This command requires a configured exchange.*'):
         check_exchange(default_conf)
-
-
-def test_remove_credentials(default_conf, caplog) -> None:
-    conf = deepcopy(default_conf)
-    conf['dry_run'] = False
-    remove_credentials(conf)
-
-    assert conf['dry_run'] is True
-    assert conf['exchange']['key'] == ''
-    assert conf['exchange']['secret'] == ''
-    assert conf['exchange']['password'] == ''
-    assert conf['exchange']['uid'] == ''
 
 
 def test_cli_verbose_with_params(default_conf, mocker, caplog) -> None:
