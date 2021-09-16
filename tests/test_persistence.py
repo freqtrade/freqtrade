@@ -13,8 +13,8 @@ from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from freqtrade.utils import get_sides
-from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
+from tests.conftest import (create_mock_trades, create_mock_trades_with_leverage, get_sides,
+                            log_has, log_has_re)
 
 
 def test_init_create_session(default_conf):
