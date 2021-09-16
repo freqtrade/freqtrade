@@ -1379,7 +1379,7 @@ class Exchange:
 
     # Directory name for a pair, e.g., given `ETH/BTC` returns `ETH-BTC`.
     def _pair_dir(self, pair: str) -> str:
-        return pair.replace("/","-")
+        return pair.replace("/", "-")
 
     # Returns the directory path that contains the intermediate trade files for a given pair.
     def _intermediate_trades_dir_for_pair(self, datadir: str, pair: str) -> str:
@@ -1414,7 +1414,7 @@ class Exchange:
     async def _get_interval_tree_for_pair(self, datadir: str, pair: str) -> IntervalTree:
         cached_res = self._intermediate_data_cache.get(pair, None)
         if cached_res:
-            return cached_res;
+            return cached_res
 
         logger.debug("Caching intervals for pair %s", pair)
         cache_interval_tree = IntervalTree()
@@ -1433,8 +1433,8 @@ class Exchange:
                                 trades_list_from_id = trades_list[0][1]
                                 trades_list_to_id = trades_list[-1][1]
                                 cache_interval_tree.add(Interval(
-                                    int(trades_list_from_id), #inclusive
-                                    int(trades_list_to_id), #exclusive
+                                    int(trades_list_from_id),  # inclusive
+                                    int(trades_list_to_id),  # exclusive
                                     tmpdata_file))
 
         logger.debug("Cached intervals for pair %s: %s intervals", pair, len(cache_interval_tree))
@@ -1467,15 +1467,16 @@ class Exchange:
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = await self._api_async.fetch_trades(pair, params=params, limit=self.batch_size())
+                trades = await self._api_async.fetch_trades(
+                    pair, params=params, limit=self.batch_size())
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair,  since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
-                trades = await self._api_async.fetch_trades(pair, since=since, limit=self.batch_size())
-
+                trades = await self._api_async.fetch_trades(
+                    pair, since=since, limit=self.batch_size())
 
             trades_list = trades_dict_to_list(trades)
             if trades_list and datadir and len(trades_list) == self.batch_size():
@@ -1517,7 +1518,6 @@ class Exchange:
                                  len(trades_list))
                     return trades_list
 
-
                 # If neither `from_id` nor `to_id` are cached, we cache the trades in an
                 # intermediate trade file.
                 tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
@@ -1552,8 +1552,7 @@ class Exchange:
                                           until: int,
                                           since: Optional[int] = None,
                                           from_id: Optional[str] = None,
-                                          datadir: Optional[str] = None
-                                         ) -> Tuple[str, List[List]]:
+                                          datadir: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades
         use this when exchange uses id-based iteration (check `self._trades_pagination`)
@@ -1617,10 +1616,9 @@ class Exchange:
 
         return (pair, trades)
 
-    async def _async_get_trade_history_time(self, pair: str, until: int,
-                                            since: Optional[int] = None,
-                                            datadir: Optional[str] = None
-                                           ) -> Tuple[str, List[List]]:
+    async def _async_get_trade_history_time(
+        self, pair: str, until: int, since: Optional[int] = None, datadir: Optional[str] = None
+    ) -> Tuple[str, List[List]]:
         """
         Asyncronously gets trade history using fetch_trades,
         when the exchange uses time-based iteration (check `self._trades_pagination`)
@@ -1652,8 +1650,7 @@ class Exchange:
                                        since: Optional[int] = None,
                                        until: Optional[int] = None,
                                        from_id: Optional[str] = None,
-                                       datadir: Optional[str] = None
-                                      ) -> Tuple[str, List[List]]:
+                                       datadir: Optional[str] = None) -> Tuple[str, List[List]]:
         """
         Async wrapper handling downloading trades using either time or id based methods.
         """
