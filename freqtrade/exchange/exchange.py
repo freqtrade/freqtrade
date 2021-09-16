@@ -1421,11 +1421,11 @@ class Exchange:
         cache_interval_tree = IntervalTree()
         tmpdata_dir = self._intermediate_trades_dir_for_pair(datadir, pair)
         if os.path.isdir(tmpdata_dir):
-            tmpdata_subdirs = os.listdir(tmpdata_dir)
+            tmpdata_subdirs = sorted(os.listdir(tmpdata_dir))
             for tmpdata_subdir in tmpdata_subdirs:
                 if tmpdata_subdir.isnumeric():
                     tmpdata_subdir = os.path.join(tmpdata_dir, tmpdata_subdir)
-                    tmpdata_files = os.listdir(tmpdata_subdir)
+                    tmpdata_files = sorted(os.listdir(tmpdata_subdir))
                     for tmpdata_file in tmpdata_files:
                         if tmpdata_file.startswith(self._pair_dir(pair)):
                             tmpdata_file = os.path.join(tmpdata_subdir, tmpdata_file)
@@ -1433,10 +1433,10 @@ class Exchange:
                                 trades_list = await self._async_fetch_trades_from_file(tmpdata_file)
                                 trades_list_from_id = trades_list[0][1]
                                 trades_list_to_id = trades_list[-1][1]
-                                cache_interval_tree.addi(
-                                    int(trades_list_from_id),
-                                    int(trades_list_to_id)+1,
-                                    tmpdata_file)
+                                cache_interval_tree.add(Interval(
+                                    int(trades_list_from_id), #inclusive
+                                    int(trades_list_to_id), #exclusive
+                                    tmpdata_file))
 
         logger.debug("Cached intervals for pair %s: %s intervals", pair, len(cache_interval_tree))
         self._intermediate_data_cache[pair] = cache_interval_tree
@@ -1523,6 +1523,8 @@ class Exchange:
                 # intermediate trade file.
                 tmpdata_file = self._intermediate_trades_file(datadir, pair, from_id)
                 json_string = json.dumps(trades_list)
+                self._intermediate_data_cache[pair].addi(int(from_id), int(to_id), tmpdata_file)
+
                 with open(tmpdata_file, "w") as text_file:
                     text_file.write(json_string)
                     logger.debug("Cached the intermediate trades in %s", tmpdata_file)
