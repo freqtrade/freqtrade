@@ -45,7 +45,7 @@ progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
-INITIAL_POINTS = 30
+INITIAL_POINTS = 5
 
 # Keep no more than SKOPT_MODEL_QUEUE_SIZE models
 # in the skopt model queue, to optimize memory consumption
@@ -365,10 +365,20 @@ class Hyperopt:
         }
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
+        estimator = self.custom_hyperopt.generate_estimator()
+
+        acq_optimizer = "sampling"
+        if isinstance(estimator, str):
+            if estimator not in ("GP", "RF", "ET", "GBRT"):
+                raise OperationalException(f"Estimator {estimator} not supported.")
+            else:
+                acq_optimizer = "auto"
+
+        logger.info(f"Using estimator {estimator}.")
         return Optimizer(
             dimensions,
-            base_estimator="ET",
-            acq_optimizer="auto",
+            base_estimator=estimator,
+            acq_optimizer=acq_optimizer,
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.random_state,
