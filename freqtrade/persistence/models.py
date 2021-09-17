@@ -846,7 +846,7 @@ class Trade(_DECL_BASE, LocalTrade):
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
-        ).filter(filters)\
+        ).filter(*filters)\
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum_abs')) \
             .all()
