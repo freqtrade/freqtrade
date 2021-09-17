@@ -53,7 +53,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
 
     if epochs and export_csv:
         HyperoptTools.export_csv_file(
-            config, epochs, total_epochs, not config.get('hyperopt_list_best', False), export_csv
+            config, epochs, export_csv
         )
 
 
