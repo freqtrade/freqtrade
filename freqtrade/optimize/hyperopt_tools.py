@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 import rapidjson
 import tabulate
 from colorama import Fore, Style
@@ -298,7 +299,7 @@ class HyperoptTools():
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def prepare_trials_columns(trials, legacy_mode: bool, has_drawdown: bool) -> str:
+    def prepare_trials_columns(trials, legacy_mode: bool, has_drawdown: bool) -> pd.DataFrame:
 
         trials['Best'] = ''
 
