@@ -132,9 +132,8 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
 
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert ex._api.headers == {'hello': 'world'}
+    assert ex._ccxt_config == {}
     Exchange._headers = {}
-
-    # TODO-lev: Test with options
 
 
 def test_destroy(default_conf, mocker, caplog):
@@ -1116,6 +1115,8 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._set_leverage = MagicMock()
+    exchange.set_margin_mode = MagicMock()
 
     order = exchange.create_order(
         pair='ETH/BTC',
@@ -1134,10 +1135,10 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     assert api_mock.create_order.call_args[0][2] == side
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] is rate
+    assert exchange._set_leverage.call_count == 0
+    assert exchange.set_margin_mode.call_count == 0
 
-    assert api_mock._set_leverage.call_count == 0 if side == "buy" else 1
-    assert api_mock.set_margin_mode.call_count == 0 if side == "buy" else 1
-
+    exchange.trading_mode = TradingMode.FUTURES
     order = exchange.create_order(
         pair='ETH/BTC',
         ordertype=ordertype,
@@ -1147,8 +1148,8 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         leverage=3.0
     )
 
-    assert api_mock._set_leverage.call_count == 1
-    assert api_mock.set_margin_mode.call_count == 1
+    assert exchange._set_leverage.call_count == 1
+    assert exchange.set_margin_mode.call_count == 1
 
 
 def test_buy_dry_run(default_conf, mocker):
@@ -3042,7 +3043,6 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     (3, 5, 5),
     (4, 5, 2),
     (5, 5, 1),
-
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
@@ -3054,7 +3054,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     (20.0, 5.0, 4.0),
     (100.0, 100.0, 1.0)
 ])
-def test_divide_stake_amount_by_leverage(
+def test_get_stake_amount_considering_leverage(
     exchange,
     stake_amount,
     leverage,
@@ -3063,7 +3063,8 @@ def test_divide_stake_amount_by_leverage(
     default_conf
 ):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
-    assert exchange._divide_stake_amount_by_leverage(stake_amount, leverage) == min_stake_with_lev
+    assert exchange._get_stake_amount_considering_leverage(
+        stake_amount, leverage) == min_stake_with_lev
 
 
 @pytest.mark.parametrize("exchange_name,trading_mode", [
@@ -3132,6 +3133,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # TODO-lev: Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
     ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
     ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
@@ -3140,7 +3142,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # TODO-lev: Uncomment once implemented
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
@@ -3154,7 +3156,8 @@ def test_validate_trading_mode_and_collateral(
     collateral,
     exception_thrown
 ):
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    exchange = get_patched_exchange(
+        mocker, default_conf, id=exchange_name, mock_supported_modes=False)
     if (exception_thrown):
         with pytest.raises(OperationalException):
             exchange.validate_trading_mode_and_collateral(trading_mode, collateral)

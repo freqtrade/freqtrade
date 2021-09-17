@@ -33,8 +33,26 @@ class Binance(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        (TradingMode.FUTURES, Collateral.ISOLATED)
+        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
     ]
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        if self.trading_mode == TradingMode.MARGIN:
+            return {
+                "options": {
+                    "defaultType": "margin"
+                }
+            }
+        elif self.trading_mode == TradingMode.FUTURES:
+            return {
+                "options": {
+                    "defaultType": "future"
+                }
+            }
+        else:
+            return {}
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """

@@ -49,9 +49,6 @@ class Exchange:
 
     _config: Dict = {}
 
-    # Parameters to add directly to ccxt sync/async initialization.
-    _ccxt_config: Dict = {}
-
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
@@ -131,21 +128,6 @@ class Exchange:
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
-        # Initialize ccxt objects
-        ccxt_config = self._ccxt_config.copy()
-        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}), ccxt_config)
-        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_sync_config', {}), ccxt_config)
-
-        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=ccxt_config)
-
-        ccxt_async_config = self._ccxt_config.copy()
-        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
-                                             ccxt_async_config)
-        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
-                                             ccxt_async_config)
-        self._api_async = self._init_ccxt(
-            exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
-
         self.trading_mode: TradingMode = (
             TradingMode(config.get('trading_mode'))
             if config.get('trading_mode')
@@ -156,6 +138,21 @@ class Exchange:
             if config.get('collateral')
             else None
         )
+
+        # Initialize ccxt objects
+        ccxt_config = self._ccxt_config
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}), ccxt_config)
+        ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_sync_config', {}), ccxt_config)
+
+        self._api = self._init_ccxt(exchange_config, ccxt_kwargs=ccxt_config)
+
+        ccxt_async_config = self._ccxt_config
+        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
+                                             ccxt_async_config)
+        ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
+                                             ccxt_async_config)
+        self._api_async = self._init_ccxt(
+            exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
         if self.trading_mode != TradingMode.SPOT:
             self.fill_leverage_brackets()
@@ -210,7 +207,7 @@ class Exchange:
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid', ''),
-            'options': exchange_config.get('options', {})
+            # 'options': exchange_config.get('options', {})
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
@@ -230,6 +227,11 @@ class Exchange:
         self.set_sandbox(api, exchange_config, name)
 
         return api
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        return {}
 
     @property
     def name(self) -> str:
@@ -257,13 +259,6 @@ class Exchange:
     def precisionMode(self) -> str:
         """exchange ccxt precisionMode"""
         return self._api.precisionMode
-
-    @property
-    def running_live_mode(self) -> bool:
-        return (
-            self._config['runmode'].value not in ('backtest', 'hyperopt') and
-            not self._config['dry_run']
-        )
 
     def _log_exchange_response(self, endpoint, response) -> None:
         """ Log exchange responses """
@@ -624,12 +619,12 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return self._divide_stake_amount_by_leverage(
+        return self._get_stake_amount_considering_leverage(
             max(min_stake_amounts) * amount_reserve_percent,
             leverage or 1.0
         )
 
-    def _divide_stake_amount_by_leverage(self, stake_amount: float, leverage: float):
+    def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
         """
         Takes the minimum stake amount for a pair with no leverage and returns the minimum
         stake amount when leverage is considered
@@ -1603,7 +1598,7 @@ class Exchange:
 
     def fill_leverage_brackets(self):
         """
-            #TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
+            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
         """

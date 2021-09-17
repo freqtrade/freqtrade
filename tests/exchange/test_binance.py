@@ -336,3 +336,15 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog):
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert res == ohlcv
     assert log_has_re(r"Candle-data for ETH/BTC available starting with .*", caplog)
+
+
+@pytest.mark.parametrize("trading_mode,collateral,config", [
+    ("", "", {}),
+    ("margin", "cross", {"options": {"defaultType": "margin"}}),
+    ("futures", "isolated", {"options": {"defaultType": "future"}}),
+])
+def test__ccxt_config(default_conf, mocker, trading_mode, collateral, config):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = collateral
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    assert exchange._ccxt_config == config

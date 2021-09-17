@@ -18,7 +18,7 @@ from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import Edge, PairInfo
-from freqtrade.enums import RunMode
+from freqtrade.enums import Collateral, RunMode, TradingMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -81,7 +81,13 @@ def patched_configuration_load_config_file(mocker, config) -> None:
     )
 
 
-def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> None:
+def patch_exchange(
+    mocker,
+    api_mock=None,
+    id='binance',
+    mock_markets=True,
+    mock_supported_modes=True
+) -> None:
     mocker.patch('freqtrade.exchange.Exchange._load_async_markets', MagicMock(return_value={}))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs', MagicMock())
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes', MagicMock())
@@ -90,9 +96,21 @@ def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> No
     mocker.patch('freqtrade.exchange.Exchange.id', PropertyMock(return_value=id))
     mocker.patch('freqtrade.exchange.Exchange.name', PropertyMock(return_value=id.title()))
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
+
     if mock_markets:
         mocker.patch('freqtrade.exchange.Exchange.markets',
                      PropertyMock(return_value=get_markets()))
+
+    if mock_supported_modes:
+        mocker.patch(
+            f'freqtrade.exchange.{id.capitalize()}._supported_trading_mode_collateral_pairs',
+            PropertyMock(return_value=[
+                (TradingMode.MARGIN, Collateral.CROSS),
+                (TradingMode.MARGIN, Collateral.ISOLATED),
+                (TradingMode.FUTURES, Collateral.CROSS),
+                (TradingMode.FUTURES, Collateral.ISOLATED)
+            ])
+        )
 
     if api_mock:
         mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
@@ -101,8 +119,8 @@ def patch_exchange(mocker, api_mock=None, id='binance', mock_markets=True) -> No
 
 
 def get_patched_exchange(mocker, config, api_mock=None, id='binance',
-                         mock_markets=True) -> Exchange:
-    patch_exchange(mocker, api_mock, id, mock_markets)
+                         mock_markets=True, mock_supported_modes=True) -> Exchange:
+    patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
     config['exchange']['name'] = id
     try:
         exchange = ExchangeResolver.load_exchange(id, config)
