@@ -48,10 +48,7 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         try:
-            if self._days > 0:
-                performance = pd.DataFrame(Trade.get_performance(self._days))
-            else:
-                performance = pd.DataFrame(Trade.get_overall_performance())
+            performance = pd.DataFrame(Trade.get_overall_performance(self._days))
         except AttributeError:
             # Performancefilter does not work in backtesting.
             self.log_once("PerformanceFilter is not available in this mode.", logger.warning)
