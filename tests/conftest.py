@@ -301,7 +301,8 @@ def get_default_conf(testdatadir):
                 "ETH/BTC",
                 "LTC/BTC",
                 "XRP/BTC",
-                "NEO/BTC"
+                "NEO/BTC",
+                "ADA/USDT"
             ],
             "pair_blacklist": [
                 "DOGE/BTC",
@@ -371,6 +372,33 @@ def ticker_sell_down():
 
 
 @pytest.fixture
+def ticker_usdt():
+    return MagicMock(return_value={
+        'bid': 1.99,
+        'ask': 2.0,
+        'last': 1.99,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_up():
+    return MagicMock(return_value={
+        'bid': 2.19,
+        'ask': 2.2,
+        'last': 2.19,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_down():
+    return MagicMock(return_value={
+        'bid': 2.01,
+        'ask': 2.0,
+        'last': 2.01,
+    })
+
+
+@pytest.fixture
 def markets():
     return get_markets()
 
@@ -382,6 +410,31 @@ def get_markets():
             'symbol': 'ETH/BTC',
             'base': 'ETH',
             'quote': 'BTC',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'ADA/USDT': {
+            'id': 'ethbtc',
+            'symbol': 'ADA/USDT',
+            'base': 'USDT',
+            'quote': 'ADA',
             'active': True,
             'precision': {
                 'price': 8,
@@ -1809,6 +1862,22 @@ def open_trade():
         fee_open=0.0,
         fee_close=0.0,
         stake_amount=1,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+
+
+@pytest.fixture(scope="function")
+def open_trade_usdt():
+    return Trade(
+        pair='ADA/USDT',
+        open_rate=2.0,
+        exchange='binance',
+        open_order_id='123456789',
+        amount=30.0,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=60.0,
         open_date=arrow.utcnow().shift(minutes=-601).datetime,
         is_open=True
     )
