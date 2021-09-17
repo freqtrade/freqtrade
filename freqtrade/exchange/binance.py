@@ -131,7 +131,7 @@ class Binance(Exchange):
         if self.trading_mode == TradingMode.FUTURES:
             try:
                 if self._config['dry_run']:
-                    leverage_brackets_path = Path('data') / 'leverage_brackets.json'
+                    leverage_brackets_path = Path('freqtrade/data') / 'leverage_brackets.json'
                     with open(leverage_brackets_path) as json_file:
                         leverage_brackets = json.load(json_file)
                 else:
