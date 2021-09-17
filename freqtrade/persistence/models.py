@@ -325,6 +325,7 @@ class LocalTrade():
         if self.isolated_liq:
             self.set_isolated_liq(self.isolated_liq)
         self.recalc_open_trade_value()
+        # TODO-lev: Throw exception if on margin and interest_rate is none
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
