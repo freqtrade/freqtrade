@@ -33,7 +33,7 @@ class Binance(Exchange):
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.ISOLATED)  # TODO-lev: Uncomment once supported
+        (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:

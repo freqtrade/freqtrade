@@ -3076,6 +3076,7 @@ def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
     api_mock = MagicMock()
     api_mock.set_leverage = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
+    default_conf['dry_run'] = False
 
     ccxt_exceptionhandlers(
         mocker,
@@ -3099,6 +3100,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     api_mock = MagicMock()
     api_mock.set_margin_mode = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'setMarginMode': True})
+    default_conf['dry_run'] = False
 
     ccxt_exceptionhandlers(
         mocker,
@@ -3130,7 +3132,6 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # TODO-lev: Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
     ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
     ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
@@ -3139,7 +3140,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # TODO-lev: Uncomment once implemented
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
