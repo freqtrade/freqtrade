@@ -299,9 +299,8 @@ class HyperoptTools():
                 f"Objective: {results['loss']:.5f}")
 
     @staticmethod
-    def prepare_trials_columns(trials: pd.DataFrame, legacy_mode: bool, 
+    def prepare_trials_columns(trials: pd.DataFrame, legacy_mode: bool,
                                has_drawdown: bool) -> pd.DataFrame:
-
         trials['Best'] = ''
 
         if 'results_metrics.winsdrawslosses' not in trials.columns:
