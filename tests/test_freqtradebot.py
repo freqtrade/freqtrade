@@ -3844,21 +3844,24 @@ def test_trailing_stop_loss_offset(default_conf, limit_buy_order, limit_buy_orde
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_open, fee, is_short,
-                                 caplog, mocker) -> None:
-    buy_price = limit_buy_order['price']
-    # buy_price: 0.00001099
+def test_tsl_only_offset_reached(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open,
+                                 fee, is_short, limit_sell_order_usdt,
+                                 limit_sell_order_usdt_open, caplog, mocker) -> None:
+    limit_order = limit_sell_usdt_order if is_short else limit_buy_order_usdt
+    limit_order_open = limit_sell_order_usdt_open if is_short else limit_buy_order_open_usdt
+    enter_price = limit_order['price']
+    # enter_price: 2.0
 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': buy_price,
-            'ask': buy_price,
-            'last': buy_price
+            'bid': enter_price,
+            'ask': enter_price,
+            'last': enter_price
         }),
-        create_order=MagicMock(return_value=limit_buy_order_open),
+        create_order=MagicMock(return_value=limit_order_open),
         get_fee=fee,
     )
     patch_whitelist(mocker, default_conf)
@@ -3873,11 +3876,11 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_buy_order)
+    trade.update(limit_order)
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
     assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 0.0000098910
+    assert trade.stop_loss == 2.20 if is_short else 1.80
 
     # Raise ticker above buy price
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -3891,7 +3894,7 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
     assert freqtrade.handle_trade(trade) is False
 
     assert not log_has("ETH/BTC - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == 0.0000098910
+    assert trade.stop_loss == 2.20 if is_short else 1.80
     caplog.clear()
 
     # price rises above the offset (rises 12% when the offset is 5.5%)
@@ -3908,9 +3911,9 @@ def test_tsl_only_offset_reached(default_conf, limit_buy_order, limit_buy_order_
     assert trade.stop_loss == 0.0000117705
 
 
-@pytest.mark.parametrize("is_short", [False, True])
+# TODO-lev: @pytest.mark.parametrize("is_short", [False, True])
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order, limit_buy_order_open,
-                                          is_short, fee, mocker) -> None:
+                                          fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
