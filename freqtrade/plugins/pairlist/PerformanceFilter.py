@@ -7,7 +7,6 @@ from typing import Dict, List, Any
 import pandas as pd
 
 from freqtrade.persistence import Trade
-from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
