@@ -1,10 +1,9 @@
 from random import randint
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 import ccxt
 import pytest
 
-from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT
 from tests.conftest import get_patched_exchange
@@ -13,8 +12,6 @@ from .test_exchange import ccxt_exceptionhandlers
 
 
 STOPLOSS_ORDERTYPE = 'stop'
-
-# TODO-lev: All these stoploss tests with shorts
 
 
 @pytest.mark.parametrize('order_price,exchangelimitratio,side', [
@@ -39,8 +36,14 @@ def test_stoploss_order_ftx(default_conf, mocker, order_price, exchangelimitrati
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
 
     # stoploss_on_exchange_limit_ratio is irrelevant for ftx market orders
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190, side=side,
-                              order_types={'stoploss_on_exchange_limit_ratio': exchangelimitratio})
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=190,
+        side=side,
+        order_types={'stoploss_on_exchange_limit_ratio': exchangelimitratio},
+        leverage=1.0
+    )
 
     assert api_mock.create_order.call_args_list[0][1]['symbol'] == 'ETH/BTC'
     assert api_mock.create_order.call_args_list[0][1]['type'] == STOPLOSS_ORDERTYPE
@@ -54,7 +57,14 @@ def test_stoploss_order_ftx(default_conf, mocker, order_price, exchangelimitrati
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types={},
+        side=side,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -67,8 +77,13 @@ def test_stoploss_order_ftx(default_conf, mocker, order_price, exchangelimitrati
     assert api_mock.create_order.call_args_list[0][1]['params']['stopPrice'] == 220
 
     api_mock.create_order.reset_mock()
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
-                              order_types={'stoploss': 'limit'}, side=side)
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types={'stoploss': 'limit'}, side=side,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -85,17 +100,32 @@ def test_stoploss_order_ftx(default_conf, mocker, order_price, exchangelimitrati
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0
+        )
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("ftx Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'ftx')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0
+        )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "ftx",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={},
+                           side=side, leverage=1.0)
 
 
 @pytest.mark.parametrize('side', [("sell"), ("buy")])
@@ -109,7 +139,14 @@ def test_stoploss_order_dry_run_ftx(default_conf, mocker, side):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types={},
+        side=side,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -230,26 +267,3 @@ def test_fill_leverage_brackets_ftx(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id="ftx")
     exchange.fill_leverage_brackets()
     assert exchange._leverage_brackets == {}
-
-
-@pytest.mark.parametrize("trading_mode", [
-    (TradingMode.MARGIN),
-    (TradingMode.FUTURES)
-])
-def test__set_leverage(mocker, default_conf, trading_mode):
-
-    api_mock = MagicMock()
-    api_mock.set_leverage = MagicMock()
-    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "ftx",
-        "_set_leverage",
-        "set_leverage",
-        pair="XRP/USDT",
-        leverage=5.0,
-        trading_mode=trading_mode
-    )

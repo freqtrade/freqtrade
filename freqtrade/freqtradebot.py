@@ -737,7 +737,8 @@ class FreqtradeBot(LoggingMixin):
                 amount=trade.amount,
                 stop_price=stop_price,
                 order_types=self.strategy.order_types,
-                side=trade.exit_side
+                side=trade.exit_side,
+                leverage=trade.leverage
             )
 
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')

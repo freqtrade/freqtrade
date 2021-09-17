@@ -49,8 +49,8 @@ class Ftx(Exchange):
         )
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float,
-                 stop_price: float, order_types: Dict, side: str) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float,
+                 order_types: Dict, side: str, leverage: float) -> Dict:
         """
         Creates a stoploss order.
         depending on order_types.stoploss configuration, uses 'market' or limit order.
@@ -69,7 +69,7 @@ class Ftx(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price)
+                pair, ordertype, side, amount, stop_price, leverage)
             return dry_order
 
         try:
@@ -81,8 +81,14 @@ class Ftx(Exchange):
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, params=params)
+            order = self._api.create_order(
+                symbol=pair,
+                type=ordertype,
+                side=side,
+                amount=amount,
+                leverage=leverage,
+                params=params
+            )
             self._log_exchange_response('create_stoploss_order', order)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)

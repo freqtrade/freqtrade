@@ -403,7 +403,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
     assert isclose(result, expected_result/3)
-    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -420,7 +419,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
     assert isclose(result, expected_result/5)
-    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -437,7 +435,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
     assert isclose(result, expected_result/10)
-    # TODO-lev: Min stake for base, kraken and ftx
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -454,7 +451,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
     assert isclose(result, expected_result/7.0)
-    # TODO-lev: Min stake for base, kraken and ftx
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
     expected_result = max(8, 2 * 2) * 1.5
@@ -462,7 +458,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
     assert isclose(result, expected_result/8.0)
-    # TODO-lev: Min stake for base, kraken and ftx
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
@@ -471,7 +466,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, expected_result/12)
-    # TODO-lev: Min stake for base, kraken and ftx
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -493,7 +487,6 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     assert round(result, 8) == round(expected_result, 8)
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
     assert round(result, 8) == round(expected_result/3, 8)
-    # TODO-lev: Min stake for base, kraken and ftx
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -1004,7 +997,13 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     order = exchange.create_dry_run_order(
-        pair='ETH/BTC', ordertype='limit', side=side, amount=1, rate=200)
+        pair='ETH/BTC',
+        ordertype='limit',
+        side=side,
+        amount=1,
+        rate=200,
+        leverage=1.0
+    )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -1027,7 +1026,13 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='limit', side=side, amount=1, rate=startprice)
+        pair='LTC/USDT',
+        ordertype='limit',
+        side=side,
+        amount=1,
+        rate=startprice,
+        leverage=1.0
+    )
     assert order_book_l2_usd.call_count == 1
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
@@ -1073,7 +1078,13 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=rate)
+        pair='LTC/USDT',
+        ordertype='market',
+        side=side,
+        amount=amount,
+        rate=rate,
+        leverage=1.0
+    )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -2664,7 +2675,14 @@ def test_get_fee(default_conf, mocker, exchange_name):
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side="sell",
+            leverage=1.0
+        )
 
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
         exchange.stoploss_adjust(1, {}, side="sell")
@@ -3024,7 +3042,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     (20.0, 5.0, 4.0),
     (100.0, 100.0, 1.0)
 ])
-def test_apply_leverage_to_stake_amount(
+def test_divide_stake_amount_by_leverage(
     exchange,
     stake_amount,
     leverage,
@@ -3033,7 +3051,7 @@ def test_apply_leverage_to_stake_amount(
     default_conf
 ):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
-    assert exchange._apply_leverage_to_stake_amount(stake_amount, leverage) == min_stake_with_lev
+    assert exchange._divide_stake_amount_by_leverage(stake_amount, leverage) == min_stake_with_lev
 
 
 @pytest.mark.parametrize("exchange_name,trading_mode", [

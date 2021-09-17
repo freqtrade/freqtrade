@@ -195,7 +195,9 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, adjustedpr
         order_types={
             'stoploss': ordertype,
             'stoploss_on_exchange_limit_ratio': 0.99
-        })
+        },
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -219,17 +221,32 @@ def test_stoploss_order_kraken(default_conf, mocker, ordertype, side, adjustedpr
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0
+        )
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("kraken Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'kraken')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0
+        )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "kraken",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={},
+                           side=side, leverage=1.0)
 
 
 @pytest.mark.parametrize('side', ['buy', 'sell'])
@@ -243,7 +260,14 @@ def test_stoploss_order_dry_run_kraken(default_conf, mocker, side):
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types={},
+        side=side,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order

@@ -1349,7 +1349,8 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=0.00002346 * 0.95,
-        side="sell"
+        side="sell",
+        leverage=1.0
     )
 
     # price fell below stoploss, so dry-run sells trade.
@@ -1537,7 +1538,8 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=0.00002346 * 0.96,
-        side="sell"
+        side="sell",
+        leverage=1.0
     )
 
     # price fell below stoploss, so dry-run sells trade.
@@ -1661,7 +1663,8 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
         pair='NEO/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=0.00002346 * 0.99,
-        side="sell"
+        side="sell",
+        leverage=1.0
     )
 
 

@@ -1,5 +1,7 @@
 """ Binance exchange subclass """
+import json
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import arrow
@@ -47,8 +49,8 @@ class Binance(Exchange):
         )
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float,
-                 stop_price: float, order_types: Dict, side: str) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float,
+                 order_types: Dict, side: str, leverage: float) -> Dict:
         """
         creates a stoploss limit order.
         this stoploss-limit is binance-specific.
@@ -76,7 +78,7 @@ class Binance(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, side, amount, stop_price)
+                pair, ordertype, side, amount, stop_price, leverage)
             return dry_order
 
         try:
@@ -87,8 +89,15 @@ class Binance(Exchange):
 
             rate = self.price_to_precision(pair, rate)
 
-            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
-                                           amount=amount, price=rate, params=params)
+            order = self._api.create_order(
+                symbol=pair,
+                type=ordertype,
+                side=side,
+                amount=amount,
+                price=rate,
+                params=params,
+                leverage=leverage
+            )
             logger.info('stoploss limit order added for %s. '
                         'stop price: %s. limit: %s', pair, stop_price, rate)
             self._log_exchange_response('create_stoploss_order', order)
@@ -119,26 +128,33 @@ class Binance(Exchange):
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
         """
-        try:
-            leverage_brackets = self._api.load_leverage_brackets()
-            for pair, brackets in leverage_brackets.items():
-                self._leverage_brackets[pair] = [
-                    [
-                        min_amount,
-                        float(margin_req)
-                    ] for [
-                        min_amount,
-                        margin_req
-                    ] in brackets
-                ]
+        if self.trading_mode == TradingMode.FUTURES:
+            try:
+                if self._config['dry_run']:
+                    leverage_brackets_path = Path('data') / 'leverage_brackets.json'
+                    with open(leverage_brackets_path) as json_file:
+                        leverage_brackets = json.load(json_file)
+                else:
+                    leverage_brackets = self._api.load_leverage_brackets()
 
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not fetch leverage amounts due to'
-                                 f'{e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
+                for pair, brackets in leverage_brackets.items():
+                    self._leverage_brackets[pair] = [
+                        [
+                            min_amount,
+                            float(margin_req)
+                        ] for [
+                            min_amount,
+                            margin_req
+                        ] in brackets
+                    ]
+
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                raise TemporaryError(f'Could not fetch leverage amounts due to'
+                                     f'{e.__class__.__name__}. Message: {e}') from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
@@ -153,10 +169,6 @@ class Binance(Exchange):
                 max_lev = 1/margin_req
         return max_lev
 
-    def lev_prep(self, pair: str, leverage: float):
-        self.set_margin_mode(pair, self.collateral)
-        self._set_leverage(leverage, pair, self.trading_mode)
-
     @retrier
     def _set_leverage(
         self,
@@ -170,9 +182,11 @@ class Binance(Exchange):
         """
         trading_mode = trading_mode or self.trading_mode
 
+        if self._config['dry_run'] or trading_mode != TradingMode.FUTURES:
+            return
+
         try:
-            if trading_mode == TradingMode.FUTURES:
-                self._api.set_leverage(symbol=pair, leverage=leverage)
+            self._api.set_leverage(symbol=pair, leverage=leverage)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

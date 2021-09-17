@@ -48,13 +48,20 @@ def test_stoploss_order_binance(
             amount=1,
             stop_price=190,
             side=side,
-            order_types={'stoploss_on_exchange_limit_ratio': 1.05}
+            order_types={'stoploss_on_exchange_limit_ratio': 1.05},
+            leverage=1.0
         )
 
     api_mock.create_order.reset_mock()
     order_types = {} if limitratio is None else {'stoploss_on_exchange_limit_ratio': limitratio}
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220,
-                              order_types=order_types, side=side)
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types=order_types,
+        side=side,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -71,17 +78,31 @@ def test_stoploss_order_binance(
     with pytest.raises(DependencyException):
         api_mock.create_order = MagicMock(side_effect=ccxt.InsufficientFunds("0 balance"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0)
 
     with pytest.raises(InvalidOrderException):
         api_mock.create_order = MagicMock(
             side_effect=ccxt.InvalidOrder("binance Order would trigger immediately."))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side=side,
+            leverage=1.0
+        )
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, "binance",
                            "stoploss", "create_order", retries=1,
-                           pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side=side)
+                           pair='ETH/BTC', amount=1, stop_price=220, order_types={},
+                           side=side, leverage=1.0)
 
 
 def test_stoploss_order_dry_run_binance(default_conf, mocker):
@@ -94,12 +115,25 @@ def test_stoploss_order_dry_run_binance(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, 'binance')
 
     with pytest.raises(OperationalException):
-        order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=190, side="sell",
-                                  order_types={'stoploss_on_exchange_limit_ratio': 1.05})
+        order = exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=190,
+            side="sell",
+            order_types={'stoploss_on_exchange_limit_ratio': 1.05},
+            leverage=1.0
+        )
 
     api_mock.create_order.reset_mock()
 
-    order = exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={}, side="sell")
+    order = exchange.stoploss(
+        pair='ETH/BTC',
+        amount=1,
+        stop_price=220,
+        order_types={},
+        side="sell",
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
