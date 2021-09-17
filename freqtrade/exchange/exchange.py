@@ -1435,7 +1435,7 @@ class Exchange:
 
                         # if it's not paginated by_id
                         if not trades_list_from_id:
-                            # pagination by_since
+                            # pagination by_time
                             trades_list_from_id = trades_list[0][0]
                             trades_list_to_id = trades_list[-1][0] + 1  # +1 as it's exclusive
                         int_tree.add(Interval(
@@ -1505,7 +1505,7 @@ class Exchange:
                 if not from_pg_id:
                     from_pg_id = trades_list[0][0]
                     to_pg_id = trades_list[-1][0] + 1  # as it's exclusive
-                    pagination_method = "by_since"
+                    pagination_method = "by_time"
 
                 pagination_col_index = 1 if pagination_method == "by_id" else 0
 
@@ -1530,9 +1530,11 @@ class Exchange:
                         ))
                         logger.debug("The result was partially cached in the intermediate result " +
                                      "(using from_pg_id). Returned %s " +
-                                     "elements without caching them.",
-                                     len(trades_list))
-                    return trades_list
+                                     "elements without caching them. cached_from_pg_id_interval=%s",
+                                     len(trades_list), cached_from_pg_id_interval)
+                        extended_trades_list = await self._async_fetch_trades_from_file(
+                            cached_from_pg_id_interval.data)
+                        return trades_list + extended_trades_list
 
                 # If `to_pg_id` exists in a cached interval, we return everything before the
                 # beginning of this cached interval. In the next round, the cached trades (starting
@@ -1545,9 +1547,12 @@ class Exchange:
                         trades_list
                     ))
                     logger.debug("The result was partially cached in the intermediate result " +
-                                 "(using to_pg_id). Returned %s elements without caching them.",
-                                 len(trades_list))
-                    return trades_list
+                                 "(using to_pg_id). Returned %s " +
+                                 "elements without caching them. cached_to_pg_id_interval=%s",
+                                 len(trades_list), cached_to_pg_id_interval)
+                    extended_trades_list = await self._async_fetch_trades_from_file(
+                        cached_to_pg_id_interval.data)
+                    return trades_list + extended_trades_list
 
                 # If neither `from_pg_id` nor `to_pg_id` are cached, we cache the trades in an
                 # intermediate trade file.
@@ -1644,7 +1649,7 @@ class Exchange:
                 # Skip last id since its the key for the next call
                 trades.extend(t[:-1])
                 if from_id == t[-1][1] or t[-1][0] > until:
-                    logger.debug(f"Stopping because from_id did not change. "
+                    logger.debug(f"Stopping because from_id ({from_id}) did not change. "
                                  f"Reached {t[-1][0]} > {until}")
                     # Reached the end of the defined-download period - add last trade as well.
                     trades.extend(t[-1:])
