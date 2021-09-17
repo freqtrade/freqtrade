@@ -65,7 +65,21 @@ def binance(
     margin_mode: MarginMode,
     trading_mode: TradingMode,
     collateral: Collateral,
-    **kwargs
+    wallet_balance: float,
+    maintenance_margin_ex_1: float,
+    unrealized_pnl_ex_1: float,
+    maintenance_amount_both: float,
+    maintenance_amount_long: float,
+    maintenance_amount_short: float,
+    position_1_both: float,
+    entry_price_1_both: float,
+    position_1_long: float,
+    entry_price_1_long: float,
+    position_1_short: float,
+    entry_price_1_short: float,
+    maintenance_margin_rate_both: float,
+    maintenance_margin_rate_long: float,
+    maintenance_margin_rate_short: float,
 ):
     r"""
         Calculates the liquidation price on Binance
@@ -76,79 +90,58 @@ def binance(
         :param trading_mode: spot, margin, futures
         :param collateral: cross, isolated
 
-        :param \**kwargs:
-            See below
+        :param wallet_balance: Wallet Balance is crossWalletBalance in Cross-Margin Mode.
+          Wallet Balance is isolatedWalletBalance in Isolated Margin Mode
 
-        :Keyword Arguments:
-            * *wallet_balance* (``float``) --
-              Wallet Balance is crossWalletBalance in Cross-Margin Mode
-              Wallet Balance is isolatedWalletBalance in Isolated Margin Mode
+        :param maintenance_margin_ex_1: Maintenance Margin of all other contracts, excluding Contract 1.
+          If it is an isolated margin mode, then TMM=0
 
-            * *maintenance_margin_ex_1* (``float``) --
-              Maintenance Margin of all other contracts, excluding Contract 1.
-              If it is an isolated margin mode, then TMM=0
+        :param unrealized_pnl_ex_1: Unrealized PNL of all other contracts, excluding Contract 1.
+          If it is an isolated margin mode, then UPNL=0
 
-            * *unrealized_pnl_ex_1* (``float``) --
-              Unrealized PNL of all other contracts, excluding Contract 1.
-              If it is an isolated margin mode, then UPNL=0
+        :param maintenance_amount_both: Maintenance Amount of BOTH position (one-way mode)
 
-            * *maintenance_amount_both* (``float``) --
-              Maintenance Amount of BOTH position (one-way mode)
+        :param maintenance_amount_long: Maintenance Amount of LONG position (hedge mode)
 
-            * *maintenance_amount_long* (``float``) --
-              Maintenance Amount of LONG position (hedge mode)
+        :param maintenance_amount_short: Maintenance Amount of SHORT position (hedge mode)
 
-            * *maintenance_amount_short* (``float``) --
-              Maintenance Amount of SHORT position (hedge mode)
+        :param side_1_both: Direction of BOTH position, 1 as long position, -1 as short position derived from is_short
 
-            * *side_1_both* (``int``) --
-              Direction of BOTH position, 1 as long position, -1 as short position
-              Derived from is_short
+        :param position_1_both: Absolute value of BOTH position size (one-way mode)
 
-            * *position_1_both* (``float``) --
-              Absolute value of BOTH position size (one-way mode)
+        :param entry_price_1_both: Entry Price of BOTH position (one-way mode)
 
-            * *entry_price_1_both* (``float``) --
-              Entry Price of BOTH position (one-way mode)
+        :param position_1_long: Absolute value of LONG position size (hedge mode)
 
-            * *position_1_long* (``float``) --
-              Absolute value of LONG position size (hedge mode)
+        :param entry_price_1_long: Entry Price of LONG position (hedge mode)
 
-            * *entry_price_1_long* (``float``) --
-              Entry Price of LONG position (hedge mode)
+        :param position_1_short: Absolute value of SHORT position size (hedge mode)
 
-            * *position_1_short* (``float``) --
-              Absolute value of SHORT position size (hedge mode)
+        :param entry_price_1_short: Entry Price of SHORT position (hedge mode)
 
-            * *entry_price_1_short* (``float``) --
-              Entry Price of SHORT position (hedge mode)
+        :param maintenance_margin_rate_both: Maintenance margin rate of BOTH position (one-way mode)
 
-            * *maintenance_margin_rate_both* (``float``) --
-              Maintenance margin rate of BOTH position (one-way mode)
+        :param maintenance_margin_rate_long: Maintenance margin rate of LONG position (hedge mode)
 
-            * *maintenance_margin_rate_long* (``float``) --
-              Maintenance margin rate of LONG position (hedge mode)
-
-            * *maintenance_margin_rate_short* (``float``) --
-              Maintenance margin rate of SHORT position (hedge mode)
+        :param maintenance_margin_rate_short: Maintenance margin rate of SHORT position (hedge mode)
     """
     # TODO-lev: Additional arguments, fill in formulas
-    wb = kwargs.get("wallet_balance")
-    tmm_1 = 0.0 if collateral == Collateral.ISOLATED else kwargs.get("maintenance_margin_ex_1")
-    upnl_1 = 0.0 if collateral == Collateral.ISOLATED else kwargs.get("unrealized_pnl_ex_1")
-    cum_b = kwargs.get("maintenance_amount_both")
-    cum_l = kwargs.get("maintenance_amount_long")
-    cum_s = kwargs.get("maintenance_amount_short")
+    wb = wallet_balance
+    tmm_1 = 0.0 if collateral == Collateral.ISOLATED else maintenance_margin_ex_1
+    upnl_1 = 0.0 if collateral == Collateral.ISOLATED else unrealized_pnl_ex_1
+    cum_b = maintenance_amount_both
+    cum_l = maintenance_amount_long
+    cum_s = maintenance_amount_short
     side_1_both = -1 if is_short else 1
-    position_1_both = abs(kwargs.get("position_1_both"))
-    ep1_both = kwargs.get("entry_price_1_both")
-    position_1_long = abs(kwargs.get("position_1_long"))
-    ep1_long = kwargs.get("entry_price_1_long")
-    position_1_short = abs(kwargs.get("position_1_short"))
-    ep1_short = kwargs.get("entry_price_1_short")
-    mmr_b = kwargs.get("maintenance_margin_rate_both")
-    mmr_l = kwargs.get("maintenance_margin_rate_long")
-    mmr_s = kwargs.get("maintenance_margin_rate_short")
+    position_1_both = abs(position_1_both)
+    ep1_both = entry_price_1_both
+    position_1_long = abs(position_1_long)
+    ep1_long = entry_price_1_long
+    position_1_short = abs(position_1_short)
+    ep1_short = entry_price_1_short
+    mmr_b = maintenance_margin_rate_both
+    mmr_l = maintenance_margin_rate_long
+    mmr_s = maintenance_margin_rate_short
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
         # TODO-lev: perform a calculation based on this formula
