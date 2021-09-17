@@ -1094,10 +1094,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert round(order["average"], 4) == round(endprice, 4)
 
 
-@pytest.mark.parametrize("side", [
-    ("buy"),
-    ("sell")
-])
+@pytest.mark.parametrize("side", ["buy", "sell"])
 @pytest.mark.parametrize("ordertype,rate,marketprice", [
     ("market", None, None),
     ("market", 200, True),
@@ -1126,7 +1123,7 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
         side=side,
         amount=1,
         rate=200,
-        leverage=3.0
+        leverage=1.0
     )
 
     assert 'id' in order
@@ -1137,6 +1134,21 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     assert api_mock.create_order.call_args[0][2] == side
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] is rate
+
+    assert api_mock._set_leverage.call_count == 0 if side == "buy" else 1
+    assert api_mock.set_margin_mode.call_count == 0 if side == "buy" else 1
+
+    order = exchange.create_order(
+        pair='ETH/BTC',
+        ordertype=ordertype,
+        side=side,
+        amount=1,
+        rate=200,
+        leverage=3.0
+    )
+
+    assert api_mock._set_leverage.call_count == 1
+    assert api_mock.set_margin_mode.call_count == 1
 
 
 def test_buy_dry_run(default_conf, mocker):
