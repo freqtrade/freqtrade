@@ -435,8 +435,7 @@ class HyperoptTools():
         return table
 
     @staticmethod
-    def export_csv_file(config: dict, results: list, total_epochs: int, highlight_best: bool,
-                        csv_file: str) -> None:
+    def export_csv_file(config: dict, results: list, csv_file: str) -> None:
         """
         Log result to csv-file
         """
