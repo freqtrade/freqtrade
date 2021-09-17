@@ -123,7 +123,7 @@ class VolumePairList(IPairList):
             filtered_tickers = [
                 v for k, v in tickers.items()
                 if (self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                    and v[self._sort_key] is not None)]
+                    and (self._use_range or v[self._sort_key] is not None))]
             pairlist = [s['symbol'] for s in filtered_tickers]
 
             pairlist = self.filter_pairlist(pairlist, tickers)

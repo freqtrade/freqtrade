@@ -320,6 +320,7 @@ class LocalTrade():
         if self.isolated_liq:
             self.set_isolated_liq(self.isolated_liq)
         self.recalc_open_trade_value()
+        # TODO-lev: Throw exception if on margin and interest_rate is none
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
@@ -549,7 +550,7 @@ class LocalTrade():
             if self.is_open:
                 payment = "BUY" if self.is_short else "SELL"
                 # TODO-lev: On shorts, you buy a little bit more than the amount (amount + interest)
-                # This wll only print the original amount
+                # TODO-lev: This wll only print the original amount
                 logger.info(f'{order_type.upper()}_{payment} has been fulfilled for {self}.')
             # TODO-lev: Double check this
             self.close(safe_value_fallback(order, 'average', 'price'))

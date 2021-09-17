@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
+from freqtrade.configuration import TimeRange, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
@@ -64,8 +64,7 @@ class Backtesting:
         self.config = config
         self.results: Optional[Dict[str, Any]] = None
 
-        # Reset keys for backtesting
-        remove_credentials(self.config)
+        config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
         self._exchange_name = self.config['exchange']['name']
@@ -403,7 +402,7 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ]
+            ]
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)

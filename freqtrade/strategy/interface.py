@@ -168,7 +168,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Check buy timeout function callback.
         This method can be used to override the enter-timeout.
-        It is called whenever a limit buy/short order has been created,
+        It is called whenever a limit entry order has been created,
         and is not yet fully filled.
         Configuration options in `unfilledtimeout` will be verified before this,
         so ensure to set these timeouts high enough.
@@ -178,7 +178,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return bool: When True is returned, then the buy/short-order is cancelled.
+        :return bool: When True is returned, then the entry order is cancelled.
         """
         return False
 
@@ -213,7 +213,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a buy/short order.
+        Called right before placing a entry order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -237,7 +237,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                            rate: float, time_in_force: str, sell_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
-        Called right before placing a regular sell/exit_short order.
+        Called right before placing a regular exit order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -412,7 +412,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         Checks if a pair is currently locked
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
         and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
-        of 2 seconds for a buy/short to happen on an old signal.
+        of 2 seconds for an entry order to happen on an old signal.
         :param pair: "Pair to check"
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
@@ -428,7 +428,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def analyze_ticker(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Parses the given candle (OHLCV) data and returns a populated DataFrame
-        add several TA indicators and buy/short signal to it
+        add several TA indicators and entry order signal to it
         :param dataframe: Dataframe containing data from exchange
         :param metadata: Metadata dictionary with additional data (e.g. 'pair')
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
@@ -547,7 +547,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe: DataFrame,
     ) -> Tuple[Optional[DataFrame], Optional[arrow.Arrow]]:
         """
-        Get the latest candle. Used only during real mode
+        Calculates current signal based based on the entry order or exit order
+        columns of the dataframe.
+        Used by Bot to get the signal to buy, sell, short, or exit_short
         :param pair: pair in format ANT/BTC
         :param timeframe: timeframe to use
         :param dataframe: Analyzed dataframe to get signal from.
@@ -672,7 +674,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     low: float = None, high: float = None,
                     force_stoploss: float = 0) -> SellCheckTuple:
         """
-        This function evaluates if one of the conditions required to trigger a sell/exit_short
+        This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
         :param low: Only used during backtesting to simulate (long)stoploss/(short)ROI
         :param high: Only used during backtesting, to simulate (short)stoploss/(long)ROI
@@ -860,10 +862,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         Does not run advise_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
+        Also copy on output to avoid PerformanceWarnings pandas 1.3.0 started to show.
         Has positive effects on memory usage for whatever reason - also when
         using only one strategy.
         """
-        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair})
+        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair}).copy()
                 for pair, pair_data in data.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -884,7 +887,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators, populates the buy/short signal for the given dataframe
+        Based on TA indicators, populates the entry order signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the
@@ -907,7 +910,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
-        Based on TA indicators, populates the sell/exit_short signal for the given dataframe
+        Based on TA indicators, populates the exit order signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
         :param metadata: Additional information dictionary, with details like the

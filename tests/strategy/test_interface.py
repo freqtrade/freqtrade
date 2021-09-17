@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring, C0103
-from freqtrade.enums.signaltype import SignalDirection
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -13,6 +12,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import SellType
+from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade
@@ -48,7 +48,7 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history.loc[1, 'enter_long'] = 1
 
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history
-        ) == (SignalDirection.LONG, None)
+                                      ) == (SignalDirection.LONG, None)
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False)
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
     mocked_history.loc[1, 'exit_long'] = 0
@@ -776,10 +776,15 @@ def test_auto_hyperopt_interface(default_conf):
     PairLocks.timeframe = default_conf['timeframe']
     strategy = StrategyResolver.load_strategy(default_conf)
 
+    with pytest.raises(OperationalException):
+        next(strategy.enumerate_parameters('deadBeef'))
+
     assert strategy.buy_rsi.value == strategy.buy_params['buy_rsi']
     # PlusDI is NOT in the buy-params, so default should be used
     assert strategy.buy_plusdi.value == 0.5
     assert strategy.sell_rsi.value == strategy.sell_params['sell_rsi']
+
+    assert repr(strategy.sell_rsi) == 'IntParameter(74)'
 
     # Parameter is disabled - so value from sell_param dict will NOT be used.
     assert strategy.sell_minusdi.value == 0.5
