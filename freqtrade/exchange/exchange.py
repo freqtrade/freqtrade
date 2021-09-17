@@ -1450,12 +1450,12 @@ class Exchange:
         if cached_res:
             return cached_res
 
-        logger.debug("Caching intervals for pair %s", pair)
+        logger.debug("Reading cached intervals for pair %s", pair)
         cache_interval_tree = IntervalTree()
         tmpdata_dir = self._intermediate_trades_dir_for_pair(datadir, pair)
         await self._async_read_interval_tree_for_pair(tmpdata_dir, pair, cache_interval_tree)
 
-        logger.debug("Cached intervals for pair %s: %s intervals", pair, len(cache_interval_tree))
+        logger.debug("Read cached intervals for pair %s: %s intervals", pair, len(cache_interval_tree))
         self._intermediate_data_cache[pair] = cache_interval_tree
         return cache_interval_tree
 
@@ -1504,7 +1504,7 @@ class Exchange:
 
                 if not from_pg_id:
                     from_pg_id = trades_list[0][0]
-                    to_pg_id = trades_list[-1][0]
+                    to_pg_id = trades_list[-1][0] + 1  # as it's exclusive
                     pagination_method = "by_since"
 
                 pagination_col_index = 1 if pagination_method == "by_id" else 0
@@ -1525,7 +1525,7 @@ class Exchange:
                     if int(from_pg_id) != cached_from_pg_id_interval.begin:
                         trades_list = list(filter(
                             lambda trade: (int(trade[pagination_col_index]) <
-                                           cached_from_pg_id_interval.begin),
+                                           cached_from_pg_id_interval.end),
                             trades_list
                         ))
                         logger.debug("The result was partially cached in the intermediate result " +
