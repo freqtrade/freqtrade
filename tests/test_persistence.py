@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import create_engine, inspect, text
 
 from freqtrade import constants
+from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
 from tests.conftest import (create_mock_trades, create_mock_trades_with_leverage, get_sides,
@@ -81,7 +82,8 @@ def test_enter_exit_side(fee, is_short):
         fee_close=fee.return_value,
         exchange='binance',
         is_short=is_short,
-        leverage=2.0
+        leverage=2.0,
+        trading_mode=TradingMode.MARGIN
     )
     assert trade.enter_side == enter_side
     assert trade.exit_side == exit_side
@@ -101,7 +103,8 @@ def test_set_stop_loss_isolated_liq(fee):
         fee_close=fee.return_value,
         exchange='binance',
         is_short=False,
-        leverage=2.0
+        leverage=2.0,
+        trading_mode=TradingMode.MARGIN
     )
     trade.set_isolated_liq(0.09)
     assert trade.isolated_liq == 0.09
@@ -258,7 +261,8 @@ def test_interest(market_buy_order_usdt, fee, exchange, is_short, lev, minutes, 
         exchange=exchange,
         leverage=lev,
         interest_rate=rate,
-        is_short=is_short
+        is_short=is_short,
+        trading_mode=TradingMode.MARGIN
     )
 
     assert round(float(trade.calculate_interest()), 8) == interest
@@ -347,7 +351,8 @@ def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
         fee_close=fee.return_value,
         exchange='binance',
         is_short=is_short,
-        leverage=lev
+        leverage=lev,
+        trading_mode=TradingMode.MARGIN
     )
     assert trade.borrowed == borrowed
 
@@ -445,7 +450,8 @@ def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_
         exchange='binance',
         is_short=is_short,
         interest_rate=0.0005,
-        leverage=lev
+        leverage=lev,
+        trading_mode=TradingMode.MARGIN
     )
     assert trade.open_order_id is None
     assert trade.close_profit is None
@@ -491,6 +497,7 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().datetime,
         exchange='binance',
+        trading_mode=TradingMode.MARGIN
     )
 
     trade.open_order_id = 'something'
@@ -543,7 +550,8 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
         fee_close=fee.return_value,
         exchange=exchange,
         is_short=is_short,
-        leverage=lev
+        leverage=lev,
+        trading_mode=TradingMode.MARGIN
     )
 
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
@@ -572,6 +580,7 @@ def test_trade_close(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
         exchange='binance',
+        trading_mode=TradingMode.MARGIN
     )
     assert trade.close_profit is None
     assert trade.close_date is None
@@ -600,6 +609,7 @@ def test_calc_close_trade_price_exception(limit_buy_order_usdt, fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
+        trading_mode=TradingMode.MARGIN
     )
 
     trade.open_order_id = 'something'
@@ -617,6 +627,7 @@ def test_update_open_order(limit_buy_order_usdt):
         fee_open=0.1,
         fee_close=0.1,
         exchange='binance',
+        trading_mode=TradingMode.MARGIN
     )
 
     assert trade.open_order_id is None
@@ -641,6 +652,7 @@ def test_update_invalid_order(limit_buy_order_usdt):
         fee_open=0.1,
         fee_close=0.1,
         exchange='binance',
+        trading_mode=TradingMode.MARGIN
     )
     limit_buy_order_usdt['type'] = 'invalid'
     with pytest.raises(ValueError, match=r'Unknown order type'):
@@ -692,7 +704,8 @@ def test_calc_open_trade_value(
         fee_close=fee_rate,
         exchange=exchange,
         leverage=lev,
-        is_short=is_short
+        is_short=is_short,
+        trading_mode=TradingMode.MARGIN
     )
     trade.open_order_id = 'open_trade'
 
@@ -731,7 +744,8 @@ def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, ope
         exchange=exchange,
         interest_rate=0.0005,
         is_short=is_short,
-        leverage=lev
+        leverage=lev,
+        trading_mode=TradingMode.MARGIN
     )
     trade.open_order_id = 'close_trade'
     assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
@@ -925,7 +939,8 @@ def test_calc_profit(
         is_short=is_short,
         leverage=lev,
         fee_open=0.0025,
-        fee_close=fee_close
+        fee_close=fee_close,
+        trading_mode=TradingMode.MARGIN
     )
     trade.open_order_id = 'something'
 
