@@ -2274,6 +2274,12 @@ def test__intermediate_trades_file(default_conf, mocker, caplog, exchange_name,
     expected_file = ("user_data/data/" + exchange_name +
                      "/trades-intermediate-parts/ETH-BTC/254/ETH-BTC_254648140.json")
     assert expected_file == exchange._intermediate_trades_file(datadir, pair, "254648140", False)
+    expected_file = (
+        "user_data/data/" + exchange_name +
+        "/trades-intermediate-parts/ETH-BTC/1/623/216/788/143/ETH-BTC_1623216788143201587.json"
+    )
+    assert expected_file == exchange._intermediate_trades_file(
+        datadir, pair, "1623216788143201587", False)
 
 
 @pytest.mark.asyncio
@@ -2298,7 +2304,7 @@ async def test__async_fetch_trades_from_file(default_conf, mocker, caplog, excha
     expected_trades_list = await exchange._async_fetch_trades_from_file(expected_file)
     assert expected_trades_list == json.loads(trades_list_string)
 
-    expected_interval_tree = await exchange._get_interval_tree_for_pair(datadir, pair)
+    expected_interval_tree = await exchange._async_get_interval_tree_for_pair(datadir, pair)
     expected_interval = Interval(254648140, 254648143, expected_file)
     assert len(expected_interval_tree) == 1
 
