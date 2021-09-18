@@ -97,8 +97,22 @@ def stoploss_from_absolute(stop_rate: float, current_rate: float) -> float:
     """
     Given current price and desired stop price, return a stop loss value that is relative to current
     price.
+
+    The requested stop can be positive for a stop above the open price, or negative for
+    a stop below the open price. The return value is always >= 0.
+
+    Returns 0 if the resulting stop price would be above the current price.
+
     :param stop_rate: Stop loss price.
     :param current_rate: Current asset price.
     :return: Positive stop loss value relative to current price
     """
-    return 1 - (stop_rate / current_rate)
+
+    # formula is undefined for current_rate 0, return maximum value
+    if current_rate == 0:
+        return 1
+
+    stoploss = 1 - (stop_rate / current_rate)
+
+    # negative stoploss values indicate the requested stop price is higher than the current price
+    return max(stoploss, 0.0)

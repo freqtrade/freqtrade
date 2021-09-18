@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.strategy import merge_informative_pair, stoploss_from_open, timeframe_to_minutes
+from freqtrade.strategy import (merge_informative_pair, stoploss_from_open, timeframe_to_minutes,
+                                stoploss_from_absolute)
 
 
 def generate_test_data(timeframe: str, size: int):
@@ -133,6 +134,14 @@ def test_stoploss_from_open():
                         assert stoploss == 0
                     else:
                         assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)
+
+
+def test_stoploss_from_absolute():
+    assert stoploss_from_absolute(90, 100) == 1 - (90 / 100)
+    assert stoploss_from_absolute(100, 100) == 0
+    assert stoploss_from_absolute(110, 100) == 0
+    assert stoploss_from_absolute(100, 0) == 1
+    assert stoploss_from_absolute(0, 100) == 1
 
 
 def test_informative_decorator(mocker, default_conf):
