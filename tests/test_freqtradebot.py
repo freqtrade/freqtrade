@@ -192,8 +192,14 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
         'LTC/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
 
 
-def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf) -> None:
-
+@pytest.mark.parametrize('buy_price_mult,ignore_strat_sl', [
+    # Override stoploss
+    (0.79, False),
+    # Override strategy stoploss
+    (0.85, True)
+])
+def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker,
+                                 buy_price_mult, ignore_strat_sl, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_edge(mocker)
@@ -207,9 +213,9 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': buy_price * 0.79,
-            'ask': buy_price * 0.79,
-            'last': buy_price * 0.79
+            'bid': buy_price * buy_price_mult,
+            'ask': buy_price * buy_price_mult,
+            'last': buy_price * buy_price_mult,
         }),
         get_fee=fee,
     )
@@ -226,46 +232,10 @@ def test_edge_overrides_stoploss(limit_buy_order, fee, caplog, mocker, edge_conf
     #############################################
 
     # stoploss shoud be hit
-    assert freqtrade.handle_trade(trade) is True
-    assert log_has('Executing Sell for NEO/BTC. Reason: stop_loss', caplog)
-    assert trade.sell_reason == SellType.STOP_LOSS.value
-
-
-def test_edge_should_ignore_strategy_stoploss(limit_buy_order, fee,
-                                              mocker, edge_conf) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    patch_edge(mocker)
-    edge_conf['max_open_trades'] = float('inf')
-
-    # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
-    # Thus, if price falls 15%, stoploss should not be triggered
-    #
-    # mocking the ticker: price is falling ...
-    buy_price = limit_buy_order['price']
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=MagicMock(return_value={
-            'bid': buy_price * 0.85,
-            'ask': buy_price * 0.85,
-            'last': buy_price * 0.85
-        }),
-        get_fee=fee,
-    )
-    #############################################
-
-    # Create a trade with "limit_buy_order" price
-    freqtrade = FreqtradeBot(edge_conf)
-    freqtrade.active_pair_whitelist = ['NEO/BTC']
-    patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
-    freqtrade.enter_positions()
-    trade = Trade.query.first()
-    trade.update(limit_buy_order)
-    #############################################
-
-    # stoploss shoud not be hit
-    assert freqtrade.handle_trade(trade) is False
+    assert freqtrade.handle_trade(trade) is not ignore_strat_sl
+    if not ignore_strat_sl:
+        assert log_has('Executing Sell for NEO/BTC. Reason: stop_loss', caplog)
+        assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
 def test_total_open_trades_stakes(mocker, default_conf, ticker, fee) -> None:
