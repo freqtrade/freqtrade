@@ -801,9 +801,6 @@ for more information.
     will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
     created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
 
-!!! Warning
-    When using a legacy hyperopt implementation informative pairs defined with a decorator will not be executed. Please update your strategy if necessary.
-
 ## Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
