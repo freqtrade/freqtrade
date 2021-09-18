@@ -338,8 +338,7 @@ def get_default_conf(testdatadir):
                 "ETH/BTC",
                 "LTC/BTC",
                 "XRP/BTC",
-                "NEO/BTC",
-                "ADA/USDT"
+                "NEO/BTC"
             ],
             "pair_blacklist": [
                 "DOGE/BTC",
@@ -449,31 +448,6 @@ def get_markets():
             'symbol': 'ETH/BTC',
             'base': 'ETH',
             'quote': 'BTC',
-            'active': True,
-            'precision': {
-                'price': 8,
-                'amount': 8,
-                'cost': 8,
-            },
-            'lot': 0.00000001,
-            'limits': {
-                'amount': {
-                    'min': 0.01,
-                    'max': 1000,
-                },
-                'price': 500000,
-                'cost': {
-                    'min': 0.0001,
-                    'max': 500000,
-                },
-            },
-            'info': {},
-        },
-        'ADA/USDT': {
-            'id': 'ethbtc',
-            'symbol': 'ADA/USDT',
-            'base': 'USDT',
-            'quote': 'ADA',
             'active': True,
             'precision': {
                 'price': 8,

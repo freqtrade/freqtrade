@@ -1267,11 +1267,14 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     )
 
     # price fell below stoploss, so dry-run sells trade.
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
-        'bid': 4.1712,
-        'ask': 4.1921,
-        'last': 4.1712
-    }))
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': 4.1712,
+            'ask': 4.1921,
+            'last': 4.1712
+        })
+    )
     assert freqtrade.handle_trade(trade) is True
 
 
@@ -1407,7 +1410,7 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
         'price': 3,
         'average': 2,
         'info': {
-            'stopPrice': '0.000011134'
+            'stopPrice': '2.0805'
         }
     })
 
@@ -1417,11 +1420,14 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     # price jumped 2x
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
-        'bid': 4.38,
-        'ask': 4.4,
-        'last': 4.38
-    }))
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': 4.38,
+            'ask': 4.4,
+            'last': 4.38
+        })
+    )
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock(return_value={'id': 13434334})
@@ -1435,7 +1441,7 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
     stoploss_order_mock.assert_not_called()
 
     assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 0.00002346 * 0.96
+    assert trade.stop_loss == 4.4 * 0.96
     assert trade.stop_loss_pct == -0.04
 
     # setting stoploss_on_exchange_interval to 0 seconds
@@ -1444,17 +1450,22 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=85.32423208,
-                                                pair='ETH/BTC',
-                                                order_types=freqtrade.strategy.order_types,
-                                                stop_price=0.00002346 * 0.96)
+    stoploss_order_mock.assert_called_once_with(
+        amount=100.0,
+        pair='ETH/BTC',
+        order_types=freqtrade.strategy.order_types,
+        stop_price=4.4 * 0.96
+    )
 
     # price fell below stoploss, so dry-run sells trade.
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
-        'bid': 0.00002144,
-        'ask': 0.00002146,
-        'last': 0.00002144
-    }))
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': 4.1712,
+            'ask': 4.1921,
+            'last': 4.1712
+        })
+    )
     assert freqtrade.handle_trade(trade) is True
 
 
@@ -3192,9 +3203,9 @@ def test_ignore_roi_if_buy_signal(default_conf, limit_buy_order_usdt, limit_buy_
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': 0.0000172,
-            'ask': 0.0000173,
-            'last': 0.0000172
+            'bid': 2.19,
+            'ask': 2.2,
+            'last': 2.19
         }),
         create_order=MagicMock(side_effect=[
             limit_buy_order_usdt_open,
@@ -3259,7 +3270,7 @@ def test_trailing_stop_loss(default_conf, limit_buy_order_usdt_open, limit_buy_o
 
     # Stoploss should be adjusted
     assert freqtrade.handle_trade(trade) is False
-
+    caplog.clear()
     # Price fell
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={
@@ -3271,22 +3282,28 @@ def test_trailing_stop_loss(default_conf, limit_buy_order_usdt_open, limit_buy_o
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
-    assert log_has("ETH/BTC - HIT STOP: current price at 0.000012, stoploss is 0.000015, "
-                   "initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
+    # TODO: Does this make sense? How is stoploss 2.7?
+    assert log_has("ETH/BTC - HIT STOP: current price at 2.200000, stoploss is 2.700000, "
+                   "initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-def test_trailing_stop_loss_positive(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open, fee,
-                                     caplog, mocker) -> None:
+@pytest.mark.parametrize('offset,trail_if_reached,second_sl', [
+    (0, False, 2.0394),
+    (0.011, False, 2.0394),
+    (0.055, True, 1.8),
+])
+def test_trailing_stop_loss_positive(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open,
+                                     offset, fee, caplog, mocker, trail_if_reached, second_sl) -> None:
     buy_price = limit_buy_order_usdt['price']
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': buy_price - 0.000001,
-            'ask': buy_price - 0.000001,
-            'last': buy_price - 0.000001
+            'bid': buy_price - 0.01,
+            'ask': buy_price - 0.01,
+            'last': buy_price - 0.01
         }),
         create_order=MagicMock(side_effect=[
             limit_buy_order_usdt_open,
@@ -3296,6 +3313,9 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order_usdt, limit_b
     )
     default_conf['trailing_stop'] = True
     default_conf['trailing_stop_positive'] = 0.01
+    if offset:
+        default_conf['trailing_stop_positive_offset'] = offset
+        default_conf['trailing_only_offset_is_reached'] = trail_if_reached
     patch_whitelist(mocker, default_conf)
 
     freqtrade = FreqtradeBot(default_conf)
@@ -3310,157 +3330,57 @@ def test_trailing_stop_loss_positive(default_conf, limit_buy_order_usdt, limit_b
     assert freqtrade.handle_trade(trade) is False
 
     # Raise ticker above buy price
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.000003,
-                     'ask': buy_price + 0.000003,
-                     'last': buy_price + 0.000003
-                 }))
-    # stop-loss not reached, adjusted stoploss
-    assert freqtrade.handle_trade(trade) is False
-    assert log_has("ETH/BTC - Using positive stoploss: 0.01 offset: 0 profit: 0.2666%", caplog)
-    assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == 0.0000138501
-    caplog.clear()
-
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.000002,
-                     'ask': buy_price + 0.000002,
-                     'last': buy_price + 0.000002
-                 }))
-    # Lower price again (but still positive)
-    assert freqtrade.handle_trade(trade) is True
-    assert log_has(
-        f"ETH/BTC - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
-        f"stoploss is {trade.stop_loss:.6f}, "
-        f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
-
-
-def test_trailing_stop_loss_offset(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open, fee,
-                                   caplog, mocker) -> None:
-    buy_price = limit_buy_order_usdt['price']
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=MagicMock(return_value={
-            'bid': buy_price - 0.000001,
-            'ask': buy_price - 0.000001,
-            'last': buy_price - 0.000001
-        }),
-        create_order=MagicMock(side_effect=[
-            limit_buy_order_usdt_open,
-            {'id': 1234553382},
-        ]),
-        get_fee=fee,
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': buy_price + 0.06,
+            'ask': buy_price + 0.06,
+            'last': buy_price + 0.06
+        })
     )
-    patch_whitelist(mocker, default_conf)
-    default_conf['trailing_stop'] = True
-    default_conf['trailing_stop_positive'] = 0.01
-    default_conf['trailing_stop_positive_offset'] = 0.011
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
-    freqtrade.enter_positions()
-
-    trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
-    caplog.set_level(logging.DEBUG)
-    # stop-loss not reached
-    assert freqtrade.handle_trade(trade) is False
-
-    # Raise ticker above buy price
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.000003,
-                     'ask': buy_price + 0.000003,
-                     'last': buy_price + 0.000003
-                 }))
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    assert log_has("ETH/BTC - Using positive stoploss: 0.01 offset: 0.011 profit: 0.2666%", caplog)
-    assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == 0.0000138501
+    # TODO: is 0.0249% correct? Shouldn't it be higher?
+    caplog_text = f"ETH/BTC - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
+    if trail_if_reached:
+        assert not log_has(caplog_text, caplog)
+        assert not log_has("ETH/BTC - Adjusting stoploss...", caplog)
+    else:
+        assert log_has(caplog_text, caplog)
+        assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
+    assert trade.stop_loss == second_sl
     caplog.clear()
 
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.000002,
-                     'ask': buy_price + 0.000002,
-                     'last': buy_price + 0.000002
-                 }))
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': buy_price + 0.125,
+            'ask': buy_price + 0.125,
+            'last': buy_price + 0.125,
+        })
+    )
+    assert freqtrade.handle_trade(trade) is False
+    assert log_has(
+        f"ETH/BTC - Using positive stoploss: 0.01 offset: {offset} profit: 0.0572%",
+        caplog
+    )
+    assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
+
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_ticker',
+        MagicMock(return_value={
+            'bid': buy_price + 0.02,
+            'ask': buy_price + 0.02,
+            'last': buy_price + 0.02
+        })
+    )
     # Lower price again (but still positive)
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f"ETH/BTC - HIT STOP: current price at {buy_price + 0.000002:.6f}, "
+        f"ETH/BTC - HIT STOP: current price at {buy_price + 0.02:.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
-        f"initial stoploss was at 0.000010, trade opened at 0.000011", caplog)
+        f"initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
-
-
-def test_tsl_only_offset_reached(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open, fee,
-                                 caplog, mocker) -> None:
-    buy_price = limit_buy_order_usdt['price']
-    # buy_price: 2.0
-
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=MagicMock(return_value={
-            'bid': buy_price,
-            'ask': buy_price,
-            'last': buy_price
-        }),
-        create_order=MagicMock(return_value=limit_buy_order_usdt_open),
-        get_fee=fee,
-    )
-    patch_whitelist(mocker, default_conf)
-    default_conf['trailing_stop'] = True
-    default_conf['trailing_stop_positive'] = 0.05
-    default_conf['trailing_stop_positive_offset'] = 0.055
-    default_conf['trailing_only_offset_is_reached'] = True
-
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-    freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
-    freqtrade.enter_positions()
-
-    trade = Trade.query.first()
-    trade.update(limit_buy_order_usdt)
-    caplog.set_level(logging.DEBUG)
-    # stop-loss not reached
-    assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 1.8
-
-    # Raise ticker above buy price
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.0000004,
-                     'ask': buy_price + 0.0000004,
-                     'last': buy_price + 0.0000004
-                 }))
-
-    # stop-loss should not be adjusted as offset is not reached yet
-    assert freqtrade.handle_trade(trade) is False
-
-    assert not log_has("ETH/BTC - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == 1.8
-    caplog.clear()
-
-    # price rises above the offset (rises 12% when the offset is 5.5%)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
-                 MagicMock(return_value={
-                     'bid': buy_price + 0.0000014,
-                     'ask': buy_price + 0.0000014,
-                     'last': buy_price + 0.0000014
-                 }))
-
-    assert freqtrade.handle_trade(trade) is False
-    assert log_has("ETH/BTC - Using positive stoploss: 0.05 offset: 0.055 profit: 0.1218%", caplog)
-    assert log_has("ETH/BTC - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == 0.0000117705
 
 
 def test_disable_ignore_roi_if_buy_signal(default_conf, limit_buy_order_usdt, limit_buy_order_usdt_open,
