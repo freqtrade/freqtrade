@@ -12,7 +12,8 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import get_patched_exchange, get_patched_freqtradebot, log_has, log_has_re
+from tests.conftest import (create_mock_trades, get_patched_exchange, get_patched_freqtradebot,
+                            log_has, log_has_re)
 
 
 @pytest.fixture(scope="function")
@@ -661,6 +662,31 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
+    whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "PerformanceFilter", "minutes": 60}
+    ]
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
+
+    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        create_mock_trades(fee)
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['XRP/BTC', 'ETH/BTC', 'TKN/BTC']
+
+        # Move to "outside" of lookback window, so original sorting is restored.
+        t.move_to("2021-09-01 07:00:00 +00:00")
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
 
 
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
