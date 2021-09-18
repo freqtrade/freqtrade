@@ -698,10 +698,7 @@ def informative(timeframe: str, asset: str = '',
     current pair.
     :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
     specified, defaults to:
-    * {base}_{column}_{timeframe} if asset is specified and quote currency does match stake
-    currency. 
-    * {base}_{quote}_{column}_{timeframe} if asset is specified and quote currency does not match 
-    stake currency. 
+    * {base}_{quote}_{column}_{timeframe} if asset is specified. 
     * {column}_{timeframe} if asset is not specified.
     Format string supports these format variables:
     * {asset} - full name of the asset, for example 'BTC/USDT'.
@@ -746,7 +743,7 @@ for more information.
         # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
         # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
         # instead of hardcoding actual stake currency. Available in populate_indicators and other 
-        # methods as 'btc_rsi_1h'.
+        # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
         @informative('1h', 'BTC/{stake}')
         def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
             dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
@@ -779,6 +776,25 @@ for more information.
 !!! Note
     Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
     manually as described [in the DataProvider section](#complete-data-provider-sample).
+
+!!! Note
+    Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
+
+    ``` python
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        stake = self.config['stake_currency']
+        dataframe.loc[
+            (
+                (dataframe[f'btc_{stake}_rsi_1h'] < 35)
+                &
+                (dataframe['volume'] > 0)
+            ),
+            ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+    
+        return dataframe
+    ```
+
+    Alternatively column renaming may be used to remove stake currency from column names: `@informative('1h', 'BTC/{stake}', fmt='{base}_{column}_{timeframe}')`.
 
 !!! Warning "Duplicate method names"
     Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)

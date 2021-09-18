@@ -177,7 +177,7 @@ def test_informative_decorator(mocker, default_conf):
         {p: data[(p, strategy.timeframe)] for p in ('XRP/USDT', 'LTC/USDT')})
     expected_columns = [
         'rsi_1h', 'rsi_30m',                    # Stacked informative decorators
-        'btc_rsi_1h',                           # BTC 1h informative
+        'btc_usdt_rsi_1h',                      # BTC 1h informative
         'rsi_BTC_USDT_btc_usdt_BTC/USDT_30m',   # Column formatting
         'rsi_from_callable',                    # Custom column formatter
         'eth_btc_rsi_1h',                       # Quote currency not matching stake currency
