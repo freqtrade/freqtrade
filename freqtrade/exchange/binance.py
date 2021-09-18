@@ -149,7 +149,9 @@ class Binance(Exchange):
         if self.trading_mode == TradingMode.FUTURES:
             try:
                 if self._config['dry_run']:
-                    leverage_brackets_path = Path('freqtrade/data') / 'leverage_brackets.json'
+                    leverage_brackets_path = (
+                        Path(__file__).parent / 'binance_leverage_brackets.json'
+                    )
                     with open(leverage_brackets_path) as json_file:
                         leverage_brackets = json.load(json_file)
                 else:
@@ -187,7 +189,7 @@ class Binance(Exchange):
                 max_lev = 1/margin_req
         return max_lev
 
-    @retrier
+    @ retrier
     def _set_leverage(
         self,
         leverage: float,
