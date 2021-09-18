@@ -832,14 +832,14 @@ class Trade(_DECL_BASE, LocalTrade):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_overall_performance(days=None) -> List[Dict[str, Any]]:
+    def get_overall_performance(minutes=None) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, including profit and trade count
         NOTE: Not supported in Backtesting.
         """
         filters = [Trade.is_open.is_(False)]
-        if days:
-            start_date = datetime.today() - timedelta(days)
+        if minutes:
+            start_date = datetime.now(timezone.utc) - timedelta(minutes=minutes)
             filters.append(Trade.close_date >= start_date)
         pair_rates = Trade.query.with_entities(
             Trade.pair,

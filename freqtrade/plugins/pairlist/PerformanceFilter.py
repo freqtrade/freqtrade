@@ -20,7 +20,7 @@ class PerformanceFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._days = pairlistconfig.get('days', 0)
+        self._minutes = pairlistconfig.get('minutes', 0)
 
     @property
     def needstickers(self) -> bool:
@@ -47,7 +47,7 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         try:
-            performance = pd.DataFrame(Trade.get_overall_performance(self._days))
+            performance = pd.DataFrame(Trade.get_overall_performance(self._minutes))
         except AttributeError:
             # Performancefilter does not work in backtesting.
             self.log_once("PerformanceFilter is not available in this mode.", logger.warning)

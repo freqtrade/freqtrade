@@ -191,7 +191,7 @@ Sorts pairs by past trade performance, as follows:
 
 Trade count is used as a tie breaker.
 
-You can use the `days` parameter to only consider performance of the past X days.
+You can use the `minutes` parameter to only consider performance of the past X minutes (rolling window).
 Not defining this parameter (or setting it to 0) will use all-time performance.
 
 ```json
@@ -199,7 +199,7 @@ Not defining this parameter (or setting it to 0) will use all-time performance.
     // ...
     {
         "method": "PerformanceFilter",
-        "days": 10
+        "minutes": 1440  // rolling 24h
     }
 ],
 ```
