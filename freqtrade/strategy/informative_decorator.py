@@ -1,6 +1,5 @@
 from typing import Any, Callable, NamedTuple, Optional, Union
 
-from mypy_extensions import KwArg
 from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException
@@ -13,12 +12,12 @@ PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
 class InformativeData(NamedTuple):
     asset: Optional[str]
     timeframe: str
-    fmt: Union[str, Callable[[KwArg(str)], str], None]
+    fmt: Union[str, Callable[[Any], str], None]
     ffill: bool
 
 
 def informative(timeframe: str, asset: str = '',
-                fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                fmt: Optional[Union[str, Callable[[Any], str]]] = None,
                 ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
     """
     A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
