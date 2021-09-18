@@ -78,11 +78,15 @@ def test_bot_cleanup(mocker, default_conf, caplog) -> None:
     assert coo_mock.call_count == 1
 
 
-def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
+@pytest.mark.parametrize('runmode', [
+    RunMode.DRY_RUN,
+    RunMode.LIVE
+])
+def test_order_dict(default_conf, mocker, runmode, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     conf = default_conf.copy()
-    conf['runmode'] = RunMode.DRY_RUN
+    conf['runmode'] = runmode
     conf['order_types'] = {
         'buy': 'market',
         'sell': 'limit',
@@ -92,45 +96,14 @@ def test_order_dict_dry_run(default_conf, mocker, caplog) -> None:
     conf['bid_strategy']['price_side'] = 'ask'
 
     freqtrade = FreqtradeBot(conf)
+    if runmode == RunMode.LIVE:
+        assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
     assert freqtrade.strategy.order_types['stoploss_on_exchange']
 
     caplog.clear()
     # is left untouched
     conf = default_conf.copy()
-    conf['runmode'] = RunMode.DRY_RUN
-    conf['order_types'] = {
-        'buy': 'market',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': False,
-    }
-    freqtrade = FreqtradeBot(conf)
-    assert not freqtrade.strategy.order_types['stoploss_on_exchange']
-    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
-
-
-def test_order_dict_live(default_conf, mocker, caplog) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-
-    conf = default_conf.copy()
-    conf['runmode'] = RunMode.LIVE
-    conf['order_types'] = {
-        'buy': 'market',
-        'sell': 'limit',
-        'stoploss': 'limit',
-        'stoploss_on_exchange': True,
-    }
-    conf['bid_strategy']['price_side'] = 'ask'
-
-    freqtrade = FreqtradeBot(conf)
-    assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
-    assert freqtrade.strategy.order_types['stoploss_on_exchange']
-
-    caplog.clear()
-    # is left untouched
-    conf = default_conf.copy()
-    conf['runmode'] = RunMode.LIVE
+    conf['runmode'] = runmode
     conf['order_types'] = {
         'buy': 'market',
         'sell': 'limit',
@@ -3139,7 +3112,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf, ticker, fee,
     # Disable loss
     (False, 0.00000172, 0.00000173, True, False, SellType.SELL_SIGNAL.value),
 ])
-def test_sell_profit_only_enable_profit(
+def test_sell_profit_only(
         default_conf, limit_buy_order, limit_buy_order_open,
         fee, mocker, profit_only, bid, ask, handle_first, handle_second, sell_type) -> None:
     patch_RPCManager(mocker)
