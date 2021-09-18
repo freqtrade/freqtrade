@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.strategy import (merge_informative_pair, stoploss_from_open, timeframe_to_minutes,
-                                stoploss_from_absolute)
+from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
+                                timeframe_to_minutes)
 
 
 def generate_test_data(timeframe: str, size: int):
