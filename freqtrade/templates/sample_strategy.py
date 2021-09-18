@@ -352,7 +352,7 @@ class SampleStrategy(IStrategy):
                 (dataframe['tema'] > dataframe['tema'].shift(1)) &  # Guard: tema is raising
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
@@ -371,5 +371,5 @@ class SampleStrategy(IStrategy):
                 (dataframe['tema'] < dataframe['tema'].shift(1)) &  # Guard: tema is falling
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe

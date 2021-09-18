@@ -461,12 +461,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self.dp._set_cached_df(pair, self.timeframe, dataframe)
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
-            dataframe['buy'] = 0
-            dataframe['sell'] = 0
-            dataframe['enter_short'] = 0
-            dataframe['exit_short'] = 0
-            dataframe['buy_tag'] = None
-            dataframe['short_tag'] = None
+            dataframe[SignalType.ENTER_LONG.value] = 0
+            dataframe[SignalType.EXIT_LONG.value] = 0
+            dataframe[SignalType.ENTER_SHORT.value] = 0
+            dataframe[SignalType.EXIT_SHORT.value] = 0
+            dataframe[SignalTagType.BUY_TAG.value] = None
+            dataframe[SignalTagType.SHORT_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
