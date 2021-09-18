@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -840,7 +840,7 @@ class Trade(_DECL_BASE, LocalTrade):
         filters = [Trade.is_open.is_(False)]
         if days:
             start_date = datetime.today() - timedelta(days)
-            filters.append((Trade.close_date >= start_date))
+            filters.append(Trade.close_date >= start_date)
         pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),

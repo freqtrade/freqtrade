@@ -165,6 +165,7 @@ Example to remove the first 10 pairs from the pairlist:
 
 ```json
 "pairlists": [
+    // ...
     {
         "method": "OffsetFilter",
         "offset": 10
@@ -189,6 +190,19 @@ Sorts pairs by past trade performance, as follows:
 3. Negative performance.
 
 Trade count is used as a tie breaker.
+
+You can use the `days` parameter to only consider performance of the past X days.
+Not defining this parameter (or setting it to 0) will use all-time performance.
+
+```json
+"pairlists": [
+    // ...
+    {
+        "method": "PerformanceFilter",
+        "days": 10
+    }
+],
+```
 
 !!! Note
     `PerformanceFilter` does not support backtesting mode.
