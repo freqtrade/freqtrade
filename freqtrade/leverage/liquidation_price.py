@@ -19,6 +19,7 @@ def liquidation_price(
     entry_price_1: Optional[float],
     maintenance_margin_rate: Optional[float]
 ) -> Optional[float]:
+
     if trading_mode == TradingMode.SPOT:
         return None
 

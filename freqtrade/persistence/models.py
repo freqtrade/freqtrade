@@ -14,9 +14,9 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
-from freqtrade.enums import SellType
+from freqtrade.enums import Collateral, SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.leverage import interest
+from freqtrade.leverage import interest, liquidation_price
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -265,6 +265,8 @@ class LocalTrade():
     buy_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
+    trading_mode: TradingMode
+
     # Leverage trading properties
     is_short: bool = False
     isolated_liq: Optional[float] = None
@@ -318,8 +320,9 @@ class LocalTrade():
         for key in kwargs:
             setattr(self, key, kwargs[key])
         if self.isolated_liq:
-            self.set_isolated_liq(self.isolated_liq)
+            self.set_isolated_liq(isolated_liq=self.isolated_liq)
         self.recalc_open_trade_value()
+        # TODO-lev: Throw exception if on margin and interest_rate is none
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
@@ -344,11 +347,25 @@ class LocalTrade():
             self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
-    def set_isolated_liq(self, isolated_liq: float):
+    def set_isolated_liq(self, isolated_liq: Optional[float]):
         """
             Method you should use to set self.liquidation price.
             Assures stop_loss is not passed the liquidation price
         """
+        if not isolated_liq:
+            isolated_liq = liquidation_price(
+                exchange_name=self.exchange,
+                open_rate=self.open_rate,
+                is_short=self.is_short,
+                leverage=self.leverage,
+                trading_mode=self.trading_mode,
+                collateral=Collateral.ISOLATED
+            )
+        if isolated_liq is None:
+            raise OperationalException(
+                "leverage/isolated_liq returned None. This exception should never happen"
+            )
+
         if self.stop_loss is not None:
             if self.is_short:
                 self.stop_loss = min(self.stop_loss, isolated_liq)

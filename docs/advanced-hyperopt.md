@@ -98,6 +98,38 @@ class MyAwesomeStrategy(IStrategy):
 !!! Note
     All overrides are optional and can be mixed/matched as necessary.
 
+### Overriding Base estimator
+
+You can define your own estimator for Hyperopt by implementing `generate_estimator()` in the Hyperopt subclass.
+
+```python
+class MyAwesomeStrategy(IStrategy):
+    class HyperOpt:
+        def generate_estimator():
+            return "RF"
+
+```
+
+Possible values are either one of "GP", "RF", "ET", "GBRT" (Details can be found in the [scikit-optimize documentation](https://scikit-optimize.github.io/)), or "an instance of a class that inherits from `RegressorMixin` (from sklearn) and where the `predict` method has an optional `return_std` argument, which returns `std(Y | x)` along with `E[Y | x]`".
+
+Some research will be necessary to find additional Regressors.
+
+Example for `ExtraTreesRegressor` ("ET") with additional parameters:
+
+```python
+class MyAwesomeStrategy(IStrategy):
+    class HyperOpt:
+        def generate_estimator():
+            from skopt.learning import ExtraTreesRegressor
+            # Corresponds to "ET" - but allows additional parameters.
+            return ExtraTreesRegressor(n_estimators=100)
+
+```
+
+!!! Note
+    While custom estimators can be provided, it's up to you as User to do research on possible parameters and analyze / understand which ones should be used.
+    If you're unsure about this, best use one of the Defaults (`"ET"` has proven to be the most versatile) without further parameters.
+
 ## Space options
 
 For the additional spaces, scikit-optimize (in combination with Freqtrade) provides the following space types:

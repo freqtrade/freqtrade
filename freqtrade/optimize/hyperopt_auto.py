@@ -12,7 +12,7 @@ from freqtrade.exceptions import OperationalException
 with suppress(ImportError):
     from skopt.space import Dimension
 
-from freqtrade.optimize.hyperopt_interface import IHyperOpt
+from freqtrade.optimize.hyperopt_interface import EstimatorType, IHyperOpt
 
 
 def _format_exception_message(space: str) -> str:
@@ -56,7 +56,7 @@ class HyperOptAuto(IHyperOpt):
         else:
             _format_exception_message(category)
 
-    def indicator_space(self) -> List['Dimension']:
+    def buy_indicator_space(self) -> List['Dimension']:
         return self._get_indicator_space('buy')
 
     def sell_indicator_space(self) -> List['Dimension']:
@@ -79,3 +79,6 @@ class HyperOptAuto(IHyperOpt):
 
     def trailing_space(self) -> List['Dimension']:
         return self._get_func('trailing_space')()
+
+    def generate_estimator(self) -> EstimatorType:
+        return self._get_func('generate_estimator')()
