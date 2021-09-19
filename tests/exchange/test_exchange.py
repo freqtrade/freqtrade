@@ -3020,7 +3020,7 @@ def test_get_funding_fees(default_conf, mocker, exchange_name):
     # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
-    unix_time = int(date_time.strftime('%s'))
+    unix_time = int(date_time.timestamp())
     expected_fees = -0.001  # 0.14542341 + -0.14642341
     fees_from_datetime = exchange.get_funding_fees_from_exchange(
         pair='XRP/USDT',
