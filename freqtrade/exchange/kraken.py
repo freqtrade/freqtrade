@@ -114,15 +114,8 @@ class Kraken(Exchange):
         try:
             amount = self.amount_to_precision(pair, amount)
 
-            order = self._api.create_order(
-                symbol=pair,
-                type=ordertype,
-                side=side,
-                amount=amount,
-                price=stop_price,
-                leverage=leverage,
-                params=params
-            )
+            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
+                                           amount=amount, price=stop_price, params=params)
             self._log_exchange_response('create_stoploss_order', order)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)
