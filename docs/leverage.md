@@ -15,3 +15,7 @@ For longs, the currency which pays the interest fee for the `borrowed` will alre
     Rollover fee = P (borrowed money) * R (quat_hourly_interest) * ceiling(T/4) (in hours)
     I (interest) = Opening fee + Rollover fee
     [source](https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-)
+
+# TODO-lev: Mention that says you can't run 2 bots on the same account with leverage,
+
+#TODO-lev: Create a huge risk disclaimer

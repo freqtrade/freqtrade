@@ -576,6 +576,8 @@ def test_balance_handle_too_large_response(default_conf, update, mocker) -> None
         'total': 100.0,
         'symbol': 100.0,
         'value': 1000.0,
+        'starting_capital': 1000,
+        'starting_capital_fiat': 1000,
     })
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)

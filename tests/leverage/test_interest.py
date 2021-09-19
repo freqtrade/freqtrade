@@ -22,9 +22,10 @@ twentyfive_hours = Decimal(25.0)
     ('kraken', 0.00025, five_hours, 0.045),
     ('kraken', 0.00025, twentyfive_hours, 0.12),
     # FTX
-    # TODO-lev: - implement FTX tests
-    # ('ftx', Decimal(0.0005), ten_mins, 0.06),
-    # ('ftx', Decimal(0.0005), five_hours, 0.045),
+    ('ftx', 0.0005, ten_mins, 0.00125),
+    ('ftx', 0.00025, ten_mins, 0.000625),
+    ('ftx', 0.00025, five_hours, 0.003125),
+    ('ftx', 0.00025, twentyfive_hours, 0.015625),
 ])
 def test_interest(exchange, interest_rate, hours, expected):
     borrowed = Decimal(60.0)

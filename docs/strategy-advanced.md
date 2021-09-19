@@ -288,6 +288,12 @@ Stoploss values returned from `custom_stoploss()` always specify a percentage re
 
 The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
 
+### Calculating stoploss percentage from absolute price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss at specified absolute price level, we need to use `stop_rate` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_absolute()`](strategy-customization.md#stoploss_from_absolute) can be used to convert from an absolute price, to a current price relative stop which can be returned from `custom_stoploss()`.
+
 #### Stepped stoploss
 
 Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.

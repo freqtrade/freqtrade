@@ -85,10 +85,10 @@ class FreqtradeBot(LoggingMixin):
 
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
-        # Attach Dataprovider to Strategy baseclass
-        IStrategy.dp = self.dataprovider
-        # Attach Wallets to Strategy baseclass
-        IStrategy.wallets = self.wallets
+        # Attach Dataprovider to strategy instance
+        self.strategy.dp = self.dataprovider
+        # Attach Wallets to strategy instance
+        self.strategy.wallets = self.wallets
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -162,7 +162,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Refreshing candles
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
-                                  self.strategy.informative_pairs())
+                                  self.strategy.gather_informative_pairs())
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
@@ -735,9 +735,14 @@ class FreqtradeBot(LoggingMixin):
         :return: True if the order succeeded, and False in case of problems.
         """
         try:
-            stoploss_order = self.exchange.stoploss(pair=trade.pair, amount=trade.amount,
-                                                    stop_price=stop_price,
-                                                    order_types=self.strategy.order_types)
+            stoploss_order = self.exchange.stoploss(
+                pair=trade.pair,
+                amount=trade.amount,
+                stop_price=stop_price,
+                order_types=self.strategy.order_types,
+                side=trade.exit_side,
+                leverage=trade.leverage
+            )
 
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
             trade.orders.append(order_obj)
@@ -829,11 +834,11 @@ class FreqtradeBot(LoggingMixin):
             # if trailing stoploss is enabled we check if stoploss value has changed
             # in which case we cancel stoploss order and put another one with new
             # value immediately
-            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order)
+            self.handle_trailing_stoploss_on_exchange(trade, stoploss_order, side=trade.exit_side)
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict, side: str) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -841,7 +846,7 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
-        if self.exchange.stoploss_adjust(trade.stop_loss, order):
+        if self.exchange.stoploss_adjust(trade.stop_loss, order, side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
             if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:

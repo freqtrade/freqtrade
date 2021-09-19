@@ -422,20 +422,22 @@ def test_api_stopbuy(botclient):
     assert ftbot.config['max_open_trades'] == 0
 
 
-def test_api_balance(botclient, mocker, rpc_balance):
+def test_api_balance(botclient, mocker, rpc_balance, tickers):
     ftbot, client = botclient
 
     ftbot.config['dry_run'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_balances', return_value=rpc_balance)
+    mocker.patch('freqtrade.exchange.Exchange.get_tickers', tickers)
     mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination',
                  side_effect=lambda a, b: f"{a}/{b}")
     ftbot.wallets.update()
 
     rc = client_get(client, f"{BASE_URI}/balance")
     assert_response(rc)
-    assert "currencies" in rc.json()
-    assert len(rc.json()["currencies"]) == 5
-    assert rc.json()['currencies'][0] == {
+    response = rc.json()
+    assert "currencies" in response
+    assert len(response["currencies"]) == 5
+    assert response['currencies'][0] == {
         'currency': 'BTC',
         'free': 12.0,
         'balance': 12.0,
@@ -443,6 +445,10 @@ def test_api_balance(botclient, mocker, rpc_balance):
         'est_stake': 12.0,
         'stake': 'BTC',
     }
+    assert 'starting_capital' in response
+    assert 'starting_capital_fiat' in response
+    assert 'starting_capital_pct' in response
+    assert 'starting_capital_ratio' in response
 
 
 def test_api_count(botclient, mocker, ticker, fee, markets):
@@ -1218,6 +1224,7 @@ def test_api_strategies(botclient):
     assert_response(rc)
     assert rc.json() == {'strategies': [
         'HyperoptableStrategy',
+        'InformativeDecoratorTest',
         'StrategyTestV2',
         'TestStrategyLegacyV1'
     ]}
