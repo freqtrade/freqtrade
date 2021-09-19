@@ -123,7 +123,7 @@ def binance(
         # Liquidation Price of USDⓈ-M Futures Contracts Isolated
 
         # Isolated margin mode, then TMM=0，UPNL=0
-        return (wb + cum_b - (side_1_both * position_1_both * ep1_both)) / (
+        return (wb + cum_b - side_1_both * position_1_both * ep1_both) / (
             position_1_both * mmr_b - side_1_both * position_1_both)
 
     elif trading_mode == TradingMode.FUTURES and collateral == Collateral.CROSS:
@@ -131,7 +131,7 @@ def binance(
         # Liquidation Price of USDⓈ-M Futures Contracts Cross
 
         # Isolated margin mode, then TMM=0，UPNL=0
-        return (wb - tmm_1 + upnl_1 + cum_b - (side_1_both * position_1_both * ep1_both)) / (
+        return (wb - tmm_1 + upnl_1 + cum_b - side_1_both * position_1_both * ep1_both) / (
             position_1_both * mmr_b - side_1_both * position_1_both)
 
     # If nothing was returned
