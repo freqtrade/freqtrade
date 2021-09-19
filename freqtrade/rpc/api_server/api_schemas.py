@@ -54,7 +54,6 @@ class Balances(BaseModel):
     starting_capital_fiat_pct: float
 
 
-
 class Count(BaseModel):
     current: int
     max: int

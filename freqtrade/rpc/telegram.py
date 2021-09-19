@@ -649,8 +649,7 @@ class Telegram(RPCHandler):
                        f" `({result['starting_capital_pct']}%)`\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`"
-                       f" `({result['starting_capital_fiat_pct']}%)`\n"
-            )
+                       f" `({result['starting_capital_fiat_pct']}%)`\n")
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
