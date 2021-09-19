@@ -8,7 +8,7 @@ from freqtrade.leverage import liquidation_price
 
 @pytest.mark.parametrize(
     'exchange_name, open_rate, is_short, leverage, trading_mode, collateral, wallet_balance, maintenance_margin_ex_1, '
-    'unrealized_pnl_ex_1, maintenance_amount_both, position_1_both, entry_price_1_both, maintenance_margin_rate_both, '
+    'unrealized_pnl_ex_1, maintenance_amount, position_1, entry_price_1, maintenance_margin_rate, '
     'expected',
     [
         ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 71200.81144, -56354.57,
@@ -21,8 +21,8 @@ from freqtrade.leverage import liquidation_price
          109.488, 32481.980, 0.025, 26316.89)
     ])
 def test_liquidation_price(exchange_name, open_rate, is_short, leverage, trading_mode, collateral, wallet_balance,
-                           maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount_both, position_1_both,
-                           entry_price_1_both, maintenance_margin_rate_both, expected):
+                           maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount, position_1,
+                           entry_price_1, maintenance_margin_rate, expected):
     assert isclose(round(liquidation_price(
         exchange_name=exchange_name,
         open_rate=open_rate,
@@ -33,8 +33,8 @@ def test_liquidation_price(exchange_name, open_rate, is_short, leverage, trading
         wallet_balance=wallet_balance,
         maintenance_margin_ex_1=maintenance_margin_ex_1,
         unrealized_pnl_ex_1=unrealized_pnl_ex_1,
-        maintenance_amount_both=maintenance_amount_both,
-        position_1_both=position_1_both,
-        entry_price_1_both=entry_price_1_both,
-        maintenance_margin_rate_both=maintenance_margin_rate_both
+        maintenance_amount=maintenance_amount,
+        position_1=position_1,
+        entry_price_1=entry_price_1,
+        maintenance_margin_rate=maintenance_margin_rate
     ), 2), expected)
