@@ -359,8 +359,12 @@ def test_create_trade_minimal_amount(
             assert freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.edge) == 0
 
 
+@pytest.mark.parametrize('whitelist,positions', [
+    (["ETH/BTC"], 1),  # No pairs left
+    ([], 0),  # No pairs in whitelist
+])
 def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order_open, fee,
-                                       mocker, caplog) -> None:
+                                       whitelist, positions, mocker, caplog) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -369,36 +373,20 @@ def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order_ope
         create_order=MagicMock(return_value=limit_buy_order_open),
         get_fee=fee,
     )
-
-    default_conf['exchange']['pair_whitelist'] = ["ETH/BTC"]
+    default_conf['exchange']['pair_whitelist'] = whitelist
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
 
     n = freqtrade.enter_positions()
-    assert n == 1
-    assert not log_has_re(r"No currency pair in active pair whitelist.*", caplog)
-    n = freqtrade.enter_positions()
-    assert n == 0
-    assert log_has_re(r"No currency pair in active pair whitelist.*", caplog)
-
-
-def test_enter_positions_no_pairs_in_whitelist(default_conf, ticker, limit_buy_order, fee,
-                                               mocker, caplog) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        create_order=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_fee=fee,
-    )
-    default_conf['exchange']['pair_whitelist'] = []
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-
-    n = freqtrade.enter_positions()
-    assert n == 0
-    assert log_has("Active pair whitelist is empty.", caplog)
+    assert n == positions
+    if positions:
+        assert not log_has_re(r"No currency pair in active pair whitelist.*", caplog)
+        n = freqtrade.enter_positions()
+        assert n == 0
+        assert log_has_re(r"No currency pair in active pair whitelist.*", caplog)
+    else:
+        assert n == 0
+        assert log_has("Active pair whitelist is empty.", caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1555,30 +1543,27 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                                 stop_price=0.00002346 * 0.99)
 
 
-def test_enter_positions(mocker, default_conf, caplog) -> None:
+@pytest.mark.parametrize('return_value,side_effect,log_message', [
+    (False, None, 'Found no buy signals for whitelisted currencies. Trying again...'),
+    (None, DependencyException, 'Unable to create trade for ETH/BTC: ')
+])
+def test_enter_positions(mocker, default_conf, return_value, side_effect,
+                         log_message, caplog) -> None:
     caplog.set_level(logging.DEBUG)
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-
-    mock_ct = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.create_trade',
-                           MagicMock(return_value=False))
-    n = freqtrade.enter_positions()
-    assert n == 0
-    assert log_has('Found no buy signals for whitelisted currencies. Trying again...', caplog)
-    # create_trade should be called once for every pair in the whitelist.
-    assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
-
-
-def test_enter_positions_exception(mocker, default_conf, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mock_ct = mocker.patch(
         'freqtrade.freqtradebot.FreqtradeBot.create_trade',
-        MagicMock(side_effect=DependencyException)
+        MagicMock(
+            return_value=return_value,
+            side_effect=side_effect
+        )
     )
     n = freqtrade.enter_positions()
     assert n == 0
+    assert log_has(log_message, caplog)
+    # create_trade should be called once for every pair in the whitelist.
     assert mock_ct.call_count == len(default_conf['exchange']['pair_whitelist'])
-    assert log_has('Unable to create trade for ETH/BTC: ', caplog)
 
 
 def test_exit_positions(mocker, default_conf, limit_buy_order, caplog) -> None:
@@ -1672,8 +1657,13 @@ def test_update_trade_state(mocker, default_conf, limit_buy_order, caplog) -> No
     assert log_has_re('Found open order for.*', caplog)
 
 
+@pytest.mark.parametrize('initial_amount,has_rounding_fee', [
+    (90.99181073 + 1e-14, True),
+    (8.0, False)
+])
 def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_buy_order, fee,
-                                          mocker):
+                                          mocker, initial_amount, has_rounding_fee, caplog):
+    trades_for_order[0]['amount'] = initial_amount
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     # fetch_order should not be called!!
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
@@ -1694,32 +1684,8 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
     freqtrade.update_trade_state(trade, '123456', limit_buy_order)
     assert trade.amount != amount
     assert trade.amount == limit_buy_order['amount']
-
-
-def test_update_trade_state_withorderdict_rounding_fee(default_conf, trades_for_order, fee,
-                                                       limit_buy_order, mocker, caplog):
-    trades_for_order[0]['amount'] = limit_buy_order['amount'] + 1e-14
-    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
-    # fetch_order should not be called!!
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', MagicMock(side_effect=ValueError))
-    patch_exchange(mocker)
-    amount = sum(x['amount'] for x in trades_for_order)
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    trade = Trade(
-        pair='LTC/ETH',
-        amount=amount,
-        exchange='binance',
-        open_rate=0.245441,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        open_order_id='123456',
-        is_open=True,
-        open_date=arrow.utcnow().datetime,
-    )
-    freqtrade.update_trade_state(trade, '123456', limit_buy_order)
-    assert trade.amount != amount
-    assert trade.amount == limit_buy_order['amount']
-    assert log_has_re(r'Applying fee on amount for .*', caplog)
+    if has_rounding_fee:
+        assert log_has_re(r'Applying fee on amount for .*', caplog)
 
 
 def test_update_trade_state_exception(mocker, default_conf,
