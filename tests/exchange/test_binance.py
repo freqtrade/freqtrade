@@ -9,7 +9,6 @@ from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
 from tests.conftest import get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
-from tests.leverage_brackets import leverage_brackets
 
 
 @pytest.mark.parametrize('limitratio,expected,side', [
@@ -281,7 +280,44 @@ def test_fill_leverage_brackets_binance_dryrun(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
     exchange.fill_leverage_brackets()
 
-    assert exchange._leverage_brackets == leverage_brackets()
+    leverage_brackets = {
+        "1000SHIB/USDT": [
+            [0.0, 0.01],
+            [5000.0, 0.025],
+            [25000.0, 0.05],
+            [100000.0, 0.1],
+            [250000.0, 0.125],
+            [1000000.0, 0.5]
+        ],
+        "1INCH/USDT": [
+            [0.0, 0.012],
+            [5000.0, 0.025],
+            [25000.0, 0.05],
+            [100000.0, 0.1],
+            [250000.0, 0.125],
+            [1000000.0, 0.5]
+        ],
+        "AAVE/USDT": [
+            [0.0, 0.01],
+            [50000.0, 0.02],
+            [250000.0, 0.05],
+            [1000000.0, 0.1],
+            [2000000.0, 0.125],
+            [5000000.0, 0.1665],
+            [10000000.0, 0.25]
+        ],
+        "ADA/BUSD": [
+            [0.0, 0.025],
+            [100000.0, 0.05],
+            [500000.0, 0.1],
+            [1000000.0, 0.15],
+            [2000000.0, 0.25],
+            [5000000.0, 0.5]
+        ]
+    }
+
+    for key, value in leverage_brackets.items():
+        assert exchange._leverage_brackets[key] == value
 
 
 def test__set_leverage_binance(mocker, default_conf):
