@@ -1,3 +1,5 @@
+from math import isclose
+
 import pytest
 
 from freqtrade.enums import Collateral, TradingMode
@@ -46,7 +48,14 @@ def test_liquidation_price_is_none(
         is_short,
         leverage,
         trading_mode,
-        collateral
+        collateral,
+        1535443.01,
+        71200.81144,
+        -56354.57,
+        135365.00,
+        3683.979,
+        1456.84,
+        0.10,
     ) is None
 
 
@@ -80,34 +89,35 @@ def test_liquidation_price_exception_thrown(
 
 
 @pytest.mark.parametrize(
-    'exchange_name,open_rate,is_short,leverage,trading_mode,collateral,result', [
-        # Binance
-        ('binance', "2.0", False, "1.0", margin, cross, 1.0),
-        ('binance', "2.0", False, "1.0", futures, cross, 1.0),
-        ('binance', "2.0", False, "1.0", futures, isolated, 1.0),
-        # Kraken
-        ('kraken', "2.0", True, "3.0", margin, cross, 1.0),
-        ('kraken', "2.0", True, "3.0", futures, cross, 1.0),
-        # FTX
-        ('ftx', "2.0", False, "3.0", margin, cross, 1.0),
-        ('ftx', "2.0", False, "3.0", futures, cross, 1.0),
-    ]
-)
-def test_liquidation_price(
-    exchange_name,
-    open_rate,
-    is_short,
-    leverage,
-    trading_mode,
-    collateral,
-    result
-):
-    # assert liquidation_price(
-    #     exchange_name,
-    #     open_rate,
-    #     is_short,
-    #     leverage,
-    #     trading_mode,
-    #     collateral
-    # ) == result
-    return  # Here to avoid indent error
+    'exchange_name, open_rate, is_short, leverage, trading_mode, collateral, wallet_balance, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, position, entry_price, '
+    'mm_rate, expected',
+    [
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 71200.8114,
+         -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 356512.508,
+         -448192.89, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.CROSS, 1535443.01, 71200.81144,
+         -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26),
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.CROSS, 1535443.01, 356512.508,
+         -448192.89, 16300.000, 109.488, 32481.980, 0.025, 26316.89)
+    ])
+def test_liquidation_price(exchange_name, open_rate, is_short, leverage, trading_mode, collateral,
+                           wallet_balance, mm_ex_1, upnl_ex_1,
+                           maintenance_amt, position, entry_price, mm_rate,
+                           expected):
+    assert isclose(round(liquidation_price(
+        exchange_name=exchange_name,
+        open_rate=open_rate,
+        is_short=is_short,
+        leverage=leverage,
+        trading_mode=trading_mode,
+        collateral=collateral,
+        wallet_balance=wallet_balance,
+        mm_ex_1=mm_ex_1,
+        upnl_ex_1=upnl_ex_1,
+        maintenance_amt=maintenance_amt,
+        position=position,
+        entry_price=entry_price,
+        mm_rate=mm_rate
+    ), 2), expected)
