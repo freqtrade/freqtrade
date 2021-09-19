@@ -5,8 +5,9 @@ This module defines the interface to apply for hyperopt
 import logging
 import math
 from abc import ABC
-from typing import Dict, List
+from typing import Dict, List, Union
 
+from sklearn.base import RegressorMixin
 from skopt.space import Categorical, Dimension, Integer
 
 from freqtrade.exchange import timeframe_to_minutes
@@ -16,6 +17,8 @@ from freqtrade.strategy import IStrategy
 
 
 logger = logging.getLogger(__name__)
+
+EstimatorType = Union[RegressorMixin, str]
 
 
 class IHyperOpt(ABC):
@@ -36,6 +39,14 @@ class IHyperOpt(ABC):
         # Assign ticker_interval to be used in hyperopt
         IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
+
+    def generate_estimator(self) -> EstimatorType:
+        """
+        Return base_estimator.
+        Can be any of "GP", "RF", "ET", "GBRT" or an instance of a class
+        inheriting from RegressorMixin (from sklearn).
+        """
+        return 'ET'
 
     def generate_roi_table(self, params: Dict) -> Dict[int, float]:
         """
