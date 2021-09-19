@@ -603,12 +603,15 @@ class Telegram(RPCHandler):
 
             output = ''
             if self._config['dry_run']:
-                output += (
-                    f"*Warning:* Simulated balances in Dry Mode.\n"
-                    "This mode is still experimental!\n"
-                    "Starting capital: "
-                    f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
-                )
+                output += "*Warning:* Simulated balances in Dry Mode.\n"
+
+            output += ("Starting capital: "
+                       f"`{result['starting_capital']}` {self._config['stake_currency']}"
+                       )
+            output += (f" `{result['starting_capital_fiat']}` "
+                       f"{self._config['fiat_display_currency']}.\n"
+                       ) if result['starting_capital_fiat'] > 0 else '.\n'
+
             total_dust_balance = 0
             total_dust_currencies = 0
             for curr in result['currencies']:
@@ -641,9 +644,13 @@ class Telegram(RPCHandler):
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
 
             output += ("\n*Estimated Value*:\n"
-                       f"\t`{result['stake']}: {result['total']: .8f}`\n"
+                       f"\t`{result['stake']}: "
+                       f"{round_coin_value(result['total'], result['stake'], False)}`"
+                       f" `({result['starting_capital_pct']}%)`\n"
                        f"\t`{result['symbol']}: "
-                       f"{round_coin_value(result['value'], result['symbol'], False)}`\n")
+                       f"{round_coin_value(result['value'], result['symbol'], False)}`"
+                       f" `({result['starting_capital_fiat_pct']}%)`\n"
+            )
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:

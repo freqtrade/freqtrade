@@ -46,6 +46,13 @@ class Balances(BaseModel):
     value: float
     stake: str
     note: str
+    starting_capital: float
+    starting_capital_ratio: float
+    starting_capital_pct: float
+    starting_capital_fiat: float
+    starting_capital_fiat_ratio: float
+    starting_capital_fiat_pct: float
+
 
 
 class Count(BaseModel):
