@@ -1559,7 +1559,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
 
 @pytest.mark.parametrize('return_value,side_effect,log_message', [
-    (False, None, 'Found no buy signals for whitelisted currencies. Trying again...'),
+    (False, None, 'Found no enter signals for whitelisted currencies. Trying again...'),
     (None, DependencyException, 'Unable to create trade for ETH/BTC: ')
 ])
 def test_enter_positions(mocker, default_conf, return_value, side_effect,
@@ -3126,7 +3126,7 @@ def test__safe_exit_amount(default_conf, fee, caplog, mocker, amount_wallet, has
     freqtrade = FreqtradeBot(default_conf)
     patch_get_signal(freqtrade)
     if has_err:
-        with pytest.raises(DependencyException, match=r"Not enough amount to sell."):
+        with pytest.raises(DependencyException, match=r"Not enough amount to exit trade."):
             assert freqtrade._safe_exit_amount(trade.pair, trade.amount)
     else:
         wallet_update.reset_mock()
