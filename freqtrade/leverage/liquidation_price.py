@@ -14,10 +14,10 @@ def liquidation_price(
     wallet_balance: Optional[float],
     maintenance_margin_ex_1: Optional[float],
     unrealized_pnl_ex_1: Optional[float],
-    maintenance_amount_both: Optional[float],
-    position_1_both: Optional[float],
-    entry_price_1_both: Optional[float],
-    maintenance_margin_rate_both: Optional[float]
+    maintenance_amount: Optional[float],
+    position_1: Optional[float],
+    entry_price_1: Optional[float],
+    maintenance_margin_rate: Optional[float]
 ) -> Optional[float]:
 
     if trading_mode == TradingMode.SPOT:
@@ -30,34 +30,16 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if (
-            not wallet_balance or
-            not maintenance_margin_ex_1 or
-            not unrealized_pnl_ex_1 or
-            not maintenance_amount_both or
-            not position_1_both or
-            not entry_price_1_both or
-            not maintenance_margin_rate_both
-        ):
+        if not wallet_balance or not maintenance_margin_ex_1 or not unrealized_pnl_ex_1 or not maintenance_amount \
+                or not position_1 or not entry_price_1 or not maintenance_margin_rate:
             raise OperationalException(
-                f"Parameters wallet_balance, maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount_both, "
-                f"position_1_both, entry_price_1_both, maintenance_margin_rate_both is required by liquidation_price "
+                f"Parameters wallet_balance, maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount, "
+                f"position_1, entry_price_1, maintenance_margin_rate is required by liquidation_price "
                 f"when exchange is {exchange_name.lower()}")
 
-        return binance(
-            open_rate,
-            is_short,
-            leverage,
-            trading_mode,
-            collateral,
-            wallet_balance,
-            maintenance_margin_ex_1,
-            unrealized_pnl_ex_1,
-            maintenance_amount_both,
-            position_1_both,
-            entry_price_1_both,
-            maintenance_margin_rate_both
-        )
+        return binance(open_rate, is_short, leverage, trading_mode, collateral, wallet_balance, maintenance_margin_ex_1,
+                       unrealized_pnl_ex_1, maintenance_amount, position_1, entry_price_1,
+                       maintenance_margin_rate)
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
@@ -92,10 +74,10 @@ def binance(
     wallet_balance: float,
     maintenance_margin_ex_1: float,
     unrealized_pnl_ex_1: float,
-    maintenance_amount_both: float,
-    position_1_both: float,
-    entry_price_1_both: float,
-    maintenance_margin_rate_both: float,
+    maintenance_amount: float,
+    position_1: float,
+    entry_price_1: float,
+    maintenance_margin_rate: float,
 ):
     r"""
         Calculates the liquidation price on Binance
@@ -114,24 +96,24 @@ def binance(
         :param unrealized_pnl_ex_1: Unrealized PNL of all other contracts, excluding Contract 1.
           If it is an isolated margin mode, then UPNL=0
 
-        :param maintenance_amount_both: Maintenance Amount of BOTH position (one-way mode)
+        :param maintenance_amount: Maintenance Amount of position (one-way mode)
 
-        :param position_1_both: Absolute value of BOTH position size (one-way mode)
+        :param position_1: Absolute value of position size (one-way mode)
 
-        :param entry_price_1_both: Entry Price of BOTH position (one-way mode)
+        :param entry_price_1: Entry Price of position (one-way mode)
 
-        :param maintenance_margin_rate_both: Maintenance margin rate of BOTH position (one-way mode)
+        :param maintenance_margin_rate: Maintenance margin rate of position (one-way mode)
 
     """
     # TODO-lev: Additional arguments, fill in formulas
     wb = wallet_balance
     tmm_1 = 0.0 if collateral == Collateral.ISOLATED else maintenance_margin_ex_1
     upnl_1 = 0.0 if collateral == Collateral.ISOLATED else unrealized_pnl_ex_1
-    cum_b = maintenance_amount_both
-    side_1_both = -1 if is_short else 1
-    position_1_both = abs(position_1_both)
-    ep1_both = entry_price_1_both
-    mmr_b = maintenance_margin_rate_both
+    cum_b = maintenance_amount
+    side_1 = -1 if is_short else 1
+    position_1 = abs(position_1)
+    ep1 = entry_price_1
+    mmr_b = maintenance_margin_rate
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
         # TODO-lev: perform a calculation based on this formula
@@ -142,16 +124,16 @@ def binance(
         # Liquidation Price of USDⓈ-M Futures Contracts Isolated
 
         # Isolated margin mode, then TMM=0，UPNL=0
-        return (wb + cum_b - (side_1_both * position_1_both * ep1_both)) / (
-            position_1_both * mmr_b - side_1_both * position_1_both)
+        return (wb + cum_b - side_1 * position_1 * ep1) / (
+            position_1 * mmr_b - side_1 * position_1)
 
     elif trading_mode == TradingMode.FUTURES and collateral == Collateral.CROSS:
         # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
         # Liquidation Price of USDⓈ-M Futures Contracts Cross
 
         # Isolated margin mode, then TMM=0，UPNL=0
-        return (wb - tmm_1 + upnl_1 + cum_b - (side_1_both * position_1_both * ep1_both)) / (
-            position_1_both * mmr_b - side_1_both * position_1_both)
+        return (wb - tmm_1 + upnl_1 + cum_b - side_1 * position_1 * ep1) / (
+            position_1 * mmr_b - side_1 * position_1)
 
     # If nothing was returned
     exception("binance", trading_mode, collateral)
