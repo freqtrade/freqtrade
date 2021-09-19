@@ -319,8 +319,16 @@ def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order,
         freqtrade.create_trade('ETH/BTC')
 
 
-def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order_open,
-                                     fee, mocker) -> None:
+@pytest.mark.parametrize('stake_amount,create,amount_enough,max_open_trades', [
+    (0.0005, True, True, 99),
+    (0.000000005, True, False, 99),
+    (0, False, True, 99),
+    (UNLIMITED_STAKE_AMOUNT, False, True, 0),
+])
+def test_create_trade_minimal_amount(
+    default_conf, ticker, limit_buy_order_open, fee, mocker,
+    stake_amount, create, amount_enough, max_open_trades, caplog
+) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     buy_mock = MagicMock(return_value=limit_buy_order_open)
@@ -330,74 +338,25 @@ def test_create_trade_minimal_amount(default_conf, ticker, limit_buy_order_open,
         create_order=buy_mock,
         get_fee=fee,
     )
-    default_conf['stake_amount'] = 0.0005
+    default_conf['max_open_trades'] = max_open_trades
     freqtrade = FreqtradeBot(default_conf)
+    freqtrade.config['stake_amount'] = stake_amount
     patch_get_signal(freqtrade)
 
-    freqtrade.create_trade('ETH/BTC')
-    rate, amount = buy_mock.call_args[1]['rate'], buy_mock.call_args[1]['amount']
-    assert rate * amount <= default_conf['stake_amount']
-
-
-def test_create_trade_too_small_stake_amount(default_conf, ticker, limit_buy_order_open,
-                                             fee, mocker, caplog) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    buy_mock = MagicMock(return_value=limit_buy_order_open)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        create_order=buy_mock,
-        get_fee=fee,
-    )
-
-    freqtrade = FreqtradeBot(default_conf)
-    freqtrade.config['stake_amount'] = 0.000000005
-
-    patch_get_signal(freqtrade)
-
-    assert freqtrade.create_trade('ETH/BTC')
-    assert log_has_re(r"Stake amount for pair .* is too small.*", caplog)
-
-
-def test_create_trade_zero_stake_amount(default_conf, ticker, limit_buy_order_open,
-                                        fee, mocker) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    buy_mock = MagicMock(return_value=limit_buy_order_open)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        create_order=buy_mock,
-        get_fee=fee,
-    )
-
-    freqtrade = FreqtradeBot(default_conf)
-    freqtrade.config['stake_amount'] = 0
-
-    patch_get_signal(freqtrade)
-
-    assert not freqtrade.create_trade('ETH/BTC')
-
-
-def test_create_trade_limit_reached(default_conf, ticker, limit_buy_order_open,
-                                    fee, mocker) -> None:
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        create_order=MagicMock(return_value=limit_buy_order_open),
-        get_fee=fee,
-    )
-    default_conf['max_open_trades'] = 0
-    default_conf['stake_amount'] = UNLIMITED_STAKE_AMOUNT
-
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-
-    assert not freqtrade.create_trade('ETH/BTC')
-    assert freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.edge) == 0
+    if create:
+        assert freqtrade.create_trade('ETH/BTC')
+        if amount_enough:
+            rate, amount = buy_mock.call_args[1]['rate'], buy_mock.call_args[1]['amount']
+            assert rate * amount <= default_conf['stake_amount']
+        else:
+            assert log_has_re(
+                r"Stake amount for pair .* is too small.*",
+                caplog
+            )
+    else:
+        assert not freqtrade.create_trade('ETH/BTC')
+        if not max_open_trades:
+            assert freqtrade.wallets.get_trade_stake_amount('ETH/BTC', freqtrade.edge) == 0
 
 
 def test_enter_positions_no_pairs_left(default_conf, ticker, limit_buy_order_open, fee,
