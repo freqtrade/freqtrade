@@ -93,10 +93,10 @@ def test_liquidation_price_exception_thrown(
     'mm_ex_1, upnl_ex_1, maintenance_amt, position, entry_price, '
     'mm_rate, expected',
     [
-        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 71200.8114,
-         -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
-        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 356512.508,
-         -448192.89, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 0.0,
+         0.0, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
+        ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 0.0,
+         0.0, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
         ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.CROSS, 1535443.01, 71200.81144,
          -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26),
         ("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.CROSS, 1535443.01, 356512.508,
