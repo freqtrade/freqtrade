@@ -375,7 +375,14 @@ class LocalTrade():
                 is_short=self.is_short,
                 leverage=self.leverage,
                 trading_mode=self.trading_mode,
-                collateral=Collateral.ISOLATED
+                collateral=Collateral.ISOLATED,
+                mm_ex_1=0.0,
+                upnl_ex_1=0.0,
+                # TODO-lev: position=amount * current_price,
+                # TODO-lev: maintenance_amt,
+                # TODO-lev: wallet_balance,
+                # TODO-lev: mm_rate,
+
             )
         if isolated_liq is None:
             raise OperationalException(
