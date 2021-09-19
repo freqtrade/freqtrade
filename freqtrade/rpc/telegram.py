@@ -260,29 +260,7 @@ class Telegram(RPCHandler):
 
         return message
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
-        """ Send a message to telegram channel """
-
-        default_noti = 'on'
-
-        msg_type = msg['type']
-        noti = ''
-        if msg_type == RPCMessageType.SELL:
-            sell_noti = self._config['telegram'] \
-                .get('notification_settings', {}).get(str(msg_type), {})
-            # For backward compatibility sell still can be string
-            if isinstance(sell_noti, str):
-                noti = sell_noti
-            else:
-                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
-        else:
-            noti = self._config['telegram'] \
-                .get('notification_settings', {}).get(str(msg_type), default_noti)
-
-        if noti == 'off':
-            logger.info(f"Notification '{msg_type}' not sent.")
-            # Notification disabled
-            return
+    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
 
         if msg_type == RPCMessageType.BUY:
             message = self._format_buy_msg(msg)
@@ -315,6 +293,33 @@ class Telegram(RPCHandler):
 
         else:
             raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+        return message
+
+    def send_msg(self, msg: Dict[str, Any]) -> None:
+        """ Send a message to telegram channel """
+
+        default_noti = 'on'
+
+        msg_type = msg['type']
+        noti = ''
+        if msg_type == RPCMessageType.SELL:
+            sell_noti = self._config['telegram'] \
+                .get('notification_settings', {}).get(str(msg_type), {})
+            # For backward compatibility sell still can be string
+            if isinstance(sell_noti, str):
+                noti = sell_noti
+            else:
+                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
+        else:
+            noti = self._config['telegram'] \
+                .get('notification_settings', {}).get(str(msg_type), default_noti)
+
+        if noti == 'off':
+            logger.info(f"Notification '{msg_type}' not sent.")
+            # Notification disabled
+            return
+
+        message = self.compose_message(msg, msg_type)
 
         self._send_msg(message, disable_notification=(noti == 'silent'))
 
