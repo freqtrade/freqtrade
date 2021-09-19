@@ -29,16 +29,17 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if not wallet_balance or not maintenance_margin_ex_1 or not unrealized_pnl_ex_1 or not maintenance_amount \
-                or not position_1 or not entry_price_1 or not maintenance_margin_rate:
+        if not wallet_balance or not maintenance_margin_ex_1 or not unrealized_pnl_ex_1 \
+                or not maintenance_amount or not position_1 or not entry_price_1 \
+                or not maintenance_margin_rate:
             raise OperationalException(
-                f"Parameters wallet_balance, maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount, "
-                f"position_1, entry_price_1, maintenance_margin_rate is required by liquidation_price "
-                f"when exchange is {exchange_name.lower()}")
+                f"Parameters wallet_balance, maintenance_margin_ex_1, unrealized_pnl_ex_1, "
+                f"maintenance_amount, position_1, entry_price_1, maintenance_margin_rate "
+                f"is required by liquidation_price when exchange is {exchange_name.lower()}")
 
-        return binance(open_rate, is_short, leverage, trading_mode, collateral, wallet_balance, maintenance_margin_ex_1,
-                       unrealized_pnl_ex_1, maintenance_amount, position_1, entry_price_1,
-                       maintenance_margin_rate)
+        return binance(open_rate, is_short, leverage, trading_mode, collateral, wallet_balance,
+                       maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount,
+                       position_1, entry_price_1, maintenance_margin_rate)
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
@@ -87,13 +88,13 @@ def binance(
         :param collateral: cross, isolated
 
         :param wallet_balance: Wallet Balance is crossWalletBalance in Cross-Margin Mode.
-          Wallet Balance is isolatedWalletBalance in Isolated Margin Mode
+            Wallet Balance is isolatedWalletBalance in Isolated Margin Mode
 
-        :param maintenance_margin_ex_1: Maintenance Margin of all other contracts, excluding Contract 1.
-          If it is an isolated margin mode, then TMM=0
+        :param maintenance_margin_ex_1: Maintenance Margin of all other contracts,
+            excluding Contract 1. If it is an isolated margin mode, then TMM=0
 
         :param unrealized_pnl_ex_1: Unrealized PNL of all other contracts, excluding Contract 1.
-          If it is an isolated margin mode, then UPNL=0
+            If it is an isolated margin mode, then UPNL=0
 
         :param maintenance_amount: Maintenance Amount of position (one-way mode)
 
