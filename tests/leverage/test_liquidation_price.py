@@ -1,5 +1,6 @@
-import pytest
 from math import isclose
+
+import pytest
 
 from freqtrade.enums import Collateral, TradingMode
 from freqtrade.leverage import liquidation_price
