@@ -62,7 +62,7 @@ function updateenv() {
     then
         REQUIREMENTS_PLOT="-r requirements-plot.txt"
     fi
-    if [ "${SYS_ARCH}" == "armv7l" ]; then
+    if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
         echo "Detected Raspberry, installing cython, skipping hyperopt installation."
         ${PYTHON} -m pip install --upgrade cython
     else

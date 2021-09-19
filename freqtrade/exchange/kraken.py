@@ -1,9 +1,10 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -23,6 +24,12 @@ class Kraken(Exchange):
         "trades_pagination_arg": "since",
     }
     funding_fee_times: List[int] = [0, 4, 8, 12, 16, 20]  # hours of the day
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: No CCXT support
+    ]
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
@@ -68,16 +75,19 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
-        return (order['type'] in ('stop-loss', 'stop-loss-limit')
-                and stop_loss > float(order['price']))
+        return (order['type'] in ('stop-loss', 'stop-loss-limit') and (
+                (side == "sell" and stop_loss > float(order['price'])) or
+                (side == "buy" and stop_loss < float(order['price']))
+                ))
 
     @retrier(retries=0)
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float,
+                 order_types: Dict, side: str, leverage: float) -> Dict:
         """
         Creates a stoploss market order.
         Stoploss market orders is the only stoploss type supported by kraken.
@@ -87,7 +97,10 @@ class Kraken(Exchange):
         if order_types.get('stoploss', 'market') == 'limit':
             ordertype = "stop-loss-limit"
             limit_price_pct = order_types.get('stoploss_on_exchange_limit_ratio', 0.99)
-            limit_rate = stop_price * limit_price_pct
+            if side == "sell":
+                limit_rate = stop_price * limit_price_pct
+            else:
+                limit_rate = stop_price * (2 - limit_price_pct)
             params['price2'] = self.price_to_precision(pair, limit_rate)
         else:
             ordertype = "stop-loss"
@@ -96,13 +109,13 @@ class Kraken(Exchange):
 
         if self._config['dry_run']:
             dry_order = self.create_dry_run_order(
-                pair, ordertype, "sell", amount, stop_price)
+                pair, ordertype, side, amount, stop_price, leverage)
             return dry_order
 
         try:
             amount = self.amount_to_precision(pair, amount)
 
-            order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
+            order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, price=stop_price, params=params)
             self._log_exchange_response('create_stoploss_order', order)
             logger.info('stoploss order added for %s. '
@@ -110,18 +123,70 @@ class Kraken(Exchange):
             return order
         except ccxt.InsufficientFunds as e:
             raise InsufficientFundsError(
-                f'Insufficient funds to create {ordertype} sell order on market {pair}. '
+                f'Insufficient funds to create {ordertype} {side} order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
-                f'Could not create {ordertype} sell order on market {pair}. '
+                f'Could not create {ordertype} {side} order on market {pair}. '
                 f'Tried to create stoploss with amount {amount} at stoploss {stop_price}. '
                 f'Message: {e}') from e
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
             raise TemporaryError(
-                f'Could not place sell order due to {e.__class__.__name__}. Message: {e}') from e
+                f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def fill_leverage_brackets(self):
+        """
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        leverages = {}
+
+        for pair, market in self.markets.items():
+            leverages[pair] = [1]
+            info = market['info']
+            leverage_buy = info.get('leverage_buy', [])
+            leverage_sell = info.get('leverage_sell', [])
+            if len(leverage_buy) > 0 or len(leverage_sell) > 0:
+                if leverage_buy != leverage_sell:
+                    logger.warning(
+                        f"The buy({leverage_buy}) and sell({leverage_sell}) leverage are not equal"
+                        "for {pair}. Please notify freqtrade because this has never happened before"
+                    )
+                    if max(leverage_buy) <= max(leverage_sell):
+                        leverages[pair] += [int(lev) for lev in leverage_buy]
+                    else:
+                        leverages[pair] += [int(lev) for lev in leverage_sell]
+                else:
+                    leverages[pair] += [int(lev) for lev in leverage_buy]
+        self._leverage_brackets = leverages
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: Here for super class, not needed on Kraken
+        """
+        return float(max(self._leverage_brackets[pair]))
+
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
+    ):
+        """
+            Kraken set's the leverage as an option in the order object, so we need to
+            add it to params
+        """
+        return
+
+    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
+        params = super()._get_params(ordertype, leverage, time_in_force)
+        if leverage > 1.0:
+            params['leverage'] = leverage
+        return params

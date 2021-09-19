@@ -11,6 +11,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
@@ -131,6 +132,7 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
 
     assert log_has("Applying additional ccxt config: {'TestKWARG': 11, 'TestKWARG44': 11}", caplog)
     assert ex._api.headers == {'hello': 'world'}
+    assert ex._ccxt_config == {}
     Exchange._headers = {}
 
 
@@ -395,7 +397,11 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
-    assert isclose(result, 2 * (1+0.05) / (1-abs(stoploss)))
+    expected_result = 2 * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
+    assert isclose(result, expected_result/3)
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -407,7 +413,11 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, 2 * 2 * (1+0.05) / (1-abs(stoploss)))
+    expected_result = 2 * 2 * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
+    assert isclose(result, expected_result/5)
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -419,7 +429,11 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
+    expected_result = max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
+    assert isclose(result, expected_result/10)
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -431,14 +445,26 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    assert isclose(result, max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss)))
+    expected_result = max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
+    assert isclose(result, expected_result/7.0)
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    assert isclose(result, max(8, 2 * 2) * 1.5)
+    expected_result = max(8, 2 * 2) * 1.5
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
+    assert isclose(result, expected_result/8.0)
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
-    assert isclose(result, max(8, 2 * 2) * 1.5)
+    expected_result = max(8, 2 * 2) * 1.5
+    assert isclose(result, expected_result)
+    # With Leverage
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
+    assert isclose(result, expected_result/12)
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -456,10 +482,10 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
         PropertyMock(return_value=markets)
     )
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    assert round(result, 8) == round(
-        max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss)),
-        8
-    )
+    expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
+    assert round(result, 8) == round(expected_result, 8)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
+    assert round(result, 8) == round(expected_result/3, 8)
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -970,7 +996,13 @@ def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
     order = exchange.create_dry_run_order(
-        pair='ETH/BTC', ordertype='limit', side=side, amount=1, rate=200)
+        pair='ETH/BTC',
+        ordertype='limit',
+        side=side,
+        amount=1,
+        rate=200,
+        leverage=1.0
+    )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -993,7 +1025,13 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='limit', side=side, amount=1, rate=startprice)
+        pair='LTC/USDT',
+        ordertype='limit',
+        side=side,
+        amount=1,
+        rate=startprice,
+        leverage=1.0
+    )
     assert order_book_l2_usd.call_count == 1
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
@@ -1039,7 +1077,13 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
                           )
 
     order = exchange.create_dry_run_order(
-        pair='LTC/USDT', ordertype='market', side=side, amount=amount, rate=rate)
+        pair='LTC/USDT',
+        ordertype='market',
+        side=side,
+        amount=amount,
+        rate=rate,
+        leverage=1.0
+    )
     assert 'id' in order
     assert f'dry_run_{side}_' in order["id"]
     assert order["side"] == side
@@ -1049,10 +1093,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
     assert round(order["average"], 4) == round(endprice, 4)
 
 
-@pytest.mark.parametrize("side", [
-    ("buy"),
-    ("sell")
-])
+@pytest.mark.parametrize("side", ["buy", "sell"])
 @pytest.mark.parametrize("ordertype,rate,marketprice", [
     ("market", None, None),
     ("market", 200, True),
@@ -1074,9 +1115,17 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     mocker.patch('freqtrade.exchange.Exchange.amount_to_precision', lambda s, x, y: y)
     mocker.patch('freqtrade.exchange.Exchange.price_to_precision', lambda s, x, y: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    exchange._set_leverage = MagicMock()
+    exchange.set_margin_mode = MagicMock()
 
     order = exchange.create_order(
-        pair='ETH/BTC', ordertype=ordertype, side=side, amount=1, rate=200)
+        pair='ETH/BTC',
+        ordertype=ordertype,
+        side=side,
+        amount=1,
+        rate=200,
+        leverage=1.0
+    )
 
     assert 'id' in order
     assert 'info' in order
@@ -1086,6 +1135,21 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
     assert api_mock.create_order.call_args[0][2] == side
     assert api_mock.create_order.call_args[0][3] == 1
     assert api_mock.create_order.call_args[0][4] is rate
+    assert exchange._set_leverage.call_count == 0
+    assert exchange.set_margin_mode.call_count == 0
+
+    exchange.trading_mode = TradingMode.FUTURES
+    order = exchange.create_order(
+        pair='ETH/BTC',
+        ordertype=ordertype,
+        side=side,
+        amount=1,
+        rate=200,
+        leverage=3.0
+    )
+
+    assert exchange._set_leverage.call_count == 1
+    assert exchange.set_margin_mode.call_count == 1
 
 
 def test_buy_dry_run(default_conf, mocker):
@@ -2624,10 +2688,17 @@ def test_get_fee(default_conf, mocker, exchange_name):
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id='bittrex')
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss(pair='ETH/BTC', amount=1, stop_price=220, order_types={})
+        exchange.stoploss(
+            pair='ETH/BTC',
+            amount=1,
+            stop_price=220,
+            order_types={},
+            side="sell",
+            leverage=1.0
+        )
 
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
-        exchange.stoploss_adjust(1, {})
+        exchange.stoploss_adjust(1, {}, side="sell")
 
 
 def test_merge_ft_has_dict(default_conf, mocker):
@@ -2972,7 +3043,6 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
     (3, 5, 5),
     (4, 5, 2),
     (5, 5, 1),
-
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
@@ -3044,3 +3114,120 @@ def test_get_funding_fees(default_conf, mocker, exchange_name):
         pair="XRP/USDT",
         since=unix_time
     )
+
+
+@pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
+@pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
+    (9.0, 3.0, 3.0),
+    (20.0, 5.0, 4.0),
+    (100.0, 100.0, 1.0)
+])
+def test_get_stake_amount_considering_leverage(
+    exchange,
+    stake_amount,
+    leverage,
+    min_stake_with_lev,
+    mocker,
+    default_conf
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange)
+    assert exchange._get_stake_amount_considering_leverage(
+        stake_amount, leverage) == min_stake_with_lev
+
+
+@pytest.mark.parametrize("exchange_name,trading_mode", [
+    ("binance", TradingMode.FUTURES),
+    ("ftx", TradingMode.MARGIN),
+    ("ftx", TradingMode.FUTURES)
+])
+def test__set_leverage(mocker, default_conf, exchange_name, trading_mode):
+
+    api_mock = MagicMock()
+    api_mock.set_leverage = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'setLeverage': True})
+    default_conf['dry_run'] = False
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        exchange_name,
+        "_set_leverage",
+        "set_leverage",
+        pair="XRP/USDT",
+        leverage=5.0,
+        trading_mode=trading_mode
+    )
+
+
+@pytest.mark.parametrize("collateral", [
+    (Collateral.CROSS),
+    (Collateral.ISOLATED)
+])
+def test_set_margin_mode(mocker, default_conf, collateral):
+
+    api_mock = MagicMock()
+    api_mock.set_margin_mode = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'setMarginMode': True})
+    default_conf['dry_run'] = False
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "set_margin_mode",
+        "set_margin_mode",
+        pair="XRP/USDT",
+        collateral=collateral
+    )
+
+
+@pytest.mark.parametrize("exchange_name, trading_mode, collateral, exception_thrown", [
+    ("binance", TradingMode.SPOT, None, False),
+    ("binance", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.SPOT, None, False),
+    ("kraken", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("ftx", TradingMode.SPOT, None, False),
+    ("ftx", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("ftx", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("bittrex", TradingMode.SPOT, None, False),
+    ("bittrex", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("bittrex", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
+
+    # TODO-lev: Remove once implemented
+    ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
+
+    # TODO-lev: Uncomment once implemented
+    # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False)
+])
+def test_validate_trading_mode_and_collateral(
+    default_conf,
+    mocker,
+    exchange_name,
+    trading_mode,
+    collateral,
+    exception_thrown
+):
+    exchange = get_patched_exchange(
+        mocker, default_conf, id=exchange_name, mock_supported_modes=False)
+    if (exception_thrown):
+        with pytest.raises(OperationalException):
+            exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+    else:
+        exchange.validate_trading_mode_and_collateral(trading_mode, collateral)

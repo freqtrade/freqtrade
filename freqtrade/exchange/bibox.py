@@ -20,4 +20,7 @@ class Bibox(Exchange):
 
     # fetchCurrencies API point requires authentication for Bibox,
     # so switch it off for Freqtrade load_markets()
-    _ccxt_config: Dict = {"has": {"fetchCurrencies": False}}
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        return {"has": {"fetchCurrencies": False}}
