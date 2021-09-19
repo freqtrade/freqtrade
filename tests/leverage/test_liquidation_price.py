@@ -46,7 +46,14 @@ def test_liquidation_price_is_none(
         is_short,
         leverage,
         trading_mode,
-        collateral
+        collateral,
+        1535443.01,
+        71200.81144,
+        -56354.57,
+        135365.00,
+        3683.979,
+        1456.84,
+        0.10,
     ) is None
 
 
@@ -80,17 +87,14 @@ def test_liquidation_price_exception_thrown(
 
 
 @pytest.mark.parametrize(
-    'exchange_name,open_rate,is_short,leverage,trading_mode,collateral,result', [
+    ('exchange_name,open_rate,is_short,leverage,trading_mode,collateral,wallet_balance,'
+     'maintenance_margin_ex_1,unrealized_pnl_ex_1,maintenance_amount_both,'
+     'position_1_both,entry_price_1_both,maintenance_margin_rate_both,liq_price'), [
         # Binance
-        ('binance', "2.0", False, "1.0", margin, cross, 1.0),
-        ('binance', "2.0", False, "1.0", futures, cross, 1.0),
-        ('binance', "2.0", False, "1.0", futures, isolated, 1.0),
+        ("binance", 0.0, False, 1, futures, cross, 1535443.01,
+         71200.81144, -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26)
         # Kraken
-        ('kraken', "2.0", True, "3.0", margin, cross, 1.0),
-        ('kraken', "2.0", True, "3.0", futures, cross, 1.0),
         # FTX
-        ('ftx', "2.0", False, "3.0", margin, cross, 1.0),
-        ('ftx', "2.0", False, "3.0", futures, cross, 1.0),
     ]
 )
 def test_liquidation_price(
@@ -100,14 +104,27 @@ def test_liquidation_price(
     leverage,
     trading_mode,
     collateral,
-    result
+    wallet_balance,
+    maintenance_margin_ex_1,
+    unrealized_pnl_ex_1,
+    maintenance_amount_both,
+    position_1_both,
+    entry_price_1_both,
+    maintenance_margin_rate_both,
+    liq_price
 ):
-    # assert liquidation_price(
-    #     exchange_name,
-    #     open_rate,
-    #     is_short,
-    #     leverage,
-    #     trading_mode,
-    #     collateral
-    # ) == result
-    return  # Here to avoid indent error
+    assert liquidation_price(
+        exchange_name,
+        open_rate,
+        is_short,
+        leverage,
+        trading_mode,
+        collateral,
+        wallet_balance,
+        maintenance_margin_ex_1,
+        unrealized_pnl_ex_1,
+        maintenance_amount_both,
+        position_1_both,
+        entry_price_1_both,
+        maintenance_margin_rate_both
+    ) == liq_price

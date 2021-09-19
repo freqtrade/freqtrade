@@ -19,6 +19,7 @@ def liquidation_price(
     entry_price_1_both: Optional[float],
     maintenance_margin_rate_both: Optional[float]
 ) -> Optional[float]:
+
     if trading_mode == TradingMode.SPOT:
         return None
 
@@ -29,16 +30,34 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if not wallet_balance or not maintenance_margin_ex_1 or not unrealized_pnl_ex_1 or not maintenance_amount_both \
-                or not position_1_both or not entry_price_1_both or not maintenance_margin_rate_both:
+        if (
+            not wallet_balance or
+            not maintenance_margin_ex_1 or
+            not unrealized_pnl_ex_1 or
+            not maintenance_amount_both or
+            not position_1_both or
+            not entry_price_1_both or
+            not maintenance_margin_rate_both
+        ):
             raise OperationalException(
                 f"Parameters wallet_balance, maintenance_margin_ex_1, unrealized_pnl_ex_1, maintenance_amount_both, "
                 f"position_1_both, entry_price_1_both, maintenance_margin_rate_both is required by liquidation_price "
                 f"when exchange is {exchange_name.lower()}")
 
-        return binance(open_rate, is_short, leverage, trading_mode, collateral, wallet_balance, maintenance_margin_ex_1,
-                       unrealized_pnl_ex_1, maintenance_amount_both, position_1_both, entry_price_1_both,
-                       maintenance_margin_rate_both)
+        return binance(
+            open_rate,
+            is_short,
+            leverage,
+            trading_mode,
+            collateral,
+            wallet_balance,
+            maintenance_margin_ex_1,
+            unrealized_pnl_ex_1,
+            maintenance_amount_both,
+            position_1_both,
+            entry_price_1_both,
+            maintenance_margin_rate_both
+        )
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
