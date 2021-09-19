@@ -13,7 +13,8 @@ from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades, create_mock_trades_with_leverage, log_has, log_has_re
+from tests.conftest import (create_mock_trades, create_mock_trades_with_leverage, get_sides,
+                            log_has, log_has_re)
 
 
 def test_init_create_session(default_conf):
@@ -64,8 +65,10 @@ def test_init_dryrun_db(default_conf, tmpdir):
     assert Path(filename).is_file()
 
 
+@pytest.mark.parametrize('is_short', [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_enter_exit_side(fee):
+def test_enter_exit_side(fee, is_short):
+    enter_side, exit_side = get_sides(is_short)
     trade = Trade(
         id=2,
         pair='ADA/USDT',
@@ -77,16 +80,11 @@ def test_enter_exit_side(fee):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-        is_short=False,
+        is_short=is_short,
         leverage=2.0
     )
-    assert trade.enter_side == 'buy'
-    assert trade.exit_side == 'sell'
-
-    trade.is_short = True
-
-    assert trade.enter_side == 'sell'
-    assert trade.exit_side == 'buy'
+    assert trade.enter_side == enter_side
+    assert trade.exit_side == exit_side
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -170,8 +168,32 @@ def test_set_stop_loss_isolated_liq(fee):
     assert trade.initial_stop_loss == 0.09
 
 
+@pytest.mark.parametrize('exchange,is_short,lev,minutes,rate,interest', [
+    ("binance", False, 3, 10, 0.0005, round(0.0008333333333333334, 8)),
+    ("binance", True, 3, 10, 0.0005, 0.000625),
+    ("binance", False, 3, 295, 0.0005, round(0.004166666666666667, 8)),
+    ("binance", True, 3, 295, 0.0005, round(0.0031249999999999997, 8)),
+    ("binance", False, 3, 295, 0.00025, round(0.0020833333333333333, 8)),
+    ("binance", True, 3, 295, 0.00025, round(0.0015624999999999999, 8)),
+    ("binance", False, 5, 295, 0.0005, 0.005),
+    ("binance", True, 5, 295, 0.0005, round(0.0031249999999999997, 8)),
+    ("binance", False, 1, 295, 0.0005, 0.0),
+    ("binance", True, 1, 295, 0.0005, 0.003125),
+
+    ("kraken", False, 3, 10, 0.0005, 0.040),
+    ("kraken", True, 3, 10, 0.0005, 0.030),
+    ("kraken", False, 3, 295, 0.0005, 0.06),
+    ("kraken", True, 3, 295, 0.0005, 0.045),
+    ("kraken", False, 3, 295, 0.00025, 0.03),
+    ("kraken", True, 3, 295, 0.00025, 0.0225),
+    ("kraken", False, 5, 295, 0.0005, round(0.07200000000000001, 8)),
+    ("kraken", True, 5, 295, 0.0005, 0.045),
+    ("kraken", False, 1, 295, 0.0005, 0.0),
+    ("kraken", True, 1, 295, 0.0005, 0.045),
+
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_interest(market_buy_order_usdt, fee):
+def test_interest(market_buy_order_usdt, fee, exchange, is_short, lev, minutes, rate, interest):
     """
         10min, 5hr limit trade on Binance/Kraken at 3x,5x leverage
         fee: 0.25 % quote
@@ -230,114 +252,27 @@ def test_interest(market_buy_order_usdt, fee):
         stake_amount=20.0,
         amount=30.0,
         open_rate=2.0,
-        open_date=datetime.utcnow() - timedelta(hours=0, minutes=10),
+        open_date=datetime.utcnow() - timedelta(minutes=minutes),
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
-        leverage=3.0,
-        interest_rate=0.0005,
+        exchange=exchange,
+        leverage=lev,
+        interest_rate=rate,
+        is_short=is_short
     )
 
-    # 10min, 3x leverage
-    # binance
-    assert round(float(trade.calculate_interest()), 8) == round(0.0008333333333333334, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.040
-    # Short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # binace
-    trade.exchange = "binance"
-    assert float(trade.calculate_interest()) == 0.000625
-    # kraken
-    trade.exchange = "kraken"
-    assert isclose(float(trade.calculate_interest()), 0.030)
-
-    # 5hr, long
-    trade.open_date = datetime.utcnow() - timedelta(hours=4, minutes=55)
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    # binance
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest()), 8) == round(0.004166666666666667, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.06
-    # short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # binace
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.045
-
-    # 0.00025 interest, 5hr, long
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    # binance
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest(interest_rate=0.00025)),
-                 8) == round(0.0020833333333333333, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert isclose(float(trade.calculate_interest(interest_rate=0.00025)), 0.03)
-    # short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # binace
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest(interest_rate=0.00025)),
-                 8) == round(0.0015624999999999999, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest(interest_rate=0.00025)) == 0.0225
-
-    # 5x leverage, 0.0005 interest, 5hr, long
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    trade.leverage = 5.0
-    # binance
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest()), 8) == 0.005
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == round(0.07200000000000001, 8)
-    # short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # binace
-    trade.exchange = "binance"
-    assert round(float(trade.calculate_interest()), 8) == round(0.0031249999999999997, 8)
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.045
-
-    # 1x leverage, 0.0005 interest, 5hr
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    trade.leverage = 1.0
-    # binance
-    trade.exchange = "binance"
-    assert float(trade.calculate_interest()) == 0.0
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.0
-    # short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # binace
-    trade.exchange = "binance"
-    assert float(trade.calculate_interest()) == 0.003125
-    # kraken
-    trade.exchange = "kraken"
-    assert float(trade.calculate_interest()) == 0.045
+    assert round(float(trade.calculate_interest()), 8) == interest
 
 
+@pytest.mark.parametrize('is_short,lev,borrowed', [
+    (False, 1.0, 0.0),
+    (True, 1.0, 30.0),
+    (False, 3.0, 40.0),
+    (True, 3.0, 30.0),
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee, caplog):
+def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
+                  caplog, is_short, lev, borrowed):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
         fee: 0.25% quote
@@ -411,20 +346,19 @@ def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee, caplog):
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
+        is_short=is_short,
+        leverage=lev
     )
-    assert trade.borrowed == 0
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    assert trade.borrowed == 30.0
-    trade.leverage = 3.0
-    assert trade.borrowed == 30.0
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    assert trade.borrowed == 40.0
+    assert trade.borrowed == borrowed
 
 
+@pytest.mark.parametrize('is_short,open_rate,close_rate,lev,profit', [
+    (False, 2.0, 2.2, 1.0, round(0.0945137157107232, 8)),
+    (True, 2.2, 2.0, 3.0, round(0.2589996297562085, 8))
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, caplog):
+def test_update_limit_order(fee, caplog, limit_buy_order_usdt, limit_sell_order_usdt,
+                            is_short, open_rate, close_rate, lev, profit):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
         fee: 0.25% quote
@@ -494,84 +428,52 @@ def test_update_limit_order(limit_buy_order_usdt, limit_sell_order_usdt, fee, ca
 
     """
 
+    enter_order = limit_sell_order_usdt if is_short else limit_buy_order_usdt
+    exit_order = limit_buy_order_usdt if is_short else limit_sell_order_usdt
+    enter_side, exit_side = get_sides(is_short)
+
     trade = Trade(
         id=2,
         pair='ADA/USDT',
         stake_amount=60.0,
-        open_rate=2.0,
-        amount=30.0,
-        is_open=True,
-        open_date=arrow.utcnow().datetime,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance'
-    )
-    assert trade.open_order_id is None
-    assert trade.close_profit is None
-    assert trade.close_date is None
-
-    trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
-    assert trade.open_order_id is None
-    assert trade.open_rate == 2.00
-    assert trade.close_profit is None
-    assert trade.close_date is None
-    assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=2, "
-                      r'pair=ADA/USDT, amount=30.00000000, '
-                      r"is_short=False, leverage=1.0, open_rate=2.00000000, open_since=.*\).",
-                      caplog)
-
-    caplog.clear()
-    trade.open_order_id = 'something'
-    trade.update(limit_sell_order_usdt)
-    assert trade.open_order_id is None
-    assert trade.close_rate == 2.20
-    assert trade.close_profit == round(0.0945137157107232, 8)
-    assert trade.close_date is not None
-    assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=2, "
-                      r"pair=ADA/USDT, amount=30.00000000, "
-                      r"is_short=False, leverage=1.0, open_rate=2.00000000, open_since=.*\).",
-                      caplog)
-    caplog.clear()
-
-    trade = Trade(
-        id=226531,
-        pair='ADA/USDT',
-        stake_amount=20.0,
-        open_rate=2.0,
+        open_rate=open_rate,
         amount=30.0,
         is_open=True,
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         exchange='binance',
-        is_short=True,
-        leverage=3.0,
+        is_short=is_short,
         interest_rate=0.0005,
+        leverage=lev
     )
-    trade.open_order_id = 'something'
-    trade.update(limit_sell_order_usdt)
-
     assert trade.open_order_id is None
-    assert trade.open_rate == 2.20
     assert trade.close_profit is None
     assert trade.close_date is None
 
-    assert log_has_re(r"LIMIT_SELL has been fulfilled for Trade\(id=226531, "
-                      r"pair=ADA/USDT, amount=30.00000000, "
-                      r"is_short=True, leverage=3.0, open_rate=2.20000000, open_since=.*\).",
-                      caplog)
-    caplog.clear()
-
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)
+    trade.update(enter_order)
     assert trade.open_order_id is None
-    assert trade.close_rate == 2.00
-    assert trade.close_profit == round(0.2589996297562085, 8)
+    assert trade.open_rate == open_rate
+    assert trade.close_profit is None
+    assert trade.close_date is None
+    assert log_has_re(f"LIMIT_{enter_side.upper()} has been fulfilled for "
+                      r"Trade\(id=2, pair=ADA/USDT, amount=30.00000000, "
+                      f"is_short={is_short}, leverage={lev}, open_rate={open_rate}0000000, "
+                      r"open_since=.*\).",
+                      caplog)
+
+    caplog.clear()
+    trade.open_order_id = 'something'
+    trade.update(exit_order)
+    assert trade.open_order_id is None
+    assert trade.close_rate == close_rate
+    assert trade.close_profit == profit
     assert trade.close_date is not None
-    assert log_has_re(r"LIMIT_BUY has been fulfilled for Trade\(id=226531, "
-                      r"pair=ADA/USDT, amount=30.00000000, "
-                      r"is_short=True, leverage=3.0, open_rate=2.20000000, open_since=.*\).",
+    assert log_has_re(f"LIMIT_{exit_side.upper()} has been fulfilled for "
+                      r"Trade\(id=2, pair=ADA/USDT, amount=30.00000000, "
+                      f"is_short={is_short}, leverage={lev}, open_rate={open_rate}0000000, "
+                      r"open_since=.*\).",
                       caplog)
     caplog.clear()
 
@@ -616,9 +518,21 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
                       caplog)
 
 
+@pytest.mark.parametrize('exchange,is_short,lev,open_value,close_value,profit,profit_ratio', [
+    ("binance", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232),
+    ("binance", True, 1, 59.850, 66.1663784375, -6.316378437500013, -0.1055368159983292),
+    ("binance", False, 3, 60.15, 65.83416667, 5.684166670000003, 0.2834995845386534),
+    ("binance", True, 3, 59.85, 66.1663784375, -6.316378437500013, -0.3166104479949876),
+
+    ("kraken", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232),
+    ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.106619298245614),
+    ("kraken", False, 3, 60.15, 65.795, 5.645, 0.2815461346633419),
+    ("kraken", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842),
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee):
-    trade = Trade(
+def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee, exchange,
+                                     is_short, lev, open_value, close_value, profit, profit_ratio):
+    trade: Trade = Trade(
         pair='ADA/USDT',
         stake_amount=60.0,
         open_rate=2.0,
@@ -627,55 +541,22 @@ def test_calc_open_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt
         interest_rate=0.0005,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
-        exchange='binance',
+        exchange=exchange,
+        is_short=is_short,
+        leverage=lev
     )
 
-    trade.open_order_id = 'something'
+    trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
+
     trade.update(limit_buy_order_usdt)
     trade.update(limit_sell_order_usdt)
-    # 1x leverage, binance
-    assert trade._calc_open_trade_value() == 60.15
-    assert isclose(trade.calc_close_trade_value(), 65.835)
-    assert trade.calc_profit() == 5.685
-    assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
-    # 3x leverage, binance
-    trade.leverage = 3
-    trade.exchange = "binance"
-    assert trade._calc_open_trade_value() == 60.15
-    assert round(trade.calc_close_trade_value(), 8) == 65.83416667
-    assert trade.calc_profit() == round(5.684166670000003, 8)
-    assert trade.calc_profit_ratio() == round(0.2834995845386534, 8)
-    trade.exchange = "kraken"
-    # 3x leverage, kraken
-    assert trade._calc_open_trade_value() == 60.15
-    assert trade.calc_close_trade_value() == 65.795
-    assert trade.calc_profit() == 5.645
-    assert trade.calc_profit_ratio() == round(0.2815461346633419, 8)
-    trade.is_short = True
+    trade.open_rate = 2.0
+    trade.close_rate = 2.2
     trade.recalc_open_trade_value()
-    # 3x leverage, short, kraken
-    assert trade._calc_open_trade_value() == 59.850
-    assert trade.calc_close_trade_value() == 66.231165
-    assert trade.calc_profit() == round(-6.381165000000003, 8)
-    assert trade.calc_profit_ratio() == round(-0.319857894736842, 8)
-    trade.exchange = "binance"
-    # 3x leverage, short, binance
-    assert trade._calc_open_trade_value() == 59.85
-    assert trade.calc_close_trade_value() == 66.1663784375
-    assert trade.calc_profit() == round(-6.316378437500013, 8)
-    assert trade.calc_profit_ratio() == round(-0.3166104479949876, 8)
-    # 1x leverage, short, binance
-    trade.leverage = 1.0
-    assert trade._calc_open_trade_value() == 59.850
-    assert trade.calc_close_trade_value() == 66.1663784375
-    assert trade.calc_profit() == round(-6.316378437500013, 8)
-    assert trade.calc_profit_ratio() == round(-0.1055368159983292, 8)
-    # 1x leverage, short, kraken
-    trade.exchange = "kraken"
-    assert trade._calc_open_trade_value() == 59.850
-    assert trade.calc_close_trade_value() == 66.231165
-    assert trade.calc_profit() == -6.381165
-    assert trade.calc_profit_ratio() == round(-0.106619298245614, 8)
+    assert isclose(trade._calc_open_trade_value(), open_value)
+    assert isclose(trade.calc_close_trade_value(), close_value)
+    assert isclose(trade.calc_profit(), round(profit, 8))
+    assert isclose(trade.calc_profit_ratio(), round(profit_ratio, 8))
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -766,8 +647,27 @@ def test_update_invalid_order(limit_buy_order_usdt):
         trade.update(limit_buy_order_usdt)
 
 
+@pytest.mark.parametrize('exchange', ['binance', 'kraken'])
+@pytest.mark.parametrize('lev', [1, 3])
+@pytest.mark.parametrize('is_short,fee_rate,result', [
+    (False, 0.003, 60.18),
+    (False, 0.0025, 60.15),
+    (False, 0.003, 60.18),
+    (False, 0.0025, 60.15),
+    (True, 0.003, 59.82),
+    (True, 0.0025, 59.85),
+    (True, 0.003, 59.82),
+    (True, 0.0025, 59.85)
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_open_trade_value(limit_buy_order_usdt, fee):
+def test_calc_open_trade_value(
+    limit_buy_order_usdt,
+    exchange,
+    lev,
+    is_short,
+    fee_rate,
+    result
+):
     # 10 minute limit trade on Binance/Kraken at 1x, 3x leverage
     # fee: 0.25 %, 0.3% quote
     # open_rate: 2.00 quote
@@ -787,90 +687,104 @@ def test_calc_open_trade_value(limit_buy_order_usdt, fee):
         stake_amount=60.0,
         amount=30.0,
         open_rate=2.0,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
+        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
+        fee_open=fee_rate,
+        fee_close=fee_rate,
+        exchange=exchange,
+        leverage=lev,
+        is_short=is_short
     )
     trade.open_order_id = 'open_trade'
-    trade.update(limit_buy_order_usdt)
 
     # Get the open rate price with the standard fee rate
-    assert trade._calc_open_trade_value() == 60.15
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    assert trade._calc_open_trade_value() == 59.85
-    trade.leverage = 3
-    trade.exchange = "binance"
-    assert trade._calc_open_trade_value() == 59.85
-    trade.is_short = False
-    trade.recalc_open_trade_value()
-    assert trade._calc_open_trade_value() == 60.15
-
-    # Get the open rate price with a custom fee rate
-    trade.fee_open = 0.003
-
-    assert trade._calc_open_trade_value() == 60.18
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    assert trade._calc_open_trade_value() == 59.82
+    assert trade._calc_open_trade_value() == result
 
 
+@pytest.mark.parametrize('exchange,is_short,lev,open_rate,close_rate,fee_rate,result', [
+    ('binance', False, 1, 2.0, 2.5, 0.0025, 74.8125),
+    ('binance', False, 1, 2.0, 2.5, 0.003, 74.775),
+    ('binance', False, 1, 2.0, 2.2, 0.005, 65.67),
+    ('binance', False, 3, 2.0, 2.5, 0.0025, 74.81166667),
+    ('binance', False, 3, 2.0, 2.5, 0.003, 74.77416667),
+    ('kraken', False, 3, 2.0, 2.5, 0.0025, 74.7725),
+    ('kraken', False, 3, 2.0, 2.5, 0.003, 74.735),
+    ('kraken', True, 3, 2.2, 2.5, 0.0025, 75.2626875),
+    ('kraken', True, 3, 2.2, 2.5, 0.003, 75.300225),
+    ('binance', True, 3, 2.2, 2.5, 0.0025, 75.18906641),
+    ('binance', True, 3, 2.2, 2.5, 0.003, 75.22656719),
+    ('binance', True, 1, 2.2, 2.5, 0.0025, 75.18906641),
+    ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719),
+    ('kraken', True, 1, 2.2, 2.5, 0.0025, 75.2626875),
+    ('kraken', True, 1, 2.2, 2.5, 0.003, 75.300225),
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, fee):
+def test_calc_close_trade_price(limit_buy_order_usdt, limit_sell_order_usdt, open_rate,
+                                exchange, is_short, lev, close_rate, fee_rate, result):
     trade = Trade(
         pair='ADA/USDT',
         stake_amount=60.0,
         amount=30.0,
-        open_rate=2.0,
+        open_rate=open_rate,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance',
+        fee_open=fee_rate,
+        fee_close=fee_rate,
+        exchange=exchange,
         interest_rate=0.0005,
+        is_short=is_short,
+        leverage=lev
     )
     trade.open_order_id = 'close_trade'
-    trade.update(limit_buy_order_usdt)
-
-    # 1x leverage binance
-    assert trade.calc_close_trade_value(rate=2.5) == 74.8125
-    assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.775
-    trade.update(limit_sell_order_usdt)
-    assert trade.calc_close_trade_value(fee=0.005) == 65.67
-
-    # 3x leverage binance
-    trade.leverage = 3.0
-    assert round(trade.calc_close_trade_value(rate=2.5), 8) == 74.81166667
-    assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 74.77416667
-
-    # 3x leverage kraken
-    trade.exchange = "kraken"
-    assert trade.calc_close_trade_value(rate=2.5) == 74.7725
-    assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 74.735
-
-    # 3x leverage kraken, short
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.2626875
-    assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 75.300225
-
-    # 3x leverage binance, short
-    trade.exchange = "binance"
-    assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.18906641
-    assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 75.22656719
-
-    trade.leverage = 1.0
-    # 1x leverage binance, short
-    assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.18906641
-    assert round(trade.calc_close_trade_value(rate=2.5, fee=0.003), 8) == 75.22656719
-
-    # 1x leverage kraken, short
-    trade.exchange = "kraken"
-    assert round(trade.calc_close_trade_value(rate=2.5), 8) == 75.2626875
-    assert trade.calc_close_trade_value(rate=2.5, fee=0.003) == 75.300225
+    assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
 
 
+@pytest.mark.parametrize('exchange,is_short,lev,close_rate,fee_close,profit,profit_ratio', [
+    ('binance', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673),
+    ('binance', False, 3, 2.1, 0.0025, 2.69166667, 0.13424771421446402),
+    ('binance', True, 1, 2.1, 0.0025, -3.308815781249997, -0.05528514254385963),
+    ('binance', True, 3, 2.1, 0.0025, -3.308815781249997, -0.1658554276315789),
+
+    ('binance', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632),
+    ('binance', False, 3, 1.9, 0.0025, -3.29333333, -0.16425602643391513),
+    ('binance', True, 1, 1.9, 0.0025, 2.7063095312499996, 0.045218204365079395),
+    ('binance', True, 3, 1.9, 0.0025, 2.7063095312499996, 0.13565461309523819),
+
+    ('binance', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232),
+    ('binance', False, 3, 2.2, 0.0025, 5.68416667, 0.2834995845386534),
+    ('binance', True, 1, 2.2, 0.0025, -6.316378437499999, -0.1055368159983292),
+    ('binance', True, 3, 2.2, 0.0025, -6.316378437499999, -0.3166104479949876),
+
+    ('kraken', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673),
+    ('kraken', False, 3, 2.1, 0.0025, 2.6525, 0.13229426433915248),
+    ('kraken', True, 1, 2.1, 0.0025, -3.3706575, -0.05631842105263152),
+    ('kraken', True, 3, 2.1, 0.0025, -3.3706575, -0.16895526315789455),
+
+    ('kraken', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632),
+    ('kraken', False, 3, 1.9, 0.0025, -3.3325, -0.16620947630922667),
+    ('kraken', True, 1, 1.9, 0.0025, 2.6503575, 0.04428333333333334),
+    ('kraken', True, 3, 1.9, 0.0025, 2.6503575, 0.13285000000000002),
+
+    ('kraken', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232),
+    ('kraken', False, 3, 2.2, 0.0025, 5.645, 0.2815461346633419),
+    ('kraken', True, 1, 2.2, 0.0025, -6.381165, -0.106619298245614),
+    ('kraken', True, 3, 2.2, 0.0025, -6.381165, -0.319857894736842),
+
+    ('binance', False, 1, 2.1, 0.003, 2.6610000000000014, 0.04423940149625927),
+    ('binance', False, 1, 1.9, 0.003, -3.320999999999998, -0.05521197007481293),
+    ('binance', False, 1, 2.2, 0.003, 5.652000000000008, 0.09396508728179565),
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
+def test_calc_profit(
+    limit_buy_order_usdt,
+    limit_sell_order_usdt,
+    fee,
+    exchange,
+    is_short,
+    lev,
+    close_rate,
+    fee_close,
+    profit,
+    profit_ratio
+):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
         arguments:
@@ -1007,198 +921,16 @@ def test_calc_profit(limit_buy_order_usdt, limit_sell_order_usdt, fee):
         open_rate=2.0,
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
         interest_rate=0.0005,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance'
+        exchange=exchange,
+        is_short=is_short,
+        leverage=lev,
+        fee_open=0.0025,
+        fee_close=fee_close
     )
     trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
 
-    # 1x Leverage, long
-    # Custom closing rate and regular fee rate
-    # Higher than open rate - 2.1 quote
-    assert trade.calc_profit(rate=2.1) == 2.6925
-    # Lower than open rate - 1.9 quote
-    assert trade.calc_profit(rate=1.9) == round(-3.292499999999997, 8)
-
-    # fee 0.003
-    # Higher than open rate - 2.1 quote
-    assert trade.calc_profit(rate=2.1, fee=0.003) == 2.661
-    # Lower than open rate - 1.9 quote
-    assert trade.calc_profit(rate=1.9, fee=0.003) == round(-3.320999999999998, 8)
-
-    # Test when we apply a Sell order. Sell higher than open rate @ 2.2
-    trade.update(limit_sell_order_usdt)
-    assert trade.calc_profit() == round(5.684999999999995, 8)
-
-    # Test with a custom fee rate on the close trade
-    assert trade.calc_profit(fee=0.003) == round(5.652000000000008, 8)
-
-    trade.open_trade_value = 0.0
-    trade.open_trade_value = trade._calc_open_trade_value()
-
-    # 3x leverage, long ###################################################
-    trade.leverage = 3.0
-    # Higher than open rate - 2.1 quote
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == 2.69166667
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == 2.6525
-
-    # 1.9 quote
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == -3.29333333
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == -3.3325
-
-    # 2.2 quote
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(fee=0.0025) == 5.68416667
-    trade.exchange = "kraken"
-    assert trade.calc_profit(fee=0.0025) == 5.645
-
-    # 3x leverage, short ###################################################
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # 2.1 quote - Higher than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == round(-3.308815781249997, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == -3.3706575
-
-    # 1.9 quote - Lower than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == round(2.7063095312499996, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == 2.6503575
-
-    # Test when we apply a Sell order. Uses sell order used above
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(fee=0.0025) == round(-6.316378437499999, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(fee=0.0025) == -6.381165
-
-    # 1x leverage, short ###################################################
-    trade.leverage = 1.0
-    # 2.1 quote - Higher than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == round(-3.308815781249997, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=2.1, fee=0.0025) == -3.3706575
-
-    # 1.9 quote - Lower than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == round(2.7063095312499996, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(rate=1.9, fee=0.0025) == 2.6503575
-
-    # Test when we apply a Sell order. Uses sell order used above
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit(fee=0.0025) == round(-6.316378437499999, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit(fee=0.0025) == -6.381165
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_calc_profit_ratio(limit_buy_order_usdt, limit_sell_order_usdt, fee):
-    trade = Trade(
-        pair='ADA/USDT',
-        stake_amount=60.0,
-        amount=30.0,
-        open_rate=2.0,
-        open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=10),
-        interest_rate=0.0005,
-        fee_open=fee.return_value,
-        fee_close=fee.return_value,
-        exchange='binance'
-    )
-    trade.open_order_id = 'something'
-    trade.update(limit_buy_order_usdt)  # Buy @ 2.0
-
-    # 1x Leverage, long
-    # Custom closing rate and regular fee rate
-    # Higher than open rate - 2.1 quote
-    assert trade.calc_profit_ratio(rate=2.1) == round(0.04476309226932673, 8)
-    # Lower than open rate - 1.9 quote
-    assert trade.calc_profit_ratio(rate=1.9) == round(-0.05473815461346632, 8)
-
-    # fee 0.003
-    # Higher than open rate - 2.1 quote
-    assert trade.calc_profit_ratio(rate=2.1, fee=0.003) == round(0.04423940149625927, 8)
-    # Lower than open rate - 1.9 quote
-    assert trade.calc_profit_ratio(rate=1.9, fee=0.003) == round(-0.05521197007481293, 8)
-
-    # Test when we apply a Sell order. Sell higher than open rate @ 2.2
-    trade.update(limit_sell_order_usdt)
-    assert trade.calc_profit_ratio() == round(0.0945137157107232, 8)
-
-    # Test with a custom fee rate on the close trade
-    assert trade.calc_profit_ratio(fee=0.003) == round(0.09396508728179565, 8)
-
-    trade.open_trade_value = 0.0
-    assert trade.calc_profit_ratio(fee=0.003) == 0.0
-    trade.open_trade_value = trade._calc_open_trade_value()
-
-    # 3x leverage, long ###################################################
-    trade.leverage = 3.0
-    # 2.1 quote - Higher than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio(rate=2.1) == round(0.13424771421446402, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=2.1) == round(0.13229426433915248, 8)
-
-    # 1.9 quote - Lower than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio(rate=1.9) == round(-0.16425602643391513, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=1.9) == round(-0.16620947630922667, 8)
-
-    # Test when we apply a Sell order. Uses sell order used above
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio() == round(0.2834995845386534, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio() == round(0.2815461346633419, 8)
-
-    # 3x leverage, short ###################################################
-    trade.is_short = True
-    trade.recalc_open_trade_value()
-    # 2.1 quote - Higher than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio(rate=2.1) == round(-0.1658554276315789, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=2.1) == round(-0.16895526315789455, 8)
-
-    # 1.9 quote - Lower than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio(rate=1.9) == round(0.13565461309523819, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=1.9) == round(0.13285000000000002, 8)
-
-    # Test when we apply a Sell order. Uses sell order used above
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio() == round(-0.3166104479949876, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio() == round(-0.319857894736842, 8)
-
-    # 1x leverage, short ###################################################
-    trade.leverage = 1.0
-    # 2.1 quote - Higher than open rate
-    trade.exchange = "binance"  # binance
-    assert trade.calc_profit_ratio(rate=2.1) == round(-0.05528514254385963, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=2.1) == round(-0.05631842105263152, 8)
-
-    # 1.9 quote - Lower than open rate
-    trade.exchange = "binance"
-    assert trade.calc_profit_ratio(rate=1.9) == round(0.045218204365079395, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio(rate=1.9) == round(0.04428333333333334, 8)
-
-    # Test when we apply a Sell order. Uses sell order used above
-    trade.exchange = "binance"
-    assert trade.calc_profit_ratio() == round(-0.1055368159983292, 8)
-    trade.exchange = "kraken"
-    assert trade.calc_profit_ratio() == round(-0.106619298245614, 8)
+    assert trade.calc_profit(rate=close_rate) == round(profit, 8)
+    assert trade.calc_profit_ratio(rate=close_rate) == round(profit_ratio, 8)
 
 
 @pytest.mark.usefixtures("init_persistence")
