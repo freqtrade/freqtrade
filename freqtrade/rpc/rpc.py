@@ -459,6 +459,9 @@ class RPC:
             raise RPCException('Error getting current tickers.')
 
         self._freqtrade.wallets.update(require_update=False)
+        starting_capital = self._freqtrade.wallets.get_starting_balance()
+        starting_cap_fiat = self._fiat_converter.convert_amount(
+            starting_capital, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
         for coin, balance in self._freqtrade.wallets.get_all_balances().items():
             if not balance.total:
@@ -494,15 +497,25 @@ class RPC:
             else:
                 raise RPCException('All balances are zero.')
 
-        symbol = fiat_display_currency
-        value = self._fiat_converter.convert_amount(total, stake_currency,
-                                                    symbol) if self._fiat_converter else 0
+        value = self._fiat_converter.convert_amount(
+            total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
+
+        starting_capital_ratio = 0.0
+        starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
+        starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
+
         return {
             'currencies': output,
             'total': total,
-            'symbol': symbol,
+            'symbol': fiat_display_currency,
             'value': value,
             'stake': stake_currency,
+            'starting_capital': starting_capital,
+            'starting_capital_ratio': starting_capital_ratio,
+            'starting_capital_pct': round(starting_capital_ratio * 100, 2),
+            'starting_capital_fiat': starting_cap_fiat,
+            'starting_capital_fiat_ratio': starting_cap_fiat_ratio,
+            'starting_capital_fiat_pct': round(starting_cap_fiat_ratio * 100, 2),
             'note': 'Simulated balances' if self._freqtrade.config['dry_run'] else ''
         }
 

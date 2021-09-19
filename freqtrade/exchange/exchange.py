@@ -22,6 +22,7 @@ from pandas import DataFrame
 from freqtrade.constants import (DEFAULT_AMOUNT_RESERVE_PERCENT, NON_OPEN_EXCHANGE_STATES,
                                  ListPairsWithTimeframes)
 from freqtrade.data.converter import ohlcv_to_dataframe, trades_dict_to_list
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   RetryableOrderError, TemporaryError)
@@ -48,9 +49,6 @@ class Exchange:
 
     _config: Dict = {}
 
-    # Parameters to add directly to ccxt sync/async initialization.
-    _ccxt_config: Dict = {}
-
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: Dict = {}
 
@@ -74,6 +72,10 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+    ]
+
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
         Initializes this module with the given config,
@@ -83,6 +85,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
@@ -125,20 +128,34 @@ class Exchange:
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
+        self.trading_mode: TradingMode = (
+            TradingMode(config.get('trading_mode'))
+            if config.get('trading_mode')
+            else TradingMode.SPOT
+        )
+        self.collateral: Optional[Collateral] = (
+            Collateral(config.get('collateral'))
+            if config.get('collateral')
+            else None
+        )
+
         # Initialize ccxt objects
-        ccxt_config = self._ccxt_config.copy()
+        ccxt_config = self._ccxt_config
         ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}), ccxt_config)
         ccxt_config = deep_merge_dicts(exchange_config.get('ccxt_sync_config', {}), ccxt_config)
 
         self._api = self._init_ccxt(exchange_config, ccxt_kwargs=ccxt_config)
 
-        ccxt_async_config = self._ccxt_config.copy()
+        ccxt_async_config = self._ccxt_config
         ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_config', {}),
                                              ccxt_async_config)
         ccxt_async_config = deep_merge_dicts(exchange_config.get('ccxt_async_config', {}),
                                              ccxt_async_config)
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
+
+        if self.trading_mode != TradingMode.SPOT:
+            self.fill_leverage_brackets()
 
         logger.info('Using Exchange "%s"', self.name)
 
@@ -157,7 +174,7 @@ class Exchange:
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
             self.validate_required_startup_candles(config.get('startup_candle_count', 0),
                                                    config.get('timeframe', ''))
-
+            self.validate_trading_mode_and_collateral(self.trading_mode, self.collateral)
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
@@ -190,6 +207,7 @@ class Exchange:
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid', ''),
+            # 'options': exchange_config.get('options', {})
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
@@ -209,6 +227,11 @@ class Exchange:
         self.set_sandbox(api, exchange_config, name)
 
         return api
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        return {}
 
     @property
     def name(self) -> str:
@@ -355,6 +378,7 @@ class Exchange:
             # Also reload async markets to avoid issues with newly listed pairs
             self._load_async_markets(reload=True)
             self._last_markets_refresh = arrow.utcnow().int_timestamp
+            self.fill_leverage_brackets()
         except ccxt.BaseError:
             logger.exception("Could not reload markets.")
 
@@ -370,7 +394,7 @@ class Exchange:
             raise OperationalException(
                 'Could not load markets, therefore cannot start. '
                 'Please investigate the above error for more details.'
-                )
+            )
         quote_currencies = self.get_quote_currencies()
         if stake_currency not in quote_currencies:
             raise OperationalException(
@@ -482,6 +506,25 @@ class Exchange:
                 f"This strategy requires {startup_candles} candles to start. "
                 f"{self.name} only provides {candle_limit} for {timeframe}.")
 
+    def validate_trading_mode_and_collateral(
+        self,
+        trading_mode: TradingMode,
+        collateral: Optional[Collateral]  # Only None when trading_mode = TradingMode.SPOT
+    ):
+        """
+            Checks if freqtrade can perform trades using the configured
+            trading mode(Margin, Futures) and Collateral(Cross, Isolated)
+            Throws OperationalException:
+                If the trading_mode/collateral type are not supported by freqtrade on this exchange
+        """
+        if trading_mode != TradingMode.SPOT and (
+            (trading_mode, collateral) not in self._supported_trading_mode_collateral_pairs
+        ):
+            collateral_value = collateral and collateral.value
+            raise OperationalException(
+                f"Freqtrade does not support {collateral_value} {trading_mode.value} on {self.name}"
+            )
+
     def exchange_has(self, endpoint: str) -> bool:
         """
         Checks if exchange implements a specific API endpoint.
@@ -541,8 +584,8 @@ class Exchange:
         else:
             return 1 / pow(10, precision)
 
-    def get_min_pair_stake_amount(self, pair: str, price: float,
-                                  stoploss: float) -> Optional[float]:
+    def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
+                                  leverage: Optional[float] = 1.0) -> Optional[float]:
         try:
             market = self.markets[pair]
         except KeyError:
@@ -576,12 +619,24 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return max(min_stake_amounts) * amount_reserve_percent
+        return self._get_stake_amount_considering_leverage(
+            max(min_stake_amounts) * amount_reserve_percent,
+            leverage or 1.0
+        )
+
+    def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
+        """
+        Takes the minimum stake amount for a pair with no leverage and returns the minimum
+        stake amount when leverage is considered
+        :param stake_amount: The stake amount for a pair before leverage is considered
+        :param leverage: The amount of leverage being used on the current trade
+        """
+        return stake_amount / leverage
 
     # Dry-run methods
 
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
-                             rate: float, params: Dict = {}) -> Dict[str, Any]:
+                             rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
         _amount = self.amount_to_precision(pair, amount)
         dry_order: Dict[str, Any] = {
@@ -598,7 +653,8 @@ class Exchange:
             'timestamp': arrow.utcnow().int_timestamp * 1000,
             'status': "closed" if ordertype == "market" else "open",
             'fee': None,
-            'info': {}
+            'info': {},
+            'leverage': leverage
         }
         if dry_order["type"] in ["stop_loss_limit", "stop-loss-limit"]:
             dry_order["info"] = {"stopPrice": dry_order["price"]}
@@ -608,7 +664,7 @@ class Exchange:
             average = self.get_dry_market_fill_price(pair, side, amount, rate)
             dry_order.update({
                 'average': average,
-                'cost': dry_order['amount'] * average,
+                'cost': (dry_order['amount'] * average) / leverage
             })
             dry_order = self.add_dry_order_fee(pair, dry_order)
 
@@ -716,17 +772,26 @@ class Exchange:
 
     # Order handling
 
-    def create_order(self, pair: str, ordertype: str, side: str, amount: float,
-                     rate: float, time_in_force: str = 'gtc') -> Dict:
+    def _lev_prep(self, pair: str, leverage: float):
+        if self.trading_mode != TradingMode.SPOT:
+            self.set_margin_mode(pair, self.collateral)
+            self._set_leverage(leverage, pair)
 
-        if self._config['dry_run']:
-            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
-            return dry_order
-
+    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
             params.update({param: time_in_force})
+        return params
+
+    def create_order(self, pair: str, ordertype: str, side: str, amount: float,
+                     rate: float, leverage: float = 1.0, time_in_force: str = 'gtc') -> Dict:
+        # TODO-lev: remove default for leverage
+        if self._config['dry_run']:
+            dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
+            return dry_order
+
+        params = self._get_params(ordertype, leverage, time_in_force)
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
@@ -735,6 +800,7 @@ class Exchange:
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
+            self._lev_prep(pair, leverage)
             order = self._api.create_order(pair, ordertype, side,
                                            amount, rate_for_order, params)
             self._log_exchange_response('create_order', order)
@@ -758,14 +824,15 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def stoploss_adjust(self, stop_loss: float, order: Dict) -> bool:
+    def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
         Returns True if adjustment is necessary.
         """
         raise OperationalException(f"stoploss is not implemented for {self.name}.")
 
-    def stoploss(self, pair: str, amount: float, stop_price: float, order_types: Dict) -> Dict:
+    def stoploss(self, pair: str, amount: float, stop_price: float,
+                 order_types: Dict, side: str, leverage: float) -> Dict:
         """
         creates a stoploss order.
         The precise ordertype is determined by the order_types dict or exchange default.
@@ -1527,6 +1594,69 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
+
+    def fill_leverage_brackets(self):
+        """
+            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+        """
+        return
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        """
+        return 1.0
+
+    @retrier
+    def _set_leverage(
+        self,
+        leverage: float,
+        pair: Optional[str] = None,
+        trading_mode: Optional[TradingMode] = None
+    ):
+        """
+            Set's the leverage before making a trade, in order to not
+            have the same leverage on every trade
+        """
+        # TODO-lev: Make a documentation page that says you can't run 2 bots
+        # TODO-lev: on the same account with leverage
+        if self._config['dry_run'] or not self.exchange_has("setLeverage"):
+            # Some exchanges only support one collateral type
+            return
+
+        try:
+            self._api.set_leverage(symbol=pair, leverage=leverage)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
+        '''
+            Set's the margin mode on the exchange to cross or isolated for a specific pair
+            :param symbol: base/quote currency pair (e.g. "ADA/USDT")
+        '''
+        if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
+            # Some exchanges only support one collateral type
+            return
+
+        try:
+            self._api.set_margin_mode(pair, collateral.value, params)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

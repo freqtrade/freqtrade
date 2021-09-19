@@ -20,7 +20,7 @@ def interest(
 
         :param exchange_name: The exchanged being trading on
         :param borrowed: The amount of currency being borrowed
-        :param rate: The rate of interest
+        :param rate: The rate of interest (i.e daily interest rate)
         :param hours: The time in hours that the currency has been borrowed for
 
         Raises:
@@ -36,7 +36,8 @@ def interest(
         # Rounded based on https://kraken-fees-calculator.github.io/
         return borrowed * rate * (one+ceil(hours/four))
     elif exchange_name == "ftx":
-        # TODO-lev: Add FTX interest formula
-        raise OperationalException(f"Leverage not available on {exchange_name} with freqtrade")
+        # As Explained under #Interest rates section in
+        # https://help.ftx.com/hc/en-us/articles/360053007671-Spot-Margin-Trading-Explainer
+        return borrowed * rate * ceil(hours)/twenty_four
     else:
         raise OperationalException(f"Leverage not available on {exchange_name} with freqtrade")
