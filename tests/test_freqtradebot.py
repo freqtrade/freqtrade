@@ -1252,6 +1252,7 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
                                               limit_buy_order, limit_sell_order) -> None:
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -1343,10 +1344,14 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=85.32423208,
-                                                pair='ETH/BTC',
-                                                order_types=freqtrade.strategy.order_types,
-                                                stop_price=0.00002346 * 0.95)
+    stoploss_order_mock.assert_called_once_with(
+        amount=85.32423208,
+        pair='ETH/BTC',
+        order_types=freqtrade.strategy.order_types,
+        stop_price=0.00002346 * 0.95,
+        side="sell",
+        leverage=1.0
+    )
 
     # price fell below stoploss, so dry-run sells trade.
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
@@ -1359,6 +1364,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
 
 def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, caplog,
                                                     limit_buy_order, limit_sell_order) -> None:
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_exchange(mocker)
@@ -1417,7 +1423,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
                  side_effect=InvalidOrderException())
     mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
                  return_value=stoploss_order_hanging)
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
     # Still try to create order
@@ -1427,7 +1433,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     caplog.clear()
     cancel_mock = mocker.patch("freqtrade.exchange.Binance.cancel_stoploss_order", MagicMock())
     mocker.patch("freqtrade.exchange.Binance.stoploss", side_effect=ExchangeError())
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging, side="sell")
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
@@ -1436,6 +1442,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
 def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
                                                  limit_buy_order, limit_sell_order) -> None:
     # When trailing stoploss is set
+    # TODO-lev: test for short
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -1526,10 +1533,14 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=85.32423208,
-                                                pair='ETH/BTC',
-                                                order_types=freqtrade.strategy.order_types,
-                                                stop_price=0.00002346 * 0.96)
+    stoploss_order_mock.assert_called_once_with(
+        amount=85.32423208,
+        pair='ETH/BTC',
+        order_types=freqtrade.strategy.order_types,
+        stop_price=0.00002346 * 0.96,
+        side="sell",
+        leverage=1.0
+    )
 
     # price fell below stoploss, so dry-run sells trade.
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
@@ -1542,7 +1553,7 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee,
 
 def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
                                               limit_buy_order, limit_sell_order) -> None:
-
+    # TODO-lev: test for short
     # When trailing stoploss is set
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
@@ -1647,10 +1658,14 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss should be set to 1% as trailing is on
     assert trade.stop_loss == 0.00002346 * 0.99
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=2132892.49146757,
-                                                pair='NEO/BTC',
-                                                order_types=freqtrade.strategy.order_types,
-                                                stop_price=0.00002346 * 0.99)
+    stoploss_order_mock.assert_called_once_with(
+        amount=2132892.49146757,
+        pair='NEO/BTC',
+        order_types=freqtrade.strategy.order_types,
+        stop_price=0.00002346 * 0.99,
+        side="sell",
+        leverage=1.0
+    )
 
 
 def test_enter_positions(mocker, default_conf, caplog) -> None:
