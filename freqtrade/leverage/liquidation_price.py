@@ -10,8 +10,7 @@ def liquidation_price(
     is_short: bool,
     leverage: float,
     trading_mode: TradingMode,
-    collateral: Optional[Collateral],
-    margin_mode: Optional[MarginMode]
+    collateral: Optional[Collateral]
 ) -> Optional[float]:
     if trading_mode == TradingMode.SPOT:
         return None
@@ -23,11 +22,7 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if not margin_mode:
-            raise OperationalException(
-                f"Parameter margin_mode is required by liquidation_price when exchange is {trading_mode}")
-
-        return binance(open_rate, is_short, leverage, margin_mode, trading_mode, collateral)
+        return binance(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
@@ -41,7 +36,7 @@ def exception(
     exchange: str,
     trading_mode: TradingMode,
     collateral: Collateral,
-    margin_mode: Optional[MarginMode] = None
+    margin_mode: Optional[MarginMode]
 ):
     """
         Raises an exception if exchange used doesn't support desired leverage mode
@@ -188,6 +183,7 @@ def kraken(
     open_rate: float,
     is_short: bool,
     leverage: float,
+    margin_mode: MarginMode,
     trading_mode: TradingMode,
     collateral: Collateral
 ):
@@ -196,6 +192,7 @@ def kraken(
         :param open_rate: open_rate
         :param is_short: true or false
         :param leverage: leverage in float
+        :param margin_mode: one-way or hedge
         :param trading_mode: spot, margin, futures
         :param collateral: cross, isolated
     """
@@ -207,16 +204,17 @@ def kraken(
             # TODO-lev: perform a calculation based on this formula
             # https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
         elif trading_mode == TradingMode.FUTURES:
-            exception("kraken",  trading_mode, collateral)
+            exception("kraken",  trading_mode, collateral, margin_mode)
 
     # If nothing was returned
-    exception("kraken",  trading_mode, collateral)
+    exception("kraken",  trading_mode, collateral, margin_mode)
 
 
 def ftx(
     open_rate: float,
     is_short: bool,
     leverage: float,
+    margin_mode: MarginMode,
     trading_mode: TradingMode,
     collateral: Collateral
 ):
@@ -225,12 +223,13 @@ def ftx(
         :param open_rate: open_rate
         :param is_short: true or false
         :param leverage: leverage in float
+        :param margin_mode: one-way or hedge
         :param trading_mode: spot, margin, futures
         :param collateral: cross, isolated
     """
     if collateral == Collateral.CROSS:
         # TODO-lev: Additional arguments, fill in formulas
-        exception("ftx",  trading_mode, collateral)
+        exception("ftx",  trading_mode, collateral, margin_mode)
 
     # If nothing was returned
-    exception("ftx",  trading_mode, collateral)
+    exception("ftx",  trading_mode, collateral, margin_mode)
