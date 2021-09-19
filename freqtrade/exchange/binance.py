@@ -107,6 +107,7 @@ class Binance(Exchange):
 
             rate = self.price_to_precision(pair, rate)
 
+            self._lev_prep(pair, leverage)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, price=rate, params=params)
             logger.info('stoploss limit order added for %s. '

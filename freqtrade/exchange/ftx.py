@@ -81,6 +81,7 @@ class Ftx(Exchange):
             params['stopPrice'] = stop_price
             amount = self.amount_to_precision(pair, amount)
 
+            self._lev_prep(pair, leverage)
             order = self._api.create_order(symbol=pair, type=ordertype, side=side,
                                            amount=amount, params=params)
             self._log_exchange_response('create_stoploss_order', order)

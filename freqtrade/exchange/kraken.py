@@ -184,8 +184,8 @@ class Kraken(Exchange):
         """
         return
 
-    def _get_params(self, time_in_force: str, ordertype: str, leverage: float) -> Dict:
-        params = super()._get_params(time_in_force, ordertype, leverage)
+    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
+        params = super()._get_params(ordertype, leverage, time_in_force)
         if leverage > 1.0:
             params['leverage'] = leverage
         return params

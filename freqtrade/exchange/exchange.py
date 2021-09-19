@@ -773,10 +773,11 @@ class Exchange:
     # Order handling
 
     def _lev_prep(self, pair: str, leverage: float):
-        self.set_margin_mode(pair, self.collateral)
-        self._set_leverage(leverage, pair)
+        if self.trading_mode != TradingMode.SPOT:
+            self.set_margin_mode(pair, self.collateral)
+            self._set_leverage(leverage, pair)
 
-    def _get_params(self, time_in_force: str, ordertype: str, leverage: float) -> Dict:
+    def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:
         params = self._params.copy()
         if time_in_force != 'gtc' and ordertype != 'market':
             param = self._ft_has.get('time_in_force_parameter', '')
@@ -790,10 +791,7 @@ class Exchange:
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate, leverage)
             return dry_order
 
-        if self.trading_mode != TradingMode.SPOT:
-            self._lev_prep(pair, leverage)
-
-        params = self._get_params(time_in_force, ordertype, leverage)
+        params = self._get_params(ordertype, leverage, time_in_force)
 
         try:
             # Set the precision for amount and price(rate) as accepted by the exchange
@@ -802,6 +800,7 @@ class Exchange:
                            or self._api.options.get("createMarketBuyOrderRequiresPrice", False))
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
+            self._lev_prep(pair, leverage)
             order = self._api.create_order(pair, ordertype, side,
                                            amount, rate_for_order, params)
             self._log_exchange_response('create_order', order)
