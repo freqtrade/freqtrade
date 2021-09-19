@@ -19,7 +19,6 @@ def liquidation_price(
     entry_price: Optional[float],
     mm_rate: Optional[float]
 ) -> Optional[float]:
-
     if trading_mode == TradingMode.SPOT:
         return None
 
@@ -30,9 +29,8 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if not wallet_balance or not mm_ex_1 or not upnl_ex_1 \
-                or not maintenance_amt or not position or not entry_price \
-                or not mm_rate:
+        if None in [wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, entry_price,
+                    mm_rate]:
             raise OperationalException(
                 f"Parameters wallet_balance, mm_ex_1, upnl_ex_1, "
                 f"maintenance_amt, position, entry_price, mm_rate "
@@ -187,3 +185,9 @@ def ftx(
 
     # If nothing was returned
     exception("ftx", trading_mode, collateral)
+
+
+if __name__ == '__main__':
+    print(liquidation_price("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED,
+                            1535443.01, 356512.508,
+                            0.0, 16300.000, 109.488, 32481.980, 0.025))
