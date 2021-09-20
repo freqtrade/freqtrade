@@ -1292,14 +1292,26 @@ class FreqtradeBot(LoggingMixin):
         if not trade.is_open:
             if not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
-            self.protections.stop_per_pair(trade.pair)
-            self.protections.global_stop()
+            self.handle_protections(trade.pair)
             self.wallets.update()
         elif not trade.open_order_id:
             # Buy fill
             self._notify_enter_fill(trade)
 
         return False
+
+    def handle_protections(self, pair: str) -> None:
+        prot_trig = self.protections.stop_per_pair(pair)
+        if prot_trig:
+            msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }
+            msg.update(prot_trig.to_json())
+            self.rpc.send_msg(msg)
+
+        prot_trig_glb = self.protections.global_stop()
+        if prot_trig_glb:
+            msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }
+            msg.update(prot_trig_glb.to_json())
+            self.rpc.send_msg(msg)
 
     def apply_fee_conditional(self, trade: Trade, trade_base_currency: str,
                               amount: float, fee_abs: float) -> float:
