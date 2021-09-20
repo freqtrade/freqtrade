@@ -3049,7 +3049,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
 
 
 @pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
-def test_get_funding_fees(default_conf, mocker, exchange_name):
+def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_funding_history = MagicMock(return_value=[
         {
