@@ -93,7 +93,9 @@ Example configuration showing the different settings:
         "buy_cancel": "silent",
         "sell_cancel": "on",
         "buy_fill": "off",
-        "sell_fill": "off"
+        "sell_fill": "off",
+        "protection_trigger": "off",
+        "protection_trigger_global": "on"
     },
     "reload": true,
     "balance_dust_level": 0.01

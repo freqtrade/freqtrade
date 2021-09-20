@@ -286,7 +286,11 @@ class Telegram(RPCHandler):
                 "*Protection* triggered due to {reason}. "
                 "{pair} will be locked until {lock_end_time}."
             ).format(**msg)
-
+        elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
+            message = (
+                "*Protection* triggered due to {reason}. "
+                "All pairs will be locked until {lock_end_time}."
+            ).format(**msg)
         elif msg_type == RPCMessageType.STATUS:
             message = '*Status:* `{status}`'.format(**msg)
 

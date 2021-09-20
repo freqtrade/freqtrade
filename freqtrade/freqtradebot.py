@@ -1309,7 +1309,7 @@ class FreqtradeBot(LoggingMixin):
 
         prot_trig_glb = self.protections.global_stop()
         if prot_trig_glb:
-            msg = {'type': RPCMessageType.PROTECTION_TRIGGER, }
+            msg = {'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL, }
             msg.update(prot_trig_glb.to_json())
             self.rpc.send_msg(msg)
 
