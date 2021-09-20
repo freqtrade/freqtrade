@@ -149,6 +149,20 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
 
+### Troubleshooting
+
+### Docker on Windows
+
+* Error: `"Timestamp for this request is outside of the recvWindow."`
+  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
+    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
+    ```
+    taskkill /IM "Docker Desktop.exe" /F
+    wsl --shutdown
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    ```
+
 ## Plotting with docker-compose
 
 Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
