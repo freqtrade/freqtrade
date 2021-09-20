@@ -1315,6 +1315,8 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
 
 def test_send_msg_protection_notification(default_conf, mocker, time_machine) -> None:
 
+    default_conf['telegram']['notification_settings']['protection_trigger'] = 'on'
+
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     time_machine.move_to("2021-09-01 05:00:00 +00:00")
     lock = PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=6).datetime, 'randreason')
