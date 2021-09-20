@@ -887,6 +887,10 @@ def test_in_strategy_auto_hyperopt(mocker, hyperopt_conf, tmpdir, fee) -> None:
     assert hyperopt.backtesting.strategy.buy_rsi.value != 35
     assert hyperopt.backtesting.strategy.sell_rsi.value != 74
 
+    hyperopt.custom_hyperopt.generate_estimator = lambda *args, **kwargs: 'ET1'
+    with pytest.raises(OperationalException, match="Estimator ET1 not supported."):
+        hyperopt.get_optimizer([], 2)
+
 
 def test_SKDecimal():
     space = SKDecimal(1, 2, decimals=2)

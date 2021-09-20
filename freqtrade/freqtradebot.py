@@ -86,10 +86,10 @@ class FreqtradeBot(LoggingMixin):
 
         self.dataprovider = DataProvider(self.config, self.exchange, self.pairlists)
 
-        # Attach Dataprovider to Strategy baseclass
-        IStrategy.dp = self.dataprovider
-        # Attach Wallets to Strategy baseclass
-        IStrategy.wallets = self.wallets
+        # Attach Dataprovider to strategy instance
+        self.strategy.dp = self.dataprovider
+        # Attach Wallets to strategy instance
+        self.strategy.wallets = self.wallets
 
         # Initializing Edge only if enabled
         self.edge = Edge(self.config, self.exchange, self.strategy) if \
@@ -175,7 +175,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Refreshing candles
         self.dataprovider.refresh(self.pairlists.create_pair_list(self.active_pair_whitelist),
-                                  self.strategy.informative_pairs())
+                                  self.strategy.gather_informative_pairs())
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)()
 
@@ -812,10 +812,8 @@ class FreqtradeBot(LoggingMixin):
         exit_signal_type = "exit_short" if trade.is_short else "exit_long"
 
         # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
-        if (
-            self.config.get('use_sell_signal', True) or
-            self.config.get('ignore_roi_if_buy_signal', False)
-        ):
+        if (self.config.get('use_sell_signal', True) or
+                self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
@@ -847,7 +845,8 @@ class FreqtradeBot(LoggingMixin):
                 amount=trade.amount,
                 stop_price=stop_price,
                 order_types=self.strategy.order_types,
-                side=trade.exit_side
+                side=trade.exit_side,
+                leverage=trade.leverage
             )
 
             order_obj = Order.parse_from_ccxt_object(stoploss_order, trade.pair, 'stoploss')
@@ -947,7 +946,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict, side: str) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
