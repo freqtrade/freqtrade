@@ -111,9 +111,10 @@ def test_load_backtest_data_multi(testdatadir):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_load_trades_from_db(default_conf, fee, mocker):
+@pytest.mark.parametrize('is_short', [False, True])
+def test_load_trades_from_db(default_conf, fee, is_short, mocker):
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     # remove init so it does not init again
     init_mock = mocker.patch('freqtrade.data.btanalysis.init_db', MagicMock())
 

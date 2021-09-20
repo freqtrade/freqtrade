@@ -665,6 +665,7 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
     whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
     whitelist_conf['pairlists'] = [
@@ -679,7 +680,7 @@ def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
     assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
 
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
-        create_mock_trades(fee)
+        create_mock_trades(fee, False)
         pm.refresh_pairlist()
         assert pm.whitelist == ['XRP/BTC', 'ETH/BTC', 'TKN/BTC']
 

@@ -285,7 +285,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
         rpc._rpc_daily_profit(0, stake_currency, fiat_display_currency)
 
 
-def test_rpc_trade_history(mocker, default_conf, markets, fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_rpc_trade_history(mocker, default_conf, markets, fee, is_short):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -293,7 +294,7 @@ def test_rpc_trade_history(mocker, default_conf, markets, fee):
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
     trades = rpc._rpc_trade_history(2)
@@ -310,7 +311,8 @@ def test_rpc_trade_history(mocker, default_conf, markets, fee):
     assert trades['trades'][0]['pair'] == 'XRP/BTC'
 
 
-def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     stoploss_mock = MagicMock()
     cancel_mock = MagicMock()
@@ -323,7 +325,7 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog):
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     freqtradebot.strategy.order_types['stoploss_on_exchange'] = True
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     rpc = RPC(freqtradebot)
     with pytest.raises(RPCException, match='invalid argument'):
         rpc._rpc_delete('200')

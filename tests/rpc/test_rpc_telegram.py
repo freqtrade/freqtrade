@@ -33,6 +33,7 @@ class DummyCls(Telegram):
     """
     Dummy class for testing the Telegram @authorized_only decorator
     """
+
     def __init__(self, rpc: RPC, config) -> None:
         super().__init__(rpc, config)
         self.state = {'called': False}
@@ -479,8 +480,9 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     assert '*Best Performing:* `ETH/BTC: 6.20%`' in msg_mock.call_args_list[-1][0][0]
 
 
+@pytest.mark.parametrize('is_short', [True, False])
 def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
-                        limit_buy_order, limit_sell_order, mocker) -> None:
+                        limit_buy_order, limit_sell_order, mocker, is_short) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -496,7 +498,7 @@ def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
     msg_mock.reset_mock()
 
     # Create some test data
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
 
     telegram._stats(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
@@ -997,9 +999,9 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     msg = ('<pre>  current    max    total stake\n---------  -----  -------------\n'
            '        1      {}          {}</pre>').format(
-            default_conf['max_open_trades'],
-            default_conf['stake_amount']
-        )
+        default_conf['max_open_trades'],
+        default_conf['stake_amount']
+    )
     assert msg in msg_mock.call_args_list[0][0][0]
 
 
@@ -1159,6 +1161,7 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert 'Winrate' not in msg_mock.call_args_list[0][0][0]
 
 
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_telegram_trades(mocker, update, default_conf, fee):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -1177,7 +1180,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "<pre>" not in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     context = MagicMock()
     context.args = [5]
@@ -1191,6 +1194,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
                 msg_mock.call_args_list[0][0][0]))
 
 
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_telegram_delete_trade(mocker, update, default_conf, fee):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
@@ -1201,7 +1205,7 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee):
     assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     context = MagicMock()
     context.args = [1]

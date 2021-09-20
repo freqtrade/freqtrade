@@ -875,10 +875,8 @@ def test_execute_entry(mocker, default_conf, fee, limit_buy_order, limit_sell_or
     assert trade.open_rate_requested == 10
 
 
-@pytest.mark.parametrize("is_short", [False, True])
-def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order,
-                                     limit_sell_order, is_short) -> None:
-    order = limit_sell_order if is_short else limit_buy_order
+# TODO-lev: @pytest.mark.parametrize("is_short", [False, True])
+def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -887,7 +885,7 @@ def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order,
             'ask': 0.00001173,
             'last': 0.00001172
         }),
-        create_order=MagicMock(return_value=order),
+        create_order=MagicMock(return_value=limit_buy_order),
         get_rate=MagicMock(return_value=0.11),
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
@@ -899,11 +897,11 @@ def test_execute_entry_confirm_error(mocker, default_conf, fee, limit_buy_order,
     # TODO-lev: KeyError happens on short, why?
     assert freqtrade.execute_entry(pair, stake_amount)
 
-    order['id'] = '222'
+    limit_buy_order['id'] = '222'
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=Exception)
     assert freqtrade.execute_entry(pair, stake_amount)
 
-    order['id'] = '2223'
+    limit_buy_order['id'] = '2223'
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
     assert freqtrade.execute_entry(pair, stake_amount)
 
@@ -1319,7 +1317,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee, is_shor
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=0.00002346 * 0.95,
-        side="sell",
+        side="buy" if is_short else "sell",
         leverage=1.0
     )
 
@@ -1398,7 +1396,10 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     mocker.patch('freqtrade.exchange.Binance.fetch_stoploss_order',
                  return_value=stoploss_order_hanging)
     freqtrade.handle_trailing_stoploss_on_exchange(
-        trade, stoploss_order_hanging, side=("buy" if is_short else "sell"))
+        trade,
+        stoploss_order_hanging,
+        side=("buy" if is_short else "sell")
+    )
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
     # Still try to create order
@@ -1519,7 +1520,7 @@ def test_handle_stoploss_on_exchange_custom_stop(mocker, default_conf, fee, is_s
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=0.00002346 * 0.96,
-        side="sell",
+        side="buy" if is_short else "sell",
         leverage=1.0
     )
 

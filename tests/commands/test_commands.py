@@ -871,7 +871,7 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmpdir):
     mocker.patch(
         'freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist',
         return_value=True
-        )
+    )
 
     def fake_iterator(*args, **kwargs):
         yield from [saved_hyperopt_results]
@@ -1277,9 +1277,10 @@ def test_start_list_data(testdatadir, capsys):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: Short trades?
 def test_show_trades(mocker, fee, capsys, caplog):
     mocker.patch("freqtrade.persistence.init_db")
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     args = [
         "show-trades",
         "--db-url",

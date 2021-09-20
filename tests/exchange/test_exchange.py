@@ -135,7 +135,7 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 
-    # TODO-lev: Test with options
+    # TODO-lev: Test with options in ccxt_config
 
 
 def test_destroy(default_conf, mocker, caplog):
@@ -420,21 +420,25 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     # With Leverage
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
     assert isclose(result, expected_result/5)
+
+    # min amount and cost are set (cost is minimal)
+    markets["ETH/BTC"]["limits"] = {
+        'cost': {'min': 2},
         'amount': {'min': 2}
     }
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
     )
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result=max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
+    expected_result = max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
     assert isclose(result, expected_result/10)
 
     # min amount and cost are set (amount is minial)
-    markets["ETH/BTC"]["limits"]={
+    markets["ETH/BTC"]["limits"] = {
         'cost': {'min': 8},
         'amount': {'min': 2}
     }
@@ -442,28 +446,36 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
     )
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
-    expected_result=max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
+    expected_result = max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
     # With Leverage
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
     assert isclose(result, expected_result/7.0)
 
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
-    expected_result=max(8, 2 * 2) * 1.5
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
+    expected_result = max(8, 2 * 2) * 1.5
     assert isclose(result, expected_result)
     # With Leverage
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
     assert isclose(result, expected_result/8.0)
+
+    # Really big stoploss
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
+    expected_result = max(8, 2 * 2) * 1.5
     assert isclose(result, expected_result)
     # With Leverage
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, expected_result/12)
-    stoploss=-0.05
-    markets={'ETH/BTC': {'symbol': 'ETH/BTC'}}
+
+
+def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
+    stoploss = -0.05
+    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
 
     # Real Binance data
-    markets["ETH/BTC"]["limits"]={
+    markets["ETH/BTC"]["limits"] = {
         'cost': {'min': 0.0001},
         'amount': {'min': 0.001}
     }
@@ -471,10 +483,10 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
     )
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
-    expected_result=max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
+    expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
     assert round(result, 8) == round(expected_result, 8)
-    result=exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
+    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
     assert round(result, 8) == round(expected_result/3, 8)
 
 
@@ -482,16 +494,16 @@ def test_set_sandbox(default_conf, mocker):
     """
     Test working scenario
     """
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(return_value = {
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value={
         'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
     })
-    url_mock=PropertyMock(return_value = {'test': "api-public.sandbox.gdax.com",
+    url_mock = PropertyMock(return_value={'test': "api-public.sandbox.gdax.com",
                                           'api': 'https://api.gdax.com'})
-    type(api_mock).urls=url_mock
-    exchange=get_patched_exchange(mocker, default_conf, api_mock)
-    liveurl=exchange._api.urls['api']
-    default_conf['exchange']['sandbox']=True
+    type(api_mock).urls = url_mock
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    liveurl = exchange._api.urls['api']
+    default_conf['exchange']['sandbox'] = True
     exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
     assert exchange._api.urls['api'] != liveurl
 
@@ -500,16 +512,16 @@ def test_set_sandbox_exception(default_conf, mocker):
     """
     Test Fail scenario
     """
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(return_value = {
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value={
         'ETH/BTC': '', 'LTC/BTC': '', 'XRP/BTC': '', 'NEO/BTC': ''
     })
-    url_mock=PropertyMock(return_value = {'api': 'https://api.gdax.com'})
-    type(api_mock).urls=url_mock
+    url_mock = PropertyMock(return_value={'api': 'https://api.gdax.com'})
+    type(api_mock).urls = url_mock
 
-    with pytest.raises(OperationalException, match = r'does not provide a sandbox api'):
-        exchange=get_patched_exchange(mocker, default_conf, api_mock)
-        default_conf['exchange']['sandbox']=True
+    with pytest.raises(OperationalException, match=r'does not provide a sandbox api'):
+        exchange = get_patched_exchange(mocker, default_conf, api_mock)
+        default_conf['exchange']['sandbox'] = True
         exchange.set_sandbox(exchange._api, default_conf['exchange'], 'Logname')
 
 
@@ -519,13 +531,13 @@ def test__load_async_markets(default_conf, mocker, caplog):
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
     mocker.patch('freqtrade.exchange.Exchange._load_markets')
     mocker.patch('freqtrade.exchange.Exchange.validate_stakecurrency')
-    exchange=Exchange(default_conf)
-    exchange._api_async.load_markets=get_mock_coro(None)
+    exchange = Exchange(default_conf)
+    exchange._api_async.load_markets = get_mock_coro(None)
     exchange._load_async_markets()
     assert exchange._api_async.load_markets.call_count == 1
     caplog.set_level(logging.DEBUG)
 
-    exchange._api_async.load_markets=Mock(side_effect = ccxt.BaseError("deadbeef"))
+    exchange._api_async.load_markets = Mock(side_effect=ccxt.BaseError("deadbeef"))
     exchange._load_async_markets()
 
     assert log_has('Could not load async markets. Reason: deadbeef', caplog)
@@ -533,8 +545,8 @@ def test__load_async_markets(default_conf, mocker, caplog):
 
 def test__load_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(side_effect = ccxt.BaseError("SomeError"))
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(side_effect=ccxt.BaseError("SomeError"))
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
     mocker.patch('freqtrade.exchange.Exchange.validate_pairs')
     mocker.patch('freqtrade.exchange.Exchange.validate_timeframes')
@@ -543,28 +555,28 @@ def test__load_markets(default_conf, mocker, caplog):
     Exchange(default_conf)
     assert log_has('Unable to initialize markets.', caplog)
 
-    expected_return={'ETH/BTC': 'available'}
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(return_value = expected_return)
+    expected_return = {'ETH/BTC': 'available'}
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value=expected_return)
     mocker.patch('freqtrade.exchange.Exchange._init_ccxt', MagicMock(return_value=api_mock))
-    default_conf['exchange']['pair_whitelist']=['ETH/BTC']
-    ex=Exchange(default_conf)
+    default_conf['exchange']['pair_whitelist'] = ['ETH/BTC']
+    ex = Exchange(default_conf)
 
     assert ex.markets == expected_return
 
 
 def test_reload_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
-    initial_markets={'ETH/BTC': {}}
-    updated_markets={'ETH/BTC': {}, "LTC/BTC": {}}
+    initial_markets = {'ETH/BTC': {}}
+    updated_markets = {'ETH/BTC': {}, "LTC/BTC": {}}
 
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(return_value = initial_markets)
-    default_conf['exchange']['markets_refresh_interval']=10
-    exchange=get_patched_exchange(mocker, default_conf, api_mock, id = "binance",
-                                    mock_markets = False)
-    exchange._load_async_markets=MagicMock()
-    exchange._last_markets_refresh=arrow.utcnow().int_timestamp
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(return_value=initial_markets)
+    default_conf['exchange']['markets_refresh_interval'] = 10
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance",
+                                    mock_markets=False)
+    exchange._load_async_markets = MagicMock()
+    exchange._last_markets_refresh = arrow.utcnow().int_timestamp
 
     assert exchange.markets == initial_markets
 
@@ -573,9 +585,9 @@ def test_reload_markets(default_conf, mocker, caplog):
     assert exchange.markets == initial_markets
     assert exchange._load_async_markets.call_count == 0
 
-    api_mock.load_markets=MagicMock(return_value = updated_markets)
+    api_mock.load_markets = MagicMock(return_value=updated_markets)
     # more than 10 minutes have passed, reload is executed
-    exchange._last_markets_refresh=arrow.utcnow().int_timestamp - 15 * 60
+    exchange._last_markets_refresh = arrow.utcnow().int_timestamp - 15 * 60
     exchange.reload_markets()
     assert exchange.markets == updated_markets
     assert exchange._load_async_markets.call_count == 1
@@ -585,10 +597,10 @@ def test_reload_markets(default_conf, mocker, caplog):
 def test_reload_markets_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
 
-    api_mock=MagicMock()
-    api_mock.load_markets=MagicMock(side_effect = ccxt.NetworkError("LoadError"))
-    default_conf['exchange']['markets_refresh_interval']=10
-    exchange=get_patched_exchange(mocker, default_conf, api_mock, id = "binance")
+    api_mock = MagicMock()
+    api_mock.load_markets = MagicMock(side_effect=ccxt.NetworkError("LoadError"))
+    default_conf['exchange']['markets_refresh_interval'] = 10
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="binance")
 
     # less than 10 minutes have passed, no reload
     exchange.reload_markets()
@@ -596,11 +608,11 @@ def test_reload_markets_exception(default_conf, mocker, caplog):
     assert log_has_re(r"Could not reload markets.*", caplog)
 
 
-@ pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
+@pytest.mark.parametrize("stake_currency", ['ETH', 'BTC', 'USDT'])
 def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
-    default_conf['stake_currency']=stake_currency
-    api_mock=MagicMock()
-    type(api_mock).load_markets=MagicMock(return_value = {
+    default_conf['stake_currency'] = stake_currency
+    api_mock = MagicMock()
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
     })
@@ -612,9 +624,9 @@ def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
 
 
 def test_validate_stakecurrency_error(default_conf, mocker, caplog):
-    default_conf['stake_currency']='XRP'
-    api_mock=MagicMock()
-    type(api_mock).load_markets=MagicMock(return_value = {
+    default_conf['stake_currency'] = 'XRP'
+    api_mock = MagicMock()
+    type(api_mock).load_markets = MagicMock(return_value={
         'ETH/BTC': {'quote': 'BTC'}, 'LTC/BTC': {'quote': 'BTC'},
         'XRP/ETH': {'quote': 'ETH'}, 'NEO/USDT': {'quote': 'USDT'},
     })

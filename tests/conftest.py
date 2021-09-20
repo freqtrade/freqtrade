@@ -285,22 +285,22 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
         else:
             LocalTrade.add_bt_trade(trade)
     # Simulate dry_run entries
-    trade = mock_trade_1(fee)
+    trade = mock_trade_1(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_2(fee)
+    trade = mock_trade_2(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_3(fee)
+    trade = mock_trade_3(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_4(fee)
+    trade = mock_trade_4(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_5(fee)
+    trade = mock_trade_5(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_6(fee)
+    trade = mock_trade_6(fee, False)
     add_trade(trade)
 
     trade = short_trade(fee)
