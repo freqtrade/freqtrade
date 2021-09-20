@@ -526,6 +526,29 @@ def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, 
     assert log_has_re(message, caplog)
 
 
+def test_handle_protections(mocker, default_conf, fee):
+    default_conf['protections'] = [
+        {"method": "CooldownPeriod", "stop_duration": 60},
+        {
+            "method": "StoplossGuard",
+            "lookback_period_candles": 24,
+            "trade_limit": 4,
+            "stop_duration_candles": 4,
+            "only_per_pair": False
+        }
+    ]
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.protections._protection_handlers[1].global_stop = MagicMock(
+        return_value=(True, arrow.utcnow().shift(hours=1).datetime, "asdf"))
+    create_mock_trades(fee)
+    freqtrade.handle_protections('ETC/BTC')
+    send_msg_mock = freqtrade.rpc.send_msg
+    assert send_msg_mock.call_count == 2
+    assert send_msg_mock.call_args_list[0][0][0]['type'] == RPCMessageType.PROTECTION_TRIGGER
+    assert send_msg_mock.call_args_list[1][0][0]['type'] == RPCMessageType.PROTECTION_TRIGGER_GLOBAL
+
+
 def test_create_trade_no_signal(default_conf, fee, mocker) -> None:
     default_conf['dry_run'] = True
 
