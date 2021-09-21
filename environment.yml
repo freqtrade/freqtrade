@@ -29,7 +29,7 @@ dependencies:
     - colorama
     - questionary
     - prompt-toolkit
-
+    - schedule
 
     # ============================
     # 2/4 req dev
@@ -58,6 +58,7 @@ dependencies:
 
     - plotly
     - jupyter
+
 
     - pip:
         - pycoingecko
