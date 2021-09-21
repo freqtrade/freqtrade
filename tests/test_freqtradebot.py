@@ -3546,24 +3546,19 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
 
 
 @pytest.mark.parametrize(
-    'fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log',
-    [
+    'fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log', [
         (None, 'ETH', 0, True, None),
         (0.004, None, 0, True, None),
-        (0.00094518, "BNB", 0, True, None),
-        (
-            0.004,
-            "LTC",
-            0.004,
-            False,
-            (
-                'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
-            )
-        ),
+        (0.00094518, "BNB", 0, True, (
+            'Fee for Trade Trade(id=None, pair=LTC/ETH, amount=8.00000000, open_rate=0.24544100,'
+            ' open_since=closed) [buy]: 0.00094518 BNB - rate: None'
+        )),
+        (0.004, "LTC", 0.004, False, (
+            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+            'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
+        )),
         (0.008, None, 0, True, None),
-    ]
-)
+    ])
 def test_get_real_amount(
     default_conf, trades_for_order, buy_order_fee, fee, mocker, caplog,
     fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log
@@ -3590,6 +3585,7 @@ def test_get_real_amount(
     if not use_ticker_rate:
         mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', side_effect=ExchangeError)
 
+    caplog.clear()
     # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order) == amount - fee_reduction_amount
 
@@ -3598,32 +3594,16 @@ def test_get_real_amount(
 
 
 @pytest.mark.parametrize(
-    'stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log',
-    [
-        (
-            "BTC",
-            None,
-            None,
-            0.001,
-            0.001,
-            (
-                'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).'
-            )
-        ),
-        (
-            "ETH",
-            0.02,
-            'BNB',
-            0.0005,
-            0.001518575,
-            (
-                'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-                'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
-            )
-        ),
-    ]
-)
+    'stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log', [
+        ("BTC", None, None, 0.001, 0.001, (
+            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+            'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).'
+        )),
+        ("ETH", 0.02, 'BNB', 0.0005, 0.001518575, (
+            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+            'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
+        )),
+    ])
 def test_get_real_amount_multi(
     default_conf, trades_for_order2, buy_order_fee, caplog, fee, mocker, markets,
     stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log,
@@ -3653,10 +3633,8 @@ def test_get_real_amount_multi(
     markets['BNB/ETH'] = markets['ETH/BTC']
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
-    mocker.patch(
-        'freqtrade.exchange.Exchange.fetch_ticker',
-        return_value={'ask': 0.19, 'last': 0.2}
-    )
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
+                 return_value={'ask': 0.19, 'last': 0.2})
 
     # Amount is reduced by "fee"
     expected_amount = amount - (amount * fee_reduction_amount)
@@ -3788,10 +3766,14 @@ def test_apply_fee_conditional(default_conf, fee, caplog, mocker,
     assert walletmock.call_count == 1
 
 
+@pytest.mark.parametrize("delta, is_high_delta", [
+    (0.1, False),
+    (100, True),
+])
 def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, limit_buy_order,
-                                    fee, mocker, order_book_l2):
+                                    fee, mocker, order_book_l2, delta, is_high_delta):
     default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
-    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 0.1
+    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = delta
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
@@ -3809,42 +3791,22 @@ def test_order_book_depth_of_market(default_conf, ticker, limit_buy_order_open, 
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    assert trade is not None
-    assert trade.stake_amount == 0.001
-    assert trade.is_open
-    assert trade.open_date is not None
-    assert trade.exchange == 'binance'
+    if is_high_delta:
+        assert trade is None
+    else:
+        assert trade is not None
+        assert trade.stake_amount == 0.001
+        assert trade.is_open
+        assert trade.open_date is not None
+        assert trade.exchange == 'binance'
 
-    assert len(Trade.query.all()) == 1
+        assert len(Trade.query.all()) == 1
 
-    # Simulate fulfilled LIMIT_BUY order for trade
-    trade.update(limit_buy_order)
+        # Simulate fulfilled LIMIT_BUY order for trade
+        trade.update(limit_buy_order)
 
-    assert trade.open_rate == 0.00001099
-    assert whitelist == default_conf['exchange']['pair_whitelist']
-
-
-def test_order_book_depth_of_market_high_delta(default_conf, ticker, limit_buy_order,
-                                               fee, mocker, order_book_l2):
-    default_conf['bid_strategy']['check_depth_of_market']['enabled'] = True
-    # delta is 100 which is impossible to reach. hence check_depth_of_market will return false
-    default_conf['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = 100
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book', order_book_l2)
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker,
-        create_order=MagicMock(return_value={'id': limit_buy_order['id']}),
-        get_fee=fee,
-    )
-    # Save state of current whitelist
-    freqtrade = FreqtradeBot(default_conf)
-    patch_get_signal(freqtrade)
-    freqtrade.enter_positions()
-
-    trade = Trade.query.first()
-    assert trade is None
+        assert trade.open_rate == 0.00001099
+        assert whitelist == default_conf['exchange']['pair_whitelist']
 
 
 @pytest.mark.parametrize('exception_thrown,ask,last,order_book_top,order_book', [
