@@ -1226,7 +1226,8 @@ def test_api_strategies(botclient):
         'HyperoptableStrategy',
         'InformativeDecoratorTest',
         'StrategyTestV2',
-        'TestStrategyLegacyV1'
+        'StrategyTestV3',
+        'TestStrategyLegacyV1',
     ]}
 
 

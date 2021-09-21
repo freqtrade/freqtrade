@@ -23,11 +23,11 @@ from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import log_has, log_has_re
 
-from .strats.strategy_test_v2 import StrategyTestV2
+from .strats.strategy_test_v3 import StrategyTestV3
 
 
 # Avoid to reinit the same object again and again
-_STRATEGY = StrategyTestV2(config={})
+_STRATEGY = StrategyTestV3(config={})
 _STRATEGY.dp = DataProvider({}, None, None)
 
 
@@ -224,8 +224,8 @@ def test_assert_df_raise(mocker, caplog, ohlcv_history):
 
 def test_assert_df(ohlcv_history, caplog):
     df_len = len(ohlcv_history) - 1
-    ohlcv_history.loc[:, 'buy'] = 0
-    ohlcv_history.loc[:, 'sell'] = 0
+    ohlcv_history.loc[:, 'enter_long'] = 0
+    ohlcv_history.loc[:, 'exit_long'] = 0
     # Ensure it's running when passed correctly
     _STRATEGY.assert_df(ohlcv_history, len(ohlcv_history),
                         ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[df_len, 'date'])
@@ -248,8 +248,8 @@ def test_assert_df(ohlcv_history, caplog):
         _STRATEGY.assert_df(None, len(ohlcv_history),
                             ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
     with pytest.raises(StrategyError,
-                       match="Buy column not set"):
-        _STRATEGY.assert_df(ohlcv_history.drop('buy', axis=1), len(ohlcv_history),
+                       match="enter_long/buy column not set."):
+        _STRATEGY.assert_df(ohlcv_history.drop('enter_long', axis=1), len(ohlcv_history),
                             ohlcv_history.loc[df_len, 'close'], ohlcv_history.loc[0, 'date'])
 
     _STRATEGY.disable_dataframe_checks = True
@@ -528,7 +528,7 @@ def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:
         advise_sell=sell_mock,
 
     )
-    strategy = StrategyTestV2({})
+    strategy = StrategyTestV3({})
     strategy.analyze_ticker(ohlcv_history, {'pair': 'ETH/BTC'})
     assert ind_mock.call_count == 1
     assert buy_mock.call_count == 1
@@ -559,7 +559,7 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
         advise_sell=sell_mock,
 
     )
-    strategy = StrategyTestV2({})
+    strategy = StrategyTestV3({})
     strategy.dp = DataProvider({}, None, None)
     strategy.process_only_new_candles = True
 
