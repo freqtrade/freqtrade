@@ -151,7 +151,7 @@ You can then run `docker-compose build` to build the docker image, and run it us
 
 ### Troubleshooting
 
-### Docker on Windows
+#### Docker on Windows
 
 * Error: `"Timestamp for this request is outside of the recvWindow."`
   * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
