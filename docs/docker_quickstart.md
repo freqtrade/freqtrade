@@ -163,6 +163,10 @@ You can then run `docker-compose build` to build the docker image, and run it us
     start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
     ```
 
+!!! Warning
+    Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
+    Best use a linux-VPS for running freqtrade reliably.
+
 ## Plotting with docker-compose
 
 Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
