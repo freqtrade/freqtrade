@@ -4,10 +4,11 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.strategy import IStrategy
+from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
+                                RealParameter)
 
 
-class StrategyTestV2(IStrategy):
+class StrategyTestV3(IStrategy):
     """
     Strategy used by tests freqtrade bot.
     Please do not modify this strategy, it's  intended for internal use only.
@@ -15,7 +16,7 @@ class StrategyTestV2(IStrategy):
     or strategy repository https://github.com/freqtrade/freqtrade-strategies
     for samples and inspiration.
     """
-    INTERFACE_VERSION = 2
+    INTERFACE_VERSION = 3
 
     # Minimal ROI designed for the strategy
     minimal_roi = {
@@ -48,30 +49,40 @@ class StrategyTestV2(IStrategy):
         'sell': 'gtc',
     }
 
+    buy_params = {
+        'buy_rsi': 35,
+        # Intentionally not specified, so "default" is tested
+        # 'buy_plusdi': 0.4
+    }
+
+    sell_params = {
+        'sell_rsi': 74,
+        'sell_minusdi': 0.4
+    }
+
+    buy_rsi = IntParameter([0, 50], default=30, space='buy')
+    buy_plusdi = RealParameter(low=0, high=1, default=0.5, space='buy')
+    sell_rsi = IntParameter(low=50, high=100, default=70, space='sell')
+    sell_minusdi = DecimalParameter(low=0, high=1, default=0.5001, decimals=3, space='sell',
+                                    load=False)
+    protection_enabled = BooleanParameter(default=True)
+    protection_cooldown_lookback = IntParameter([0, 50], default=30)
+
+    @property
+    def protections(self):
+        prot = []
+        if self.protection_enabled.value:
+            prot.append({
+                "method": "CooldownPeriod",
+                "stop_duration_candles": self.protection_cooldown_lookback.value
+            })
+        return prot
+
     def informative_pairs(self):
-        """
-        Define additional, informative pair/interval combinations to be cached from the exchange.
-        These pair/interval combinations are non-tradeable, unless they are part
-        of the whitelist as well.
-        For more information, please consult the documentation
-        :return: List of tuples in the format (pair, interval)
-            Sample: return [("ETH/USDT", "5m"),
-                            ("BTC/USDT", "15m"),
-                            ]
-        """
+
         return []
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Adds several different TA indicators to the given DataFrame
-
-        Performance Note: For the best performance be frugal on the number of indicators
-        you are using. Let uncomment only the indicator you are using in your strategies
-        or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
-        :param dataframe: Dataframe with data from the exchange
-        :param metadata: Additional information, like the currently traded pair
-        :return: a Dataframe with all mandatory indicators for the strategies
-        """
 
         # Momentum Indicator
         # ------------------------------------
@@ -111,38 +122,28 @@ class StrategyTestV2(IStrategy):
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the buy signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with buy column
-        """
+
         dataframe.loc[
             (
-                (dataframe['rsi'] < 35) &
+                (dataframe['rsi'] < self.buy_rsi.value) &
                 (dataframe['fastd'] < 35) &
                 (dataframe['adx'] > 30) &
-                (dataframe['plus_di'] > 0.5)
+                (dataframe['plus_di'] > self.buy_plusdi.value)
             ) |
             (
                 (dataframe['adx'] > 65) &
-                (dataframe['plus_di'] > 0.5)
+                (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
-            'buy'] = 1
+            'enter_trade'] = 1
+        # TODO-lev: Add short logic
 
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """
-        Based on TA indicators, populates the sell signal for the given dataframe
-        :param dataframe: DataFrame
-        :param metadata: Additional information, like the currently traded pair
-        :return: DataFrame with buy column
-        """
         dataframe.loc[
             (
                 (
-                    (qtpylib.crossed_above(dataframe['rsi'], 70)) |
+                    (qtpylib.crossed_above(dataframe['rsi'], self.sell_rsi.value)) |
                     (qtpylib.crossed_above(dataframe['fastd'], 70))
                 ) &
                 (dataframe['adx'] > 10) &
@@ -150,7 +151,9 @@ class StrategyTestV2(IStrategy):
             ) |
             (
                 (dataframe['adx'] > 70) &
-                (dataframe['minus_di'] > 0.5)
+                (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
-            'sell'] = 1
+            'exit_trade'] = 1
+
+        # TODO-lev: Add short logic
         return dataframe

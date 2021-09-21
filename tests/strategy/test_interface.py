@@ -581,10 +581,10 @@ def test__analyze_ticker_internal_skip_analyze(ohlcv_history, mocker, caplog) ->
     assert buy_mock.call_count == 1
     assert buy_mock.call_count == 1
     # only skipped analyze adds buy and sell columns, otherwise it's all mocked
-    assert 'buy' in ret.columns
-    assert 'sell' in ret.columns
-    assert ret['buy'].sum() == 0
-    assert ret['sell'].sum() == 0
+    assert 'enter_long' in ret.columns
+    assert 'exit_long' in ret.columns
+    assert ret['enter_long'].sum() == 0
+    assert ret['exit_long'].sum() == 0
     assert not log_has('TA Analysis Launched', caplog)
     assert log_has('Skipping TA Analysis for already analyzed candle', caplog)
 
