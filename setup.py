@@ -11,7 +11,7 @@ hyperopt = [
     'joblib',
     'progressbar2',
     'psutil',
-    ]
+]
 
 develop = [
     'coveralls',
@@ -31,7 +31,7 @@ jupyter = [
     'nbstripout',
     'ipykernel',
     'nbconvert',
-    ]
+]
 
 all_extra = plot + develop + jupyter + hyperopt
 
@@ -41,7 +41,7 @@ setup(
         'pytest-asyncio',
         'pytest-cov',
         'pytest-mock',
-        ],
+    ],
     install_requires=[
         # from requirements.txt
         'ccxt>=1.50.48',
@@ -71,7 +71,8 @@ setup(
         'fastapi',
         'uvicorn',
         'pyjwt',
-        'aiofiles'
+        'aiofiles',
+        'schedule'
     ],
     extras_require={
         'dev': all_extra,
