@@ -363,12 +363,22 @@ class LocalTrade():
             self.stop_loss_pct = -1 * abs(percent)
         self.stoploss_last_update = datetime.utcnow()
 
-    def set_isolated_liq(self, isolated_liq: Optional[float]):
+    def set_isolated_liq(
+        self,
+        isolated_liq: Optional[float],
+        wallet_balance: Optional[float],
+        current_price: Optional[float]
+    ):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price
         """
         if not isolated_liq:
+            if not wallet_balance or not current_price:
+                raise OperationalException(
+                    "wallet balance must be passed to LocalTrade.set_isolated_liq when param"
+                    "isolated_liq is None"
+                )
             isolated_liq = liquidation_price(
                 exchange_name=self.exchange,
                 open_rate=self.open_rate,
@@ -378,9 +388,9 @@ class LocalTrade():
                 collateral=Collateral.ISOLATED,
                 mm_ex_1=0.0,
                 upnl_ex_1=0.0,
-                # TODO-lev: position=amount * current_price,
+                position=self.amount * current_price,
+                wallet_balance=wallet_balance,
                 # TODO-lev: maintenance_amt,
-                # TODO-lev: wallet_balance,
                 # TODO-lev: mm_rate,
 
             )
