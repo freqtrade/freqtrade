@@ -22,7 +22,7 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
@@ -159,7 +159,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--export', 'none'
     ]
 
@@ -194,7 +194,7 @@ def test_setup_bt_configuration_with_arguments(mocker, default_conf, caplog) -> 
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--enable-position-stacking',
@@ -244,7 +244,7 @@ def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog)
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--stake-amount', '1',
         '--starting-balance', '2'
     ]
@@ -255,7 +255,7 @@ def test_setup_optimize_configuration_stake_amount(mocker, default_conf, caplog)
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--stake-amount', '1',
         '--starting-balance', '0.5'
     ]
@@ -273,7 +273,7 @@ def test_start(mocker, fee, default_conf, caplog) -> None:
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
     ]
     pargs = get_args(args)
     start_backtesting(pargs)
@@ -306,7 +306,7 @@ def test_backtesting_init(mocker, default_conf, order_types) -> None:
 def test_backtesting_init_no_timeframe(mocker, default_conf, caplog) -> None:
     patch_exchange(mocker)
     del default_conf['timeframe']
-    default_conf['strategy_list'] = ['StrategyTestV2',
+    default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY,
                                      'SampleStrategy']
 
     mocker.patch('freqtrade.exchange.Exchange.get_fee', MagicMock(return_value=0.5))
@@ -344,7 +344,6 @@ def test_data_to_dataframe_bt(default_conf, mocker, testdatadir) -> None:
     assert len(processed['UNITTEST/BTC']) == 102
 
     # Load strategy to compare the result between Backtesting function and strategy are the same
-    default_conf.update({'strategy': 'StrategyTestV2'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     processed2 = strategy.advise_all_indicators(data)
@@ -486,7 +485,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
     Backtesting(default_conf)
 
     # Multiple strategies
-    default_conf['strategy_list'] = ['StrategyTestV2', 'TestStrategyLegacyV1']
+    default_conf['strategy_list'] = [CURRENT_TEST_STRATEGY, 'TestStrategyLegacyV1']
     with pytest.raises(OperationalException,
                        match='PrecisionFilter not allowed for backtesting multiple strategies.'):
         Backtesting(default_conf)
@@ -803,7 +802,7 @@ def test_backtest_pricecontours(default_conf, fee, mocker, testdatadir,
 
 
 def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
-    # Override the default buy trend function in our StrategyTestV2
+    # Override the default buy trend function in our StrategyTest
     def fun(dataframe=None, pair=None):
         buy_value = 1
         sell_value = 1
@@ -819,7 +818,7 @@ def test_backtest_clash_buy_sell(mocker, default_conf, testdatadir):
 
 
 def test_backtest_only_sell(mocker, default_conf, testdatadir):
-    # Override the default buy trend function in our StrategyTestV2
+    # Override the default buy trend function in our StrategyTest
     def fun(dataframe=None, pair=None):
         buy_value = 0
         sell_value = 1
@@ -948,7 +947,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
     args = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--datadir', str(testdatadir),
         '--timeframe', '1m',
         '--timerange', '1510694220-1510700340',
@@ -1019,7 +1018,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
-        'StrategyTestV2',
+        CURRENT_TEST_STRATEGY,
         'TestStrategyLegacyV1',
     ]
     args = get_args(args)
@@ -1042,7 +1041,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         'Backtesting with data from 2017-11-14 21:17:00 '
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
-        'Running backtesting for Strategy StrategyTestV2',
+        f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
         'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 
@@ -1123,7 +1122,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--enable-position-stacking',
         '--disable-max-market-positions',
         '--strategy-list',
-        'StrategyTestV2',
+        CURRENT_TEST_STRATEGY,
         'TestStrategyLegacyV1',
     ]
     args = get_args(args)
@@ -1140,7 +1139,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         'Backtesting with data from 2017-11-14 21:17:00 '
         'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
-        'Running backtesting for Strategy StrategyTestV2',
+        f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
         'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
 
@@ -1228,7 +1227,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
         '--timeframe', '5m',
         '--timeframe-detail', '1m',
         '--strategy-list',
-        'StrategyTestV2'
+        CURRENT_TEST_STRATEGY
     ]
     args = get_args(args)
     start_backtesting(args)
@@ -1242,7 +1241,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
         'up to 2019-10-13 11:10:00 (2 days).',
         'Backtesting with data from 2019-10-11 01:40:00 '
         'up to 2019-10-13 11:10:00 (2 days).',
-        'Running backtesting for Strategy StrategyTestV2',
+        f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
     ]
 
     for line in exists:

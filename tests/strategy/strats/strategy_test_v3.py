@@ -68,15 +68,17 @@ class StrategyTestV3(IStrategy):
     protection_enabled = BooleanParameter(default=True)
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
-    @property
-    def protections(self):
-        prot = []
-        if self.protection_enabled.value:
-            prot.append({
-                "method": "CooldownPeriod",
-                "stop_duration_candles": self.protection_cooldown_lookback.value
-            })
-        return prot
+    # TODO-lev: Can we make this work with protection tests?
+    # TODO-lev: (Would replace HyperoptableStrategy implicitly ... )
+    # @property
+    # def protections(self):
+    #     prot = []
+    #     if self.protection_enabled.value:
+    #         prot.append({
+    #             "method": "CooldownPeriod",
+    #             "stop_duration_candles": self.protection_cooldown_lookback.value
+    #         })
+    #     return prot
 
     def informative_pairs(self):
 
@@ -134,7 +136,7 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 65) &
                 (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
-            'enter_trade'] = 1
+            'enter_long'] = 1
         # TODO-lev: Add short logic
 
         return dataframe
@@ -153,7 +155,7 @@ class StrategyTestV3(IStrategy):
                 (dataframe['adx'] > 70) &
                 (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
-            'exit_trade'] = 1
+            'exit_long'] = 1
 
         # TODO-lev: Add short logic
         return dataframe

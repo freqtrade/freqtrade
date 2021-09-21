@@ -18,7 +18,7 @@ from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy.hyper import IntParameter
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
 
 
@@ -125,7 +125,7 @@ def test_setup_hyperopt_configuration_stake_amount(mocker, default_conf) -> None
     args = [
         'hyperopt',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--stake-amount', '1',
         '--starting-balance', '0.5'
     ]

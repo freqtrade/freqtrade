@@ -10,7 +10,7 @@ import rapidjson
 from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
-from tests.conftest import log_has
+from tests.conftest import CURRENT_TEST_STRATEGY, log_has
 
 
 # Functions for recurrent object patching
@@ -167,9 +167,9 @@ def test__pprint_dict():
 
 def test_get_strategy_filename(default_conf):
 
-    x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV2')
+    x = HyperoptTools.get_strategy_filename(default_conf, CURRENT_TEST_STRATEGY)
     assert isinstance(x, Path)
-    assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v2.py'
+    assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v3.py'
 
     x = HyperoptTools.get_strategy_filename(default_conf, 'NonExistingStrategy')
     assert x is None
@@ -177,7 +177,7 @@ def test_get_strategy_filename(default_conf):
 
 def test_export_params(tmpdir):
 
-    filename = Path(tmpdir) / "StrategyTestV2.json"
+    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -205,12 +205,12 @@ def test_export_params(tmpdir):
         }
 
     }
-    HyperoptTools.export_params(params, "StrategyTestV2", filename)
+    HyperoptTools.export_params(params, CURRENT_TEST_STRATEGY, filename)
 
     assert filename.is_file()
 
     content = rapidjson.load(filename.open('r'))
-    assert content['strategy_name'] == 'StrategyTestV2'
+    assert content['strategy_name'] == CURRENT_TEST_STRATEGY
     assert 'params' in content
     assert "buy" in content["params"]
     assert "sell" in content["params"]
@@ -223,7 +223,7 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
     default_conf['disableparamexport'] = False
     export_mock = mocker.patch("freqtrade.optimize.hyperopt_tools.HyperoptTools.export_params")
 
-    filename = Path(tmpdir) / "StrategyTestV2.json"
+    filename = Path(tmpdir) / f"{CURRENT_TEST_STRATEGY}.json"
     assert not filename.is_file()
     params = {
         "params_details": {
@@ -252,17 +252,17 @@ def test_try_export_params(default_conf, tmpdir, caplog, mocker):
         FTHYPT_FILEVERSION: 2,
 
     }
-    HyperoptTools.try_export_params(default_conf, "StrategyTestV222", params)
+    HyperoptTools.try_export_params(default_conf, "StrategyTestVXXX", params)
 
     assert log_has("Strategy not found, not exporting parameter file.", caplog)
     assert export_mock.call_count == 0
     caplog.clear()
 
-    HyperoptTools.try_export_params(default_conf, "StrategyTestV2", params)
+    HyperoptTools.try_export_params(default_conf, CURRENT_TEST_STRATEGY, params)
 
     assert export_mock.call_count == 1
-    assert export_mock.call_args_list[0][0][1] == 'StrategyTestV2'
-    assert export_mock.call_args_list[0][0][2].name == 'strategy_test_v2.json'
+    assert export_mock.call_args_list[0][0][1] == CURRENT_TEST_STRATEGY
+    assert export_mock.call_args_list[0][0][2].name == 'strategy_test_v3.json'
 
 
 def test_params_print(capsys):

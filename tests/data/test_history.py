@@ -26,7 +26,8 @@ from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHa
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
-from tests.conftest import get_patched_exchange, log_has, log_has_re, patch_exchange
+from tests.conftest import (CURRENT_TEST_STRATEGY, get_patched_exchange, log_has, log_has_re,
+                            patch_exchange)
 
 
 # Change this if modifying UNITTEST/BTC testdatafile
@@ -380,7 +381,7 @@ def test_file_dump_json_tofile(testdatadir) -> None:
 def test_get_timerange(default_conf, mocker, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'StrategyTestV2'})
+    default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.advise_all_indicators(
@@ -398,7 +399,7 @@ def test_get_timerange(default_conf, mocker, testdatadir) -> None:
 def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'StrategyTestV2'})
+    default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     data = strategy.advise_all_indicators(
@@ -422,7 +423,7 @@ def test_validate_backtest_data_warn(default_conf, mocker, caplog, testdatadir) 
 def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> None:
     patch_exchange(mocker)
 
-    default_conf.update({'strategy': 'StrategyTestV2'})
+    default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     timerange = TimeRange('index', 'index', 200, 250)

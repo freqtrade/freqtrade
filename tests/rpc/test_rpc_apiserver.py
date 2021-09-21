@@ -24,8 +24,8 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
-from tests.conftest import (create_mock_trades, get_mock_coro, get_patched_freqtradebot, log_has,
-                            log_has_re, patch_get_signal)
+from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_mock_coro,
+                            get_patched_freqtradebot, log_has, log_has_re, patch_get_signal)
 
 
 BASE_URI = "/api/v1"
@@ -885,7 +885,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'open_trade_value': 15.1668225,
         'sell_reason': None,
         'sell_order_status': None,
-        'strategy': 'StrategyTestV2',
+        'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -990,7 +990,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         close_rate=0.265441,
         id=22,
         timeframe=5,
-        strategy="StrategyTestV2"
+        strategy=CURRENT_TEST_STRATEGY
     ))
     mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
 
@@ -1040,7 +1040,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'open_trade_value': 0.24605460,
         'sell_reason': None,
         'sell_order_status': None,
-        'strategy': 'StrategyTestV2',
+        'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'timeframe': 5,
         'exchange': 'binance',
@@ -1107,7 +1107,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")
     assert_response(rc)
     assert 'strategy' in rc.json()
-    assert rc.json()['strategy'] == 'StrategyTestV2'
+    assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
     assert 'columns' in rc.json()
     assert 'data_start_ts' in rc.json()
     assert 'data_start' in rc.json()
@@ -1145,19 +1145,19 @@ def test_api_pair_history(botclient, ohlcv_history):
     # No pair
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?timeframe={timeframe}"
-                    "&timerange=20180111-20180112&strategy=StrategyTestV2")
+                    f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 422)
 
     # No Timeframe
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC"
-                    "&timerange=20180111-20180112&strategy=StrategyTestV2")
+                    f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 422)
 
     # No timerange
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
-                    "&strategy=StrategyTestV2")
+                    f"&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 422)
 
     # No strategy
@@ -1169,14 +1169,14 @@ def test_api_pair_history(botclient, ohlcv_history):
     # Working
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
-                    "&timerange=20180111-20180112&strategy=StrategyTestV2")
+                    f"&timerange=20180111-20180112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 200)
     assert rc.json()['length'] == 289
     assert len(rc.json()['data']) == rc.json()['length']
     assert 'columns' in rc.json()
     assert 'data' in rc.json()
     assert rc.json()['pair'] == 'UNITTEST/BTC'
-    assert rc.json()['strategy'] == 'StrategyTestV2'
+    assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
     assert rc.json()['data_start'] == '2018-01-11 00:00:00+00:00'
     assert rc.json()['data_start_ts'] == 1515628800000
     assert rc.json()['data_stop'] == '2018-01-12 00:00:00+00:00'
@@ -1185,7 +1185,7 @@ def test_api_pair_history(botclient, ohlcv_history):
     # No data found
     rc = client_get(client,
                     f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
-                    "&timerange=20200111-20200112&strategy=StrategyTestV2")
+                    f"&timerange=20200111-20200112&strategy={CURRENT_TEST_STRATEGY}")
     assert_response(rc, 502)
     assert rc.json()['error'] == ("Error querying /api/v1/pair_history: "
                                   "No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
@@ -1234,12 +1234,12 @@ def test_api_strategies(botclient):
 def test_api_strategy(botclient):
     ftbot, client = botclient
 
-    rc = client_get(client, f"{BASE_URI}/strategy/StrategyTestV2")
+    rc = client_get(client, f"{BASE_URI}/strategy/{CURRENT_TEST_STRATEGY}")
 
     assert_response(rc)
-    assert rc.json()['strategy'] == 'StrategyTestV2'
+    assert rc.json()['strategy'] == CURRENT_TEST_STRATEGY
 
-    data = (Path(__file__).parents[1] / "strategy/strats/strategy_test_v2.py").read_text()
+    data = (Path(__file__).parents[1] / "strategy/strats/strategy_test_v3.py").read_text()
     assert rc.json()['code'] == data
 
     rc = client_get(client, f"{BASE_URI}/strategy/NoStrat")
@@ -1296,7 +1296,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog):
 
     # start backtesting
     data = {
-        "strategy": "StrategyTestV2",
+        "strategy": CURRENT_TEST_STRATEGY,
         "timeframe": "5m",
         "timerange": "20180110-20180111",
         "max_open_trades": 3,
