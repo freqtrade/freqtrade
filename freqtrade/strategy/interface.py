@@ -370,8 +370,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                             proposed_stake: float, min_stake: float, max_stake: float,
                             **kwargs) -> float:
         """
-        Customize stake size for each new trade. This method is not called when edge module is
-        enabled.
+        Customize stake size for each new trade.
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
@@ -382,6 +381,23 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: A stake size, which is between min_stake and max_stake.
         """
         return proposed_stake
+
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, side: str,
+                 **kwargs) -> float:
+        """
+        Customize leverage for each new trade. This method is not called when edge module is
+        enabled.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_leverage: A leverage proposed by the bot.
+        :param max_leverage: Max leverage allowed on this pair
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :return: A leverage amount, which is between 1.0 and max_leverage.
+        """
+        return 1.0
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -971,20 +987,3 @@ class IStrategy(ABC, HyperStrategyMixin):
             if 'exit_long' not in df.columns:
                 df = df.rename({'sell': 'exit_long'}, axis='columns')
             return df
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, side: str,
-                 **kwargs) -> float:
-        """
-        Customize leverage for each new trade. This method is not called when edge module is
-        enabled.
-
-        :param pair: Pair that's currently analyzed
-        :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
-        :param proposed_leverage: A leverage proposed by the bot.
-        :param max_leverage: Max leverage allowed on this pair
-        :param side: 'long' or 'short' - indicating the direction of the proposed trade
-        :return: A leverage amount, which is between 1.0 and max_leverage.
-        """
-        return 1.0

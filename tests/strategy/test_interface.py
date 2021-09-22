@@ -21,7 +21,7 @@ from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, Categoric
                                       DecimalParameter, IntParameter, RealParameter)
 from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from tests.conftest import log_has, log_has_re
+from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
 from .strats.strategy_test_v3 import StrategyTestV3
 
@@ -504,6 +504,32 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     assert res.sell_flag is True
     assert res.sell_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
+
+
+@pytest.mark.parametrize('side', TRADE_SIDES)
+def test_leverage_callback(default_conf, side) -> None:
+    default_conf['strategy'] = 'StrategyTestV2'
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    assert strategy.leverage(
+        pair='XRP/USDT',
+        current_time=datetime.now(timezone.utc),
+        current_rate=2.2,
+        proposed_leverage=1.0,
+        max_leverage=5.0,
+        side=side,
+        ) == 1
+
+    default_conf['strategy'] = CURRENT_TEST_STRATEGY
+    strategy = StrategyResolver.load_strategy(default_conf)
+    assert strategy.leverage(
+        pair='XRP/USDT',
+        current_time=datetime.now(timezone.utc),
+        current_rate=2.2,
+        proposed_leverage=1.0,
+        max_leverage=5.0,
+        side=side,
+        ) == 3
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:

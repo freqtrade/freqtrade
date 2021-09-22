@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+from datetime import datetime
 import talib.abstract as ta
 from pandas import DataFrame
 
@@ -159,3 +160,11 @@ class StrategyTestV3(IStrategy):
 
         # TODO-lev: Add short logic
         return dataframe
+
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, side: str,
+                 **kwargs) -> float:
+        # Return 3.0 in all cases.
+        # Bot-logic must make sure it's an allowed leverage and eventually adjust accordingly.
+
+        return 3.0

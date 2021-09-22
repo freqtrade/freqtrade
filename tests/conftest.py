@@ -36,6 +36,7 @@ logging.getLogger('').setLevel(logging.INFO)
 np.seterr(all='raise')
 
 CURRENT_TEST_STRATEGY = 'StrategyTestV3'
+TRADE_SIDES = ('long', 'short')
 
 
 def pytest_addoption(parser):
