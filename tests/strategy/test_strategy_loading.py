@@ -99,8 +99,10 @@ def test_load_strategy_noname(default_conf):
         StrategyResolver.load_strategy(default_conf)
 
 
-def test_strategy_v2(result, default_conf):
-    default_conf.update({'strategy': 'StrategyTestV2'})
+@pytest.mark.filterwarnings("ignore:deprecated")
+@pytest.mark.parametrize('strategy_name', ['StrategyTestV2', 'TestStrategyLegacyV1'])
+def test_strategy_pre_v3(result, default_conf, strategy_name):
+    default_conf.update({'strategy': strategy_name})
 
     strategy = StrategyResolver.load_strategy(default_conf)
     metadata = {'pair': 'ETH/BTC'}
@@ -364,7 +366,7 @@ def test_deprecate_populate_indicators(result, default_conf):
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
+def test_call_deprecated_function(result, default_conf, caplog):
     default_location = Path(__file__).parent / "strats"
     del default_conf['timeframe']
     default_conf.update({'strategy': 'TestStrategyLegacyV1',
@@ -386,11 +388,11 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
 
     enterdf = strategy.advise_entry(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
-    assert 'buy' in enterdf.columns
+    assert 'enter_long' in enterdf.columns
 
     exitdf = strategy.advise_exit(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
-    assert 'sell' in exitdf
+    assert 'exit_long' in exitdf
 
     assert log_has("DEPRECATED: Please migrate to using 'timeframe' instead of 'ticker_interval'.",
                    caplog)

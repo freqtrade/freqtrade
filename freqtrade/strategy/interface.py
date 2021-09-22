@@ -959,13 +959,13 @@ class IStrategy(ABC, HyperStrategyMixin):
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_buy_trend(dataframe)  # type: ignore
+            df = self.populate_buy_trend(dataframe)  # type: ignore
         else:
             df = self.populate_buy_trend(dataframe, metadata)
-            if 'enter_long' not in df.columns:
-                df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
+        if 'enter_long' not in df.columns:
+            df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
 
-            return df
+        return df
 
     def advise_exit(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
@@ -981,9 +981,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_sell_trend(dataframe)  # type: ignore
+            df = self.populate_sell_trend(dataframe)  # type: ignore
         else:
             df = self.populate_sell_trend(dataframe, metadata)
-            if 'exit_long' not in df.columns:
-                df = df.rename({'sell': 'exit_long'}, axis='columns')
-            return df
+        if 'exit_long' not in df.columns:
+            df = df.rename({'sell': 'exit_long'}, axis='columns')
+        return df
