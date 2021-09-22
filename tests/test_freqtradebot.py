@@ -3594,19 +3594,13 @@ def test_get_real_amount(
 
 
 @pytest.mark.parametrize(
-    'stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log', [
-        ("BTC", None, None, 0.001, 0.001, (
-            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-            'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.992).'
-        )),
-        ("ETH", 0.02, 'BNB', 0.0005, 0.001518575, (
-            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
-            'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
-        )),
+    'stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log_amount', [
+        (None, None, None, 0.001, 0.001, 7.992),
+        ("ETH", 0.02, 'BNB', 0.0005, 0.001518575, 7.996),
     ])
 def test_get_real_amount_multi(
     default_conf, trades_for_order2, buy_order_fee, caplog, fee, mocker, markets,
-    stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log,
+    stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log_amount,
 ):
 
     trades_for_order = deepcopy(trades_for_order2)
@@ -3617,7 +3611,8 @@ def test_get_real_amount_multi(
 
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = float(sum(x['amount'] for x in trades_for_order))
-    default_conf['stake_currency'] = stake_currency
+    if stake_currency:
+        default_conf['stake_currency'] = stake_currency
 
     trade = Trade(
         pair='LTC/ETH',
@@ -3639,7 +3634,13 @@ def test_get_real_amount_multi(
     # Amount is reduced by "fee"
     expected_amount = amount - (amount * fee_reduction_amount)
     assert freqtrade.get_real_amount(trade, buy_order_fee) == expected_amount
-    assert log_has(expected_log, caplog)
+    assert log_has(
+        (
+            'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
+            f'open_rate=0.24544100, open_since=closed) (from 8.0 to {expected_log_amount}).'
+        ),
+        caplog
+    )
 
     assert trade.fee_open == expected_fee
     assert trade.fee_close == expected_fee
