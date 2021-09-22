@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
 from datetime import datetime
+
 import talib.abstract as ta
 from pandas import DataFrame
 
@@ -138,7 +139,11 @@ class StrategyTestV3(IStrategy):
                 (dataframe['plus_di'] > self.buy_plusdi.value)
             ),
             'enter_long'] = 1
-        # TODO-lev: Add short logic
+        dataframe.loc[
+            (
+                qtpylib.crossed_below(dataframe['rsi'], self.sell_rsi.value)
+            ),
+            'enter_short'] = 1
 
         return dataframe
 
@@ -157,6 +162,12 @@ class StrategyTestV3(IStrategy):
                 (dataframe['minus_di'] > self.sell_minusdi.value)
             ),
             'exit_long'] = 1
+
+        dataframe.loc[
+            (
+                qtpylib.crossed_above(dataframe['rsi'], self.buy_rsi.value)
+            ),
+            'exit_short'] = 1
 
         # TODO-lev: Add short logic
         return dataframe

@@ -139,6 +139,10 @@ class Backtesting:
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
 
+        # TODO-lev: This should come from the configuration setting or better a
+        # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
+        self._can_short = False
+
         self.progress = BTProgress()
         self.abort = False
 
@@ -499,8 +503,8 @@ class Backtesting:
     def check_for_trade_entry(self, row) -> Optional[str]:
         enter_long = row[LONG_IDX] == 1
         exit_long = row[ELONG_IDX] == 1
-        enter_short = row[SHORT_IDX] == 1
-        exit_short = row[ESHORT_IDX] == 1
+        enter_short = self._can_short and row[SHORT_IDX] == 1
+        exit_short = self._can_short and row[ESHORT_IDX] == 1
 
         if enter_long == 1 and not any([exit_long, enter_short]):
             # Long
