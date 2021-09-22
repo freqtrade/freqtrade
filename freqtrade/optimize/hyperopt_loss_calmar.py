@@ -7,10 +7,9 @@ Hyperoptimization.
 from datetime import datetime
 
 import numpy as np
-from pandas import DataFrame
-
-from freqtrade.optimize.hyperopt import IHyperOptLoss
 from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.optimize.hyperopt import IHyperOptLoss
+from pandas import DataFrame
 
 
 class CalmarHyperOptLoss(IHyperOptLoss):
@@ -38,15 +37,14 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         # calculate max drawdown
         try:
-            _, _, _, high_val, low_val = calculate_max_drawdown(results)
+            _,_,_,high_val,low_val = calculate_max_drawdown(results)
             max_drawdown = (high_val - low_val) / high_val
         except ValueError:
             max_drawdown = 0
 
-        if max_drawdown > 0:
+        if max_drawdown != 0 and trade_count > 1000:
             calmar_ratio = expected_returns_mean / max_drawdown * np.sqrt(365)
         else:
             calmar_ratio = -20.
 
-        # print(calmar_ratio)
         return -calmar_ratio
