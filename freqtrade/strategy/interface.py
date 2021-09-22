@@ -489,8 +489,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         logger.debug("TA Analysis Launched")
         dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+        dataframe = self.advise_entry(dataframe, metadata)
+        dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -912,7 +912,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advise_buy or advise_sell!
+        Does not run advise_entry or advise_exit!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Also copy on output to avoid PerformanceWarnings pandas 1.3.0 started to show.
@@ -944,7 +944,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return self.populate_indicators(dataframe, metadata)
 
-    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the entry order signal for the given dataframe
         This method should not be overridden.
@@ -967,7 +967,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             return df
 
-    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_exit(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the exit order signal for the given dataframe
         This method should not be overridden.

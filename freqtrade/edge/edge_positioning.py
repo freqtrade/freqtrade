@@ -168,8 +168,8 @@ class Edge:
             pair_data = pair_data.sort_values(by=['date'])
             pair_data = pair_data.reset_index(drop=True)
 
-            df_analyzed = self.strategy.advise_sell(
-                dataframe=self.strategy.advise_buy(
+            df_analyzed = self.strategy.advise_exit(
+                dataframe=self.strategy.advise_entry(
                     dataframe=pair_data,
                     metadata={'pair': pair}
                 ),

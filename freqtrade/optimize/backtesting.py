@@ -274,8 +274,8 @@ class Backtesting:
                 pair_data.loc[:, 'long_tag'] = None
                 pair_data.loc[:, 'short_tag'] = None
 
-            df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}),
+            df_analyzed = self.strategy.advise_exit(
+                self.strategy.advise_entry(pair_data, {'pair': pair}),
                 {'pair': pair}
             ).copy()
             # Trim startup period from analyzed dataframe

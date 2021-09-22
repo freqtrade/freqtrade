@@ -117,11 +117,11 @@ def test_strategy_v2(result, default_conf):
     df_indicators = strategy.advise_indicators(result, metadata=metadata)
     assert 'adx' in df_indicators
 
-    dataframe = strategy.advise_buy(df_indicators, metadata=metadata)
+    dataframe = strategy.advise_entry(df_indicators, metadata=metadata)
     assert 'buy' not in dataframe.columns
     assert 'enter_long' in dataframe.columns
 
-    dataframe = strategy.advise_sell(df_indicators, metadata=metadata)
+    dataframe = strategy.advise_exit(df_indicators, metadata=metadata)
     assert 'sell' not in dataframe.columns
     assert 'exit_long' in dataframe.columns
 
@@ -347,7 +347,7 @@ def test_deprecate_populate_indicators(result, default_conf):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        strategy.advise_buy(indicators, {'pair': 'ETH/BTC'})
+        strategy.advise_entry(indicators, {'pair': 'ETH/BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -356,7 +356,7 @@ def test_deprecate_populate_indicators(result, default_conf):
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        strategy.advise_sell(indicators, {'pair': 'ETH_BTC'})
+        strategy.advise_exit(indicators, {'pair': 'ETH_BTC'})
         assert len(w) == 1
         assert issubclass(w[-1].category, DeprecationWarning)
         assert "deprecated - check out the Sample strategy to see the current function headers!" \
@@ -384,11 +384,11 @@ def test_call_deprecated_function(result, monkeypatch, default_conf, caplog):
     assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
-    enterdf = strategy.advise_buy(result, metadata=metadata)
+    enterdf = strategy.advise_entry(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
     assert 'buy' in enterdf.columns
 
-    exitdf = strategy.advise_sell(result, metadata=metadata)
+    exitdf = strategy.advise_exit(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
     assert 'sell' in exitdf
 
@@ -411,13 +411,13 @@ def test_strategy_interface_versioning(result, default_conf):
     assert isinstance(indicator_df, DataFrame)
     assert 'adx' in indicator_df.columns
 
-    enterdf = strategy.advise_buy(result, metadata=metadata)
+    enterdf = strategy.advise_entry(result, metadata=metadata)
     assert isinstance(enterdf, DataFrame)
 
     assert 'buy' not in enterdf.columns
     assert 'enter_long' in enterdf.columns
 
-    exitdf = strategy.advise_sell(result, metadata=metadata)
+    exitdf = strategy.advise_exit(result, metadata=metadata)
     assert isinstance(exitdf, DataFrame)
     assert 'sell' not in exitdf
     assert 'exit_long' in exitdf
