@@ -3547,16 +3547,21 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
 
 @pytest.mark.parametrize(
     'fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log', [
+        # basic, amount does not change
         (None, 'ETH', 0, True, None),
+        # no currency in fee
         (0.004, None, 0, True, None),
+        # BNB no rate
         (0.00094518, "BNB", 0, True, (
             'Fee for Trade Trade(id=None, pair=LTC/ETH, amount=8.00000000, open_rate=0.24544100,'
             ' open_since=closed) [buy]: 0.00094518 BNB - rate: None'
         )),
+        # from order
         (0.004, "LTC", 0.004, False, (
             'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
             'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
         )),
+        # invalid, no currency in from fee dict
         (0.008, None, 0, True, None),
     ])
 def test_get_real_amount(
@@ -3586,7 +3591,6 @@ def test_get_real_amount(
         mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', side_effect=ExchangeError)
 
     caplog.clear()
-    # Amount does not change
     assert freqtrade.get_real_amount(trade, buy_order) == amount - fee_reduction_amount
 
     if expected_log:
@@ -3595,7 +3599,9 @@ def test_get_real_amount(
 
 @pytest.mark.parametrize(
     'fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log_amount', [
+        # basic, amount is reduced by fee
         (None, None, 0.001, 0.001, 7.992),
+        # different fee currency on both trades, fee is average of both trade's fee
         (0.02, 'BNB', 0.0005, 0.001518575, 7.996),
     ])
 def test_get_real_amount_multi(
