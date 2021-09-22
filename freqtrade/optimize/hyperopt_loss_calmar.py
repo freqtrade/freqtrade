@@ -42,7 +42,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         except ValueError:
             max_drawdown = 0
 
-        if max_drawdown != 0 and trade_count > 1000:
+        if max_drawdown != 0:
             calmar_ratio = expected_returns_mean / max_drawdown * np.sqrt(365)
         else:
             calmar_ratio = -20.
