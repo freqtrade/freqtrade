@@ -3594,7 +3594,7 @@ def test_get_real_amount(
 
 
 @pytest.mark.parametrize(
-    'stake_currency, fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log_amount', [
+    'stake_currency,fee_cost,fee_currency,fee_reduction_amount,expected_fee,expected_log_amount', [
         (None, None, None, 0.001, 0.001, 7.992),
         ("ETH", 0.02, 'BNB', 0.0005, 0.001518575, 7.996),
     ])
