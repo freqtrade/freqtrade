@@ -149,7 +149,9 @@
             },
             "sell_fill": "on",
             "buy_cancel": "on",
-            "sell_cancel": "on"
+            "sell_cancel": "on",
+            "protection_trigger": "off",
+            "protection_trigger_global": "on"
         },
         "reload": true,
         "balance_dust_level": 0.01

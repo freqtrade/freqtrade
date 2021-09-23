@@ -125,7 +125,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog):
     # Test 5m after lock-period - this should try and relock the pair, but end-time
     # should be the previous end-time
     end_time = PairLocks.get_pair_longest_lock('*').lock_end_time + timedelta(minutes=5)
-    assert freqtrade.protections.global_stop(end_time)
+    freqtrade.protections.global_stop(end_time)
     assert not PairLocks.is_global_lock(end_time)
 
 
@@ -182,7 +182,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
         min_ago_open=180, min_ago_close=30, profit_rate=0.9,
     ))
 
-    assert freqtrade.protections.stop_per_pair(pair)
+    freqtrade.protections.stop_per_pair(pair)
     assert freqtrade.protections.global_stop() != only_per_pair
     assert PairLocks.is_pair_locked(pair)
     assert PairLocks.is_global_lock() != only_per_pair
