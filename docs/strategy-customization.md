@@ -793,33 +793,6 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
-### Performance warning
-
-When executing a strategy, one can sometimes be greeted by the following in the logs
-
-> PerformanceWarning: DataFrame is highly fragmented.
-
-This is a warning from [`pandas`](https://github.com/pandas-dev/pandas) and as the warning continues to say:
- use `pd.concat(axis=1)`. For example
-
-```python
-for i in range(100):
-   dataframe[i] = ta.indicator(dataframe, param=i)
-```
-
-should be rewritten to
-
-```python
-frames = [dataframe]
-for i in range(100):
-    frames.append({
-        str(i): ta.indicator(dataframe, param=i)
-    })
-
-# Append columns to existing dataframe
-merged_frame = pd.concat(frames, axis=1)
-```
-
 ## Further strategy ideas
 
 To get additional Ideas for strategies, head over to our [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.

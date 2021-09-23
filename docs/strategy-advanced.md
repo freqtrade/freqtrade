@@ -695,3 +695,33 @@ The variable 'content', will contain the strategy file in a BASE64 encoded form.
 ```
 
 Please ensure that 'NameOfStrategy' is identical to the strategy name!
+
+## Performance warning
+
+When executing a strategy, one can sometimes be greeted by the following in the logs
+
+> PerformanceWarning: DataFrame is highly fragmented.
+
+This is a warning from [`pandas`](https://github.com/pandas-dev/pandas) and as the warning continues to say:
+use `pd.concat(axis=1)`.
+This can have slight performance implications, which are usually only visible during hyperopt (when optimizing an indicator).
+
+For example:
+
+```python
+for val in self.buy_ema_short.range:
+    dataframe[f'ema_short_{val}'] = ta.EMA(dataframe, timeperiod=val)
+```
+
+should be rewritten to
+
+```python
+frames = [dataframe]
+for val in self.buy_ema_short.range:
+    frames.append({
+        f'ema_short_{val}': ta.EMA(dataframe, timeperiod=val)
+    })
+
+# Append columns to existing dataframe
+merged_frame = pd.concat(frames, axis=1)
+```
