@@ -3546,33 +3546,32 @@ def test_get_real_amount_no_trade(default_conf, buy_order_fee, caplog, mocker, f
 
 
 @pytest.mark.parametrize(
-    'fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log', [
+    'fee_par,fee_reduction_amount,use_ticker_rate,expected_log', [
         # basic, amount does not change
-        (None, 'ETH', 0, True, None),
+        ({'cost': 0.008, 'currency': 'ETH'}, 0, False, None),
         # no currency in fee
-        (0.004, None, 0, True, None),
+        ({'cost': 0.004, 'currency': None}, 0, True, None),
         # BNB no rate
-        (0.00094518, "BNB", 0, True, (
+        ({'cost': 0.00094518, 'currency': 'BNB'}, 0, True, (
             'Fee for Trade Trade(id=None, pair=LTC/ETH, amount=8.00000000, open_rate=0.24544100,'
             ' open_since=closed) [buy]: 0.00094518 BNB - rate: None'
         )),
         # from order
-        (0.004, "LTC", 0.004, False, (
+        ({'cost': 0.004, 'currency': 'LTC'}, 0.004, False, (
             'Applying fee on amount for Trade(id=None, pair=LTC/ETH, amount=8.00000000, '
             'open_rate=0.24544100, open_since=closed) (from 8.0 to 7.996).'
         )),
         # invalid, no currency in from fee dict
-        (0.008, None, 0, True, None),
+        ({'cost': 0.008, 'currency': None}, 0, True, None),
     ])
 def test_get_real_amount(
     default_conf, trades_for_order, buy_order_fee, fee, mocker, caplog,
-    fee_cost, fee_currency, fee_reduction_amount, use_ticker_rate, expected_log
+    fee_par, fee_reduction_amount, use_ticker_rate, expected_log
 ):
 
     buy_order = deepcopy(buy_order_fee)
-    buy_order['fee'] = {'cost': fee_cost, 'currency': fee_currency}
-    trades_for_order[0]['fee']['cost'] = fee_cost
-    trades_for_order[0]['fee']['currency'] = fee_currency
+    buy_order['fee'] = fee_par
+    trades_for_order[0]['fee'] = fee_par
 
     mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=trades_for_order)
     amount = sum(x['amount'] for x in trades_for_order)
