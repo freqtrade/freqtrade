@@ -110,7 +110,7 @@ CONF_SCHEMA = {
         },
         'tradable_balance_ratio': {
             'type': 'number',
-            'minimum': 0.1,
+            'minimum': 0.0,
             'maximum': 1,
             'default': 0.99
         },
