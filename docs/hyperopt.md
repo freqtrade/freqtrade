@@ -118,7 +118,7 @@ optional arguments:
                         ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
                         SortinoHyperOptLoss, SortinoHyperOptLossDaily,
-                        CalmarHyperOptLoss
+                        CalmarHyperOptLoss, CalmarHyperOptLossDaily
   --disable-param-export
                         Disable automatic hyperopt parameter export.
 
@@ -523,6 +523,7 @@ Currently, the following loss functions are builtin:
 * `SortinoHyperOptLoss` (optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation)
 * `SortinoHyperOptLossDaily` (optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation)
 * `CalmarHyperOptLoss` (optimizes Calmar Ratio calculated on trade returns relative to max drawdown)
+* `CalmarHyperOptLossDaily` (optimizes Calmar Ratio calculated on **daily** trade returns relative to max drawdown)
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 
