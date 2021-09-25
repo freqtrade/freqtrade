@@ -259,3 +259,7 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
         'pair_interval': pair_interval,
     }
     return result
+
+@router.get('/sysinfo', tags=['info'])
+def sysinfo(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_sysinfo()
