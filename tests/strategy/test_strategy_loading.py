@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 import logging
+import sys
 import warnings
 from base64 import urlsafe_b64encode
 from pathlib import Path
@@ -29,6 +30,29 @@ def test_search_strategy():
         add_source=True,
     )
     assert s is None
+
+
+def test_search_package_strategy():
+    default_location = Path(__file__).parent / 'strats'
+
+    s, _ = StrategyResolver._search_object(
+        directory=default_location,
+        object_name='SampleStrategy',
+        add_source=True,
+    )
+    assert issubclass(s, IStrategy)
+
+
+def test_new_search_strategy():
+    default_location = Path(__file__).parent / 'strats'
+    old_sys_path = sys.path.copy()
+    s, _ = StrategyResolver._search_object(
+        directory=default_location,
+        object_name='deep.package.SampleStrategy',
+        add_source=True,
+    )
+    assert issubclass(s, IStrategy)
+    assert old_sys_path == sys.path
 
 
 def test_search_all_strategies_no_failed():

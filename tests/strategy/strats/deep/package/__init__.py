@@ -1,0 +1,1 @@
+../../../../../freqtrade/templates/sample_strategy.py

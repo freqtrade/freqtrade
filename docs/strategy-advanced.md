@@ -11,6 +11,53 @@ If you're just getting started, please be familiar with the methods described in
 !!! Tip
     You can get a strategy template containing all below methods by running `freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced`
 
+## Packages
+
+It's possible to use python packages as well, so this folder structure is valid too:
+
+```
+user_data/
+└──strategies/
+    ├── AwesomeStrategy
+    │   └── __init__.py
+    └── various_strategies
+        ├── __init__.py
+        ├── advanced
+        │   ├── advanced_a.py
+        │   ├── advanced_b.py
+        │   └── __init__.py
+        └── simple
+            └── __init__.py
+```
+
+A few examples of how to use the strategies therein:
+
+```shell
+# This will import AwesomeStrategy.AwesomeStrategy
+freqtrade trade --strategy AwesomeStrategy
+
+###
+# The rest are all converted to their python `import ...` equivalents
+
+# from various_strategies.simple import SimpleStrategy 
+freqtrade trade --strategy various_strategies.simple.SimpleStrategy
+# from various_strategies.simple import SimpleStrategy2
+freqtrade trade --strategy various_strategies.simple.SimpleStrategy
+
+# from various_strategies.advanced.advanced_a import AdvancedStrategy
+freqtrade trade --strategy various_strategies.advanced.advanced_a.AdvancedStrategy
+# from various_strategies.advanced.advanced_b import AdvancedStrategy
+freqtrade trade --strategy various_strategies.advanced.advanced_b.AdvancedStrategy
+```
+
+You can also write common methods and import then within the files you need.
+
+!!! Warning
+    Internally this is done by putting `user_data/strategies` as first path
+    into `sys.path` / `PYTHONPATH`.
+    Beware how you name your modules! For example `user_data/strategies/math.py` 
+    will otherwise take precedence over the default `math` module and probably make `math.pi` fail.
+
 ## Storing information
 
 Storing information can be accomplished by creating a new dictionary within the strategy class.

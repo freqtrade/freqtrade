@@ -6,7 +6,9 @@ This module load custom objects
 import importlib.util
 import inspect
 import logging
+import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from freqtrade.exceptions import OperationalException
@@ -82,6 +84,33 @@ class IResolver:
     @classmethod
     def _search_object(cls, directory: Path, *, object_name: str, add_source: bool = False
                        ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
+        """
+        Import object from the given directory
+
+        ..see:: `Importer.import_item`_
+
+        :param directory: relative or absolute directory path
+        :param object_name: ClassName or dot separated import path
+        :return: object class
+        """
+        logger.debug(f"Attempting import of {cls.object_type.__name__} {object_name} "
+                     f"from '{directory}'")
+        try:
+            with Importer(directory) as importer:
+                item, module = importer.import_item(object_name)
+                item.__file__ = module.__file__
+                module_path = Path(module.__file__)
+                if add_source:
+                    item.__source__ = module_path.read_text()
+                return item, module_path
+        except ImportError:
+            logger.debug("Falling back to old resolution method")
+            return cls._old_search_object(directory, object_name=object_name, add_source=add_source)
+
+    @classmethod
+    def _old_search_object(
+            cls, directory: Path, *, object_name: str, add_source: bool = False
+    ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
         """
         Search for the objectname in the given directory
         :param directory: relative or absolute directory path
@@ -182,3 +211,90 @@ class IResolver:
                      'location': entry,
                      })
         return objects
+
+
+class Importer:
+    """
+    A context manager to help with importing files objects from modules/packages in a given path
+
+    This is necessary as sys.path is modified and the changes shouldn't persist
+    """
+
+    def __init__(self, path: Path):
+        """
+        :param path: Where to search from
+        """
+        self.path = path
+
+    def __enter__(self):
+        """Modifies sys.path in order to import items using the python import logic"""
+        sys.path.insert(0, str(self.path))
+        return self
+
+    def import_item(self, name: str) -> Tuple[type, ModuleType]:
+        """
+        Tries to import an item from a module
+
+        ..Examples::
+
+            import_item("MyClass") --> from MyClass import MyClass
+            import_item("path.to.MyClass") --> from path.to import MyClass
+
+        Two approaches will be attempted with two variants
+
+          For a simple name (no dots) the equivalent of `from <name> import <name>`:
+
+             - <name>.py containing `class <name>`
+             - <name>/__init.py containing `class <name>`
+
+          For a dot-separated name the equivalent of
+         `from <name before last dot> import <name after last dot>`
+
+             - <name1>/<name2>/<nameX>.py containing `class <name>
+             - <name1/<name2>/<nameX>/__init.py containing `class <name>`
+
+        :param name: A valid python module and import path or name
+        :return: The item to import
+        :throws: ImportError
+        """
+
+        module = self.import_module(name)
+        try:
+            item = getattr(module, name.rpartition(".")[2])
+        except AttributeError:
+            raise ImportError(name=name, path=str(self.path))
+
+        return item, module
+
+    @staticmethod
+    def import_module(name: str) -> ModuleType:
+        """
+        Interprets the given string as a path to import a module
+
+        :param: name: the simple name of a module, or a path to a module or class within a module
+                "some_module" --> import some_module
+                "path.to.some_module.SomeClass" --> from path.to.some_module import Someclass
+        :returns: A module or throws an ImportError.
+                   ..see: https://docs.python.org/3/library/functions.html#__import__
+        """
+        import_path, _, from_item = name.rpartition(".")
+        kwargs: Dict[str, Any] = {}
+        if import_path:
+            kwargs["name"] = import_path
+            kwargs["fromlist"] = [from_item]
+        else:
+            kwargs["name"] = from_item
+        kwargs.update(
+            {
+                "globals": globals(),
+                "locals": locals(),
+            }
+        )
+        # We need to reload here as we are dynamically importing and want to ignore the module cache
+        return importlib.reload(importlib.__import__(**kwargs))
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Undo up change to sys.path after all is said and done"""
+        str_path = str(self.path)
+        if str_path in sys.path:
+            sys.path.remove(str_path)
