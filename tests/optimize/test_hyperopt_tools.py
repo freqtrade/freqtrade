@@ -167,7 +167,7 @@ def test__pprint_dict():
 
 def test_get_strategy_filename(default_conf):
 
-    x = HyperoptTools.get_strategy_filename(default_conf, CURRENT_TEST_STRATEGY)
+    x = HyperoptTools.get_strategy_filename(default_conf, 'StrategyTestV3')
     assert isinstance(x, Path)
     assert x == Path(__file__).parents[1] / 'strategy/strats/strategy_test_v3.py'
 

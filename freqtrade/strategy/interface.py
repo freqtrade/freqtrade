@@ -519,7 +519,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalType.EXIT_LONG.value] = 0
             dataframe[SignalType.ENTER_SHORT.value] = 0
             dataframe[SignalType.EXIT_SHORT.value] = 0
-            dataframe[SignalTagType.BUY_TAG.value] = None
+            dataframe[SignalTagType.LONG_TAG.value] = None
             dataframe[SignalTagType.SHORT_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
@@ -690,7 +690,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag_value = latest.get(SignalTagType.BUY_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.LONG_TAG.value, None)
         if enter_short == 1 and not any([exit_short, enter_long]):
             enter_signal = SignalDirection.SHORT
             enter_tag_value = latest.get(SignalTagType.SHORT_TAG.value, None)

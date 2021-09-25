@@ -45,7 +45,7 @@ LONG_IDX = 5
 ELONG_IDX = 6  # Exit long
 SHORT_IDX = 7
 ESHORT_IDX = 8  # Exit short
-BUY_TAG_IDX = 9
+ENTER_TAG_IDX = 9
 SHORT_TAG_IDX = 10
 
 
@@ -454,7 +454,8 @@ class Backtesting:
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
-            has_buy_tag = len(row) >= BUY_TAG_IDX + 1
+            # TODO-lev: SHORT_TAG ...
+            has_buy_tag = len(row) >= ENTER_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -464,7 +465,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
+                buy_tag=row[ENTER_TAG_IDX] if has_buy_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
             )
