@@ -289,9 +289,19 @@ def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
+@pytest.fixture(scope='function')
+def init_persistence_usdt(default_conf_usdt):
+    init_db(default_conf_usdt['db_url'], default_conf_usdt['dry_run'])
+
+
 @pytest.fixture(scope="function")
 def default_conf(testdatadir):
     return get_default_conf(testdatadir)
+
+
+@pytest.fixture(scope="function")
+def default_conf_usdt(testdatadir):
+    return get_default_conf_usdt(testdatadir)
 
 
 def get_default_conf(testdatadir):
@@ -365,6 +375,15 @@ def get_default_conf(testdatadir):
         "internals": {},
         "export": "none",
     }
+    return configuration
+
+
+def get_default_conf_usdt(testdatadir):
+    configuration = get_default_conf(testdatadir)
+    configuration.update({
+        "stake_amount": 60.0,
+        "stake_currency": "USDT",
+    })
     return configuration
 
 
@@ -1602,7 +1621,7 @@ def trades_for_order():
         'info': {
             'id': 34567,
             'orderId': 123456,
-            'price': '0.24544100',
+            'price': '2.0',
             'qty': '8.00000000',
             'commission': '0.00800000',
             'commissionAsset': 'LTC',
@@ -1809,6 +1828,14 @@ def edge_conf(default_conf):
     }
 
     return conf
+
+
+@pytest.fixture(scope="function")
+def edge_conf_usdt(edge_conf):
+    edge_conf.update({
+        "stake_currency": "USDT",
+    })
+    return edge_conf
 
 
 @pytest.fixture
@@ -2049,7 +2076,7 @@ def saved_hyperopt_results():
 @pytest.fixture(scope='function')
 def limit_buy_order_usdt_open():
     return {
-        'id': 'mocked_limit_buy',
+        'id': 'mocked_limit_buy_usdt',
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
@@ -2076,7 +2103,7 @@ def limit_buy_order_usdt(limit_buy_order_usdt_open):
 @pytest.fixture
 def limit_sell_order_usdt_open():
     return {
-        'id': 'mocked_limit_sell',
+        'id': 'mocked_limit_sell_usdt',
         'type': 'limit',
         'side': 'sell',
         'pair': 'mocked',
