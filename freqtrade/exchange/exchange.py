@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -1604,6 +1604,14 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
+    # https://www.binance.com/en/support/faq/360033525031
+    def fetch_funding_rate(self, pair):
+        if not self.exchange_has("fetchFundingHistory"):
+            raise OperationalException(
+                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+
+        return self._api.fetch_funding_rates()
+
     @retrier
     def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
@@ -1659,6 +1667,37 @@ class Exchange:
         else:
             return 1.0
 
+    def _get_premium_index(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
+
+    def _get_mark_price(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
+
+    def _get_funding_rate(self, pair: str, when: datetime):
+        """
+            Get's the funding_rate for a pair at a specific date and time in the past
+        """
+        # TODO-lev: implement
+        raise OperationalException(f"get_funding_rate has not been implemented for {self.name}")
+
+    def _get_funding_fee(
+        self,
+        pair: str,
+        contract_size: float,
+        mark_price: float,
+        premium_index: Optional[float],
+        # index_price: float,
+        # interest_rate: float)
+    ) -> float:
+        """
+            Calculates a single funding fee
+            :param contract_size: The amount/quanity
+            :param mark_price: The price of the asset that the contract is based off of
+            :param funding_rate: the interest rate and the premium
+                - premium: varies by price difference between the perpetual contract and mark price
+        """
+        raise OperationalException(f"Funding fee has not been implemented for {self.name}")
+
     @retrier
     def _set_leverage(
         self,
@@ -1684,6 +1723,19 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def _get_funding_fee_dates(self, d1, d2):
+        d1 = datetime(d1.year, d1.month, d1.day, d1.hour)
+        d2 = datetime(d2.year, d2.month, d2.day, d2.hour)
+
+        results = []
+        d3 = d1
+        while d3 < d2:
+            d3 += timedelta(hours=1)
+            if d3.hour in self.funding_fee_times:
+                results.append(d3)
+
+        return results
+
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         '''
@@ -1703,6 +1755,34 @@ class Exchange:
                 f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def calculate_funding_fees(
+        self,
+        pair: str,
+        amount: float,
+        open_date: datetime,
+        close_date: datetime
+    ) -> float:
+        """
+            calculates the sum of all funding fees that occurred for a pair during a futures trade
+            :param pair: The quote/base pair of the trade
+            :param amount: The quantity of the trade
+            :param open_date: The date and time that the trade started
+            :param close_date: The date and time that the trade ended
+        """
+
+        fees: float = 0
+        for date in self._get_funding_fee_dates(open_date, close_date):
+            premium_index = self._get_premium_index(pair, date)
+            mark_price = self._get_mark_price(pair, date)
+            fees += self._get_funding_fee(
+                pair=pair,
+                contract_size=amount,
+                mark_price=mark_price,
+                premium_index=premium_index
+            )
+
+        return fees
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

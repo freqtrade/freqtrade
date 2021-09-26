@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from random import randint
 from unittest.mock import MagicMock
 
@@ -250,3 +251,35 @@ def test_get_order_id(mocker, default_conf):
         }
     }
     assert exchange.get_order_id_conditional(order) == '1111'
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("ADA/BTC", 0.0, 20.0),
+    ("BTC/EUR", 100.0, 20.0),
+    ("ZEC/USD", 173.31, 20.0),
+])
+def test_get_max_leverage_ftx(default_conf, mocker, pair, nominal_value, max_lev):
+    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
+
+
+def test_fill_leverage_brackets_ftx(default_conf, mocker):
+    # FTX only has one account wide leverage, so there's no leverage brackets
+    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
+    exchange.fill_leverage_brackets()
+    assert exchange._leverage_brackets == {}
+
+
+@pytest.mark.parametrize("pair,when", [
+    ('XRP/USDT', datetime.utcnow()),
+    ('ADA/BTC', datetime.utcnow()),
+    ('XRP/USDT', datetime.utcnow() - timedelta(hours=30)),
+])
+def test__get_funding_rate(default_conf, mocker, pair, when):
+    api_mock = MagicMock()
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="ftx")
+    assert exchange._get_funding_rate(pair, when) is None
+
+
+def test__get_funding_fee():
+    return

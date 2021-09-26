@@ -707,6 +707,7 @@ class LocalTrade():
                 return float(self._calc_base_close(amount, rate, fee) - total_interest)
 
         elif (trading_mode == TradingMode.FUTURES):
+            self.add_funding_fees()
             funding_fees = self.funding_fees or 0.0
             if self.is_short:
                 return float(self._calc_base_close(amount, rate, fee)) - funding_fees
@@ -787,6 +788,19 @@ class LocalTrade():
             return orders[-1]
         else:
             return None
+
+    def add_funding_fees(self):
+        if self.trading_mode == TradingMode.FUTURES:
+            # TODO-lev: Calculate this correctly and add it
+            # if self.config['runmode'].value in ('backtest', 'hyperopt'):
+            #   self.funding_fees = getattr(Exchange, self.exchange).calculate_funding_fees(
+            #     self.exchange,
+            #     self.pair,
+            #     self.amount,
+            #     self.open_date_utc,
+            #     self.close_date_utc
+            #   )
+            return
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
