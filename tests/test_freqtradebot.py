@@ -1260,7 +1260,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee,
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
     stoploss_order_mock.assert_called_once_with(
-        amount=27.39726027,
+        amount=4.56621004,
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.95
@@ -1451,7 +1451,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/BTC')
     stoploss_order_mock.assert_called_once_with(
-        amount=31.57894736,
+        amount=5.26315789,
         pair='ETH/BTC',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.96
