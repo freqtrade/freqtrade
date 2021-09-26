@@ -942,6 +942,8 @@ Printing more than a few rows is also possible (simply use  `print(dataframe)` i
 
 ## Common mistakes when developing strategies
 
+### Peeking into the future while backtesting
+
 Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
 This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.
 

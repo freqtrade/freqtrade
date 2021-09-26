@@ -113,7 +113,7 @@ CONF_SCHEMA = {
         },
         'tradable_balance_ratio': {
             'type': 'number',
-            'minimum': 0.1,
+            'minimum': 0.0,
             'maximum': 1,
             'default': 0.99
         },
@@ -286,6 +286,15 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
+                        },
+                        'protection_trigger': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                        },
+                        'protection_trigger_global': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
                         },
                     }
                 },
