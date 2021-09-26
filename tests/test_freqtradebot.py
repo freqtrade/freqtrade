@@ -270,7 +270,7 @@ def test_total_open_trades_stakes(mocker, default_conf, ticker, fee) -> None:
     assert Trade.total_open_trades_stakes() == 1.97502e-03
 
 
-def test_create_trade(default_conf, ticker, limit_buy_order_usdt, fee, mocker) -> None:
+def test_create_trade(default_conf_usdt, ticker, limit_buy_order_usdt, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -281,14 +281,14 @@ def test_create_trade(default_conf, ticker, limit_buy_order_usdt, fee, mocker) -
     )
 
     # Save state of current whitelist
-    whitelist = deepcopy(default_conf['exchange']['pair_whitelist'])
-    freqtrade = FreqtradeBot(default_conf)
+    whitelist = deepcopy(default_conf_usdt['exchange']['pair_whitelist'])
+    freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
     freqtrade.create_trade('ETH/BTC')
 
     trade = Trade.query.first()
     assert trade is not None
-    assert trade.stake_amount == 0.001
+    assert trade.stake_amount == 10.0
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
@@ -299,7 +299,7 @@ def test_create_trade(default_conf, ticker, limit_buy_order_usdt, fee, mocker) -
     assert trade.open_rate == 2.0
     assert trade.amount == 30.0
 
-    assert whitelist == default_conf['exchange']['pair_whitelist']
+    assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
 def test_create_trade_no_stake_amount(default_conf, ticker, limit_buy_order_usdt,
