@@ -366,10 +366,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
-    # TODO-lev: add side
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            side: str, **kwargs) -> float:
         """
         Customize stake size for each new trade.
 
@@ -379,6 +378,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param proposed_stake: A stake amount proposed by the bot.
         :param min_stake: Minimal stake size allowed by exchange.
         :param max_stake: Balance available for trading.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :return: A stake size, which is between min_stake and max_stake.
         """
         return proposed_stake
