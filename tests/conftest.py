@@ -1825,14 +1825,6 @@ def edge_conf(default_conf):
     return conf
 
 
-@pytest.fixture(scope="function")
-def edge_conf_usdt(edge_conf):
-    edge_conf.update({
-        "stake_currency": "USDT",
-    })
-    return edge_conf
-
-
 @pytest.fixture
 def rpc_balance():
     return {
