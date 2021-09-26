@@ -539,9 +539,10 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime,
+                            side: str, **kwargs) -> bool:
         """
-        Called right before placing a buy order.
+        Called right before placing a entry order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -549,12 +550,13 @@ class AwesomeStrategy(IStrategy):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be bought.
+        :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process

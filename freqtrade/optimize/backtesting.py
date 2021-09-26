@@ -440,7 +440,8 @@ class Backtesting:
         # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
-                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
+                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime(),
+                side=direction):
             return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):

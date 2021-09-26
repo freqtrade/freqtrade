@@ -519,9 +519,12 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get('forcebuy', order_type)
         # TODO-lev: Will this work for shorting?
 
+        # TODO-lev: Add non-hardcoded "side" parameter
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                side='long'
+                ):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
