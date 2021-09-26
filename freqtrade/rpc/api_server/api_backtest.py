@@ -47,33 +47,34 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 not ApiServer._bt
                 or lastconfig.get('timeframe') != strat.timeframe
                 or lastconfig.get('timeframe_detail') != btconfig.get('timeframe_detail')
-                or lastconfig.get('dry_run_wallet') != btconfig.get('dry_run_wallet', 0)
                 or lastconfig.get('timerange') != btconfig['timerange']
             ):
                 from freqtrade.optimize.backtesting import Backtesting
                 ApiServer._bt = Backtesting(btconfig)
                 if ApiServer._bt.timeframe_detail:
                     ApiServer._bt.load_bt_data_detail()
-
+            else:
+                ApiServer._bt.config = btconfig
+                ApiServer._bt.init_backtest()
             # Only reload data if timeframe changed.
             if (
                 not ApiServer._bt_data
                 or not ApiServer._bt_timerange
-                or lastconfig.get('stake_amount') != btconfig.get('stake_amount')
-                or lastconfig.get('enable_protections') != btconfig.get('enable_protections')
-                or lastconfig.get('protections') != btconfig.get('protections', [])
                 or lastconfig.get('timeframe') != strat.timeframe
             ):
-                lastconfig['timerange'] = btconfig['timerange']
-                lastconfig['protections'] = btconfig.get('protections', [])
-                lastconfig['enable_protections'] = btconfig.get('enable_protections')
-                lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
-                lastconfig['timeframe'] = strat.timeframe
                 ApiServer._bt_data, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
+
+                lastconfig['timerange'] = btconfig['timerange']
+                lastconfig['timeframe'] = strat.timeframe
+
+            lastconfig['protections'] = btconfig.get('protections', [])
+            lastconfig['enable_protections'] = btconfig.get('enable_protections')
+            lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
 
             ApiServer._bt.abort = False
             min_date, max_date = ApiServer._bt.backtest_one_strategy(
                 strat, ApiServer._bt_data, ApiServer._bt_timerange)
+
             ApiServer._bt.results = generate_backtest_stats(
                 ApiServer._bt_data, ApiServer._bt.all_results,
                 min_date=min_date, max_date=max_date)
