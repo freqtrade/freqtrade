@@ -1207,6 +1207,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf, fee,
     patch_get_signal(freqtrade)
 
     freqtrade.enter_positions()
+    # TODO-lev: Get this trade switched to the usdt trades
     trade = Trade.query.first()
     trade.is_open = True
     trade.open_order_id = None
@@ -1709,17 +1710,20 @@ def test_update_trade_state_withorderdict(default_conf, trades_for_order, limit_
     patch_exchange(mocker)
     amount = sum(x['amount'] for x in trades_for_order)
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    caplog.clear()
     trade = Trade(
-        pair='LTC/ETH',
+        pair='LTC/USDT',
         amount=amount,
         exchange='binance',
-        open_rate=0.245441,
+        open_rate=2.0,
         open_date=arrow.utcnow().datetime,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_order_id="123456",
         is_open=True,
     )
+    # TODO-lev: caplog.text has Amount 60.00000000000001 does not match amount 60.00000000000001
+    # TODO-lev: but they are the exact same
     freqtrade.update_trade_state(trade, '123456', limit_buy_order_usdt)
     assert trade.amount != amount
     assert trade.amount == limit_buy_order_usdt['amount']

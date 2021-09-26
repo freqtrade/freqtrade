@@ -1598,27 +1598,34 @@ def result(testdatadir):
 
 @pytest.fixture(scope="function")
 def trades_for_order():
-    return [{'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
-             'timestamp': 1521663363189,
-             'datetime': '2018-03-21T20:16:03.189Z',
-             'symbol': 'LTC/ETH',
-             'id': '34567',
-             'order': '123456',
-             'type': None,
-             'side': 'buy',
-             'price': 0.245441,
-             'cost': 1.963528,
-             'amount': 8.0,
-             'fee': {'cost': 0.008, 'currency': 'LTC'}}]
+    return [{
+        'info': {
+            'id': 34567,
+            'orderId': 123456,
+            'price': '0.24544100',
+            'qty': '8.00000000',
+            'commission': '0.00800000',
+            'commissionAsset': 'LTC',
+            'time': 1521663363189,
+            'isBuyer': True,
+            'isMaker': False,
+            'isBestMatch': True
+        },
+        'timestamp': 1521663363189,
+        'datetime': '2018-03-21T20:16:03.189Z',
+        'symbol': 'LTC/USDT',
+        'id': '34567',
+        'order': '123456',
+        'type': None,
+        'side': 'buy',
+        'price': 2.0,
+        'cost': 16.0,
+        'amount': 8.0,
+        'fee': {
+            'cost': 0.008,
+            'currency': 'LTC'
+        }
+    }]
 
 
 @pytest.fixture(scope="function")
