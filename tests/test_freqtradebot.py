@@ -126,16 +126,16 @@ def test_get_trade_stake_amount(default_conf, ticker, mocker) -> None:
 
 
 @pytest.mark.parametrize("amend_last,wallet,max_open,lsamr,expected", [
-                        (False, 0.002, 2, 0.5, [0.001, None]),
-                        (True, 0.002, 2, 0.5, [0.001, 0.00098]),
-                        (False, 0.003, 3, 0.5, [0.001, 0.001, None]),
-                        (True, 0.003, 3, 0.5, [0.001, 0.001, 0.00097]),
-                        (False, 0.0022, 3, 0.5, [0.001, 0.001, None]),
-                        (True, 0.0022, 3, 0.5, [0.001, 0.001, 0.0]),
-                        (True, 0.0027, 3, 0.5, [0.001, 0.001, 0.000673]),
-                        (True, 0.0022, 3, 1, [0.001, 0.001, 0.0]),
+                        (False, 20, 2, 0.5, [10, None]),
+                        (True, 20, 2, 0.5, [10, 9.8]),
+                        (False, 30, 3, 0.5, [10, 10, None]),
+                        (True, 30, 3, 0.5, [10, 10, 9.7]),
+                        (False, 22, 3, 0.5, [10, 10, None]),
+                        (True, 22, 3, 0.5, [10, 10, 0.0]),
+                        (True, 27, 3, 0.5, [10, 10, 6.73]),
+                        (True, 22, 3, 1, [10, 10, 0.0]),
 ])
-def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_buy_order_usdt_open,
+def test_check_available_stake_amount(default_conf_usdt, ticker, mocker, fee, limit_buy_order_usdt_open,
                                       amend_last, wallet, max_open, lsamr, expected) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -145,12 +145,12 @@ def test_check_available_stake_amount(default_conf, ticker, mocker, fee, limit_b
         create_order=MagicMock(return_value=limit_buy_order_usdt_open),
         get_fee=fee
     )
-    default_conf['dry_run_wallet'] = wallet
+    default_conf_usdt['dry_run_wallet'] = wallet
 
-    default_conf['amend_last_stake_amount'] = amend_last
-    default_conf['last_stake_amount_min_ratio'] = lsamr
+    default_conf_usdt['amend_last_stake_amount'] = amend_last
+    default_conf_usdt['last_stake_amount_min_ratio'] = lsamr
 
-    freqtrade = FreqtradeBot(default_conf)
+    freqtrade = FreqtradeBot(default_conf_usdt)
 
     for i in range(0, max_open):
 
