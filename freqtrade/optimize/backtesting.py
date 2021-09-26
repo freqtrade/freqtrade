@@ -263,14 +263,7 @@ class Backtesting:
 
             if not pair_data.empty:
                 # Cleanup from prior runs
-                # TODO-lev: The below is not 100% compatible with the interface compatibility layer
-                if 'enter_long' in pair_data.columns:
-                    pair_data.loc[:, 'enter_long'] = 0
-                pair_data.loc[:, 'enter_short'] = 0
-                if 'exit_long' in pair_data.columns:
-                    pair_data.loc[:, 'exit_long'] = 0
-                pair_data.loc[:, 'exit_short'] = 0
-                pair_data.loc[:, 'enter_tag'] = None
+                pair_data.drop(headers[5:] + ['buy', 'sell'], axis=1, errors='ignore')
 
             df_analyzed = self.strategy.advise_exit(
                 self.strategy.advise_entry(pair_data, {'pair': pair}),
@@ -281,11 +274,11 @@ class Backtesting:
                                          startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
-            df_analyzed.loc[:, 'enter_long'] = df_analyzed.loc[:, 'enter_long'].shift(1)
-            df_analyzed.loc[:, 'enter_short'] = df_analyzed.loc[:, 'enter_short'].shift(1)
-            df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
-            df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
-            df_analyzed.loc[:, 'enter_tag'] = df_analyzed.loc[:, 'enter_tag'].shift(1)
+            for col in headers[5:]:
+                if col in df_analyzed.columns:
+                    df_analyzed.loc[:, col] = df_analyzed.loc[:, col].shift(1)
+                else:
+                    df_analyzed.loc[:, col] = 0 if col != 'enter_tag' else None
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
