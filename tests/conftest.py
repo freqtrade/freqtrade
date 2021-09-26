@@ -378,6 +378,22 @@ def get_default_conf_usdt(testdatadir):
     configuration.update({
         "stake_amount": 10.0,
         "stake_currency": "USDT",
+        "exchange": {
+            "name": "binance",
+            "enabled": True,
+            "key": "key",
+            "secret": "secret",
+            "pair_whitelist": [
+                "ETH/USDT",
+                "LTC/USDT",
+                "XRP/USDT",
+                "NEO/USDT"
+            ],
+            "pair_blacklist": [
+                "DOGE/USDT",
+                "HOT/USDT",
+            ]
+        },
     })
     return configuration
 
@@ -424,9 +440,9 @@ def ticker_sell_down():
 @pytest.fixture
 def ticker_usdt():
     return MagicMock(return_value={
-        'bid': 1.99,
-        'ask': 2.0,
-        'last': 1.99,
+        'bid': 2.0,
+        'ask': 2.01,
+        'last': 2.0,
     })
 
 
