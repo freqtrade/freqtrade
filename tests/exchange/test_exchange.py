@@ -3240,3 +3240,15 @@ def test_validate_trading_mode_and_collateral(
             exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
     else:
         exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+
+
+def test_get_mark_price():
+    return
+
+
+def test_get_funding_fee_dates():
+    return
+
+
+def test_calculate_funding_fees():
+    return

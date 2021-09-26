@@ -1,8 +1,9 @@
 """ Binance exchange subclass """
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
@@ -29,7 +30,13 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
     funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
-    # but the schedule won't check within this timeframe
+    _funding_interest_rates: Dict = {}  # TODO-lev: delete
+
+    def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
+        super().__init__(config, validate)
+        # TODO-lev: Uncomment once lev-exchange merged in
+        # if self.trading_mode == TradingMode.FUTURES:
+        # self._funding_interest_rates = self._get_funding_interest_rates()
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -210,6 +217,51 @@ class Binance(Exchange):
                 f'Could not set leverage due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def _get_premium_index(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
+
+    def _get_mark_price(self, pair: str, date: datetime) -> float:
+        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
+
+    def _get_funding_interest_rates(self):
+        rates = self._api.fetch_funding_rates()
+        interest_rates = {}
+        for pair, data in rates.items():
+            interest_rates[pair] = data['interestRate']
+        return interest_rates
+
+    def _calculate_funding_rate(self, pair: str, premium_index: float) -> Optional[float]:
+        """
+            Get's the funding_rate for a pair at a specific date and time in the past
+        """
+        return (
+            premium_index +
+            max(min(self._funding_interest_rates[pair] - premium_index, 0.0005), -0.0005)
+        )
+
+    def _get_funding_fee(
+        self,
+        pair: str,
+        contract_size: float,
+        mark_price: float,
+        premium_index: Optional[float],
+    ) -> float:
+        """
+            Calculates a single funding fee
+            :param contract_size: The amount/quanity
+            :param mark_price: The price of the asset that the contract is based off of
+            :param funding_rate: the interest rate and the premium
+                - interest rate: 0.03% daily, BNBUSDT, LINKUSDT, and LTCUSDT are 0%
+                - premium: varies by price difference between the perpetual contract and mark price
+        """
+        if premium_index is None:
+            raise OperationalException("Premium index cannot be None for Binance._get_funding_fee")
+        nominal_value = mark_price * contract_size
+        funding_rate = self._calculate_funding_rate(pair, premium_index)
+        if funding_rate is None:
+            raise OperationalException("Funding rate should never be none on Binance")
+        return nominal_value * funding_rate
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, is_new_pair: bool
