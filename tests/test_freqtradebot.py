@@ -320,8 +320,8 @@ def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, limit_buy_
 
 
 @pytest.mark.parametrize('stake_amount,create,amount_enough,max_open_trades', [
-    (0.0005, True, True, 99),
-    (0.000000005, True, False, 99),
+    (5.0, True, True, 99),
+    (0.00005, True, False, 99),
     (0, False, True, 99),
     (UNLIMITED_STAKE_AMOUNT, False, True, 0),
 ])
@@ -2592,14 +2592,15 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
-        'limit': 1.172e-05,
-        'amount': 91.07468123,
+        'limit': 2.2,
+        'amount': 5.0,
         'order_type': 'limit',
-        'open_rate': 1.098e-05,
-        'current_rate': 1.173e-05,
-        'profit_amount': 6.223e-05,
-        'profit_ratio': 0.0620716,
-        'stake_currency': 'BTC',
+        'open_rate': 2.0,
+        'current_rate': 2.3,
+        # TODO: Double check that profit_amount and profit_ratio are correct
+        'profit_amount': 0.9475,
+        'profit_ratio': 0.09451372,
+        'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.ROI.value,
         'open_date': ANY,
@@ -2638,20 +2639,21 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
+    # TODO: Should be a loss, but comes out as a gain
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'loss',
-        'limit': 1.044e-05,
-        'amount': 91.07468123,
+        'limit': 2.01,
+        'amount': 5.0,
         'order_type': 'limit',
-        'open_rate': 1.098e-05,
-        'current_rate': 1.043e-05,
-        'profit_amount': -5.406e-05,
-        'profit_ratio': -0.05392257,
-        'stake_currency': 'BTC',
+        'open_rate': 2.0,
+        'current_rate': 2.0,
+        'profit_amount': -0.000125,
+        'profit_ratio': -1.247e-05,
+        'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': ANY,
@@ -2692,7 +2694,7 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
 
     # Set a custom exit price
-    freqtrade.strategy.custom_exit_price = lambda **kwargs: 1.170e-05
+    freqtrade.strategy.custom_exit_price = lambda **kwargs: 2.25
 
     freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
@@ -2709,14 +2711,14 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
-        'limit': 1.170e-05,
-        'amount': 91.07468123,
+        'limit': 2.25,
+        'amount': 5.0,
         'order_type': 'limit',
-        'open_rate': 1.098e-05,
-        'current_rate': 1.173e-05,
+        'open_rate': 2.0,
+        'current_rate': 2.3,
         'profit_amount': 6.041e-05,
-        'profit_ratio': 0.06025919,
-        'stake_currency': 'BTC',
+        'profit_ratio': 0.07262344,
+        'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.SELL_SIGNAL.value,
         'open_date': ANY,
@@ -2755,27 +2757,28 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(default_conf_usdt,
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Setting trade stoploss to 0.01
 
-    trade.stop_loss = 0.00001099 * 0.99
+    trade.stop_loss = 2.0 * 0.99
     freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
+    # TODO: Are these values correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'loss',
-        'limit': 1.08801e-05,
-        'amount': 91.07468123,
+        'limit': 1.98,
+        'amount': 5.0,
         'order_type': 'limit',
-        'open_rate': 1.098e-05,
-        'current_rate': 1.043e-05,
-        'profit_amount': -1.408e-05,
-        'profit_ratio': -0.01404051,
-        'stake_currency': 'BTC',
+        'open_rate': 2.0,
+        'current_rate': 2.0,
+        'profit_amount': -0.14975,
+        'profit_ratio': -0.01493766,
+        'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': ANY,
@@ -2975,24 +2978,25 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
 
     assert not trade.is_open
-    assert trade.close_profit == 0.0620716
+    assert trade.close_profit == 0.09451372  # TODO: Check this is correct
 
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
+    # TODO: Is this correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
-        'limit': 1.172e-05,
-        'amount': 91.07468123,
+        'limit': 2.2,
+        'amount': 5.0,
         'order_type': 'market',
-        'open_rate': 1.098e-05,
-        'current_rate': 1.173e-05,
-        'profit_amount': 6.223e-05,
-        'profit_ratio': 0.0620716,
-        'stake_currency': 'BTC',
+        'open_rate': 2.0,
+        'current_rate': 2.3,
+        'profit_amount': 0.9475,
+        'profit_ratio': 0.09451372,
+        'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.ROI.value,
         'open_date': ANY,
@@ -3893,7 +3897,7 @@ def test_startup_trade_reinit(default_conf_usdt, edge_conf, mocker):
 def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_buy_order_usdt_open, caplog):
     default_conf_usdt['dry_run'] = True
     # Initialize to 2 times stake amount
-    default_conf_usdt['dry_run_wallet'] = 0.002
+    default_conf_usdt['dry_run_wallet'] = 20.0
     default_conf_usdt['max_open_trades'] = 2
     default_conf_usdt['tradable_balance_ratio'] = 1.0
     patch_exchange(mocker)
@@ -3906,7 +3910,7 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
 
     bot = get_patched_freqtradebot(mocker, default_conf_usdt)
     patch_get_signal(bot)
-    assert bot.wallets.get_free('BTC') == 0.002
+    assert bot.wallets.get_free('USDT') == 20.0
 
     n = bot.enter_positions()
     assert n == 2
@@ -3916,8 +3920,8 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
     bot.config['max_open_trades'] = 3
     n = bot.enter_positions()
     assert n == 0
-    assert log_has_re(r"Unable to create trade for XRP/BTC: "
-                      r"Available balance \(0.0 BTC\) is lower than stake amount \(0.001 BTC\)",
+    assert log_has_re(r"Unable to create trade for XRP/USDT: "
+                      r"Available balance \(0.0 USDT\) is lower than stake amount \(10.0 USDT\)",
                       caplog)
 
 

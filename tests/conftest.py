@@ -441,7 +441,7 @@ def ticker_sell_down():
 def ticker_usdt():
     return MagicMock(return_value={
         'bid': 2.0,
-        'ask': 2.01,
+        'ask': 2.1,
         'last': 2.0,
     })
 
@@ -449,9 +449,9 @@ def ticker_usdt():
 @pytest.fixture
 def ticker_usdt_sell_up():
     return MagicMock(return_value={
-        'bid': 2.19,
-        'ask': 2.2,
-        'last': 2.19,
+        'bid': 2.2,
+        'ask': 2.3,
+        'last': 2.2,
     })
 
 
