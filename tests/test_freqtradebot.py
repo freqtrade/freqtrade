@@ -4043,9 +4043,9 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
             assert trade.fee_close_currency is not None
 
 
-@pytest.mark.usefixtures("init_persistence")
-def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog):
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+@pytest.mark.usefixtures("init_persistence_usdt")
+def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
 
     create_mock_trades(fee)
@@ -4063,13 +4063,13 @@ def test_reupdate_enter_order_fees(mocker, default_conf, fee, caplog):
     # Test with trade without orders
     trade = Trade(
         pair='XRP/ETH',
-        stake_amount=0.001,
+        stake_amount=60.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
         open_date=arrow.utcnow().datetime,
         is_open=True,
-        amount=20,
-        open_rate=0.01,
+        amount=30,
+        open_rate=2.0,
         exchange='binance',
     )
     Trade.query.session.add(trade)
