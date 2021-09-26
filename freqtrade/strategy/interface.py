@@ -519,8 +519,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalType.EXIT_LONG.value] = 0
             dataframe[SignalType.ENTER_SHORT.value] = 0
             dataframe[SignalType.EXIT_SHORT.value] = 0
-            dataframe[SignalTagType.LONG_TAG.value] = None
-            dataframe[SignalTagType.SHORT_TAG.value] = None
+            dataframe[SignalTagType.ENTER_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -690,10 +689,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag_value = latest.get(SignalTagType.LONG_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
         if enter_short == 1 and not any([exit_short, enter_long]):
             enter_signal = SignalDirection.SHORT
-            enter_tag_value = latest.get(SignalTagType.SHORT_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
 
         timeframe_seconds = timeframe_to_seconds(timeframe)
 
@@ -963,7 +962,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             df = self.populate_buy_trend(dataframe, metadata)
         if 'enter_long' not in df.columns:
-            df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
+            df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
 
         return df
 

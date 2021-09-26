@@ -532,7 +532,7 @@ tc33 = BTContainer(data=[
         sell_reason=SellType.TRAILING_STOP_LOSS,
         open_tick=1,
         close_tick=1,
-        buy_tag='buy_signal_01'
+        enter_tag='buy_signal_01'
     )]
 )
 
@@ -621,6 +621,6 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason.value
-        assert res.buy_tag == trade.buy_tag
+        assert res.buy_tag == trade.enter_tag
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)

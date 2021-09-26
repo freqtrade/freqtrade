@@ -46,7 +46,6 @@ ELONG_IDX = 6  # Exit long
 SHORT_IDX = 7
 ESHORT_IDX = 8  # Exit short
 ENTER_TAG_IDX = 9
-SHORT_TAG_IDX = 10
 
 
 class Backtesting:
@@ -253,7 +252,7 @@ class Backtesting:
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
         headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                   'enter_short', 'exit_short', 'long_tag', 'short_tag']
+                   'enter_short', 'exit_short', 'enter_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -271,8 +270,7 @@ class Backtesting:
                 if 'exit_long' in pair_data.columns:
                     pair_data.loc[:, 'exit_long'] = 0
                 pair_data.loc[:, 'exit_short'] = 0
-                pair_data.loc[:, 'long_tag'] = None
-                pair_data.loc[:, 'short_tag'] = None
+                pair_data.loc[:, 'enter_tag'] = None
 
             df_analyzed = self.strategy.advise_exit(
                 self.strategy.advise_entry(pair_data, {'pair': pair}),
@@ -287,7 +285,7 @@ class Backtesting:
             df_analyzed.loc[:, 'enter_short'] = df_analyzed.loc[:, 'enter_short'].shift(1)
             df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
             df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
-            df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
+            df_analyzed.loc[:, 'enter_tag'] = df_analyzed.loc[:, 'enter_tag'].shift(1)
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
@@ -454,8 +452,7 @@ class Backtesting:
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
-            # TODO-lev: SHORT_TAG ...
-            has_buy_tag = len(row) >= ENTER_TAG_IDX + 1
+            has_enter_tag = len(row) >= ENTER_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -465,7 +462,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[ENTER_TAG_IDX] if has_buy_tag else None,
+                buy_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
             )
