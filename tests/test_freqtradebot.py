@@ -1162,7 +1162,7 @@ def test_create_stoploss_order_insufficient_funds(mocker, default_conf, caplog, 
     assert mock_insuf.call_count == 1
 
 
-@pytest.mark.usefixtures("init_persistence_usdt")
+@pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee,
                                               limit_buy_order_usdt, limit_sell_order_usdt) -> None:
     # When trailing stoploss is set
@@ -1353,7 +1353,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
 
-@pytest.mark.usefixtures("init_persistence_usdt")
+@pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_custom_stop(
         mocker, default_conf_usdt, fee, limit_buy_order_usdt, limit_sell_order_usdt) -> None:
     # When trailing stoploss is set
@@ -4043,7 +4043,7 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf, fee):
             assert trade.fee_close_currency is not None
 
 
-@pytest.mark.usefixtures("init_persistence_usdt")
+@pytest.mark.usefixtures("init_persistence")
 def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')

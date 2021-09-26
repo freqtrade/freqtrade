@@ -289,11 +289,6 @@ def init_persistence(default_conf):
     init_db(default_conf['db_url'], default_conf['dry_run'])
 
 
-@pytest.fixture(scope='function')
-def init_persistence_usdt(default_conf_usdt):
-    init_db(default_conf_usdt['db_url'], default_conf_usdt['dry_run'])
-
-
 @pytest.fixture(scope="function")
 def default_conf(testdatadir):
     return get_default_conf(testdatadir)
