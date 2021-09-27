@@ -422,11 +422,11 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (side, enter_tag) = self.strategy.get_entry_signal(
+        (signal, enter_tag) = self.strategy.get_entry_signal(
             pair, self.strategy.timeframe, analyzed_df
             )
 
-        if side:
+        if signal:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
