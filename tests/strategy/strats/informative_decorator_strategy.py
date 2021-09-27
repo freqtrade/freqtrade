@@ -2,8 +2,7 @@
 
 from pandas import DataFrame
 
-from freqtrade.strategy import informative, merge_informative_pair
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import IStrategy, informative, merge_informative_pair
 
 
 class InformativeDecoratorTest(IStrategy):

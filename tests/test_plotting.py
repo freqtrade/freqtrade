@@ -201,8 +201,8 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
     timerange = TimeRange(None, 'line', 0, -1000)
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
-    data['buy'] = 0
-    data['sell'] = 0
+    data['enter_long'] = 0
+    data['exit_long'] = 0
 
     indicators1 = []
     indicators2 = []
@@ -261,12 +261,12 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     buy = find_trace_in_fig_data(figure.data, "buy")
     assert isinstance(buy, go.Scatter)
     # All buy-signals should be plotted
-    assert int(data.buy.sum()) == len(buy.x)
+    assert int(data['enter_long'].sum()) == len(buy.x)
 
     sell = find_trace_in_fig_data(figure.data, "sell")
     assert isinstance(sell, go.Scatter)
     # All buy-signals should be plotted
-    assert int(data.sell.sum()) == len(sell.x)
+    assert int(data['exit_long'].sum()) == len(sell.x)
 
     assert find_trace_in_fig_data(figure.data, "Bollinger Band")
 

@@ -19,8 +19,8 @@ from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_in
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from tests.conftest import (create_mock_trades, get_args, log_has, log_has_re, patch_exchange,
-                            patched_configuration_load_config_file)
+from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_args, log_has,
+                            log_has_re, patch_exchange, patched_configuration_load_config_file)
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -774,7 +774,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy_v1.py" not in captured.out
-    assert "StrategyTestV2" in captured.out
+    assert CURRENT_TEST_STRATEGY in captured.out
 
     # Test regular output
     args = [
@@ -789,7 +789,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy_v1.py" in captured.out
-    assert "StrategyTestV2" in captured.out
+    assert CURRENT_TEST_STRATEGY in captured.out
 
     # Test color output
     args = [
@@ -803,7 +803,7 @@ def test_start_list_strategies(mocker, caplog, capsys):
     captured = capsys.readouterr()
     assert "TestStrategyLegacyV1" in captured.out
     assert "legacy_strategy_v1.py" in captured.out
-    assert "StrategyTestV2" in captured.out
+    assert CURRENT_TEST_STRATEGY in captured.out
     assert "LOAD FAILED" in captured.out
 
 
