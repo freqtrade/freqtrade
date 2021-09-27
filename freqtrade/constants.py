@@ -5,7 +5,6 @@ bot constants
 """
 from typing import List, Tuple
 
-
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
@@ -52,7 +51,6 @@ ENV_VAR_PREFIX = 'FREQTRADE__'
 
 NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
 
-
 # Define decimals per coin for outputs
 # Only used for outputs.
 DECIMAL_PER_COIN_FALLBACK = 3  # Should be low to avoid listing all possible FIAT's
@@ -66,13 +64,10 @@ DUST_PER_COIN = {
     'ETH': 0.01
 }
 
-
 # Source files with destination directories within user-directory
 USER_DATA_FILES = {
     'sample_strategy.py': USERPATH_STRATEGIES,
-    'sample_hyperopt_advanced.py': USERPATH_HYPEROPTS,
     'sample_hyperopt_loss.py': USERPATH_HYPEROPTS,
-    'sample_hyperopt.py': USERPATH_HYPEROPTS,
     'strategy_analysis_example.ipynb': USERPATH_NOTEBOOKS,
 }
 
@@ -195,7 +190,7 @@ CONF_SCHEMA = {
             'required': ['price_side']
         },
         'custom_price_max_distance_ratio': {
-           'type': 'number', 'minimum': 0.0
+            'type': 'number', 'minimum': 0.0
         },
         'order_types': {
             'type': 'object',
@@ -348,13 +343,13 @@ CONF_SCHEMA = {
         },
         'dataformat_ohlcv': {
             'type': 'string',
-                    'enum': AVAILABLE_DATAHANDLERS,
-                    'default': 'json'
+            'enum': AVAILABLE_DATAHANDLERS,
+            'default': 'json'
         },
         'dataformat_trades': {
             'type': 'string',
-                    'enum': AVAILABLE_DATAHANDLERS,
-                    'default': 'jsongz'
+            'enum': AVAILABLE_DATAHANDLERS,
+            'default': 'jsongz'
         }
     },
     'definitions': {
