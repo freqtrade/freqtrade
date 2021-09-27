@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
+from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
 from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
@@ -42,6 +43,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             # Reload strategy
             lastconfig = ApiServer._bt_last_config
             strat = StrategyResolver.load_strategy(btconfig)
+            validate_config_consistency(btconfig)
 
             if (
                 not ApiServer._bt
