@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 
+from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import DependencyException
 from freqtrade.rpc.api_server.api_schemas import BacktestRequest, BacktestResponse
@@ -42,6 +43,7 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             # Reload strategy
             lastconfig = ApiServer._bt_last_config
             strat = StrategyResolver.load_strategy(btconfig)
+            validate_config_consistency(btconfig)
 
             if (
                 not ApiServer._bt
@@ -61,12 +63,12 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
                 not ApiServer._bt_data
                 or not ApiServer._bt_timerange
                 or lastconfig.get('timeframe') != strat.timeframe
+                or lastconfig.get('timerange') != btconfig['timerange']
             ):
                 ApiServer._bt_data, ApiServer._bt_timerange = ApiServer._bt.load_bt_data()
 
-                lastconfig['timerange'] = btconfig['timerange']
-                lastconfig['timeframe'] = strat.timeframe
-
+            lastconfig['timerange'] = btconfig['timerange']
+            lastconfig['timeframe'] = strat.timeframe
             lastconfig['protections'] = btconfig.get('protections', [])
             lastconfig['enable_protections'] = btconfig.get('enable_protections')
             lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
