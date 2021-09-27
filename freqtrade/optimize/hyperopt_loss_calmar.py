@@ -27,6 +27,8 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         trade_count: int,
         min_date: datetime,
         max_date: datetime,
+        config: Dict,
+        processed: Dict[str, DataFrame],
         backtest_stats: Dict[str, Any],
         *args,
         **kwargs
@@ -52,7 +54,7 @@ class CalmarHyperOptLoss(IHyperOptLoss):
         except ValueError:
             max_drawdown = 0
 
-        if max_drawdown != 0:
+        if max_drawdown != 0 and trade_count > 2000:
             calmar_ratio = expected_returns_mean / max_drawdown * msqrt(365)
         else:
             # Define high (negative) calmar ratio to be clear that this is NOT optimal.
