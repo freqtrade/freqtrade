@@ -5,6 +5,7 @@ bot constants
 """
 from typing import List, Tuple
 
+
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
 PROCESS_THROTTLE_SECS = 5  # sec
