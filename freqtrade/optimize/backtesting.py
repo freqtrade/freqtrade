@@ -385,12 +385,12 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ]
+             ].copy()
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
-            detail_data['buy'] = sell_row[BUY_IDX]
-            detail_data['sell'] = sell_row[SELL_IDX]
+            detail_data.loc[:, 'buy'] = sell_row[BUY_IDX]
+            detail_data.loc[:, 'sell'] = sell_row[SELL_IDX]
             headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)
