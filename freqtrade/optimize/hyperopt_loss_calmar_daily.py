@@ -26,6 +26,8 @@ class CalmarHyperOptLossDaily(IHyperOptLoss):
         trade_count: int,
         min_date: datetime,
         max_date: datetime,
+        config: Dict,
+        processed: Dict[str, DataFrame],
         backtest_stats: Dict[str, Any],
         *args,
         **kwargs
