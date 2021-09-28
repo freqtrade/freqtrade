@@ -46,6 +46,12 @@ class Balances(BaseModel):
     value: float
     stake: str
     note: str
+    starting_capital: float
+    starting_capital_ratio: float
+    starting_capital_pct: float
+    starting_capital_fiat: float
+    starting_capital_fiat_ratio: float
+    starting_capital_fiat_pct: float
 
 
 class Count(BaseModel):
@@ -324,6 +330,7 @@ class PairHistory(BaseModel):
 class BacktestRequest(BaseModel):
     strategy: str
     timeframe: Optional[str]
+    timeframe_detail: Optional[str]
     timerange: Optional[str]
     max_open_trades: Optional[int]
     stake_amount: Optional[Union[float, str]]

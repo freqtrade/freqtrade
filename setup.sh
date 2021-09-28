@@ -62,7 +62,7 @@ function updateenv() {
     then
         REQUIREMENTS_PLOT="-r requirements-plot.txt"
     fi
-    if [ "${SYS_ARCH}" == "armv7l" ]; then
+    if [ "${SYS_ARCH}" == "armv7l" ] || [ "${SYS_ARCH}" == "armv6l" ]; then
         echo "Detected Raspberry, installing cython, skipping hyperopt installation."
         ${PYTHON} -m pip install --upgrade cython
     else
@@ -95,19 +95,7 @@ function install_talib() {
         return
     fi
 
-    cd build_helpers
-    tar zxvf ta-lib-0.4.0-src.tar.gz
-    cd ta-lib
-    sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h
-    ./configure --prefix=/usr/local
-    make
-    sudo make install
-    if [ -x "$(command -v apt-get)" ]; then
-        echo "Updating library path using ldconfig"
-        sudo ldconfig
-    fi
-    cd .. && rm -rf ./ta-lib/
-    cd ..
+    cd build_helpers && ./install_ta-lib.sh && cd ..
 }
 
 function install_mac_newer_python_dependencies() {    
@@ -119,6 +107,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install hdf5
     fi
+    export HDF5_DIR=$(brew --prefix)
 
     if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
     then
@@ -127,6 +116,7 @@ function install_mac_newer_python_dependencies() {
         echo "-------------------------"
         brew install c-blosc
     fi    
+    export CBLOSC_DIR=$(brew --prefix)
 }
 
 # Install bot MacOS

@@ -2,7 +2,7 @@
 Performance pair list filter
 """
 import logging
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class PerformanceFilter(IPairList):
+
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        self._minutes = pairlistconfig.get('minutes', 0)
 
     @property
     def needstickers(self) -> bool:
@@ -40,7 +47,7 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         try:
-            performance = pd.DataFrame(Trade.get_overall_performance())
+            performance = pd.DataFrame(Trade.get_overall_performance(self._minutes))
         except AttributeError:
             # Performancefilter does not work in backtesting.
             self.log_once("PerformanceFilter is not available in this mode.", logger.warning)

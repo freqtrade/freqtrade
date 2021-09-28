@@ -1,7 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
 
@@ -441,6 +441,15 @@ def test_backtesting_no_pair_left(default_conf, mocker, caplog, testdatadir) -> 
     with pytest.raises(OperationalException, match='VolumePairList not allowed for backtesting.'):
         Backtesting(default_conf)
 
+    default_conf.update({
+        'pairlists': [{"method": "StaticPairList"}],
+        'timeframe_detail': '1d',
+    })
+
+    with pytest.raises(OperationalException,
+                       match='Detail timeframe must be smaller than strategy timeframe.'):
+        Backtesting(default_conf)
+
 
 def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, tickers) -> None:
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -491,7 +500,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     pair = 'UNITTEST/BTC'
     row = [
         pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0),
-        1,  # Sell
+        1,  # Buy
         0.001,  # Open
         0.0011,  # Close
         0,  # Sell
@@ -537,6 +546,88 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
     assert trade is None
 
     backtesting.cleanup()
+
+
+def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    default_conf['timeframe_detail'] = '1m'
+    default_conf['max_open_trades'] = 2
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    pair = 'UNITTEST/BTC'
+    row = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=4, minute=55, tzinfo=timezone.utc),
+        1,  # Buy
+        200,  # Open
+        201,  # Close
+        0,  # Sell
+        195,  # Low
+        201.5,  # High
+        '',  # Buy Signal Name
+    ]
+
+    trade = backtesting._enter_trade(pair, row=row)
+    assert isinstance(trade, LocalTrade)
+
+    row_sell = [
+        pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
+        0,  # Buy
+        200,  # Open
+        201,  # Close
+        0,  # Sell
+        195,  # Low
+        210.5,  # High
+        '',  # Buy Signal Name
+    ]
+    row_detail = pd.DataFrame(
+        [
+            [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
+                1, 200, 199, 0, 197, 200.1, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=1, tzinfo=timezone.utc),
+                0, 199, 199.5, 0, 199, 199.7, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=2, tzinfo=timezone.utc),
+                0, 199.5, 200.5, 0, 199, 200.8, '',
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=3, tzinfo=timezone.utc),
+                0, 200.5, 210.5, 0, 193, 210.5, '',  # ROI sell (?)
+            ], [
+                pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=4, tzinfo=timezone.utc),
+                0, 200, 199, 0, 193, 200.1, '',
+            ],
+        ], columns=["date", "buy", "open", "close", "sell", "low", "high", "buy_tag"]
+    )
+
+    # No data available.
+    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    assert res is not None
+    assert res.sell_reason == SellType.ROI.value
+    assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
+
+    # Enter new trade
+    trade = backtesting._enter_trade(pair, row=row)
+    assert isinstance(trade, LocalTrade)
+    # Assign empty ... no result.
+    backtesting.detail_data[pair] = pd.DataFrame(
+        [], columns=["date", "buy", "open", "close", "sell", "low", "high", "buy_tag"])
+
+    res = backtesting._get_sell_trade_entry(trade, row)
+    assert res is None
+
+    # Assign backtest-detail data
+    backtesting.detail_data[pair] = row_detail
+
+    res = backtesting._get_sell_trade_entry(trade, row_sell)
+    assert res is not None
+    assert res.sell_reason == SellType.ROI.value
+    # Sell at minute 3 (not available above!)
+    assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
+    assert round(res.close_rate, 3) == round(209.0225, 3)
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
@@ -1042,3 +1133,102 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     assert 'LEFT OPEN TRADES REPORT' in captured.out
     assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
+def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
+                                                  caplog, testdatadir, capsys):
+    # Tests detail-data loading
+    default_conf.update({
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+    })
+    patch_exchange(mocker)
+    result1 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
+                            'profit_ratio': [0.0, 0.0],
+                            'profit_abs': [0.0, 0.0],
+                            'open_date': pd.to_datetime(['2018-01-29 18:40:00',
+                                                         '2018-01-30 03:30:00', ], utc=True
+                                                        ),
+                            'close_date': pd.to_datetime(['2018-01-29 20:45:00',
+                                                          '2018-01-30 05:35:00', ], utc=True),
+                            'trade_duration': [235, 40],
+                            'is_open': [False, False],
+                            'stake_amount': [0.01, 0.01],
+                            'open_rate': [0.104445, 0.10302485],
+                            'close_rate': [0.104969, 0.103541],
+                            'sell_reason': [SellType.ROI, SellType.ROI]
+                            })
+    result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
+                            'profit_ratio': [0.03, 0.01, 0.1],
+                            'profit_abs': [0.01, 0.02, 0.2],
+                            'open_date': pd.to_datetime(['2018-01-29 18:40:00',
+                                                         '2018-01-30 03:30:00',
+                                                         '2018-01-30 05:30:00'], utc=True
+                                                        ),
+                            'close_date': pd.to_datetime(['2018-01-29 20:45:00',
+                                                          '2018-01-30 05:35:00',
+                                                          '2018-01-30 08:30:00'], utc=True),
+                            'trade_duration': [47, 40, 20],
+                            'is_open': [False, False, False],
+                            'stake_amount': [0.01, 0.01, 0.01],
+                            'open_rate': [0.104445, 0.10302485, 0.122541],
+                            'close_rate': [0.104969, 0.103541, 0.123541],
+                            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+                            })
+    backtestmock = MagicMock(side_effect=[
+        {
+            'results': result1,
+            'config': default_conf,
+            'locks': [],
+            'rejected_signals': 20,
+            'final_balance': 1000,
+        },
+        {
+            'results': result2,
+            'config': default_conf,
+            'locks': [],
+            'rejected_signals': 20,
+            'final_balance': 1000,
+        }
+    ])
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['XRP/ETH']))
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '5m',
+        '--timeframe-detail', '1m',
+        '--strategy-list',
+        'StrategyTestV2'
+    ]
+    args = get_args(args)
+    start_backtesting(args)
+
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Parameter -i/--timeframe detected ... Using timeframe: 5m ...',
+        'Parameter --timeframe-detail detected, using 1m for intra-candle backtesting ...',
+        f'Using data directory: {testdatadir} ...',
+        'Loading data from 2019-10-11 00:00:00 '
+        'up to 2019-10-13 11:10:00 (2 days).',
+        'Backtesting with data from 2019-10-11 01:40:00 '
+        'up to 2019-10-13 11:10:00 (2 days).',
+        'Running backtesting for Strategy StrategyTestV2',
+    ]
+
+    for line in exists:
+        assert log_has(line, caplog)
+
+    captured = capsys.readouterr()
+    assert 'BACKTESTING REPORT' in captured.out
+    assert 'SELL REASON STATS' in captured.out
+    assert 'LEFT OPEN TRADES REPORT' in captured.out

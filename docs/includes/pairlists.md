@@ -82,6 +82,8 @@ Filtering instances (not the first position in the list) will not apply any cach
 
 You can define a minimum volume with `min_value` - which will filter out pairs with a volume lower than the specified value in the specified timerange.
 
+### VolumePairList Advanced mode
+
 `VolumePairList` can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the `quoteVolume` over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.
 
 For convenience `lookback_days` can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:
@@ -104,6 +106,24 @@ For convenience `lookback_days` can be specified, which will imply that 1d candl
 
 !!! Warning "Performance implications when using lookback range"
     If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `VolumeFilter` to narrow the pairlist down for further range volume calculation.
+
+??? Tip "Unsupported exchanges (Bittrex, Gemini)"
+    On some exchanges (like Bittrex and Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
+    To roughly simulate 24h volume, you can use the following configuration.
+    Please note that These pairlists will only refresh once per day.
+
+    ```json
+    "pairlists": [
+        {
+            "method": "VolumePairList",
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "min_value": 0,
+            "refresh_period": 86400,
+            "lookback_days": 1
+        }
+    ],
+    ```
 
 More sophisticated approach can be used, by using `lookback_timeframe` for candle size and `lookback_period` which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:
 
@@ -145,6 +165,7 @@ Example to remove the first 10 pairs from the pairlist:
 
 ```json
 "pairlists": [
+    // ...
     {
         "method": "OffsetFilter",
         "offset": 10
@@ -169,6 +190,19 @@ Sorts pairs by past trade performance, as follows:
 3. Negative performance.
 
 Trade count is used as a tie breaker.
+
+You can use the `minutes` parameter to only consider performance of the past X minutes (rolling window).
+Not defining this parameter (or setting it to 0) will use all-time performance.
+
+```json
+"pairlists": [
+    // ...
+    {
+        "method": "PerformanceFilter",
+        "minutes": 1440  // rolling 24h
+    }
+],
+```
 
 !!! Note
     `PerformanceFilter` does not support backtesting mode.

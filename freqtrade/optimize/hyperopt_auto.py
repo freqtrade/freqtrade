@@ -4,15 +4,23 @@ This module implements a convenience auto-hyperopt class, which can be used toge
  that implement IHyperStrategy interface.
 """
 from contextlib import suppress
-from typing import Any, Callable, Dict, List
+from typing import Callable, Dict, List
 
-from pandas import DataFrame
+from freqtrade.exceptions import OperationalException
 
 
 with suppress(ImportError):
     from skopt.space import Dimension
 
-from freqtrade.optimize.hyperopt_interface import IHyperOpt
+from freqtrade.optimize.hyperopt_interface import EstimatorType, IHyperOpt
+
+
+def _format_exception_message(space: str) -> str:
+    raise OperationalException(
+        f"The '{space}' space is included into the hyperoptimization "
+        f"but no parameter for this space was not found in your Strategy. "
+        f"Please make sure to have parameters for this space enabled for optimization "
+        f"or remove the '{space}' space from hyperoptimization.")
 
 
 class HyperOptAuto(IHyperOpt):
@@ -21,26 +29,6 @@ class HyperOptAuto(IHyperOpt):
      Most of the time Strategy.HyperOpt class would only implement indicator_space and
      sell_indicator_space methods, but other hyperopt methods can be overridden as well.
     """
-
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        def populate_buy_trend(dataframe: DataFrame, metadata: dict):
-            for attr_name, attr in self.strategy.enumerate_parameters('buy'):
-                if attr.optimize:
-                    # noinspection PyProtectedMember
-                    attr.value = params[attr_name]
-            return self.strategy.populate_buy_trend(dataframe, metadata)
-
-        return populate_buy_trend
-
-    def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        def populate_sell_trend(dataframe: DataFrame, metadata: dict):
-            for attr_name, attr in self.strategy.enumerate_parameters('sell'):
-                if attr.optimize:
-                    # noinspection PyProtectedMember
-                    attr.value = params[attr_name]
-            return self.strategy.populate_sell_trend(dataframe, metadata)
-
-        return populate_sell_trend
 
     def _get_func(self, name) -> Callable:
         """
@@ -60,21 +48,22 @@ class HyperOptAuto(IHyperOpt):
             if attr.optimize:
                 yield attr.get_space(attr_name)
 
-    def _get_indicator_space(self, category, fallback_method_name):
+    def _get_indicator_space(self, category):
+        # TODO: is this necessary, or can we call "generate_space" directly?
         indicator_space = list(self._generate_indicator_space(category))
         if len(indicator_space) > 0:
             return indicator_space
         else:
-            return self._get_func(fallback_method_name)()
+            _format_exception_message(category)
 
-    def indicator_space(self) -> List['Dimension']:
-        return self._get_indicator_space('buy', 'indicator_space')
+    def buy_indicator_space(self) -> List['Dimension']:
+        return self._get_indicator_space('buy')
 
     def sell_indicator_space(self) -> List['Dimension']:
-        return self._get_indicator_space('sell', 'sell_indicator_space')
+        return self._get_indicator_space('sell')
 
     def protection_space(self) -> List['Dimension']:
-        return self._get_indicator_space('protection', 'protection_space')
+        return self._get_indicator_space('protection')
 
     def generate_roi_table(self, params: Dict) -> Dict[int, float]:
         return self._get_func('generate_roi_table')(params)
@@ -90,3 +79,6 @@ class HyperOptAuto(IHyperOpt):
 
     def trailing_space(self) -> List['Dimension']:
         return self._get_func('trailing_space')()
+
+    def generate_estimator(self) -> EstimatorType:
+        return self._get_func('generate_estimator')()

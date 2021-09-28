@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-from argparse import ArgumentTypeError
+from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
@@ -135,6 +135,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Override the value of the `stake_amount` configuration setting.',
     ),
     # Backtesting
+    "timeframe_detail": Arg(
+        '--timeframe-detail',
+        help='Specify detail timeframe for backtesting (`1m`, `5m`, `30m`, `1h`, `1d`).',
+    ),
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -199,13 +203,13 @@ AVAILABLE_CLI_OPTIONS = {
     # Hyperopt
     "hyperopt": Arg(
         '--hyperopt',
-        help='Specify hyperopt class name which will be used by the bot.',
+        help=SUPPRESS,
         metavar='NAME',
         required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
