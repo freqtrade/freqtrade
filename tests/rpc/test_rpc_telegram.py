@@ -25,8 +25,8 @@ from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.telegram import Telegram, authorized_only
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot, log_has, log_has_re,
-                            patch_exchange, patch_get_signal, patch_whitelist)
+from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_patched_freqtradebot,
+                            log_has, log_has_re, patch_exchange, patch_get_signal, patch_whitelist)
 
 
 class DummyCls(Telegram):
@@ -1238,7 +1238,7 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
     assert '*Exchange:* `binance`' in msg_mock.call_args_list[0][0][0]
-    assert '*Strategy:* `StrategyTestV2`' in msg_mock.call_args_list[0][0][0]
+    assert f'*Strategy:* `{CURRENT_TEST_STRATEGY}`' in msg_mock.call_args_list[0][0][0]
     assert '*Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
@@ -1247,7 +1247,7 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert msg_mock.call_count == 1
     assert '*Mode:* `{}`'.format('Dry-run') in msg_mock.call_args_list[0][0][0]
     assert '*Exchange:* `binance`' in msg_mock.call_args_list[0][0][0]
-    assert '*Strategy:* `StrategyTestV2`' in msg_mock.call_args_list[0][0][0]
+    assert f'*Strategy:* `{CURRENT_TEST_STRATEGY}`' in msg_mock.call_args_list[0][0][0]
     assert '*Initial Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
 

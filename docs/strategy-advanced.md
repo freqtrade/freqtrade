@@ -539,9 +539,10 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime,
+                            side: str, **kwargs) -> bool:
         """
-        Called right before placing a buy order.
+        Called right before placing a entry order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -549,12 +550,13 @@ class AwesomeStrategy(IStrategy):
 
         When not implemented by a strategy, returns True (always confirming).
 
-        :param pair: Pair that's about to be bought.
+        :param pair: Pair that's about to be bought/shorted.
         :param order_type: Order type (as configured in order_types). usually limit or market.
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -617,7 +619,7 @@ It is possible to manage your risk by reducing or increasing stake amount when p
 class AwesomeStrategy(IStrategy):
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            side: str, **kwargs) -> float:
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
@@ -641,6 +643,34 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.
+
+## Leverage Callback
+
+When trading in markets that allow leverage, this method must return the desired Leverage (Defaults to 1 -> No leverage).
+
+Assuming a capital of 500USDT, a trade with leverage=3 would result in a position with 500 x 3 = 1500 USDT.
+
+Values that are above `max_leverage` will be adjusted to `max_leverage`.
+For markets / exchanges that don't support leverage, this method is ignored.
+
+``` python
+class AwesomeStrategy(IStrategy):
+    def leverage(self, pair: str, current_time: 'datetime', current_rate: float,
+                 proposed_leverage: float, max_leverage: float, side: str,
+                 **kwargs) -> float:
+        """
+        Customize leverage for each new trade.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_leverage: A leverage proposed by the bot.
+        :param max_leverage: Max leverage allowed on this pair
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :return: A leverage amount, which is between 1.0 and max_leverage.
+        """
+        return 1.0
+```
 
 ---
 

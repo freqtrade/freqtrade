@@ -23,7 +23,8 @@ from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import _set_loggers, setup_logging, setup_logging_pre
-from tests.conftest import log_has, log_has_re, patched_configuration_load_config_file
+from tests.conftest import (CURRENT_TEST_STRATEGY, log_has, log_has_re,
+                            patched_configuration_load_config_file)
 
 
 @pytest.fixture(scope="function")
@@ -403,7 +404,7 @@ def test_setup_configuration_without_arguments(mocker, default_conf, caplog) -> 
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
     ]
 
     args = Arguments(arglist).get_parsed_arg()
@@ -440,7 +441,7 @@ def test_setup_configuration_with_arguments(mocker, default_conf, caplog) -> Non
     arglist = [
         'backtesting',
         '--config', 'config.json',
-        '--strategy', 'StrategyTestV2',
+        '--strategy', CURRENT_TEST_STRATEGY,
         '--datadir', '/foo/bar',
         '--userdir', "/tmp/freqtrade",
         '--ticker-interval', '1m',
@@ -497,7 +498,7 @@ def test_setup_configuration_with_stratlist(mocker, default_conf, caplog) -> Non
         '--ticker-interval', '1m',
         '--export', 'trades',
         '--strategy-list',
-        'StrategyTestV2',
+        CURRENT_TEST_STRATEGY,
         'TestStrategy'
     ]
 

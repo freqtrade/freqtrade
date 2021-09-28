@@ -18,7 +18,7 @@ class BTrade(NamedTuple):
     sell_reason: SellType
     open_tick: int
     close_tick: int
-    buy_tag: Optional[str] = None
+    enter_tag: Optional[str] = None
 
 
 class BTContainer(NamedTuple):
@@ -44,14 +44,18 @@ def _get_frame_time_from_offset(offset):
 
 
 def _build_backtest_dataframe(data):
-    columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'buy', 'sell']
-    columns = columns + ['buy_tag'] if len(data[0]) == 9 else columns
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'enter_long', 'exit_long',
+               'enter_short', 'exit_short']
+    if len(data[0]) == 8:
+        # No short columns
+        data = [d + [0, 0] for d in data]
+    columns = columns + ['enter_tag'] if len(data[0]) == 11 else columns
 
     frame = DataFrame.from_records(data, columns=columns)
     frame['date'] = frame['date'].apply(_get_frame_time_from_offset)
     # Ensure floats are in place
     for column in ['open', 'high', 'low', 'close', 'volume']:
         frame[column] = frame[column].astype('float64')
-    if 'buy_tag' not in columns:
-        frame['buy_tag'] = None
+    if 'enter_tag' not in columns:
+        frame['enter_tag'] = None
     return frame

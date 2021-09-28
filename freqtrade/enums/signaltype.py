@@ -5,12 +5,19 @@ class SignalType(Enum):
     """
     Enum to distinguish between enter and exit signals
     """
-    BUY = "buy"
-    SELL = "sell"
+    ENTER_LONG = "enter_long"
+    EXIT_LONG = "exit_long"
+    ENTER_SHORT = "enter_short"
+    EXIT_SHORT = "exit_short"
 
 
 class SignalTagType(Enum):
     """
     Enum for signal columns
     """
-    BUY_TAG = "buy_tag"
+    ENTER_TAG = "enter_tag"
+
+
+class SignalDirection(Enum):
+    LONG = 'long'
+    SHORT = 'short'
