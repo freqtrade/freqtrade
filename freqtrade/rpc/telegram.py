@@ -260,6 +260,50 @@ class Telegram(RPCHandler):
 
         return message
 
+    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
+
+        if msg_type == RPCMessageType.BUY:
+            message = self._format_buy_msg(msg)
+
+        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
+            msg['message_side'] = 'buy' if msg_type == RPCMessageType.BUY_CANCEL else 'sell'
+            message = ("\N{WARNING SIGN} *{exchange}:* "
+                       "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
+                       "Reason: {reason}.".format(**msg))
+
+        elif msg_type == RPCMessageType.BUY_FILL:
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Buy order for {pair} (#{trade_id}) filled "
+                       "for {open_rate}.".format(**msg))
+        elif msg_type == RPCMessageType.SELL_FILL:
+            message = ("\N{LARGE CIRCLE} *{exchange}:* "
+                       "Sell order for {pair} (#{trade_id}) filled "
+                       "for {close_rate}.".format(**msg))
+        elif msg_type == RPCMessageType.SELL:
+            message = self._format_sell_msg(msg)
+        elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
+            message = (
+                "*Protection* triggered due to {reason}. "
+                "`{pair}` will be locked until `{lock_end_time}`."
+            ).format(**msg)
+        elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
+            message = (
+                "*Protection* triggered due to {reason}. "
+                "*All pairs* will be locked until `{lock_end_time}`."
+            ).format(**msg)
+        elif msg_type == RPCMessageType.STATUS:
+            message = '*Status:* `{status}`'.format(**msg)
+
+        elif msg_type == RPCMessageType.WARNING:
+            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
+
+        elif msg_type == RPCMessageType.STARTUP:
+            message = '{status}'.format(**msg)
+
+        else:
+            raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+        return message
+
     def send_msg(self, msg: Dict[str, Any]) -> None:
         """ Send a message to telegram channel """
 
@@ -284,37 +328,7 @@ class Telegram(RPCHandler):
             # Notification disabled
             return
 
-        if msg_type == RPCMessageType.BUY:
-            message = self._format_buy_msg(msg)
-
-        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
-            msg['message_side'] = 'buy' if msg_type == RPCMessageType.BUY_CANCEL else 'sell'
-            message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
-                       "Reason: {reason}.".format(**msg))
-
-        elif msg_type == RPCMessageType.BUY_FILL:
-            message = ("\N{LARGE CIRCLE} *{exchange}:* "
-                       "Buy order for {pair} (#{trade_id}) filled "
-                       "for {open_rate}.".format(**msg))
-        elif msg_type == RPCMessageType.SELL_FILL:
-            message = ("\N{LARGE CIRCLE} *{exchange}:* "
-                       "Sell order for {pair} (#{trade_id}) filled "
-                       "for {close_rate}.".format(**msg))
-        elif msg_type == RPCMessageType.SELL:
-            message = self._format_sell_msg(msg)
-
-        elif msg_type == RPCMessageType.STATUS:
-            message = '*Status:* `{status}`'.format(**msg)
-
-        elif msg_type == RPCMessageType.WARNING:
-            message = '\N{WARNING SIGN} *Warning:* `{status}`'.format(**msg)
-
-        elif msg_type == RPCMessageType.STARTUP:
-            message = '{status}'.format(**msg)
-
-        else:
-            raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+        message = self.compose_message(msg, msg_type)
 
         self._send_msg(message, disable_notification=(noti == 'silent'))
 

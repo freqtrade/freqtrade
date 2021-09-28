@@ -36,9 +36,10 @@ def liquidation_price(
                 f"maintenance_amt, position, entry_price, mm_rate "
                 f"is required by liquidation_price when exchange is {exchange_name.lower()}")
 
-        return binance(open_rate, is_short, leverage, trading_mode, collateral, wallet_balance,
-                       mm_ex_1, upnl_ex_1, maintenance_amt,
-                       position, entry_price, mm_rate)
+        # Suppress incompatible type "Optional[float]"; expected "float" as the check exists above.
+        return binance(open_rate, is_short, leverage, trading_mode, collateral,  # type: ignore
+                       wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt,  # type: ignore
+                       position, entry_price, mm_rate)  # type: ignore
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":

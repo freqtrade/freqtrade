@@ -284,6 +284,15 @@ CONF_SCHEMA = {
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
                         },
+                        'protection_trigger': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                        },
+                        'protection_trigger_global': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},
