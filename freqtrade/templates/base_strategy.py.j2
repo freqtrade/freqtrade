@@ -122,7 +122,7 @@ class {{ strategy }}(IStrategy):
                 {{ buy_trend | indent(16) }}
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'buy'] = 1
+            'enter_long'] = 1
 
         return dataframe
 
@@ -138,6 +138,6 @@ class {{ strategy }}(IStrategy):
                 {{ sell_trend | indent(16) }}
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
             ),
-            'sell'] = 1
+            'exit_long'] = 1
         return dataframe
     {{ additional_methods | indent(4) }}

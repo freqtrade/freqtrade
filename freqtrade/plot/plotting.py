@@ -386,8 +386,9 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     )
     fig.add_trace(candles, 1, 1)
 
-    if 'buy' in data.columns:
-        df_buy = data[data['buy'] == 1]
+    # TODO-lev: Needs short equivalent
+    if 'enter_long' in data.columns:
+        df_buy = data[data['enter_long'] == 1]
         if len(df_buy) > 0:
             buys = go.Scatter(
                 x=df_buy.date,
@@ -405,8 +406,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
         else:
             logger.warning("No buy-signals found.")
 
-    if 'sell' in data.columns:
-        df_sell = data[data['sell'] == 1]
+    if 'exit_long' in data.columns:
+        df_sell = data[data['exit_long'] == 1]
         if len(df_sell) > 0:
             sells = go.Scatter(
                 x=df_sell.date,
