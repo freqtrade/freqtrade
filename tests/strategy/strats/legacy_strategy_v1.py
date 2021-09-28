@@ -4,7 +4,7 @@
 import talib.abstract as ta
 from pandas import DataFrame
 
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import IStrategy
 
 
 # --------------------------------

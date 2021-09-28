@@ -445,24 +445,25 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_tag) = self.strategy.get_signal(
-            pair,
-            self.strategy.timeframe,
-            analyzed_df
+        (signal, enter_tag) = self.strategy.get_entry_signal(
+            pair, self.strategy.timeframe, analyzed_df
         )
 
-        if buy and not sell:
+        if signal:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
+                # TODO-lev: Does the below need to be adjusted for shorts?
                 if self._check_depth_of_market_buy(pair, bid_check_dom):
-                    return self.execute_entry(pair, stake_amount, buy_tag=buy_tag)
+                    # TODO-lev: pass in "enter" as side.
+
+                    return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
                 else:
                     return False
 
-            return self.execute_entry(pair, stake_amount, buy_tag=buy_tag)
+            return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
         else:
             return False
 
@@ -491,7 +492,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
     def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                      forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
+                      forcebuy: bool = False, enter_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -524,7 +525,9 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount)
+                min_stake=min_stake_amount, max_stake=max_stake_amount, side='long')
+        # TODO-lev: Add non-hardcoded "side" parameter
+
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
@@ -541,9 +544,12 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get('forcebuy', order_type)
         # TODO-lev: Will this work for shorting?
 
+        # TODO-lev: Add non-hardcoded "side" parameter
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                side='long'
+        ):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -608,7 +614,8 @@ class FreqtradeBot(LoggingMixin):
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
-            buy_tag=buy_tag,
+            # TODO-lev: compatibility layer for buy_tag (!)
+            buy_tag=enter_tag,
             timeframe=timeframe_to_minutes(self.config['timeframe']),
             trading_mode=self.trading_mode,
             funding_fees=funding_fees
@@ -734,22 +741,23 @@ class FreqtradeBot(LoggingMixin):
 
         logger.debug('Handling %s ...', trade)
 
-        (buy, sell) = (False, False)
+        (enter, exit_) = (False, False)
+
         # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
         if (self.config.get('use_sell_signal', True) or
                 self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell, _) = self.strategy.get_signal(
+            (enter, exit_) = self.strategy.get_exit_signal(
                 trade.pair,
                 self.strategy.timeframe,
-                analyzed_df
+                analyzed_df, is_short=trade.is_short
             )
 
-        logger.debug('checking sell')
+        # TODO-lev: side should depend on trade side.
         exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
-        if self._check_and_execute_exit(trade, exit_rate, buy, sell):
+        if self._check_and_execute_exit(trade, exit_rate, enter, exit_):
             return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -895,18 +903,18 @@ class FreqtradeBot(LoggingMixin):
                                    f"for pair {trade.pair}.")
 
     def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                buy: bool, sell: bool) -> bool:
+                                enter: bool, exit_: bool) -> bool:
         """
-        Check and execute exit
+        Check and execute trade exit
         """
-        should_sell = self.strategy.should_sell(
-            trade, exit_rate, datetime.now(timezone.utc), buy, sell,
+        should_exit: SellCheckTuple = self.strategy.should_exit(
+            trade, exit_rate, datetime.now(timezone.utc), enter=enter, exit_=exit_,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
-        if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_trade_exit(trade, exit_rate, should_sell)
+        if should_exit.sell_flag:
+            logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}')
+            self.execute_trade_exit(trade, exit_rate, should_exit)
             return True
         return False
 

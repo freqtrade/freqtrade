@@ -31,6 +31,7 @@ BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'profit_ratio', 'profit_abs', 'sell_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
                    'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'buy_tag']
+# TODO-lev: usage of the above might need compatibility code (buy_tag, is_short?, ...?)
 
 
 def get_latest_optimize_filename(directory: Union[Path, str], variant: str) -> str:
