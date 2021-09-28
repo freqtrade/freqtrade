@@ -135,8 +135,6 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 
-    # TODO-lev: Test with options in ccxt_config
-
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)

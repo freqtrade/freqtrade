@@ -1,10 +1,9 @@
 from random import randint
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock
 
 import ccxt
 import pytest
 
-from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException
 from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT
 from tests.conftest import get_patched_exchange

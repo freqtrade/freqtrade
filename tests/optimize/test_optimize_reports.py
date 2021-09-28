@@ -21,6 +21,7 @@ from freqtrade.optimize.optimize_reports import (generate_backtest_stats, genera
                                                  text_table_bt_results, text_table_sell_reason,
                                                  text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
+from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _backup_file, _clean_test_file
 
 
@@ -52,7 +53,7 @@ def test_text_table_bt_results():
 
 
 def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
-    default_conf.update({'strategy': 'StrategyTestV2'})
+    default_conf.update({'strategy': CURRENT_TEST_STRATEGY})
     StrategyResolver.load_strategy(default_conf)
 
     results = {'DefStrat': {

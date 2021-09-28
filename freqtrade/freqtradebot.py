@@ -441,11 +441,11 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (side, enter_tag) = self.strategy.get_entry_signal(
+        (signal, enter_tag) = self.strategy.get_entry_signal(
             pair, self.strategy.timeframe, analyzed_df
         )
 
-        if side:
+        if signal:
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.edge)
 
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
@@ -585,7 +585,9 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount)
+                min_stake=min_stake_amount, max_stake=max_stake_amount, side='long')
+        # TODO-lev: Add non-hardcoded "side" parameter
+
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
@@ -603,10 +605,13 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get('forcebuy', order_type)
         # TODO-lev: Will this work for shorting?
 
+        # TODO-lev: Add non-hardcoded "side" parameter
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
-            logger.info(f"User requested abortion of {name.lower()}ing {pair}")
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                side='short' if is_short else 'long'
+        ):
+            logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
         order = self.exchange.create_order(

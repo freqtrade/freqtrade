@@ -182,12 +182,6 @@ class Kraken(Exchange):
             Kraken set's the leverage as an option in the order object, so we need to
             add it to params
         """
-
-        if leverage > 1.0:
-            self._params['leverage'] = leverage
-        else:
-            if 'leverage' in self._params:
-                del self._params['leverage']
         return
 
     def _get_params(self, ordertype: str, leverage: float, time_in_force: str = 'gtc') -> Dict:

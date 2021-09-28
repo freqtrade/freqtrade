@@ -15,8 +15,9 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
+# TODO-lev: Create a meaningfull short strategy (not just revresed signs).
 # This class is a sample. Feel free to customize it.
-class SampleStrategy(IStrategy):
+class SampleShortStrategy(IStrategy):
     """
     This is a sample strategy to inspire you.
     More information in https://www.freqtrade.io/en/latest/strategy-customization/

@@ -43,6 +43,9 @@ logging.getLogger('').setLevel(logging.INFO)
 # Do not mask numpy errors as warnings that no one read, raise the exсeption
 np.seterr(all='raise')
 
+CURRENT_TEST_STRATEGY = 'StrategyTestV3'
+TRADE_SIDES = ('long', 'short')
+
 
 def pytest_addoption(parser):
     parser.addoption('--longrun', action='store_true', dest="longrun",
@@ -414,7 +417,7 @@ def get_default_conf(testdatadir):
         "user_data_dir": Path("user_data"),
         "verbosity": 3,
         "strategy_path": str(Path(__file__).parent / "strategy" / "strats"),
-        "strategy": "StrategyTestV2",
+        "strategy": CURRENT_TEST_STRATEGY,
         "disableparamexport": True,
         "internals": {},
         "export": "none",

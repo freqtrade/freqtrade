@@ -45,8 +45,7 @@ LONG_IDX = 5
 ELONG_IDX = 6  # Exit long
 SHORT_IDX = 7
 ESHORT_IDX = 8  # Exit short
-BUY_TAG_IDX = 9
-SHORT_TAG_IDX = 10
+ENTER_TAG_IDX = 9
 
 
 class Backtesting:
@@ -138,6 +137,10 @@ class Backtesting:
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
+
+        # TODO-lev: This should come from the configuration setting or better a
+        # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
+        self._can_short = False
 
         self.progress = BTProgress()
         self.abort = False
@@ -249,7 +252,7 @@ class Backtesting:
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
         headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                   'enter_short', 'exit_short', 'long_tag', 'short_tag']
+                   'enter_short', 'exit_short', 'enter_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -260,18 +263,10 @@ class Backtesting:
 
             if not pair_data.empty:
                 # Cleanup from prior runs
-                # TODO-lev: The below is not 100% compatible with the interface compatibility layer
-                if 'enter_long' in pair_data.columns:
-                    pair_data.loc[:, 'enter_long'] = 0
-                pair_data.loc[:, 'enter_short'] = 0
-                if 'exit_long' in pair_data.columns:
-                    pair_data.loc[:, 'exit_long'] = 0
-                pair_data.loc[:, 'exit_short'] = 0
-                pair_data.loc[:, 'long_tag'] = None
-                pair_data.loc[:, 'short_tag'] = None
+                pair_data.drop(headers[5:] + ['buy', 'sell'], axis=1, errors='ignore')
 
-            df_analyzed = self.strategy.advise_sell(
-                self.strategy.advise_buy(pair_data, {'pair': pair}),
+            df_analyzed = self.strategy.advise_exit(
+                self.strategy.advise_entry(pair_data, {'pair': pair}),
                 {'pair': pair}
             ).copy()
             # Trim startup period from analyzed dataframe
@@ -279,11 +274,11 @@ class Backtesting:
                                          startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
-            df_analyzed.loc[:, 'enter_long'] = df_analyzed.loc[:, 'enter_long'].shift(1)
-            df_analyzed.loc[:, 'enter_short'] = df_analyzed.loc[:, 'enter_short'].shift(1)
-            df_analyzed.loc[:, 'exit_long'] = df_analyzed.loc[:, 'exit_long'].shift(1)
-            df_analyzed.loc[:, 'exit_short'] = df_analyzed.loc[:, 'exit_short'].shift(1)
-            df_analyzed.loc[:, 'long_tag'] = df_analyzed.loc[:, 'long_tag'].shift(1)
+            for col in headers[5:]:
+                if col in df_analyzed.columns:
+                    df_analyzed.loc[:, col] = df_analyzed.loc[:, col].shift(1)
+                else:
+                    df_analyzed.loc[:, col] = 0 if col != 'enter_tag' else None
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
@@ -434,7 +429,8 @@ class Backtesting:
         stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                              default_retval=stake_amount)(
             pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
-            proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
+            proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
+            side=direction)
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
@@ -445,12 +441,13 @@ class Backtesting:
         # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
-                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
+                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime(),
+                side=direction):
             return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
-            has_buy_tag = len(row) >= BUY_TAG_IDX + 1
+            has_enter_tag = len(row) >= ENTER_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -460,7 +457,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
+                buy_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
             )
@@ -499,8 +496,8 @@ class Backtesting:
     def check_for_trade_entry(self, row) -> Optional[str]:
         enter_long = row[LONG_IDX] == 1
         exit_long = row[ELONG_IDX] == 1
-        enter_short = row[SHORT_IDX] == 1
-        exit_short = row[ESHORT_IDX] == 1
+        enter_short = self._can_short and row[SHORT_IDX] == 1
+        exit_short = self._can_short and row[ESHORT_IDX] == 1
 
         if enter_long == 1 and not any([exit_long, enter_short]):
             # Long

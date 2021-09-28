@@ -230,9 +230,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         pass
 
-    # TODO-lev: add side
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime,
+                            side: str, **kwargs) -> bool:
         """
         Called right before placing a entry order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -248,6 +248,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -365,13 +366,11 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return None
 
-    # TODO-lev: add side
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            side: str, **kwargs) -> float:
         """
-        Customize stake size for each new trade. This method is not called when edge module is
-        enabled.
+        Customize stake size for each new trade.
 
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
@@ -379,9 +378,27 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param proposed_stake: A stake amount proposed by the bot.
         :param min_stake: Minimal stake size allowed by exchange.
         :param max_stake: Balance available for trading.
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :return: A stake size, which is between min_stake and max_stake.
         """
         return proposed_stake
+
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, side: str,
+                 **kwargs) -> float:
+        """
+        Customize leverage for each new trade. This method is not called when edge module is
+        enabled.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_leverage: A leverage proposed by the bot.
+        :param max_leverage: Max leverage allowed on this pair
+        :param side: 'long' or 'short' - indicating the direction of the proposed trade
+        :return: A leverage amount, which is between 1.0 and max_leverage.
+        """
+        return 1.0
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -473,8 +490,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         logger.debug("TA Analysis Launched")
         dataframe = self.advise_indicators(dataframe, metadata)
-        dataframe = self.advise_buy(dataframe, metadata)
-        dataframe = self.advise_sell(dataframe, metadata)
+        dataframe = self.advise_entry(dataframe, metadata)
+        dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -503,8 +520,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalType.EXIT_LONG.value] = 0
             dataframe[SignalType.ENTER_SHORT.value] = 0
             dataframe[SignalType.EXIT_SHORT.value] = 0
-            dataframe[SignalTagType.BUY_TAG.value] = None
-            dataframe[SignalTagType.SHORT_TAG.value] = None
+            dataframe[SignalTagType.ENTER_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -563,9 +579,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         message = ""
         if dataframe is None:
             message = "No dataframe returned (return statement missing?)."
-        elif 'buy' not in dataframe:
-            # TODO-lev: Something?
-            message = "Buy column not set."
+        elif 'enter_long' not in dataframe:
+            message = "enter_long/buy column not set."
         elif df_len != len(dataframe):
             message = message_template.format("length")
         elif df_close != dataframe["close"].iloc[-1]:
@@ -675,10 +690,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         enter_tag_value: Optional[str] = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag_value = latest.get(SignalTagType.BUY_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
         if enter_short == 1 and not any([exit_short, enter_long]):
             enter_signal = SignalDirection.SHORT
-            enter_tag_value = latest.get(SignalTagType.SHORT_TAG.value, None)
+            enter_tag_value = latest.get(SignalTagType.ENTER_TAG.value, None)
 
         timeframe_seconds = timeframe_to_seconds(timeframe)
 
@@ -897,7 +912,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
-        Does not run advise_buy or advise_sell!
+        Does not run advise_entry or advise_exit!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
         Also copy on output to avoid PerformanceWarnings pandas 1.3.0 started to show.
@@ -929,7 +944,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return self.populate_indicators(dataframe, metadata)
 
-    def advise_buy(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the entry order signal for the given dataframe
         This method should not be overridden.
@@ -944,15 +959,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         if self._buy_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_buy_trend(dataframe)  # type: ignore
+            df = self.populate_buy_trend(dataframe)  # type: ignore
         else:
             df = self.populate_buy_trend(dataframe, metadata)
-            if 'enter_long' not in df.columns:
-                df = df.rename({'buy': 'enter_long', 'buy_tag': 'long_tag'}, axis='columns')
+        if 'enter_long' not in df.columns:
+            df = df.rename({'buy': 'enter_long', 'buy_tag': 'enter_tag'}, axis='columns')
 
-            return df
+        return df
 
-    def advise_sell(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def advise_exit(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Based on TA indicators, populates the exit order signal for the given dataframe
         This method should not be overridden.
@@ -966,26 +981,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         if self._sell_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
-            return self.populate_sell_trend(dataframe)  # type: ignore
+            df = self.populate_sell_trend(dataframe)  # type: ignore
         else:
             df = self.populate_sell_trend(dataframe, metadata)
-            if 'exit_long' not in df.columns:
-                df = df.rename({'sell': 'exit_long'}, axis='columns')
-            return df
-
-    def leverage(self, pair: str, current_time: datetime, current_rate: float,
-                 proposed_leverage: float, max_leverage: float, side: str,
-                 **kwargs) -> float:
-        """
-        Customize leverage for each new trade. This method is not called when edge module is
-        enabled.
-
-        :param pair: Pair that's currently analyzed
-        :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
-        :param proposed_leverage: A leverage proposed by the bot.
-        :param max_leverage: Max leverage allowed on this pair
-        :param side: 'long' or 'short' - indicating the direction of the proposed trade
-        :return: A leverage amount, which is between 1.0 and max_leverage.
-        """
-        return 1.0
+        if 'exit_long' not in df.columns:
+            df = df.rename({'sell': 'exit_long'}, axis='columns')
+        return df

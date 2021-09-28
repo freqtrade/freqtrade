@@ -16,7 +16,7 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_
                                        get_latest_hyperopt_file, load_backtest_data, load_trades,
                                        load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
-from tests.conftest import create_mock_trades
+from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -129,7 +129,7 @@ def test_load_trades_from_db(default_conf, fee, is_short, mocker):
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:
             assert col in trades.columns
-    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='StrategyTestV2')
+    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy=CURRENT_TEST_STRATEGY)
     assert len(trades) == 4
     trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='NoneStrategy')
     assert len(trades) == 0
@@ -187,7 +187,7 @@ def test_load_trades(default_conf, mocker):
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
                 no_trades=False,
-                strategy="StrategyTestV2",
+                strategy=CURRENT_TEST_STRATEGY,
                 )
 
     assert db_mock.call_count == 1

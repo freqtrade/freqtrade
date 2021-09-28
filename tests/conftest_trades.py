@@ -45,7 +45,7 @@ def mock_trade_1(fee, is_short: bool):
         open_rate=0.123,
         exchange='binance',
         open_order_id=f'dry_run_buy_{direc(is_short)}_12345',
-        strategy='StrategyTestV2',
+        strategy='StrategyTestV3',
         timeframe=5,
         is_short=is_short
     )
@@ -100,7 +100,7 @@ def mock_trade_2(fee, is_short: bool):
         exchange='binance',
         is_open=False,
         open_order_id=f'dry_run_sell_{direc(is_short)}_12345',
-        strategy='StrategyTestV2',
+        strategy='StrategyTestV3',
         timeframe=5,
         sell_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
@@ -160,7 +160,7 @@ def mock_trade_3(fee, is_short: bool):
         close_profit_abs=-0.001155 if is_short else 0.000155,
         exchange='binance',
         is_open=False,
-        strategy='StrategyTestV2',
+        strategy='StrategyTestV3',
         timeframe=5,
         sell_reason='roi',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
@@ -204,7 +204,7 @@ def mock_trade_4(fee, is_short: bool):
         open_rate=0.123,
         exchange='binance',
         open_order_id=f'prod_buy_{direc(is_short)}_12345',
-        strategy='StrategyTestV2',
+        strategy='StrategyTestV3',
         timeframe=5,
         is_short=is_short
     )
