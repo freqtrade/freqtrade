@@ -8,12 +8,12 @@ from zipfile import ZipFile
 import arrow
 import pytest
 
-from freqtrade.commands import (start_convert_data, start_create_userdir, start_download_data,
-                                start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                start_list_data, start_list_exchanges, start_list_markets,
-                                start_list_strategies, start_list_timeframes, start_new_strategy,
-                                start_show_trades, start_test_pairlist, start_trading,
-                                start_webserver)
+from freqtrade.commands import (start_convert_data, start_convert_trades, start_create_userdir,
+                                start_download_data, start_hyperopt_list, start_hyperopt_show,
+                                start_install_ui, start_list_data, start_list_exchanges,
+                                start_list_markets, start_list_strategies, start_list_timeframes,
+                                start_new_strategy, start_show_trades, start_test_pairlist,
+                                start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
@@ -756,6 +756,22 @@ def test_download_data_trades(mocker, caplog):
     start_download_data(get_args(args))
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
+    assert convert_mock.call_count == 1
+
+
+def test_start_convert_trades(mocker, caplog):
+    convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
+                                MagicMock(return_value=[]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "trades-to-ohlcv",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+    ]
+    start_convert_trades(get_args(args))
     assert convert_mock.call_count == 1
 
 

@@ -94,12 +94,6 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     timerange = TimeRange()
-    if 'days' in config:
-        time_since = (datetime.now() - timedelta(days=config['days'])).strftime("%Y%m%d")
-        timerange = TimeRange.parse_timerange(f'{time_since}-')
-
-    if 'timerange' in config:
-        timerange = timerange.parse_timerange(config['timerange'])
 
     # Remove stake-currency to skip checks which are not relevant for datadownload
     config['stake_currency'] = ''

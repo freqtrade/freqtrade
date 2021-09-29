@@ -58,7 +58,7 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
-ARGS_CONVERT_TRADES = ["pairs", "timeframes", "dataformat_ohlcv", "dataformat_trades"]
+ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
 
@@ -93,7 +93,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
                     "hyperopt-list", "hyperopt-show",
-                    "plot-dataframe", "plot-profit", "show-trades"]
+                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
