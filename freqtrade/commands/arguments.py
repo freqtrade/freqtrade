@@ -172,14 +172,13 @@ class Arguments:
         self._build_args(optionlist=['version'], parser=self.parser)
 
         from freqtrade.commands import (start_backtesting, start_convert_data, start_convert_trades,
-                                        start_create_userdir,
-                                        start_download_data, start_edge, start_hyperopt,
-                                        start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                        start_list_data, start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_list_timeframes,
-                                        start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_test_pairlist,
-                                        start_trading, start_webserver)
+                                        start_create_userdir, start_download_data, start_edge,
+                                        start_hyperopt, start_hyperopt_list, start_hyperopt_show,
+                                        start_install_ui, start_list_data, start_list_exchanges,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes, start_new_config, start_new_strategy,
+                                        start_plot_dataframe, start_plot_profit, start_show_trades,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
