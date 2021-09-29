@@ -208,11 +208,10 @@ def test_list_timeframes(mocker, capsys):
     assert re.search(r"^1d$", captured.out, re.MULTILINE)
 
 
-def test_list_markets(mocker, markets, capsys):
+def test_list_markets(mocker, markets_static, capsys):
 
     api_mock = MagicMock()
-    api_mock.markets = markets
-    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex', mock_markets=markets_static)
 
     # Test with no --config
     args = [
@@ -237,7 +236,7 @@ def test_list_markets(mocker, markets, capsys):
             "TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance")
+    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
     # Test with --exchange
     args = [
         "list-markets",
@@ -250,7 +249,7 @@ def test_list_markets(mocker, markets, capsys):
     assert re.match("\nExchange Binance has 10 active markets:\n",
                     captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="bittrex")
+    patch_exchange(mocker, api_mock=api_mock, id="bittrex", mock_markets=markets_static)
     # Test with --all: all markets
     args = [
         "list-markets", "--all",
