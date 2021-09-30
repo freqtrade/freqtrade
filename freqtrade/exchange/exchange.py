@@ -1609,7 +1609,7 @@ class Exchange:
                 f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
 
         if type(since) is datetime:
-            since = int(since.timestamp())
+            since = int(since.timestamp()) * 1000   # * 1000 for ms
 
         try:
             funding_history = self._api.fetch_funding_history(
