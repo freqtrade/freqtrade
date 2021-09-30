@@ -442,7 +442,7 @@ def ticker_sell_down():
 def ticker_usdt():
     return MagicMock(return_value={
         'bid': 2.0,
-        'ask': 2.1,
+        'ask': 2.02,
         'last': 2.0,
     })
 
