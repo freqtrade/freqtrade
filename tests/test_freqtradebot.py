@@ -6,12 +6,13 @@ import time
 from copy import deepcopy
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
+import time_machine
 
 import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RPCMessageType, RunMode, SellType, State
+from freqtrade.enums import RPCMessageType, RunMode, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -4423,5 +4424,37 @@ def test_get_valid_price(mocker, default_conf) -> None:
     assert valid_price_at_min_alwd < proposed_price
 
 
-def test_update_funding_fees():
-    return
+@pytest.mark.parametrize('exchange,trading_mode,calls', [
+    ("ftx", TradingMode.SPOT, 0),
+    ("ftx", TradingMode.MARGIN, 0),
+    ("binance", TradingMode.FUTURES, 1),
+    ("kraken", TradingMode.FUTURES, 2),
+    ("ftx", TradingMode.FUTURES, 8),
+])
+def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls):
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf)
+
+    with time_machine.travel("2021-09-01 00:00:00 +00:00") as t:
+
+        # trade = Trade(
+        #     id=2,
+        #     pair='ADA/USDT',
+        #     stake_amount=60.0,
+        #     open_rate=2.0,
+        #     amount=30.0,
+        #     is_open=True,
+        #     open_date=arrow.utcnow().datetime,
+        #     fee_open=fee.return_value,
+        #     fee_close=fee.return_value,
+        #     exchange='binance',
+        #     is_short=False,
+        #     leverage=3.0,
+        #     trading_mode=trading_mode
+        # )
+
+        t.move_to("2021-09-01 08:00:00 +00:00")
+
+        assert freqtrade.update_funding_fees.call_count == calls
