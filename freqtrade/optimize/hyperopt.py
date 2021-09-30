@@ -237,27 +237,63 @@ class Hyperopt:
             logger.debug("Hyperopt has 'protection' space")
             # Enable Protections if protection space is selected.
             self.config['enable_protections'] = True
-            self.protection_space = self.custom_hyperopt.protection_space()
+            try:
+                self.protection_space = self.custom_hyperopt.protection_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
 
         if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
-            self.buy_space = self.custom_hyperopt.buy_indicator_space()
+            try:
+                self.buy_space = self.custom_hyperopt.buy_indicator_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
 
         if HyperoptTools.has_space(self.config, 'sell'):
             logger.debug("Hyperopt has 'sell' space")
-            self.sell_space = self.custom_hyperopt.sell_indicator_space()
+            try:
+                self.sell_space = self.custom_hyperopt.sell_indicator_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
 
         if HyperoptTools.has_space(self.config, 'roi'):
             logger.debug("Hyperopt has 'roi' space")
-            self.roi_space = self.custom_hyperopt.roi_space()
+            try:
+                self.roi_space = self.custom_hyperopt.roi_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
             logger.debug("Hyperopt has 'stoploss' space")
-            self.stoploss_space = self.custom_hyperopt.stoploss_space()
+            try:
+                self.stoploss_space = self.custom_hyperopt.stoploss_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
 
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
-            self.trailing_space = self.custom_hyperopt.trailing_space()
+            try:
+                self.trailing_space = self.custom_hyperopt.trailing_space()
+            except OperationalException as e:
+                if self.config["hyperopt_ignore_unparam_space"]:
+                    logger.warning(e)
+                else:
+                    raise
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
                            + self.roi_space + self.stoploss_space + self.trailing_space)
 
