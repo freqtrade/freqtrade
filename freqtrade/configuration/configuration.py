@@ -368,6 +368,9 @@ class Configuration:
 
         self._args_to_config(config, argname='hyperopt_show_no_header',
                              logstring='Parameter --no-header detected: {}')
+        
+        self._args_to_config(config, argname="hyperopt_ignore_unparam_space",
+                             logstring="Paramter --ignore-unparameterized-spaces detected: {}")
 
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
