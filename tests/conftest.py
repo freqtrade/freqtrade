@@ -387,7 +387,8 @@ def get_default_conf_usdt(testdatadir):
                 "ETH/USDT",
                 "LTC/USDT",
                 "XRP/USDT",
-                "NEO/USDT"
+                "NEO/USDT",
+                "TKN/USDT",
             ],
             "pair_blacklist": [
                 "DOGE/USDT",
@@ -693,6 +694,81 @@ def get_markets():
                     'min': 1e-08,
                     'max': None
                 }
+            },
+            'info': {},
+        },
+        'XRP/USDT': {
+            'id': 'xrpusdt',
+            'symbol': 'XRP/USDT',
+            'base': 'XRP',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'NEO/USDT': {
+            'id': 'neousdt',
+            'symbol': 'NEO/USDT',
+            'base': 'NEO',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'TKN/USDT': {
+            'id': 'tknusdt',
+            'symbol': 'TKN/USDT',
+            'base': 'TKN',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
             },
             'info': {},
         },
