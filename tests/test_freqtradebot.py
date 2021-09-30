@@ -4421,3 +4421,7 @@ def test_get_valid_price(mocker, default_conf) -> None:
 
     assert valid_price_at_min_alwd > custom_price_under_min_alwd
     assert valid_price_at_min_alwd < proposed_price
+
+
+def test_update_funding_fees():
+    return
