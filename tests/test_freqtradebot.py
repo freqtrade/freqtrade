@@ -2672,8 +2672,10 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         get_fee=fee,
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
-    patch_whitelist(mocker, default_conf_usdt)
-    freqtrade = FreqtradeBot(default_conf_usdt)
+    config = deepcopy(default_conf_usdt)
+    config['custom_price_max_distance_ratio'] = 0.1
+    patch_whitelist(mocker, config)
+    freqtrade = FreqtradeBot(config)
     patch_get_signal(freqtrade)
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
@@ -2716,8 +2718,8 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        'profit_amount': 6.041e-05,
-        'profit_ratio': 0.07262344,
+        'profit_amount': 1.196875,
+        'profit_ratio': 0.11938903,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.SELL_SIGNAL.value,
