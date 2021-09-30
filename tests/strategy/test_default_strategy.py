@@ -37,10 +37,10 @@ def test_strategy_test_v2(result, fee):
 
     assert strategy.confirm_trade_entry(pair='ETH/BTC', order_type='limit', amount=0.1,
                                         rate=20000, time_in_force='gtc',
-                                        current_time=datetime.utcnow(), side='long') is True
+                                        current_time=datetime.now(timezone.utc)(), side='long') is True
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
                                        rate=20000, time_in_force='gtc', sell_reason='roi',
-                                       current_time=datetime.utcnow()) is True
+                                       current_time=datetime.now(timezone.utc)()) is True
 
     # TODO-lev: Test for shorts?
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),

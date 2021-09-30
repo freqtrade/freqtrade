@@ -594,7 +594,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
-        open_date = datetime.utcnow()
+        open_date = datetime.now(timezone.utc)
         if self.trading_mode == TradingMode.FUTURES:
             funding_fees = self.exchange.get_funding_fees_from_exchange(pair, open_date)
         else:
@@ -610,7 +610,7 @@ class FreqtradeBot(LoggingMixin):
             fee_close=fee,
             open_rate=enter_limit_filled_price,
             open_rate_requested=enter_limit_requested,
-            open_date=datetime.utcnow(),
+            open_date=datetime.now(timezone.utc),
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
@@ -652,7 +652,7 @@ class FreqtradeBot(LoggingMixin):
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': trade.amount,
-            'open_date': trade.open_date or datetime.utcnow(),
+            'open_date': trade.open_date or datetime.now(timezone.utc),
             'current_rate': trade.open_rate_requested,
         }
 
@@ -848,7 +848,7 @@ class FreqtradeBot(LoggingMixin):
             stop_price = trade.open_rate * (1 + stoploss)
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
-                trade.stoploss_last_update = datetime.utcnow()
+                trade.stoploss_last_update = datetime.now(timezone.utc)
                 return False
 
         # If stoploss order is canceled for some reason we add it
@@ -885,7 +885,7 @@ class FreqtradeBot(LoggingMixin):
         if self.exchange.stoploss_adjust(trade.stop_loss, order, side):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get('stoploss_on_exchange_interval', 60)
-            if (datetime.utcnow() - trade.stoploss_last_update).total_seconds() >= update_beat:
+            if (datetime.now(timezone.utc) - trade.stoploss_last_update).total_seconds() >= update_beat:
                 # cancelling the current stoploss on exchange first
                 logger.info(f"Cancelling current stoploss on exchange for pair {trade.pair} "
                             f"(orderid:{order['id']}) in order to add another one ...")
@@ -1241,7 +1241,7 @@ class FreqtradeBot(LoggingMixin):
             'profit_ratio': profit_ratio,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
-            'close_date': trade.close_date or datetime.utcnow(),
+            'close_date': trade.close_date or datetime.now(timezone.utc),
             'stake_currency': self.config['stake_currency'],
             'fiat_currency': self.config.get('fiat_display_currency', None),
         }

@@ -33,6 +33,7 @@ class DummyCls(Telegram):
     """
     Dummy class for testing the Telegram @authorized_only decorator
     """
+
     def __init__(self, rpc: RPC, config) -> None:
         super().__init__(rpc, config)
         self.state = {'called': False}
@@ -132,7 +133,7 @@ def test_authorized_only_unauthorized(default_conf, mocker, caplog) -> None:
     caplog.set_level(logging.DEBUG)
     chat = Chat(0xdeadbeef, 0)
     update = Update(randint(1, 100))
-    update.message = Message(randint(1, 100), datetime.utcnow(), chat)
+    update.message = Message(randint(1, 100), datetime.now(timezone.utc)(), chat)
 
     default_conf['telegram']['enabled'] = False
     bot = FreqtradeBot(default_conf)
@@ -343,7 +344,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
 
-    trade.close_date = datetime.utcnow()
+    trade.close_date = datetime.now(timezone.utc)()
     trade.is_open = False
 
     # Try valid data
@@ -353,7 +354,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     telegram._daily(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.now(timezone.utc)().date()) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
     assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
@@ -365,7 +366,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     telegram._daily(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Daily' in msg_mock.call_args_list[0][0][0]
-    assert str(datetime.utcnow().date()) in msg_mock.call_args_list[0][0][0]
+    assert str(datetime.now(timezone.utc)().date()) in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
     assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
     assert str('  1 trade') in msg_mock.call_args_list[0][0][0]
@@ -382,7 +383,7 @@ def test_daily_handle(default_conf, update, ticker, limit_buy_order, fee,
     for trade in trades:
         trade.update(limit_buy_order)
         trade.update(limit_sell_order)
-        trade.close_date = datetime.utcnow()
+        trade.close_date = datetime.now(timezone.utc)()
         trade.is_open = False
 
     # /daily 1
@@ -462,7 +463,7 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
     trade.update(limit_sell_order)
 
-    trade.close_date = datetime.utcnow()
+    trade.close_date = datetime.now(timezone.utc)()
     trade.is_open = False
 
     telegram._profit(update=update, context=MagicMock())
@@ -966,7 +967,7 @@ def test_performance_handle(default_conf, update, ticker, fee,
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
 
-    trade.close_date = datetime.utcnow()
+    trade.close_date = datetime.now(timezone.utc)()
     trade.is_open = False
     telegram._performance(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
@@ -997,9 +998,9 @@ def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     msg = ('<pre>  current    max    total stake\n---------  -----  -------------\n'
            '        1      {}          {}</pre>').format(
-            default_conf['max_open_trades'],
-            default_conf['stake_amount']
-        )
+        default_conf['max_open_trades'],
+        default_conf['stake_amount']
+    )
     assert msg in msg_mock.call_args_list[0][0][0]
 
 
