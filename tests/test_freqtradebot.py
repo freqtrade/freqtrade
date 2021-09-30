@@ -1483,9 +1483,9 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': 1.9,
+            'bid': 2.19,
             'ask': 2.2,
-            'last': 1.9
+            'last': 2.19
         }),
         create_order=MagicMock(side_effect=[
             {'id': limit_buy_order_usdt['id']},
@@ -1540,7 +1540,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss initially at 20% as edge dictated it.
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
-    assert trade.stop_loss == 2.178
+    assert isclose(trade.stop_loss, 1.76)
 
     cancel_order_mock = MagicMock()
     stoploss_order_mock = MagicMock()
@@ -1549,15 +1549,15 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
 
     # price goes down 5%
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', MagicMock(return_value={
-        'bid': 1.9 * 0.95,
+        'bid': 2.19 * 0.95,
         'ask': 2.2 * 0.95,
-        'last': 1.9 * 0.95
+        'last': 2.19 * 0.95
     }))
     assert freqtrade.handle_trade(trade) is False
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     # stoploss should remain the same
-    assert trade.stop_loss == 2.178
+    assert isclose(trade.stop_loss, 1.76)
 
     # stoploss on exchange should not be canceled
     cancel_order_mock.assert_not_called()
@@ -1575,10 +1575,12 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
     # stoploss should be set to 1% as trailing is on
     assert trade.stop_loss == 4.4 * 0.99
     cancel_order_mock.assert_called_once_with(100, 'NEO/BTC')
-    stoploss_order_mock.assert_called_once_with(amount=2132892.49146757,
-                                                pair='NEO/BTC',
-                                                order_types=freqtrade.strategy.order_types,
-                                                stop_price=4.4 * 0.99)
+    stoploss_order_mock.assert_called_once_with(
+        amount=11.41438356,
+        pair='NEO/BTC',
+        order_types=freqtrade.strategy.order_types,
+        stop_price=4.4 * 0.99
+    )
 
 
 @pytest.mark.parametrize('return_value,side_effect,log_message', [
