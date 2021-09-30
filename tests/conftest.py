@@ -420,7 +420,7 @@ def get_default_conf(testdatadir):
 @pytest.fixture
 def update():
     _update = Update(0)
-    _update.message = Message(0, datetime.now(timezone.utc)(), Chat(0, 0))
+    _update.message = Message(0, datetime.utcnow(), Chat(0, 0))
     return _update
 
 

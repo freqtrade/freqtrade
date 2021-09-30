@@ -265,7 +265,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     # Simulate buy & sell
     trade.update(limit_buy_order)
     trade.update(limit_sell_order)
-    trade.close_date = datetime.now(timezone.utc)()
+    trade.close_date = datetime.utcnow()
     trade.is_open = False
 
     # Try valid data
@@ -282,7 +282,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
         assert (day['fiat_value'] == 0.0 or
                 day['fiat_value'] == 0.76748865)
     # ensure first day is current date
-    assert str(days['data'][0]['date']) == str(datetime.now(timezone.utc)().date())
+    assert str(days['data'][0]['date']) == str(datetime.utcnow().date())
 
     # Try invalid data
     with pytest.raises(RPCException, match=r'.*must be an integer greater than 0*'):
@@ -409,7 +409,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         fetch_ticker=ticker_sell_up
     )
     trade.update(limit_sell_order)
-    trade.close_date = datetime.now(timezone.utc)()
+    trade.close_date = datetime.utcnow()
     trade.is_open = False
 
     freqtradebot.enter_positions()
@@ -423,7 +423,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
         fetch_ticker=ticker_sell_up
     )
     trade.update(limit_sell_order)
-    trade.close_date = datetime.now(timezone.utc)()
+    trade.close_date = datetime.utcnow()
     trade.is_open = False
 
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
@@ -489,7 +489,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
         get_fee=fee
     )
     trade.update(limit_sell_order)
-    trade.close_date = datetime.now(timezone.utc)()
+    trade.close_date = datetime.utcnow()
     trade.is_open = False
 
     for trade in Trade.query.order_by(Trade.id).all():
@@ -831,7 +831,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
 
-    trade.close_date = datetime.now(timezone.utc)()
+    trade.close_date = datetime.utcnow()
     trade.is_open = False
     res = rpc._rpc_performance()
     assert len(res) == 1
