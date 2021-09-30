@@ -4033,16 +4033,16 @@ def test_check_for_open_trades(mocker, default_conf, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_update_open_orders(mocker, default_conf, fee, caplog):
+def test_startup_update_open_orders(mocker, default_conf, fee, caplog):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     create_mock_trades(fee)
 
-    freqtrade.update_open_orders()
+    freqtrade.startup_update_open_orders()
     assert not log_has_re(r"Error updating Order .*", caplog)
     caplog.clear()
 
     freqtrade.config['dry_run'] = False
-    freqtrade.update_open_orders()
+    freqtrade.startup_update_open_orders()
 
     assert log_has_re(r"Error updating Order .*", caplog)
     caplog.clear()
@@ -4053,7 +4053,7 @@ def test_update_open_orders(mocker, default_conf, fee, caplog):
         'status': 'closed',
     })
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=matching_buy_order)
-    freqtrade.update_open_orders()
+    freqtrade.startup_update_open_orders()
     # Only stoploss and sell orders are kept open
     assert len(Order.get_open_orders()) == 2
 
