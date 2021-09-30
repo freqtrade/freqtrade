@@ -31,7 +31,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_loss", "disableparamexport"]
+                                        "hyperopt_loss", "disableparamexport", 
+                                        "hyperopt_ignore_unparam_space"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
