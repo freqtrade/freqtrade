@@ -1,6 +1,6 @@
 """ Bybit exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from freqtrade.exchange import Exchange
 
@@ -21,3 +21,5 @@ class Bybit(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
     }
+
+    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
