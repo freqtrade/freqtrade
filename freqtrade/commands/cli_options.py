@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-from argparse import ArgumentTypeError
+from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
@@ -135,6 +135,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Override the value of the `stake_amount` configuration setting.',
     ),
     # Backtesting
+    "timeframe_detail": Arg(
+        '--timeframe-detail',
+        help='Specify detail timeframe for backtesting (`1m`, `5m`, `30m`, `1h`, `1d`).',
+    ),
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -162,7 +166,7 @@ AVAILABLE_CLI_OPTIONS = {
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
-        '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
+        '(so `backtest-data.json` becomes `backtest-data-SampleStrategy.json`',
         nargs='+',
     ),
     "export": Arg(
@@ -199,13 +203,13 @@ AVAILABLE_CLI_OPTIONS = {
     # Hyperopt
     "hyperopt": Arg(
         '--hyperopt',
-        help='Specify hyperopt class name which will be used by the bot.',
+        help=SUPPRESS,
         metavar='NAME',
         required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "epochs": Arg(
@@ -218,7 +222,7 @@ AVAILABLE_CLI_OPTIONS = {
     "spaces": Arg(
         '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list.',
-        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'protection', 'default'],
         nargs='+',
         default='default',
     ),
@@ -377,12 +381,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `json`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
-        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "exchange": Arg(

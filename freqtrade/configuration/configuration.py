@@ -11,11 +11,12 @@ from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
+from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_config_file, load_file
 from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
-from freqtrade.misc import deep_merge_dicts
+from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,11 @@ class Configuration:
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
 
+        # Load environment variables
+        env_data = enironment_vars_to_dict()
+        config = deep_merge_dicts(env_data, config)
+
+        config['config_files'] = files
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
@@ -144,7 +150,7 @@ class Configuration:
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
-        logger.info(f'Using DB: "{config["db_url"]}"')
+        logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
 
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
@@ -236,6 +242,9 @@ class Configuration:
             except ValueError:
                 pass
 
+        self._args_to_config(config, argname='timeframe_detail',
+                             logstring='Parameter --timeframe-detail detected, '
+                             'using {} for intra-candle backtesting ...')
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')

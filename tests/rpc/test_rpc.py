@@ -35,7 +35,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.RUNNING
@@ -69,6 +69,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
+        'buy_tag': ANY,
         'timeframe': 5,
         'open_order_id': ANY,
         'close_date': None,
@@ -109,7 +110,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'exchange': 'binance',
     }
 
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     results = rpc._rpc_trade_status()
     assert isnan(results[0]['current_profit'])
@@ -135,6 +136,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'min_rate': ANY,
         'max_rate': ANY,
         'strategy': ANY,
+        'buy_tag': ANY,
         'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
@@ -190,7 +192,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     )
     del default_conf['fiat_display_currency']
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.RUNNING
@@ -217,7 +219,7 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.41% (-0.06)' == result[0][3]
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
 
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert 'instantly' == result[0][2]
@@ -237,7 +239,7 @@ def test_rpc_daily_profit(default_conf, update, ticker, fee,
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -369,7 +371,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -427,7 +429,7 @@ def test_rpc_trade_statistics(default_conf, ticker, ticker_sell_up, fee,
     assert prec_satoshi(stats['best_rate'], 6.2)
 
     # Test non-available pair
-    mocker.patch('freqtrade.exchange.Exchange.get_sell_rate',
+    mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
     stats = rpc._rpc_trade_statistics(stake_currency, fiat_display_currency)
     assert stats['trade_count'] == 2
@@ -457,7 +459,7 @@ def test_rpc_trade_statistics_closed(mocker, default_conf, ticker, fee,
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
 
@@ -524,7 +526,7 @@ def test_rpc_balance_handle_error(default_conf, mocker):
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
     with pytest.raises(RPCException, match="Error getting current tickers."):
@@ -565,7 +567,7 @@ def test_rpc_balance_handle(default_conf, mocker, tickers):
     )
     default_conf['dry_run'] = False
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     rpc._fiat_converter = CryptoToFiatConverter()
 
@@ -610,7 +612,7 @@ def test_rpc_start(mocker, default_conf) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     freqtradebot.state = State.STOPPED
 
@@ -631,7 +633,7 @@ def test_rpc_stop(mocker, default_conf) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     freqtradebot.state = State.RUNNING
 
@@ -653,7 +655,7 @@ def test_rpc_stopbuy(mocker, default_conf) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     freqtradebot.state = State.RUNNING
 
@@ -685,7 +687,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=1000)
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 
     freqtradebot.state = State.STOPPED
@@ -803,7 +805,7 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 
     # Create some test data
@@ -836,7 +838,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
 
     counts = rpc._rpc_count()
@@ -857,11 +859,11 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
         get_balances=MagicMock(return_value=ticker),
         fetch_ticker=ticker,
         get_fee=fee,
-        buy=buy_mm
+        create_order=buy_mm
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
     trade = rpc._rpc_forcebuy(pair, None)
@@ -886,8 +888,8 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
 
     # Test not buying
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    freqtradebot.config['stake_amount'] = 0.0000001
-    patch_get_signal(freqtradebot, (True, False))
+    freqtradebot.config['stake_amount'] = 0
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
     trade = rpc._rpc_forcebuy(pair, None)
@@ -900,7 +902,7 @@ def test_rpcforcebuy_stopped(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'trader is not running'):
@@ -911,7 +913,7 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot, (True, False))
+    patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):

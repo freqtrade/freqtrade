@@ -24,82 +24,21 @@ Freqtrade provides an official Docker image on [Dockerhub](https://hub.docker.co
 
 Create a new directory and place the [docker-compose file](https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml) in this directory.
 
-=== "PC/MAC/Linux"
-    ``` bash
-    mkdir ft_userdata
-    cd ft_userdata/
-    # Download the docker-compose file from the repository
-    curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
+``` bash
+mkdir ft_userdata
+cd ft_userdata/
+# Download the docker-compose file from the repository
+curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
 
-    # Pull the freqtrade image
-    docker-compose pull
+# Pull the freqtrade image
+docker-compose pull
 
-    # Create user directory structure
-    docker-compose run --rm freqtrade create-userdir --userdir user_data
+# Create user directory structure
+docker-compose run --rm freqtrade create-userdir --userdir user_data
 
-    # Create configuration - Requires answering interactive questions
-    docker-compose run --rm freqtrade new-config --config user_data/config.json
-    ```
-
-=== "RaspberryPi"
-    ``` bash
-    mkdir ft_userdata
-    cd ft_userdata/
-    # Download the docker-compose file from the repository
-    curl https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml -o docker-compose.yml
-
-    # Edit the compose file to use an image named `*_pi` (stable_pi or develop_pi)
-
-    # Pull the freqtrade image
-    docker-compose pull
-
-    # Create user directory structure
-    docker-compose run --rm freqtrade create-userdir --userdir user_data
-
-    # Create configuration - Requires answering interactive questions
-    docker-compose run --rm freqtrade new-config --config user_data/config.json
-    ```
-
-    !!! Note "Change your docker Image"
-        You have to change the docker image in the docker-compose file for your Raspberry build to work properly.
-        ``` yml
-        image: freqtradeorg/freqtrade:stable_pi
-        # image: freqtradeorg/freqtrade:develop_pi
-        ```
-
-=== "ARM 64 Systenms (Mac M1, Raspberry Pi 4, Jetson Nano)"
-    In case of a Mac M1, make sure that your docker installation is running in native mode
-    Arm64 images are not yet provided via Docker Hub and need to be build locally first.
-    Depending on the device, this may take a few minutes (Apple M1) or multiple hours (Raspberry Pi)
-
-    ``` bash
-    # Clone Freqtrade repository
-    git clone  https://github.com/freqtrade/freqtrade.git
-    cd freqtrade
-    # Optionally switch to the stable version
-    git checkout stable   
-
-    # Modify your docker-compose file to enable building and change the image name 
-    # (see the Note Box below for necessary changes)
-
-    # Build image
-    docker-compose build
-    
-    # Create user directory structure
-    docker-compose run --rm freqtrade create-userdir --userdir user_data
-
-    # Create configuration - Requires answering interactive questions
-    docker-compose run --rm freqtrade new-config --config user_data/config.json
-    ```
-
-    !!! Note "Change your docker Image"
-        You have to change the docker image in the docker-compose file for your arm64 build to work properly.
-        ``` yml
-        image: freqtradeorg/freqtrade:custom_arm64
-        build:
-          context: .
-          dockerfile: "Dockerfile"
-        ```
+# Create configuration - Requires answering interactive questions
+docker-compose run --rm freqtrade new-config --config user_data/config.json
+```
 
 The above snippet creates a new directory called `ft_userdata`, downloads the latest compose file and pulls the freqtrade image.
 The last 2 steps in the snippet create the directory with `user_data`, as well as (interactively) the default configuration based on your selections.
@@ -117,7 +56,7 @@ The last 2 steps in the snippet create the directory with `user_data`, as well a
 
 The `SampleStrategy` is run by default.
 
-!!! Warning "`SampleStrategy` is just a demo!"
+!!! Danger "`SampleStrategy` is just a demo!"
     The `SampleStrategy` is there for your reference and give you ideas for your own strategy.
     Please always backtest your strategy and use dry-run for some time before risking real money!
     You will find more information about Strategy development in the [Strategy documentation](strategy-customization.md).
@@ -167,6 +106,10 @@ Advanced users may edit the docker-compose file further to include all possible 
 
 All freqtrade arguments will be available by running `docker-compose run --rm freqtrade <command> <optional arguments>`.
 
+!!! Warning "`docker-compose` for trade commands"
+    Trade commands (`freqtrade trade <...>`) should not be ran via `docker-compose run` - but should use `docker-compose up -d` instead.
+    This makes sure that the container is properly started (including port forwardings) and will make sure that the container will restart after a system reboot.
+
 !!! Note "`docker-compose run --rm`"
     Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
 
@@ -205,6 +148,24 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 ```
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+
+### Troubleshooting
+
+#### Docker on Windows
+
+* Error: `"Timestamp for this request is outside of the recvWindow."`
+  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
+    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
+    ```
+    taskkill /IM "Docker Desktop.exe" /F
+    wsl --shutdown
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    ```
+
+!!! Warning
+    Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
+    Best use a linux-VPS for running freqtrade reliably.
 
 ## Plotting with docker-compose
 

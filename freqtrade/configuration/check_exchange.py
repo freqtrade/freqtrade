@@ -10,19 +10,6 @@ from freqtrade.exchange import (available_exchanges, is_exchange_known_ccxt,
 logger = logging.getLogger(__name__)
 
 
-def remove_credentials(config: Dict[str, Any]) -> None:
-    """
-    Removes exchange keys from the configuration and specifies dry-run
-    Used for backtesting / hyperopt / edge and utils.
-    Modifies the input dict!
-    """
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
-    config['exchange']['password'] = ''
-    config['exchange']['uid'] = ''
-    config['dry_run'] = True
-
-
 def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
     """
     Check if the exchange name in the config file is supported by Freqtrade
@@ -51,10 +38,10 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
 
     if not is_exchange_known_ccxt(exchange):
         raise OperationalException(
-                f'Exchange "{exchange}" is not known to the ccxt library '
-                f'and therefore not available for the bot.\n'
-                f'The following exchanges are available for Freqtrade: '
-                f'{", ".join(available_exchanges())}'
+            f'Exchange "{exchange}" is not known to the ccxt library '
+            f'and therefore not available for the bot.\n'
+            f'The following exchanges are available for Freqtrade: '
+            f'{", ".join(available_exchanges())}'
         )
 
     valid, reason = validate_exchange(exchange)

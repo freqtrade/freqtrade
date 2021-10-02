@@ -204,6 +204,61 @@ It'll also remove original jsongz data files (`--erase` parameter).
 freqtrade convert-trade-data --format-from jsongz --format-to json --datadir ~/.freqtrade/data/kraken --erase
 ```
 
+### Sub-command trades to ohlcv
+
+When you need to use `--dl-trades` (kraken only) to download data, conversion of trades data to ohlcv data is the last step.
+This command will allow you to repeat this last step for additional timeframes without re-downloading the data.
+
+```
+usage: freqtrade trades-to-ohlcv [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [-p PAIRS [PAIRS ...]]
+                                 [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+                                 [--exchange EXCHANGE]
+                                 [--data-format-ohlcv {json,jsongz,hdf5}]
+                                 [--data-format-trades {json,jsongz,hdf5}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
+                        Specify which tickers to download. Space-separated
+                        list. Default: `1m 5m`.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  --data-format-trades {json,jsongz,hdf5}
+                        Storage format for downloaded trades data. (default:
+                        `jsongz`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+```
+
+#### Example trade-to-ohlcv conversion
+
+``` bash
+freqtrade trades-to-ohlcv --exchange kraken -t 5m 1h 1d --pairs BTC/EUR ETH/EUR
+```
+
 ### Sub-command list-data
 
 You can get a list of downloaded data using the `list-data` sub-command.

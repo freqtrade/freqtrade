@@ -144,24 +144,26 @@ class IPairList(LoggingMixin, ABC):
         markets = self._exchange.markets
         if not markets:
             raise OperationalException(
-                    'Markets not loaded. Make sure that exchange is initialized correctly.')
+                'Markets not loaded. Make sure that exchange is initialized correctly.')
 
         sanitized_whitelist: List[str] = []
         for pair in pairlist:
             # pair is not in the generated dynamic market or has the wrong stake currency
             if pair not in markets:
-                logger.warning(f"Pair {pair} is not compatible with exchange "
-                               f"{self._exchange.name}. Removing it from whitelist..")
+                self.log_once(f"Pair {pair} is not compatible with exchange "
+                              f"{self._exchange.name}. Removing it from whitelist..",
+                              logger.warning)
                 continue
 
             if not self._exchange.market_is_tradable(markets[pair]):
-                logger.warning(f"Pair {pair} is not tradable with Freqtrade."
-                               "Removing it from whitelist..")
+                self.log_once(f"Pair {pair} is not tradable with Freqtrade."
+                              "Removing it from whitelist..", logger.warning)
                 continue
 
             if self._exchange.get_pair_quote_currency(pair) != self._config['stake_currency']:
-                logger.warning(f"Pair {pair} is not compatible with your stake currency "
-                               f"{self._config['stake_currency']}. Removing it from whitelist..")
+                self.log_once(f"Pair {pair} is not compatible with your stake currency "
+                              f"{self._config['stake_currency']}. Removing it from whitelist..",
+                              logger.warning)
                 continue
 
             # Check if market is active

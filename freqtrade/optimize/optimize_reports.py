@@ -31,7 +31,7 @@ def store_backtest_stats(recordfilename: Path, stats: Dict[str, DataFrame]) -> N
         filename = Path.joinpath(
             recordfilename.parent,
             f'{recordfilename.stem}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}'
-            ).with_suffix(recordfilename.suffix)
+        ).with_suffix(recordfilename.suffix)
     file_dump_json(filename, stats)
 
     latest_filename = Path.joinpath(filename.parent, LAST_BT_RESULT_FN)
@@ -173,7 +173,7 @@ def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
     for strategy, results in all_results.items():
         tabular_data.append(_generate_result_line(
             results['results'], results['config']['dry_run_wallet'], strategy)
-            )
+        )
         try:
             max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
                                                                   value_col='profit_ratio')
@@ -272,7 +272,7 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     winning_days = sum(daily_profit > 0)
     draw_days = sum(daily_profit == 0)
     losing_days = sum(daily_profit < 0)
-    daily_profit_list = daily_profit.tolist()
+    daily_profit_list = [(str(idx.date()), val) for idx, val in daily_profit.iteritems()]
 
     return {
         'backtest_best_day': best_rel,
@@ -325,8 +325,9 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
                     key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
     worst_pair = min([pair for pair in pair_results if pair['key'] != 'TOTAL'],
                      key=lambda x: x['profit_sum']) if len(pair_results) > 1 else None
-    results['open_timestamp'] = results['open_date'].astype(int64) // 1e6
-    results['close_timestamp'] = results['close_date'].astype(int64) // 1e6
+    if not results.empty:
+        results['open_timestamp'] = results['open_date'].view(int64) // 1e6
+        results['close_timestamp'] = results['close_date'].view(int64) // 1e6
 
     backtest_days = (max_date - min_date).days
     strat_stats = {
@@ -367,6 +368,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
         'timeframe': config['timeframe'],
+        'timeframe_detail': config.get('timeframe_detail', ''),
         'timerange': config.get('timerange', ''),
         'enable_protections': config.get('enable_protections', False),
         'strategy_name': strategy,
@@ -603,7 +605,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                          strat_results['stake_currency'])
         stake_amount = round_coin_value(
             strat_results['stake_amount'], strat_results['stake_currency']
-            ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
+        ) if strat_results['stake_amount'] != UNLIMITED_STAKE_AMOUNT else 'unlimited'
 
         message = ("No trades made. "
                    f"Your starting balance was {start_balance}, "

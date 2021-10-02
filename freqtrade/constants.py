@@ -26,9 +26,9 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
-                       'AgeFilter', 'PerformanceFilter', 'PrecisionFilter',
-                       'PriceFilter', 'RangeStabilityFilter', 'ShuffleFilter',
-                       'SpreadFilter', 'VolatilityFilter']
+                       'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
+                       'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
+                       'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
 DRY_RUN_WALLET = 1000
@@ -47,6 +47,9 @@ USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
+ENV_VAR_PREFIX = 'FREQTRADE__'
+
+NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
 
 
 # Define decimals per coin for outputs
@@ -66,9 +69,7 @@ DUST_PER_COIN = {
 # Source files with destination directories within user-directory
 USER_DATA_FILES = {
     'sample_strategy.py': USERPATH_STRATEGIES,
-    'sample_hyperopt_advanced.py': USERPATH_HYPEROPTS,
     'sample_hyperopt_loss.py': USERPATH_HYPEROPTS,
-    'sample_hyperopt.py': USERPATH_HYPEROPTS,
     'strategy_analysis_example.ipynb': USERPATH_NOTEBOOKS,
 }
 
@@ -109,9 +110,13 @@ CONF_SCHEMA = {
         },
         'tradable_balance_ratio': {
             'type': 'number',
-            'minimum': 0.1,
+            'minimum': 0.0,
             'maximum': 1,
             'default': 0.99
+        },
+        'available_capital': {
+            'type': 'number',
+            'minimum': 0,
         },
         'amend_last_stake_amount': {'type': 'boolean', 'default': False},
         'last_stake_amount_min_ratio': {
@@ -185,6 +190,9 @@ CONF_SCHEMA = {
                 'order_book_top': {'type': 'integer', 'minimum': 1, 'maximum': 50, },
             },
             'required': ['price_side']
+        },
+        'custom_price_max_distance_ratio': {
+           'type': 'number', 'minimum': 0.0
         },
         'order_types': {
             'type': 'object',
@@ -275,7 +283,16 @@ CONF_SCHEMA = {
                             'type': 'string',
                             'enum': TELEGRAM_SETTING_OPTIONS,
                             'default': 'off'
-                            },
+                        },
+                        'protection_trigger': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                            'default': 'off'
+                        },
+                        'protection_trigger_global': {
+                            'type': 'string',
+                            'enum': TELEGRAM_SETTING_OPTIONS,
+                        },
                     }
                 },
                 'reload': {'type': 'boolean'},

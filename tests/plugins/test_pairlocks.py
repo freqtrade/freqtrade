@@ -68,7 +68,7 @@ def test_PairLocks(use_db):
     # Global lock
     PairLocks.lock_pair('*', lock_time)
     assert PairLocks.is_global_lock(lock_time + timedelta(minutes=-50))
-    # Global lock also locks every pair seperately
+    # Global lock also locks every pair separately
     assert PairLocks.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
     assert PairLocks.is_pair_locked('XRP/USDT', lock_time + timedelta(minutes=-50))
 

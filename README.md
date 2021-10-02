@@ -26,10 +26,11 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 Please read the [exchange specific notes](docs/exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
 - [X] [Bittrex](https://bittrex.com/)
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#blacklists))
 - [X] [Kraken](https://kraken.com/)
 - [X] [FTX](https://ftx.com)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
@@ -37,7 +38,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 Exchanges confirmed working by the community:
 
 - [X] [Bitvavo](https://bitvavo.com/)
-- [X] [Kukoin](https://www.kucoin.com/)
+- [X] [Kucoin](https://www.kucoin.com/)
 
 ## Documentation
 
@@ -78,22 +79,22 @@ For any other type of installation please refer to [Installation doc](https://ww
 
 ```
 usage: freqtrade [-h] [-V]
-                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+                 {trade,create-userdir,new-config,new-strategy,download-data,convert-data,convert-trade-data,list-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,install-ui,plot-dataframe,plot-profit,webserver}
                  ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+  {trade,create-userdir,new-config,new-strategy,download-data,convert-data,convert-trade-data,list-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,install-ui,plot-dataframe,plot-profit,webserver}
     trade               Trade module.
     create-userdir      Create user-data directory.
     new-config          Create new config
-    new-hyperopt        Create new hyperopt
     new-strategy        Create new strategy
     download-data       Download backtesting data.
     convert-data        Convert candle (OHLCV) data from one format to
                         another.
     convert-trade-data  Convert trade data from one format to another.
+    list-data           List downloaded data.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
@@ -107,8 +108,10 @@ positional arguments:
     list-timeframes     Print available timeframes for the exchange.
     show-trades         Show trades.
     test-pairlist       Test your pairlist configuration.
+    install-ui          Install FreqUI
     plot-dataframe      Plot candles with indicators.
     plot-profit         Generate plot showing profits.
+    webserver           Webserver module.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -142,13 +145,9 @@ The project is currently setup in two main branches:
 
 ## Support
 
-### Help / Discord / Slack
+### Help / Discord
 
-For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
-
-Please check out our [discord server](https://discord.gg/p7nuUNVfP7).
-
-You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
+For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join the Freqtrade [discord server](https://discord.gg/p7nuUNVfP7).
 
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
@@ -179,7 +178,7 @@ to understand the requirements before sending your pull-requests.
 Coding is not a necessity to contribute - maybe start with improving our documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
-**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/p7nuUNVfP7) or [Slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
+**Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/p7nuUNVfP7) (please use the #dev channel for this). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.
 
 **Important:** Always create your PR against the `develop` branch, not `stable`.
 

@@ -123,9 +123,9 @@ def test_parse_args_backtesting_custom() -> None:
         '-c', 'test_conf.json',
         '--ticker-interval', '1m',
         '--strategy-list',
-        'DefaultStrategy',
+        'StrategyTestV2',
         'SampleStrategy'
-        ]
+    ]
     call_args = Arguments(args).get_parsed_arg()
     assert call_args['config'] == ['test_conf.json']
     assert call_args['verbosity'] == 0
@@ -172,7 +172,7 @@ def test_download_data_options() -> None:
 def test_plot_dataframe_options() -> None:
     args = [
         'plot-dataframe',
-        '-c', 'config_bittrex.json.example',
+        '-c', 'config_examples/config_bittrex.example.json',
         '--indicators1', 'sma10', 'sma100',
         '--indicators2', 'macd', 'fastd', 'fastk',
         '--plot-limit', '30',

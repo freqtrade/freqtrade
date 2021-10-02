@@ -70,7 +70,6 @@ def test_add_indicators(default_conf, testdatadir, caplog):
     indicators1 = {"ema10": {}}
     indicators2 = {"macd": {"color": "red"}}
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
@@ -112,7 +111,6 @@ def test_add_areas(default_conf, testdatadir, caplog):
                              "fill_to": "macdhist"}}
 
     ind_plain = {"macd": {"fill_to": "macdhist"}}
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
@@ -239,7 +237,6 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     data = history.load_pair_history(pair=pair, timeframe='1m',
                                      datadir=testdatadir, timerange=timerange)
 
-    default_conf.update({'strategy': 'DefaultStrategy'})
     strategy = StrategyResolver.load_strategy(default_conf)
 
     # Generate buy/sell signals and indicators
@@ -364,7 +361,7 @@ def test_start_plot_dataframe(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.load_and_plot_trades", MagicMock())
     args = [
         "plot-dataframe",
-        "--config", "config_bittrex.json.example",
+        "--config", "config_examples/config_bittrex.example.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_dataframe(get_args(args))
@@ -408,7 +405,7 @@ def test_start_plot_profit(mocker):
     aup = mocker.patch("freqtrade.plot.plotting.plot_profit", MagicMock())
     args = [
         "plot-profit",
-        "--config", "config_bittrex.json.example",
+        "--config", "config_examples/config_bittrex.example.json",
         "--pairs", "ETH/BTC"
     ]
     start_plot_profit(get_args(args))

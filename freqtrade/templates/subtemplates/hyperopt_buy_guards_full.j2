@@ -1,8 +1,0 @@
-if params.get('mfi-enabled'):
-    conditions.append(dataframe['mfi'] < params['mfi-value'])
-if params.get('fastd-enabled'):
-    conditions.append(dataframe['fastd'] < params['fastd-value'])
-if params.get('adx-enabled'):
-    conditions.append(dataframe['adx'] > params['adx-value'])
-if params.get('rsi-enabled'):
-    conditions.append(dataframe['rsi'] < params['rsi-value'])

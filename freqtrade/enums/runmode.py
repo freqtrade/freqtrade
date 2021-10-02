@@ -14,6 +14,7 @@ class RunMode(Enum):
     UTIL_EXCHANGE = "util_exchange"
     UTIL_NO_EXCHANGE = "util_no_exchange"
     PLOT = "plot"
+    WEBSERVER = "webserver"
     OTHER = "other"
 
 

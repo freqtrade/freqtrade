@@ -16,7 +16,7 @@ def test_setup_optimize_configuration_without_arguments(mocker, default_conf, ca
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
     ]
 
     config = setup_optimize_configuration(get_args(args), RunMode.EDGE)
@@ -46,7 +46,7 @@ def test_setup_edge_configuration_with_arguments(mocker, edge_conf, caplog) -> N
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
         '--datadir', '/foo/bar',
         '--timeframe', '1m',
         '--timerange', ':100',
@@ -80,7 +80,7 @@ def test_start(mocker, fee, edge_conf, caplog) -> None:
     args = [
         'edge',
         '--config', 'config.json',
-        '--strategy', 'DefaultStrategy',
+        '--strategy', 'StrategyTestV2',
     ]
     pargs = get_args(args)
     start_edge(pargs)

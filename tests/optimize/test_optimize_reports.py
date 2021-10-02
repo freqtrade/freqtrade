@@ -52,7 +52,7 @@ def test_text_table_bt_results():
 
 
 def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
-    default_conf.update({'strategy': 'DefaultStrategy'})
+    default_conf.update({'strategy': 'StrategyTestV2'})
     StrategyResolver.load_strategy(default_conf)
 
     results = {'DefStrat': {

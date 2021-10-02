@@ -42,6 +42,11 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
+    'gateio': {
+        'pair': 'BTC/USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
@@ -49,6 +54,8 @@ EXCHANGES = {
 def exchange_conf():
     config = get_default_conf((Path(__file__).parent / "testdata").resolve())
     config['exchange']['pair_whitelist'] = []
+    config['exchange']['key'] = ''
+    config['exchange']['secret'] = ''
     config['dry_run'] = False
     return config
 
@@ -142,8 +149,8 @@ class TestCCXTExchange():
     def test_ccxt_get_fee(self, exchange):
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
-
-        assert 0 < exchange.get_fee(pair, 'limit', 'buy') < 1
-        assert 0 < exchange.get_fee(pair, 'limit', 'sell') < 1
-        assert 0 < exchange.get_fee(pair, 'market', 'buy') < 1
-        assert 0 < exchange.get_fee(pair, 'market', 'sell') < 1
+        threshold = 0.01
+        assert 0 < exchange.get_fee(pair, 'limit', 'buy') < threshold
+        assert 0 < exchange.get_fee(pair, 'limit', 'sell') < threshold
+        assert 0 < exchange.get_fee(pair, 'market', 'buy') < threshold
+        assert 0 < exchange.get_fee(pair, 'market', 'sell') < threshold

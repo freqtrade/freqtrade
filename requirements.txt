@@ -1,19 +1,20 @@
-numpy==1.21.0
-pandas==1.2.5
+numpy==1.21.2
+pandas==1.3.3
+pandas-ta==0.3.14b
 
-ccxt==1.52.4
+ccxt==1.57.3
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==3.4.7
+cryptography==3.4.8
 aiohttp==3.7.4.post0
-SQLAlchemy==1.4.19
-python-telegram-bot==13.6
+SQLAlchemy==1.4.25
+python-telegram-bot==13.7
 arrow==1.1.1
 cachetools==4.2.2
-requests==2.25.1
-urllib3==1.26.6
+requests==2.26.0
+urllib3==1.26.7
 wrapt==1.12.1
 jsonschema==3.2.0
-TA-Lib==0.4.20
+TA-Lib==0.4.21
 technical==1.3.0
 tabulate==0.8.9
 pycoingecko==2.2.0
@@ -31,13 +32,13 @@ python-rapidjson==1.4
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.65.2
-uvicorn==0.14.0
+fastapi==0.68.1
+uvicorn==0.15.0
 pyjwt==2.1.0
 aiofiles==0.7.0
 
 # Support for colorized terminal output
 colorama==0.4.4
 # Building config files interactively
-questionary==1.9.0
-prompt-toolkit==3.0.19
+questionary==1.10.0
+prompt-toolkit==3.0.20

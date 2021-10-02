@@ -47,6 +47,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     min_rate = get_column_def(cols, 'min_rate', 'null')
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
+    buy_tag = get_column_def(cols, 'buy_tag', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
@@ -64,7 +65,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     # Schema migration necessary
     with engine.begin() as connection:
         connection.execute(text(f"alter table trades rename to {table_back_name}"))
-        # drop indexes on backup table
+    with engine.begin() as connection:
+        # drop indexes on backup table in new session
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
     # let SQLAlchemy create the schema as required
@@ -75,22 +77,15 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
         connection.execute(text(f"""insert into trades
             (id, exchange, pair, is_open,
             fee_open, fee_open_cost, fee_open_currency,
-            fee_close, fee_close_cost, fee_open_currency, open_rate,
+            fee_close, fee_close_cost, fee_close_currency, open_rate,
             open_rate_requested, close_rate, close_rate_requested, close_profit,
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, sell_reason, sell_order_status, strategy,
+            max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
             timeframe, open_trade_value, close_profit_abs
             )
-        select id, lower(exchange),
-            case
-                when instr(pair, '_') != 0 then
-                substr(pair,    instr(pair, '_') + 1) || '/' ||
-                substr(pair, 1, instr(pair, '_') - 1)
-                else pair
-                end
-            pair,
+        select id, lower(exchange), pair,
             is_open, {fee_open} fee_open, {fee_open_cost} fee_open_cost,
             {fee_open_currency} fee_open_currency, {fee_close} fee_close,
             {fee_close_cost} fee_close_cost, {fee_close_currency} fee_close_currency,
@@ -103,7 +98,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
             {sell_order_status} sell_order_status,
-            {strategy} strategy, {timeframe} timeframe,
+            {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
             """))
@@ -131,7 +126,9 @@ def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, col
 
     with engine.begin() as connection:
         connection.execute(text(f"alter table orders rename to {table_back_name}"))
-        # drop indexes on backup table
+
+    with engine.begin() as connection:
+        # drop indexes on backup table in new session
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
 
@@ -160,7 +157,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
     # Check for latest column
-    if not has_column(cols, 'open_trade_value'):
+    if not has_column(cols, 'buy_tag'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!

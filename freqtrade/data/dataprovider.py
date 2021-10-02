@@ -10,11 +10,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
+from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
-from freqtrade.exchange import Exchange
+from freqtrade.exchange import Exchange, timeframe_to_seconds
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class DataProvider:
         self._pairlists = pairlists
         self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
+        self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
 
     def _set_dataframe_max_index(self, limit_index: int):
         """
@@ -62,11 +64,22 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         """
-        return load_pair_history(pair=pair,
-                                 timeframe=timeframe or self._config['timeframe'],
-                                 datadir=self._config['datadir'],
-                                 data_format=self._config.get('dataformat_ohlcv', 'json')
-                                 )
+        saved_pair = (pair, str(timeframe))
+        if saved_pair not in self.__cached_pairs_backtesting:
+            timerange = TimeRange.parse_timerange(None if self._config.get(
+                'timerange') is None else str(self._config.get('timerange')))
+            # Move informative start time respecting startup_candle_count
+            timerange.subtract_start(
+                timeframe_to_seconds(str(timeframe)) * self._config.get('startup_candle_count', 0)
+            )
+            self.__cached_pairs_backtesting[saved_pair] = load_pair_history(
+                pair=pair,
+                timeframe=timeframe or self._config['timeframe'],
+                datadir=self._config['datadir'],
+                timerange=timerange,
+                data_format=self._config.get('dataformat_ohlcv', 'json')
+            )
+        return self.__cached_pairs_backtesting[saved_pair].copy()
 
     def get_pair_dataframe(self, pair: str, timeframe: str = None) -> DataFrame:
         """
@@ -136,6 +149,8 @@ class DataProvider:
         Clear pair dataframe cache.
         """
         self.__cached_pairs = {}
+        self.__cached_pairs_backtesting = {}
+        self.__slice_index = 0
 
     # Exchange functions
 

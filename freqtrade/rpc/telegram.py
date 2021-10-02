@@ -24,7 +24,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import chunks, round_coin_value
+from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
@@ -77,7 +77,6 @@ class Telegram(RPCHandler):
     """  This class handles all telegram communication """
 
     def __init__(self, rpc: RPC, config: Dict[str, Any]) -> None:
-
         """
         Init the Telegram call, and init the super class RPCHandler
         :param rpc: instance of RPC Helper class
@@ -208,15 +207,25 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
-        message = (f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
-                   f" (#{msg['trade_id']})\n"
-                   f"*Amount:* `{msg['amount']:.8f}`\n"
-                   f"*Open Rate:* `{msg['limit']:.8f}`\n"
-                   f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
-                   f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}")
-
+        content = []
+        content.append(
+            f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
+            f" (#{msg['trade_id']})\n"
+        )
+        if msg.get('buy_tag', None):
+            content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
+        content.append(f"*Open Rate:* `{msg['limit']:.8f}`\n")
+        content.append(f"*Current Rate:* `{msg['current_rate']:.8f}`\n")
+        content.append(
+            f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
+        )
         if msg.get('fiat_currency', None):
-            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            content.append(
+                f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+            )
+
+        message = ''.join(content)
         message += ")`"
         return message
 
@@ -251,29 +260,7 @@ class Telegram(RPCHandler):
 
         return message
 
-    def send_msg(self, msg: Dict[str, Any]) -> None:
-        """ Send a message to telegram channel """
-
-        default_noti = 'on'
-
-        msg_type = msg['type']
-        noti = ''
-        if msg_type == RPCMessageType.SELL:
-            sell_noti = self._config['telegram'] \
-              .get('notification_settings', {}).get(str(msg_type), {})
-            # For backward compatibility sell still can be string
-            if isinstance(sell_noti, str):
-                noti = sell_noti
-            else:
-                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
-        else:
-            noti = self._config['telegram'] \
-              .get('notification_settings', {}).get(str(msg_type), default_noti)
-
-        if noti == 'off':
-            logger.info(f"Notification '{msg_type}' not sent.")
-            # Notification disabled
-            return
+    def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
 
         if msg_type == RPCMessageType.BUY:
             message = self._format_buy_msg(msg)
@@ -294,7 +281,16 @@ class Telegram(RPCHandler):
                        "for {close_rate}.".format(**msg))
         elif msg_type == RPCMessageType.SELL:
             message = self._format_sell_msg(msg)
-
+        elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
+            message = (
+                "*Protection* triggered due to {reason}. "
+                "`{pair}` will be locked until `{lock_end_time}`."
+            ).format(**msg)
+        elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
+            message = (
+                "*Protection* triggered due to {reason}. "
+                "*All pairs* will be locked until `{lock_end_time}`."
+            ).format(**msg)
         elif msg_type == RPCMessageType.STATUS:
             message = '*Status:* `{status}`'.format(**msg)
 
@@ -306,6 +302,33 @@ class Telegram(RPCHandler):
 
         else:
             raise NotImplementedError('Unknown message type: {}'.format(msg_type))
+        return message
+
+    def send_msg(self, msg: Dict[str, Any]) -> None:
+        """ Send a message to telegram channel """
+
+        default_noti = 'on'
+
+        msg_type = msg['type']
+        noti = ''
+        if msg_type == RPCMessageType.SELL:
+            sell_noti = self._config['telegram'] \
+                .get('notification_settings', {}).get(str(msg_type), {})
+            # For backward compatibility sell still can be string
+            if isinstance(sell_noti, str):
+                noti = sell_noti
+            else:
+                noti = sell_noti.get(str(msg['sell_reason']), default_noti)
+        else:
+            noti = self._config['telegram'] \
+                .get('notification_settings', {}).get(str(msg_type), default_noti)
+
+        if noti == 'off':
+            logger.info(f"Notification '{msg_type}' not sent.")
+            # Notification disabled
+            return
+
+        message = self.compose_message(msg, msg_type)
 
         self._send_msg(message, disable_notification=(noti == 'silent'))
 
@@ -354,6 +377,7 @@ class Telegram(RPCHandler):
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
+                    "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
@@ -494,11 +518,11 @@ class Telegram(RPCHandler):
             start_date)
         profit_closed_coin = stats['profit_closed_coin']
         profit_closed_percent_mean = stats['profit_closed_percent_mean']
-        profit_closed_percent_sum = stats['profit_closed_percent_sum']
+        profit_closed_percent = stats['profit_closed_percent']
         profit_closed_fiat = stats['profit_closed_fiat']
         profit_all_coin = stats['profit_all_coin']
         profit_all_percent_mean = stats['profit_all_percent_mean']
-        profit_all_percent_sum = stats['profit_all_percent_sum']
+        profit_all_percent = stats['profit_all_percent']
         profit_all_fiat = stats['profit_all_fiat']
         trade_count = stats['trade_count']
         first_trade_date = stats['first_trade_date']
@@ -514,7 +538,7 @@ class Telegram(RPCHandler):
                 markdown_msg = ("*ROI:* Closed trades\n"
                                 f"∙ `{round_coin_value(profit_closed_coin, stake_cur)} "
                                 f"({profit_closed_percent_mean:.2f}%) "
-                                f"({profit_closed_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                                f"({profit_closed_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                                 f"∙ `{round_coin_value(profit_closed_fiat, fiat_disp_cur)}`\n")
             else:
                 markdown_msg = "`No closed trade` \n"
@@ -523,14 +547,14 @@ class Telegram(RPCHandler):
                 f"*ROI:* All trades\n"
                 f"∙ `{round_coin_value(profit_all_coin, stake_cur)} "
                 f"({profit_all_percent_mean:.2f}%) "
-                f"({profit_all_percent_sum} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
+                f"({profit_all_percent} \N{GREEK CAPITAL LETTER SIGMA}%)`\n"
                 f"∙ `{round_coin_value(profit_all_fiat, fiat_disp_cur)}`\n"
                 f"*Total Trade Count:* `{trade_count}`\n"
                 f"*{'First Trade opened' if not timescale else 'Showing Profit since'}:* "
                 f"`{first_trade_date}`\n"
                 f"*Latest Trade opened:* `{latest_trade_date}\n`"
                 f"*Win / Loss:* `{stats['winning_trades']} / {stats['losing_trades']}`"
-                )
+            )
             if stats['closed_trade_count'] > 0:
                 markdown_msg += (f"\n*Avg. Duration:* `{avg_duration}`\n"
                                  f"*Best Performing:* `{best_pair}: {best_rate:.2f}%`")
@@ -565,13 +589,14 @@ class Telegram(RPCHandler):
         sell_reasons_msg = tabulate(
             sell_reasons_tabulate,
             headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
-            )
+        )
         durations = stats['durations']
-        duration_msg = tabulate([
-            ['Wins', str(timedelta(seconds=durations['wins']))
-             if durations['wins'] != 'N/A' else 'N/A'],
-            ['Losses', str(timedelta(seconds=durations['losses']))
-             if durations['losses'] != 'N/A' else 'N/A']
+        duration_msg = tabulate(
+            [
+                ['Wins', str(timedelta(seconds=durations['wins']))
+                 if durations['wins'] != 'N/A' else 'N/A'],
+                ['Losses', str(timedelta(seconds=durations['losses']))
+                 if durations['losses'] != 'N/A' else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )
@@ -592,13 +617,19 @@ class Telegram(RPCHandler):
 
             output = ''
             if self._config['dry_run']:
-                output += (
-                    f"*Warning:* Simulated balances in Dry Mode.\n"
-                    "This mode is still experimental!\n"
-                    "Starting capital: "
-                    f"`{self._config['dry_run_wallet']}` {self._config['stake_currency']}.\n"
-                )
+                output += "*Warning:* Simulated balances in Dry Mode.\n"
+
+            output += ("Starting capital: "
+                       f"`{result['starting_capital']}` {self._config['stake_currency']}"
+                       )
+            output += (f" `{result['starting_capital_fiat']}` "
+                       f"{self._config['fiat_display_currency']}.\n"
+                       ) if result['starting_capital_fiat'] > 0 else '.\n'
+
+            total_dust_balance = 0
+            total_dust_currencies = 0
             for curr in result['currencies']:
+                curr_output = ''
                 if curr['est_stake'] > balance_dust_level:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
@@ -607,9 +638,9 @@ class Telegram(RPCHandler):
                         f"\t`Pending: {curr['used']:.8f}`\n"
                         f"\t`Est. {curr['stake']}: "
                         f"{round_coin_value(curr['est_stake'], curr['stake'], False)}`\n")
-                else:
-                    curr_output = (f"*{curr['currency']}:* not showing <{balance_dust_level} "
-                                   f"{curr['stake']} amount \n")
+                elif curr['est_stake'] <= balance_dust_level:
+                    total_dust_balance += curr['est_stake']
+                    total_dust_currencies += 1
 
                 # Handle overflowing message length
                 if len(output + curr_output) >= MAX_TELEGRAM_MESSAGE_LENGTH:
@@ -618,10 +649,21 @@ class Telegram(RPCHandler):
                 else:
                     output += curr_output
 
+            if total_dust_balance > 0:
+                output += (
+                    f"*{total_dust_currencies} Other "
+                    f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
+                    f"(< {balance_dust_level} {result['stake']}):*\n"
+                    f"\t`Est. {result['stake']}: "
+                    f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+
             output += ("\n*Estimated Value*:\n"
-                       f"\t`{result['stake']}: {result['total']: .8f}`\n"
+                       f"\t`{result['stake']}: "
+                       f"{round_coin_value(result['total'], result['stake'], False)}`"
+                       f" `({result['starting_capital_pct']}%)`\n"
                        f"\t`{result['symbol']}: "
-                       f"{round_coin_value(result['value'], result['symbol'], False)}`\n")
+                       f"{round_coin_value(result['value'], result['symbol'], False)}`"
+                       f" `({result['starting_capital_fiat_pct']}%)`\n")
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:
@@ -1078,7 +1120,7 @@ class Telegram(RPCHandler):
         if reload_able:
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton("Refresh", callback_data=callback_path)],
-                ])
+            ])
         else:
             reply_markup = InlineKeyboardMarkup([[]])
         msg += "\nUpdated: {}".format(datetime.now().ctime())

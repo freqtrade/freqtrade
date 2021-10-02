@@ -5,6 +5,20 @@ import time
 import uvicorn
 
 
+def asyncio_setup() -> None:  # pragma: no cover
+    # Set eventloop for win32 setups
+    # Reverts a change done in uvicorn 0.15.0 - which now sets the eventloop
+    # via policy.
+    import sys
+
+    if sys.version_info >= (3, 8) and sys.platform == "win32":
+        import asyncio
+        import selectors
+        selector = selectors.SelectSelector()
+        loop = asyncio.SelectorEventLoop(selector)
+        asyncio.set_event_loop(loop)
+
+
 class UvicornServer(uvicorn.Server):
     """
     Multithreaded server - as found in https://github.com/encode/uvicorn/issues/742
@@ -28,12 +42,15 @@ class UvicornServer(uvicorn.Server):
         try:
             import uvloop  # noqa
         except ImportError:  # pragma: no cover
-            from uvicorn.loops.asyncio import asyncio_setup
+
             asyncio_setup()
         else:
             asyncio.set_event_loop(uvloop.new_event_loop())
-
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # When running in a thread, we'll not have an eventloop yet.
+            loop = asyncio.new_event_loop()
         loop.run_until_complete(self.serve(sockets=sockets))
 
     @contextlib.contextmanager
