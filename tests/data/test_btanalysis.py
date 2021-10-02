@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -12,9 +13,9 @@ from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_
                                        analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
                                        combine_dataframes_with_mean, create_cum_profit,
-                                       extract_trades_of_period, get_latest_backtest_filename,
-                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
-                                       load_trades_from_db)
+                                       expand_trades_over_period, extract_trades_of_period,
+                                       get_latest_backtest_filename, get_latest_hyperopt_file,
+                                       load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -176,6 +177,55 @@ def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
     assert 'open_trades' in res.columns
     assert res['open_trades'].max() == 3
     assert res['open_trades'].min() == 0
+
+
+def test_expand_trades_over_period(testdatadir):
+    filename = testdatadir / "backtest-result_test.json"
+    bt_data = load_backtest_data(filename)
+
+    res = expand_trades_over_period(bt_data, "5m")
+    assert isinstance(res, DataFrame)
+    assert res['pair'].str.contains('ADA/BTC').sum() == 1970
+    pair_res = res[res['pair'] == 'ADA/BTC']
+    assert all(pair_res.iloc[[0]].index == '2018-01-10 07:15:00')
+    assert all(pair_res.iloc[[1]].index == '2018-01-10 07:20:00')
+
+    res = expand_trades_over_period(bt_data, "15m")
+    # Expanding over 15m should produce fewer rows.
+    assert isinstance(res, DataFrame)
+    assert res['pair'].str.contains('ADA/BTC').sum() == 672
+    pair_res = res[res['pair'] == 'ADA/BTC']
+    assert all(pair_res.iloc[[0]].index == '2018-01-10 07:15:00')
+    assert all(pair_res.iloc[[1]].index == '2018-01-10 07:30:00')
+
+    trade_results = DataFrame(
+        {
+            'pair': ['ETH/USDT', 'ETH/USDT', 'ETH/USDT', 'ETH/USDT'],
+            'profit_ratio': [-0.1, 0.2, -0.1, 0.3],
+            'profit_abs': [-0.2, 0.4, -0.2, 0.6],
+            'trade_duration': [10, 30, 10, 10],
+            'amount': [0.1, 0.1, 0.1, 0.1],
+            'open_date':
+            [
+                datetime(2019, 1, 1, 9, 15, 0),
+                datetime(2019, 1, 2, 8, 55, 0),
+                datetime(2019, 1, 3, 9, 15, 0),
+                datetime(2019, 1, 4, 9, 15, 0),
+            ],
+            'close_date':
+            [
+                datetime(2019, 1, 1, 9, 25, 0),
+                datetime(2019, 1, 2, 9, 25, 0),
+                datetime(2019, 1, 3, 9, 25, 0),
+                datetime(2019, 1, 4, 9, 25, 0),
+            ],
+        }
+    )
+
+    res = expand_trades_over_period(trade_results, "5m")
+    assert res['pair'].str.contains('ETH/USDT').sum() == 16
+    assert all(res.iloc[[0]].index == '2019-01-01 09:15:00')
+    assert all(res.iloc[[1]].index == '2019-01-01 09:20:00')
 
 
 def test_load_trades(default_conf, mocker):

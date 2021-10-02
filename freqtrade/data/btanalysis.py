@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import json_load
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
@@ -202,7 +203,8 @@ def expand_trades_over_period(results: pd.DataFrame, timeframe: str,
         from freqtrade.exchange import timeframe_to_minutes
         timeframe_min = timeframe_to_minutes(timeframe)
     # compute how long each trade was left outstanding as date indexes
-    dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
+    dates = [pd.Series(pd.date_range(timeframe_to_prev_date(timeframe, row[1]['open_date']),
+                                     timeframe_to_prev_date(timeframe, row[1]['close_date']),
                                      freq=f"{timeframe_min}min"))
              for row in results[['open_date', 'close_date']].iterrows()]
     deltas = [len(x) for x in dates]
