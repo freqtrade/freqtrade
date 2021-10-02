@@ -12,13 +12,15 @@ from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
                                        analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
-                                       combine_dataframes_with_mean, create_cum_profit,
-                                       expand_trades_over_period, extract_trades_of_period,
-                                       get_latest_backtest_filename, get_latest_hyperopt_file,
-                                       load_backtest_data, load_trades, load_trades_from_db)
+                                       calculate_outstanding_balance, combine_dataframes_with_mean,
+                                       create_cum_profit, expand_trades_over_period,
+                                       extract_trades_of_period, get_latest_backtest_filename,
+                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
+                                       load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
+from tests.strategy.test_strategy_helpers import generate_test_data
 
 
 def test_get_latest_backtest_filename(testdatadir, mocker):
@@ -226,6 +228,20 @@ def test_expand_trades_over_period(testdatadir):
     assert res['pair'].str.contains('ETH/USDT').sum() == 16
     assert all(res.iloc[[0]].index == '2019-01-01 09:15:00')
     assert all(res.iloc[[1]].index == '2019-01-01 09:20:00')
+
+
+def test_calculate_outstanding_balance(testdatadir):
+    filename = testdatadir / "backtest-result_new.json"
+    bt_results = load_backtest_data(filename)
+
+    data = {pair: generate_test_data('5m', 1200, start='2018-01-10')
+            for pair in bt_results['pair'].unique()}
+
+    res = calculate_outstanding_balance(bt_results, "5m", data)
+
+    assert isinstance(res, DataFrame)
+    assert len(res) == 1113
+    assert 'value' in res.columns
 
 
 def test_load_trades(default_conf, mocker):
