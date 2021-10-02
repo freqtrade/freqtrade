@@ -115,7 +115,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
 
 
-def test_get_trade_stake_amount(default_conf_usdt, ticker_usdt, mocker) -> None:
+def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
 
@@ -243,7 +243,6 @@ def test_edge_overrides_stoploss(limit_buy_order_usdt, fee, caplog, mocker,
 def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    default_conf_usdt['stake_amount'] = 10.0
     default_conf_usdt['max_open_trades'] = 2
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -304,8 +303,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_buy_order_usdt, fee,
     assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
-def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, limit_buy_order_usdt,
-                                      fee, mocker) -> None:
+def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_wallet(mocker, free=default_conf_usdt['stake_amount'] * 0.5)
@@ -1477,7 +1475,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     assert freqtrade.handle_trade(trade) is True
 
 
-def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog,
+def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee,
                                               limit_buy_order_usdt, limit_sell_order_usdt) -> None:
 
     # When trailing stoploss is set
@@ -2125,7 +2123,7 @@ def test_check_handle_cancelled_buy(default_conf_usdt, ticker_usdt, limit_buy_or
     assert log_has_re("Buy order cancelled on exchange for Trade.*", caplog)
 
 
-def test_check_handle_timedout_buy_exception(default_conf_usdt, ticker_usdt, limit_buy_order_old,
+def test_check_handle_timedout_buy_exception(default_conf_usdt, ticker_usdt,
                                              open_trade, fee, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
@@ -3253,7 +3251,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
     assert trade.sell_reason == SellType.ROI.value
 
 
-def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt,
+def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open,
                             fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3724,7 +3722,7 @@ def test_get_real_amount_open_trade(default_conf_usdt, fee, mocker):
     (8.0, 0.1, 8.0, 8.0),
     (8.0, 0.1, 7.9, 7.9),
 ])
-def test_apply_fee_conditional(default_conf_usdt, fee, caplog, mocker,
+def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
                                amount, fee_abs, wallet, amount_exp):
     walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
