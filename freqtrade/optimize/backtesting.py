@@ -87,18 +87,7 @@ class Backtesting:
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
-        # Load detail timeframe if specified
-        self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
-        if self.timeframe_detail:
-            self.timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
-            if self.timeframe_min <= self.timeframe_detail_min:
-                raise OperationalException(
-                    "Detail timeframe must be smaller than strategy timeframe.")
-
-        else:
-            self.timeframe_detail_min = 0
-        self.detail_data: Dict[str, DataFrame] = {}
-
+        self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting.")
@@ -121,14 +110,6 @@ class Backtesting:
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
-        Trade.use_db = False
-        Trade.reset_trades()
-        PairLocks.timeframe = self.config['timeframe']
-        PairLocks.use_db = False
-        PairLocks.reset_locks()
-
-        self.wallets = Wallets(self.config, self.exchange, log=False)
-
         self.timerange = TimeRange.parse_timerange(
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))
 
@@ -144,6 +125,7 @@ class Backtesting:
 
         self.progress = BTProgress()
         self.abort = False
+        self.init_backtest()
 
     def __del__(self):
         self.cleanup()
@@ -152,6 +134,28 @@ class Backtesting:
         LoggingMixin.show_output = True
         PairLocks.use_db = True
         Trade.use_db = True
+
+    def init_backtest_detail(self):
+        # Load detail timeframe if specified
+        self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
+        if self.timeframe_detail:
+            self.timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
+            if self.timeframe_min <= self.timeframe_detail_min:
+                raise OperationalException(
+                    "Detail timeframe must be smaller than strategy timeframe.")
+
+        else:
+            self.timeframe_detail_min = 0
+        self.detail_data: Dict[str, DataFrame] = {}
+
+    def init_backtest(self):
+
+        self.prepare_backtest(False)
+
+        self.wallets = Wallets(self.config, self.exchange, log=False)
+
+        self.progress = BTProgress()
+        self.abort = False
 
     def _set_strategy(self, strategy: IStrategy):
         """
@@ -232,7 +236,8 @@ class Backtesting:
         Trade.reset_trades()
         self.rejected_trades = 0
         self.dataprovider.clear_cache()
-        self._load_protections(self.strategy)
+        if enable_protections:
+            self._load_protections(self.strategy)
 
     def check_abort(self):
         """
@@ -365,7 +370,7 @@ class Backtesting:
             trade, sell_row[OPEN_IDX], sell_candle_time,  # type: ignore
             enter=enter, exit_=exit_,
             low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
-            )
+        )
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
@@ -397,14 +402,14 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-            ]
+            ].copy()
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
-            detail_data['enter_long'] = sell_row[LONG_IDX]
-            detail_data['exit_long'] = sell_row[ELONG_IDX]
-            detail_data['enter_short'] = sell_row[SHORT_IDX]
-            detail_data['exit_short'] = sell_row[ESHORT_IDX]
+            detail_data.loc[:, 'enter_long'] = sell_row[LONG_IDX]
+            detail_data.loc[:, 'exit_long'] = sell_row[ELONG_IDX]
+            detail_data.loc[:, 'enter_long'] = sell_row[LONG_IDX]
+            detail_data.loc[:, 'exit_long'] = sell_row[ELONG_IDX]
             headers = ['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
                        'enter_short', 'exit_short']
             for det_row in detail_data[headers].values.tolist():

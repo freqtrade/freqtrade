@@ -8,12 +8,12 @@ from zipfile import ZipFile
 import arrow
 import pytest
 
-from freqtrade.commands import (start_convert_data, start_create_userdir, start_download_data,
-                                start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                start_list_data, start_list_exchanges, start_list_markets,
-                                start_list_strategies, start_list_timeframes, start_new_strategy,
-                                start_show_trades, start_test_pairlist, start_trading,
-                                start_webserver)
+from freqtrade.commands import (start_convert_data, start_convert_trades, start_create_userdir,
+                                start_download_data, start_hyperopt_list, start_hyperopt_show,
+                                start_install_ui, start_list_data, start_list_exchanges,
+                                start_list_markets, start_list_strategies, start_list_timeframes,
+                                start_new_strategy, start_show_trades, start_test_pairlist,
+                                start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
@@ -208,11 +208,10 @@ def test_list_timeframes(mocker, capsys):
     assert re.search(r"^1d$", captured.out, re.MULTILINE)
 
 
-def test_list_markets(mocker, markets, capsys):
+def test_list_markets(mocker, markets_static, capsys):
 
     api_mock = MagicMock()
-    api_mock.markets = markets
-    patch_exchange(mocker, api_mock=api_mock, id='bittrex')
+    patch_exchange(mocker, api_mock=api_mock, id='bittrex', mock_markets=markets_static)
 
     # Test with no --config
     args = [
@@ -237,7 +236,7 @@ def test_list_markets(mocker, markets, capsys):
             "TKN/BTC, XLTCUSDT, XRP/BTC.\n"
             in captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance")
+    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
     # Test with --exchange
     args = [
         "list-markets",
@@ -250,7 +249,7 @@ def test_list_markets(mocker, markets, capsys):
     assert re.match("\nExchange Binance has 10 active markets:\n",
                     captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="bittrex")
+    patch_exchange(mocker, api_mock=api_mock, id="bittrex", mock_markets=markets_static)
     # Test with --all: all markets
     args = [
         "list-markets", "--all",
@@ -757,6 +756,22 @@ def test_download_data_trades(mocker, caplog):
     start_download_data(get_args(args))
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
+    assert convert_mock.call_count == 1
+
+
+def test_start_convert_trades(mocker, caplog):
+    convert_mock = mocker.patch('freqtrade.commands.data_commands.convert_trades_to_ohlcv',
+                                MagicMock(return_value=[]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value={})
+    )
+    args = [
+        "trades-to-ohlcv",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+    ]
+    start_convert_trades(get_args(args))
     assert convert_mock.call_count == 1
 
 

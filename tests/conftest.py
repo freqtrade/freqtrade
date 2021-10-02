@@ -102,8 +102,10 @@ def patch_exchange(
     mocker.patch('freqtrade.exchange.Exchange.precisionMode', PropertyMock(return_value=2))
 
     if mock_markets:
+        if isinstance(mock_markets, bool):
+            mock_markets = get_markets()
         mocker.patch('freqtrade.exchange.Exchange.markets',
-                     PropertyMock(return_value=get_markets()))
+                     PropertyMock(return_value=mock_markets))
 
     if mock_supported_modes:
         mocker.patch(
@@ -462,6 +464,8 @@ def markets():
 
 
 def get_markets():
+    # See get_markets_static() for immutable markets and do not modify them unless absolutely
+    # necessary!
     return {
         'ETH/BTC': {
             'id': 'ethbtc',
@@ -778,11 +782,22 @@ def get_markets():
 
 
 @pytest.fixture
-def shitcoinmarkets(markets):
+def markets_static():
+    # These markets are used in some tests that would need adaptation should anything change in
+    # market list. Do not modify this list without a good reason! Do not modify market parameters
+    # of listed pairs in get_markets() without a good reason either!
+    static_markets = ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
+                      'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']
+    all_markets = get_markets()
+    return {m: all_markets[m] for m in static_markets}
+
+
+@pytest.fixture
+def shitcoinmarkets(markets_static):
     """
     Fixture with shitcoin markets - used to test filters in pairlists
     """
-    shitmarkets = deepcopy(markets)
+    shitmarkets = deepcopy(markets_static)
     shitmarkets.update({
         'HOT/BTC': {
             'id': 'HOTBTC',
@@ -1786,14 +1801,6 @@ def trades_for_order2():
              'cost': 1.963528,
              'amount': 4.0,
              'fee': {'cost': 0.004, 'currency': 'LTC'}}]
-
-
-@pytest.fixture(scope="function")
-def trades_for_order3(trades_for_order2):
-    # Different fee currencies for each trade
-    trades_for_order = deepcopy(trades_for_order2)
-    trades_for_order[0]['fee'] = {'cost': 0.02, 'currency': 'BNB'}
-    return trades_for_order
 
 
 @pytest.fixture
