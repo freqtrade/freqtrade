@@ -446,7 +446,8 @@ def test_enter_positions_global_pairlock(default_conf, ticker, limit_buy_order, 
     assert log_has_re(message, caplog)
 
 
-def test_handle_protections(mocker, default_conf, fee):
+@pytest.mark.parametrize('is_short', [False, True])
+def test_handle_protections(mocker, default_conf, fee, is_short):
     default_conf['protections'] = [
         {"method": "CooldownPeriod", "stop_duration": 60},
         {
@@ -461,7 +462,7 @@ def test_handle_protections(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     freqtrade.protections._protection_handlers[1].global_stop = MagicMock(
         return_value=(True, arrow.utcnow().shift(hours=1).datetime, "asdf"))
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     freqtrade.handle_protections('ETC/BTC')
     send_msg_mock = freqtrade.rpc.send_msg
     assert send_msg_mock.call_count == 2
@@ -1420,8 +1421,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
                  return_value=stoploss_order_hanging)
     freqtrade.handle_trailing_stoploss_on_exchange(
         trade,
-        stoploss_order_hanging,
-        side=("buy" if is_short else "sell")
+        stoploss_order_hanging
     )
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/BTC.*", caplog)
 
@@ -1432,8 +1432,7 @@ def test_handle_stoploss_on_exchange_trailing_error(mocker, default_conf, fee, c
     caplog.clear()
     cancel_mock = mocker.patch("freqtrade.exchange.Binance.cancel_stoploss_order", MagicMock())
     mocker.patch("freqtrade.exchange.Binance.stoploss", side_effect=ExchangeError())
-    freqtrade.handle_trailing_stoploss_on_exchange(
-        trade, stoploss_order_hanging, side=("buy" if is_short else "sell"))
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 1
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/BTC\..*", caplog)
 
