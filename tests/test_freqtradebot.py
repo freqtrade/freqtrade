@@ -4435,7 +4435,11 @@ def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls
 
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    freqtrade = FreqtradeBot(default_conf)
+    mocker.patch(
+        'freqtrade.freqtradebot',
+        update_funding_fees=MagicMock(return_value=True)
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     with time_machine.travel("2021-09-01 00:00:00 +00:00") as t:
 
