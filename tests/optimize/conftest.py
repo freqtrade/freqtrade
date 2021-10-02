@@ -48,16 +48,16 @@ def hyperopt_results():
             'open_date':
             [
                 datetime(2019, 1, 1, 9, 15, 0),
-                datetime(2019, 2, 1, 8, 55, 0),
-                datetime(2019, 3, 1, 9, 15, 0),
-                datetime(2019, 4, 1, 9, 15, 0),
+                datetime(2019, 1, 2, 8, 55, 0),
+                datetime(2019, 1, 3, 9, 15, 0),
+                datetime(2019, 1, 4, 9, 15, 0),
             ],
             'close_date':
             [
                 datetime(2019, 1, 1, 9, 25, 0),
-                datetime(2019, 2, 1, 9, 25, 0),
-                datetime(2019, 3, 1, 9, 25, 0),
-                datetime(2019, 4, 1, 9, 25, 0),
+                datetime(2019, 1, 2, 9, 25, 0),
+                datetime(2019, 1, 3, 9, 25, 0),
+                datetime(2019, 1, 4, 9, 25, 0),
             ],
         }
     )
