@@ -184,7 +184,7 @@ class Binance(Exchange):
                 max_lev = 1/margin_req
         return max_lev
 
-    @ retrier
+    @retrier
     def _set_leverage(
         self,
         leverage: float,
