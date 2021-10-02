@@ -11,6 +11,8 @@ class RPCMessageType(Enum):
     SELL = 'sell'
     SELL_FILL = 'sell_fill'
     SELL_CANCEL = 'sell_cancel'
+    PROTECTION_TRIGGER = 'protection_trigger'
+    PROTECTION_TRIGGER_GLOBAL = 'protection_trigger_global'
 
     def __repr__(self):
         return self.value

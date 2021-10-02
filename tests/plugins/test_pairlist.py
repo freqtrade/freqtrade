@@ -4,6 +4,7 @@ import time
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
+import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
 from freqtrade.exceptions import OperationalException
@@ -11,7 +12,8 @@ from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from tests.conftest import get_patched_exchange, get_patched_freqtradebot, log_has, log_has_re
+from tests.conftest import (create_mock_trades, get_patched_exchange, get_patched_freqtradebot,
+                            log_has, log_has_re)
 
 
 @pytest.fixture(scope="function")
@@ -129,9 +131,9 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
                                        default_conf, {}, 1)
 
 
-def test_load_pairlist_verify_multi(mocker, markets, default_conf):
+def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
     plm = PairListManager(freqtrade.exchange, default_conf)
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)
@@ -662,6 +664,31 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
+    whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "PerformanceFilter", "minutes": 60}
+    ]
+    mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    pm = PairListManager(exchange, whitelist_conf)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
+
+    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        create_mock_trades(fee)
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['XRP/BTC', 'ETH/BTC', 'TKN/BTC']
+
+        # Move to "outside" of lookback window, so original sorting is restored.
+        t.move_to("2021-09-01 07:00:00 +00:00")
+        pm.refresh_pairlist()
+        assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
+
+
 def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None:
     default_conf['pairlists'] = [{'method': 'VolumePairList', 'number_assets': 10}]
 
@@ -815,32 +842,63 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
 
 
 def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history):
-    ohlcv_data = {
-        ('ETH/BTC', '1d'): ohlcv_history,
-        ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history,
-    }
-    mocker.patch.multiple('freqtrade.exchange.Exchange',
-                          markets=PropertyMock(return_value=markets),
-                          exchange_has=MagicMock(return_value=True),
-                          get_tickers=tickers
-                          )
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
-    )
+    with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        ohlcv_data = {
+            ('ETH/BTC', '1d'): ohlcv_history,
+            ('TKN/BTC', '1d'): ohlcv_history,
+            ('LTC/BTC', '1d'): ohlcv_history,
+        }
+        mocker.patch.multiple(
+            'freqtrade.exchange.Exchange',
+            markets=PropertyMock(return_value=markets),
+            exchange_has=MagicMock(return_value=True),
+            get_tickers=tickers,
+            refresh_latest_ohlcv=MagicMock(return_value=ohlcv_data),
+        )
 
-    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_agefilter)
-    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
-    freqtrade.pairlists.refresh_pairlist()
-    assert len(freqtrade.pairlists.whitelist) == 3
-    assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
+        freqtrade = get_patched_freqtradebot(mocker, whitelist_conf_agefilter)
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 3
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count > 0
 
-    previous_call_count = freqtrade.exchange.refresh_latest_ohlcv.call_count
-    freqtrade.pairlists.refresh_pairlist()
-    assert len(freqtrade.pairlists.whitelist) == 3
-    # Called once for XRP/BTC
-    assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count + 1
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 3
+        # Call to XRP/BTC cached
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 2
+
+        ohlcv_data = {
+            ('ETH/BTC', '1d'): ohlcv_history,
+            ('TKN/BTC', '1d'): ohlcv_history,
+            ('LTC/BTC', '1d'): ohlcv_history,
+            ('XRP/BTC', '1d'): ohlcv_history.iloc[[0]],
+        }
+        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 3
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+
+        # Move to next day
+        t.move_to("2021-09-02 01:00:00 +00:00")
+        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 3
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+
+        # Move another day with fresh mocks (now the pair is old enough)
+        t.move_to("2021-09-03 01:00:00 +00:00")
+        # Called once for XRP/BTC
+        ohlcv_data = {
+            ('ETH/BTC', '1d'): ohlcv_history,
+            ('TKN/BTC', '1d'): ohlcv_history,
+            ('LTC/BTC', '1d'): ohlcv_history,
+            ('XRP/BTC', '1d'): ohlcv_history,
+        }
+        mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
+        freqtrade.pairlists.refresh_pairlist()
+        assert len(freqtrade.pairlists.whitelist) == 4
+        # Called once (only for XRP/BTC)
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
 
 
 def test_OffsetFilter_error(mocker, whitelist_conf) -> None:

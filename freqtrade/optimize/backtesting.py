@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
-from freqtrade.configuration import TimeRange, remove_credentials, validate_config_consistency
+from freqtrade.configuration import TimeRange, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
@@ -61,8 +61,7 @@ class Backtesting:
         self.config = config
         self.results: Optional[Dict[str, Any]] = None
 
-        # Reset keys for backtesting
-        remove_credentials(self.config)
+        config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
 
@@ -86,18 +85,7 @@ class Backtesting:
                                        "configuration or as cli argument `--timeframe 5m`")
         self.timeframe = str(self.config.get('timeframe'))
         self.timeframe_min = timeframe_to_minutes(self.timeframe)
-        # Load detail timeframe if specified
-        self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
-        if self.timeframe_detail:
-            self.timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
-            if self.timeframe_min <= self.timeframe_detail_min:
-                raise OperationalException(
-                    "Detail timeframe must be smaller than strategy timeframe.")
-
-        else:
-            self.timeframe_detail_min = 0
-        self.detail_data: Dict[str, DataFrame] = {}
-
+        self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
             raise OperationalException("VolumePairList not allowed for backtesting.")
@@ -120,14 +108,6 @@ class Backtesting:
         else:
             self.fee = self.exchange.get_fee(symbol=self.pairlists.whitelist[0])
 
-        Trade.use_db = False
-        Trade.reset_trades()
-        PairLocks.timeframe = self.config['timeframe']
-        PairLocks.use_db = False
-        PairLocks.reset_locks()
-
-        self.wallets = Wallets(self.config, self.exchange, log=False)
-
         self.timerange = TimeRange.parse_timerange(
             None if self.config.get('timerange') is None else str(self.config.get('timerange')))
 
@@ -136,9 +116,7 @@ class Backtesting:
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
-
-        self.progress = BTProgress()
-        self.abort = False
+        self.init_backtest()
 
     def __del__(self):
         self.cleanup()
@@ -148,6 +126,28 @@ class Backtesting:
         PairLocks.use_db = True
         Trade.use_db = True
 
+    def init_backtest_detail(self):
+        # Load detail timeframe if specified
+        self.timeframe_detail = str(self.config.get('timeframe_detail', ''))
+        if self.timeframe_detail:
+            self.timeframe_detail_min = timeframe_to_minutes(self.timeframe_detail)
+            if self.timeframe_min <= self.timeframe_detail_min:
+                raise OperationalException(
+                    "Detail timeframe must be smaller than strategy timeframe.")
+
+        else:
+            self.timeframe_detail_min = 0
+        self.detail_data: Dict[str, DataFrame] = {}
+
+    def init_backtest(self):
+
+        self.prepare_backtest(False)
+
+        self.wallets = Wallets(self.config, self.exchange, log=False)
+
+        self.progress = BTProgress()
+        self.abort = False
+
     def _set_strategy(self, strategy: IStrategy):
         """
         Load strategy into backtesting
@@ -155,7 +155,7 @@ class Backtesting:
         self.strategy: IStrategy = strategy
         strategy.dp = self.dataprovider
         # Attach Wallets to Strategy baseclass
-        IStrategy.wallets = self.wallets
+        strategy.wallets = self.wallets
         # Set stoploss_on_exchange to false for backtesting,
         # since a "perfect" stoploss-sell is assumed anyway
         # And the regular "stoploss" function would not apply to that case
@@ -227,7 +227,8 @@ class Backtesting:
         Trade.reset_trades()
         self.rejected_trades = 0
         self.dataprovider.clear_cache()
-        self._load_protections(self.strategy)
+        if enable_protections:
+            self._load_protections(self.strategy)
 
     def check_abort(self):
         """
@@ -384,12 +385,12 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ]
+             ].copy()
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
-            detail_data['buy'] = sell_row[BUY_IDX]
-            detail_data['sell'] = sell_row[SELL_IDX]
+            detail_data.loc[:, 'buy'] = sell_row[BUY_IDX]
+            detail_data.loc[:, 'sell'] = sell_row[SELL_IDX]
             headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)

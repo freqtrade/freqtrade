@@ -93,7 +93,9 @@ Example configuration showing the different settings:
         "buy_cancel": "silent",
         "sell_cancel": "on",
         "buy_fill": "off",
-        "sell_fill": "off"
+        "sell_fill": "off",
+        "protection_trigger": "off",
+        "protection_trigger_global": "on"
     },
     "reload": true,
     "balance_dust_level": 0.01
@@ -103,6 +105,7 @@ Example configuration showing the different settings:
 `buy` notifications are sent when the order is placed, while `buy_fill` notifications are sent when the order is filled on the exchange.
 `sell` notifications are sent when the order is placed, while `sell_fill` notifications are sent when the order is filled on the exchange.
 `*_fill` notifications are off by default and must be explicitly enabled.
+`protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.
 
 
 `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.
