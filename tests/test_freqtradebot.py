@@ -1612,32 +1612,6 @@ def test_enter_positions(mocker, default_conf_usdt, return_value, side_effect,
     assert mock_ct.call_count == len(default_conf_usdt['exchange']['pair_whitelist'])
 
 
-def test_exit_positions(mocker, default_conf_usdt, limit_buy_order_usdt, caplog) -> None:
-    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_trade', MagicMock(return_value=True))
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt)
-    mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount',
-                 return_value=limit_buy_order_usdt['amount'])
-
-    trade = MagicMock()
-    trade.open_order_id = '123'
-    trade.open_fee = 0.001
-    trades = [trade]
-    n = freqtrade.exit_positions(trades)
-    assert n == 0
-    # Test amount not modified by fee-logic
-    assert not log_has(
-        'Applying fee to amount for Trade {} from 30.0 to 90.81'.format(trade), caplog
-    )
-
-    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', return_value=90.81)
-    # test amount modified by fee-logic
-    n = freqtrade.exit_positions(trades)
-    assert n == 0
-
-
 def test_exit_positions_exception(mocker, default_conf_usdt, limit_buy_order_usdt, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt)
