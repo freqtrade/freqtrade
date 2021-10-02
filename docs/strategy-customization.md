@@ -122,6 +122,16 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
     Then uncomment indicators you need.
 
+#### Indicator libraries
+
+Out of the box, freqtrade installs the following technical libraries:
+
+* [ta-lib](http://mrjbq7.github.io/ta-lib/)
+* [pandas-ta](https://twopirllc.github.io/pandas-ta/)
+* [technical](https://github.com/freqtrade/technical/)
+
+Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
+
 ### Strategy startup period
 
 Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
@@ -941,6 +951,8 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 Printing more than a few rows is also possible (simply use  `print(dataframe)` instead of `print(dataframe.tail())`), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).
 
 ## Common mistakes when developing strategies
+
+### Peeking into the future while backtesting
 
 Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
 This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.

@@ -131,9 +131,9 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
                                        default_conf, {}, 1)
 
 
-def test_load_pairlist_verify_multi(mocker, markets, default_conf):
+def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
     plm = PairListManager(freqtrade.exchange, default_conf)
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)

@@ -1317,6 +1317,34 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
             'Reason: cancelled due to timeout.')
 
 
+def test_send_msg_protection_notification(default_conf, mocker, time_machine) -> None:
+
+    default_conf['telegram']['notification_settings']['protection_trigger'] = 'on'
+
+    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    time_machine.move_to("2021-09-01 05:00:00 +00:00")
+    lock = PairLocks.lock_pair('ETH/BTC', arrow.utcnow().shift(minutes=6).datetime, 'randreason')
+    msg = {
+        'type': RPCMessageType.PROTECTION_TRIGGER,
+    }
+    msg.update(lock.to_json())
+    telegram.send_msg(msg)
+    assert (msg_mock.call_args[0][0] == "*Protection* triggered due to randreason. "
+            "`ETH/BTC` will be locked until `2021-09-01 05:10:00`.")
+
+    msg_mock.reset_mock()
+    # Test global protection
+
+    msg = {
+        'type': RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+    }
+    lock = PairLocks.lock_pair('*', arrow.utcnow().shift(minutes=100).datetime, 'randreason')
+    msg.update(lock.to_json())
+    telegram.send_msg(msg)
+    assert (msg_mock.call_args[0][0] == "*Protection* triggered due to randreason. "
+            "*All pairs* will be locked until `2021-09-01 06:45:00`.")
+
+
 def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
 
     default_conf['telegram']['notification_settings']['buy_fill'] = 'on'

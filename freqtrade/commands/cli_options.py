@@ -381,12 +381,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `json`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
-        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "exchange": Arg(
