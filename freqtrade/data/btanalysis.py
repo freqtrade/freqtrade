@@ -446,13 +446,13 @@ def calculate_outstanding_balance(results: pd.DataFrame, timeframe: str,
 
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_min = timeframe_to_minutes(timeframe)
-    df3 = expand_trades_over_period(results, timeframe, timeframe_min)
+    trades_over_period = expand_trades_over_period(results, timeframe, timeframe_min)
 
     values = {}
     # Iterate over every pair
     for pair in hloc:
         ohlc = hloc[pair].set_index('date')
-        df_pair = df3.loc[df3['pair'] == pair]
+        df_pair = trades_over_period.loc[trades_over_period['pair'] == pair]
         # filter on pair and convert dateindex to utc
         # * Temporary workaround
         df_pair.index = pd.to_datetime(df_pair.index, utc=True)
@@ -466,6 +466,6 @@ def calculate_outstanding_balance(results: pd.DataFrame, timeframe: str,
         values[pair] = df4
 
     balance = pd.concat([df[['value']] for k, df in values.items()])
-    # TODO: Does this resample make sense ... ?
+    # Combine multi-pair balances
     balance = balance.resample(f"{timeframe_min}min").agg({"value": sum})
     return balance
