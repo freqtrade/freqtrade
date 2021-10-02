@@ -1,17 +1,20 @@
 import logging
 from datetime import datetime
 
-from freqtrade.data.btanalysis import calculate_max_drawdown
-from freqtrade.optimize.hyperopt import IHyperOptLoss
+import numpy as np
 from pandas import DataFrame
 from scipy import interpolate
 
+from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.optimize.hyperopt import IHyperOptLoss
+
+
 logger = logging.getLogger(__name__)
 
-import numpy as np
 
 # HyperOpt Loss function, it is difficult to put the various optimizations into one number.
-# To make it easier, you can specify one table per optimization here. Missing values are interpolated.
+# To make it easier, you can specify one table per optimization here.
+# Missing values are interpolated.
 # In this way it is possible to create your own loss curves for each value quite easily.
 
 #
@@ -38,7 +41,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
 
         try:
             max_drawdown = calculate_max_drawdown(results)[0]
-        except:
+        except Exception:
             max_drawdown = 0.0
 
         #  profit_sum = results['profit_ratio'].sum()
@@ -58,8 +61,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             '100.0': 10000,
         }
         r = execute_table(profit_table, profit)
-        logger.debug(f'profit: {profit}')
-        logger.debug(f'profit ret: {r}')
+        logger.debug(f'profit: {profit} ret: {r}')
         ret += r
 
         profit_mean_table = {
@@ -71,8 +73,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             '0.05': 50,
         }
         r = execute_table(profit_mean_table, profit_mean)
-        logger.debug(f'profit_mean: {profit_mean}')
-        logger.debug(f'profit_mean ret: {r}')
+        logger.debug(f'profit_mean: {profit_mean} ret: {r}')
         ret += r
 
         profit_median_table = {
@@ -84,8 +85,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             '0.05': 10,
         }
         r = execute_table(profit_median_table, profit_median)
-        logger.debug(f'profit_median: {profit_median}')
-        logger.debug(f'profit_median ret: {r}')
+        logger.debug(f'profit_median: {profit_median} ret: {r}')
         ret += r
 
         trade_duration_table = {
@@ -98,8 +98,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             str(60 * 2000): -10,
         }
         r = execute_table(trade_duration_table, trade_duration)
-        logger.debug(f'trade_duration: {trade_duration}')
-        logger.debug(f'trade_duration ret: {r}')
+        logger.debug(f'trade_duration: {trade_duration} ret: {r}')
         ret += r
 
         trade_count_table = {
@@ -111,8 +110,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             '1000': 50,
         }
         r = execute_table(trade_count_table, trade_count)
-        logger.debug(f'trade_count: {trade_count}')
-        logger.debug(f'trade_count ret: {r}')
+        logger.debug(f'trade_count: {trade_count} ret: {r}')
         ret += r
 
         max_drawdown_table = {
@@ -122,8 +120,7 @@ class SplineHyperOptLoss(IHyperOptLoss):
             '0.8': -5000,
         }
         r = execute_table(max_drawdown_table, max_drawdown)
-        logger.debug(f'max_drawdown: {max_drawdown}')
-        logger.debug(f'max_drawdown ret: {r}')
+        logger.debug(f'max_drawdown: {max_drawdown} ret: {r}')
         ret += r
 
         return -ret
