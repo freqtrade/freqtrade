@@ -2588,8 +2588,8 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
                              is_short) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    l_order = limit_order[enter_side('is_short')]
-    cancel_buy_order = deepcopy(limit_order[enter_side('is_short')])
+    l_order = limit_order[enter_side(is_short)]
+    cancel_buy_order = deepcopy(limit_order[enter_side(is_short)])
     cancel_buy_order['status'] = 'canceled'
     del cancel_buy_order['filled']
 
@@ -2665,7 +2665,7 @@ def test_handle_cancel_enter_corder_empty(mocker, default_conf_usdt, limit_order
                                           cancelorder) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    l_order = limit_order[enter_side('is_short')]
+    l_order = limit_order[enter_side(is_short)]
     cancel_order_mock = MagicMock(return_value=cancelorder)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -3286,7 +3286,7 @@ def test_sell_profit_only(
             'last': bid
         }),
         create_order=MagicMock(side_effect=[
-            limit_order_open[enter_side['is_short']],
+            limit_order_open[enter_side(is_short)],
             {'id': 1234553382},
         ]),
         get_fee=fee,
@@ -3306,7 +3306,7 @@ def test_sell_profit_only(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.update(limit_order[enter_side('is_short')])
+    trade.update(limit_order[enter_side(is_short)])
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade) is handle_first
