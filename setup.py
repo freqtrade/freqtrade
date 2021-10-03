@@ -54,6 +54,7 @@ setup(
         'wrapt',
         'jsonschema',
         'TA-Lib',
+        'pandas-ta',
         'technical',
         'tabulate',
         'pycoingecko',

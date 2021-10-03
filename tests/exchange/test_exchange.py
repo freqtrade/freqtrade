@@ -2806,7 +2806,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         (['LTC'], ['NONEXISTENT'], False, False,
          []),
     ])
-def test_get_markets(default_conf, mocker, markets,
+def test_get_markets(default_conf, mocker, markets_static,
                      base_currencies, quote_currencies, pairs_only, active_only,
                      expected_keys):
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -2814,7 +2814,7 @@ def test_get_markets(default_conf, mocker, markets,
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
                           validate_timeframes=MagicMock(),
-                          markets=PropertyMock(return_value=markets))
+                          markets=PropertyMock(return_value=markets_static))
     ex = Exchange(default_conf)
     pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
     assert sorted(pairs.keys()) == sorted(expected_keys)

@@ -109,6 +109,7 @@ All freqtrade arguments will be available by running `docker-compose run --rm fr
 !!! Warning "`docker-compose` for trade commands"
     Trade commands (`freqtrade trade <...>`) should not be ran via `docker-compose run` - but should use `docker-compose up -d` instead.
     This makes sure that the container is properly started (including port forwardings) and will make sure that the container will restart after a system reboot.
+    If you intend to use freqUI, please also ensure to adjust the [configuration accordingly](rest-api.md#configuration-with-docker), otherwise the UI will not be available.
 
 !!! Note "`docker-compose run --rm`"
     Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
@@ -148,6 +149,24 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
 ```
 
 You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+
+### Troubleshooting
+
+#### Docker on Windows
+
+* Error: `"Timestamp for this request is outside of the recvWindow."`
+  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
+    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
+    ```
+    taskkill /IM "Docker Desktop.exe" /F
+    wsl --shutdown
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    ```
+
+!!! Warning
+    Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
+    Best use a linux-VPS for running freqtrade reliably.
 
 ## Plotting with docker-compose
 
