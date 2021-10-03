@@ -376,7 +376,7 @@ def get_default_conf(testdatadir):
 def get_default_conf_usdt(testdatadir):
     configuration = get_default_conf(testdatadir)
     configuration.update({
-        "stake_amount": 10.0,
+        "stake_amount": 60.0,
         "stake_currency": "USDT",
         "exchange": {
             "name": "binance",
