@@ -9,13 +9,13 @@ from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, 
                                 timeframe_to_minutes)
 
 
-def generate_test_data(timeframe: str, size: int):
+def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
     np.random.seed(42)
     tf_mins = timeframe_to_minutes(timeframe)
 
     base = np.random.normal(20, 2, size=size)
 
-    date = pd.period_range('2020-07-05', periods=size, freq=f'{tf_mins}min').to_timestamp()
+    date = pd.date_range(start, periods=size, freq=f'{tf_mins}min', tz='UTC')
     df = pd.DataFrame({
         'date': date,
         'open': base,

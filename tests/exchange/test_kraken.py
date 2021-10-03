@@ -327,5 +327,8 @@ def test_fill_leverage_brackets_kraken(default_conf, mocker):
         'LTC/USDT': [1],
         'LTC/USD': [1],
         'XLTCUSDT': [1],
-        'LTC/ETH': [1]
+        'LTC/ETH': [1],
+        'NEO/USDT': [1],
+        'TKN/USDT': [1],
+        'XRP/USDT': [1]
     }

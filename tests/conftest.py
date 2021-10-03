@@ -27,7 +27,8 @@ from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
 from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, mock_trade_3,
                                    mock_trade_4, mock_trade_5, mock_trade_6, short_trade)
-
+from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mock_trade_usdt_3,
+                                        mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6)
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -281,6 +282,7 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
+
     # Simulate dry_run entries
     trade = mock_trade_1(fee)
     add_trade(trade)
@@ -305,6 +307,40 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
 
     trade = leverage_trade(fee)
     add_trade(trade)
+
+    if use_db:
+        Trade.query.session.flush()
+
+
+def create_mock_trades_usdt(fee, use_db: bool = True):
+    """
+    Create some fake trades ...
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+
+        # Simulate dry_run entries
+    trade = mock_trade_usdt_1(fee)
+    add_trade(trade)
+
+    trade = mock_trade_usdt_2(fee)
+    add_trade(trade)
+
+    trade = mock_trade_usdt_3(fee)
+    add_trade(trade)
+
+    trade = mock_trade_usdt_4(fee)
+    add_trade(trade)
+
+    trade = mock_trade_usdt_5(fee)
+    add_trade(trade)
+
+    trade = mock_trade_usdt_6(fee)
+    add_trade(trade)
+
     if use_db:
         Trade.query.session.flush()
 
@@ -343,6 +379,11 @@ def init_persistence(default_conf):
 @pytest.fixture(scope="function")
 def default_conf(testdatadir):
     return get_default_conf(testdatadir)
+
+
+@pytest.fixture(scope="function")
+def default_conf_usdt(testdatadir):
+    return get_default_conf_usdt(testdatadir)
 
 
 def get_default_conf(testdatadir):
@@ -419,6 +460,32 @@ def get_default_conf(testdatadir):
     return configuration
 
 
+def get_default_conf_usdt(testdatadir):
+    configuration = get_default_conf(testdatadir)
+    configuration.update({
+        "stake_amount": 60.0,
+        "stake_currency": "USDT",
+        "exchange": {
+            "name": "binance",
+            "enabled": True,
+            "key": "key",
+            "secret": "secret",
+            "pair_whitelist": [
+                "ETH/USDT",
+                "LTC/USDT",
+                "XRP/USDT",
+                "NEO/USDT",
+                "TKN/USDT",
+            ],
+            "pair_blacklist": [
+                "DOGE/USDT",
+                "HOT/USDT",
+            ]
+        },
+    })
+    return configuration
+
+
 @pytest.fixture
 def update():
     _update = Update(0)
@@ -455,6 +522,33 @@ def ticker_sell_down():
         'bid': 0.00001044,
         'ask': 0.00001043,
         'last': 0.00001044,
+    })
+
+
+@pytest.fixture
+def ticker_usdt():
+    return MagicMock(return_value={
+        'bid': 2.0,
+        'ask': 2.02,
+        'last': 2.0,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_up():
+    return MagicMock(return_value={
+        'bid': 2.2,
+        'ask': 2.3,
+        'last': 2.2,
+    })
+
+
+@pytest.fixture
+def ticker_usdt_sell_down():
+    return MagicMock(return_value={
+        'bid': 2.01,
+        'ask': 2.0,
+        'last': 2.01,
     })
 
 
@@ -702,6 +796,81 @@ def get_markets():
                     'min': 1e-08,
                     'max': None
                 }
+            },
+            'info': {},
+        },
+        'XRP/USDT': {
+            'id': 'xrpusdt',
+            'symbol': 'XRP/USDT',
+            'base': 'XRP',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'NEO/USDT': {
+            'id': 'neousdt',
+            'symbol': 'NEO/USDT',
+            'base': 'NEO',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
+            },
+            'info': {},
+        },
+        'TKN/USDT': {
+            'id': 'tknusdt',
+            'symbol': 'TKN/USDT',
+            'base': 'TKN',
+            'quote': 'USDT',
+            'active': True,
+            'precision': {
+                'price': 8,
+                'amount': 8,
+                'cost': 8,
+            },
+            'lot': 0.00000001,
+            'limits': {
+                'amount': {
+                    'min': 0.01,
+                    'max': 1000,
+                },
+                'price': 500000,
+                'cost': {
+                    'min': 0.0001,
+                    'max': 500000,
+                },
             },
             'info': {},
         },
@@ -1639,27 +1808,34 @@ def result(testdatadir):
 
 @pytest.fixture(scope="function")
 def trades_for_order():
-    return [{'info': {'id': 34567,
-                      'orderId': 123456,
-                      'price': '0.24544100',
-                      'qty': '8.00000000',
-                      'commission': '0.00800000',
-                      'commissionAsset': 'LTC',
-                      'time': 1521663363189,
-                      'isBuyer': True,
-                      'isMaker': False,
-                      'isBestMatch': True},
-             'timestamp': 1521663363189,
-             'datetime': '2018-03-21T20:16:03.189Z',
-             'symbol': 'LTC/ETH',
-             'id': '34567',
-             'order': '123456',
-             'type': None,
-             'side': 'buy',
-             'price': 0.245441,
-             'cost': 1.963528,
-             'amount': 8.0,
-             'fee': {'cost': 0.008, 'currency': 'LTC'}}]
+    return [{
+        'info': {
+            'id': 34567,
+            'orderId': 123456,
+            'price': '2.0',
+            'qty': '8.00000000',
+            'commission': '0.00800000',
+            'commissionAsset': 'LTC',
+            'time': 1521663363189,
+            'isBuyer': True,
+            'isMaker': False,
+            'isBestMatch': True
+        },
+        'timestamp': 1521663363189,
+        'datetime': '2018-03-21T20:16:03.189Z',
+        'symbol': 'LTC/USDT',
+        'id': '34567',
+        'order': '123456',
+        'type': None,
+        'side': 'buy',
+        'price': 2.0,
+        'cost': 16.0,
+        'amount': 8.0,
+        'fee': {
+            'cost': 0.008,
+            'currency': 'LTC'
+        }
+    }]
 
 
 @pytest.fixture(scope="function")
@@ -1924,6 +2100,22 @@ def open_trade():
     )
 
 
+@pytest.fixture(scope="function")
+def open_trade_usdt():
+    return Trade(
+        pair='ADA/USDT',
+        open_rate=2.0,
+        exchange='binance',
+        open_order_id='123456789',
+        amount=30.0,
+        fee_open=0.0,
+        fee_close=0.0,
+        stake_amount=60.0,
+        open_date=arrow.utcnow().shift(minutes=-601).datetime,
+        is_open=True
+    )
+
+
 @pytest.fixture
 def saved_hyperopt_results():
     hyperopt_res = [
@@ -2067,7 +2259,7 @@ def saved_hyperopt_results():
 @pytest.fixture(scope='function')
 def limit_buy_order_usdt_open():
     return {
-        'id': 'mocked_limit_buy',
+        'id': 'mocked_limit_buy_usdt',
         'type': 'limit',
         'side': 'buy',
         'symbol': 'mocked',
@@ -2094,7 +2286,7 @@ def limit_buy_order_usdt(limit_buy_order_usdt_open):
 @pytest.fixture
 def limit_sell_order_usdt_open():
     return {
-        'id': 'mocked_limit_sell',
+        'id': 'mocked_limit_sell_usdt',
         'type': 'limit',
         'side': 'sell',
         'pair': 'mocked',
