@@ -2581,7 +2581,6 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        # TODO: Double check that profit_amount and profit_ratio are correct
         'profit_amount': 0.9475,
         'profit_ratio': 0.09451372,
         'stake_currency': 'USDT',
@@ -2624,7 +2623,6 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
-    # TODO: Should be a loss, but comes out as a gain
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -2751,7 +2749,6 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
-    # TODO: Are these values correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3274,7 +3271,6 @@ def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open,
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
-    # TODO: Does this make sense? How is stoploss 2.7?
     assert log_has("ETH/USDT - HIT STOP: current price at 2.200000, stoploss is 2.700000, "
                    "initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
