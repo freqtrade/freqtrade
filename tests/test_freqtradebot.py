@@ -3026,12 +3026,12 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     # Enable profit
     (True, 1.9, 2.2, False, True, SellType.SELL_SIGNAL.value),
     # Disable profit
-    (False, 0.00002172, 0.00002173, True,  False, SellType.SELL_SIGNAL.value),
+    (False, 2.9, 3.2, True,  False, SellType.SELL_SIGNAL.value),
     # Enable loss
     # * Shouldn't this be SellType.STOP_LOSS.value
-    (True, 0.00000172, 0.00000173, False, False, None),
+    (True, 0.19, 0.22, False, False, None),
     # Disable loss
-    (False, 0.00000172, 0.00000173, True, False, SellType.SELL_SIGNAL.value),
+    (False, 0.10, 0.22, True, False, SellType.SELL_SIGNAL.value),
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_buy_order_usdt, limit_buy_order_usdt_open,
