@@ -30,6 +30,7 @@ from tests.conftest_trades import (leverage_trade, mock_trade_1, mock_trade_2, m
 from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mock_trade_usdt_3,
                                         mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6)
 
+
 logging.getLogger('').setLevel(logging.INFO)
 
 
