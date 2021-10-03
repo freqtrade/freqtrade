@@ -2962,11 +2962,10 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
 
     assert not trade.is_open
-    assert trade.close_profit == 0.09451372  # TODO: Check this is correct
+    assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
-    # TODO: Is this correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3330,7 +3329,6 @@ def test_trailing_stop_loss_positive(
     )
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    # TODO: is 0.0249% correct? Shouldn't it be higher?
     caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
     if trail_if_reached:
         assert not log_has(caplog_text, caplog)
