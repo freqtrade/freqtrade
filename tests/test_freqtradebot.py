@@ -135,7 +135,7 @@ def test_order_dict(default_conf_usdt, mocker, runmode, caplog) -> None:
     assert not log_has_re(".*stoploss_on_exchange .* dry-run", caplog)
 
 
-def test_get_trade_stake_amount(default_conf_usdt, ticker_usdt, mocker) -> None:
+def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
 
@@ -333,8 +333,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_buy_order_usdt, limi
     assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
-def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, limit_buy_order_usdt,
-                                      fee, mocker) -> None:
+def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     patch_wallet(mocker, free=default_conf_usdt['stake_amount'] * 0.5)
@@ -815,10 +814,10 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt, lim
     # In case of rejected or expired order and partially filled
     order['status'] = 'expired'
     order['amount'] = 30.0
-    order['filled'] = 80.99181073
+    order['filled'] = 20.0
     order['remaining'] = 10.00
     order['price'] = 0.5
-    order['cost'] = 40.495905365
+    order['cost'] = 15.0
     order['id'] = '555'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
                  MagicMock(return_value=order))
@@ -828,7 +827,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt, lim
     assert trade
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
-    assert trade.stake_amount == 40.495905365
+    assert trade.stake_amount == 15.0
 
     # Test with custom stake
     order['status'] = 'open'
@@ -2832,7 +2831,6 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        # TODO: Double check that profit_amount and profit_ratio are correct
         'profit_amount': 0.9475,
         'profit_ratio': 0.09451372,
         'stake_currency': 'USDT',
@@ -2876,7 +2874,6 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
-    # TODO: Should be a loss, but comes out as a gain
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3006,7 +3003,6 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
 
-    # TODO: Are these values correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3225,11 +3221,10 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
 
     assert not trade.is_open
-    assert trade.close_profit == 0.09451372  # TODO: Check this is correct
+    assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
-    # TODO: Is this correct?
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3293,12 +3288,12 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     # Enable profit
     (True, 1.9, 2.2, False, True, SellType.SELL_SIGNAL.value),
     # Disable profit
-    (False, 0.00002172, 0.00002173, True,  False, SellType.SELL_SIGNAL.value),
+    (False, 2.9, 3.2, True,  False, SellType.SELL_SIGNAL.value),
     # Enable loss
     # * Shouldn't this be SellType.STOP_LOSS.value
-    (True, 0.00000172, 0.00000173, False, False, None),
+    (True, 0.19, 0.22, False, False, None),
     # Disable loss
-    (False, 0.00000172, 0.00000173, True, False, SellType.SELL_SIGNAL.value),
+    (False, 0.10, 0.22, True, False, SellType.SELL_SIGNAL.value),
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_buy_order_usdt, limit_buy_order_usdt_open, is_short,
@@ -3493,7 +3488,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
 
 
 @ pytest.mark.parametrize("is_short", [False, True])
-def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt,
+def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open,
                             is_short, fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -3542,7 +3537,6 @@ def test_trailing_stop_loss(default_conf_usdt, limit_buy_order_usdt_open, limit_
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
-    # TODO: Does this make sense? How is stoploss 2.7?
     assert log_has("ETH/USDT - HIT STOP: current price at 2.200000, stoploss is 2.700000, "
                    "initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
@@ -3603,7 +3597,6 @@ def test_trailing_stop_loss_positive(
     )
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    # TODO: is 0.0249% correct? Shouldn't it be higher?
     caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
     if trail_if_reached:
         assert not log_has(caplog_text, caplog)
@@ -3975,7 +3968,7 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
     (8.0, 0.1, 8.0, 8.0),
     (8.0, 0.1, 7.9, 7.9),
 ])
-def test_apply_fee_conditional(default_conf_usdt, fee, caplog, mocker,
+def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
                                amount, fee_abs, wallet, amount_exp):
     walletmock = mocker.patch('freqtrade.wallets.Wallets.update')
     mocker.patch('freqtrade.wallets.Wallets.get_free', return_value=wallet)
