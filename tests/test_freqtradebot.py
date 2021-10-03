@@ -135,14 +135,14 @@ def test_get_trade_stake_amount(default_conf_usdt, mocker) -> None:
 
 
 @pytest.mark.parametrize("amend_last,wallet,max_open,lsamr,expected", [
-                        (False, 20, 2, 0.5, [10, None]),
-                        (True, 20, 2, 0.5, [10, 9.8]),
-                        (False, 30, 3, 0.5, [10, 10, None]),
-                        (True, 30, 3, 0.5, [10, 10, 9.7]),
-                        (False, 22, 3, 0.5, [10, 10, None]),
-                        (True, 22, 3, 0.5, [10, 10, 0.0]),
-                        (True, 27, 3, 0.5, [10, 10, 6.73]),
-                        (True, 22, 3, 1, [10, 10, 0.0]),
+                        (False, 120, 2, 0.5, [60, None]),
+                        (True, 120, 2, 0.5, [60, 58.8]),
+                        (False, 180, 3, 0.5, [60, 60, None]),
+                        (True, 180, 3, 0.5, [60, 60, 58.2]),
+                        (False, 122, 3, 0.5, [60, 60, None]),
+                        (True, 122, 3, 0.5, [60, 60, 0.0]),
+                        (True, 167, 3, 0.5, [60, 60, 45.33]),
+                        (True, 122, 3, 1, [60, 60, 0.0]),
 ])
 def test_check_available_stake_amount(
     default_conf_usdt, ticker_usdt, mocker, fee, limit_buy_order_usdt_open,
@@ -267,7 +267,7 @@ def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -
     trade = Trade.query.first()
 
     assert trade is not None
-    assert trade.stake_amount == 10.0
+    assert trade.stake_amount == 60.0
     assert trade.is_open
     assert trade.open_date is not None
 
@@ -275,11 +275,11 @@ def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -
     trade = Trade.query.order_by(Trade.id.desc()).first()
 
     assert trade is not None
-    assert trade.stake_amount == 10.0
+    assert trade.stake_amount == 60.0
     assert trade.is_open
     assert trade.open_date is not None
 
-    assert Trade.total_open_trades_stakes() == 20.0
+    assert Trade.total_open_trades_stakes() == 120.0
 
 
 @pytest.mark.parametrize("is_short,open_rate", [
@@ -306,7 +306,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
     trade = Trade.query.first()
     trade.is_short = is_short
     assert trade is not None
-    assert trade.stake_amount == 10.0
+    assert trade.stake_amount == 60.0
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
@@ -487,7 +487,7 @@ def test_create_trades_multiple_trades(
     patch_exchange(mocker)
     default_conf_usdt['max_open_trades'] = max_open
     default_conf_usdt['tradable_balance_ratio'] = tradable_balance_ratio
-    default_conf_usdt['dry_run_wallet'] = 10.0 * max_open
+    default_conf_usdt['dry_run_wallet'] = 60.0 * max_open
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -566,10 +566,10 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
     assert trade.open_rate == 2.0
-    assert trade.amount == 5.0
+    assert trade.amount == 30.0
 
     assert log_has(
-        'Long signal found: about create a new trade for ETH/USDT with stake_amount: 10.0 ...',
+        'Long signal found: about create a new trade for ETH/USDT with stake_amount: 60.0 ...',
         caplog
     )
 
@@ -1330,7 +1330,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=4.56621004,
+        amount=27.39726027,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.95,
@@ -1533,7 +1533,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=5.26315789,
+        amount=31.57894736,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=4.4 * 0.96,
@@ -2576,7 +2576,7 @@ def test_check_handle_timedout_exception(default_conf_usdt, ticker_usdt, open_tr
     caplog.clear()
     freqtrade.check_handle_timedout()
     assert log_has_re(r"Cannot query order for Trade\(id=1, pair=ADA/USDT, amount=30.00000000, "
-                      f"is_short=False, leverage=1.0, "
+                      r"is_short=False, leverage=1.0, "
                       r"open_rate=2.00000000, open_since="
                       f"{open_trade_usdt.open_date.strftime('%Y-%m-%d %H:%M:%S')}"
                       r"\) due to Traceback \(most recent call last\):\n*",
@@ -2805,11 +2805,11 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'pair': 'ETH/USDT',
         'gain': 'profit',
         'limit': 2.2,
-        'amount': 5.0,
+        'amount': 30.0,
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        'profit_amount': 0.9475,
+        'profit_amount': 5.685,
         'profit_ratio': 0.09451372,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
@@ -2859,11 +2859,11 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'pair': 'ETH/USDT',
         'gain': 'loss',
         'limit': 2.01,
-        'amount': 5.0,
+        'amount': 30.0,
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.0,
-        'profit_amount': -0.000125,
+        'profit_amount': -0.00075,
         'profit_ratio': -1.247e-05,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
@@ -2927,11 +2927,11 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'pair': 'ETH/USDT',
         'gain': 'profit',
         'limit': 2.25,
-        'amount': 5.0,
+        'amount': 30.0,
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        'profit_amount': 1.196875,
+        'profit_amount': 7.18125,
         'profit_ratio': 0.11938903,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
@@ -2988,11 +2988,11 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'pair': 'ETH/USDT',
         'gain': 'loss',
         'limit': 1.98,
-        'amount': 5.0,
+        'amount': 30.0,
         'order_type': 'limit',
         'open_rate': 2.0,
         'current_rate': 2.0,
-        'profit_amount': -0.14975,
+        'profit_amount': -0.8985,
         'profit_ratio': -0.01493766,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
@@ -3210,11 +3210,11 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
         'pair': 'ETH/USDT',
         'gain': 'profit',
         'limit': 2.2,
-        'amount': 5.0,
+        'amount': 30.0,
         'order_type': 'market',
         'open_rate': 2.0,
         'current_rate': 2.3,
-        'profit_amount': 0.9475,
+        'profit_amount': 5.685,
         'profit_ratio': 0.09451372,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
@@ -3999,7 +3999,7 @@ def test_order_book_depth_of_market(
         assert trade is None
     else:
         assert trade is not None
-        assert trade.stake_amount == 10.0
+        assert trade.stake_amount == 60.0
         assert trade.is_open
         assert trade.open_date is not None
         assert trade.exchange == 'binance'
@@ -4148,7 +4148,7 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
                              caplog):
     default_conf_usdt['dry_run'] = True
     # Initialize to 2 times stake amount
-    default_conf_usdt['dry_run_wallet'] = 20.0
+    default_conf_usdt['dry_run_wallet'] = 120.0
     default_conf_usdt['max_open_trades'] = 2
     default_conf_usdt['tradable_balance_ratio'] = 1.0
     patch_exchange(mocker)
@@ -4161,7 +4161,7 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
 
     bot = get_patched_freqtradebot(mocker, default_conf_usdt)
     patch_get_signal(bot)
-    assert bot.wallets.get_free('USDT') == 20.0
+    assert bot.wallets.get_free('USDT') == 120.0
 
     n = bot.enter_positions()
     assert n == 2
@@ -4172,7 +4172,7 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
     n = bot.enter_positions()
     assert n == 0
     assert log_has_re(r"Unable to create trade for XRP/USDT: "
-                      r"Available balance \(0.0 USDT\) is lower than stake amount \(10.0 USDT\)",
+                      r"Available balance \(0.0 USDT\) is lower than stake amount \(60.0 USDT\)",
                       caplog)
 
 

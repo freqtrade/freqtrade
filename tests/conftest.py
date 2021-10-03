@@ -291,6 +291,7 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
+
     # Simulate dry_run entries
     trade = mock_trade_1(fee, False)
     add_trade(trade)
@@ -329,6 +330,7 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
+
     # Simulate dry_run entries
     trade = mock_trade_usdt_1(fee)
     add_trade(trade)
@@ -470,7 +472,7 @@ def get_default_conf(testdatadir):
 def get_default_conf_usdt(testdatadir):
     configuration = get_default_conf(testdatadir)
     configuration.update({
-        "stake_amount": 10.0,
+        "stake_amount": 60.0,
         "stake_currency": "USDT",
         "exchange": {
             "name": "binance",
