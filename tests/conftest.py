@@ -217,8 +217,14 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
-                     enter_short=False, exit_short=False, enter_tag: Optional[str] = None) -> None:
+def patch_get_signal(
+    freqtrade: FreqtradeBot,
+    enter_long=True,
+    exit_long=False,
+    enter_short=False,
+    exit_short=False,
+    enter_tag: Optional[str] = None
+) -> None:
     """
     :param mocker: mocker to patch IStrategy class
     :param value: which value IStrategy.get_signal() must return

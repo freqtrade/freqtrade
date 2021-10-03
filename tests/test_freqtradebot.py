@@ -203,12 +203,11 @@ def test_edge_overrides_stake_amount(mocker, edge_conf) -> None:
         'LTC/BTC', freqtrade.edge) == (999.9 * 0.5 * 0.01) / 0.21
 
 
-@pytest.mark.parametrize('is_short', [False, True])
-@pytest.mark.parametrize('buy_price_mult,ignore_strat_sl', [
-    # Override stoploss
-    (0.79, False),
-    # Override strategy stoploss
-    (0.85, True)
+@pytest.mark.parametrize('buy_price_mult,ignore_strat_sl,is_short', [
+    (0.79, False, False),   # Override stoploss
+    (0.85, True, False),    # Override strategy stoploss
+    (0.85, False, True),    # Override stoploss
+    (0.79, True, True)      # Override strategy stoploss
 ])
 def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker, is_short,
                                  buy_price_mult, ignore_strat_sl, edge_conf) -> None:
@@ -220,7 +219,7 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker, is_short,
     # Strategy stoploss is -0.1 but Edge imposes a stoploss at -0.2
     # Thus, if price falls 21%, stoploss should be triggered
     #
-    # mocking the ticker_usdt: price is falling ...
+    # mocking the ticker: price is falling ...
     enter_price = limit_order[enter_side(is_short)]['price']
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -236,10 +235,12 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker, is_short,
     # Create a trade with "limit_buy_order_usdt" price
     freqtrade = FreqtradeBot(edge_conf)
     freqtrade.active_pair_whitelist = ['NEO/BTC']
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
+    caplog.clear()
     trade.update(limit_order[enter_side(is_short)])
     #############################################
 
@@ -253,7 +254,6 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker, is_short,
 def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
-    default_conf_usdt['stake_amount'] = 10.0
     default_conf_usdt['max_open_trades'] = 2
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -300,7 +300,7 @@ def test_create_trade(default_conf_usdt, ticker_usdt, limit_order,
     # Save state of current whitelist
     whitelist = deepcopy(default_conf_usdt['exchange']['pair_whitelist'])
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.create_trade('ETH/USDT')
 
     trade = Trade.query.first()
@@ -359,7 +359,7 @@ def test_create_trade_minimal_amount(
     default_conf_usdt['max_open_trades'] = max_open_trades
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.config['stake_amount'] = stake_amount
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     if create:
         assert freqtrade.create_trade('ETH/USDT')
@@ -550,7 +550,7 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     trades = Trade.query.filter(Trade.is_open.is_(True)).all()
     assert not trades
@@ -985,7 +985,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
         stoploss=stoploss
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # First case: when stoploss is not yet set but the order is open
     # should get the stoploss order id immediately
@@ -1111,7 +1111,7 @@ def test_handle_sle_cancel_cant_recreate(mocker, default_conf_usdt, fee, caplog,
         stoploss=MagicMock(side_effect=ExchangeError()),
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
@@ -1155,7 +1155,7 @@ def test_create_stoploss_order_invalid_order(
         stoploss=MagicMock(side_effect=InvalidOrderException()),
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     freqtrade.enter_positions()
@@ -1207,7 +1207,7 @@ def test_create_stoploss_order_insufficient_funds(
         'freqtrade.exchange.Binance',
         stoploss=MagicMock(side_effect=InsufficientFundsError()),
     )
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     freqtrade.enter_positions()
@@ -1227,10 +1227,14 @@ def test_create_stoploss_order_insufficient_funds(
     assert mock_insuf.call_count == 1
 
 
-@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short,bid,ask,stop_price,amt,hang_price", [
+    (False, [4.38, 4.16], [4.4, 4.17], ['2.0805', 4.4 * 0.95], 27.39726027, 3),
+    (True, [1.09, 1.21], [1.1, 1.22], ['2.321', 1.1 * 0.95], 27.39726027, 1.5),
+])
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is_short,
-                                              limit_order) -> None:
+def test_handle_stoploss_on_exchange_trailing(
+    mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, amt, hang_price
+) -> None:
     # TODO-lev: test for short
     # When trailing stoploss is set
     enter_order = limit_order[enter_side(is_short)]
@@ -1242,7 +1246,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
         fetch_ticker=MagicMock(return_value={
             'bid': 2.19,
             'ask': 2.2,
-            'last': 2.19
+            'last': 2.19,
         }),
         create_order=MagicMock(side_effect=[
             {'id': enter_order['id']},
@@ -1268,28 +1272,28 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     # setting stoploss
-    freqtrade.strategy.stoploss = -0.05
+    freqtrade.strategy.stoploss = 0.05 if is_short else -0.05
 
     # setting stoploss_on_exchange_interval to 60 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
 
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
-    trade.is_short = is_short
 
     stoploss_order_hanging = MagicMock(return_value={
         'id': 100,
         'status': 'open',
         'type': 'stop_loss_limit',
-        'price': 3,
+        'price': hang_price,
         'average': 2,
         'info': {
-            'stopPrice': '2.0805'
+            'stopPrice': stop_price[0]
         }
     })
 
@@ -1303,9 +1307,9 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': 4.38,
-            'ask': 4.4,
-            'last': 4.38
+            'bid': bid[0],
+            'ask': ask[0],
+            'last': bid[0],
         })
     )
 
@@ -1321,7 +1325,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
     stoploss_order_mock.assert_not_called()
 
     assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 4.4 * 0.95
+    assert trade.stop_loss == stop_price[1]
 
     # setting stoploss_on_exchange_interval to 0 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
@@ -1333,7 +1337,7 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
         amount=27.39726027,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
-        stop_price=4.4 * 0.95,
+        stop_price=stop_price[1],
         side=exit_side(is_short),
         leverage=1.0
     )
@@ -1342,9 +1346,9 @@ def test_handle_stoploss_on_exchange_trailing(mocker, default_conf_usdt, fee, is
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': 4.16,
-            'ask': 4.17,
-            'last': 4.16
+            'bid': bid[1],
+            'ask': ask[1],
+            'last': bid[1],
         })
     )
     assert freqtrade.handle_trade(trade) is True
@@ -1387,11 +1391,11 @@ def test_handle_stoploss_on_exchange_trailing_error(
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
 
     # setting stoploss
-    freqtrade.strategy.stoploss = -0.05
+    freqtrade.strategy.stoploss = 0.05 if is_short else -0.05
 
     # setting stoploss_on_exchange_interval to 60 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.enter_positions()
     trade = Trade.query.first()
     trade.is_open = True
@@ -1477,10 +1481,11 @@ def test_handle_stoploss_on_exchange_custom_stop(
     # setting stoploss_on_exchange_interval to 60 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 60
 
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
@@ -1602,7 +1607,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog, is
     # setting stoploss_on_exchange_interval to 0 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
 
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.active_pair_whitelist = freqtrade.edge.adjust(freqtrade.active_pair_whitelist)
 
@@ -1941,7 +1946,7 @@ def test_handle_trade(
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
 
@@ -1996,7 +2001,7 @@ def test_handle_overlapping_signals(
     assert nb_trades == 0
 
     # Buy is triggering, so buying ...
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.enter_positions()
     trades = Trade.query.all()
     for trade in trades:
@@ -2053,7 +2058,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.enter_positions()
@@ -2097,7 +2102,7 @@ def test_handle_trade_use_sell_signal(
     )
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.enter_positions()
 
@@ -2132,7 +2137,7 @@ def test_close_trade(
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create trade and sell it
     freqtrade.enter_positions()
@@ -2766,7 +2771,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
@@ -2833,7 +2838,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -2889,7 +2894,7 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
     config['custom_price_max_distance_ratio'] = 0.1
     patch_whitelist(mocker, config)
     freqtrade = FreqtradeBot(config)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
@@ -2955,7 +2960,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3066,7 +3071,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3179,7 +3184,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3240,7 +3245,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
             InsufficientFundsError(),
         ]),
     )
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3297,7 +3302,7 @@ def test_sell_profit_only(
         'sell_profit_offset': 0.1,
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     if sell_type == SellType.SELL_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
@@ -3336,7 +3341,7 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_order, limit_order_ope
     )
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.enter_positions()
@@ -3400,7 +3405,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
     freqtrade.enter_positions()
@@ -3448,7 +3453,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     default_conf_usdt['ignore_roi_if_buy_signal'] = True
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.enter_positions()
@@ -3486,7 +3491,7 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
     default_conf_usdt['trailing_stop'] = True
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.enter_positions()
@@ -3554,7 +3559,7 @@ def test_trailing_stop_loss_positive(
     patch_whitelist(mocker, default_conf_usdt)
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     freqtrade.enter_positions()
 
@@ -3641,7 +3646,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
         'ignore_roi_if_buy_signal': False
     }
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
     freqtrade.enter_positions()
@@ -3991,7 +3996,7 @@ def test_order_book_depth_of_market(
     # Save state of current whitelist
     whitelist = deepcopy(default_conf_usdt['exchange']['pair_whitelist'])
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
+    patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
