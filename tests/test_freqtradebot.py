@@ -773,10 +773,10 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     # In case of rejected or expired order and partially filled
     limit_buy_order_usdt['status'] = 'expired'
     limit_buy_order_usdt['amount'] = 30.0
-    limit_buy_order_usdt['filled'] = 80.99181073
+    limit_buy_order_usdt['filled'] = 20.0
     limit_buy_order_usdt['remaining'] = 10.00
     limit_buy_order_usdt['price'] = 0.5
-    limit_buy_order_usdt['cost'] = 40.495905365
+    limit_buy_order_usdt['cost'] = 15.0
     limit_buy_order_usdt['id'] = '555'
     mocker.patch('freqtrade.exchange.Exchange.create_order',
                  MagicMock(return_value=limit_buy_order_usdt))
@@ -785,7 +785,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
     assert trade
     assert trade.open_order_id == '555'
     assert trade.open_rate == 0.5
-    assert trade.stake_amount == 40.495905365
+    assert trade.stake_amount == 15.0
 
     # Test with custom stake
     limit_buy_order_usdt['status'] = 'open'
