@@ -90,6 +90,8 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trailing_stop_positive_offset` | Offset on when to apply `trailing_stop_positive`. Percentage value which should be positive. More details in the [stoploss documentation](stoploss.md#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0` (no offset).* <br> **Datatype:** Float
 | `trailing_only_offset_is_reached` | Only apply trailing stoploss when the offset is reached. [stoploss documentation](stoploss.md). [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*  <br> **Datatype:** Boolean
 | `fee` | Fee used during backtesting / dry-runs. Should normally not be configured, which has freqtrade fall back to the exchange default fee. Set as ratio (e.g. 0.001 = 0.1%). Fee is applied twice for each trade, once when buying, once when selling. <br> **Datatype:** Float (as ratio)
+| `trading_mode` | Specifies if you want to trade regularly, trade with leverage, or trade contracts whose prices are derived from matching cryptocurrency prices. spot, margin or futures
+| `collateral` | When trading with leverage, this determines if the collateral owned by the trader will be shared or isolated to each trading pair
 | `unfilledtimeout.buy` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled buy order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.sell` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled sell order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.unit` | Unit to use in unfilledtimeout setting. Note: If you set unfilledtimeout.unit to "seconds", "internals.process_throttle_secs" must be inferior or equal to timeout [Strategy Override](#parameters-in-the-strategy). <br> *Defaults to `minutes`.* <br> **Datatype:** String
@@ -447,6 +449,100 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
     This is ongoing work. For now, it is supported only for binance and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
+### Understand trading_mode
+
+The possible values are: `spot` (default), `margin`(*coming soon*) or `futures`.
+
+**SPOT**
+    Regular trading mode. 
+        - Shorting is not available
+        - There is no liquidation price
+        - Profits gained/lost are equal to the change in value of the assets(minus trading fees)
+
+#### Leverage trading modes
+
+!!! Warning: Trading with leverage(`trading_mode="margin"` or `trading_mode="futures"`) is very risky. 
+!!! Do not trade with a leverage > 1 using a strategy that hasn't shown positive results in a live run using the spot market 
+!!! Check the stoploss of your strategy. With a leverage of 2, a stoploss of 0.5 would be too low, and these trades would be liquidated before reaching that amount
+
+> I've only been using freqtrade for a couple weeks, but I feel like I'm pretty good and could use leverage
+
+!!! No you're not. Do not use leverage yet.
+
+# TODO: include a resource to help calculate stoplosses that are above the liquidation price
+
+#TODO: Taken from investopedia, is that ok?
+Leverage results from using borrowed capital as a funding source when investing to expand the firm's asset base and generate returns on risk capital. Leverage is an investment strategy of using borrowed money—specifically, the use of various financial instruments or borrowed capital—to increase the potential return of an investment. 
+
+
+**MARGIN**
+*coming soon*
+    Trading occurs on the spot market, but the exchange lends currency to you in an amount equal to the chosen leverage. You pay the amount lent to you back to the exchange with interest, and your profits/losses are multiplied by the leverage specified
+    
+**FUTURES**
+*Freqtrade can only trade **perpetual futures***
+
+    Perpetual futures contracts are traded at a price that mirrors the underlying asset they are based off of. You are not trading the actual asset but instead are trading a derivative contract. In contract to regular futures contracts, perpetual futures can last indefinately. 
+
+    In addition to the gains/losses from the change in price of the futures contract, traders also exchange funding fees, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.
+
+
+``` python
+"trading_mode": "spot"
+```
+
+### Collateral
+
+The possible values are: `isolated` (default), or `cross`(*coming soon*)
+
+    # TODO: I took this definition from bitmex, is that fine? https://www.bitmex.com/app/isolatedMargin
+**ISOLATED** 
+
+Margin assigned to a position is restricted to a certain amount. If the margin falls below the Maintenance Margin level, the position is liquidated.
+
+**CROSS**
+
+Margin is shared between open positions. When needed, a position will draw more margin from the total account balance to avoid liquidation. 
+
+### Exchange configuration
+
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
+exchange markets and trading APIs. The complete up-to-date list can be found in the
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
+ However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
+ so these are the only officially supported exchanges:
+
+- [Bittrex](https://bittrex.com/): "bittrex"
+- [Binance](https://www.binance.com/): "binance"
+- [Kraken](https://kraken.com/): "kraken"
+
+Feel free to test other exchanges and submit your PR to improve the bot.
+
+Some exchanges require special configuration, which can be found on the [Exchange-specific Notes](exchanges.md) documentation page.
+
+#### Sample exchange configuration
+
+A exchange configuration for "binance" would look as follows:
+
+```json
+"exchange": {
+    "name": "binance",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "ccxt_config": {"enableRateLimit": true},
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 200
+    },
+```
+
+This configuration enables binance, as well as rate-limiting to avoid bans from the exchange.
+`"rateLimit": 200` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+
+!!! Note
+    Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
+    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
+
 ### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
@@ -485,7 +581,7 @@ creating trades on the exchange.
 
 ```json
 "exchange": {
-        "name": "bittrex",
+    "name": "bittrex",
         "key": "key",
         "secret": "secret",
         ...
