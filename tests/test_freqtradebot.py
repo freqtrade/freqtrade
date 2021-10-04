@@ -717,7 +717,7 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     assert ("ETH/USDT", default_conf_usdt["timeframe"]) in refresh_mock.call_args[0][0]
 
 
-@pytest.mark.parametrize("is_short", [True, False])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short) -> None:
 
@@ -1909,6 +1909,7 @@ def test_update_trade_state_sell(
         open_date=arrow.utcnow().datetime,
         open_order_id="123456",
         is_open=True,
+        interest_rate=0.0005,
         is_short=is_short
     )
     order = Order.parse_from_ccxt_object(open_order, 'LTC/ETH', (enter_side(is_short)))
