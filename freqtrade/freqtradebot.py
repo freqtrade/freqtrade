@@ -869,7 +869,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.execute_trade_exit(trade, trade.stop_loss, sell_reason=SellCheckTuple(
-                sell_type=SellType.EMERGENCY_SELL), side=trade.exit_side)
+                sell_type=SellType.EMERGENCY_SELL))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -996,7 +996,7 @@ class FreqtradeBot(LoggingMixin):
 
         if should_exit.sell_flag:
             logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}')
-            self.execute_trade_exit(trade, exit_rate, should_exit, side=trade.exit_side)
+            self.execute_trade_exit(trade, exit_rate, should_exit)
             return True
         return False
 
@@ -1227,7 +1227,6 @@ class FreqtradeBot(LoggingMixin):
         trade: Trade,
         limit: float,
         sell_reason: SellCheckTuple,  # TODO-lev update to exit_reason
-        side: str
     ) -> bool:
         """
         Executes a trade exit for the given trade and limit

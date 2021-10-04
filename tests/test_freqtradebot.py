@@ -2790,7 +2790,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     )
     # Prevented sell ...
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
     assert rpc_mock.call_count == 0
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
@@ -2798,7 +2798,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     # Repatch with true
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
@@ -2853,7 +2853,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         fetch_ticker=ticker_usdt_sell_down
     )
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
@@ -2917,7 +2917,7 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
     # Set a custom exit price
     freqtrade.strategy.custom_exit_price = lambda **kwargs: 2.25
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
 
     # Sell price must be different to default bid price
@@ -2981,7 +2981,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
 
     trade.stop_loss = 2.0 * 0.99
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
@@ -3038,7 +3038,7 @@ def test_execute_trade_exit_sloe_cancel_exception(
     trade.stoploss_order_id = "abcd"
 
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=1234, side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=1234,
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     assert create_order_mock.call_count == 2
     assert log_has('Could not cancel stoploss order abcd', caplog)
@@ -3091,7 +3091,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     )
 
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     trade = Trade.query.first()
@@ -3201,7 +3201,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
     freqtrade.config['order_types']['sell'] = 'market'
 
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
 
     assert not trade.is_open
@@ -3263,7 +3263,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     sell_reason = SellCheckTuple(sell_type=SellType.ROI)
     # TODO-lev: side="buy"
     assert not freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
-                                            sell_reason=sell_reason, side="sell")
+                                            sell_reason=sell_reason)
     assert mock_insuf.call_count == 1
 
 
@@ -3421,7 +3421,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     )
 
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'], side="sell",
+    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     trade.close(ticker_usdt_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair)
