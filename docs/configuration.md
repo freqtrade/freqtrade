@@ -488,14 +488,14 @@ Leverage results from using borrowed capital as a funding source when investing 
 
 
 ``` python
-"trading_mode": "spot"
+"trading_mode": "futures"
 ```
 
 ### Collateral
 
-The possible values are: `isolated` (default), or `cross`(*coming soon*)
+The possible values are: `isolated`, or `cross`(*coming soon*)
 
-    # TODO: I took this definition from bitmex, is that fine? https://www.bitmex.com/app/isolatedMargin
+# TODO: I took this definition from bitmex, is that fine? https://www.bitmex.com/app/isolatedMargin
 **ISOLATED** 
 
 Margin assigned to a position is restricted to a certain amount. If the margin falls below the Maintenance Margin level, the position is liquidated.
@@ -503,6 +503,10 @@ Margin assigned to a position is restricted to a certain amount. If the margin f
 **CROSS**
 
 Margin is shared between open positions. When needed, a position will draw more margin from the total account balance to avoid liquidation. 
+
+``` python
+"collateral": "isolated"
+```
 
 ### Exchange configuration
 
