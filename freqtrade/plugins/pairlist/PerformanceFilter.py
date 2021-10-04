@@ -21,6 +21,7 @@ class PerformanceFilter(IPairList):
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
         self._minutes = pairlistconfig.get('minutes', 0)
+        self._min_profit = pairlistconfig.get('min_profit', None)
 
     @property
     def needstickers(self) -> bool:
@@ -68,6 +69,8 @@ class PerformanceFilter(IPairList):
         sorted_df = list_df.merge(performance, on='pair', how='left')\
             .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
             .sort_values(by=['profit'], ascending=False)
+        if self._min_profit is not None:
+            sorted_df = sorted_df[sorted_df['profit'] >= self._min_profit]
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist
