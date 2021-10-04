@@ -347,3 +347,7 @@ class BacktestResponse(BaseModel):
     trade_count: Optional[float]
     # TODO: Properly type backtestresult...
     backtest_result: Optional[Dict[str, Any]]
+
+class SysInfo(BaseModel):
+    cpu_pct: float
+    ram_pct: float

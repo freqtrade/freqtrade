@@ -871,5 +871,6 @@ class RPC:
             self._freqtrade.strategy.plot_config['subplots'] = {}
         return self._freqtrade.strategy.plot_config
 
-    def _rpc_sysinfo(self) -> Dict[str, Any]:
+    @staticmethod
+    def _rpc_sysinfo() -> Dict[str, Any]:
         return {"cpu_pct": psutil.cpu_percent(interval=1, percpu=True), "ram_pct": psutil.virtual_memory().percent}
