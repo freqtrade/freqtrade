@@ -82,11 +82,11 @@ Currently known to happen for US Bittrex users.
 
 Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
-### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+### I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy
 
-As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex and Gate.io).
 
-To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
+To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
 ```
     order_types = {
@@ -136,6 +136,8 @@ On Windows, the `--logfile` option is also supported by Freqtrade and you can us
 > type \path\to\mylogfile.log | findstr "something"
 ```
 
+## Hyperopt module
+
 ### Why does freqtrade not have GPU support?
 
 First of all, most indicator libraries don't have GPU support - as such, there would be little benefit for indicator calculations.
@@ -151,8 +153,6 @@ As such, GPU's are not too well suited for most parts of hyperopt.
 The benefit of using GPU would therefore be pretty slim - and will not justify the complexity introduced by trying to add GPU support.
 
 There is however nothing preventing you from using GPU-enabled indicators within your strategy if you think you must have this - you will however probably be disappointed by the slim gain that will give you (compared to the complexity).
-
-## Hyperopt module
 
 ### How many epochs do I need to get a good Hyperopt result?
 
