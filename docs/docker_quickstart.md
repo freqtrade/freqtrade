@@ -70,6 +70,35 @@ docker-compose up -d
 !!! Warning "Default configuration"
     While the configuration generated will be mostly functional, you will still need to verify that all options correspond to what you want (like Pricing, pairlist, ...) before starting the bot.
 
+#### Acessing the UI
+
+Uncommend the 2 lines below and add your IP adress in the following format (like 192.168.2.67:8080:8080) to the docker-compose.yml:
+'''bash
+    ports:
+      - "yourIPadress:8080:8080"
+'''
+Your config.json should look like:
+'''bash
+api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "****",
+        "CORS_origins": [],
+        "username": "****",
+        "password": "****"
+    },
+'''
+instead of "****" you will have your data in.
+Then rebuild your docker file
+'''bash
+on Ubuntu:
+sudo docker-compose down && sudo docker-compose pull && sudo docker-compose build && sudo docker-compose up -d 
+'''
+You can now access the UI by typing yourIPadress:8080 in your browser.
+
 #### Monitoring the bot
 
 You can check for running instances with `docker-compose ps`.
