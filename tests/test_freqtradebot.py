@@ -3312,6 +3312,7 @@ def test_sell_profit_only(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
@@ -3565,6 +3566,7 @@ def test_trailing_stop_loss_positive(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     caplog.set_level(logging.DEBUG)
     # stop-loss not reached
@@ -3653,6 +3655,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     # Sell due to min_roi_reached
     patch_get_signal(freqtrade, enter_long=True, exit_long=True)
@@ -4001,6 +4004,7 @@ def test_order_book_depth_of_market(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     if is_high_delta:
         assert trade is None
     else:
@@ -4104,6 +4108,7 @@ def test_order_book_ask_strategy(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     time.sleep(0.01)  # Race condition fix
