@@ -1963,7 +1963,10 @@ def test_handle_trade(
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == exit_order['id']
 
@@ -1994,7 +1997,10 @@ def test_handle_overlapping_signals(
     )
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=True, exit_long=True)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.enter_positions()
@@ -2026,7 +2032,10 @@ def test_handle_overlapping_signals(
     assert trades[0].is_open is True
 
     # Buy and Sell are triggering, so doing nothing ...
-    patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=True, exit_long=True)
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     for trade in trades:
@@ -2036,7 +2045,10 @@ def test_handle_overlapping_signals(
     assert trades[0].is_open is True
 
     # Sell is triggering, guess what : we are Selling!
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     trades = Trade.query.all()
     for trade in trades:
         trade.is_short = is_short
@@ -2115,12 +2127,13 @@ def test_handle_trade_use_sell_signal(
     trade.is_short = is_short
     trade.is_open = True
 
-    # TODO-lev: patch for short
     patch_get_signal(freqtrade, enter_long=False, exit_long=False)
     assert not freqtrade.handle_trade(trade)
 
-    # TODO-lev: patch for short
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Sell signal received. sell_type=SellType.SELL_SIGNAL",
                    caplog)
@@ -3143,7 +3156,6 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     freqtrade.enter_positions()
     freqtrade.check_handle_timedout()
     trade = Trade.query.first()
-    trade.is_short = is_short
     trades = [trade]
     assert trade.stoploss_order_id is None
 
@@ -3481,11 +3493,18 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+
     assert freqtrade.handle_trade(trade) is False
 
     # Test if buy-signal is absent (should sell due to roi = true)
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3677,11 +3696,17 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     # Sell due to min_roi_reached
-    patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=True, exit_long=True)
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
@@ -4134,7 +4159,10 @@ def test_order_book_ask_strategy(
     freqtrade.wallets.update()
     assert trade.is_open is True
 
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    if is_short:
+        patch_get_signal(freqtrade, enter_long=False,  exit_short=True)
+    else:
+        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade) is True
     assert trade.close_rate_requested == order_book_l2.return_value['asks'][0][0]
 
