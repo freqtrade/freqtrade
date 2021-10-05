@@ -35,6 +35,23 @@ Sample configuration:
     },
 ```
 
+Also uncommend the 2 lines below in ft_userdata/docker-compose.yml:
+'''bash
+    ports:
+      - "127.0.0.1:8080:8080"
+'''
+Then rebuild your docker file:
+Linux:
+'''bash
+sudo docker-compose down && sudo docker-compose pull && sudo docker-compose build && sudo docker-compose up -d 
+'''
+Windows:
+'''bash
+docker-compose down && docker-compose pull && docker-compose build && docker-compose up -d 
+'''
+
+You can now access the UI by typing 127.0.0.1:8080 in your browser. Alternatively replace the 127.0.0.1 everywhere above with your IP adress.
+
 !!! Danger "Security warning"
     By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
