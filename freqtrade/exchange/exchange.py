@@ -89,6 +89,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
@@ -157,6 +158,9 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
+        if self.trading_mode != TradingMode.SPOT:
+            self.fill_leverage_brackets()
+
         logger.info('Using Exchange "%s"', self.name)
 
         if validate:
@@ -178,10 +182,6 @@ class Exchange:
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
-
-        self._leverage_brackets: Dict = {}
-        if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
 
     def __del__(self):
         """
@@ -1634,30 +1634,6 @@ class Exchange:
                 f'Could not get funding fees due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
-
-    def fill_leverage_brackets(self):
-        """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
-            Not used if the exchange has a static max leverage value for the account or each pair
-        """
-        return
-
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
-        """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
-        """
-        market = self.markets[pair]
-        if (
-            'limits' in market and
-            'leverage' in market['limits'] and
-            'max' in market['limits']['leverage']
-        ):
-            return market['limits']['leverage']['max']
-        else:
-            return 1.0
 
     def _get_mark_price(self, pair: str, date: datetime) -> float:
         raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')

@@ -242,12 +242,12 @@ class Binance(Exchange):
                 - interest rate: 0.03% daily, BNBUSDT, LINKUSDT, and LTCUSDT are 0%
                 - premium: varies by price difference between the perpetual contract and mark price
         """
-        if premium_index is None:
-            raise OperationalException("Premium index cannot be None for Binance._get_funding_fee")
+        if mark_price is None:
+            raise OperationalException("Mark price cannot be None for Binance._get_funding_fee")
         nominal_value = mark_price * contract_size
-        funding_rate = self._calculate_funding_rate(pair, premium_index)
         if funding_rate is None:
-            raise OperationalException("Funding rate should never be none on Binance")
+            raise OperationalException(
+                "Funding rate should never be none on Binance._get_funding_fee")
         return nominal_value * funding_rate
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
