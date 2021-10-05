@@ -1,13 +1,12 @@
 # Leverage
-*You can't run 2 bots on the same account with leverage,*
+*You can't run 2 bots on the same account with leverage*
 
-!!! Warning: Trading with leverage(`trading_mode="margin"` or `trading_mode="futures"`) is very risky. 
-!!! Do not trade with a leverage > 1 using a strategy that hasn't shown positive results in a live run using the spot market 
-!!! Check the stoploss of your strategy. With a leverage of 2, a stoploss of 0.5 would be too low, and these trades would be liquidated before reaching that amount
+!!! Warning "Trading with leverage is very risky"
+    *(`trading_mode="margin"` or `trading_mode="futures"`)* Do not trade with a leverage > 1 using a strategy that hasn't shown positive results in a live run using the spot market. Check the stoploss of your strategy. With a leverage of 2, a stoploss of 0.5 would be too low, and these trades would be liquidated before reaching that amount
 
 > I've only been using freqtrade for a couple weeks, but I feel like I'm pretty good and could use leverage
 
-!!! No you're not. Do not use leverage yet.
+**No you're not. Do not use leverage yet.**
 ### Understand trading_mode
 
 The possible values are: `spot` (default), `margin`(*coming soon*) or `futures`.
