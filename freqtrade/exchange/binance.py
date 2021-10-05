@@ -218,34 +218,21 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _get_premium_index(self, pair: str, date: datetime) -> float:
-        raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
-
     def _get_mark_price(self, pair: str, date: datetime) -> float:
         raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
 
-    def _get_funding_interest_rates(self):
-        rates = self._api.fetch_funding_rates()
-        interest_rates = {}
-        for pair, data in rates.items():
-            interest_rates[pair] = data['interestRate']
-        return interest_rates
-
-    def _calculate_funding_rate(self, pair: str, premium_index: float) -> Optional[float]:
+    def _get_funding_rate(self, pair: str, premium_index: float) -> Optional[float]:
         """
             Get's the funding_rate for a pair at a specific date and time in the past
         """
-        return (
-            premium_index +
-            max(min(self._funding_interest_rates[pair] - premium_index, 0.0005), -0.0005)
-        )
+        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
 
     def _get_funding_fee(
         self,
         pair: str,
         contract_size: float,
         mark_price: float,
-        premium_index: Optional[float],
+        funding_rate: Optional[float],
     ) -> float:
         """
             Calculates a single funding fee
