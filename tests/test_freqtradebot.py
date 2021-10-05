@@ -7,6 +7,7 @@ from copy import deepcopy
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
 import time_machine
+import schedule
 
 import arrow
 import pytest
@@ -4284,15 +4285,17 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 @pytest.mark.parametrize('exchange,trading_mode,calls', [
     ("ftx", TradingMode.SPOT, 0),
     ("ftx", TradingMode.MARGIN, 0),
-    ("binance", TradingMode.FUTURES, 1),
-    ("kraken", TradingMode.FUTURES, 2),
-    ("ftx", TradingMode.FUTURES, 8),
+    ("binance", TradingMode.FUTURES, 2),
+    ("kraken", TradingMode.FUTURES, 3),
+    ("ftx", TradingMode.FUTURES, 9),
 ])
 def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls):
 
     patch_RPCManager(mocker)
-    patch_exchange(mocker)
+    patch_exchange(mocker, id=exchange)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_funding_fees', return_value=True)
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     with time_machine.travel("2021-09-01 00:00:00 +00:00") as t:
@@ -4314,5 +4317,6 @@ def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls
         # )
 
         t.move_to("2021-09-01 08:00:00 +00:00")
+        schedule.run_pending()
 
         assert freqtrade.update_funding_fees.call_count == calls

@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -112,7 +112,7 @@ class FreqtradeBot(LoggingMixin):
 
         if self.trading_mode == TradingMode.FUTURES:
             for time_slot in self.exchange.funding_fee_times:
-                schedule.every().day.at(time_slot).do(self.update_funding_fees())
+                schedule.every().day.at(str(time(time_slot))).do(self.update_funding_fees)
                 self.wallets.update()
 
     def notify_status(self, msg: str) -> None:
@@ -194,6 +194,9 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for buy opportunities
         if self.get_free_open_trades():
             self.enter_positions()
+
+        if self.trading_mode == TradingMode.FUTURES:
+            schedule.run_pending()
 
         Trade.commit()
 
