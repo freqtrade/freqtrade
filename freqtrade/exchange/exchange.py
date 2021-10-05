@@ -1604,14 +1604,6 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    # https://www.binance.com/en/support/faq/360033525031
-    def fetch_funding_rate(self, pair):
-        if not self.exchange_has("fetchFundingHistory"):
-            raise OperationalException(
-                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
-
-        return self._api.fetch_funding_rates()
-
     @retrier
     def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
@@ -1667,9 +1659,6 @@ class Exchange:
         else:
             return 1.0
 
-    def _get_premium_index(self, pair: str, date: datetime) -> float:
-        raise OperationalException(f'_get_premium_index has not been implemented on {self.name}')
-
     def _get_mark_price(self, pair: str, date: datetime) -> float:
         raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
 
@@ -1685,9 +1674,7 @@ class Exchange:
         pair: str,
         contract_size: float,
         mark_price: float,
-        premium_index: Optional[float],
-        # index_price: float,
-        # interest_rate: float)
+        funding_rate: Optional[float]
     ) -> float:
         """
             Calculates a single funding fee
@@ -1740,7 +1727,7 @@ class Exchange:
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         '''
             Set's the margin mode on the exchange to cross or isolated for a specific pair
-            :param symbol: base/quote currency pair (e.g. "ADA/USDT")
+            :param pair: base/quote currency pair (e.g. "ADA/USDT")
         '''
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
             # Some exchanges only support one collateral type
@@ -1773,13 +1760,13 @@ class Exchange:
 
         fees: float = 0
         for date in self._get_funding_fee_dates(open_date, close_date):
-            premium_index = self._get_premium_index(pair, date)
+            funding_rate = self._get_funding_rate(pair, date)
             mark_price = self._get_mark_price(pair, date)
             fees += self._get_funding_fee(
                 pair=pair,
                 contract_size=amount,
                 mark_price=mark_price,
-                premium_index=premium_index
+                funding_rate=funding_rate
             )
 
         return fees
