@@ -242,27 +242,38 @@ class Binance(Exchange):
                 - interest rate: 0.03% daily, BNBUSDT, LINKUSDT, and LTCUSDT are 0%
                 - premium: varies by price difference between the perpetual contract and mark price
         """
-        if premium_index is None:
-            raise OperationalException("Premium index cannot be None for Binance._get_funding_fee")
+        if mark_price is None:
+            raise OperationalException("Mark price cannot be None for Binance._get_funding_fee")
         nominal_value = mark_price * contract_size
-        funding_rate = self._calculate_funding_rate(pair, premium_index)
         if funding_rate is None:
-            raise OperationalException("Funding rate should never be none on Binance")
+            raise OperationalException(
+                "Funding rate should never be none on Binance._get_funding_fee")
         return nominal_value * funding_rate
 
-    async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool
-                                        ) -> List:
+    async def _async_get_historic_ohlcv(
+        self,
+        pair: str,
+        timeframe: str,
+        since_ms: int,
+        is_new_pair: bool,
+        price: Optional[str]
+    ) -> List:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
+        :param price: "mark" if retrieving the mark price cnadles
         """
         if is_new_pair:
-            x = await self._async_get_candle_history(pair, timeframe, 0)
+            x = await self._async_get_candle_history(pair, timeframe, 0, price)
             if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[2][0][0]
                 logger.info(f"Candle-data for {pair} available starting with "
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
         return await super()._async_get_historic_ohlcv(
-            pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
+            pair=pair,
+            timeframe=timeframe,
+            since_ms=since_ms,
+            is_new_pair=is_new_pair,
+            price=price
+        )
