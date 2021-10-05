@@ -1034,6 +1034,7 @@ def test_handle_stoploss_on_exchange(mocker, default_conf_usdt, fee, caplog, is_
     caplog.clear()
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
@@ -1398,6 +1399,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = "abcd"
@@ -1613,6 +1615,7 @@ def test_tsl_on_exchange_compatible_with_edge(mocker, edge_conf, fee, caplog, is
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
     trade.open_order_id = None
     trade.stoploss_order_id = 100
@@ -1952,6 +1955,7 @@ def test_handle_trade(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     time.sleep(0.01)  # Race condition fix
@@ -2108,6 +2112,7 @@ def test_handle_trade_use_sell_signal(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
 
     # TODO-lev: patch for short
@@ -2144,6 +2149,7 @@ def test_close_trade(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     trade.update(enter_order)
@@ -2780,6 +2786,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     rpc_mock.reset_mock()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
 
@@ -2845,6 +2852,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     # Decrease the price and sell it
@@ -2903,6 +2911,7 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
     rpc_mock.reset_mock()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
 
@@ -2967,6 +2976,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     # Decrease the price and sell it
@@ -3078,6 +3088,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
     trades = [trade]
 
@@ -3095,6 +3106,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
     assert cancel_order.call_count == 1
     assert rpc_mock.call_count == 3
@@ -3131,6 +3143,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     freqtrade.enter_positions()
     freqtrade.check_handle_timedout()
     trade = Trade.query.first()
+    trade.is_short = is_short
     trades = [trade]
     assert trade.stoploss_order_id is None
 
@@ -3191,6 +3204,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     # Increase the price and sell it
@@ -3252,6 +3266,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     # Increase the price and sell it
@@ -3349,6 +3364,7 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_order, limit_order_ope
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     amnt = trade.amount
     trade.update(limit_order[enter_side(is_short)])
     patch_get_signal(freqtrade, enter_long=False, exit_long=True)
@@ -3413,6 +3429,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert trade
 
     # Decrease the price and sell it
@@ -3461,6 +3478,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     freqtrade.wallets.update()
     patch_get_signal(freqtrade, enter_long=True, exit_long=True)
@@ -3498,6 +3516,7 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
+    trade.is_short = is_short
     assert freqtrade.handle_trade(trade) is False
 
     # Raise ticker_usdt above buy price
@@ -4108,7 +4127,6 @@ def test_order_book_ask_strategy(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
     assert trade
 
     time.sleep(0.01)  # Race condition fix
@@ -4221,6 +4239,7 @@ def test_check_for_open_trades(mocker, default_conf_usdt, fee, is_short):
 
     create_mock_trades(fee, is_short)
     trade = Trade.query.first()
+    trade.is_short = is_short
     trade.is_open = True
 
     freqtrade.check_for_open_trades()
