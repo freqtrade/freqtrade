@@ -5,10 +5,11 @@ This module defines the alternative HyperOptLoss class which can be used for
 Hyperoptimization.
 """
 from datetime import datetime
-from freqtrade.data.btanalysis import calculate_max_drawdown
-from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 from pandas import DataFrame
+
+from freqtrade.data.btanalysis import calculate_max_drawdown
+from freqtrade.optimize.hyperopt import IHyperOptLoss
 
 
 class MaxDrawDownHyperOptLoss(IHyperOptLoss):
@@ -31,7 +32,7 @@ class MaxDrawDownHyperOptLoss(IHyperOptLoss):
         Uses profit ratio weighted max_drawdown when drawdown is available.
         Otherwise directly optimizes profit ratio.
         """
-        total_profit = results['profit_ratio'].sum()        
+        total_profit = results['profit_ratio'].sum()
         try:
             max_drawdown = calculate_max_drawdown(results)
         except ValueError:
