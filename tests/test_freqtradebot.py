@@ -6,7 +6,6 @@ import time
 from copy import deepcopy
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
-import time_machine
 import schedule
 
 import arrow
@@ -4289,7 +4288,8 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     ("kraken", TradingMode.FUTURES, 3),
     ("ftx", TradingMode.FUTURES, 9),
 ])
-def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls):
+def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls, time_machine):
+    time_machine.move_to("2021-09-01 00:00:00 +00:00")
 
     patch_RPCManager(mocker)
     patch_exchange(mocker, id=exchange)
@@ -4298,25 +4298,23 @@ def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls
     default_conf['collateral'] = 'isolated'
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    with time_machine.travel("2021-09-01 00:00:00 +00:00") as t:
+    # trade = Trade(
+    #     id=2,
+    #     pair='ADA/USDT',
+    #     stake_amount=60.0,
+    #     open_rate=2.0,
+    #     amount=30.0,
+    #     is_open=True,
+    #     open_date=arrow.utcnow().datetime,
+    #     fee_open=fee.return_value,
+    #     fee_close=fee.return_value,
+    #     exchange='binance',
+    #     is_short=False,
+    #     leverage=3.0,
+    #     trading_mode=trading_mode
+    # )
 
-        # trade = Trade(
-        #     id=2,
-        #     pair='ADA/USDT',
-        #     stake_amount=60.0,
-        #     open_rate=2.0,
-        #     amount=30.0,
-        #     is_open=True,
-        #     open_date=arrow.utcnow().datetime,
-        #     fee_open=fee.return_value,
-        #     fee_close=fee.return_value,
-        #     exchange='binance',
-        #     is_short=False,
-        #     leverage=3.0,
-        #     trading_mode=trading_mode
-        # )
+    time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    schedule.run_pending()
 
-        t.move_to("2021-09-01 08:00:00 +00:00")
-        schedule.run_pending()
-
-        assert freqtrade.update_funding_fees.call_count == calls
+    assert freqtrade.update_funding_fees.call_count == calls
