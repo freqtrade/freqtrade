@@ -29,6 +29,7 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
     funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
+    # but the schedule won't check within this timeframe
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list

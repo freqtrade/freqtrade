@@ -6,10 +6,10 @@ import time
 from copy import deepcopy
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
-import schedule
 
 import arrow
 import pytest
+import schedule
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import RPCMessageType, RunMode, SellType, State, TradingMode
@@ -4281,40 +4281,29 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     assert valid_price_at_min_alwd < proposed_price
 
 
-@pytest.mark.parametrize('exchange,trading_mode,calls', [
-    ("ftx", TradingMode.SPOT, 0),
-    ("ftx", TradingMode.MARGIN, 0),
-    ("binance", TradingMode.FUTURES, 2),
-    ("kraken", TradingMode.FUTURES, 3),
-    ("ftx", TradingMode.FUTURES, 9),
+@pytest.mark.parametrize('exchange,trading_mode,calls,t1,t2', [
+    ("ftx", TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ("ftx", TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ("binance", TradingMode.FUTURES, 1, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
+    ("kraken", TradingMode.FUTURES, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
+    ("ftx", TradingMode.FUTURES, 8, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
+    ("binance", TradingMode.FUTURES, 2, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
+    ("kraken", TradingMode.FUTURES, 3, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
+    ("ftx", TradingMode.FUTURES, 9, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
 ])
-def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls, time_machine):
-    time_machine.move_to("2021-09-01 00:00:00 +00:00")
+def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls, time_machine,
+                             t1, t2):
+    time_machine.move_to(f"{t1} +00:00")
 
     patch_RPCManager(mocker)
     patch_exchange(mocker, id=exchange)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_funding_fees', return_value=True)
     default_conf['trading_mode'] = trading_mode
     default_conf['collateral'] = 'isolated'
+    default_conf['exchange']['name'] = exchange
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
-    # trade = Trade(
-    #     id=2,
-    #     pair='ADA/USDT',
-    #     stake_amount=60.0,
-    #     open_rate=2.0,
-    #     amount=30.0,
-    #     is_open=True,
-    #     open_date=arrow.utcnow().datetime,
-    #     fee_open=fee.return_value,
-    #     fee_close=fee.return_value,
-    #     exchange='binance',
-    #     is_short=False,
-    #     leverage=3.0,
-    #     trading_mode=trading_mode
-    # )
-
-    time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    time_machine.move_to(f"{t2} +00:00")
     schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls

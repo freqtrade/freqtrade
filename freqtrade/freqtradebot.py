@@ -111,9 +111,14 @@ class FreqtradeBot(LoggingMixin):
             self.trading_mode = TradingMode.SPOT
 
         if self.trading_mode == TradingMode.FUTURES:
-            for time_slot in self.exchange.funding_fee_times:
-                schedule.every().day.at(str(time(time_slot))).do(self.update_funding_fees)
+
+            def update():
+                self.update_funding_fees()
                 self.wallets.update()
+
+            for time_slot in self.exchange.funding_fee_times:
+                t = str(time(time_slot))
+                schedule.every().day.at(t).do(update)
 
     def notify_status(self, msg: str) -> None:
         """
