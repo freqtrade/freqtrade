@@ -18,7 +18,8 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, SysInfo, Version, WhitelistResponse)
+                                                  StrategyResponse, SysInfo, Version,
+                                                  WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
@@ -259,6 +260,7 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
         'pair_interval': pair_interval,
     }
     return result
+
 
 @router.get('/sysinfo', response_model=SysInfo, tags=['info'])
 def sysinfo():

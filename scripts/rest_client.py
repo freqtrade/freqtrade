@@ -341,6 +341,7 @@ class FtRestClient():
         """
         return self._get("sysinfo")
 
+
 def add_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("command",

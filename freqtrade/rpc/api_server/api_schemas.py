@@ -348,6 +348,7 @@ class BacktestResponse(BaseModel):
     # TODO: Properly type backtestresult...
     backtest_result: Optional[Dict[str, Any]]
 
+
 class SysInfo(BaseModel):
     cpu_pct: float
     ram_pct: float

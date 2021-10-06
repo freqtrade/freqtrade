@@ -1,13 +1,14 @@
 """
 This module contains class to define a RPC communications
 """
-import logging, psutil
+import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
+import psutil
 from numpy import NAN, inf, int64, mean
 from pandas import DataFrame
 
@@ -873,4 +874,7 @@ class RPC:
 
     @staticmethod
     def _rpc_sysinfo() -> Dict[str, Any]:
-        return {"cpu_pct": psutil.cpu_percent(interval=1, percpu=True), "ram_pct": psutil.virtual_memory().percent}
+        return {
+            "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
+            "ram_pct": psutil.virtual_memory().percent
+        }
