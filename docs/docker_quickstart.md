@@ -148,27 +148,9 @@ You'll then also need to modify the `docker-compose.yml` file and uncomment the 
       dockerfile: "./Dockerfile.<yourextension>"
 ```
 
-You can then run `docker-compose build` to build the docker image, and run it using the commands described above.
+You can then run `docker-compose build --pull` to build the docker image, and run it using the commands described above.
 
-### Troubleshooting
-
-#### Docker on Windows
-
-* Error: `"Timestamp for this request is outside of the recvWindow."`
-  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
-    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
-    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
-    ```
-    taskkill /IM "Docker Desktop.exe" /F
-    wsl --shutdown
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-    ```
-
-!!! Warning
-    Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
-    Best use a linux-VPS for running freqtrade reliably.
-
-## Plotting with docker-compose
+### Plotting with docker-compose
 
 Commands `freqtrade plot-profit` and `freqtrade plot-dataframe` ([Documentation](plotting.md)) are available by changing the image to `*_plot` in your docker-compose.yml file.
 You can then use these commands as follows:
@@ -179,7 +161,7 @@ docker-compose run --rm freqtrade plot-dataframe --strategy AwesomeStrategy -p B
 
 The output will be stored in the `user_data/plot` directory, and can be opened with any modern browser.
 
-## Data analysis using docker compose
+### Data analysis using docker compose
 
 Freqtrade provides a docker-compose file which starts up a jupyter lab server.
 You can run this server using the following command:
@@ -196,3 +178,22 @@ Since part of this image is built on your machine, it is recommended to rebuild 
 ``` bash
 docker-compose -f docker/docker-compose-jupyter.yml build --no-cache
 ```
+
+## Troubleshooting
+
+### Docker on Windows
+
+* Error: `"Timestamp for this request is outside of the recvWindow."`
+  * The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+    To fix this issue temporarily you need to run `wsl --shutdown` and restart docker again (a popup on windows 10 will ask you to do so).
+    A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.
+
+    ``` bash
+    taskkill /IM "Docker Desktop.exe" /F
+    wsl --shutdown
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+    ```
+
+!!! Warning
+    Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
+    Best use a linux-VPS for running freqtrade reliably.
