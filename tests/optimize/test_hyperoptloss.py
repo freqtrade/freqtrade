@@ -84,13 +84,14 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SortinoHyperOptLossDaily",
     "SharpeHyperOptLoss",
     "SharpeHyperOptLossDaily",
+    "MaxDrawDownHyperOptLoss",
 ])
 def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunction) -> None:
     results_over = hyperopt_results.copy()
-    results_over['profit_abs'] = hyperopt_results['profit_abs'] * 2
+    results_over['profit_abs'] = hyperopt_results['profit_abs'] * 2 + 0.2
     results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
     results_under = hyperopt_results.copy()
-    results_under['profit_abs'] = hyperopt_results['profit_abs'] / 2
+    results_under['profit_abs'] = hyperopt_results['profit_abs'] / 2 - 0.2
     results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
     default_conf.update({'hyperopt_loss': lossfunction})
