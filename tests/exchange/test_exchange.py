@@ -1899,7 +1899,8 @@ def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
     caplog.set_level(logging.DEBUG)
 
     default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['bid_last_balance'] = last_ab
+    if last_ab is not None:
+        default_conf['ask_strategy']['bid_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
