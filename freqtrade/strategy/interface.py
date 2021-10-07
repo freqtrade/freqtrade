@@ -840,6 +840,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
+        # TODO-lev: short
         if self.trailing_stop and trade.stop_loss < (low or current_rate):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
@@ -861,6 +862,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
+        # TODO-lev: short
         if ((trade.stop_loss >= (low or current_rate)) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 

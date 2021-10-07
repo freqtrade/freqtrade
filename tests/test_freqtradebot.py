@@ -3565,11 +3565,13 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-@ pytest.mark.parametrize('offset,trail_if_reached,second_sl', [
-    (0, False, 2.0394),
-    (0.011, False, 2.0394),
-    (0.055, True, 1.8),
+@ pytest.mark.parametrize('offset,trail_if_reached,second_sl,is_short', [
+    # (0, False, 2.0394, False),
+    # (0.011, False, 2.0394, False),
+    # (0.055, True, 1.8, False),
+    (0, False, 2.1606, True),
+    (0.011, False, 2.1606, True),
+    (0.055, True, 2.4, True),
 ])
 def test_trailing_stop_loss_positive(
     default_conf_usdt, limit_order, limit_order_open,
@@ -3581,9 +3583,9 @@ def test_trailing_stop_loss_positive(
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': enter_price - 0.01,
-            'ask': enter_price - 0.01,
-            'last': enter_price - 0.01
+            'bid': enter_price - (-0.01 if is_short else 0.01),
+            'ask': enter_price - (-0.01 if is_short else 0.01),
+            'last': enter_price - (-0.01 if is_short else 0.01),
         }),
         create_order=MagicMock(side_effect=[
             limit_order_open[enter_side(is_short)],
@@ -3614,9 +3616,9 @@ def test_trailing_stop_loss_positive(
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': enter_price + 0.06,
-            'ask': enter_price + 0.06,
-            'last': enter_price + 0.06
+            'bid': enter_price + (-0.06 if is_short else 0.06),
+            'ask': enter_price + (-0.06 if is_short else 0.06),
+            'last': enter_price + (-0.06 if is_short else 0.06),
         })
     )
     # stop-loss not reached, adjusted stoploss
@@ -3634,9 +3636,9 @@ def test_trailing_stop_loss_positive(
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': enter_price + 0.125,
-            'ask': enter_price + 0.125,
-            'last': enter_price + 0.125,
+            'bid': enter_price + (-0.125 if is_short else 0.125),
+            'ask': enter_price + (-0.125 if is_short else 0.125),
+            'last': enter_price + (-0.125 if is_short else 0.125),
         })
     )
     assert freqtrade.handle_trade(trade) is False
@@ -3649,17 +3651,17 @@ def test_trailing_stop_loss_positive(
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': enter_price + 0.02,
-            'ask': enter_price + 0.02,
-            'last': enter_price + 0.02
+            'bid': enter_price + (-0.02 if is_short else 0.02),
+            'ask': enter_price + (-0.02 if is_short else 0.02),
+            'last': enter_price + (-0.02 if is_short else 0.02),
         })
     )
     # Lower price again (but still positive)
     assert freqtrade.handle_trade(trade) is True
     assert log_has(
-        f"ETH/USDT - HIT STOP: current price at {enter_price + 0.02:.6f}, "
+        f"ETH/USDT - HIT STOP: current price at {enter_price + (-0.02 if is_short else 0.02):.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
-        f"initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
+        f"initial stoploss was at {2.2 if is_short else 1.8}00000, trade opened at 2.000000", caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
