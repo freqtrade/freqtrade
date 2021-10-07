@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.exchange import timeframe_to_prev_date
 from freqtrade.misc import json_load
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
@@ -188,6 +189,36 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
     return df
 
 
+def expand_trades_over_period(results: pd.DataFrame, timeframe: str,
+                              timeframe_min: Optional[int] = None) -> pd.DataFrame:
+    """
+    Expand trades DF to have one row per candle
+    :param results: Results Dataframe - can be loaded
+    :param timeframe: Timeframe used for backtest
+    :param timeframe: Timeframe in minutes. calculated from timeframe if not available.
+    :return: dataframe with date index (nonunique)
+        with trades expanded for every row from trade.open_date til trade.close_date
+    """
+    if not timeframe_min:
+        from freqtrade.exchange import timeframe_to_minutes
+        timeframe_min = timeframe_to_minutes(timeframe)
+    # compute how long each trade was left outstanding as date indexes
+    dates = [pd.Series(pd.date_range(timeframe_to_prev_date(timeframe, row[1]['open_date']),
+                                     timeframe_to_prev_date(timeframe, row[1]['close_date']),
+                                     freq=f"{timeframe_min}min"))
+             for row in results[['open_date', 'close_date']].iterrows()]
+    deltas = [len(x) for x in dates]
+    # expand and flatten the list of lists of dates
+    dates = pd.Series(pd.concat(dates).values, name='date')
+    # trades are repeated (column wise) according to their lifetime
+    df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
+
+    # the expanded dates list is added as a new column to the repeated trades (df2)
+    df2 = pd.concat([dates, df2], axis=1)
+    df2 = df2.set_index('date')
+    return df2
+
+
 def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataFrame:
     """
     Find overlapping trades by expanding each trade once per period it was open
@@ -198,15 +229,10 @@ def analyze_trade_parallelism(results: pd.DataFrame, timeframe: str) -> pd.DataF
     """
     from freqtrade.exchange import timeframe_to_minutes
     timeframe_min = timeframe_to_minutes(timeframe)
-    dates = [pd.Series(pd.date_range(row[1]['open_date'], row[1]['close_date'],
-                                     freq=f"{timeframe_min}min"))
-             for row in results[['open_date', 'close_date']].iterrows()]
-    deltas = [len(x) for x in dates]
-    dates = pd.Series(pd.concat(dates).values, name='date')
-    df2 = pd.DataFrame(np.repeat(results.values, deltas, axis=0), columns=results.columns)
+    df2 = expand_trades_over_period(results, timeframe, timeframe_min)
 
-    df2 = pd.concat([dates, df2], axis=1)
-    df2 = df2.set_index('date')
+    # duplicate dates entries represent trades on the same candle
+    # which resampling resolves through the applied function (count)
     df_final = df2.resample(f"{timeframe_min}min")[['pair']].count()
     df_final = df_final.rename({'pair': 'open_trades'}, axis=1)
     return df_final
@@ -408,3 +434,40 @@ def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[f
     csum_max = csum_df['sum'].max() + starting_balance
 
     return csum_min, csum_max
+
+
+def calculate_outstanding_balance(results: pd.DataFrame, timeframe: str,
+                                  hloc: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Sums the value of each trade (both open and closed) on each candle
+    :param results: Results Dataframe
+    :param timeframe: Frequency used for the backtest
+    :param hloc: historical DataFrame of each pair tested
+    :return: DataFrame of outstanding balance at each timeframe
+    """
+
+    from freqtrade.exchange import timeframe_to_minutes
+    timeframe_min = timeframe_to_minutes(timeframe)
+    trades_over_period = expand_trades_over_period(results, timeframe, timeframe_min)
+
+    values = {}
+    # Iterate over every pair
+    for pair in hloc:
+        ohlc = hloc[pair].set_index('date')
+        df_pair = trades_over_period.loc[trades_over_period['pair'] == pair]
+        # filter on pair and convert dateindex to utc
+        # * Temporary workaround
+        df_pair.index = pd.to_datetime(df_pair.index, utc=True)
+
+        # Combine trades with ohlc data
+        df4 = df_pair.merge(ohlc, left_on=['date'], right_on=['date'])
+        # Calculate the value at each candle
+        df4['current_value'] = df4['amount'] * df4['open']
+        # 0.002 -> slippage / fees
+        df4['value'] = df4['current_value'] - df4['current_value'] * 0.002
+        values[pair] = df4
+
+    balance = pd.concat([df[['value']] for k, df in values.items()])
+    # Combine multi-pair balances
+    balance = balance.resample(f"{timeframe_min}min").agg({"value": sum})
+    return balance

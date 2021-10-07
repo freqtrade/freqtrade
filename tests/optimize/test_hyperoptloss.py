@@ -6,6 +6,7 @@ import pytest
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
+from tests.strategy.test_strategy_helpers import generate_test_data
 
 
 def test_hyperoptlossresolver_noname(default_conf):
@@ -78,14 +79,16 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     assert under > correct
 
 
-@pytest.mark.parametrize('lossfunction', [
-    "OnlyProfitHyperOptLoss",
-    "SortinoHyperOptLoss",
-    "SortinoHyperOptLossDaily",
-    "SharpeHyperOptLoss",
-    "SharpeHyperOptLossDaily",
+@pytest.mark.parametrize('lossfunction, needsdata', [
+    ("OnlyProfitHyperOptLoss", False),
+    ("SortinoHyperOptLoss", False),
+    ("SortinoHyperOptLossDaily", False),
+    ("SharpeHyperOptLoss", False),
+    ("SharpeHyperOptLossDaily", False),
+    ("SortinoLossBalance", True),
 ])
-def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunction) -> None:
+def test_loss_functions_better_profits(default_conf, hyperopt_results,
+                                       lossfunction, needsdata) -> None:
     results_over = hyperopt_results.copy()
     results_over['profit_abs'] = hyperopt_results['profit_abs'] * 2
     results_over['profit_ratio'] = hyperopt_results['profit_ratio'] * 2
@@ -93,13 +96,24 @@ def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunct
     results_under['profit_abs'] = hyperopt_results['profit_abs'] / 2
     results_under['profit_ratio'] = hyperopt_results['profit_ratio'] / 2
 
+    if needsdata:
+        data = {'ETH/USDT': generate_test_data('5m', 1200, start='2019-01-01')}
+    else:
+        data = {}
+
     default_conf.update({'hyperopt_loss': lossfunction})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
     correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
+                                        datetime(2019, 1, 1), datetime(2019, 5, 1),
+                                        config=default_conf, processed=data,
+                                        )
     over = hl.hyperopt_loss_function(results_over, len(results_over),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
+                                     datetime(2019, 1, 1), datetime(2019, 5, 1),
+                                     config=default_conf, processed=data,
+                                     )
     under = hl.hyperopt_loss_function(results_under, len(results_under),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+                                      datetime(2019, 1, 1), datetime(2019, 5, 1),
+                                      config=default_conf, processed=data,
+                                      )
     assert over < correct
     assert under > correct
