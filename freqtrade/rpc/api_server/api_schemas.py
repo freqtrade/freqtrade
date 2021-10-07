@@ -350,5 +350,5 @@ class BacktestResponse(BaseModel):
 
 
 class SysInfo(BaseModel):
-    cpu_pct: float
+    cpu_pct: List[float]
     ram_pct: float
