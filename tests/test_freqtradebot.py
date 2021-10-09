@@ -4,7 +4,7 @@
 import logging
 import time
 from copy import deepcopy
-from math import isclose
+from math import floor, isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
@@ -536,9 +536,12 @@ def test_create_trades_preopen(default_conf_usdt, ticker_usdt, fee, mocker,
     assert len(trades) == 4
 
 
-@pytest.mark.parametrize('is_short', [False, True])
+@pytest.mark.parametrize('is_short, open_rate', [
+    (False, 2.0),
+    (True, 2.02)
+])
 def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-                                is_short, fee, mocker, caplog
+                                is_short, open_rate, fee, mocker, caplog
                                 ) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -565,11 +568,12 @@ def test_process_trade_creation(default_conf_usdt, ticker_usdt, limit_order, lim
     assert trade.is_open
     assert trade.open_date is not None
     assert trade.exchange == 'binance'
-    assert trade.open_rate == 2.0
-    assert trade.amount == 30.0
+    assert trade.open_rate == open_rate  # TODO-lev: I think? That's what the ticker ask price is
+    assert isclose(trade.amount, 60 / open_rate)
 
     assert log_has(
-        'Long signal found: about create a new trade for ETH/USDT with stake_amount: 60.0 ...',
+        f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
+        'with stake_amount: 60.0 ...',
         caplog
     )
 
@@ -1230,8 +1234,7 @@ def test_create_stoploss_order_insufficient_funds(
 
 @pytest.mark.parametrize("is_short,bid,ask,stop_price,amt,hang_price", [
     (False, [4.38, 4.16], [4.4, 4.17], ['2.0805', 4.4 * 0.95], 27.39726027, 3),
-    # TODO-lev: Should the stoploss be based off the bid for shorts? (1.09)
-    (True, [1.09, 1.21], [1.1, 1.22], ['2.321', 1.09 * 1.05], 27.39726027, 1.5),
+    (True, [1.09, 1.21], [1.1, 1.22], ['2.321', 1.09 * 1.05], 27.27272727, 1.5),
 ])
 @pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_trailing(
@@ -1336,7 +1339,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
     stoploss_order_mock.assert_called_once_with(
-        amount=27.39726027,
+        amount=amt,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
         stop_price=stop_price[1],
@@ -1943,9 +1946,9 @@ def test_handle_trade(
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': 1.9,
+            'bid': 2.19,
             'ask': 2.2,
-            'last': 1.9
+            'last': 2.19
         }),
         create_order=MagicMock(side_effect=[
             enter_order,
@@ -1967,17 +1970,14 @@ def test_handle_trade(
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    if is_short:
-        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
-    else:
-        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == exit_order['id']
 
     # Simulate fulfilled LIMIT order for trade
     trade.update(exit_order)
 
-    assert trade.close_rate == 2.2
+    assert trade.close_rate == 2.0 if is_short else 2.2
     assert trade.close_profit == 0.09451372
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
@@ -2803,9 +2803,12 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@ pytest.mark.parametrize("is_short, open_rate, amt", [
+    (False, 2.0, 30.0),
+    (True, 2.02, 29.7029703),
+])
 def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, mocker,
-                               is_short) -> None:
+                               is_short, open_rate, amt) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2856,9 +2859,9 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'pair': 'ETH/USDT',
         'gain': 'profit',
         'limit': 2.2,
-        'amount': 30.0,
+        'amount': amt,
         'order_type': 'limit',
-        'open_rate': 2.0,
+        'open_rate': open_rate,
         'current_rate': 2.3,
         'profit_amount': 5.685,
         'profit_ratio': 0.09451372,
@@ -3252,8 +3255,11 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
     freqtrade.config['order_types']['sell'] = 'market'
 
     # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.ROI))
+    freqtrade.execute_trade_exit(
+        trade=trade,
+        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.ROI)
+    )
 
     assert not trade.is_open
     assert trade.close_profit == 0.09451372
@@ -4045,10 +4051,13 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
     (0.1, False),
     (100, True),
 ])
-@ pytest.mark.parametrize('is_short', [False, True])
+@ pytest.mark.parametrize('is_short, open_rate', [
+    (False, 2.0),
+    (True, 2.02),
+])
 def test_order_book_depth_of_market(
     default_conf_usdt, ticker_usdt, limit_order, limit_order_open,
-    fee, mocker, order_book_l2, delta, is_high_delta, is_short
+    fee, mocker, order_book_l2, delta, is_high_delta, is_short, open_rate
 ):
     default_conf_usdt['bid_strategy']['check_depth_of_market']['enabled'] = True
     default_conf_usdt['bid_strategy']['check_depth_of_market']['bids_to_ask_delta'] = delta
@@ -4084,7 +4093,7 @@ def test_order_book_depth_of_market(
         # Simulate fulfilled LIMIT_BUY order for trade
         trade.update(limit_order_open[enter_side(is_short)])
 
-        assert trade.open_rate == 2.0
+        assert trade.open_rate == open_rate  # TODO-lev: double check
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 

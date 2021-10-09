@@ -1303,7 +1303,7 @@ class FreqtradeBot(LoggingMixin):
             order = self.exchange.create_order(
                 pair=trade.pair,
                 ordertype=order_type,
-                side="sell",
+                side=trade.exit_side,
                 amount=amount,
                 rate=limit,
                 time_in_force=time_in_force
