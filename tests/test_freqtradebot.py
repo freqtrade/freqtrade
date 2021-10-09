@@ -4281,26 +4281,21 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     assert valid_price_at_min_alwd < proposed_price
 
 
-@pytest.mark.parametrize('exchange,trading_mode,calls,t1,t2', [
-    ("ftx", TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    ("ftx", TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    ("binance", TradingMode.FUTURES, 1, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
-    ("kraken", TradingMode.FUTURES, 2, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
-    ("ftx", TradingMode.FUTURES, 8, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
-    ("binance", TradingMode.FUTURES, 2, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
-    ("kraken", TradingMode.FUTURES, 3, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
-    ("ftx", TradingMode.FUTURES, 9, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
+@pytest.mark.parametrize('trading_mode,calls,t1,t2', [
+    (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    (TradingMode.FUTURES, 8, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
+    (TradingMode.FUTURES, 9, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
 ])
-def test_update_funding_fees(mocker, default_conf, exchange, trading_mode, calls, time_machine,
+def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):
     time_machine.move_to(f"{t1} +00:00")
 
     patch_RPCManager(mocker)
-    patch_exchange(mocker, id=exchange)
+    patch_exchange(mocker)
     mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_funding_fees', return_value=True)
     default_conf['trading_mode'] = trading_mode
     default_conf['collateral'] = 'isolated'
-    default_conf['exchange']['name'] = exchange
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     time_machine.move_to(f"{t2} +00:00")

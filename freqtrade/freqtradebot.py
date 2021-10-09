@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone, timedelta
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -116,20 +116,9 @@ class FreqtradeBot(LoggingMixin):
                 self.update_funding_fees()
                 self.wallets.update()
 
-            for time_slot in self.exchange.funding_fee_times:
-                t = str(time(self.utc_hour_to_local(time_slot)))
+            for time_slot in range(0, 24):
+                t = str(time(time_slot))
                 schedule.every().day.at(t).do(update)
-
-    def utc_hour_to_local(self, hour):
-        local_timezone = datetime.now(
-            timezone.utc).astimezone().tzinfo
-        local_time = datetime.now(local_timezone)
-        offset = local_time.utcoffset().total_seconds()
-        td = timedelta(seconds=offset)
-        t = datetime.strptime(f'26 Sep 2021 {hour}:00:00', '%d %b %Y %H:%M:%S')
-        utc = t + td
-        print(hour, utc)
-        return int(utc.strftime("%H").lstrip("0") or 0)
 
     def notify_status(self, msg: str) -> None:
         """
