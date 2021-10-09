@@ -840,31 +840,40 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        # TODO-lev: short
-        if self.trailing_stop and trade.stop_loss < (low or current_rate):
+        if self.trailing_stop and (
+            (trade.stop_loss < (low or current_rate) and not trade.is_short) or
+            (trade.stop_loss > (high or current_rate) and trade.is_short)
+        ):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
             # Make sure current_profit is calculated using high for backtesting.
-            # TODO-lev: Check this function - high / low usage must be inversed for short trades!
-            high_profit = current_profit if not high else trade.calc_profit_ratio(high)
+            bound = low if trade.is_short else high
+            bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
-            if not (self.trailing_only_offset_is_reached and high_profit < sl_offset):
+            if not (self.trailing_only_offset_is_reached and (
+                (bound_profit < sl_offset and not trade.is_short) or
+                (bound_profit > sl_offset and trade.is_short)
+            )):
                 # Specific handling for trailing_stop_positive
-                if self.trailing_stop_positive is not None and high_profit > sl_offset:
+                if self.trailing_stop_positive is not None and (
+                    (bound_profit > sl_offset and not trade.is_short) or
+                    (bound_profit < sl_offset and trade.is_short)
+                ):
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
 
-                trade.adjust_stop_loss(high or current_rate, stop_loss_value)
+                trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
 
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        # TODO-lev: short
-        if ((trade.stop_loss >= (low or current_rate)) and
-                (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
+        if ((
+            (trade.stop_loss >= (low or current_rate) and not trade.is_short) or
+            ((trade.stop_loss <= (high or current_rate) and trade.is_short))
+        ) and (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
 
@@ -872,12 +881,18 @@ class IStrategy(ABC, HyperStrategyMixin):
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
                 logger.debug(
-                    f"{trade.pair} - HIT STOP: current price at {(low or current_rate):.6f}, "
+                    f"{trade.pair} - HIT STOP: current price at "
+                    f"{((high if trade.is_short else low) or current_rate):.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
+                new_stoploss = (
+                    trade.stop_loss + trade.initial_stop_loss
+                    if trade.is_short else
+                    trade.stop_loss - trade.initial_stop_loss
+                )
                 logger.debug(f"{trade.pair} - Trailing stop saved "
-                             f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
+                             f"{new_stoploss:.6f}")
 
             return SellCheckTuple(sell_type=sell_type)
 
