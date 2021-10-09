@@ -78,7 +78,7 @@ If you run your bot using docker, you'll need to have the bot listen to incoming
     },
 ```
 
-Uncomment the following from your docker-compose file:
+Make sure that the following 2 lines are available in your docker-compose file:
 
 ```yml
     ports:

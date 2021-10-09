@@ -480,7 +480,7 @@ class Exchange:
         if startup_candles + 5 > candle_limit:
             raise OperationalException(
                 f"This strategy requires {startup_candles} candles to start. "
-                f"{self.name} only provides {candle_limit} for {timeframe}.")
+                f"{self.name} only provides {candle_limit - 5} for {timeframe}.")
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -1058,7 +1058,7 @@ class Exchange:
             ticker_rate = ticker[conf_strategy['price_side']]
             if ticker['last'] and ticker_rate:
                 if side == 'buy' and ticker_rate > ticker['last']:
-                    balance = conf_strategy['ask_last_balance']
+                    balance = conf_strategy.get('ask_last_balance', 0.0)
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
                 elif side == 'sell' and ticker_rate < ticker['last']:
                     balance = conf_strategy.get('bid_last_balance', 0.0)

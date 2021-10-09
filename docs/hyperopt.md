@@ -60,7 +60,7 @@ optional arguments:
                         Specify what timerange of data to use.
   --data-format-ohlcv {json,jsongz,hdf5}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `None`).
+                        (default: `json`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -114,7 +114,8 @@ optional arguments:
                         Hyperopt-loss-functions are:
                         ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
-                        SortinoHyperOptLoss, SortinoHyperOptLossDaily
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily,
+                        MaxDrawDownHyperOptLoss
   --disable-param-export
                         Disable automatic hyperopt parameter export.
 
@@ -512,12 +513,13 @@ This class should be in its own file within the `user_data/hyperopts/` directory
 
 Currently, the following loss functions are builtin:
 
-* `ShortTradeDurHyperOptLoss` (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
-* `OnlyProfitHyperOptLoss` (which takes only amount of profit into consideration)
-* `SharpeHyperOptLoss` (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)
-* `SharpeHyperOptLossDaily` (optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation)
-* `SortinoHyperOptLoss` (optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation)
-* `SortinoHyperOptLossDaily` (optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation)
+* `ShortTradeDurHyperOptLoss` - (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.
+* `OnlyProfitHyperOptLoss` - takes only amount of profit into consideration.
+* `SharpeHyperOptLoss` - optimizes Sharpe Ratio calculated on trade returns relative to standard deviation.
+* `SharpeHyperOptLossDaily` - optimizes Sharpe Ratio calculated on **daily** trade returns relative to standard deviation.
+* `SortinoHyperOptLoss` - optimizes Sortino Ratio calculated on trade returns relative to **downside** standard deviation.
+* `SortinoHyperOptLossDaily` - optimizes Sortino Ratio calculated on **daily** trade returns relative to **downside** standard deviation.
+* `MaxDrawDownHyperOptLoss` - Optimizes Maximum drawdown.
 
 Creation of a custom loss function is covered in the [Advanced Hyperopt](advanced-hyperopt.md) part of the documentation.
 

@@ -54,9 +54,11 @@ you can't say much from few trades.
 
 Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
-### I want to improve the bot with a new strategy
+### I want to use incomplete candles
 
-That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
+Freqtrade will not provide incomplete candles to strategies. Using incomplete candles will lead to repainting and consequently to strategies with "ghost" buys, which are impossible to both backtest, and verify after they happened.
+
+You can use "current" market data by using the [dataprovider](strategy-customization.md#orderbookpair-maximum)'s orderbook or ticker methods - which however cannot be used during backtesting.
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
