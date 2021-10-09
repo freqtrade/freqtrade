@@ -453,17 +453,26 @@ class FreqtradeBot(LoggingMixin):
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
-                # TODO-lev: Does the below need to be adjusted for shorts?
                 if self._check_depth_of_market(
                     pair,
                     bid_check_dom,
                     side=signal
                 ):
-                    return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
+                    return self.execute_entry(
+                        pair,
+                        stake_amount,
+                        enter_tag=enter_tag,
+                        is_short=(signal == SignalDirection.SHORT)
+                    )
                 else:
                     return False
 
-            return self.execute_entry(pair, stake_amount, enter_tag=enter_tag)
+            return self.execute_entry(
+                pair,
+                stake_amount,
+                enter_tag=enter_tag,
+                is_short=(signal == SignalDirection.SHORT)
+            )
         else:
             return False
 
