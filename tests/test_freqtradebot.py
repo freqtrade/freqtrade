@@ -3566,9 +3566,9 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
 
 
 @ pytest.mark.parametrize('offset,trail_if_reached,second_sl,is_short', [
-    # (0, False, 2.0394, False),
-    # (0.011, False, 2.0394, False),
-    # (0.055, True, 1.8, False),
+    (0, False, 2.0394, False),
+    (0.011, False, 2.0394, False),
+    (0.055, True, 1.8, False),
     (0, False, 2.1606, True),
     (0.011, False, 2.1606, True),
     (0.055, True, 2.4, True),
@@ -3698,17 +3698,11 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     trade.is_short = is_short
     trade.update(limit_order[enter_side(is_short)])
     # Sell due to min_roi_reached
-    if is_short:
-        patch_get_signal(freqtrade, enter_long=False, enter_short=True, exit_short=True)
-    else:
-        patch_get_signal(freqtrade, enter_long=True, exit_long=True)
+    patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    if is_short:
-        patch_get_signal(freqtrade, enter_long=False, exit_long=True)
-    else:
-        patch_get_signal(freqtrade, enter_long=False, exit_short=True)
+    patch_get_signal(freqtrade, enter_long=False, exit_long=not is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.SELL_SIGNAL.value
 
@@ -4050,10 +4044,10 @@ def test_order_book_depth_of_market(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
     if is_high_delta:
         assert trade is None
     else:
+        trade.is_short = is_short
         assert trade is not None
         assert trade.stake_amount == 60.0
         assert trade.is_open
@@ -4122,8 +4116,9 @@ def test_check_depth_of_market(default_conf_usdt, mocker, order_book_l2) -> None
     assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
+@ pytest.mark.parametrize('is_short', [False, True])
 def test_order_book_ask_strategy(
-        default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt, fee,
+        default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt, fee, is_short,
         limit_sell_order_usdt_open, mocker, order_book_l2, caplog) -> None:
     """
     test order book ask strategy
@@ -4236,17 +4231,22 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
 
 
 @ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short", [False, True])
+@ pytest.mark.parametrize("is_short,buy_calls,sell_calls", [
+    (False, 1, 2),
+    (True, 2, 1),
+])
 def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, limit_order_open,
-                                is_short):
+                                is_short, buy_calls, sell_calls):
     default_conf_usdt['cancel_open_orders_on_exit'] = True
-    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
-                 side_effect=[
-                     ExchangeError(),
-                     limit_order[exit_side(is_short)],
-                     limit_order_open[enter_side(is_short)],
-                     limit_order_open[exit_side(is_short)],
-                 ])
+    mocker.patch(
+        'freqtrade.exchange.Exchange.fetch_order',
+        side_effect=[
+            ExchangeError(),
+            limit_order[exit_side(is_short)],
+            limit_order_open[enter_side(is_short)],
+            limit_order_open[exit_side(is_short)],
+        ]
+    )
     buy_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_enter')
     sell_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.handle_cancel_exit')
 
@@ -4255,8 +4255,8 @@ def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, lim
     trades = Trade.query.all()
     assert len(trades) == MOCK_TRADE_COUNT
     freqtrade.cancel_all_open_orders()
-    assert buy_mock.call_count == 1
-    assert sell_mock.call_count == 2
+    assert buy_mock.call_count == buy_calls
+    assert sell_mock.call_count == sell_calls
 
 
 @ pytest.mark.usefixtures("init_persistence")
