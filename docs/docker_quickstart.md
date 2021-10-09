@@ -70,39 +70,17 @@ docker-compose up -d
 !!! Warning "Default configuration"
     While the configuration generated will be mostly functional, you will still need to verify that all options correspond to what you want (like Pricing, pairlist, ...) before starting the bot.
 
-#### Acessing the UI
+#### Accessing the UI
 
-Uncommend the 2 lines below and add your IP adress in the following format (like 192.168.2.67:8080:8080) to the ft_userdata/docker-compose.yml:
-'''bash
-    ports:
-      - "yourIPadress:8080:8080"
-'''
-Your ft_userdata/user_data/config.json should look like:
-'''bash
-api_server": {
-        "enabled": true,
-        "listen_ip_address": "0.0.0.0",
-        "listen_port": 8080,
-        "verbosity": "error",
-        "enable_openapi": false,
-        "jwt_secret_key": "****",
-        "CORS_origins": [],
-        "username": "****",
-        "password": "****"
-    },
-'''
-instead of "****" you will have your data in.
-Then rebuild your docker file:
-Linux:
-'''bash
-sudo docker-compose down && sudo docker-compose pull && sudo docker-compose build && sudo docker-compose up -d 
-'''
-Windows:
-'''bash
-docker-compose down && docker-compose pull && docker-compose build && docker-compose up -d 
-'''
+If you've selected to enable FreqUI in the `new-config` step, you will have freqUI available at port `localhost:8080`.
 
-You can now access the UI by typing yourIPadress:8080 in your browser.
+You can now access the UI by typing localhost:8080 in your browser.
+
+??? Note "UI Access on a remote servers"
+    If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+    This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+    Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+    Please also read the [API configuration with docker](rest-api.md#configuration-with-docker) section to learn more about this configuration.
 
 #### Monitoring the bot
 
