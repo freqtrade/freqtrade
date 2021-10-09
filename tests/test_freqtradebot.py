@@ -4,6 +4,7 @@
 import logging
 import time
 from copy import deepcopy
+# from datetime import tzinfo
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -4302,3 +4303,28 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
+
+
+@pytest.mark.parametrize('tz,minute_offset', [
+    ('IST', 30),
+    ('ACST', 30),
+    ('ACWST', 45),
+    ('ACST', 30),
+    ('ACDT', 30),
+    ('CCT', 30),
+    ('CHAST', 45),
+    ('NST',  30),
+    ('IST',  30),
+    ('AFT',  30),
+    ('IRST',  30),
+    ('IRDT',  30),
+    ('MMT',  30),
+    ('NPT',  45),
+    ('MART',  30),
+])
+def test_time_zone_minutes(mocker, default_conf, tz, minute_offset):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    return freqtrade
+    # freqtrade.time_zone_minutes(tzinfo('IST'))
