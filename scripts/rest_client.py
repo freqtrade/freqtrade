@@ -334,6 +334,13 @@ class FtRestClient():
             "timerange": timerange if timerange else '',
         })
 
+    def sysinfo(self):
+        """Provides system information (CPU, RAM usage)
+
+        :return: json object
+        """
+        return self._get("sysinfo")
+
 
 def add_arguments():
     parser = argparse.ArgumentParser()
