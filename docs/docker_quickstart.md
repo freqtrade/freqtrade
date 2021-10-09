@@ -70,6 +70,18 @@ docker-compose up -d
 !!! Warning "Default configuration"
     While the configuration generated will be mostly functional, you will still need to verify that all options correspond to what you want (like Pricing, pairlist, ...) before starting the bot.
 
+#### Accessing the UI
+
+If you've selected to enable FreqUI in the `new-config` step, you will have freqUI available at port `localhost:8080`.
+
+You can now access the UI by typing localhost:8080 in your browser.
+
+??? Note "UI Access on a remote servers"
+    If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+    This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+    Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+    Please also read the [API configuration with docker](rest-api.md#configuration-with-docker) section to learn more about this configuration.
+
 #### Monitoring the bot
 
 You can check for running instances with `docker-compose ps`.
