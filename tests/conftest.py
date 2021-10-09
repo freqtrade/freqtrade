@@ -2309,6 +2309,7 @@ def limit_sell_order_usdt_open():
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 2.20,
         'amount': 30.0,
+        'cost': 66.0,
         'filled': 0.0,
         'remaining': 30.0,
         'status': 'open'

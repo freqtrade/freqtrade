@@ -1927,13 +1927,16 @@ def test_update_trade_state_sell(
     assert order.status == 'closed'
 
 
-@pytest.mark.parametrize('is_short', [False, True])
+@pytest.mark.parametrize('is_short', [
+    False,
+    True
+])
 def test_handle_trade(
     default_conf_usdt, limit_order_open, limit_order, fee, mocker, is_short
 ) -> None:
     open_order = limit_order_open[exit_side(is_short)]
-    enter_order = limit_order[exit_side(is_short)]
-    exit_order = limit_order[enter_side(is_short)]
+    enter_order = limit_order[enter_side(is_short)]
+    exit_order = limit_order[exit_side(is_short)]
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
