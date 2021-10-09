@@ -38,6 +38,4 @@ class MaxDrawDownHyperOptLoss(IHyperOptLoss):
         except ValueError:
             # No losing trade, therefore no drawdown.
             return -total_profit
-        max_drawdown_rev = 1 / max_drawdown[0]
-        ret = max_drawdown_rev * total_profit
-        return -ret
+        return -total_profit / max_drawdown[0]
