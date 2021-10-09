@@ -59,7 +59,6 @@ dependencies:
     - plotly
     - jupyter
 
-
     - pip:
         - pycoingecko
         - py_find_1st

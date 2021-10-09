@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, time, timezone, timedelta, tzinfo
+from datetime import datetime, time, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
