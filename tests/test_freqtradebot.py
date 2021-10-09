@@ -4285,8 +4285,8 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 @pytest.mark.parametrize('trading_mode,calls,t1,t2', [
     (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
     (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    (TradingMode.FUTURES, 8, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
-    (TradingMode.FUTURES, 9, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
 ])
 def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):
@@ -4303,28 +4303,3 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
-
-
-@pytest.mark.parametrize('tz,minute_offset', [
-    ('IST', 30),
-    ('ACST', 30),
-    ('ACWST', 45),
-    ('ACST', 30),
-    ('ACDT', 30),
-    ('CCT', 30),
-    ('CHAST', 45),
-    ('NST',  30),
-    ('IST',  30),
-    ('AFT',  30),
-    ('IRST',  30),
-    ('IRDT',  30),
-    ('MMT',  30),
-    ('NPT',  45),
-    ('MART',  30),
-])
-def test_time_zone_minutes(mocker, default_conf, tz, minute_offset):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    return freqtrade
-    # freqtrade.time_zone_minutes(tzinfo('IST'))
