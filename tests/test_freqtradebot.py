@@ -2193,7 +2193,8 @@ def test_check_handle_timedout_buy_usercustom(
 ) -> None:
 
     old_order = limit_sell_order_old if is_short else limit_buy_order_old
-    default_conf_usdt["unfilledtimeout"] = {"buy": 1400, "sell": 30}
+    default_conf_usdt["unfilledtimeout"] = {"buy": 30,
+                                            "sell": 1400} if is_short else {"buy": 1400, "sell": 30}
 
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock(return_value=old_order)
@@ -2211,7 +2212,7 @@ def test_check_handle_timedout_buy_usercustom(
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-
+    open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
 
     # Ensure default is to return empty (so not mocked yet)
@@ -2219,24 +2220,34 @@ def test_check_handle_timedout_buy_usercustom(
     assert cancel_order_mock.call_count == 0
 
     # Return false - trade remains open
-    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
+    if is_short:
+        freqtrade.strategy.check_sell_timeout = MagicMock(return_value=False)
+    else:
+        freqtrade.strategy.check_buy_timeout = MagicMock(return_value=False)
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 1
-    assert freqtrade.strategy.check_buy_timeout.call_count == 1
+    if is_short:
+        assert freqtrade.strategy.check_sell_timeout.call_count == 1
+        # Raise Keyerror ... (no impact on trade)
+        freqtrade.strategy.check_sell_timeout = MagicMock(side_effect=KeyError)
+    else:
+        assert freqtrade.strategy.check_buy_timeout.call_count == 1
+        freqtrade.strategy.check_buy_timeout = MagicMock(side_effect=KeyError)
 
-    # Raise Keyerror ... (no impact on trade)
-    freqtrade.strategy.check_buy_timeout = MagicMock(side_effect=KeyError)
     freqtrade.check_handle_timedout()
     assert cancel_order_mock.call_count == 0
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 1
-    assert freqtrade.strategy.check_buy_timeout.call_count == 1
-
-    freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
+    if is_short:
+        assert freqtrade.strategy.check_sell_timeout.call_count == 1
+        freqtrade.strategy.check_sell_timeout = MagicMock(return_value=True)
+    else:
+        assert freqtrade.strategy.check_buy_timeout.call_count == 1
+        freqtrade.strategy.check_buy_timeout = MagicMock(return_value=True)
     # Trade should be closed since the function returns true
     freqtrade.check_handle_timedout()
     assert cancel_order_wr_mock.call_count == 1
@@ -2244,7 +2255,10 @@ def test_check_handle_timedout_buy_usercustom(
     trades = Trade.query.filter(Trade.open_order_id.is_(open_trade.open_order_id)).all()
     nb_trades = len(trades)
     assert nb_trades == 0
-    assert freqtrade.strategy.check_buy_timeout.call_count == 1
+    if is_short:
+        assert freqtrade.strategy.check_sell_timeout.call_count == 1
+    else:
+        assert freqtrade.strategy.check_buy_timeout.call_count == 1
 
 
 @ pytest.mark.parametrize("is_short", [False, True])
@@ -2307,7 +2321,7 @@ def test_check_handle_cancelled_buy(
         get_fee=fee
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
-
+    open_trade.is_short = is_short
     Trade.query.session.add(open_trade)
 
     # check it does cancel buy orders over the time limit

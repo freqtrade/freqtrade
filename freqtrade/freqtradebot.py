@@ -1038,7 +1038,11 @@ class FreqtradeBot(LoggingMixin):
                 (fully_cancelled or
                     self._check_timed_out(trade.enter_side, order) or
                     strategy_safe_wrapper(
-                        self.strategy.check_buy_timeout,
+                        (
+                            self.strategy.check_sell_timeout
+                            if trade.is_short else
+                            self.strategy.check_buy_timeout
+                        ),
                         default_retval=False
                     )(
                         pair=trade.pair,
