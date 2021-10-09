@@ -231,8 +231,8 @@ class Binance(Exchange):
         self,
         pair: str,
         contract_size: float,
-        mark_price: float,
-        funding_rate: Optional[float],
+        funding_rate: float,
+        mark_price: Optional[float],
     ) -> float:
         """
             Calculates a single funding fee
@@ -245,9 +245,6 @@ class Binance(Exchange):
         if mark_price is None:
             raise OperationalException("Mark price cannot be None for Binance._get_funding_fee")
         nominal_value = mark_price * contract_size
-        if funding_rate is None:
-            raise OperationalException(
-                "Funding rate should never be none on Binance._get_funding_fee")
         return nominal_value * funding_rate
 
     async def _async_get_historic_ohlcv(
