@@ -3292,3 +3292,11 @@ def test_get_funding_fee_dates():
 
 def test_calculate_funding_fees():
     return
+
+
+def test__get_funding_rate(default_conf, mocker):
+    return
+
+
+def test__get_funding_fee():
+    return

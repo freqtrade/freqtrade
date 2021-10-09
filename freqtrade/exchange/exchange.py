@@ -1649,17 +1649,19 @@ class Exchange:
         self,
         pair: str,
         contract_size: float,
+        funding_rate: float,
         mark_price: float,
-        funding_rate: Optional[float]
     ) -> float:
         """
             Calculates a single funding fee
             :param contract_size: The amount/quanity
             :param mark_price: The price of the asset that the contract is based off of
             :param funding_rate: the interest rate and the premium
+                - interest rate:
                 - premium: varies by price difference between the perpetual contract and mark price
         """
-        raise OperationalException(f"Funding fee has not been implemented for {self.name}")
+        nominal_value = mark_price * contract_size
+        return nominal_value * funding_rate
 
     @retrier
     def _set_leverage(

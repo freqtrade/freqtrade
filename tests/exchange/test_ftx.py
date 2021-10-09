@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from random import randint
 from unittest.mock import MagicMock
 
@@ -268,18 +267,3 @@ def test_fill_leverage_brackets_ftx(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, id="ftx")
     exchange.fill_leverage_brackets()
     assert exchange._leverage_brackets == {}
-
-
-@pytest.mark.parametrize("pair,when", [
-    ('XRP/USDT', datetime.utcnow()),
-    ('ADA/BTC', datetime.utcnow()),
-    ('XRP/USDT', datetime.utcnow() - timedelta(hours=30)),
-])
-def test__get_funding_rate(default_conf, mocker, pair, when):
-    api_mock = MagicMock()
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="ftx")
-    assert exchange._get_funding_rate(pair, when) is None
-
-
-def test__get_funding_fee():
-    return
