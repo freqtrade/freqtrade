@@ -120,7 +120,7 @@ class FreqtradeBot(LoggingMixin):
             # TODO: funding interval, specified by funding_fee_times on the exchange classes
             for time_slot in range(0, 24):
                 for minutes in [0, 15, 30, 45]:
-                    t = str(time(time_slot, minutes))
+                    t = str(time(time_slot, minutes, 2))
                     schedule.every().day.at(t).do(update)
 
     def notify_status(self, msg: str) -> None:

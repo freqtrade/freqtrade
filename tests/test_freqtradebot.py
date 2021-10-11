@@ -4,7 +4,6 @@
 import logging
 import time
 from copy import deepcopy
-# from datetime import tzinfo
 from math import isclose
 from unittest.mock import ANY, MagicMock, PropertyMock
 
@@ -4285,8 +4284,12 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 @pytest.mark.parametrize('trading_mode,calls,t1,t2', [
     (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
     (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:00"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 31, "2021-09-01 00:00:02", "2021-09-01 08:00:01"),
+    # (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 33, "2021-09-01 00:00:01", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 34, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 34, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
 ])
 def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):
