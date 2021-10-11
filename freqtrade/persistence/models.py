@@ -709,7 +709,10 @@ class LocalTrade():
 
         elif (trading_mode == TradingMode.FUTURES):
             funding_fees = self.funding_fees or 0.0
-            return float(self._calc_base_close(amount, rate, fee)) + funding_fees
+            if self.is_short:
+                return float(self._calc_base_close(amount, rate, fee)) - funding_fees
+            else:
+                return float(self._calc_base_close(amount, rate, fee)) + funding_fees
         else:
             raise OperationalException(
                 f"{self.trading_mode.value} trading is not yet available using freqtrade")
