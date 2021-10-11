@@ -106,7 +106,7 @@ class FreqtradeBot(LoggingMixin):
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
         if 'trading_mode' in self.config:
-            self.trading_mode = self.config['trading_mode']
+            self.trading_mode = TradingMode(self.config['trading_mode'])
         else:
             self.trading_mode = TradingMode.SPOT
 

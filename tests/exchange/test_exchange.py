@@ -3053,36 +3053,36 @@ def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_funding_history = MagicMock(return_value=[
         {
-            'amount': 0.14542341,
+            'amount': 0.14542,
             'code': 'USDT',
             'datetime': '2021-09-01T08:00:01.000Z',
             'id': '485478',
             'info': {'asset': 'USDT',
-                     'income': '0.14542341',
+                     'income': '0.14542',
                      'incomeType': 'FUNDING_FEE',
                      'info': 'FUNDING_FEE',
                      'symbol': 'XRPUSDT',
-                     'time': '1630512001000',
+                     'time': '1630382001000',
                      'tradeId': '',
-                     'tranId': '4854789484855218760'},
+                     'tranId': '993203'},
             'symbol': 'XRP/USDT',
-            'timestamp': 1630512001000
+            'timestamp': 1630382001000
         },
         {
-            'amount': -0.14642341,
+            'amount': -0.14642,
             'code': 'USDT',
             'datetime': '2021-09-01T16:00:01.000Z',
             'id': '485479',
             'info': {'asset': 'USDT',
-                     'income': '-0.14642341',
+                     'income': '-0.14642',
                      'incomeType': 'FUNDING_FEE',
                      'info': 'FUNDING_FEE',
                      'symbol': 'XRPUSDT',
-                     'time': '1630512001000',
+                     'time': '1630314001000',
                      'tradeId': '',
-                     'tranId': '4854789484855218760'},
+                     'tranId': '993204'},
             'symbol': 'XRP/USDT',
-            'timestamp': 1630512001000
+            'timestamp': 1630314001000
         }
     ])
     type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
