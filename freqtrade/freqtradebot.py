@@ -10,7 +10,7 @@ from threading import Lock
 from typing import Any, Dict, List, Optional
 
 import arrow
-import schedule
+from schedule import Scheduler
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
@@ -109,6 +109,7 @@ class FreqtradeBot(LoggingMixin):
             self.trading_mode = TradingMode(self.config['trading_mode'])
         else:
             self.trading_mode = TradingMode.SPOT
+        self._schedule = Scheduler()
 
         if self.trading_mode == TradingMode.FUTURES:
 
@@ -121,7 +122,7 @@ class FreqtradeBot(LoggingMixin):
             for time_slot in range(0, 24):
                 for minutes in [0, 15, 30, 45]:
                     t = str(time(time_slot, minutes, 2))
-                    schedule.every().day.at(t).do(update)
+                    self._schedule.every().day.at(t).do(update)
 
     def notify_status(self, msg: str) -> None:
         """
@@ -293,7 +294,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
 
         if self.trading_mode == TradingMode.FUTURES:
-            schedule.run_pending()
+            self._schedule.run_pending()
 
     def update_closed_trades_without_assigned_fees(self):
         """

@@ -4303,6 +4303,6 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     time_machine.move_to(f"{t2} +00:00")
-    schedule.run_pending()
+    freqtrade._schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
