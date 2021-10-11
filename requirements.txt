@@ -20,7 +20,7 @@ tabulate==0.8.9
 pycoingecko==2.2.0
 jinja2==3.0.1
 tables==3.6.1
-blosc==1.10.4
+blosc==1.10.6
 
 # find first, C search in arrays
 py_find_1st==1.1.5
