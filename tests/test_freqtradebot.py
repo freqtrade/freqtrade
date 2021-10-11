@@ -4285,7 +4285,7 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
     (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
     (TradingMode.FUTURES, 31, "2021-09-01 00:00:02", "2021-09-01 08:00:01"),
-    # (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:01"),
     (TradingMode.FUTURES, 33, "2021-09-01 00:00:01", "2021-09-01 08:00:02"),
     (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
     (TradingMode.FUTURES, 34, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
@@ -4303,6 +4303,7 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     time_machine.move_to(f"{t2} +00:00")
+    # Check schedule jobs in debugging with freqtrade._schedule.jobs
     freqtrade._schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
