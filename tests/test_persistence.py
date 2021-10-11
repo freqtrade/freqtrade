@@ -18,7 +18,7 @@ from tests.conftest import (create_mock_trades, create_mock_trades_with_leverage
                             log_has, log_has_re)
 
 
-spot, margin = TradingMode.SPOT, TradingMode.MARGIN
+spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES
 
 
 def test_init_create_session(default_conf):
@@ -186,6 +186,13 @@ def test_set_stop_loss_isolated_liq(fee):
     ("binance", False, 1, 295, 0.0005, 0.0, spot),
     ("binance", True, 1, 295, 0.0005, 0.003125, margin),
 
+    # ("binance", False, 3, 10, 0.0005, 0.0, futures),
+    # ("binance", True, 3, 295, 0.0005, 0.0, futures),
+    # ("binance", False, 5, 295, 0.0005, 0.0, futures),
+    # ("binance", True, 5, 295, 0.0005, 0.0, futures),
+    # ("binance", False, 1, 295, 0.0005, 0.0, futures),
+    # ("binance", True, 1, 295, 0.0005, 0.0, futures),
+
     ("kraken", False, 3, 10, 0.0005, 0.040, margin),
     ("kraken", True, 3, 10, 0.0005, 0.030, margin),
     ("kraken", False, 3, 295, 0.0005, 0.06, margin),
@@ -277,6 +284,8 @@ def test_interest(market_buy_order_usdt, fee, exchange, is_short, lev, minutes, 
     (True, 1.0, 30.0, margin),
     (False, 3.0, 40.0, margin),
     (True, 3.0, 30.0, margin),
+    # (False, 3.0, 0.0, futures),
+    # (True, 3.0, 0.0, futures),
 ])
 @pytest.mark.usefixtures("init_persistence")
 def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
@@ -535,10 +544,16 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
         ("binance", True, 1, 59.850, 66.1663784375, -6.316378437500013, -0.105536815998329, margin),
         ("binance", False, 3, 60.15, 65.83416667, 5.684166670000003, 0.2834995845386534, margin),
         ("binance", True, 3, 59.85, 66.1663784375, -6.316378437500013, -0.3166104479949876, margin),
+
         ("kraken", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot),
         ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.106619298245614, margin),
         ("kraken", False, 3, 60.15, 65.795, 5.645, 0.2815461346633419, margin),
         ("kraken", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, margin),
+
+        # TODO-lev
+        # ("binance", True, 1, 59.850, 66.1663784375, -6.316378437500013, -0.105536815998329, futures),
+        # ("binance", False, 3, 60.15, 65.83416667, 5.684166670000003, 0.2834995845386534, futures),
+        # ("binance", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, futures),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(
@@ -666,7 +681,7 @@ def test_update_invalid_order(limit_buy_order_usdt):
 
 
 @pytest.mark.parametrize('exchange', ['binance', 'kraken'])
-@pytest.mark.parametrize('trading_mode', [spot, margin])
+@pytest.mark.parametrize('trading_mode', [spot, margin, futures])
 @pytest.mark.parametrize('lev', [1, 3])
 @pytest.mark.parametrize('is_short,fee_rate,result', [
     (False, 0.003, 60.18),
@@ -738,6 +753,11 @@ def test_calc_open_trade_value(
         ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719, margin),
         ('kraken', True, 1, 2.2, 2.5, 0.0025, 75.2626875, margin),
         ('kraken', True, 1, 2.2, 2.5, 0.003, 75.300225, margin),
+
+        # TODO-lev
+        # ('binance', False, 3, 2.0, 2.5, 0.003, 74.77416667, futures),
+        # ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719, futures),
+        # ('binance', True, 1, 2.2, 2.5, 0.0025, 75.2626875, futures),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price(
@@ -763,40 +783,73 @@ def test_calc_close_trade_price(
 
 
 @pytest.mark.parametrize(
-    'exchange,is_short,lev,close_rate,fee_close,profit,profit_ratio,trading_mode', [
-        ('binance', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673, spot),
-        ('binance', False, 3, 2.1, 0.0025, 2.69166667, 0.13424771421446402, margin),
-        ('binance', True, 1, 2.1, 0.0025, -3.308815781249997, -0.05528514254385963, margin),
-        ('binance', True, 3, 2.1, 0.0025, -3.308815781249997, -0.1658554276315789, margin),
+    'exchange,is_short,lev,close_rate,fee_close,profit,profit_ratio,trading_mode,funding_fees', [
+        ('binance', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673, spot, 0),
+        ('binance', False, 3, 2.1, 0.0025, 2.69166667, 0.13424771421446402, margin, 0),
+        ('binance', True, 1, 2.1, 0.0025, -3.308815781249997, -0.05528514254385963, margin, 0),
+        ('binance', True, 3, 2.1, 0.0025, -3.308815781249997, -0.1658554276315789, margin, 0),
 
-        ('binance', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632, margin),
-        ('binance', False, 3, 1.9, 0.0025, -3.29333333, -0.16425602643391513, margin),
-        ('binance', True, 1, 1.9, 0.0025, 2.7063095312499996, 0.045218204365079395, margin),
-        ('binance', True, 3, 1.9, 0.0025, 2.7063095312499996, 0.13565461309523819, margin),
+        ('binance', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632, margin, 0),
+        ('binance', False, 3, 1.9, 0.0025, -3.29333333, -0.16425602643391513, margin, 0),
+        ('binance', True, 1, 1.9, 0.0025, 2.7063095312499996, 0.045218204365079395, margin, 0),
+        ('binance', True, 3, 1.9, 0.0025, 2.7063095312499996, 0.13565461309523819, margin, 0),
 
-        ('binance', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232, margin),
-        ('binance', False, 3, 2.2, 0.0025, 5.68416667, 0.2834995845386534, margin),
-        ('binance', True, 1, 2.2, 0.0025, -6.316378437499999, -0.1055368159983292, margin),
-        ('binance', True, 3, 2.2, 0.0025, -6.316378437499999, -0.3166104479949876, margin),
+        ('binance', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232, margin, 0),
+        ('binance', False, 3, 2.2, 0.0025, 5.68416667, 0.2834995845386534, margin, 0),
+        ('binance', True, 1, 2.2, 0.0025, -6.316378437499999, -0.1055368159983292, margin, 0),
+        ('binance', True, 3, 2.2, 0.0025, -6.316378437499999, -0.3166104479949876, margin, 0),
 
-        ('kraken', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673, spot),
-        ('kraken', False, 3, 2.1, 0.0025, 2.6525, 0.13229426433915248, margin),
-        ('kraken', True, 1, 2.1, 0.0025, -3.3706575, -0.05631842105263152, margin),
-        ('kraken', True, 3, 2.1, 0.0025, -3.3706575, -0.16895526315789455, margin),
+        # # Kraken
+        ('kraken', False, 1, 2.1, 0.0025, 2.6925, 0.04476309226932673, spot, 0),
+        ('kraken', False, 3, 2.1, 0.0025, 2.6525, 0.13229426433915248, margin, 0),
+        ('kraken', True, 1, 2.1, 0.0025, -3.3706575, -0.05631842105263152, margin, 0),
+        ('kraken', True, 3, 2.1, 0.0025, -3.3706575, -0.16895526315789455, margin, 0),
 
-        ('kraken', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632, margin),
-        ('kraken', False, 3, 1.9, 0.0025, -3.3325, -0.16620947630922667, margin),
-        ('kraken', True, 1, 1.9, 0.0025, 2.6503575, 0.04428333333333334, margin),
-        ('kraken', True, 3, 1.9, 0.0025, 2.6503575, 0.13285000000000002, margin),
+        ('kraken', False, 1, 1.9, 0.0025, -3.2925, -0.05473815461346632, margin, 0),
+        ('kraken', False, 3, 1.9, 0.0025, -3.3325, -0.16620947630922667, margin, 0),
+        ('kraken', True, 1, 1.9, 0.0025, 2.6503575, 0.04428333333333334, margin, 0),
+        ('kraken', True, 3, 1.9, 0.0025, 2.6503575, 0.13285000000000002, margin, 0),
 
-        ('kraken', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232, margin),
-        ('kraken', False, 3, 2.2, 0.0025, 5.645, 0.2815461346633419, margin),
-        ('kraken', True, 1, 2.2, 0.0025, -6.381165, -0.106619298245614, margin),
-        ('kraken', True, 3, 2.2, 0.0025, -6.381165, -0.319857894736842, margin),
+        ('kraken', False, 1, 2.2, 0.0025, 5.685, 0.0945137157107232, margin, 0),
+        ('kraken', False, 3, 2.2, 0.0025, 5.645, 0.2815461346633419, margin, 0),
+        ('kraken', True, 1, 2.2, 0.0025, -6.381165, -0.106619298245614, margin, 0),
+        ('kraken', True, 3, 2.2, 0.0025, -6.381165, -0.319857894736842, margin, 0),
 
-        ('binance', False, 1, 2.1, 0.003, 2.6610000000000014, 0.04423940149625927, spot),
-        ('binance', False, 1, 1.9, 0.003, -3.320999999999998, -0.05521197007481293, spot),
-        ('binance', False, 1, 2.2, 0.003, 5.652000000000008, 0.09396508728179565, spot),
+        ('binance', False, 1, 2.1, 0.003, 2.6610000000000014, 0.04423940149625927, spot, 0),
+        ('binance', False, 1, 1.9, 0.003, -3.320999999999998, -0.05521197007481293, spot, 0),
+        ('binance', False, 1, 2.2, 0.003, 5.652000000000008, 0.09396508728179565, spot, 0),
+
+        # # FUTURES, funding_fee=1
+        ('binance', False, 1, 2.1, 0.0025, 3.6925, 0.06138819617622615, futures, 1),
+        ('binance', False, 3, 2.1, 0.0025, 3.6925, 0.18416458852867845, futures, 1),
+        ('binance', True, 1, 2.1, 0.0025, -2.3074999999999974, -0.038554720133667564, futures, 1),
+        ('binance', True, 3, 2.1, 0.0025, -2.3074999999999974, -0.11566416040100269, futures, 1),
+
+        ('binance', False, 1, 1.9, 0.0025, -2.2925, -0.0381130507065669, futures, 1),
+        ('binance', False, 3, 1.9, 0.0025, -2.2925, -0.1143391521197007, futures, 1),
+        ('binance', True, 1, 1.9, 0.0025, 3.707500000000003, 0.06194653299916464, futures, 1),
+        ('binance', True, 3, 1.9, 0.0025, 3.707500000000003, 0.18583959899749392, futures, 1),
+
+        ('binance', False, 1, 2.2, 0.0025, 6.685, 0.11113881961762262, futures, 1),
+        ('binance', False, 3, 2.2, 0.0025, 6.685, 0.33341645885286786, futures, 1),
+        ('binance', True, 1, 2.2, 0.0025, -5.315000000000005, -0.08880534670008355, futures, 1),
+        ('binance', True, 3, 2.2, 0.0025, -5.315000000000005, -0.26641604010025066, futures, 1),
+
+        # FUTURES, funding_fee=-1
+        ('binance', False, 1, 2.1, 0.0025, 1.6925000000000026, 0.028137988362427313, futures, -1),
+        ('binance', False, 3, 2.1, 0.0025, 1.6925000000000026, 0.08441396508728194, futures, -1),
+        ('binance', True, 1, 2.1, 0.0025, -4.307499999999997, -0.07197159565580624, futures, -1),
+        ('binance', True, 3, 2.1, 0.0025, -4.307499999999997, -0.21591478696741873, futures, -1),
+
+        ('binance', False, 1, 1.9, 0.0025, -4.292499999999997, -0.07136325852036574, futures, -1),
+        ('binance', False, 3, 1.9, 0.0025, -4.292499999999997, -0.2140897755610972, futures, -1),
+        ('binance', True, 1, 1.9, 0.0025, 1.7075000000000031, 0.02852965747702596, futures, -1),
+        ('binance', True, 3, 1.9, 0.0025, 1.7075000000000031, 0.08558897243107788, futures, -1),
+
+        ('binance', False, 1, 2.2, 0.0025, 4.684999999999995, 0.07788861180382378, futures, -1),
+        ('binance', False, 3, 2.2, 0.0025, 4.684999999999995, 0.23366583541147135, futures, -1),
+        ('binance', True, 1, 2.2, 0.0025, -7.315000000000005, -0.12222222222222223, futures, -1),
+        ('binance', True, 3, 2.2, 0.0025, -7.315000000000005, -0.3666666666666667, futures, -1),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_profit(
@@ -810,7 +863,8 @@ def test_calc_profit(
     fee_close,
     profit,
     profit_ratio,
-    trading_mode
+    trading_mode,
+    funding_fees
 ):
     """
         10 minute limit trade on Binance/Kraken at 1x, 3x leverage
@@ -829,6 +883,7 @@ def test_calc_profit(
                 1x,-1x: 60.0  quote
                 3x,-3x: 20.0  quote
             hours: 1/6 (10 minutes)
+            funding_fees: 1
         borrowed
              1x:  0 quote
              3x: 40 quote
@@ -940,6 +995,87 @@ def test_calc_profit(
                     2.1 quote: (62.811 / 60.15) - 1 = 0.04423940149625927
                     1.9 quote: (56.829 / 60.15) - 1 = -0.05521197007481293
                     2.2 quote: (65.802 / 60.15) - 1 = 0.09396508728179565
+        futures (live):
+            funding_fee: 1
+                close_value:
+                    equations:
+                        1x,3x: (amount * close_rate) - (amount * close_rate * fee) + funding_fees
+                        -1x,-3x: (amount * close_rate) + (amount * close_rate * fee) - funding_fees
+                    2.1 quote
+                        1x,3x: (30.00 * 2.1) - (30.00 * 2.1 * 0.0025) + 1   = 63.8425
+                        -1x,-3x: (30.00 * 2.1) + (30.00 * 2.1 * 0.0025) - 1   = 62.1575
+                    1.9 quote
+                        1x,3x: (30.00 * 1.9) - (30.00 * 1.9 * 0.0025) + 1   = 57.8575
+                        -1x,-3x: (30.00 * 1.9) + (30.00 * 1.9 * 0.0025) - 1   = 56.1425
+                    2.2 quote:
+                        1x,3x: (30.00 * 2.20) - (30.00 * 2.20 * 0.0025) + 1 = 66.835
+                        -1x,-3x: (30.00 * 2.20) + (30.00 * 2.20 * 0.0025) - 1 = 65.165
+                total_profit:
+                    2.1 quote
+                        1x,3x:   63.8425     - 60.15          = 3.6925
+                        -1x,-3x: 59.850      - 62.1575        = -2.3074999999999974
+                    1.9 quote
+                        1x,3x:   57.8575     - 60.15          = -2.2925
+                        -1x,-3x: 59.850      - 56.1425        = 3.707500000000003
+                    2.2 quote:
+                        1x,3x:   66.835      - 60.15          = 6.685
+                        -1x,-3x: 59.850      - 65.165         = -5.315000000000005
+                total_profit_ratio:
+                    2.1 quote
+                        1x: (63.8425 / 60.15) - 1             = 0.06138819617622615
+                        3x: ((63.8425 / 60.15) - 1)*3         = 0.18416458852867845
+                        -1x: 1 - (62.1575 / 59.850)           = -0.038554720133667564
+                        -3x: (1 - (62.1575 / 59.850))*3       = -0.11566416040100269
+                    1.9 quote
+                        1x: (57.8575 / 60.15) - 1             = -0.0381130507065669
+                        3x: ((57.8575 / 60.15) - 1)*3         = -0.1143391521197007
+                        -1x: 1 - (56.1425 / 59.850)           = 0.06194653299916464
+                        -3x: (1 - (56.1425 / 59.850))*3       = 0.18583959899749392
+                    2.2 quote
+                        1x: (66.835 / 60.15) - 1             = 0.11113881961762262
+                        3x: ((66.835 / 60.15) - 1)*3         = 0.33341645885286786
+                        -1x: 1 - (65.165 / 59.850)           = -0.08880534670008355
+                        -3x: (1 - (65.165 / 59.850))*3       = -0.26641604010025066
+            funding_fee: -1
+                close_value:
+                    equations:
+                        (amount * close_rate) - (amount * close_rate * fee) + funding_fees
+                        (amount * close_rate) - (amount * close_rate * fee) - funding_fees
+                    2.1 quote
+                        1x,3x:  (30.00 * 2.1) - (30.00 * 2.1 * 0.0025) + (-1)   = 61.8425
+                        -1x,-3x: (30.00 * 2.1) + (30.00 * 2.1 * 0.0025) - (-1)   = 64.1575
+                    1.9 quote
+                        1x,3x:  (30.00 * 1.9) - (30.00 * 1.9 * 0.0025) + (-1)   = 55.8575
+                        -1x,-3x: (30.00 * 1.9) + (30.00 * 1.9 * 0.0025) - (-1)   = 58.1425
+                    2.2 quote:
+                        1x,3x:  (30.00 * 2.20) - (30.00 * 2.20 * 0.0025) + (-1) = 64.835
+                        -1x,-3x: (30.00 * 2.20) + (30.00 * 2.20 * 0.0025) - (-1) = 67.165
+                total_profit:
+                    2.1 quote
+                        1x,3x:   61.8425     - 60.15          = 1.6925000000000026
+                        -1x,-3x: 59.850      - 64.1575        = -4.307499999999997
+                    1.9 quote
+                        1x,3x:   55.8575     - 60.15          = -4.292499999999997
+                        -1x,-3x: 59.850      - 58.1425        = 1.7075000000000031
+                    2.2 quote:
+                        1x,3x:   64.835      - 60.15          = 4.684999999999995
+                        -1x,-3x: 59.850      - 67.165         = -7.315000000000005
+                total_profit_ratio:
+                    2.1 quote
+                        1x: (61.8425 / 60.15) - 1             = 0.028137988362427313
+                        3x: ((61.8425 / 60.15) - 1)*3         = 0.08441396508728194
+                        -1x: 1 - (64.1575 / 59.850)           = -0.07197159565580624
+                        -3x: (1 - (64.1575 / 59.850))*3       = -0.21591478696741873
+                    1.9 quote
+                        1x: (55.8575 / 60.15) - 1             = -0.07136325852036574
+                        3x: ((55.8575 / 60.15) - 1)*3         = -0.2140897755610972
+                        -1x: 1 - (58.1425 / 59.850)           = 0.02852965747702596
+                        -3x: (1 - (58.1425 / 59.850))*3       = 0.08558897243107788
+                    2.2 quote
+                        1x: (64.835 / 60.15) - 1              = 0.07788861180382378
+                        3x: ((64.835 / 60.15) - 1)*3          = 0.23366583541147135
+                        -1x: 1 - (67.165 / 59.850)            = -0.12222222222222223
+                        -3x: (1 - (67.165 / 59.850))*3        = -0.3666666666666667
     """
     trade = Trade(
         pair='ADA/USDT',
@@ -953,7 +1089,8 @@ def test_calc_profit(
         leverage=lev,
         fee_open=0.0025,
         fee_close=fee_close,
-        trading_mode=trading_mode
+        trading_mode=trading_mode,
+        funding_fees=funding_fees
     )
     trade.open_order_id = 'something'
 
