@@ -186,12 +186,12 @@ def test_set_stop_loss_isolated_liq(fee):
     ("binance", False, 1, 295, 0.0005, 0.0, spot),
     ("binance", True, 1, 295, 0.0005, 0.003125, margin),
 
-    # ("binance", False, 3, 10, 0.0005, 0.0, futures),
-    # ("binance", True, 3, 295, 0.0005, 0.0, futures),
-    # ("binance", False, 5, 295, 0.0005, 0.0, futures),
-    # ("binance", True, 5, 295, 0.0005, 0.0, futures),
-    # ("binance", False, 1, 295, 0.0005, 0.0, futures),
-    # ("binance", True, 1, 295, 0.0005, 0.0, futures),
+    ("binance", False, 3, 10, 0.0005, 0.0, futures),
+    ("binance", True, 3, 295, 0.0005, 0.0, futures),
+    ("binance", False, 5, 295, 0.0005, 0.0, futures),
+    ("binance", True, 5, 295, 0.0005, 0.0, futures),
+    ("binance", False, 1, 295, 0.0005, 0.0, futures),
+    ("binance", True, 1, 295, 0.0005, 0.0, futures),
 
     ("kraken", False, 3, 10, 0.0005, 0.040, margin),
     ("kraken", True, 3, 10, 0.0005, 0.030, margin),
@@ -284,8 +284,6 @@ def test_interest(market_buy_order_usdt, fee, exchange, is_short, lev, minutes, 
     (True, 1.0, 30.0, margin),
     (False, 3.0, 40.0, margin),
     (True, 3.0, 30.0, margin),
-    # (False, 3.0, 0.0, futures),
-    # (True, 3.0, 0.0, futures),
 ])
 @pytest.mark.usefixtures("init_persistence")
 def test_borrowed(limit_buy_order_usdt, limit_sell_order_usdt, fee,
@@ -539,26 +537,26 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
 
 @pytest.mark.parametrize(
-    'exchange,is_short,lev,open_value,close_value,profit,profit_ratio,trading_mode', [
-        ("binance", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot),
-        ("binance", True, 1, 59.850, 66.1663784375, -6.316378437500013, -0.105536815998329, margin),
-        ("binance", False, 3, 60.15, 65.83416667, 5.684166670000003, 0.2834995845386534, margin),
-        ("binance", True, 3, 59.85, 66.1663784375, -6.316378437500013, -0.3166104479949876, margin),
+    'exchange,is_short,lev,open_value,close_value,profit,profit_ratio,trading_mode,funding_fees', [
+        ("binance", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot, 0.0),
+        ("binance", True, 1, 59.850, 66.1663784375, -6.3163784375, -0.105536815998329, margin, 0.0),
+        ("binance", False, 3, 60.15, 65.83416667, 5.68416667, 0.2834995845386534, margin, 0.0),
+        ("binance", True, 3, 59.85, 66.1663784375, -6.3163784375, -0.3166104479949876, margin, 0.0),
 
-        ("kraken", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot),
-        ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.106619298245614, margin),
-        ("kraken", False, 3, 60.15, 65.795, 5.645, 0.2815461346633419, margin),
-        ("kraken", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, margin),
+        ("kraken", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot, 0.0),
+        ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.106619298245614, margin, 0.0),
+        ("kraken", False, 3, 60.15, 65.795, 5.645, 0.2815461346633419, margin, 0.0),
+        ("kraken", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, margin, 0.0),
 
-        # TODO-lev
-        # ("binance", True, 1, 59.850, 66.1663784375, -6.316378437500013, -0.105536815998329, futures),
-        # ("binance", False, 3, 60.15, 65.83416667, 5.684166670000003, 0.2834995845386534, futures),
-        # ("binance", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, futures),
+        ("binance", False, 1, 60.15, 66.835,  6.685, 0.11113881961762262, futures, 1.0),
+        ("binance", True, 1, 59.85,  67.165, -7.315, -0.12222222222222223, futures, -1.0),
+        ("binance", False, 3, 60.15, 64.835,  4.685, 0.23366583541147135, futures, -1.0),
+        ("binance", True, 3, 59.85,  65.165, -5.315, -0.26641604010025066, futures, 1.0),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(
     limit_buy_order_usdt, limit_sell_order_usdt, fee, exchange, is_short, lev,
-    open_value, close_value, profit, profit_ratio, trading_mode
+    open_value, close_value, profit, profit_ratio, trading_mode, funding_fees
 ):
     trade: Trade = Trade(
         pair='ADA/USDT',
@@ -572,7 +570,8 @@ def test_calc_open_close_trade_price(
         exchange=exchange,
         is_short=is_short,
         leverage=lev,
-        trading_mode=trading_mode
+        trading_mode=trading_mode,
+        funding_fees=funding_fees
     )
 
     trade.open_order_id = f'something-{is_short}-{lev}-{exchange}'
@@ -737,32 +736,35 @@ def test_calc_open_trade_value(
 
 
 @pytest.mark.parametrize(
-    'exchange,is_short,lev,open_rate,close_rate,fee_rate,result,trading_mode', [
-        ('binance', False, 1, 2.0, 2.5, 0.0025, 74.8125, spot),
-        ('binance', False, 1, 2.0, 2.5, 0.003, 74.775, spot),
-        ('binance', False, 1, 2.0, 2.2, 0.005, 65.67, margin),
-        ('binance', False, 3, 2.0, 2.5, 0.0025, 74.81166667, margin),
-        ('binance', False, 3, 2.0, 2.5, 0.003, 74.77416667, margin),
-        ('kraken', False, 3, 2.0, 2.5, 0.0025, 74.7725, margin),
-        ('kraken', False, 3, 2.0, 2.5, 0.003, 74.735, margin),
-        ('kraken', True, 3, 2.2, 2.5, 0.0025, 75.2626875, margin),
-        ('kraken', True, 3, 2.2, 2.5, 0.003, 75.300225, margin),
-        ('binance', True, 3, 2.2, 2.5, 0.0025, 75.18906641, margin),
-        ('binance', True, 3, 2.2, 2.5, 0.003, 75.22656719, margin),
-        ('binance', True, 1, 2.2, 2.5, 0.0025, 75.18906641, margin),
-        ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719, margin),
-        ('kraken', True, 1, 2.2, 2.5, 0.0025, 75.2626875, margin),
-        ('kraken', True, 1, 2.2, 2.5, 0.003, 75.300225, margin),
+    'exchange,is_short,lev,open_rate,close_rate,fee_rate,result,trading_mode,funding_fees', [
+        ('binance', False, 1, 2.0, 2.5, 0.0025, 74.8125, spot, 0),
+        ('binance', False, 1, 2.0, 2.5, 0.003, 74.775, spot, 0),
+        ('binance', False, 1, 2.0, 2.2, 0.005, 65.67, margin, 0),
+        ('binance', False, 3, 2.0, 2.5, 0.0025, 74.81166667, margin, 0),
+        ('binance', False, 3, 2.0, 2.5, 0.003, 74.77416667, margin, 0),
+        ('binance', True, 3, 2.2, 2.5, 0.0025, 75.18906641, margin, 0),
+        ('binance', True, 3, 2.2, 2.5, 0.003, 75.22656719, margin, 0),
+        ('binance', True, 1, 2.2, 2.5, 0.0025, 75.18906641, margin, 0),
+        ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719, margin, 0),
 
-        # TODO-lev
-        # ('binance', False, 3, 2.0, 2.5, 0.003, 74.77416667, futures),
-        # ('binance', True, 1, 2.2, 2.5, 0.003, 75.22656719, futures),
-        # ('binance', True, 1, 2.2, 2.5, 0.0025, 75.2626875, futures),
+        # Kraken
+        ('kraken', False, 3, 2.0, 2.5, 0.0025, 74.7725, margin, 0),
+        ('kraken', False, 3, 2.0, 2.5, 0.003, 74.735, margin, 0),
+        ('kraken', True, 3, 2.2, 2.5, 0.0025, 75.2626875, margin, 0),
+        ('kraken', True, 3, 2.2, 2.5, 0.003, 75.300225, margin, 0),
+        ('kraken', True, 1, 2.2, 2.5, 0.0025, 75.2626875, margin, 0),
+        ('kraken', True, 1, 2.2, 2.5, 0.003, 75.300225, margin, 0),
+
+        ('binance', False, 1, 2.0, 2.5, 0.0025, 75.8125, futures, 1),
+        ('binance', False, 3, 2.0, 2.5, 0.0025, 73.8125, futures, -1),
+        ('binance', True, 3, 2.0, 2.5, 0.0025,  74.1875, futures, 1),
+        ('binance', True, 1, 2.0, 2.5, 0.0025,  76.1875, futures, -1),
+
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_close_trade_price(
     limit_buy_order_usdt, limit_sell_order_usdt, open_rate, exchange, is_short,
-    lev, close_rate, fee_rate, result, trading_mode
+    lev, close_rate, fee_rate, result, trading_mode, funding_fees
 ):
     trade = Trade(
         pair='ADA/USDT',
@@ -776,7 +778,8 @@ def test_calc_close_trade_price(
         interest_rate=0.0005,
         is_short=is_short,
         leverage=lev,
-        trading_mode=trading_mode
+        trading_mode=trading_mode,
+        funding_fees=funding_fees
     )
     trade.open_order_id = 'close_trade'
     assert round(trade.calc_close_trade_value(rate=close_rate, fee=fee_rate), 8) == result
