@@ -258,6 +258,7 @@ class LocalTrade():
     sell_order_status: str = ''
     strategy: str = ''
     buy_tag: Optional[str] = None
+    sell_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
     def __init__(self, **kwargs):
@@ -324,7 +325,8 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': self.sell_reason,
+            'sell_reason':  (f' ({self.sell_reason})' if self.sell_reason else ''), #+str(self.sell_reason) ## CHANGE TO BUY TAG IF NEEDED
+            'sell_tag': self.sell_tag,
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -706,6 +708,7 @@ class Trade(_DECL_BASE, LocalTrade):
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
+    sell_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
@@ -854,6 +857,122 @@ class Trade(_DECL_BASE, LocalTrade):
                 'count': count
             }
             for pair, profit, profit_abs, count in pair_rates
+        ]
+
+    @staticmethod
+    def get_buy_tag_performance(pair: str) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on buy tag performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+
+        if(pair is not None):
+            tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .filter(Trade.pair.lower() == pair.lower()) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+        else:
+            tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return [
+            {
+                'buy_tag': buy_tag,
+                'profit': profit,
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for buy_tag, profit, profit_abs, count in tag_perf
+        ]
+
+    @staticmethod
+    def get_sell_tag_performance(pair: str) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on sell tag performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+        if(pair is not None):
+            tag_perf = Trade.query.with_entities(
+            Trade.sell_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .filter(Trade.pair.lower() == pair.lower()) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+        else:
+            tag_perf = Trade.query.with_entities(
+            Trade.sell_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return [
+            {
+                'sell_tag': sell_tag,
+                'profit': profit,
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for sell_tag, profit, profit_abs, count in tag_perf
+        ]
+
+    @staticmethod
+    def get_mix_tag_performance(pair: str) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on buy_tag + sell_tag performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+        if(pair is not None):
+            tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            Trade.sell_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .filter(Trade.pair.lower() == pair.lower()) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+        else:
+            tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            Trade.sell_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(Trade.is_open.is_(False))\
+            .group_by(Trade.pair) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return [
+            {   'mix_tag': str(buy_tag) + " " +str(sell_tag),
+                'profit': profit,
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for buy_tag, sell_tag, profit, profit_abs, count in tag_perf
         ]
 
     @staticmethod

@@ -82,7 +82,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag,
+            max_rate, min_rate, sell_reason, sell_order_status, strategy, buy_tag, sell_tag,
             timeframe, open_trade_value, close_profit_abs
             )
         select id, lower(exchange), pair,
@@ -98,7 +98,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
             {sell_order_status} sell_order_status,
-            {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
+            {strategy} strategy, {buy_tag} buy_tag, {sell_tag} sell_tag,  {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
             from {table_back_name}
             """))
@@ -157,7 +157,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     table_back_name = get_backup_name(tabs, 'trades_bak')
 
     # Check for latest column
-    if not has_column(cols, 'buy_tag'):
+    if not has_column(cols, 'sell_tag'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
         # Reread columns - the above recreated the table!

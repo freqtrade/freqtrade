@@ -669,6 +669,37 @@ class RPC:
         [x.update({'profit': round(x['profit'] * 100, 2)}) for x in pair_rates]
         return pair_rates
 
+    def _rpc_buy_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+        """
+        Handler for buy tag performance.
+        Shows a performance statistic from finished trades
+        """
+        buy_tags = Trade.get_buy_tag_performance(pair)
+        # Round and convert to %
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in buy_tags]
+        return buy_tags
+
+
+    def _rpc_sell_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+        """
+        Handler for sell tag performance.
+        Shows a performance statistic from finished trades
+        """
+        sell_tags = Trade.get_sell_tag_performance(pair)
+        # Round and convert to %
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in sell_tags]
+        return sell_tags
+
+    def _rpc_mix_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+        """
+        Handler for mix tag performance.
+        Shows a performance statistic from finished trades
+        """
+        mix_tags = Trade.get_mix_tag_performance(pair)
+        # Round and convert to %
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in mix_tags]
+        return mix_tags
+
     def _rpc_count(self) -> Dict[str, float]:
         """ Returns the number of trades running """
         if self._freqtrade.state != State.RUNNING:

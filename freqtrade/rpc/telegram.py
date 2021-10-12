@@ -108,6 +108,7 @@ class Telegram(RPCHandler):
                                  r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
                                  r'/profit$', r'/profit \d+',
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
+                                 r'/buys',r'/sells',r'/mix_tags',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
                                  r'/forcebuy$', r'/help$', r'/version$']
@@ -152,6 +153,9 @@ class Telegram(RPCHandler):
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
+            CommandHandler('buys', self._buy_tag_performance),
+            CommandHandler('sells', self._sell_tag_performance),
+            CommandHandler('mix_tags', self._mix_tag_performance),
             CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
             CommandHandler('count', self._count),
@@ -173,6 +177,9 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._profit, pattern='update_profit'),
             CallbackQueryHandler(self._balance, pattern='update_balance'),
             CallbackQueryHandler(self._performance, pattern='update_performance'),
+            CallbackQueryHandler(self._performance, pattern='update_buy_tag_performance'),
+            CallbackQueryHandler(self._performance, pattern='update_sell_tag_performance'),
+            CallbackQueryHandler(self._performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._forcebuy_inline),
         ]
@@ -257,6 +264,42 @@ class Telegram(RPCHandler):
                    "*Open Rate:* `{open_rate:.8f}`\n"
                    "*Current Rate:* `{current_rate:.8f}`\n"
                    "*Close Rate:* `{limit:.8f}`").format(**msg)
+
+        sell_tag = msg['sell_tag']
+        buy_tag = msg['buy_tag']
+
+        if sell_tag is not None and buy_tag is not None:
+            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
+                   "*Buy Tag:* `{buy_tag}`\n"
+                   "*Sell Tag:* `{sell_tag}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+        elif sell_tag is None and buy_tag is not None:
+            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
+                   "*Buy Tag:* `{buy_tag}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+        elif sell_tag is not None and buy_tag is None:
+            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
+                   "*Sell Tag:* `{sell_tag}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+
 
         return message
 
@@ -364,6 +407,7 @@ class Telegram(RPCHandler):
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
+                    "*Sell Tag:* `{sell_tag}`" if r['sell_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
@@ -846,6 +890,111 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
+    def _buy_tag_performance(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /buys PAIR .
+        Shows a performance statistic from finished trades
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        try:
+            pair=None
+            if context.args:
+                pair = context.args[0]
+
+            trades = self._rpc._rpc_buy_tag_performance(pair)
+            output = "<b>Performance:</b>\n"
+            for i, trade in enumerate(trades):
+                stat_line = (
+                    f"{i+1}.\t <code>{trade['buy_tag']}\t"
+                    f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                    f"({trade['profit']:.2f}%) "
+                    f"({trade['count']})</code>\n")
+
+                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output, parse_mode=ParseMode.HTML)
+                    output = stat_line
+                else:
+                    output += stat_line
+
+            self._send_msg(output, parse_mode=ParseMode.HTML,
+                           reload_able=True, callback_path="update_buy_tag_performance",
+                           query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _sell_tag_performance(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /sells.
+        Shows a performance statistic from finished trades
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        try:
+            pair=None
+            if context.args:
+                pair = context.args[0]
+
+            trades = self._rpc._rpc_sell_tag_performance(pair)
+            output = "<b>Performance:</b>\n"
+            for i, trade in enumerate(trades):
+                stat_line = (
+                    f"{i+1}.\t <code>{trade['sell_tag']}\t"
+                    f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                    f"({trade['profit']:.2f}%) "
+                    f"({trade['count']})</code>\n")
+
+                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output, parse_mode=ParseMode.HTML)
+                    output = stat_line
+                else:
+                    output += stat_line
+
+            self._send_msg(output, parse_mode=ParseMode.HTML,
+                           reload_able=True, callback_path="update_sell_tag_performance",
+                           query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _mix_tag_performance(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /mix_tags.
+        Shows a performance statistic from finished trades
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        try:
+            pair=None
+            if context.args:
+                pair = context.args[0]
+
+            trades = self._rpc._rpc_mix_tag_performance(pair)
+            output = "<b>Performance:</b>\n"
+            for i, trade in enumerate(trades):
+                stat_line = (
+                    f"{i+1}.\t <code>{trade['mix_tag']}\t"
+                    f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
+                    f"({trade['profit']:.2f}%) "
+                    f"({trade['count']})</code>\n")
+
+                if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
+                    self._send_msg(output, parse_mode=ParseMode.HTML)
+                    output = stat_line
+                else:
+                    output += stat_line
+
+            self._send_msg(output, parse_mode=ParseMode.HTML,
+                           reload_able=True, callback_path="update_mix_tag_performance",
+                           query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
     def _count(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /count.
@@ -1020,6 +1169,9 @@ class Telegram(RPCHandler):
                    "         *table :* `will display trades in a table`\n"
                    "                `pending buy orders are marked with an asterisk (*)`\n"
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
+                   "*/buys <pair|none>:* `Shows the buy_tag performance`\n"
+                   "*/sells <pair|none>:* `Shows the sell reason performance`\n"
+                   "*/mix_tag <pair|none>:* `Shows combined buy tag + sell reason performance`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
                    "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
                    "over the last n days`\n"

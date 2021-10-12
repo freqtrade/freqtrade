@@ -14,3 +14,4 @@ class SignalTagType(Enum):
     Enum for signal columns
     """
     BUY_TAG = "buy_tag"
+    SELL_TAG = "sell_tag"

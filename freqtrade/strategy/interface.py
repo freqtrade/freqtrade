@@ -460,6 +460,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe['buy'] = 0
             dataframe['sell'] = 0
             dataframe['buy_tag'] = None
+            dataframe['sell_tag'] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -537,7 +538,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame
-    ) -> Tuple[bool, bool, Optional[str]]:
+    ) -> Tuple[bool, bool, Optional[str], Optional[str]]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
@@ -572,6 +573,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             sell = latest[SignalType.SELL.value] == 1
 
         buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+        sell_tag = latest.get(SignalTagType.SELL_TAG.value, None)
 
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
@@ -580,8 +582,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell, buy_tag
-        return buy, sell, buy_tag
+            return False, sell, buy_tag, sell_tag
+        return buy, sell, buy_tag, sell_tag
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
