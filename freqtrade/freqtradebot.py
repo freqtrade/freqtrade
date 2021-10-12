@@ -701,6 +701,8 @@ class FreqtradeBot(LoggingMixin):
 
         (buy, sell) = (False, False)
 
+        sell_tag=None
+
         if (self.config.get('use_sell_signal', True) or
                 self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
