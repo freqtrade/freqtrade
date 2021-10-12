@@ -399,6 +399,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
                                          starting_balance=starting_balance,
                                          results=results, skip_nan=False)
+
     buy_tag_results = generate_tag_metrics("buy_tag",btdata, stake_currency=stake_currency,
                                          starting_balance=starting_balance,
                                          results=results, skip_nan=False)
@@ -747,6 +748,11 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
     print(table)
 
+    table = text_table_tags("sell_tag",results['results_per_sell_tag'], stake_currency=stake_currency)
+
+    if isinstance(table, str) and len(table) > 0:
+        print(' SELL TAG STATS '.center(len(table.splitlines()[0]), '='))
+    print(table)
 
     table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
                                    stake_currency=stake_currency)
@@ -768,11 +774,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' SUMMARY METRICS '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    table = text_table_tags("sell_tag",results['results_per_sell_tag'], stake_currency=stake_currency)
 
-    if isinstance(table, str) and len(table) > 0:
-        print(' SELL TAG STATS '.center(len(table.splitlines()[0]), '='))
-    print(table)
 
     if isinstance(table, str) and len(table) > 0:
         print('=' * len(table.splitlines()[0]))

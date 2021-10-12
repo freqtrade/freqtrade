@@ -856,14 +856,14 @@ class FreqtradeBot(LoggingMixin):
         """
         Check and execute sell
         """
-        print(str(sell_tag)+"1")
+
         should_sell = self.strategy.should_sell(
             trade, sell_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. Tag: {sell_tag}')
+            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. Tag: {sell_tag if sell_tag is not None else "None"}')
             self.execute_trade_exit(trade, sell_rate, should_sell,sell_tag)
             return True
         return False
@@ -1142,7 +1142,8 @@ class FreqtradeBot(LoggingMixin):
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.sell_reason
-        trade.sell_tag = sell_tag
+        if(sell_tag is not None):
+            trade.sell_tag = sell_tag
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)

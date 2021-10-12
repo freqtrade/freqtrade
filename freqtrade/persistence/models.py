@@ -326,7 +326,7 @@ class LocalTrade():
             'profit_abs': self.close_profit_abs,
 
             'sell_reason':  (f' ({self.sell_reason})' if self.sell_reason else ''), #+str(self.sell_reason) ## CHANGE TO BUY TAG IF NEEDED
-            'sell_tag': self.sell_tag,
+            'sell_tag': (f' ({self.sell_tag})' if self.sell_tag else '') ,
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,

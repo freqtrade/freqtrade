@@ -48,6 +48,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     sell_reason = get_column_def(cols, 'sell_reason', 'null')
     strategy = get_column_def(cols, 'strategy', 'null')
     buy_tag = get_column_def(cols, 'buy_tag', 'null')
+    sell_tag = get_column_def(cols, 'sell_tag', 'null')
     # If ticker-interval existed use that, else null.
     if has_column(cols, 'ticker_interval'):
         timeframe = get_column_def(cols, 'timeframe', 'ticker_interval')
