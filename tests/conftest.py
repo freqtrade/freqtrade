@@ -226,6 +226,7 @@ def create_mock_trades(fee, use_db: bool = True):
     add_trade(trade)
 
     if use_db:
+        Trade.commit()
         Trade.query.session.flush()
 
 
@@ -259,6 +260,7 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
     add_trade(trade)
 
     if use_db:
+        Trade.commit()
         Trade.query.session.flush()
 
 
