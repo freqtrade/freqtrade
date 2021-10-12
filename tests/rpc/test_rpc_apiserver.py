@@ -95,7 +95,7 @@ def test_api_not_found(botclient):
     assert rc.json() == {"detail": "Not Found"}
 
 
-def test_api_ui_fallback(botclient):
+def test_api_ui_fallback(botclient, mocker):
     ftbot, client = botclient
 
     rc = client_get(client, "/favicon.ico")
@@ -109,9 +109,16 @@ def test_api_ui_fallback(botclient):
     rc = client_get(client, "/something")
     assert rc.status_code == 200
 
-    # Test directory traversal
+    # Test directory traversal without mock
     rc = client_get(client, '%2F%2F%2Fetc/passwd')
     assert rc.status_code == 200
+    # Allow both fallback or real UI
+    assert '`freqtrade install-ui`' in rc.text or '<!DOCTYPE html>' in rc.text
+
+    mocker.patch.object(Path, 'is_file', MagicMock(side_effect=[True, False]))
+    rc = client_get(client, '%2F%2F%2Fetc/passwd')
+    assert rc.status_code == 200
+
     assert '`freqtrade install-ui`' in rc.text
 
 
