@@ -73,7 +73,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe", "plot_auto_open"]
 
-ARGS_INSTALL_UI = ["erase_ui_only"]
+ARGS_INSTALL_UI = ["erase_ui_only", 'ui_version']
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
