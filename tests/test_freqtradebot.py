@@ -9,7 +9,6 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
-import schedule
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import RPCMessageType, RunMode, SellType, State, TradingMode
@@ -4288,8 +4287,8 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     (TradingMode.FUTURES, 32, "2021-09-01 00:00:01", "2021-09-01 08:00:01"),
     (TradingMode.FUTURES, 33, "2021-09-01 00:00:01", "2021-09-01 08:00:02"),
     (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
-    (TradingMode.FUTURES, 34, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
-    (TradingMode.FUTURES, 34, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
 ])
 def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):

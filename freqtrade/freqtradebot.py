@@ -204,9 +204,6 @@ class FreqtradeBot(LoggingMixin):
         if self.get_free_open_trades():
             self.enter_positions()
 
-        if self.trading_mode == TradingMode.FUTURES:
-            schedule.run_pending()
-
         Trade.commit()
 
     def process_stopped(self) -> None:
