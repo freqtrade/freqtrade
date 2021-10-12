@@ -3322,7 +3322,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
 @ pytest.mark.parametrize("is_short", [False, True])
 @ pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type', [
     # Enable profit
-    (True, 2.19, 2.2, False, True, SellType.SELL_SIGNAL.value),
+    (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value),
     # Disable profit
     (False, 3.19, 3.2, True,  False, SellType.SELL_SIGNAL.value),
     # Enable loss
