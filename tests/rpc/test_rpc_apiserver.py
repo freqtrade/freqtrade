@@ -620,10 +620,11 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
     assert_response(rc, 502)
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
+
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
+    Trade.commit()
     assert len(trades) > 2
 
     rc = client_delete(client, f"{BASE_URI}/trades/1")
