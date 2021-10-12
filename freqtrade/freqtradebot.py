@@ -716,7 +716,7 @@ class FreqtradeBot(LoggingMixin):
 
         logger.debug('checking sell')
         sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
-        if self._check_and_execute_sell(trade, sell_rate, buy, sell, sell_tag):
+        if self._check_and_execute_exit(trade, sell_rate, buy, sell, sell_tag):
             return True
 
         logger.debug('Found no sell signal for %s.', trade)
