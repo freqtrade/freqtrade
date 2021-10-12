@@ -23,10 +23,10 @@ nav:
     - Hyperopt: hyperopt.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
+    - Exchange-specific Notes: exchanges.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
         - Strategy analysis: strategy_analysis_example.md
-    - Exchange-specific Notes: exchanges.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
         - Edge Positioning: edge.md

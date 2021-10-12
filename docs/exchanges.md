@@ -2,7 +2,59 @@
 
 This page combines common gotchas and informations which are exchange-specific and most likely don't apply to other exchanges.
 
+## Exchange configuration
+
+Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
+exchange markets and trading APIs. The complete up-to-date list can be found in the
+[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
+However, the bot was tested by the development team with only a few exchanges.
+A current list of these can be found in the "Home" section of this documentation.
+
+Feel free to test other exchanges and submit your feedback or PR to improve the bot or confirm exchanges that work flawlessly..
+
+Some exchanges require special configuration, which can be found below.
+
+### Sample exchange configuration
+
+A exchange configuration for "binance" would look as follows:
+
+```json
+"exchange": {
+    "name": "binance",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    // ... 
+```
+
+### Setting rate limits
+
+Usually, rate limits set by CCXT are reliable and work well.
+In case of problems related to rate-limits (usually DDOS Exceptions in your logs), it's easy to change rateLimit settings to other values.
+
+```json
+"exchange": {
+    "name": "kraken",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "ccxt_config": {"enableRateLimit": true},
+    "ccxt_async_config": {
+        "enableRateLimit": true,
+        "rateLimit": 3100
+    },
+```
+
+This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
+`"rateLimit": 3100` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+
+!!! Note
+    Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
+    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
+
 ## Binance
+
+Binance supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 !!! Tip "Stoploss on Exchange"
     Binance supports `stoploss_on_exchange` and uses stop-loss-limit orders. It provides great advantages, so we recommend to benefit from it.
@@ -55,6 +107,12 @@ Bittrex does not support market orders. If you have a message at the bot startup
 
 Bittrex also does not support `VolumePairlist` due to limited / split API constellation at the moment.
 Please use `StaticPairlist`. Other pairlists (other than `VolumePairlist`) should not be affected.
+
+### Volume pairlist
+
+Bittrex does not support the direct usage of VolumePairList. This can however be worked around by using the advanced mode with `lookback_days: 1` (or more), which will emulate 24h volume.
+
+Read more in the [pairlist documentation](plugins.md#volumepairlist-advanced-mode).
 
 ### Restricted markets
 
@@ -113,7 +171,11 @@ Kucoin requires a passphrase for each api key, you will therefore need to add th
     "key": "your_exchange_key",
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
+    // ...
+}
 ```
+
+Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force).
 
 ### Kucoin Blacklists
 
@@ -158,6 +220,8 @@ For example, to test the order type `FOK` with Kraken, and modify candle limit t
         "order_time_in_force": ["gtc", "fok"],
         "ohlcv_candle_limit": 200
         }
+    //...
+}
 ```
 
 !!! Warning

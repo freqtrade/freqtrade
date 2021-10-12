@@ -30,6 +30,7 @@ Please read the [exchange specific notes](docs/exchanges.md) to learn about even
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [Kraken](https://kraken.com/)
 - [X] [FTX](https://ftx.com)
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
@@ -52,7 +53,7 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 - [x] **Dry-run**: Run the bot without paying money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
-- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/latest/edge/).
+- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/stable/edge/).
 - [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
 - [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram.
@@ -65,12 +66,12 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone -b develop https://github.com/freqtrade/freqtrade.git 
+git clone -b develop https://github.com/freqtrade/freqtrade.git
 cd freqtrade
 ./setup.sh --install
 ```
 
-For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/latest/installation/).
+For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/stable/installation/).
 
 ## Basic Usage
 
@@ -78,22 +79,22 @@ For any other type of installation please refer to [Installation doc](https://ww
 
 ```
 usage: freqtrade [-h] [-V]
-                 {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+                 {trade,create-userdir,new-config,new-strategy,download-data,convert-data,convert-trade-data,list-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,install-ui,plot-dataframe,plot-profit,webserver}
                  ...
 
 Free, open source crypto trading bot
 
 positional arguments:
-  {trade,create-userdir,new-config,new-hyperopt,new-strategy,download-data,convert-data,convert-trade-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,plot-dataframe,plot-profit}
+  {trade,create-userdir,new-config,new-strategy,download-data,convert-data,convert-trade-data,list-data,backtesting,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-hyperopts,list-markets,list-pairs,list-strategies,list-timeframes,show-trades,test-pairlist,install-ui,plot-dataframe,plot-profit,webserver}
     trade               Trade module.
     create-userdir      Create user-data directory.
     new-config          Create new config
-    new-hyperopt        Create new hyperopt
     new-strategy        Create new strategy
     download-data       Download backtesting data.
     convert-data        Convert candle (OHLCV) data from one format to
                         another.
     convert-trade-data  Convert trade data from one format to another.
+    list-data           List downloaded data.
     backtesting         Backtesting module.
     edge                Edge module.
     hyperopt            Hyperopt module.
@@ -107,8 +108,10 @@ positional arguments:
     list-timeframes     Print available timeframes for the exchange.
     show-trades         Show trades.
     test-pairlist       Test your pairlist configuration.
+    install-ui          Install FreqUI
     plot-dataframe      Plot candles with indicators.
     plot-profit         Generate plot showing profits.
+    webserver           Webserver module.
 
 optional arguments:
   -h, --help            show this help message and exit

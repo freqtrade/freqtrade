@@ -464,6 +464,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'max_open_trades_setting': (config['max_open_trades']
                                     if config['max_open_trades'] != float('inf') else -1),
         'timeframe': config['timeframe'],
+        'timeframe_detail': config.get('timeframe_detail', ''),
         'timerange': config.get('timerange', ''),
         'enable_protections': config.get('enable_protections', False),
         'strategy_name': strategy,
