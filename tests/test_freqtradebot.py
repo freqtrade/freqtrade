@@ -4289,6 +4289,11 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
     (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
     (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
     (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:04"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:05"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:06"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
 ])
 def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):
