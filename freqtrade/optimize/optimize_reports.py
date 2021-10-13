@@ -54,6 +54,14 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
             'Win  Draw  Loss  Win%']
 
+def _get_line_header_sell(first_column: str, stake_currency: str) -> List[str]:
+    """
+    Generate header lines (goes in line with _generate_result_line())
+    """
+    return [first_column, 'Sells', 'Avg Profit %', 'Cum Profit %',
+            f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
+            'Win  Draw  Loss  Win%']
+
 
 def _generate_wins_draws_losses(wins, draws, losses):
     if wins > 0 and losses == 0:
@@ -608,8 +616,10 @@ def text_table_tags(tag_type:str, tag_results: List[Dict[str, Any]], stake_curre
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-
-    headers = _get_line_header("TAG", stake_currency)
+    if(tag_type=="buy_tag"):
+        headers = _get_line_header("TAG", stake_currency)
+    else:
+        headers = _get_line_header_sell("TAG", stake_currency)
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [[
         t['key'], t['trades'], t['profit_mean_pct'], t['profit_sum_pct'], t['profit_total_abs'],
