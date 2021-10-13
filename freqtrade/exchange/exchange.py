@@ -71,6 +71,9 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
+
+    # funding_fee_times is currently unused, but should ideally be used to properly
+    # schedule refresh times
     funding_fee_times: List[int] = []  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
