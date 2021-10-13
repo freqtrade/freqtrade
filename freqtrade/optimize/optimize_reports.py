@@ -82,7 +82,7 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
         'profit_sum_pct': round(profit_sum * 100.0, 2),
         'profit_total_abs': result['profit_abs'].sum(),
         'profit_total': profit_total,
-        'profit_total_pct': round(profit_sum * 100.0, 2),
+        'profit_total_pct': round(profit_total * 100.0, 2),
         'duration_avg': str(timedelta(
                             minutes=round(result['trade_duration'].mean()))
                             ) if not result.empty else '0:00',
