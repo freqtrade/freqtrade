@@ -265,8 +265,12 @@ class Telegram(RPCHandler):
                    "*Current Rate:* `{current_rate:.8f}`\n"
                    "*Close Rate:* `{limit:.8f}`").format(**msg)
 
-        sell_tag = msg['sell_tag']
-        buy_tag = msg['buy_tag']
+        sell_tag =None
+        if("sell_tag" in msg.keys()):
+            sell_tag = msg['sell_tag']
+        buy_tag =None
+        if("buy_tag" in msg.keys()):
+            buy_tag = msg['buy_tag']
 
         if sell_tag is not None and buy_tag is not None:
             message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
