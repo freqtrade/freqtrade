@@ -163,7 +163,8 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "text",
             "name": "api_server_listen_addr",
-            "message": "Insert Api server Listen Address (best left untouched default!)",
+            "message": ("Insert Api server Listen Address (0.0.0.0 for docker, "
+                        "otherwise best left untouched)"),
             "default": "127.0.0.1",
             "when": lambda x: x['api_server']
         },

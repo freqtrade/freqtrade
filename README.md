@@ -53,7 +53,7 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 - [x] **Dry-run**: Run the bot without paying money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
 - [x] **Strategy Optimization by machine learning**: Use machine learning to optimize your buy/sell strategy parameters with real exchange data.
-- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/latest/edge/).
+- [x] **Edge position sizing** Calculate your win rate, risk reward ratio, the best stoploss and adjust your position size before taking a position for each specific market. [Learn more](https://www.freqtrade.io/en/stable/edge/).
 - [x] **Whitelist crypto-currencies**: Select which crypto-currency you want to trade or use dynamic whitelists.
 - [x] **Blacklist crypto-currencies**: Select which crypto-currency you want to avoid.
 - [x] **Manageable via Telegram**: Manage the bot with Telegram.
@@ -66,12 +66,12 @@ Please find the complete documentation on our [website](https://www.freqtrade.io
 Freqtrade provides a Linux/macOS script to install all dependencies and help you to configure the bot.
 
 ```bash
-git clone -b develop https://github.com/freqtrade/freqtrade.git 
+git clone -b develop https://github.com/freqtrade/freqtrade.git
 cd freqtrade
 ./setup.sh --install
 ```
 
-For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/latest/installation/).
+For any other type of installation please refer to [Installation doc](https://www.freqtrade.io/en/stable/installation/).
 
 ## Basic Usage
 
