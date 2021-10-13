@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 import ccxt
@@ -71,6 +71,10 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
+
+    # funding_fee_times is currently unused, but should ideally be used to properly
+    # schedule refresh times
+    funding_fee_times: List[int] = []  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -207,7 +211,6 @@ class Exchange:
             'secret': exchange_config.get('secret'),
             'password': exchange_config.get('password'),
             'uid': exchange_config.get('uid', ''),
-            # 'options': exchange_config.get('options', {})
         }
         if ccxt_kwargs:
             logger.info('Applying additional ccxt config: %s', ccxt_kwargs)
@@ -1595,6 +1598,37 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
+    @retrier
+    def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+        """
+            Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+            :param pair: (e.g. ADA/USDT)
+            :param since: The earliest time of consideration for calculating funding fees,
+                in unix time or as a datetime
+        """
+        # TODO-lev: Add dry-run handling for this.
+
+        if not self.exchange_has("fetchFundingHistory"):
+            raise OperationalException(
+                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+
+        if type(since) is datetime:
+            since = int(since.timestamp()) * 1000   # * 1000 for ms
+
+        try:
+            funding_history = self._api.fetch_funding_history(
+                pair=pair,
+                since=since
+            )
+            return sum(fee['amount'] for fee in funding_history)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get funding fees due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
     def fill_leverage_brackets(self):
         """
             # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
@@ -1622,8 +1656,6 @@ class Exchange:
             Set's the leverage before making a trade, in order to not
             have the same leverage on every trade
         """
-        # TODO-lev: Make a documentation page that says you can't run 2 bots
-        # TODO-lev: on the same account with leverage
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
             # Some exchanges only support one collateral type
             return

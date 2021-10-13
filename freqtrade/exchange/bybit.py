@@ -1,7 +1,8 @@
 """ Bybit exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, List, Tuple
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exchange import Exchange
 
 
@@ -21,3 +22,11 @@ class Bybit(Exchange):
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
     }
+
+    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
+    ]

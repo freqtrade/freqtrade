@@ -1,6 +1,6 @@
 """ Kucoin exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from freqtrade.exchange import Exchange
 
@@ -24,3 +24,5 @@ class Kucoin(Exchange):
         "order_time_in_force": ['gtc', 'fok', 'ioc'],
         "time_in_force_parameter": "timeInForce",
     }
+
+    funding_fee_times: List[int] = [4, 12, 20]  # hours of the day

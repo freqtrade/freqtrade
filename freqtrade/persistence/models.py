@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer, String,
+from sqlalchemy import (Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String,
                         create_engine, desc, func, inspect)
 from sqlalchemy.exc import NoSuchModuleError
 from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session, sessionmaker
@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
-from freqtrade.enums import SellType
+from freqtrade.enums import SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
@@ -265,13 +265,18 @@ class LocalTrade():
     buy_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
+    trading_mode: TradingMode = TradingMode.SPOT
+
     # Leverage trading properties
-    is_short: bool = False
     isolated_liq: Optional[float] = None
+    is_short: bool = False
     leverage: float = 1.0
 
     # Margin trading properties
     interest_rate: float = 0.0
+
+    # Futures properties
+    funding_fees: Optional[float] = None
 
     @property
     def has_no_leverage(self) -> bool:
@@ -439,7 +444,8 @@ class LocalTrade():
             'interest_rate': self.interest_rate,
             'isolated_liq': self.isolated_liq,
             'is_short': self.is_short,
-
+            'trading_mode': self.trading_mode,
+            'funding_fees': self.funding_fees,
             'open_order_id': self.open_order_id,
         }
 
@@ -643,7 +649,7 @@ class LocalTrade():
 
         zero = Decimal(0.0)
         # If nothing was borrowed
-        if self.has_no_leverage:
+        if self.has_no_leverage or self.trading_mode != TradingMode.MARGIN:
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
@@ -656,6 +662,17 @@ class LocalTrade():
         borrowed = Decimal(self.borrowed)
 
         return interest(exchange_name=self.exchange, borrowed=borrowed, rate=rate, hours=hours)
+
+    def _calc_base_close(self, amount: Decimal, rate: Optional[float] = None,
+                         fee: Optional[float] = None) -> Decimal:
+
+        close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
+        fees = close_trade * Decimal(fee or self.fee_close)
+
+        if self.is_short:
+            return close_trade + fees
+        else:
+            return close_trade - fees
 
     def calc_close_trade_value(self, rate: Optional[float] = None,
                                fee: Optional[float] = None,
@@ -673,20 +690,32 @@ class LocalTrade():
         if rate is None and not self.close_rate:
             return 0.0
 
-        interest = self.calculate_interest(interest_rate)
-        if self.is_short:
-            amount = Decimal(self.amount) + Decimal(interest)
-        else:
-            # Currency already owned for longs, no need to purchase
-            amount = Decimal(self.amount)
+        amount = Decimal(self.amount)
+        trading_mode = self.trading_mode or TradingMode.SPOT
 
-        close_trade = Decimal(amount) * Decimal(rate or self.close_rate)  # type: ignore
-        fees = close_trade * Decimal(fee or self.fee_close)
+        if trading_mode == TradingMode.SPOT:
+            return float(self._calc_base_close(amount, rate, fee))
 
-        if self.is_short:
-            return float(close_trade + fees)
+        elif (trading_mode == TradingMode.MARGIN):
+
+            total_interest = self.calculate_interest(interest_rate)
+
+            if self.is_short:
+                amount = amount + total_interest
+                return float(self._calc_base_close(amount, rate, fee))
+            else:
+                # Currency already owned for longs, no need to purchase
+                return float(self._calc_base_close(amount, rate, fee) - total_interest)
+
+        elif (trading_mode == TradingMode.FUTURES):
+            funding_fees = self.funding_fees or 0.0
+            if self.is_short:
+                return float(self._calc_base_close(amount, rate, fee)) - funding_fees
+            else:
+                return float(self._calc_base_close(amount, rate, fee)) + funding_fees
         else:
-            return float(close_trade - fees - interest)
+            raise OperationalException(
+                f"{self.trading_mode.value} trading is not yet available using freqtrade")
 
     def calc_profit(self, rate: Optional[float] = None,
                     fee: Optional[float] = None,
@@ -894,6 +923,8 @@ class Trade(_DECL_BASE, LocalTrade):
     buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
+    trading_mode = Column(Enum(TradingMode), nullable=True)
+
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
     is_short = Column(Boolean, nullable=False, default=False)
@@ -901,6 +932,9 @@ class Trade(_DECL_BASE, LocalTrade):
 
     # Margin Trading Properties
     interest_rate = Column(Float, nullable=False, default=0.0)
+
+    # Futures properties
+    funding_fees = Column(Float, nullable=True, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

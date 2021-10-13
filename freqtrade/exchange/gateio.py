@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from freqtrade.exchange import Exchange
 
@@ -23,3 +23,5 @@ class Gateio(Exchange):
     }
 
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
+
+    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day

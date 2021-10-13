@@ -28,6 +28,8 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
     }
+    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
+    # but the schedule won't check within this timeframe
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -183,7 +185,7 @@ class Binance(Exchange):
                 max_lev = 1/margin_req
         return max_lev
 
-    @ retrier
+    @retrier
     def _set_leverage(
         self,
         leverage: float,

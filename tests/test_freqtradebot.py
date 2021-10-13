@@ -11,7 +11,7 @@ import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RPCMessageType, RunMode, SellType, State
+from freqtrade.enums import RPCMessageType, RunMode, SellType, State, TradingMode
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -4278,3 +4278,36 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 
     assert valid_price_at_min_alwd > custom_price_under_min_alwd
     assert valid_price_at_min_alwd < proposed_price
+
+
+@pytest.mark.parametrize('trading_mode,calls,t1,t2', [
+    (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    (TradingMode.FUTURES, 31, "2021-09-01 00:00:02", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 32, "2021-09-01 00:00:00", "2021-09-01 08:00:01"),
+    (TradingMode.FUTURES, 32, "2021-09-01 00:00:02", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:04"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:05"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:06"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
+    (TradingMode.FUTURES, 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
+])
+def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
+                             t1, t2):
+    time_machine.move_to(f"{t1} +00:00")
+
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_funding_fees', return_value=True)
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = 'isolated'
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    time_machine.move_to(f"{t2} +00:00")
+    # Check schedule jobs in debugging with freqtrade._schedule.jobs
+    freqtrade._schedule.run_pending()
+
+    assert freqtrade.update_funding_fees.call_count == calls

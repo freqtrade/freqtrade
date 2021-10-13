@@ -3048,6 +3048,74 @@ def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
 
 
+@pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
+def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
+    api_mock = MagicMock()
+    api_mock.fetch_funding_history = MagicMock(return_value=[
+        {
+            'amount': 0.14542,
+            'code': 'USDT',
+            'datetime': '2021-09-01T08:00:01.000Z',
+            'id': '485478',
+            'info': {'asset': 'USDT',
+                     'income': '0.14542',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630382001000',
+                     'tradeId': '',
+                     'tranId': '993203'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630382001000
+        },
+        {
+            'amount': -0.14642,
+            'code': 'USDT',
+            'datetime': '2021-09-01T16:00:01.000Z',
+            'id': '485479',
+            'info': {'asset': 'USDT',
+                     'income': '-0.14642',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630314001000',
+                     'tradeId': '',
+                     'tranId': '993204'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630314001000
+        }
+    ])
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
+
+    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
+    unix_time = int(date_time.timestamp())
+    expected_fees = -0.001  # 0.14542341 + -0.14642341
+    fees_from_datetime = exchange.get_funding_fees_from_exchange(
+        pair='XRP/USDT',
+        since=date_time
+    )
+    fees_from_unix_time = exchange.get_funding_fees_from_exchange(
+        pair='XRP/USDT',
+        since=unix_time
+    )
+
+    assert(isclose(expected_fees, fees_from_datetime))
+    assert(isclose(expected_fees, fees_from_unix_time))
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        exchange_name,
+        "get_funding_fees_from_exchange",
+        "fetch_funding_history",
+        pair="XRP/USDT",
+        since=unix_time
+    )
+
+
 @pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
 @pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
     (9.0, 3.0, 3.0),
