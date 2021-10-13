@@ -923,7 +923,7 @@ class Trade(_DECL_BASE, LocalTrade):
     buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
-    trading_mode = Column(Enum(TradingMode))
+    trading_mode = Column(Enum(TradingMode), nullable=True)
 
     # Leverage trading properties
     leverage = Column(Float, nullable=True, default=1.0)
