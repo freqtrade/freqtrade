@@ -300,7 +300,6 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
         """
         logger.info("Updating from Binance ...")
         df = self.update_binance_announcements()
-        # TODO filtrare per i listaggi recenti
         # TODO migliorare l'efficienza del calcolo
         pairlist = [
             v for v in pairlist if not df[
@@ -308,7 +307,6 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
                 (df['Datetime announcement'] > datetime.now().replace(tzinfo=pytz.utc) - timedelta(hours=self._hours))
             ].empty
         ]
-        logger.info(pairlist)
         return pairlist
 
     def notify_user(self, msg):
