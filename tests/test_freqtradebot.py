@@ -2929,9 +2929,14 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     } == last_msg
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fee,
-                                              ticker_usdt_sell_up, is_short, mocker) -> None:
+@pytest.mark.parametrize(
+    "is_short,amount,open_rate,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
+        (False, 30, 2.0, 2.3, 2.25, 7.18125, 0.11938903, 'profit'),
+        (True, 29.70297029, 2.02, 2.2, 2.25, -7.14876237, -0.11944465, 'loss'),  # TODO-lev
+    ])
+def test_execute_trade_exit_custom_exit_price(
+        default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, is_short, amount, open_rate,
+        current_rate, limit, profit_amount, profit_ratio, profit_or_loss, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2981,14 +2986,14 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'type': RPCMessageType.SELL,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
-        'gain': 'profit',
-        'limit': 2.25,
-        'amount': 30.0,
+        'gain': profit_or_loss,
+        'limit': limit,
+        'amount': amount,
         'order_type': 'limit',
-        'open_rate': 2.0,
-        'current_rate': 2.3,
-        'profit_amount': 7.18125,
-        'profit_ratio': 0.11938903,
+        'open_rate': open_rate,
+        'current_rate': current_rate,
+        'profit_amount': profit_amount,
+        'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.SELL_SIGNAL.value,
