@@ -1925,12 +1925,12 @@ def test_update_trade_state_sell(
     assert order.status == 'closed'
 
 
-@pytest.mark.parametrize('is_short,close_profit,profit', [
-    (False, 0.09451372, 5.685),
-    (True, 0.08675799087, 5.7),
+@pytest.mark.parametrize('is_short,close_profit', [
+    (False, 0.09451372),
+    (True, 0.08635224),
 ])
 def test_handle_trade(
-    default_conf_usdt, limit_order_open, limit_order, fee, mocker, is_short, close_profit, profit
+    default_conf_usdt, limit_order_open, limit_order, fee, mocker, is_short, close_profit
 ) -> None:
     open_order = limit_order_open[exit_side(is_short)]
     enter_order = limit_order[enter_side(is_short)]
@@ -1973,7 +1973,7 @@ def test_handle_trade(
 
     assert trade.close_rate == 2.0 if is_short else 2.2
     assert trade.close_profit == close_profit
-    assert trade.calc_profit() == profit
+    assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
 
 
