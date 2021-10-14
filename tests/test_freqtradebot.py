@@ -3225,9 +3225,33 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt
     assert rpc_mock.call_args_list[2][0][0]['type'] == RPCMessageType.SELL
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is_short,
-                                         ticker_usdt_sell_up, mocker) -> None:
+@pytest.mark.parametrize(
+    "is_short,amount,open_rate,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
+        (False, 30, 2.0, 2.3, 2.2, 5.685, 0.09451372, 'profit'),
+        # TODO-lev: Should the current rate be 2.2 for shorts?
+        (True, 29.70297029, 2.02, 2.2, 2.3, -8.63762376, -0.1443212, 'loss'),
+    ])
+def test_execute_trade_exit_market_order(
+    default_conf_usdt, ticker_usdt, fee, is_short, current_rate, amount, open_rate,
+    limit, profit_amount, profit_ratio, profit_or_loss, ticker_usdt_sell_up, mocker
+) -> None:
+    """
+    amount
+        long: 60 / 2.0 = 30
+        short: 60 / 2.02 = 29.70297029 
+    open_value 
+        long: (30 * 2.0) + (30 * 2.0 * 0.0025) = 60.15
+        short: (29.702970297029704 * 2.02) - (29.702970297029704 * 2.02 * 0.0025) = 59.85
+    close_value 
+        long: (30 * 2.2) - (30 * 2.2 * 0.0025) = 65.835
+        short: (29.702970297029704 * 2.3) + (29.702970297029704 * 2.3 * 0.0025) = 68.48762376237624
+    profit
+        long: 65.835 - 60.15 = 5.684999999999995
+        short: 59.85 - 68.48762376237624 = -8.637623762376244
+    profit_ratio
+        long: (65.835/60.15) - 1 = 0.0945137157107232
+        short: 1 - (68.48762376237624/59.85) = -0.1443211990371971
+    """
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3262,7 +3286,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
     )
 
     assert not trade.is_open
-    assert trade.close_profit == 0.09451372
+    assert trade.close_profit == profit_ratio
 
     assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -3271,14 +3295,14 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee, is
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
-        'gain': 'profit',
-        'limit': 2.2,
-        'amount': 30.0,
+        'gain': profit_or_loss,
+        'limit': limit,
+        'amount': round(amount, 9),
         'order_type': 'market',
-        'open_rate': 2.0,
-        'current_rate': 2.3,
-        'profit_amount': 5.685,
-        'profit_ratio': 0.09451372,
+        'open_rate': open_rate,
+        'current_rate': current_rate,
+        'profit_amount': profit_amount,
+        'profit_ratio': profit_ratio,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.ROI.value,
