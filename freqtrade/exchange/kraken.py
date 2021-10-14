@@ -23,6 +23,7 @@ class Kraken(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
+    funding_fee_times: List[int] = [0, 4, 8, 12, 16, 20]  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list

@@ -277,6 +277,7 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
     (234.43, 4, 0.5, 234.5),
     (234.53, 4, 0.5, 235.0),
     (0.891534, 4, 0.0001, 0.8916),
+    (64968.89, 4, 0.01, 64968.89),
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
@@ -295,7 +296,7 @@ def test_price_to_precision(default_conf, mocker, price, precision_mode, precisi
                  PropertyMock(return_value=precision_mode))
 
     pair = 'ETH/BTC'
-    assert pytest.approx(exchange.price_to_precision(pair, price)) == expected
+    assert exchange.price_to_precision(pair, price) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -1895,6 +1896,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
     ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
     ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
     ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
@@ -1905,6 +1907,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
     ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
     ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
     ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
     ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
     ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
@@ -1914,7 +1917,10 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf['bid_strategy']['ask_last_balance'] = last_ab
+    if last_ab is None:
+        del default_conf['bid_strategy']['ask_last_balance']
+    else:
+        default_conf['bid_strategy']['ask_last_balance'] = last_ab
     default_conf['bid_strategy']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -1939,6 +1945,7 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
     ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
     ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
+    ('bid', 0.003, 0.002, 0.005, None, 0.002),
     ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
     ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
     ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
@@ -1949,13 +1956,15 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
     ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
     ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
+    ('ask', 0.006, 1.0, 11.0, None, 0.006),
 ])
 def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
 
     default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['bid_last_balance'] = last_ab
+    if last_ab is not None:
+        default_conf['ask_strategy']['bid_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
@@ -3046,6 +3055,74 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
 ])
 def test_calculate_backoff(retrycount, max_retries, expected):
     assert calculate_backoff(retrycount, max_retries) == expected
+
+
+@pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
+def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
+    api_mock = MagicMock()
+    api_mock.fetch_funding_history = MagicMock(return_value=[
+        {
+            'amount': 0.14542,
+            'code': 'USDT',
+            'datetime': '2021-09-01T08:00:01.000Z',
+            'id': '485478',
+            'info': {'asset': 'USDT',
+                     'income': '0.14542',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630382001000',
+                     'tradeId': '',
+                     'tranId': '993203'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630382001000
+        },
+        {
+            'amount': -0.14642,
+            'code': 'USDT',
+            'datetime': '2021-09-01T16:00:01.000Z',
+            'id': '485479',
+            'info': {'asset': 'USDT',
+                     'income': '-0.14642',
+                     'incomeType': 'FUNDING_FEE',
+                     'info': 'FUNDING_FEE',
+                     'symbol': 'XRPUSDT',
+                     'time': '1630314001000',
+                     'tradeId': '',
+                     'tranId': '993204'},
+            'symbol': 'XRP/USDT',
+            'timestamp': 1630314001000
+        }
+    ])
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingHistory': True})
+
+    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
+    date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
+    unix_time = int(date_time.timestamp())
+    expected_fees = -0.001  # 0.14542341 + -0.14642341
+    fees_from_datetime = exchange.get_funding_fees_from_exchange(
+        pair='XRP/USDT',
+        since=date_time
+    )
+    fees_from_unix_time = exchange.get_funding_fees_from_exchange(
+        pair='XRP/USDT',
+        since=unix_time
+    )
+
+    assert(isclose(expected_fees, fees_from_datetime))
+    assert(isclose(expected_fees, fees_from_unix_time))
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        exchange_name,
+        "get_funding_fees_from_exchange",
+        "fetch_funding_history",
+        pair="XRP/USDT",
+        since=unix_time
+    )
 
 
 @pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])

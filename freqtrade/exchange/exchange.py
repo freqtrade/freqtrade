@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from math import ceil
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 import ccxt
@@ -71,6 +71,10 @@ class Exchange:
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
     }
     _ft_has: Dict = {}
+
+    # funding_fee_times is currently unused, but should ideally be used to properly
+    # schedule refresh times
+    funding_fee_times: List[int] = []  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -503,7 +507,7 @@ class Exchange:
         if startup_candles + 5 > candle_limit:
             raise OperationalException(
                 f"This strategy requires {startup_candles} candles to start. "
-                f"{self.name} only provides {candle_limit} for {timeframe}.")
+                f"{self.name} only provides {candle_limit - 5} for {timeframe}.")
 
     def validate_trading_mode_and_collateral(
         self,
@@ -565,7 +569,7 @@ class Exchange:
                 precision = self.markets[pair]['precision']['price']
                 missing = price % precision
                 if missing != 0:
-                    price = price - missing + precision
+                    price = round(price - missing + precision, 10)
             else:
                 symbol_prec = self.markets[pair]['precision']['price']
                 big_price = price * pow(10, symbol_prec)
@@ -1130,7 +1134,7 @@ class Exchange:
             ticker_rate = ticker[conf_strategy['price_side']]
             if ticker['last'] and ticker_rate:
                 if side == 'buy' and ticker_rate > ticker['last']:
-                    balance = conf_strategy['ask_last_balance']
+                    balance = conf_strategy.get('ask_last_balance', 0.0)
                     ticker_rate = ticker_rate + balance * (ticker['last'] - ticker_rate)
                 elif side == 'sell' and ticker_rate < ticker['last']:
                     balance = conf_strategy.get('bid_last_balance', 0.0)
@@ -1599,6 +1603,37 @@ class Exchange:
         return asyncio.get_event_loop().run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
+
+    @retrier
+    def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+        """
+            Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+            :param pair: (e.g. ADA/USDT)
+            :param since: The earliest time of consideration for calculating funding fees,
+                in unix time or as a datetime
+        """
+        # TODO-lev: Add dry-run handling for this.
+
+        if not self.exchange_has("fetchFundingHistory"):
+            raise OperationalException(
+                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+
+        if type(since) is datetime:
+            since = int(since.timestamp()) * 1000   # * 1000 for ms
+
+        try:
+            funding_history = self._api.fetch_funding_history(
+                pair=pair,
+                since=since
+            )
+            return sum(fee['amount'] for fee in funding_history)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not get funding fees due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def fill_leverage_brackets(self):
         """

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from freqtrade.exchange import Exchange
 
@@ -21,3 +21,5 @@ class Hitbtc(Exchange):
         "ohlcv_candle_limit": 1000,
         "ohlcv_params": {"sort": "DESC"}
     }
+
+    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day

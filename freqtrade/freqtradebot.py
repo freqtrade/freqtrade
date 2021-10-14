@@ -4,12 +4,13 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
+from schedule import Scheduler
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
@@ -108,14 +109,26 @@ class FreqtradeBot(LoggingMixin):
         self.trading_mode: TradingMode = TradingMode.SPOT
         self.collateral_type: Optional[Collateral] = None
 
-        trading_mode = self.config.get('trading_mode')
-        collateral_type = self.config.get('collateral_type')
+        if 'trading_mode' in self.config:
+            self.trading_mode = TradingMode(self.config['trading_mode'])
 
-        if trading_mode:
-            self.trading_mode = TradingMode(trading_mode)
+        if 'collateral_type' in self.config:
+            self.collateral_type = Collateral(self.config['collateral_type'])
 
-        if collateral_type:
-            self.collateral_type = Collateral(collateral_type)
+        self._schedule = Scheduler()
+
+        if self.trading_mode == TradingMode.FUTURES:
+
+            def update():
+                self.update_funding_fees()
+                self.wallets.update()
+
+            # TODO: This would be more efficient if scheduled in utc time, and performed at each
+            # TODO: funding interval, specified by funding_fee_times on the exchange classes
+            for time_slot in range(0, 24):
+                for minutes in [0, 15, 30, 45]:
+                    t = str(time(time_slot, minutes, 2))
+                    self._schedule.every().day.at(t).do(update)
 
     def notify_status(self, msg: str) -> None:
         """
@@ -196,7 +209,8 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for buy opportunities
         if self.get_free_open_trades():
             self.enter_positions()
-
+        if self.trading_mode == TradingMode.FUTURES:
+            self._schedule.run_pending()
         Trade.commit()
 
     def process_stopped(self) -> None:
@@ -252,6 +266,15 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
+    def update_funding_fees(self):
+        if self.trading_mode == TradingMode.FUTURES:
+            for trade in Trade.get_open_trades():
+                funding_fees = self.exchange.get_funding_fees_from_exchange(
+                    trade.pair,
+                    trade.open_date
+                )
+                trade.funding_fees = funding_fees
+
     def startup_update_open_orders(self):
         """
         Updates open orders based on order list kept in the database.
@@ -273,6 +296,9 @@ class FreqtradeBot(LoggingMixin):
             except ExchangeError as e:
 
                 logger.warning(f"Error updating Order {order.order_id} due to {e}")
+
+        if self.trading_mode == TradingMode.FUTURES:
+            self._schedule.run_pending()
 
     def update_closed_trades_without_assigned_fees(self):
         """
@@ -679,6 +705,12 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        open_date = datetime.now(timezone.utc)
+        if self.trading_mode == TradingMode.FUTURES:
+            funding_fees = self.exchange.get_funding_fees_from_exchange(pair, open_date)
+        else:
+            funding_fees = 0.0
+
         trade = Trade(
             pair=pair,
             stake_amount=stake_amount,
@@ -689,7 +721,7 @@ class FreqtradeBot(LoggingMixin):
             fee_close=fee,
             open_rate=enter_limit_filled_price,
             open_rate_requested=enter_limit_requested,
-            open_date=datetime.utcnow(),
+            open_date=open_date,
             exchange=self.exchange.id,
             open_order_id=order_id,
             strategy=self.strategy.get_strategy_name(),
@@ -700,6 +732,8 @@ class FreqtradeBot(LoggingMixin):
             is_short=is_short,
             interest_rate=interest_rate,
             isolated_liq=isolated_liq,
+            trading_mode=self.trading_mode,
+            funding_fees=funding_fees
         )
         trade.orders.append(order_obj)
 

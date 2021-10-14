@@ -128,7 +128,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
         f.write(version)
 
 
-def get_ui_download_url() -> Tuple[str, str]:
+def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     base_url = 'https://api.github.com/repos/freqtrade/frequi/'
     # Get base UI Repo path
 
@@ -136,8 +136,16 @@ def get_ui_download_url() -> Tuple[str, str]:
     resp.raise_for_status()
     r = resp.json()
 
-    latest_version = r[0]['name']
-    assets = r[0].get('assets', [])
+    if version:
+        tmp = [x for x in r if x['name'] == version]
+        if tmp:
+            latest_version = tmp[0]['name']
+            assets = tmp[0].get('assets', [])
+        else:
+            raise ValueError("UI-Version not found.")
+    else:
+        latest_version = r[0]['name']
+        assets = r[0].get('assets', [])
     dl_url = ''
     if assets and len(assets) > 0:
         dl_url = assets[0]['browser_download_url']
@@ -156,7 +164,7 @@ def start_install_ui(args: Dict[str, Any]) -> None:
 
     dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui/installed/'
     # First make sure the assets are removed.
-    dl_url, latest_version = get_ui_download_url()
+    dl_url, latest_version = get_ui_download_url(args.get('ui_version'))
 
     curr_version = read_ui_version(dest_folder)
     if curr_version == latest_version and not args.get('erase_ui_only'):
