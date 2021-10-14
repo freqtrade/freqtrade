@@ -3325,17 +3325,20 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     assert mock_insuf.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-@ pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type', [
+@ pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type,is_short', [
     # Enable profit
-    (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value),
-    # Disable profit
-    (False, 3.19, 3.2, True,  False, SellType.SELL_SIGNAL.value),
-    # Enable loss
-    # * Shouldn't this be SellType.STOP_LOSS.value
-    (True, 0.21, 0.22, False, False, None),
+    (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value, False),
+    (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value, True),
+    # # Disable profit
+    (False, 3.19, 3.2, True,  False, SellType.SELL_SIGNAL.value, False),
+    (False, 3.19, 3.2, True,  False, SellType.SELL_SIGNAL.value, True),
+    # # Enable loss
+    # # * Shouldn't this be SellType.STOP_LOSS.value
+    (True, 0.21, 0.22, False, False, None, False),
+    (True, 2.41, 2.42, False, False, None, True),
     # Disable loss
-    (False, 0.10, 0.22, True, False, SellType.SELL_SIGNAL.value),
+    (False, 0.10, 0.22, True, False, SellType.SELL_SIGNAL.value, False),
+    (False, 0.10, 0.22, True, False, SellType.SELL_SIGNAL.value, True),
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
