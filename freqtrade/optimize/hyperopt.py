@@ -258,6 +258,7 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
+
         self.dimensions = (self.buy_space + self.sell_space + self.protection_space
                            + self.roi_space + self.stoploss_space + self.trailing_space)
 

@@ -558,4 +558,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Do not print epoch details header.',
         action='store_true',
     ),
+    "hyperopt_ignore_missing_space": Arg(
+        "--ignore-missing-spaces", "--ignore-unparameterized-spaces",
+        help=("Suppress errors for any requested Hyperopt spaces "
+              "that do not contain any parameters."),
+        action="store_true",
+    ),
 }
