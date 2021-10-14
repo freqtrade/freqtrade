@@ -1270,7 +1270,7 @@ class Exchange:
         timeframe: str,
         since_ms: int,
         is_new_pair: bool = False,
-        price: Optional[str]
+        price: Optional[str] = None
     ) -> List:
         """
         Get candle history using asyncio and returns the list of candles.
