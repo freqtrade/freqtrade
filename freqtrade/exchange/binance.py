@@ -219,13 +219,15 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     def _get_mark_price(self, pair: str, date: datetime) -> float:
+        # TODO-lev: implement
         raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
 
-    def _get_funding_rate(self, pair: str, premium_index: float) -> Optional[float]:
+    def _get_funding_rate(self, pair: str, when: datetime):
         """
             Get's the funding_rate for a pair at a specific date and time in the past
         """
-        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
+        # TODO-lev: implement
+        raise OperationalException(f"get_funding_rate has not been implemented for {self.name}")
 
     def _get_funding_fee(
         self,
@@ -253,7 +255,7 @@ class Binance(Exchange):
         timeframe: str,
         since_ms: int,
         is_new_pair: bool,
-        price: Optional[str]
+        price: Optional[str] = None
     ) -> List:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date

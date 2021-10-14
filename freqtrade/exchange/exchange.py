@@ -1296,7 +1296,7 @@ class Exchange:
         pair: str,
         timeframe: str,
         since_ms: int,
-        price: Optional[str]
+        price: Optional[str] = None
     ) -> DataFrame:
         """
         Minimal wrapper around get_historic_ohlcv - converting the result into a dataframe
@@ -1306,14 +1306,13 @@ class Exchange:
         :param price: "mark" if retrieving the mark price cnadles, "index" for index price candles
         :return: OHLCV DataFrame
         """
-        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms)
+        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms, price=price)
         return ohlcv_to_dataframe(
             ticks,
             timeframe,
             pair=pair,
             fill_missing=True,
-            drop_incomplete=self._ohlcv_partial_candle,
-            price=price
+            drop_incomplete=self._ohlcv_partial_candle
         )
 
     async def _async_get_historic_ohlcv(
@@ -1322,7 +1321,7 @@ class Exchange:
         timeframe: str,
         since_ms: int,
         is_new_pair: bool,
-        price: Optional[str]
+        price: Optional[str] = None
     ) -> List:
         """
         Download historic ohlcv
@@ -1368,7 +1367,7 @@ class Exchange:
         pair_list: ListPairsWithTimeframes, *,
         since_ms: Optional[int] = None,
         cache: bool = True,
-        price: Optional[str]
+        price: Optional[str] = None
     ) -> Dict[Tuple[str, str], DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
