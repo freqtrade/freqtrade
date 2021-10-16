@@ -9,7 +9,6 @@ Supported exchanges:
 """
 import logging
 import re
-from abc import abstractmethod
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +19,7 @@ from requests import get
 import pandas as pd
 from cachetools.ttl import TTLCache
 
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -72,14 +71,17 @@ class BinanceAnnouncementMixin:
             now = datetime.now(tz=pytz.utc)
             df = self._get_df()
 
-            response = get(url)
+            try:
+                response = get(url)
+            except ConnectionResetError:
+                raise TemporaryError(f"Binance url ({url}) is not available.")
 
             if response.status_code != 200:
-                raise OperationalException(f"Invalid response from url: {url}.\n"
-                                           f"Status code: {response.status_code}\n"
-                                           f"Content: {response.content.decode()}")
+                raise TemporaryError(f"Invalid response from url: {url}.\n"
+                                     f"Status code: {response.status_code}\n"
+                                     f"Content: {response.content.decode()}")
 
-            self.last_update = now
+            logger.info("Updating from Binance ...")
             updated_list = []
 
             for article in response.json()['data']['articles']:
@@ -113,13 +115,16 @@ class BinanceAnnouncementMixin:
                 df = pd.DataFrame(updated_list, columns=self.COLS)
 
             if updated_list:
-                msg = f"Adding tokens to database: {[upd[0] for upd in updated_list]}"
-                logger.info(msg)
+                logger.info(f"Adding tokens to database: {[upd[0] for upd in updated_list]}")
                 self._save_df(df)
-                self.notify_user(msg)
             return df
 
+        except TemporaryError:
+            # exception handled, re-raise
+            raise
+
         except Exception as e:
+            # exception not handled raise OperationalException
             logger.error(e)
             raise OperationalException(f"Some errors occurred processing Binance data. "
                                        f"Url: {url}.\n"
@@ -182,7 +187,6 @@ class BinanceAnnouncementMixin:
         msg = f"Cannot find datetime_announcement in announcement_url: {announcement_url}. " \
               f"Probably a CSS class change."
 
-        self.notify_user(msg)
         exc = OperationalException(msg)
         logger.error(exc)
 
@@ -190,37 +194,6 @@ class BinanceAnnouncementMixin:
         # TODO
         if raise_exceptions:
             raise ValueError("Token not found")
-
-    @abstractmethod
-    def notify_user(self, message: str):
-        # # notify user using WARNING message
-        # if self._freqtrade_bot is not None:
-        #     # monkey patching id DONE
-        #     try:
-        #         self._freqtrade_bot.rpc.send_msg({
-        #             'type': RPCMessageType.WARNING,
-        #             'status': message
-        #         })
-        #         return
-        #     except Exception as e:
-        #         logger.error(e)
-        logger.error(f"Message {message} cannot be sent to user.")
-
-    @property
-    def last_update(self) -> datetime:
-        if not self._last_update:
-            try:
-                with open('user_data/data/._last_update', 'r') as f:
-                    self._last_update = datetime.fromtimestamp(float(f.read()), tz=pytz.utc)
-            except FileNotFoundError:
-                self.last_update = datetime.now(tz=pytz.utc) - timedelta(seconds=self.REFRESH_PERIOD * 2)
-            return self._last_update
-
-    @last_update.setter
-    def last_update(self, value: datetime) -> None:
-        with open('user_data/data/._last_update', 'w') as f:
-            f.write(str(value.timestamp()))
-            self._last_update = value
 
     def get_announcement_url(self, code: str) -> str:
         return "".join([self.BINANCE_ANNOUNCEMENT_URL, code])
@@ -298,7 +271,6 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        logger.info("Updating from Binance ...")
         df = self.update_binance_announcements()
         # TODO migliorare l'efficienza del calcolo
         pairlist = [
@@ -308,7 +280,3 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
             ].empty
         ]
         return pairlist
-
-    def notify_user(self, msg):
-        # TODO
-        pass
