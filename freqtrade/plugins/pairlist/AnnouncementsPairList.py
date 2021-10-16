@@ -54,7 +54,6 @@ class BinanceAnnouncementMixin:
     COLS = ['Token', 'Text', 'Link', 'Datetime discover', 'Datetime announcement']
     DB = "BinanceAnnouncements_announcements.csv"
 
-    _last_update: Optional[datetime] = None
     _df: Optional[pd.DataFrame] = None
 
     def update_binance_announcements(self, page_number=1, page_size=10, history=False):
