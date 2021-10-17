@@ -7,17 +7,19 @@ Supported exchanges:
 - Binance
 
 """
-import logging
-import re
+from abc import abstractmethod
+from bs4 import BeautifulSoup
+from cachetools.ttl import TTLCache
 from datetime import datetime, timedelta
+from functools import cached_property
+from requests import get
 from typing import Any, Dict, List, Optional
 
+import logging
+import re
 import pytz
-from bs4 import BeautifulSoup
-from requests import get
 
 import pandas as pd
-from cachetools.ttl import TTLCache
 
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.plugins.pairlist.IPairList import IPairList
@@ -26,11 +28,30 @@ from freqtrade.plugins.pairlist.IPairList import IPairList
 logger = logging.getLogger(__name__)
 
 
-# for futures updates
-SORT_VALUES = ['exchange']
+def get_token_from_pair(pair: str, index: int = 0) -> str:
+    return pair.split('/')[index]
 
 
-class BinanceAnnouncementMixin:
+class AnnouncementMixin:
+
+    REFRESH_PERIOD: int
+    TOKEN_COL: str
+    ANNOUNCEMENT_COL: str
+
+    def __init__(self, refresh_period: Optional[int] = None, *args, **kwargs):
+        # 0 is not allowed, so `or` clause will work everytime
+        self._refresh_period = refresh_period or self.REFRESH_PERIOD
+
+    @abstractmethod
+    def update_announcements(self, *args, **kwargs) -> pd.DataFrame:
+        """
+        Called by AnnouncementsPairList.
+        It must be implemented: it must update database with fresh announcements and return updated dataframe.
+        *args, **kwargs are defined for internal scopes. No arguments will be passed.
+        """
+
+
+class BinanceAnnouncement(AnnouncementMixin):
     BINANCE_CATALOG_ID = 48
     BINANCE_BASE_URL = "https://www.binance.com/"
     BINANCE_ANNOUNCEMENT_URL = BINANCE_BASE_URL + 'en/support/announcement/'
@@ -54,15 +75,18 @@ class BinanceAnnouncementMixin:
     COLS = ['Token', 'Text', 'Link', 'Datetime discover', 'Datetime announcement']
     DB = "BinanceAnnouncements_announcements.csv"
 
+    TOKEN_COL = 'Token'
+    ANNOUNCEMENT_COL = 'Datetime announcement'
+
     _df: Optional[pd.DataFrame] = None
 
-    def update_binance_announcements(self, page_number=1, page_size=10, history=False):
+    def update_announcements(self, page_number=1, page_size=10, history=False) -> pd.DataFrame:
         response = None
         url = self.get_api_url(page_number, page_size)
 
         if history:
             # recursive updating
-            return [self.update_binance_announcements(
+            return [self.update_announcements(
                 page, page_size, history=False
             ) for page in reversed(range(2, 56))][-1]
 
@@ -80,7 +104,7 @@ class BinanceAnnouncementMixin:
                                      f"Status code: {response.status_code}\n"
                                      f"Content: {response.content.decode()}")
 
-            logger.info("Updating from Binance ...")
+            logger.info("Updating from Binance...")
             updated_list = []
 
             for article in response.json()['data']['articles']:
@@ -201,17 +225,16 @@ class BinanceAnnouncementMixin:
     def announcements_url(self) -> str:
         return self.BINANCE_ANNOUNCEMENTS_URL.format(*[self.BINANCE_CATALOG_ID for _ in range(3)])
 
-    @staticmethod
-    def get_token_from_pair(pair: str, index: int = 0) -> str:
-        return pair.split('/')[index]
-
     def get_api_url(self, page_number: int = 1, page_size: int = 10) -> str:
         return self.BINANCE_API_URL.format(self.BINANCE_CATALOG_ID, page_number, page_size)
 
 
-class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
-
-    # sleep at least 3 seconds every request
+class AnnouncementsPairList(IPairList):
+    """
+    Announcement pair list.
+    Return pairs that are listed on the selected exchange for less than some specified hours (default 24)
+    """
+    # sleep at least 3 seconds every request by default
     REFRESH_PERIOD = 3
 
     def __init__(self, exchange, pairlistmanager,
@@ -220,10 +243,22 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
 
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
+        if 'exchange' not in self._pairlistconfig:
+            raise OperationalException(
+                '`exchange` not specified. Please check your configuration '
+                'for "pairlist.config.exchange"')
+
         self._stake_currency = config['stake_currency']
         self._hours = self._pairlistconfig.get('hours', 24)
+        self._pair_exchange = self._pairlistconfig['exchange']
         self._refresh_period = self._pairlistconfig.get('refresh_period', self.REFRESH_PERIOD)
         self._pair_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
+
+        pair_exchange_kwargs = self._pairlistconfig.get('exchange_kwargs', {})
+        try:
+            self.pair_exchange = self._init_pair_exchange(**pair_exchange_kwargs)
+        except AssertionError as e:
+            raise OperationalException(f"Announcement class is improperly configured. Exception: {e}") from e
 
     @property
     def needstickers(self) -> bool:
@@ -238,7 +273,7 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - Binance exchange announced pairs."
+        return f"{self.name} - {self._pair_exchange} exchange announced pairs."
 
     def gen_pairlist(self, tickers: Dict) -> List[str]:
         """
@@ -270,12 +305,27 @@ class AnnouncementsPairList(IPairList, BinanceAnnouncementMixin):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        df = self.update_binance_announcements()
-        # TODO migliorare l'efficienza del calcolo
+        df = self.pair_exchange.update_announcements()
+        # TODO improve performance
         pairlist = [
             v for v in pairlist if not df[
-                (df['Token'] == self.get_token_from_pair(v)) &
-                (df['Datetime announcement'] > datetime.now().replace(tzinfo=pytz.utc) - timedelta(hours=self._hours))
+                (df[self.pair_exchange.TOKEN_COL] == get_token_from_pair(v, 0)) &
+                (df[self.pair_exchange.ANNOUNCEMENT_COL] > (
+                    datetime.now().replace(tzinfo=pytz.utc) - timedelta(hours=self._hours)
+                ))
             ].empty
         ]
         return pairlist
+
+    def _init_pair_exchange(self, **pair_exchange_kwargs):
+        exchange = None
+        if self._pair_exchange == 'binance':
+            exchange = BinanceAnnouncement(refresh_period=self._refresh_period, **pair_exchange_kwargs)
+
+        if exchange:
+            assert hasattr(exchange, 'update_announcements'), '`update_announcements` method is required'
+            assert hasattr(exchange, 'TOKEN_COL'), '`TOKEN_COL` attribute is required'
+            assert hasattr(exchange, 'ANNOUNCEMENT_COL'), '`ANNOUNCEMENT_COL` attribute is required'
+            return exchange
+
+        raise OperationalException(f'Exchange `{self._pair_exchange}` is not supported yet')
