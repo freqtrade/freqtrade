@@ -1438,7 +1438,6 @@ def test_handle_stoploss_on_exchange_trailing_error(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-@pytest.mark.usefixtures("init_persistence")
 def test_handle_stoploss_on_exchange_custom_stop(
     mocker, default_conf_usdt, fee, is_short, limit_order
 ) -> None:
@@ -1513,9 +1512,9 @@ def test_handle_stoploss_on_exchange_custom_stop(
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': 4.38,
-            'ask': 4.4,
-            'last': 4.38
+            'bid': 4.38 if not is_short else 1.9 / 2,
+            'ask': 4.4 if not is_short else 2.2 / 2,
+            'last': 4.38 if not is_short else 1.9 / 2,
         })
     )
 
@@ -1531,8 +1530,8 @@ def test_handle_stoploss_on_exchange_custom_stop(
     stoploss_order_mock.assert_not_called()
 
     assert freqtrade.handle_trade(trade) is False
-    assert trade.stop_loss == 4.4 * 0.96
-    assert trade.stop_loss_pct == -0.04
+    assert trade.stop_loss == 4.4 * 0.96 if not is_short else 1.1
+    assert trade.stop_loss_pct == -0.04 if not is_short else 0.04
 
     # setting stoploss_on_exchange_interval to 0 seconds
     freqtrade.strategy.order_types['stoploss_on_exchange_interval'] = 0
@@ -1540,11 +1539,12 @@ def test_handle_stoploss_on_exchange_custom_stop(
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
 
     cancel_order_mock.assert_called_once_with(100, 'ETH/USDT')
+    # Long uses modified ask - offset, short modified bid + offset
     stoploss_order_mock.assert_called_once_with(
-        amount=31.57894736,
+        amount=trade.amount,
         pair='ETH/USDT',
         order_types=freqtrade.strategy.order_types,
-        stop_price=4.4 * 0.96,
+        stop_price=4.4 * 0.96 if not is_short else 0.95 * 1.04,
         side=exit_side(is_short),
         leverage=1.0
     )
