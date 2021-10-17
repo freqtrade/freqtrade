@@ -3630,9 +3630,9 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
     (0, False, 2.0394, False),
     (0.011, False, 2.0394, False),
     (0.055, True, 1.8, False),
-    (0, False, 2.1606, True),
-    (0.011, False, 2.1606, True),
-    (0.055, True, 2.4, True),
+    (0, False, 2.1614, True),
+    (0.011, False, 2.1614, True),
+    (0.055, True, 2.42, True),
 ])
 def test_trailing_stop_loss_positive(
     default_conf_usdt, limit_order, limit_order_open,
@@ -3684,27 +3684,29 @@ def test_trailing_stop_loss_positive(
     )
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
+    caplog_text = (f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: "
+                   f"{'0.0249' if not is_short else '0.0224'}%")
     if trail_if_reached:
         assert not log_has(caplog_text, caplog)
         assert not log_has("ETH/USDT - Adjusting stoploss...", caplog)
     else:
         assert log_has(caplog_text, caplog)
         assert log_has("ETH/USDT - Adjusting stoploss...", caplog)
-    assert trade.stop_loss == second_sl
+    assert pytest.approx(trade.stop_loss) == second_sl
     caplog.clear()
 
     mocker.patch(
         'freqtrade.exchange.Exchange.fetch_ticker',
         MagicMock(return_value={
-            'bid': enter_price + (-0.125 if is_short else 0.125),
-            'ask': enter_price + (-0.125 if is_short else 0.125),
-            'last': enter_price + (-0.125 if is_short else 0.125),
+            'bid': enter_price + (-0.135 if is_short else 0.125),
+            'ask': enter_price + (-0.135 if is_short else 0.125),
+            'last': enter_price + (-0.135 if is_short else 0.125),
         })
     )
     assert freqtrade.handle_trade(trade) is False
     assert log_has(
-        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0572%",
+        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: "
+        f"{'0.0572' if not is_short else '0.0567'}%",
         caplog
     )
     assert log_has("ETH/USDT - Adjusting stoploss...", caplog)
@@ -3722,7 +3724,8 @@ def test_trailing_stop_loss_positive(
     assert log_has(
         f"ETH/USDT - HIT STOP: current price at {enter_price + (-0.02 if is_short else 0.02):.6f}, "
         f"stoploss is {trade.stop_loss:.6f}, "
-        f"initial stoploss was at {2.2 if is_short else 1.8}00000, trade opened at 2.000000",
+        f"initial stoploss was at {'2.42' if is_short else '1.80'}0000, "
+        f"trade opened at {2.2 if is_short else 2.0}00000",
         caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
