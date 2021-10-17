@@ -3267,3 +3267,16 @@ def test__ccxt_config(
     default_conf['collateral'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange._ccxt_config == ccxt_config
+
+
+@pytest.mark.parametrize('pair,nominal_value,max_lev', [
+    ("ETH/BTC", 0.0, 2.0),
+    ("TKN/BTC", 100.0, 5.0),
+    ("BLK/BTC", 173.31, 3.0),
+    ("LTC/BTC", 0.0, 1.0),
+    ("TKN/USDT", 210.30, 1.0),
+])
+def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
+    # Binance has a different method of getting the max leverage
+    exchange = get_patched_exchange(mocker, default_conf, id="kraken")
+    assert exchange.get_max_leverage(pair, nominal_value) == max_lev

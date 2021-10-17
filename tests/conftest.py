@@ -590,10 +590,10 @@ def get_markets():
                     'min': 0.0001,
                     'max': 500000,
                 },
-            },
-            'info': {
-                'leverage_buy': ['2'],
-                'leverage_sell': ['2'],
+                'leverage': {
+                    'min': 1.0,
+                    'max': 2.0
+                }
             },
         },
         'TKN/BTC': {
@@ -619,10 +619,10 @@ def get_markets():
                     'min': 0.0001,
                     'max': 500000,
                 },
-            },
-            'info': {
-                'leverage_buy': ['2', '3', '4', '5'],
-                'leverage_sell': ['2', '3', '4', '5'],
+                'leverage': {
+                    'min': 1.0,
+                    'max': 5.0
+                }
             },
         },
         'BLK/BTC': {
@@ -647,10 +647,10 @@ def get_markets():
                     'min': 0.0001,
                     'max': 500000,
                 },
-            },
-            'info': {
-                'leverage_buy': ['2', '3'],
-                'leverage_sell': ['2', '3'],
+                'leverage': {
+                    'min': 1.0,
+                    'max': 3.0
+                },
             },
         },
         'LTC/BTC': {
@@ -676,10 +676,7 @@ def get_markets():
                     'max': 500000,
                 },
             },
-            'info': {
-                'leverage_buy': [],
-                'leverage_sell': [],
-            },
+            'info': {},
         },
         'XRP/BTC': {
             'id': 'xrpbtc',
@@ -757,10 +754,7 @@ def get_markets():
                     'max': None
                 }
             },
-            'info': {
-                'leverage_buy': [],
-                'leverage_sell': [],
-            },
+            'info': {},
         },
         'ETH/USDT': {
             'id': 'USDT-ETH',

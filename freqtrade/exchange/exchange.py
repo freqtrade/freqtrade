@@ -89,7 +89,6 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
@@ -157,9 +156,6 @@ class Exchange:
                                              ccxt_async_config)
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
-
-        if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
 
         logger.info('Using Exchange "%s"', self.name)
 
@@ -1637,9 +1633,9 @@ class Exchange:
 
     def fill_leverage_brackets(self):
         """
-            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
+            Not used by most exchanges, only used by Binance at time of writing
         """
         return
 
@@ -1649,7 +1645,15 @@ class Exchange:
             :param pair: The base/quote currency pair being traded
             :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
-        return 1.0
+        market = self.markets[pair]
+        if (
+            'limits' in market and
+            'leverage' in market['limits'] and
+            'max' in market['limits']['leverage']
+        ):
+            return market['limits']['leverage']['max']
+        else:
+            return 1.0
 
     @retrier
     def _set_leverage(
