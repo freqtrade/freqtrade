@@ -31,14 +31,6 @@ from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mo
                                         mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6)
 
 
-def enter_side(is_short: bool):
-    return "sell" if is_short else "buy"
-
-
-def exit_side(is_short: bool):
-    return "buy" if is_short else "sell"
-
-
 logging.getLogger('').setLevel(logging.INFO)
 
 
