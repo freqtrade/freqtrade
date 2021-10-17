@@ -840,9 +840,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        sl_lower_short = (trade.stop_loss < (low or current_rate) and not trade.is_short)
-        sl_higher_long = (trade.stop_loss > (high or current_rate) and trade.is_short)
-        if self.trailing_stop and (sl_lower_short or sl_higher_long):
+        sl_lower_long = (trade.stop_loss < (low or current_rate) and not trade.is_short)
+        sl_higher_short = (trade.stop_loss > (high or current_rate) and trade.is_short)
+        if self.trailing_stop and (sl_lower_long or sl_higher_short):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
@@ -851,15 +851,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             bound_profit = current_profit if not bound else trade.calc_profit_ratio(bound)
 
             # Don't update stoploss if trailing_only_offset_is_reached is true.
-            if not (self.trailing_only_offset_is_reached and (
-                (bound_profit < sl_offset and not trade.is_short) or
-                (bound_profit > sl_offset and trade.is_short)
-            )):
+            if not (self.trailing_only_offset_is_reached and bound_profit < sl_offset):
                 # Specific handling for trailing_stop_positive
-                if self.trailing_stop_positive is not None and (
-                    (bound_profit > sl_offset and not trade.is_short) or
-                    (bound_profit < sl_offset and trade.is_short)
-                ):
+                if self.trailing_stop_positive is not None and bound_profit > sl_offset:
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
                                  f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
