@@ -1,6 +1,5 @@
 """ FTX exchange subclass """
 import logging
-from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
@@ -184,6 +183,3 @@ class Ftx(Exchange):
             :nominal_value: Here for super method, not used on FTX
         """
         return 20.0
-
-    def _get_funding_rate(self, pair: str, when: datetime) -> Optional[float]:
-        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
