@@ -355,6 +355,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
+    "include_inactive": Arg(
+        '--include-inactive-pairs',
+        help='Also download data from inactive pairs.',
+        action='store_true',
+    ),
     "new_pairs_days": Arg(
         '--new-pairs-days',
         help='Download data of new pairs for given number of days. Default: `%(default)s`.',
