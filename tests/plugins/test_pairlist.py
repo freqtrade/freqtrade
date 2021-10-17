@@ -666,11 +666,11 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
 
 @pytest.mark.usefixtures("init_persistence")
 # TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
+def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None:
     whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
     whitelist_conf['pairlists'] = [
         {"method": "StaticPairList"},
-        {"method": "PerformanceFilter", "minutes": 60}
+        {"method": "PerformanceFilter", "minutes": 60, "min_profit": 0.01}
     ]
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
@@ -682,7 +682,8 @@ def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades(fee, False)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/BTC', 'ETH/BTC', 'TKN/BTC']
+        assert pm.whitelist == ['XRP/BTC']
+        assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
         t.move_to("2021-09-01 07:00:00 +00:00")

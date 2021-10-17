@@ -3738,9 +3738,9 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=MagicMock(return_value={
-            'bid': 0.00000172,
-            'ask': 0.00000173,
-            'last': 0.00000172
+            'bid': 2.0,
+            'ask': 2.0,
+            'last': 2.0
         }),
         create_order=MagicMock(side_effect=[
             limit_order_open[enter_side(is_short)],
@@ -3770,7 +3770,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
     # Test if buy-signal is absent
     patch_get_signal(freqtrade, enter_long=False, exit_long=not is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade) is True
-    assert trade.sell_reason == SellType.SELL_SIGNAL.value
+    assert trade.sell_reason == SellType.ROI.value
 
 
 def test_get_real_amount_quote(default_conf_usdt, trades_for_order, buy_order_fee, fee, caplog,
