@@ -2799,10 +2799,10 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
 
 @ pytest.mark.parametrize("is_short, open_rate, amt", [
     (False, 2.0, 30.0),
-    (True, 2.02, 29.7029703),
+    (True, 2.02, 29.70297029),
 ])
 def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, mocker,
-                               is_short, open_rate, amt) -> None:
+                               ticker_usdt_sell_down, is_short, open_rate, amt) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2821,20 +2821,19 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     rpc_mock.reset_mock()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     assert trade
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
 
     # Increase the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_usdt_sell_up
+        fetch_ticker=ticker_usdt_sell_down if is_short else ticker_usdt_sell_up
     )
     # Prevented sell ...
-    # TODO-lev: side="buy"
     freqtrade.execute_trade_exit(
         trade=trade,
-        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        limit=(ticker_usdt_sell_down()['ask'] if is_short else ticker_usdt_sell_up()['bid']),
         sell_reason=SellCheckTuple(sell_type=SellType.ROI)
     )
     assert rpc_mock.call_count == 0
@@ -2842,10 +2841,9 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
 
     # Repatch with true
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
-    # TODO-lev: side="buy"
     freqtrade.execute_trade_exit(
         trade=trade,
-        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        limit=(ticker_usdt_sell_down()['ask'] if is_short else ticker_usdt_sell_up()['bid']),
         sell_reason=SellCheckTuple(sell_type=SellType.ROI)
     )
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
@@ -2858,13 +2856,13 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'profit',
-        'limit': 2.2,
+        'limit': 2.0 if is_short else 2.2,
         'amount': amt,
         'order_type': 'limit',
         'open_rate': open_rate,
-        'current_rate': 2.3,
-        'profit_amount': 5.685,
-        'profit_ratio': 0.09451372,
+        'current_rate': 2.01 if is_short else 2.3,
+        'profit_amount': 0.29554455 if is_short else 5.685,
+        'profit_ratio': 0.00493809 if is_short else 0.09451372,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.ROI.value,
@@ -2876,7 +2874,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
 
 @ pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_down,
-                                 mocker, is_short) -> None:
+                                 ticker_usdt_sell_up, mocker, is_short) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -2899,11 +2897,11 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_usdt_sell_down
+        fetch_ticker=ticker_usdt_sell_up if is_short else ticker_usdt_sell_down
     )
-    # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
+    freqtrade.execute_trade_exit(
+        trade=trade, limit=(ticker_usdt_sell_up if is_short else ticker_usdt_sell_down)()['bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -2913,13 +2911,13 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'loss',
-        'limit': 2.01,
-        'amount': 30.0,
+        'limit': 2.2 if is_short else 2.01,
+        'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
-        'open_rate': 2.0,
-        'current_rate': 2.0,
-        'profit_amount': -0.00075,
-        'profit_ratio': -1.247e-05,
+        'open_rate': 2.02 if is_short else 2.0,
+        'current_rate': 2.2 if is_short else 2.0,
+        'profit_amount': -5.65990099 if is_short else -0.00075,
+        'profit_ratio': -0.0945681 if is_short else -1.247e-05,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.STOP_LOSS.value,
@@ -3005,7 +3003,8 @@ def test_execute_trade_exit_custom_exit_price(
 
 @ pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
-        default_conf_usdt, ticker_usdt, fee, is_short, ticker_usdt_sell_down, mocker) -> None:
+        default_conf_usdt, ticker_usdt, fee, is_short, ticker_usdt_sell_down,
+        ticker_usdt_sell_up, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3022,23 +3021,23 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     assert trade
 
     # Decrease the price and sell it
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
-        fetch_ticker=ticker_usdt_sell_down
+        fetch_ticker=ticker_usdt_sell_up if is_short else ticker_usdt_sell_down
     )
 
     default_conf_usdt['dry_run'] = True
     freqtrade.strategy.order_types['stoploss_on_exchange'] = True
     # Setting trade stoploss to 0.01
 
-    trade.stop_loss = 2.0 * 0.99
-    # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
+    trade.stop_loss = 2.0 * 1.01 if is_short else 2.0 * 0.99
+    freqtrade.execute_trade_exit(
+        trade=trade, limit=(ticker_usdt_sell_up if is_short else ticker_usdt_sell_down())['bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -3049,13 +3048,13 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
         'gain': 'loss',
-        'limit': 1.98,
-        'amount': 30.0,
+        'limit': 2.02 if is_short else 1.98,
+        'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
-        'open_rate': 2.0,
-        'current_rate': 2.0,
-        'profit_amount': -0.8985,
-        'profit_ratio': -0.01493766,
+        'open_rate': 2.02 if is_short else 2.0,
+        'current_rate': 2.2 if is_short else 2.0,
+        'profit_amount': -0.3 if is_short else -0.8985,
+        'profit_ratio': -0.00501253 if is_short else -0.01493766,
         'stake_currency': 'USDT',
         'fiat_currency': 'USD',
         'sell_reason': SellType.STOP_LOSS.value,
@@ -3570,9 +3569,12 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     assert trade.sell_reason == SellType.ROI.value
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@ pytest.mark.parametrize("is_short,val1,val2", [
+    (False, 1.5, 1.1),
+    (True, 0.5, 0.9)
+    ])
 def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
-                            is_short, fee, caplog, mocker) -> None:
+                            is_short, val1, val2, fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3596,15 +3598,15 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
 
     freqtrade.enter_positions()
     trade = Trade.query.first()
-    trade.is_short = is_short
+    assert trade.is_short == is_short
     assert freqtrade.handle_trade(trade) is False
 
-    # Raise ticker_usdt above buy price
+    # Raise praise into profits
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={
-                     'bid': 2.0 * 1.5,
-                     'ask': 2.0 * 1.5,
-                     'last': 2.0 * 1.5
+                     'bid': 2.0 * val1,
+                     'ask': 2.0 * val1,
+                     'last': 2.0 * val1
                  }))
 
     # Stoploss should be adjusted
@@ -3613,16 +3615,19 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
     # Price fell
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  MagicMock(return_value={
-                     'bid': 2.0 * 1.1,
-                     'ask': 2.0 * 1.1,
-                     'last': 2.0 * 1.1
+                     'bid': 2.0 * val2,
+                     'ask': 2.0 * val2,
+                     'last': 2.0 * val2
                  }))
 
     caplog.set_level(logging.DEBUG)
     # Sell as trailing-stop is reached
     assert freqtrade.handle_trade(trade) is True
-    assert log_has("ETH/USDT - HIT STOP: current price at 2.200000, stoploss is 2.700000, "
-                   "initial stoploss was at 1.800000, trade opened at 2.000000", caplog)
+    stop_multi = 1.1 if is_short else 0.9
+    assert log_has(f"ETH/USDT - HIT STOP: current price at {(2.0 * val2):6f}, "
+                   f"stoploss is {(2.0 * val1 * stop_multi):6f}, "
+                   f"initial stoploss was at {(2.0 * stop_multi):6f}, trade opened at 2.000000",
+                   caplog)
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
