@@ -51,6 +51,7 @@ usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                           [--print-all] [--no-color] [--print-json] [-j JOBS]
                           [--random-state INT] [--min-trades INT]
                           [--hyperopt-loss NAME] [--disable-param-export]
+                          [--ignore-missing-spaces]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -118,6 +119,9 @@ optional arguments:
                         MaxDrawDownHyperOptLoss
   --disable-param-export
                         Disable automatic hyperopt parameter export.
+  --ignore-missing-spaces, --ignore-unparameterized-spaces
+                        Suppress errors for any requested Hyperopt spaces that
+                        do not contain any parameters.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

@@ -55,8 +55,8 @@ theme:
       primary: "blue grey"
       accent: "tear"
       toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
+        icon: material/toggle-switch
+        name: Switch to light mode
 extra_css:
   - "stylesheets/ft.extra.css"
 extra_javascript:
