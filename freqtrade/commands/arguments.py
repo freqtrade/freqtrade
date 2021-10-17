@@ -89,7 +89,7 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperoptexportfilename", "hyperopt_show_no_header",
-                      "disableparamexport"]
+                      "disableparamexport", "show_days"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",

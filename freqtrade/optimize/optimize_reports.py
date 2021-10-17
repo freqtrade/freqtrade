@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Union
 
 from numpy import int64
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
@@ -213,7 +213,9 @@ def generate_edge_table(results: dict) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_days_breakdown_stats(results: DataFrame, starting_balance: int) -> Dict[str, Any]:
+def generate_days_breakdown_stats(trade_list: List, starting_balance: int) -> List[Dict[str, Any]]:
+    results = DataFrame.from_records(trade_list)
+    results['close_date'] = to_datetime(results['close_date'], utc=True)
     days = results.resample('1d', on='close_date')
     days_stats = []
     for name, day in days:
@@ -341,8 +343,6 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
                                               starting_balance=starting_balance,
                                               results=results.loc[results['is_open']],
                                               skip_nan=True)
-    days_breakdown_stats = generate_days_breakdown_stats(
-        results=results, starting_balance=starting_balance)
     daily_stats = generate_daily_stats(results)
     trade_stats = generate_trading_stats(results)
     best_pair = max([pair for pair in pair_results if pair['key'] != 'TOTAL'],
@@ -362,7 +362,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'results_per_pair': pair_results,
         'sell_reason_summary': sell_reason_stats,
         'left_open_trades': left_open_results,
-        'days_breakdown_stats': days_breakdown_stats,
+        # 'days_breakdown_stats': days_breakdown_stats,
 
         'total_trades': len(results),
         'total_volume': float(results['stake_amount'].sum()),
@@ -690,7 +690,9 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
     print(table)
 
     if show_days:
-        table = text_table_days_breakdown(days_breakdown_stats=results['days_breakdown_stats'],
+        days_breakdown_stats = generate_days_breakdown_stats(
+            trade_list=results['trades'], starting_balance=results['starting_balance'])
+        table = text_table_days_breakdown(days_breakdown_stats=days_breakdown_stats,
                                           stake_currency=stake_currency)
         if isinstance(table, str) and len(table) > 0:
             print(' DAYS BREAKDOWN '.center(len(table.splitlines()[0]), '='))
