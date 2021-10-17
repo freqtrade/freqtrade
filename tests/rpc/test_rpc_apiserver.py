@@ -570,7 +570,6 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['total_trades'] == 0
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
@@ -597,7 +596,6 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert rc.json()['detail'] == 'Trade not found.'
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
     assert_response(rc)
@@ -694,7 +692,6 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-@pytest.mark.usefixtures("init_persistence")
 def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -745,7 +742,6 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
                          }
 
 
-@pytest.mark.usefixtures("init_persistence")
 def test_api_stats(botclient, mocker, ticker, fee, markets,):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -811,7 +807,7 @@ def test_api_performance(botclient, fee):
     trade.close_profit_abs = trade.calc_profit()
 
     Trade.query.session.add(trade)
-    Trade.query.session.flush()
+    Trade.commit()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)

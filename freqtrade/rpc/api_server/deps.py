@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterator, Optional
 
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc import RPC, RPCException
@@ -12,11 +12,12 @@ def get_rpc_optional() -> Optional[RPC]:
     return None
 
 
-def get_rpc() -> Optional[RPC]:
+def get_rpc() -> Optional[Iterator[RPC]]:
     _rpc = get_rpc_optional()
     if _rpc:
         Trade.query.session.rollback()
-        return _rpc
+        yield _rpc
+        Trade.query.session.rollback()
     else:
         raise RPCException('Bot is not in the correct state')
 
