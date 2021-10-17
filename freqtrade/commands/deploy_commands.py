@@ -7,10 +7,10 @@ import requests
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
-from freqtrade.constants import USERPATH_HYPEROPTS, USERPATH_STRATEGIES
+from freqtrade.constants import USERPATH_STRATEGIES
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import render_template, render_template_with_fallback
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -38,15 +38,15 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     indicators = render_template_with_fallback(
         templatefile=f"subtemplates/indicators_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/indicators_{fallback}.j2",
-        )
+    )
     buy_trend = render_template_with_fallback(
         templatefile=f"subtemplates/buy_trend_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/buy_trend_{fallback}.j2",
-        )
+    )
     sell_trend = render_template_with_fallback(
         templatefile=f"subtemplates/sell_trend_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/sell_trend_{fallback}.j2",
-        )
+    )
     plot_config = render_template_with_fallback(
         templatefile=f"subtemplates/plot_config_{subtemplate}.j2",
         templatefallbackfile=f"subtemplates/plot_config_{fallback}.j2",
@@ -74,8 +74,6 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
-        if args["strategy"] == "DefaultStrategy":
-            raise OperationalException("DefaultStrategy is not allowed as name.")
 
         new_path = config['user_data_dir'] / USERPATH_STRATEGIES / (args['strategy'] + '.py')
 
@@ -87,58 +85,6 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
 
     else:
         raise OperationalException("`new-strategy` requires --strategy to be set.")
-
-
-def deploy_new_hyperopt(hyperopt_name: str, hyperopt_path: Path, subtemplate: str) -> None:
-    """
-    Deploys a new hyperopt template to hyperopt_path
-    """
-    fallback = 'full'
-    buy_guards = render_template_with_fallback(
-        templatefile=f"subtemplates/hyperopt_buy_guards_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/hyperopt_buy_guards_{fallback}.j2",
-        )
-    sell_guards = render_template_with_fallback(
-        templatefile=f"subtemplates/hyperopt_sell_guards_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/hyperopt_sell_guards_{fallback}.j2",
-        )
-    buy_space = render_template_with_fallback(
-        templatefile=f"subtemplates/hyperopt_buy_space_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/hyperopt_buy_space_{fallback}.j2",
-        )
-    sell_space = render_template_with_fallback(
-        templatefile=f"subtemplates/hyperopt_sell_space_{subtemplate}.j2",
-        templatefallbackfile=f"subtemplates/hyperopt_sell_space_{fallback}.j2",
-        )
-
-    strategy_text = render_template(templatefile='base_hyperopt.py.j2',
-                                    arguments={"hyperopt": hyperopt_name,
-                                               "buy_guards": buy_guards,
-                                               "sell_guards": sell_guards,
-                                               "buy_space": buy_space,
-                                               "sell_space": sell_space,
-                                               })
-
-    logger.info(f"Writing hyperopt to `{hyperopt_path}`.")
-    hyperopt_path.write_text(strategy_text)
-
-
-def start_new_hyperopt(args: Dict[str, Any]) -> None:
-
-    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
-
-    if 'hyperopt' in args and args['hyperopt']:
-        if args['hyperopt'] == 'DefaultHyperopt':
-            raise OperationalException("DefaultHyperopt is not allowed as name.")
-
-        new_path = config['user_data_dir'] / USERPATH_HYPEROPTS / (args['hyperopt'] + '.py')
-
-        if new_path.exists():
-            raise OperationalException(f"`{new_path}` already exists. "
-                                       "Please choose another Hyperopt Name.")
-        deploy_new_hyperopt(args['hyperopt'], new_path, args['template'])
-    else:
-        raise OperationalException("`new-hyperopt` requires --hyperopt to be set.")
 
 
 def clean_ui_subdir(directory: Path):
@@ -182,7 +128,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
         f.write(version)
 
 
-def get_ui_download_url() -> Tuple[str, str]:
+def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     base_url = 'https://api.github.com/repos/freqtrade/frequi/'
     # Get base UI Repo path
 
@@ -190,8 +136,16 @@ def get_ui_download_url() -> Tuple[str, str]:
     resp.raise_for_status()
     r = resp.json()
 
-    latest_version = r[0]['name']
-    assets = r[0].get('assets', [])
+    if version:
+        tmp = [x for x in r if x['name'] == version]
+        if tmp:
+            latest_version = tmp[0]['name']
+            assets = tmp[0].get('assets', [])
+        else:
+            raise ValueError("UI-Version not found.")
+    else:
+        latest_version = r[0]['name']
+        assets = r[0].get('assets', [])
     dl_url = ''
     if assets and len(assets) > 0:
         dl_url = assets[0]['browser_download_url']
@@ -210,7 +164,7 @@ def start_install_ui(args: Dict[str, Any]) -> None:
 
     dest_folder = Path(__file__).parents[1] / 'rpc/api_server/ui/installed/'
     # First make sure the assets are removed.
-    dl_url, latest_version = get_ui_download_url()
+    dl_url, latest_version = get_ui_download_url(args.get('ui_version'))
 
     curr_version = read_ui_version(dest_folder)
     if curr_version == latest_version and not args.get('erase_ui_only'):

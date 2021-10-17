@@ -1,9 +1,11 @@
 import logging
+import secrets
 from pathlib import Path
 from typing import Any, Dict, List
 
 from questionary import Separator, prompt
 
+from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
@@ -59,21 +61,27 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "text",
             "name": "stake_currency",
             "message": "Please insert your stake currency:",
-            "default": 'BTC',
+            "default": 'USDT',
         },
         {
             "type": "text",
             "name": "stake_amount",
-            "message": "Please insert your stake amount:",
-            "default": "0.01",
+            "message": f"Please insert your stake amount (Number or '{UNLIMITED_STAKE_AMOUNT}'):",
+            "default": "100",
             "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_float(val),
+            "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
+            if val == UNLIMITED_STAKE_AMOUNT
+            else val
         },
         {
             "type": "text",
             "name": "max_open_trades",
             "message": f"Please insert max_open_trades (Integer or '{UNLIMITED_STAKE_AMOUNT}'):",
             "default": "3",
-            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val)
+            "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_int(val),
+            "filter": lambda val: '"' + UNLIMITED_STAKE_AMOUNT + '"'
+            if val == UNLIMITED_STAKE_AMOUNT
+            else val
         },
         {
             "type": "text",
@@ -97,6 +105,8 @@ def ask_user_config() -> Dict[str, Any]:
                 "bittrex",
                 "kraken",
                 "ftx",
+                "kucoin",
+                "gateio",
                 Separator(),
                 "other",
             ],
@@ -121,6 +131,12 @@ def ask_user_config() -> Dict[str, Any]:
             "when": lambda x: not x['dry_run']
         },
         {
+            "type": "password",
+            "name": "exchange_key_password",
+            "message": "Insert Exchange API Key password",
+            "when": lambda x: not x['dry_run'] and x['exchange_name'] == 'kucoin'
+        },
+        {
             "type": "confirm",
             "name": "telegram",
             "message": "Do you want to enable Telegram?",
@@ -138,12 +154,42 @@ def ask_user_config() -> Dict[str, Any]:
             "message": "Insert Telegram chat id",
             "when": lambda x: x['telegram']
         },
+        {
+            "type": "confirm",
+            "name": "api_server",
+            "message": "Do you want to enable the Rest API (includes FreqUI)?",
+            "default": False,
+        },
+        {
+            "type": "text",
+            "name": "api_server_listen_addr",
+            "message": ("Insert Api server Listen Address (0.0.0.0 for docker, "
+                        "otherwise best left untouched)"),
+            "default": "127.0.0.1",
+            "when": lambda x: x['api_server']
+        },
+        {
+            "type": "text",
+            "name": "api_server_username",
+            "message": "Insert api-server username",
+            "default": "freqtrader",
+            "when": lambda x: x['api_server']
+        },
+        {
+            "type": "text",
+            "name": "api_server_password",
+            "message": "Insert api-server password",
+            "when": lambda x: x['api_server']
+        },
     ]
     answers = prompt(questions)
 
     if not answers:
         # Interrupted questionary sessions return an empty dict.
         raise OperationalException("User interrupted interactive questions.")
+
+    # Force JWT token to be a random string
+    answers['api_server_jwt_key'] = secrets.token_hex()
 
     return answers
 
@@ -152,7 +198,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     """
     Applies selections to the template and writes the result to config_path
     :param config_path: Path object for new config file. Should not exist yet
-    :param selecions: Dict containing selections taken by the user.
+    :param selections: Dict containing selections taken by the user.
     """
     from jinja2.exceptions import TemplateNotFound
     try:
@@ -162,7 +208,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
         selections['exchange'] = render_template(
             templatefile=f"subtemplates/exchange_{exchange_template}.j2",
             arguments=selections
-            )
+        )
     except TemplateNotFound:
         selections['exchange'] = render_template(
             templatefile="subtemplates/exchange_generic.j2",
@@ -182,10 +228,11 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
 def start_new_config(args: Dict[str, Any]) -> None:
     """
     Create a new strategy from a template
-    Asking the user questions to fill out the templateaccordingly.
+    Asking the user questions to fill out the template accordingly.
     """
 
     config_path = Path(args['config'][0])
+    chown_user_directory(config_path.parent)
     if config_path.exists():
         overwrite = ask_user_overwrite(config_path)
         if overwrite:

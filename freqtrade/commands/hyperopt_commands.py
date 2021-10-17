@@ -1,13 +1,14 @@
 import logging
 from operator import itemgetter
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from colorama import init as colorama_init
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.state import RunMode
+from freqtrade.optimize.optimize_reports import show_backtest_result
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
-    from freqtrade.optimize.hyperopt import Hyperopt
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -27,49 +28,32 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     no_details = config.get('hyperopt_list_no_details', False)
     no_header = False
 
-    filteroptions = {
-        'only_best': config.get('hyperopt_list_best', False),
-        'only_profitable': config.get('hyperopt_list_profitable', False),
-        'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
-        'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
-        'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
-        'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
-        'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
-        'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
-        'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
-        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
-        'filter_min_objective': config.get('hyperopt_list_min_objective', None),
-        'filter_max_objective': config.get('hyperopt_list_max_objective', None),
-    }
-
     results_file = get_latest_hyperopt_file(
         config['user_data_dir'] / 'hyperopt_results',
         config.get('hyperoptexportfilename'))
 
     # Previous evaluations
-    epochs = Hyperopt.load_previous_results(results_file)
-    total_epochs = len(epochs)
-
-    epochs = hyperopt_filter_epochs(epochs, filteroptions)
+    epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
 
     if print_colorized:
         colorama_init(autoreset=True)
 
     if not export_csv:
         try:
-            print(Hyperopt.get_result_table(config, epochs, total_epochs,
-                                            not filteroptions['only_best'], print_colorized, 0))
+            print(HyperoptTools.get_result_table(config, epochs, total_epochs,
+                                                 not config.get('hyperopt_list_best', False),
+                                                 print_colorized, 0))
         except KeyboardInterrupt:
             print('User interrupted..')
 
     if epochs and not no_details:
         sorted_epochs = sorted(epochs, key=itemgetter('loss'))
         results = sorted_epochs[0]
-        Hyperopt.print_epoch_details(results, total_epochs, print_json, no_header)
+        HyperoptTools.show_epoch_details(results, total_epochs, print_json, no_header)
 
     if epochs and export_csv:
-        Hyperopt.export_csv_file(
-            config, epochs, total_epochs, not filteroptions['only_best'], export_csv
+        HyperoptTools.export_csv_file(
+            config, epochs, export_csv
         )
 
 
@@ -77,7 +61,7 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     """
     Show details of a hyperopt epoch previously evaluated
     """
-    from freqtrade.optimize.hyperopt import Hyperopt
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -89,26 +73,9 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     n = config.get('hyperopt_show_index', -1)
 
-    filteroptions = {
-        'only_best': config.get('hyperopt_list_best', False),
-        'only_profitable': config.get('hyperopt_list_profitable', False),
-        'filter_min_trades': config.get('hyperopt_list_min_trades', 0),
-        'filter_max_trades': config.get('hyperopt_list_max_trades', 0),
-        'filter_min_avg_time': config.get('hyperopt_list_min_avg_time', None),
-        'filter_max_avg_time': config.get('hyperopt_list_max_avg_time', None),
-        'filter_min_avg_profit': config.get('hyperopt_list_min_avg_profit', None),
-        'filter_max_avg_profit': config.get('hyperopt_list_max_avg_profit', None),
-        'filter_min_total_profit': config.get('hyperopt_list_min_total_profit', None),
-        'filter_max_total_profit': config.get('hyperopt_list_max_total_profit', None),
-        'filter_min_objective': config.get('hyperopt_list_min_objective', None),
-        'filter_max_objective': config.get('hyperopt_list_max_objective', None)
-    }
-
     # Previous evaluations
-    epochs = Hyperopt.load_previous_results(results_file)
-    total_epochs = len(epochs)
+    epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
 
-    epochs = hyperopt_filter_epochs(epochs, filteroptions)
     filtered_epochs = len(epochs)
 
     if n > filtered_epochs:
@@ -124,105 +91,14 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
 
     if epochs:
         val = epochs[n]
-        Hyperopt.print_epoch_details(val, total_epochs, print_json, no_header,
-                                     header_str="Epoch details")
 
+        metrics = val['results_metrics']
+        if 'strategy_name' in metrics:
+            strategy_name = metrics['strategy_name']
+            show_backtest_result(strategy_name, metrics,
+                                 metrics['stake_currency'])
 
-def hyperopt_filter_epochs(epochs: List, filteroptions: dict) -> List:
-    """
-    Filter our items from the list of hyperopt results
-    """
-    if filteroptions['only_best']:
-        epochs = [x for x in epochs if x['is_best']]
-    if filteroptions['only_profitable']:
-        epochs = [x for x in epochs if x['results_metrics']['profit'] > 0]
+            HyperoptTools.try_export_params(config, strategy_name, val)
 
-    epochs = _hyperopt_filter_epochs_trade_count(epochs, filteroptions)
-
-    epochs = _hyperopt_filter_epochs_duration(epochs, filteroptions)
-
-    epochs = _hyperopt_filter_epochs_profit(epochs, filteroptions)
-
-    epochs = _hyperopt_filter_epochs_objective(epochs, filteroptions)
-
-    logger.info(f"{len(epochs)} " +
-                ("best " if filteroptions['only_best'] else "") +
-                ("profitable " if filteroptions['only_profitable'] else "") +
-                "epochs found.")
-    return epochs
-
-
-def _hyperopt_filter_epochs_trade_count(epochs: List, filteroptions: dict) -> List:
-
-    if filteroptions['filter_min_trades'] > 0:
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['trade_count'] > filteroptions['filter_min_trades']
-        ]
-    if filteroptions['filter_max_trades'] > 0:
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['trade_count'] < filteroptions['filter_max_trades']
-        ]
-    return epochs
-
-
-def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
-
-    if filteroptions['filter_min_avg_time'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['duration'] > filteroptions['filter_min_avg_time']
-        ]
-    if filteroptions['filter_max_avg_time'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['duration'] < filteroptions['filter_max_avg_time']
-        ]
-
-    return epochs
-
-
-def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
-
-    if filteroptions['filter_min_avg_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['avg_profit'] > filteroptions['filter_min_avg_profit']
-        ]
-    if filteroptions['filter_max_avg_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['avg_profit'] < filteroptions['filter_max_avg_profit']
-        ]
-    if filteroptions['filter_min_total_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['profit'] > filteroptions['filter_min_total_profit']
-        ]
-    if filteroptions['filter_max_total_profit'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-        epochs = [
-            x for x in epochs
-            if x['results_metrics']['profit'] < filteroptions['filter_max_total_profit']
-        ]
-    return epochs
-
-
-def _hyperopt_filter_epochs_objective(epochs: List, filteroptions: dict) -> List:
-
-    if filteroptions['filter_min_objective'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-
-        epochs = [x for x in epochs if x['loss'] < filteroptions['filter_min_objective']]
-    if filteroptions['filter_max_objective'] is not None:
-        epochs = [x for x in epochs if x['results_metrics']['trade_count'] > 0]
-
-        epochs = [x for x in epochs if x['loss'] > filteroptions['filter_max_objective']]
-
-    return epochs
+        HyperoptTools.show_epoch_details(val, total_epochs, print_json, no_header,
+                                         header_str="Epoch details")

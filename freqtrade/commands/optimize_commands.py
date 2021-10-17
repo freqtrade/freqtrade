@@ -3,9 +3,9 @@ from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,7 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
+    :param method: Bot running mode
     :return: Configuration
     """
     config = setup_utils_configuration(args, method)

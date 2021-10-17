@@ -1,3 +1,4 @@
+from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -92,7 +93,7 @@ def test_load_backtest_data_new_format(testdatadir):
 def test_load_backtest_data_multi(testdatadir):
 
     filename = testdatadir / "backtest-result_multistrat.json"
-    for strategy in ('DefaultStrategy', 'TestStrategy'):
+    for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
         assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
@@ -127,7 +128,7 @@ def test_load_trades_from_db(default_conf, fee, mocker):
     for col in BT_DATA_COLUMNS:
         if col not in ['index', 'open_at_end']:
             assert col in trades.columns
-    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='DefaultStrategy')
+    trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='StrategyTestV2')
     assert len(trades) == 4
     trades = load_trades_from_db(db_url=default_conf['db_url'], strategy='NoneStrategy')
     assert len(trades) == 0
@@ -185,7 +186,7 @@ def test_load_trades(default_conf, mocker):
                 db_url=default_conf.get('db_url'),
                 exportfilename=default_conf.get('exportfilename'),
                 no_trades=False,
-                strategy="DefaultStrategy",
+                strategy="StrategyTestV2",
                 )
 
     assert db_mock.call_count == 1
@@ -246,7 +247,7 @@ def test_create_cum_profit(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
 
 def test_create_cum_profit1(testdatadir):
@@ -264,7 +265,7 @@ def test_create_cum_profit1(testdatadir):
                                     "cum_profits", timeframe="5m")
     assert "cum_profits" in cum_profits.columns
     assert cum_profits.iloc[0]['cum_profits'] == 0
-    assert cum_profits.iloc[-1]['cum_profits'] == 0.0798005
+    assert isclose(cum_profits.iloc[-1]['cum_profits'], 8.723007518796964e-06)
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         create_cum_profit(df.set_index('date'), bt_data[bt_data["pair"] == 'NOTAPAIR'],

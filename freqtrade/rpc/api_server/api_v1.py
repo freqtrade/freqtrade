@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
@@ -17,11 +18,13 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
-                                                  StrategyResponse, TradeResponse, Version,
+                                                  StrategyResponse, SysInfo, Version,
                                                   WhitelistResponse)
 from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
+
+logger = logging.getLogger(__name__)
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -83,9 +86,19 @@ def status(rpc: RPC = Depends(get_rpc)):
         return []
 
 
-@router.get('/trades', response_model=TradeResponse, tags=['info', 'trading'])
-def trades(limit: int = 0, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_trade_history(limit)
+# Using the responsemodel here will cause a ~100% increase in response time (from 1s to 2s)
+# on big databases. Correct response model: response_model=TradeResponse,
+@router.get('/trades', tags=['info', 'trading'])
+def trades(limit: int = 500, offset: int = 0, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_trade_history(limit, offset=offset, order_by_id=True)
+
+
+@router.get('/trade/{tradeid}', response_model=OpenTradeSchema, tags=['info', 'trading'])
+def trade(tradeid: int = 0, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_trade_status([tradeid])[0]
+    except (RPCException, KeyError):
+        raise HTTPException(status_code=404, detail='Trade not found.')
 
 
 @router.delete('/trades/{tradeid}', response_model=DeleteTrade, tags=['info', 'trading'])
@@ -153,8 +166,8 @@ def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
 
 
 @router.get('/logs', response_model=Logs, tags=['info'])
-def logs(limit: Optional[int] = None, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_get_logs(limit)
+def logs(limit: Optional[int] = None):
+    return RPC._rpc_get_logs(limit)
 
 
 @router.post('/start', response_model=StatusMsg, tags=['botcontrol'])
@@ -187,8 +200,8 @@ def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
                  config=Depends(get_config)):
     config = deepcopy(config)
     config.update({
-            'strategy': strategy,
-        })
+        'strategy': strategy,
+    })
     return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
 
 
@@ -211,11 +224,11 @@ def list_strategies(config=Depends(get_config)):
 @router.get('/strategy/{strategy}', response_model=StrategyResponse, tags=['strategy'])
 def get_strategy(strategy: str, config=Depends(get_config)):
 
-    config = deepcopy(config)
+    config_ = deepcopy(config)
     from freqtrade.resolvers.strategy_resolver import StrategyResolver
     try:
-        strategy_obj = StrategyResolver._load_strategy(strategy, config,
-                                                       extra_dir=config.get('strategy_path'))
+        strategy_obj = StrategyResolver._load_strategy(strategy, config_,
+                                                       extra_dir=config_.get('strategy_path'))
     except OperationalException:
         raise HTTPException(status_code=404, detail='Strategy not found')
 
@@ -240,10 +253,15 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
     pairs = list({x[0] for x in pair_interval})
-
+    pairs.sort()
     result = {
         'length': len(pairs),
         'pairs': pairs,
         'pair_interval': pair_interval,
     }
     return result
+
+
+@router.get('/sysinfo', response_model=SysInfo, tags=['info'])
+def sysinfo():
+    return RPC._rpc_sysinfo()

@@ -30,7 +30,8 @@ class PairLocks():
             PairLocks.locks = []
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None, *, now: datetime = None) -> None:
+    def lock_pair(pair: str, until: datetime, reason: str = None, *,
+                  now: datetime = None) -> PairLock:
         """
         Create PairLock from now to "until".
         Uses database by default, unless PairLocks.use_db is set to False,
@@ -48,10 +49,11 @@ class PairLocks():
             active=True
         )
         if PairLocks.use_db:
-            PairLock.session.add(lock)
-            PairLock.session.flush()
+            PairLock.query.session.add(lock)
+            PairLock.query.session.commit()
         else:
             PairLocks.locks.append(lock)
+        return lock
 
     @staticmethod
     def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List[PairLock]:
@@ -99,7 +101,7 @@ class PairLocks():
         for lock in locks:
             lock.active = False
         if PairLocks.use_db:
-            PairLock.session.flush()
+            PairLock.query.session.commit()
 
     @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:

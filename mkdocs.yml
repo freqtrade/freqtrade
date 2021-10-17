@@ -1,5 +1,7 @@
 site_name: Freqtrade
+site_url: https://www.freqtrade.io/
 repo_url: https://github.com/freqtrade/freqtrade
+use_directory_urls: True
 nav:
     - Home: index.md
     - Quickstart with Docker: docker_quickstart.md
@@ -21,10 +23,10 @@ nav:
     - Hyperopt: hyperopt.md
     - Utility Sub-commands: utils.md
     - Plotting: plotting.md
+    - Exchange-specific Notes: exchanges.md
     - Data Analysis:
         - Jupyter Notebooks: data-analysis.md
         - Strategy analysis: strategy_analysis_example.md
-    - Exchange-specific Notes: exchanges.md
     - Advanced Topics:
         - Advanced Post-installation Tasks: advanced-setup.md
         - Edge Positioning: edge.md
@@ -40,10 +42,20 @@ theme:
   name: material
   logo: 'images/logo.png'
   favicon: 'images/logo.png'
-  custom_dir: 'docs'
+  custom_dir: 'docs/overrides'
   palette:
-    primary: 'blue grey'
-    accent: 'tear'
+    - scheme: default
+      primary: 'blue grey'
+      accent: 'tear'
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: 'blue grey'
+      accent: 'tear'
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
 extra_css:
   - 'stylesheets/ft.extra.css'
 extra_javascript:

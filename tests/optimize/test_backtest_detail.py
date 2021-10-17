@@ -4,8 +4,8 @@ import logging
 import pytest
 
 from freqtrade.data.history import get_timerange
+from freqtrade.enums import SellType
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.strategy.interface import SellType
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
                             _get_frame_time_from_offset, tests_timeframe)
@@ -185,7 +185,7 @@ tc11 = BTContainer(data=[
     [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
     [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
     [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
-    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [3, 5000, 5150, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
@@ -268,7 +268,7 @@ tc16 = BTContainer(data=[
 # Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
 # Causes negative profit even though sell-reason is ROI.
 # stop-loss: 10%, ROI: 10% (should not apply), -100% after 100 minutes (limits trade duration)
-# Uses open as sell-rate (special case) - since the roi-time is a multiple of the ticker interval.
+# Uses open as sell-rate (special case) - since the roi-time is a multiple of the timeframe.
 tc17 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
@@ -440,6 +440,102 @@ tc27 = BTContainer(data=[
     trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=4)]
 )
 
+# Test 28: trailing_stop should raise so candle 3 causes a stoploss
+# Same case than tc11 - but candle 3 "gaps down" - the stoploss will be above the candle,
+# therefore "open" will be used
+# stop-loss: 10%, ROI: 10% (should not apply), stoploss adjusted candle 2
+tc28 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 4950, 5100, 6172, 0, 0],
+    [2, 5100, 5251, 5100, 5100, 6172, 0, 0],
+    [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.03, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+)
+
+# Test 29: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
+# high of stoploss candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc29 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5050, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle)
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],    # Triggers trailing-stoploss
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.02, trailing_stop=True,
+    trailing_stop_positive=0.03,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+)
+
+# Test 30: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc30 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_stop_positive=0.01,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+# Test 31: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 10%, ROI: 10% (should not apply)
+tc31 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+# Test 32: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 1%, ROI: 10% (should not apply)
+tc32 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01, use_custom_stoploss=True,
+    trades=[BTrade(sell_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+)
+
+# Test 33: trailing_stop should be triggered immediately on trade open candle.
+# stop-loss: 1%, ROI: 10% (should not apply)
+tc33 = BTContainer(data=[
+    # D   O     H     L     C    V    B  S   BT
+    [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 'buy_signal_01'],
+    [1, 5000, 5500, 5000, 4900, 6172, 0, 0, None],    # enter trade (signal on last candle) and stop
+    [2, 4900, 5250, 4500, 5100, 6172, 0, 0, None],
+    [3, 5100, 5100, 4650, 4750, 6172, 0, 0, None],
+    [4, 4750, 4950, 4350, 4750, 6172, 0, 0, None]],
+    stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
+    trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01, use_custom_stoploss=True,
+    trades=[BTrade(
+        sell_reason=SellType.TRAILING_STOP_LOSS,
+        open_tick=1,
+        close_tick=1,
+        buy_tag='buy_signal_01'
+    )]
+)
+
 TESTS = [
     tc0,
     tc1,
@@ -469,6 +565,12 @@ TESTS = [
     tc25,
     tc26,
     tc27,
+    tc28,
+    tc29,
+    tc30,
+    tc31,
+    tc32,
+    tc33,
 ]
 
 
@@ -486,33 +588,38 @@ def test_backtest_results(default_conf, fee, mocker, caplog, data) -> None:
     if data.trailing_stop_positive is not None:
         default_conf["trailing_stop_positive"] = data.trailing_stop_positive
     default_conf["trailing_stop_positive_offset"] = data.trailing_stop_positive_offset
-    default_conf["ask_strategy"] = {"use_sell_signal": data.use_sell_signal}
+    default_conf["use_sell_signal"] = data.use_sell_signal
 
     mocker.patch("freqtrade.exchange.Exchange.get_fee", return_value=0.0)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     frame = _build_backtest_dataframe(data.data)
     backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.required_startup = 0
     backtesting.strategy.advise_buy = lambda a, m: frame
     backtesting.strategy.advise_sell = lambda a, m: frame
+    backtesting.strategy.use_custom_stoploss = data.use_custom_stoploss
     caplog.set_level(logging.DEBUG)
 
     pair = "UNITTEST/BTC"
     # Dummy data as we mock the analyze functions
     data_processed = {pair: frame.copy()}
     min_date, max_date = get_timerange({pair: frame})
-    results = backtesting.backtest(
+    result = backtesting.backtest(
         processed=data_processed,
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
     )
 
+    results = result['results']
     assert len(results) == len(data.trades)
     assert round(results["profit_ratio"].sum(), 3) == round(data.profit_perc, 3)
 
     for c, trade in enumerate(data.trades):
         res = results.iloc[c]
         assert res.sell_reason == trade.sell_reason.value
+        assert res.buy_tag == trade.buy_tag
         assert res.open_date == _get_frame_time_from_offset(trade.open_tick)
         assert res.close_date == _get_frame_time_from_offset(trade.close_tick)

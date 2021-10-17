@@ -1,42 +1,45 @@
-numpy==1.20.1
-pandas==1.2.3
+numpy==1.21.2
+pandas==1.3.3
+pandas-ta==0.3.14b
 
-ccxt==1.43.27
+ccxt==1.57.94
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==3.4.6
+cryptography==35.0.0
 aiohttp==3.7.4.post0
-SQLAlchemy==1.3.23
-python-telegram-bot==13.4.1
-arrow==1.0.3
-cachetools==4.2.1
-requests==2.25.1
-urllib3==1.26.3
-wrapt==1.12.1
-jsonschema==3.2.0
-TA-Lib==0.4.19
+SQLAlchemy==1.4.25
+python-telegram-bot==13.7
+arrow==1.2.0
+cachetools==4.2.2
+requests==2.26.0
+urllib3==1.26.7
+wrapt==1.13.1
+jsonschema==4.1.0
+TA-Lib==0.4.21
+technical==1.3.0
 tabulate==0.8.9
-pycoingecko==1.4.0
-jinja2==2.11.3
+pycoingecko==2.2.0
+jinja2==3.0.2
 tables==3.6.1
-blosc==1.10.2
+blosc==1.10.6
 
 # find first, C search in arrays
 py_find_1st==1.1.5
 
 # Load ticker files 30% faster
-python-rapidjson==1.0
+python-rapidjson==1.4
 
 # Notify systemd
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.63.0
-uvicorn==0.13.4
-pyjwt==2.0.1
-aiofiles==0.6.0
+fastapi==0.70.0
+uvicorn==0.15.0
+pyjwt==2.2.0
+aiofiles==0.7.0
+psutil==5.8.0
 
 # Support for colorized terminal output
 colorama==0.4.4
 # Building config files interactively
-questionary==1.9.0
-prompt-toolkit==3.0.17
+questionary==1.10.0
+prompt-toolkit==3.0.20

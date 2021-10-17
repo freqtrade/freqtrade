@@ -1,5 +1,19 @@
 # Freqtrade FAQ
 
+## Supported Markets
+
+Freqtrade supports spot trading only.
+
+### Can I open short positions?
+
+No, Freqtrade does not support trading with margin / leverage, and cannot open short positions.
+
+In some cases, your exchange may provide leveraged spot tokens which can be traded with Freqtrade eg. BTCUP/USD, BTCDOWN/USD, ETHBULL/USD, ETHBEAR/USD, etc...
+
+### Can I trade options or futures?
+
+No, options and futures trading are not supported.
+
 ## Beginner Tips & Tricks
 
 * When you work with your strategy & hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).
@@ -40,9 +54,11 @@ you can't say much from few trades.
 
 Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
-### I want to improve the bot with a new strategy
+### I want to use incomplete candles
 
-That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial [here|Testing-new-strategies-with-Hyperopt](bot-usage.md#hyperopt-commands).
+Freqtrade will not provide incomplete candles to strategies. Using incomplete candles will lead to repainting and consequently to strategies with "ghost" buys, which are impossible to both backtest, and verify after they happened.
+
+You can use "current" market data by using the [dataprovider](strategy-customization.md#orderbookpair-maximum)'s orderbook or ticker methods - which however cannot be used during backtesting.
 
 ### Is there a setting to only SELL the coins being held and not perform anymore BUYS?
 
@@ -68,11 +84,11 @@ Currently known to happen for US Bittrex users.
 
 Read [the Bittrex section about restricted markets](exchanges.md#restricted-markets) for more information.
 
-### I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+### I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy
 
-As the message says, Bittrex does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).
+As the message says, your exchange does not support market orders and you have one of the [order types](configuration.md/#understand-order_types) set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex and Gate.io).
 
-To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":
+To fix this, redefine order types in the strategy to use "limit" instead of "market":
 
 ```
     order_types = {
@@ -124,6 +140,22 @@ On Windows, the `--logfile` option is also supported by Freqtrade and you can us
 
 ## Hyperopt module
 
+### Why does freqtrade not have GPU support?
+
+First of all, most indicator libraries don't have GPU support - as such, there would be little benefit for indicator calculations.
+The GPU improvements would only apply to pandas-native calculations - or ones written by yourself.
+
+For hyperopt, freqtrade is using scikit-optimize, which is built on top of scikit-learn.
+Their statement about GPU support is [pretty clear](https://scikit-learn.org/stable/faq.html#will-you-add-gpu-support).
+
+GPU's also are only good at crunching numbers (floating point operations). 
+For hyperopt, we need both number-crunching (find next parameters) and running python code (running backtesting). 
+As such, GPU's are not too well suited for most parts of hyperopt.
+
+The benefit of using GPU would therefore be pretty slim - and will not justify the complexity introduced by trying to add GPU support.
+
+There is however nothing preventing you from using GPU-enabled indicators within your strategy if you think you must have this - you will however probably be disappointed by the slim gain that will give you (compared to the complexity).
+
 ### How many epochs do I need to get a good Hyperopt result?
 
 Per default Hyperopt called without the `-e`/`--epochs` command line option will only
@@ -137,12 +169,12 @@ Since hyperopt uses Bayesian search, running for too many epochs may not produce
 It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.
 
 ```bash
-freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
+freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000
 ```
 
 ### Why does it take a long time to run hyperopt?
 
-* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [Slack community](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) - or the Freqtrade [discord community](https://discord.gg/X89cVG). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
+* Discovering a great strategy with Hyperopt takes time. Study www.freqtrade.io, the Freqtrade Documentation page, join the Freqtrade [discord community](https://discord.gg/p7nuUNVfP7). While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.
 
 * If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:
 

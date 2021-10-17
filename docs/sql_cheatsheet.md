@@ -19,7 +19,7 @@ The freqtrade docker image does contain sqlite3, so you can edit the database wi
 
 ``` bash
 docker-compose exec freqtrade /bin/bash
-sqlite3 <databasefile>.sqlite
+sqlite3 <database-file>.sqlite
 ```
 
 ## Open the DB
@@ -99,3 +99,32 @@ DELETE FROM trades WHERE id = 31;
 
 !!! Warning
     This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.
+
+## Use a different database system
+
+!!! Warning
+    By using one of the below database systems, you acknowledge that you know how to manage such a system. Freqtrade will not provide any support with setup or maintenance (or backups) of the below database systems.
+
+### PostgreSQL
+
+Freqtrade supports PostgreSQL by using SQLAlchemy, which supports multiple different database systems.
+
+Installation:
+`pip install psycopg2-binary`
+
+Usage:
+`... --db-url postgresql+psycopg2://<username>:<password>@localhost:5432/<database>`
+
+Freqtrade will automatically create the tables necessary upon startup.
+
+If you're running different instances of Freqtrade, you must either setup one database per Instance or use different users / schemas for your connections.
+
+### MariaDB / MySQL
+
+Freqtrade supports MariaDB by using SQLAlchemy, which supports multiple different database systems.
+
+Installation:
+`pip install pymysql`
+
+Usage:
+`... --db-url mysql+pymysql://<username>:<password>@localhost:3306/<database>`

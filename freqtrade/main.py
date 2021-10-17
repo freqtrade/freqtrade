@@ -9,7 +9,7 @@ from typing import Any, List
 
 
 # check min. python version
-if sys.version_info < (3, 7):
+if sys.version_info < (3, 7):  # pragma: no cover
     sys.exit("Freqtrade requires Python version >= 3.7")
 
 from freqtrade.commands import Arguments
@@ -44,9 +44,9 @@ def main(sysargv: List[str] = None) -> None:
                 "as `freqtrade trade [options...]`.\n"
                 "To see the full list of options available, please use "
                 "`freqtrade --help` or `freqtrade <command> --help`."
-                )
+            )
 
-    except SystemExit as e:
+    except SystemExit as e:  # pragma: no cover
         return_code = e
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')
@@ -60,5 +60,5 @@ def main(sysargv: List[str] = None) -> None:
         sys.exit(return_code)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     main()

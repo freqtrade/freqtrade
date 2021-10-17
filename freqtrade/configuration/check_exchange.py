@@ -1,26 +1,13 @@
 import logging
 from typing import Any, Dict
 
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import (available_exchanges, get_exchange_bad_reason, is_exchange_bad,
-                                is_exchange_known_ccxt, is_exchange_officially_supported)
-from freqtrade.state import RunMode
+from freqtrade.exchange import (available_exchanges, is_exchange_known_ccxt,
+                                is_exchange_officially_supported, validate_exchange)
 
 
 logger = logging.getLogger(__name__)
-
-
-def remove_credentials(config: Dict[str, Any]) -> None:
-    """
-    Removes exchange keys from the configuration and specifies dry-run
-    Used for backtesting / hyperopt / edge and utils.
-    Modifies the input dict!
-    """
-    config['exchange']['key'] = ''
-    config['exchange']['secret'] = ''
-    config['exchange']['password'] = ''
-    config['exchange']['uid'] = ''
-    config['dry_run'] = True
 
 
 def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
@@ -51,15 +38,19 @@ def check_exchange(config: Dict[str, Any], check_for_bad: bool = True) -> bool:
 
     if not is_exchange_known_ccxt(exchange):
         raise OperationalException(
-                f'Exchange "{exchange}" is not known to the ccxt library '
-                f'and therefore not available for the bot.\n'
-                f'The following exchanges are available for Freqtrade: '
-                f'{", ".join(available_exchanges())}'
+            f'Exchange "{exchange}" is not known to the ccxt library '
+            f'and therefore not available for the bot.\n'
+            f'The following exchanges are available for Freqtrade: '
+            f'{", ".join(available_exchanges())}'
         )
 
-    if check_for_bad and is_exchange_bad(exchange):
-        raise OperationalException(f'Exchange "{exchange}" is known to not work with the bot yet. '
-                                   f'Reason: {get_exchange_bad_reason(exchange)}')
+    valid, reason = validate_exchange(exchange)
+    if not valid:
+        if check_for_bad:
+            raise OperationalException(f'Exchange "{exchange}"  will not work with Freqtrade. '
+                                       f'Reason: {reason}')
+        else:
+            logger.warning(f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}')
 
     if is_exchange_officially_supported(exchange):
         logger.info(f'Exchange "{exchange}" is officially supported '

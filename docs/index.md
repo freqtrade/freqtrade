@@ -1,4 +1,5 @@
-# Freqtrade
+![freqtrade](assets/freqtrade_poweredby.svg)
+
 [![Freqtrade CI](https://github.com/freqtrade/freqtrade/workflows/Freqtrade%20CI/badge.svg)](https://github.com/freqtrade/freqtrade/actions/)
 [![Coverage Status](https://coveralls.io/repos/github/freqtrade/freqtrade/badge.svg?branch=develop&service=github)](https://coveralls.io/github/freqtrade/freqtrade?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5737e6d668200b7518ff/maintainability)](https://codeclimate.com/github/freqtrade/freqtrade/maintainability)
@@ -35,17 +36,19 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#blacklists))
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
 - [X] [Kraken](https://kraken.com/)
-- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
 
 Exchanges confirmed working by the community:
 
 - [X] [Bitvavo](https://bitvavo.com/)
+- [X] [Kucoin](https://www.kucoin.com/)
 
 ## Requirements
 
@@ -71,13 +74,9 @@ Alternatively
 
 ## Support
 
-### Help / Discord / Slack
+### Help / Discord
 
-For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join our slack channel.
-
-Please check out our [discord server](https://discord.gg/MA9v74M).
-
-You can also join our [Slack channel](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw).
+For any questions not covered by the documentation or for further information about the bot, or to simply engage with like-minded individuals, we encourage you to join the Freqtrade [discord server](https://discord.gg/p7nuUNVfP7).
 
 ## Ready to try?
 

@@ -50,6 +50,10 @@ def test_start_new_config(mocker, caplog, exchange):
         'telegram': False,
         'telegram_token': 'asdf1244',
         'telegram_chat_id': '1144444',
+        'api_server': False,
+        'api_server_listen_addr': '127.0.0.1',
+        'api_server_username': 'freqtrader',
+        'api_server_password': 'MoneyMachine',
     }
     mocker.patch('freqtrade.commands.build_config_commands.ask_user_config',
                  return_value=sample_selections)

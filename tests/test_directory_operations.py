@@ -1,11 +1,12 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
+import os
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from freqtrade.configuration.directory_operations import (copy_sample_files, create_datadir,
-                                                          create_userdata_dir)
+from freqtrade.configuration.directory_operations import (chown_user_directory, copy_sample_files,
+                                                          create_datadir, create_userdata_dir)
 from freqtrade.exceptions import OperationalException
 from tests.conftest import log_has, log_has_re
 
@@ -29,6 +30,24 @@ def test_create_userdata_dir(mocker, default_conf, caplog) -> None:
     assert log_has(f'Created user-data directory: {Path("/tmp/bar")}', caplog)
     assert isinstance(x, Path)
     assert str(x) == str(Path("/tmp/bar"))
+
+
+def test_create_userdata_dir_and_chown(mocker, tmpdir, caplog) -> None:
+    sp_mock = mocker.patch('subprocess.check_output')
+    path = Path(tmpdir / 'bar')
+    assert not path.is_dir()
+
+    x = create_userdata_dir(str(path), create_dir=True)
+    assert sp_mock.call_count == 0
+    assert log_has(f'Created user-data directory: {path}', caplog)
+    assert isinstance(x, Path)
+    assert path.is_dir()
+    assert (path / 'data').is_dir()
+
+    os.environ['FT_APP_ENV'] = 'docker'
+    chown_user_directory(path / 'data')
+    assert sp_mock.call_count == 1
+    del os.environ['FT_APP_ENV']
 
 
 def test_create_userdata_dir_exists(mocker, default_conf, caplog) -> None:
@@ -55,16 +74,12 @@ def test_copy_sample_files(mocker, default_conf, caplog) -> None:
     copymock = mocker.patch('shutil.copy', MagicMock())
 
     copy_sample_files(Path('/tmp/bar'))
-    assert copymock.call_count == 5
+    assert copymock.call_count == 3
     assert copymock.call_args_list[0][0][1] == str(
         Path('/tmp/bar') / 'strategies/sample_strategy.py')
     assert copymock.call_args_list[1][0][1] == str(
-        Path('/tmp/bar') / 'hyperopts/sample_hyperopt_advanced.py')
-    assert copymock.call_args_list[2][0][1] == str(
         Path('/tmp/bar') / 'hyperopts/sample_hyperopt_loss.py')
-    assert copymock.call_args_list[3][0][1] == str(
-        Path('/tmp/bar') / 'hyperopts/sample_hyperopt.py')
-    assert copymock.call_args_list[4][0][1] == str(
+    assert copymock.call_args_list[2][0][1] == str(
         Path('/tmp/bar') / 'notebooks/strategy_analysis_example.ipynb')
 
 

@@ -20,6 +20,11 @@ Sample configuration (tested using IFTTT).
             "value2": "limit {limit:8f}",
             "value3": "{stake_amount:8f} {stake_currency}"
         },
+         "webhookbuyfill": {
+            "value1": "Buy Order for {pair} filled",
+            "value2": "at {open_rate:8f}",
+            "value3": ""
+        },
         "webhooksell": {
             "value1": "Selling {pair}",
             "value2": "limit {limit:8f}",
@@ -29,6 +34,11 @@ Sample configuration (tested using IFTTT).
             "value1": "Cancelling Open Sell Order for {pair}",
             "value2": "limit {limit:8f}",
             "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
+        },
+        "webhooksellfill": {
+            "value1": "Sell Order for {pair} filled",
+            "value2": "at {close_rate:8f}.",
+            "value3": ""
         },
         "webhookstatus": {
             "value1": "Status: {status}",
@@ -73,6 +83,7 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
+* `buy_tag`
 
 ### Webhookbuycancel
 
@@ -90,6 +101,23 @@ Possible parameters are:
 * `fiat_currency`
 * `order_type`
 * `current_rate`
+* `buy_tag`
+
+### Webhookbuyfill
+
+The fields in `webhook.webhookbuyfill` are filled when the bot filled a buy order. Parameters are filled using string.format.
+Possible parameters are:
+
+* `trade_id`
+* `exchange`
+* `pair`
+* `open_rate`
+* `amount`
+* `open_date`
+* `stake_amount`
+* `stake_currency`
+* `fiat_currency`
+* `buy_tag`
 
 ### Webhooksell
 
@@ -101,6 +129,27 @@ Possible parameters are:
 * `pair`
 * `gain`
 * `limit`
+* `amount`
+* `open_rate`
+* `profit_amount`
+* `profit_ratio`
+* `stake_currency`
+* `fiat_currency`
+* `sell_reason`
+* `order_type`
+* `open_date`
+* `close_date`
+
+### Webhooksellfill
+
+The fields in `webhook.webhooksellfill` are filled when the bot fills a sell order (closes a Trae). Parameters are filled using string.format.
+Possible parameters are:
+
+* `trade_id`
+* `exchange`
+* `pair`
+* `gain`
+* `close_rate`
 * `amount`
 * `open_rate`
 * `current_rate`

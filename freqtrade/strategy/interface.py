@@ -6,60 +6,47 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import arrow
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import SellType, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
 from freqtrade.persistence import PairLocks, Trade
+from freqtrade.strategy.hyper import HyperStrategyMixin
+from freqtrade.strategy.informative_decorator import (InformativeData, PopulateIndicators,
+                                                      _create_and_merge_informative_pair,
+                                                      _format_pair_name)
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SignalType(Enum):
-    """
-    Enum to distinguish between buy and sell signals
-    """
-    BUY = "buy"
-    SELL = "sell"
-
-
-class SellType(Enum):
-    """
-    Enum to distinguish between sell reasons
-    """
-    ROI = "roi"
-    STOP_LOSS = "stop_loss"
-    STOPLOSS_ON_EXCHANGE = "stoploss_on_exchange"
-    TRAILING_STOP_LOSS = "trailing_stop_loss"
-    SELL_SIGNAL = "sell_signal"
-    FORCE_SELL = "force_sell"
-    EMERGENCY_SELL = "emergency_sell"
-    NONE = ""
-
-    def __str__(self):
-        # explicitly convert to String to help with exporting data.
-        return self.value
-
-
-class SellCheckTuple(NamedTuple):
+class SellCheckTuple(object):
     """
     NamedTuple for Sell type + reason
     """
-    sell_flag: bool
     sell_type: SellType
+    sell_reason: str = ''
+
+    def __init__(self, sell_type: SellType, sell_reason: str = ''):
+        self.sell_type = sell_type
+        self.sell_reason = sell_reason or sell_type.value
+
+    @property
+    def sell_flag(self):
+        return self.sell_type != SellType.NONE
 
 
-class IStrategy(ABC):
+class IStrategy(ABC, HyperStrategyMixin):
     """
     Interface for freqtrade strategies
     Defines the mandatory structure must follow any custom strategies
@@ -78,6 +65,7 @@ class IStrategy(ABC):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
+    _ft_params_from_file: Dict = {}
     # associated minimal roi
     minimal_roi: Dict
 
@@ -113,6 +101,11 @@ class IStrategy(ABC):
     # run "populate_indicators" only for new candle
     process_only_new_candles: bool = False
 
+    use_sell_signal: bool
+    sell_profit_only: bool
+    sell_profit_offset: float
+    ignore_roi_if_buy_signal: bool
+
     # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
 
@@ -123,13 +116,15 @@ class IStrategy(ABC):
     startup_candle_count: int = 0
 
     # Protections
-    protections: List
+    protections: List = []
 
     # Class level variables (intentional) containing
     # the dataprovider (dp) (access to other candles, historic data, ...)
     # and wallets - access to the current balance.
-    dp: Optional[DataProvider] = None
+    dp: Optional[DataProvider]
     wallets: Optional[Wallets] = None
+    # Filled from configuration
+    stake_currency: str
     # container variable for strategy source code
     __source__: str = ''
 
@@ -140,6 +135,25 @@ class IStrategy(ABC):
         self.config = config
         # Dict to determine if analysis is necessary
         self._last_candle_seen_per_pair: Dict[str, datetime] = {}
+        super().__init__(config)
+
+        # Gather informative pairs from @informative-decorated methods.
+        self._ft_informative: List[Tuple[InformativeData, PopulateIndicators]] = []
+        for attr_name in dir(self.__class__):
+            cls_method = getattr(self.__class__, attr_name)
+            if not callable(cls_method):
+                continue
+            informative_data_list = getattr(cls_method, '_ft_informative', None)
+            if not isinstance(informative_data_list, list):
+                # Type check is required because mocker would return a mock object that evaluates to
+                # True, confusing this code.
+                continue
+            strategy_timeframe_minutes = timeframe_to_minutes(self.timeframe)
+            for informative_data in informative_data_list:
+                if timeframe_to_minutes(informative_data.timeframe) < strategy_timeframe_minutes:
+                    raise OperationalException('Informative timeframe must be equal or higher than '
+                                               'strategy timeframe!')
+                self._ft_informative.append((informative_data, cls_method))
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -149,6 +163,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
+        return dataframe
 
     @abstractmethod
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -158,6 +173,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with buy column
         """
+        return dataframe
 
     @abstractmethod
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -167,6 +183,7 @@ class IStrategy(ABC):
         :param metadata: Additional information, like the currently traded pair
         :return: DataFrame with sell column
         """
+        return dataframe
 
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
         """
@@ -214,7 +231,7 @@ class IStrategy(ABC):
         pass
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -229,6 +246,7 @@ class IStrategy(ABC):
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -236,7 +254,8 @@ class IStrategy(ABC):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -255,6 +274,7 @@ class IStrategy(ABC):
         :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
@@ -279,14 +299,92 @@ class IStrategy(ABC):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: New stoploss value, relative to the currentrate
+        :return float: New stoploss value, relative to the current_rate
         """
         return self.stoploss
+
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
+                           **kwargs) -> float:
+        """
+        Custom entry price logic, returning the new entry price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set entry price
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New entry price value if provided
+        """
+        return proposed_rate
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+        """
+        Custom exit price logic, returning the new exit price.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None, orderbook is used to set exit price
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: New exit price value if provided
+        """
+        return proposed_rate
+
+    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
+        """
+        Custom sell signal logic indicating that specified position should be sold. Returning a
+        string or True from this method is equal to setting sell signal on a candle at specified
+        time. This method is not called when sell signal is set.
+
+        This method should be overridden to create sell signals that depend on trade parameters. For
+        example you could implement a sell relative to the candle when the trade was opened,
+        or a custom 1:2 risk-reward ROI.
+
+        Custom sell reason max length is 64. Exceeding characters will be removed.
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return: To execute sell, return a string with custom sell reason or True. Otherwise return
+        None or False.
+        """
+        return None
+
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+        """
+        Customize stake size for each new trade. This method is not called when edge module is
+        enabled.
+
+        :param pair: Pair that's currently analyzed
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param proposed_stake: A stake amount proposed by the bot.
+        :param min_stake: Minimal stake size allowed by exchange.
+        :param max_stake: Balance available for trading.
+        :return: A stake size, which is between min_stake and max_stake.
+        """
+        return proposed_stake
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
-        These pair/interval combinations are non-tradeable, unless they are part
+        These pair/interval combinations are non-tradable, unless they are part
         of the whitelist as well.
         For more information, please consult the documentation
         :return: List of tuples in the format (pair, interval)
@@ -299,6 +397,23 @@ class IStrategy(ABC):
 ###
 # END - Intended to be overridden by strategy
 ###
+
+    def gather_informative_pairs(self) -> ListPairsWithTimeframes:
+        """
+        Internal method which gathers all informative pairs (user or automatically defined).
+        """
+        informative_pairs = self.informative_pairs()
+        for inf_data, _ in self._ft_informative:
+            if inf_data.asset:
+                pair_tf = (_format_pair_name(self.config, inf_data.asset), inf_data.timeframe)
+                informative_pairs.append(pair_tf)
+            else:
+                if not self.dp:
+                    raise OperationalException('@informative decorator with unspecified asset '
+                                               'requires DataProvider instance.')
+                for pair in self.dp.current_whitelist():
+                    informative_pairs.append((pair, inf_data.timeframe))
+        return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
         """
@@ -334,7 +449,7 @@ class IStrategy(ABC):
         The 2nd, optional parameter ensures that locks are applied until the new candle arrives,
         and not stop at 14:00:00 - while the next candle arrives at 14:00:02 leaving a gap
         of 2 seconds for a buy to happen on an old signal.
-        :param: pair: "Pair to check"
+        :param pair: "Pair to check"
         :param candle_date: Date of the last candle. Optional, defaults to current date
         :returns: locking state of the pair in question.
         """
@@ -384,6 +499,7 @@ class IStrategy(ABC):
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe['buy'] = 0
             dataframe['sell'] = 0
+            dataframe['buy_tag'] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -438,20 +554,30 @@ class IStrategy(ABC):
         """
         Ensure dataframe (length, last candle) was not modified, and has all elements we need.
         """
+        message_template = "Dataframe returned from strategy has mismatching {}."
         message = ""
-        if df_len != len(dataframe):
-            message = "length"
+        if dataframe is None:
+            message = "No dataframe returned (return statement missing?)."
+        elif 'buy' not in dataframe:
+            message = "Buy column not set."
+        elif df_len != len(dataframe):
+            message = message_template.format("length")
         elif df_close != dataframe["close"].iloc[-1]:
-            message = "last close price"
+            message = message_template.format("last close price")
         elif df_date != dataframe["date"].iloc[-1]:
-            message = "last date"
+            message = message_template.format("last date")
         if message:
             if self.disable_dataframe_checks:
-                logger.warning(f"Dataframe returned from strategy has mismatching {message}.")
+                logger.warning(message)
             else:
-                raise StrategyError(f"Dataframe returned from strategy has mismatching {message}.")
+                raise StrategyError(message)
 
-    def get_signal(self, pair: str, timeframe: str, dataframe: DataFrame) -> Tuple[bool, bool]:
+    def get_signal(
+        self,
+        pair: str,
+        timeframe: str,
+        dataframe: DataFrame
+    ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
@@ -462,7 +588,7 @@ class IStrategy(ABC):
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False
+            return False, False, None
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -477,9 +603,16 @@ class IStrategy(ABC):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False
+            return False, False, None
 
-        (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+        buy = latest[SignalType.BUY.value] == 1
+
+        sell = False
+        if SignalType.SELL.value in latest:
+            sell = latest[SignalType.SELL.value] == 1
+
+        buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
         timeframe_seconds = timeframe_to_seconds(timeframe)
@@ -487,8 +620,8 @@ class IStrategy(ABC):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell
-        return buy, sell
+            return False, sell, buy_tag
+        return buy, sell, buy_tag
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
@@ -509,32 +642,50 @@ class IStrategy(ABC):
         :param force_stoploss: Externally provided stoploss
         :return: True if trade should be sold, False otherwise
         """
-        # Set current rate to low for backtesting sell
-        current_rate = low or rate
+        current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        trade.adjust_min_max_rates(high or current_rate)
+        trade.adjust_min_max_rates(high or current_rate, low or current_rate)
 
         stoplossflag = self.stop_loss_reached(current_rate=current_rate, trade=trade,
                                               current_time=date, current_profit=current_profit,
-                                              force_stoploss=force_stoploss, high=high)
+                                              force_stoploss=force_stoploss, low=low, high=high)
 
         # Set current rate to high for backtesting sell
         current_rate = high or rate
         current_profit = trade.calc_profit_ratio(current_rate)
-        ask_strategy = self.config.get('ask_strategy', {})
 
         # if buy signal and ignore_roi is set, we don't need to evaluate min_roi.
-        roi_reached = (not (buy and ask_strategy.get('ignore_roi_if_buy_signal', False))
+        roi_reached = (not (buy and self.ignore_roi_if_buy_signal)
                        and self.min_roi_reached(trade=trade, current_profit=current_profit,
                                                 current_time=date))
 
-        if (ask_strategy.get('sell_profit_only', False)
-                and current_profit <= ask_strategy.get('sell_profit_offset', 0)):
+        sell_signal = SellType.NONE
+        custom_reason = ''
+        # use provided rate in backtesting, not high/low.
+        current_rate = rate
+        current_profit = trade.calc_profit_ratio(current_rate)
+
+        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
             # sell_profit_only and profit doesn't reach the offset - ignore sell signal
-            sell_signal = False
-        else:
-            sell_signal = sell and not buy and ask_strategy.get('use_sell_signal', True)
+            pass
+        elif self.use_sell_signal and not buy:
+            if sell:
+                sell_signal = SellType.SELL_SIGNAL
+            else:
+                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                    pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
+                    current_profit=current_profit)
+                if custom_reason:
+                    sell_signal = SellType.CUSTOM_SELL
+                    if isinstance(custom_reason, str):
+                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                            logger.warning(f'Custom sell reason returned from custom_sell is too '
+                                           f'long and was trimmed to {CUSTOM_SELL_MAX_LENGTH} '
+                                           f'characters.')
+                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                    else:
+                        custom_reason = None
             # TODO: return here if sell-signal should be favored over ROI
 
         # Start evaluations
@@ -543,39 +694,41 @@ class IStrategy(ABC):
         # Sell-signal
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
-            logger.debug(f"{trade.pair} - Required profit reached. sell_flag=True, "
-                         f"sell_type=SellType.ROI")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.ROI)
+            logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
+            return SellCheckTuple(sell_type=SellType.ROI)
 
-        if sell_signal:
-            logger.debug(f"{trade.pair} - Sell signal received. sell_flag=True, "
-                         f"sell_type=SellType.SELL_SIGNAL")
-            return SellCheckTuple(sell_flag=True, sell_type=SellType.SELL_SIGNAL)
+        if sell_signal != SellType.NONE:
+            logger.debug(f"{trade.pair} - Sell signal received. "
+                         f"sell_type=SellType.{sell_signal.name}" +
+                         (f", custom_reason={custom_reason}" if custom_reason else ""))
+            return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
 
-            logger.debug(f"{trade.pair} - Stoploss hit. sell_flag=True, "
-                         f"sell_type={stoplossflag.sell_type}")
+            logger.debug(f"{trade.pair} - Stoploss hit. sell_type={stoplossflag.sell_type}")
             return stoplossflag
 
         # This one is noisy, commented out...
-        # logger.debug(f"{trade.pair} - No sell signal. sell_flag=False")
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        # logger.debug(f"{trade.pair} - No sell signal.")
+        return SellCheckTuple(sell_type=SellType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
-                          force_stoploss: float, high: float = None) -> SellCheckTuple:
+                          force_stoploss: float, low: float = None,
+                          high: float = None) -> SellCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to sell or not
         :param current_profit: current profit as ratio
+        :param low: Low value of this candle, only set in backtesting
+        :param high: High value of this candle, only set in backtesting
         """
         stop_loss_value = force_stoploss if force_stoploss else self.stoploss
 
         # Initiate stoploss with open_rate. Does nothing if stoploss is already set.
         trade.adjust_stop_loss(trade.open_rate, stop_loss_value, initial=True)
 
-        if self.use_custom_stoploss:
+        if self.use_custom_stoploss and trade.stop_loss < (low or current_rate):
             stop_loss_value = strategy_safe_wrapper(self.custom_stoploss, default_retval=None
                                                     )(pair=trade.pair, trade=trade,
                                                       current_time=current_time,
@@ -588,7 +741,7 @@ class IStrategy(ABC):
             else:
                 logger.warning("CustomStoploss function did not return valid stoploss")
 
-        if self.trailing_stop:
+        if self.trailing_stop and trade.stop_loss < (low or current_rate):
             # trailing stoploss handling
             sl_offset = self.trailing_stop_positive_offset
 
@@ -608,7 +761,7 @@ class IStrategy(ABC):
         # evaluate if the stoploss was hit if stoploss is not on exchange
         # in Dry-Run, this handles stoploss logic as well, as the logic will not be different to
         # regular stoploss handling.
-        if ((trade.stop_loss >= current_rate) and
+        if ((trade.stop_loss >= (low or current_rate)) and
                 (not self.order_types.get('stoploss_on_exchange') or self.config['dry_run'])):
 
             sell_type = SellType.STOP_LOSS
@@ -617,16 +770,16 @@ class IStrategy(ABC):
             if trade.initial_stop_loss != trade.stop_loss:
                 sell_type = SellType.TRAILING_STOP_LOSS
                 logger.debug(
-                    f"{trade.pair} - HIT STOP: current price at {current_rate:.6f}, "
+                    f"{trade.pair} - HIT STOP: current price at {(low or current_rate):.6f}, "
                     f"stoploss is {trade.stop_loss:.6f}, "
                     f"initial stoploss was at {trade.initial_stop_loss:.6f}, "
                     f"trade opened at {trade.open_rate:.6f}")
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{trade.stop_loss - trade.initial_stop_loss:.6f}")
 
-            return SellCheckTuple(sell_flag=True, sell_type=sell_type)
+            return SellCheckTuple(sell_type=sell_type)
 
-        return SellCheckTuple(sell_flag=False, sell_type=SellType.NONE)
+        return SellCheckTuple(sell_type=SellType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
@@ -656,16 +809,17 @@ class IStrategy(ABC):
         else:
             return current_profit > roi
 
-    def ohlcvdata_to_dataframe(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
         Does not run advise_buy or advise_sell!
         Used by optimize operations only, not during dry / live runs.
         Using .copy() to get a fresh copy of the dataframe for every strategy run.
+        Also copy on output to avoid PerformanceWarnings pandas 1.3.0 started to show.
         Has positive effects on memory usage for whatever reason - also when
         using only one strategy.
         """
-        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair})
+        return {pair: self.advise_indicators(pair_data.copy(), {'pair': pair}).copy()
                 for pair, pair_data in data.items()}
 
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -677,6 +831,12 @@ class IStrategy(ABC):
         :return: a Dataframe with all mandatory indicators for the strategies
         """
         logger.debug(f"Populating indicators for pair {metadata.get('pair')}.")
+
+        # call populate_indicators_Nm() which were tagged with @informative decorator.
+        for inf_data, populate_fn in self._ft_informative:
+            dataframe = _create_and_merge_informative_pair(
+                self, dataframe, metadata, inf_data, populate_fn)
+
         if self._populate_fun_len == 2:
             warnings.warn("deprecated - check out the Sample strategy to see "
                           "the current function headers!", DeprecationWarning)
@@ -689,7 +849,8 @@ class IStrategy(ABC):
         Based on TA indicators, populates the buy signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param metadata: Additional information dictionary, with details like the
+            currently traded pair
         :return: DataFrame with buy column
         """
         logger.debug(f"Populating buy signals for pair {metadata.get('pair')}.")
@@ -706,7 +867,8 @@ class IStrategy(ABC):
         Based on TA indicators, populates the sell signal for the given dataframe
         This method should not be overridden.
         :param dataframe: DataFrame
-        :param pair: Additional information, like the currently traded pair
+        :param metadata: Additional information dictionary, with details like the
+            currently traded pair
         :return: DataFrame with sell column
         """
         logger.debug(f"Populating sell signals for pair {metadata.get('pair')}.")

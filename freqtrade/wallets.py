@@ -8,10 +8,10 @@ from typing import Any, Dict, NamedTuple
 import arrow
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.persistence import LocalTrade, Trade
-from freqtrade.state import RunMode
 
 
 logger = logging.getLogger(__name__)
@@ -70,8 +70,7 @@ class Wallets:
         # If not backtesting...
         # TODO: potentially remove the ._log workaround to determine backtest mode.
         if self._log:
-            closed_trades = Trade.get_trades_proxy(is_open=False)
-            tot_profit = sum([trade.close_profit_abs for trade in closed_trades])
+            tot_profit = Trade.get_total_closed_profit()
         else:
             tot_profit = LocalTrade.total_profit
         tot_in_trades = sum([trade.stake_amount for trade in open_trades])
@@ -98,12 +97,13 @@ class Wallets:
         balances = self._exchange.get_balances()
 
         for currency in balances:
-            self._wallets[currency] = Wallet(
-                currency,
-                balances[currency].get('free', None),
-                balances[currency].get('used', None),
-                balances[currency].get('total', None)
-            )
+            if isinstance(balances[currency], dict):
+                self._wallets[currency] = Wallet(
+                    currency,
+                    balances[currency].get('free', None),
+                    balances[currency].get('used', None),
+                    balances[currency].get('total', None)
+                )
         # Remove currencies no longer in get_balances output
         for currency in deepcopy(self._wallets):
             if currency not in balances:
@@ -129,42 +129,71 @@ class Wallets:
     def get_all_balances(self) -> Dict[str, Any]:
         return self._wallets
 
-    def _get_available_stake_amount(self) -> float:
+    def get_starting_balance(self) -> float:
+        """
+        Retrieves starting balance - based on either available capital,
+        or by using current balance subtracting
+        """
+        if "available_capital" in self._config:
+            return self._config['available_capital']
+        else:
+            tot_profit = Trade.get_total_closed_profit()
+            open_stakes = Trade.total_open_trades_stakes()
+            available_balance = self.get_free(self._config['stake_currency'])
+            return available_balance - tot_profit + open_stakes
+
+    def get_total_stake_amount(self):
+        """
+        Return the total currently available balance in stake currency, including tied up stake and
+        respecting tradable_balance_ratio.
+        Calculated as
+        (<open_trade stakes> + free amount) * tradable_balance_ratio
+        """
+        val_tied_up = Trade.total_open_trades_stakes()
+        if "available_capital" in self._config:
+            starting_balance = self._config['available_capital']
+            tot_profit = Trade.get_total_closed_profit()
+            available_amount = starting_balance + tot_profit
+
+        else:
+            # Ensure <tradable_balance_ratio>% is used from the overall balance
+            # Otherwise we'd risk lowering stakes with each open trade.
+            # (tied up + current free) * ratio) - tied up
+            available_amount = ((val_tied_up + self.get_free(self._config['stake_currency'])) *
+                                self._config['tradable_balance_ratio'])
+        return available_amount
+
+    def get_available_stake_amount(self) -> float:
         """
         Return the total currently available balance in stake currency,
         respecting tradable_balance_ratio.
         Calculated as
-        (<open_trade stakes> + free amount ) * tradable_balance_ratio - <open_trade stakes>
+        (<open_trade stakes> + free amount) * tradable_balance_ratio - <open_trade stakes>
         """
-        val_tied_up = Trade.total_open_trades_stakes()
 
-        # Ensure <tradable_balance_ratio>% is used from the overall balance
-        # Otherwise we'd risk lowering stakes with each open trade.
-        # (tied up + current free) * ratio) - tied up
-        available_amount = ((val_tied_up + self.get_free(self._config['stake_currency'])) *
-                            self._config['tradable_balance_ratio']) - val_tied_up
-        return available_amount
+        free = self.get_free(self._config['stake_currency'])
+        return min(self.get_total_stake_amount() - Trade.total_open_trades_stakes(), free)
 
-    def _calculate_unlimited_stake_amount(self, free_open_trades: int) -> float:
+    def _calculate_unlimited_stake_amount(self, available_amount: float,
+                                          val_tied_up: float) -> float:
         """
         Calculate stake amount for "unlimited" stake amount
         :return: 0 if max number of trades reached, else stake_amount to use.
         """
-        if not free_open_trades:
+        if self._config['max_open_trades'] == 0:
             return 0
 
-        available_amount = self._get_available_stake_amount()
+        possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
+        # Theoretical amount can be above available amount - therefore limit to available amount!
+        return min(possible_stake, available_amount)
 
-        return available_amount / free_open_trades
-
-    def _check_available_stake_amount(self, stake_amount: float) -> float:
+    def _check_available_stake_amount(self, stake_amount: float, available_amount: float) -> float:
         """
         Check if stake amount can be fulfilled with the available balance
         for the stake currency
         :return: float: Stake amount
         :raise: DependencyException if balance is lower than stake-amount
         """
-        available_amount = self._get_available_stake_amount()
 
         if self._config['amend_last_stake_amount']:
             # Remaining amount needs to be at least stake_amount * last_stake_amount_min_ratio
@@ -182,7 +211,7 @@ class Wallets:
 
         return stake_amount
 
-    def get_trade_stake_amount(self, pair: str, free_open_trades: int, edge=None) -> float:
+    def get_trade_stake_amount(self, pair: str, edge=None) -> float:
         """
         Calculate stake amount for the trade
         :return: float: Stake amount
@@ -191,17 +220,47 @@ class Wallets:
         stake_amount: float
         # Ensure wallets are uptodate.
         self.update()
+        val_tied_up = Trade.total_open_trades_stakes()
+        available_amount = self.get_available_stake_amount()
 
         if edge:
             stake_amount = edge.stake_amount(
                 pair,
                 self.get_free(self._config['stake_currency']),
                 self.get_total(self._config['stake_currency']),
-                Trade.total_open_trades_stakes()
+                val_tied_up
             )
         else:
             stake_amount = self._config['stake_amount']
             if stake_amount == UNLIMITED_STAKE_AMOUNT:
-                stake_amount = self._calculate_unlimited_stake_amount(free_open_trades)
+                stake_amount = self._calculate_unlimited_stake_amount(
+                    available_amount, val_tied_up)
 
-        return self._check_available_stake_amount(stake_amount)
+        return self._check_available_stake_amount(stake_amount, available_amount)
+
+    def _validate_stake_amount(self, pair, stake_amount, min_stake_amount):
+        if not stake_amount:
+            logger.debug(f"Stake amount is {stake_amount}, ignoring possible trade for {pair}.")
+            return 0
+
+        max_stake_amount = self.get_available_stake_amount()
+
+        if min_stake_amount > max_stake_amount:
+            if self._log:
+                logger.warning("Minimum stake amount > available balance.")
+            return 0
+        if min_stake_amount is not None and stake_amount < min_stake_amount:
+            stake_amount = min_stake_amount
+            if self._log:
+                logger.info(
+                    f"Stake amount for pair {pair} is too small "
+                    f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
+                )
+        if stake_amount > max_stake_amount:
+            stake_amount = max_stake_amount
+            if self._log:
+                logger.info(
+                    f"Stake amount for pair {pair} is too big "
+                    f"({stake_amount} > {max_stake_amount}), adjusting to {max_stake_amount}."
+                )
+        return stake_amount

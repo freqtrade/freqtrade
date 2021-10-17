@@ -3,7 +3,7 @@ import time
 from unittest.mock import MagicMock, PropertyMock
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.state import State
+from freqtrade.enums import State
 from freqtrade.worker import Worker
 from tests.conftest import get_patched_worker, log_has, log_has_re
 

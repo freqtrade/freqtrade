@@ -6,8 +6,9 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator, List
 from typing.io import IO
+from urllib.parse import urlparse
 
 import rapidjson
 
@@ -56,6 +57,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
     """
     Dump JSON data into a file
     :param filename: file to create
+    :param is_zip: if file should be zip
     :param data: JSON Data to save
     :return:
     """
@@ -81,7 +83,7 @@ def json_load(datafile: IO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
-    sete number_mode to "NM_NATIVE" for greatest speed
+    set number_mode to "NM_NATIVE" for greatest speed
     """
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
@@ -202,3 +204,27 @@ def render_template_with_fallback(templatefile: str, templatefallbackfile: str,
         return render_template(templatefile, arguments)
     except TemplateNotFound:
         return render_template(templatefallbackfile, arguments)
+
+
+def chunks(lst: List[Any], n: int) -> Iterator[List[Any]]:
+    """
+    Split lst into chunks of the size n.
+    :param lst: list to split into chunks
+    :param n: number of max elements per chunk
+    :return: None
+    """
+    for chunk in range(0, len(lst), n):
+        yield (lst[chunk:chunk + n])
+
+
+def parse_db_uri_for_logging(uri: str):
+    """
+    Helper method to parse the DB URI and return the same DB URI with the password censored
+    if it contains it. Otherwise, return the DB URI unchanged
+    :param uri: DB URI to parse for logging
+    """
+    parsed_db_uri = urlparse(uri)
+    if not parsed_db_uri.netloc:  # No need for censoring as no password was provided
+        return uri
+    pwd = parsed_db_uri.netloc.split(':')[1].split('@')[0]
+    return parsed_db_uri.geturl().replace(f':{pwd}@', ':*****@')

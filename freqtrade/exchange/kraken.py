@@ -49,10 +49,12 @@ class Kraken(Exchange):
             orders = self._api.fetch_open_orders()
             order_list = [(x["symbol"].split("/")[0 if x["side"] == "sell" else 1],
                            x["remaining"] if x["side"] == "sell" else x["remaining"] * x["price"],
-                           # Don't remove the below comment, this can be important for debuggung
+                           # Don't remove the below comment, this can be important for debugging
                            # x["side"], x["amount"],
                            ) for x in orders]
             for bal in balances:
+                if not isinstance(balances[bal], dict):
+                    continue
                 balances[bal]['used'] = sum(order[1] for order in order_list if order[0] == bal)
                 balances[bal]['free'] = balances[bal]['total'] - balances[bal]['used']
 
@@ -92,7 +94,7 @@ class Kraken(Exchange):
         stop_price = self.price_to_precision(pair, stop_price)
 
         if self._config['dry_run']:
-            dry_order = self.dry_run_order(
+            dry_order = self.create_dry_run_order(
                 pair, ordertype, "sell", amount, stop_price)
             return dry_order
 
@@ -101,6 +103,7 @@ class Kraken(Exchange):
 
             order = self._api.create_order(symbol=pair, type=ordertype, side='sell',
                                            amount=amount, price=stop_price, params=params)
+            self._log_exchange_response('create_stoploss_order', order)
             logger.info('stoploss order added for %s. '
                         'stop price: %s.', pair, stop_price)
             return order

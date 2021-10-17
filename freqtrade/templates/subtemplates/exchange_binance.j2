@@ -2,40 +2,11 @@
     "name": "{{ exchange_name | lower }}",
     "key": "{{ exchange_key }}",
     "secret": "{{ exchange_secret }}",
-    "ccxt_config": {"enableRateLimit": true},
-    "ccxt_async_config": {
-        "enableRateLimit": true,
-        "rateLimit": 200
-    },
+    "ccxt_config": {},
+    "ccxt_async_config": {},
     "pair_whitelist": [
-        "ALGO/BTC",
-        "ATOM/BTC",
-        "BAT/BTC",
-        "BCH/BTC",
-        "BRD/BTC",
-        "EOS/BTC",
-        "ETH/BTC",
-        "IOTA/BTC",
-        "LINK/BTC",
-        "LTC/BTC",
-        "NEO/BTC",
-        "NXS/BTC",
-        "XMR/BTC",
-        "XRP/BTC",
-        "XTZ/BTC"
     ],
     "pair_blacklist": [
-        "BNB/BTC",
-        "BNB/BUSD",
-        "BNB/ETH",
-        "BNB/EUR",
-        "BNB/NGN",
-        "BNB/PAX",
-        "BNB/RUB",
-        "BNB/TRY",
-        "BNB/TUSD",
-        "BNB/USDC",
-        "BNB/USDS",
-        "BNB/USDT",
+        "BNB/.*"
     ]
 }

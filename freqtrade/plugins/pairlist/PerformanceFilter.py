@@ -20,11 +20,14 @@ class PerformanceFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
+        self._minutes = pairlistconfig.get('minutes', 0)
+        self._min_profit = pairlistconfig.get('min_profit', None)
+
     @property
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
         return False
@@ -44,7 +47,12 @@ class PerformanceFilter(IPairList):
         :return: new allowlist
         """
         # Get the trading performance for pairs from database
-        performance = pd.DataFrame(Trade.get_overall_performance())
+        try:
+            performance = pd.DataFrame(Trade.get_overall_performance(self._minutes))
+        except AttributeError:
+            # Performancefilter does not work in backtesting.
+            self.log_once("PerformanceFilter is not available in this mode.", logger.warning)
+            return pairlist
 
         # Skip performance-based sorting if no performance data is available
         if len(performance) == 0:
@@ -61,6 +69,14 @@ class PerformanceFilter(IPairList):
         sorted_df = list_df.merge(performance, on='pair', how='left')\
             .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
             .sort_values(by=['profit'], ascending=False)
+        if self._min_profit is not None:
+            removed = sorted_df[sorted_df['profit'] < self._min_profit]
+            for _, row in removed.iterrows():
+                self.log_once(
+                    f"Removing pair {row['pair']} since {row['profit']} is "
+                    f"below {self._min_profit}", logger.info)
+            sorted_df = sorted_df[sorted_df['profit'] >= self._min_profit]
+
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist

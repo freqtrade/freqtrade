@@ -3,17 +3,24 @@
 -r requirements-plot.txt
 -r requirements-hyperopt.txt
 
-coveralls==3.0.1
-flake8==3.9.0
-flake8-type-annotations==0.1.0
-flake8-tidy-imports==4.2.1
-mypy==0.812
-pytest==6.2.2
-pytest-asyncio==0.14.0
-pytest-cov==2.11.1
-pytest-mock==3.5.1
+coveralls==3.2.0
+flake8==4.0.0
+flake8-tidy-imports==4.5.0
+mypy==0.910
+pytest==6.2.5
+pytest-asyncio==0.15.1
+pytest-cov==3.0.0
+pytest-mock==3.6.1
 pytest-random-order==1.0.4
-isort==5.7.0
+isort==5.9.3
+# For datetime mocking
+time-machine==2.4.0
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==6.0.7
+nbconvert==6.2.0
+
+# mypy types
+types-cachetools==4.2.2
+types-filelock==3.2.0
+types-requests==2.25.9
+types-tabulate==0.8.2

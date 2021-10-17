@@ -21,6 +21,7 @@ class ExchangeResolver(IResolver):
     def load_exchange(exchange_name: str, config: dict, validate: bool = True) -> Exchange:
         """
         Load the custom class from config parameter
+        :param exchange_name: name of the Exchange to load
         :param config: configuration dictionary
         """
         # Map exchange name to avoid duplicate classes for identical exchanges

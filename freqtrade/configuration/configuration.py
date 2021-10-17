@@ -11,11 +11,12 @@ from freqtrade import constants
 from freqtrade.configuration.check_exchange import check_exchange
 from freqtrade.configuration.deprecated_settings import process_temporary_deprecated_settings
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
-from freqtrade.configuration.load_config import load_config_file
+from freqtrade.configuration.environment_vars import enironment_vars_to_dict
+from freqtrade.configuration.load_config import load_config_file, load_file
+from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
-from freqtrade.misc import deep_merge_dicts, json_load
-from freqtrade.state import NON_UTIL_MODES, TRADING_MODES, RunMode
+from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
 
 
 logger = logging.getLogger(__name__)
@@ -72,11 +73,14 @@ class Configuration:
             # Merge config options, overwriting old values
             config = deep_merge_dicts(load_config_file(path), config)
 
+        # Load environment variables
+        env_data = enironment_vars_to_dict()
+        config = deep_merge_dicts(env_data, config)
+
+        config['config_files'] = files
         # Normalize config
         if 'internals' not in config:
             config['internals'] = {}
-        # TODO: This can be deleted along with removal of deprecated
-        # experimental settings
         if 'ask_strategy' not in config:
             config['ask_strategy'] = {}
 
@@ -107,6 +111,8 @@ class Configuration:
         self._process_optimize_options(config)
 
         self._process_plot_options(config)
+
+        self._process_data_options(config)
 
         # Check if the exchange set by the user is supported
         check_exchange(config, config.get('experimental', {}).get('block_bad_exchanges', True))
@@ -144,7 +150,7 @@ class Configuration:
                 config['db_url'] = constants.DEFAULT_DB_PROD_URL
             logger.info('Dry run is disabled')
 
-        logger.info(f'Using DB: "{config["db_url"]}"')
+        logger.info(f'Using DB: "{parse_db_uri_for_logging(config["db_url"])}"')
 
     def _process_common_options(self, config: Dict[str, Any]) -> None:
 
@@ -236,6 +242,9 @@ class Configuration:
             except ValueError:
                 pass
 
+        self._args_to_config(config, argname='timeframe_detail',
+                             logstring='Parameter --timeframe-detail detected, '
+                             'using {} for intra-candle backtesting ...')
         self._args_to_config(config, argname='stake_amount',
                              logstring='Parameter --stake-amount detected, '
                              'overriding stake_amount to: {} ...')
@@ -262,6 +271,9 @@ class Configuration:
 
         self._args_to_config(config, argname='show_days',
                              logstring='Parameter --show-days detected ...')
+
+        self._args_to_config(config, argname='disableparamexport',
+                             logstring='Parameter --disableparamexport detected: {} ...')
 
         # Edge section:
         if 'stoploss_range' in self.args and self.args["stoploss_range"]:
@@ -361,6 +373,9 @@ class Configuration:
         self._args_to_config(config, argname='hyperopt_show_no_header',
                              logstring='Parameter --no-header detected: {}')
 
+        self._args_to_config(config, argname="hyperopt_ignore_missing_space",
+                             logstring="Paramter --ignore-missing-space detected: {}")
+
     def _process_plot_options(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='pairs',
@@ -377,6 +392,9 @@ class Configuration:
 
         self._args_to_config(config, argname='plot_limit',
                              logstring='Limiting plot to: {}')
+
+        self._args_to_config(config, argname='plot_auto_open',
+                             logstring='Parameter --auto-open detected.')
 
         self._args_to_config(config, argname='trade_source',
                              logstring='Using trades from: {}')
@@ -401,6 +419,11 @@ class Configuration:
 
         self._args_to_config(config, argname='dataformat_trades',
                              logstring='Using "{}" to store trades data.')
+
+    def _process_data_options(self, config: Dict[str, Any]) -> None:
+
+        self._args_to_config(config, argname='new_pairs_days',
+                             logstring='Detected --new-pairs-days: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
@@ -448,18 +471,18 @@ class Configuration:
         """
 
         if "pairs" in config:
+            config['exchange']['pair_whitelist'] = config['pairs']
             return
 
         if "pairs_file" in self.args and self.args["pairs_file"]:
             pairs_file = Path(self.args["pairs_file"])
             logger.info(f'Reading pairs file "{pairs_file}".')
             # Download pairs from the pairs file if no config is specified
-            # or if pairs file is specified explicitely
+            # or if pairs file is specified explicitly
             if not pairs_file.exists():
                 raise OperationalException(f'No pairs file found with path "{pairs_file}".')
-            with pairs_file.open('r') as f:
-                config['pairs'] = json_load(f)
-                config['pairs'].sort()
+            config['pairs'] = load_file(pairs_file)
+            config['pairs'].sort()
             return
 
         if 'config' in self.args and self.args['config']:
@@ -469,7 +492,6 @@ class Configuration:
             # Fall back to /dl_path/pairs.json
             pairs_file = config['datadir'] / 'pairs.json'
             if pairs_file.exists():
-                with pairs_file.open('r') as f:
-                    config['pairs'] = json_load(f)
+                config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config:
                     config['pairs'].sort()

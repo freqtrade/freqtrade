@@ -1,10 +1,11 @@
 """
-This module contains class to manage RPC communications (Telegram, Slack, ...)
+This module contains class to manage RPC communications (Telegram, API, ...)
 """
 import logging
 from typing import Any, Dict, List
 
-from freqtrade.rpc import RPC, RPCHandler, RPCMessageType
+from freqtrade.enums import RPCMessageType
+from freqtrade.rpc import RPC, RPCHandler
 
 
 logger = logging.getLogger(__name__)
@@ -12,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 class RPCManager:
     """
-    Class to manage RPC objects (Telegram, Slack, ...)
+    Class to manage RPC objects (Telegram, API, ...)
     """
+
     def __init__(self, freqtrade) -> None:
         """ Initializes all enabled rpc modules """
         self.registered_modules: List[RPCHandler] = []
@@ -35,15 +37,16 @@ class RPCManager:
         if config.get('api_server', {}).get('enabled', False):
             logger.info('Enabling rpc.api_server')
             from freqtrade.rpc.api_server import ApiServer
-
-            self.registered_modules.append(ApiServer(self._rpc, config))
+            apiserver = ApiServer(config)
+            apiserver.add_rpc_handler(self._rpc)
+            self.registered_modules.append(apiserver)
 
     def cleanup(self) -> None:
         """ Stops all enabled rpc modules """
         logger.info('Cleaning up rpc modules ...')
         while self.registered_modules:
             mod = self.registered_modules.pop()
-            logger.debug('Cleaning up rpc.%s ...', mod.name)
+            logger.info('Cleaning up rpc.%s ...', mod.name)
             mod.cleanup()
             del mod
 
@@ -67,7 +70,7 @@ class RPCManager:
     def startup_messages(self, config: Dict[str, Any], pairlist, protections) -> None:
         if config['dry_run']:
             self.send_msg({
-                'type': RPCMessageType.WARNING_NOTIFICATION,
+                'type': RPCMessageType.WARNING,
                 'status': 'Dry run is enabled. All trades are simulated.'
             })
         stake_currency = config['stake_currency']
@@ -79,7 +82,7 @@ class RPCManager:
         exchange_name = config['exchange']['name']
         strategy_name = config.get('strategy', '')
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.STARTUP,
             'status': f'*Exchange:* `{exchange_name}`\n'
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
@@ -88,13 +91,13 @@ class RPCManager:
                       f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({
-            'type': RPCMessageType.STARTUP_NOTIFICATION,
+            'type': RPCMessageType.STARTUP,
             'status': f'Searching for {stake_currency} pairs to buy and sell '
                       f'based on {pairlist.short_desc()}'
         })
         if len(protections.name_list) > 0:
             prots = '\n'.join([p for prot in protections.short_desc() for k, p in prot.items()])
             self.send_msg({
-                'type': RPCMessageType.STARTUP_NOTIFICATION,
+                'type': RPCMessageType.STARTUP,
                 'status': f'Using Protections: \n{prots}'
             })

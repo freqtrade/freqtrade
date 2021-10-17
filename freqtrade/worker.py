@@ -11,9 +11,9 @@ import sdnotify
 
 from freqtrade import __version__, constants
 from freqtrade.configuration import Configuration
+from freqtrade.enums import State
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.state import State
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class Worker:
 
     def _notify(self, message: str) -> None:
         """
-        Removes the need to verify in all occurances if sd_notify is enabled
+        Removes the need to verify in all occurrences if sd_notify is enabled
         :param message: Message to send to systemd if it's enabled.
         """
         if self._sd_notify:
