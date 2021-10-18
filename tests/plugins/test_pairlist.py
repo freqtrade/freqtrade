@@ -665,7 +665,6 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None:
     whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
     whitelist_conf['pairlists'] = [

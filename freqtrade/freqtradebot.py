@@ -479,11 +479,7 @@ class FreqtradeBot(LoggingMixin):
             bid_check_dom = self.config.get('bid_strategy', {}).get('check_depth_of_market', {})
             if ((bid_check_dom.get('enabled', False)) and
                     (bid_check_dom.get('bids_to_ask_delta', 0) > 0)):
-                if self._check_depth_of_market(
-                    pair,
-                    bid_check_dom,
-                    side=signal
-                ):
+                if self._check_depth_of_market(pair, bid_check_dom, side=signal):
                     return self.execute_entry(
                         pair,
                         stake_amount,
@@ -629,9 +625,10 @@ class FreqtradeBot(LoggingMixin):
         if not stake_amount:
             return False
 
-        log_type = f"{name} signal found"
-        logger.info(f"{log_type}: about create a new trade for {pair} with stake_amount: "
-                    f"{stake_amount} ...")
+        logger.info(
+            f"{name} signal found: about create a new trade for {pair} with stake_amount: "
+            f"{stake_amount} ..."
+        )
 
         amount = (stake_amount / enter_limit_requested) * leverage
         order_type = self.strategy.order_types['buy']
@@ -1280,7 +1277,6 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade instance
         :param limit: limit rate for the sell order
         :param sell_reason: Reason the sell was triggered
-        :param side: "buy" or "sell"
         :return: True if it succeeds (supported) False (not supported)
         """
         exit_type = 'sell'  # TODO-lev: Update to exit
