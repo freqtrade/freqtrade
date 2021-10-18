@@ -1,8 +1,8 @@
 numpy==1.21.2
-pandas==1.3.3
+pandas==1.3.4
 pandas-ta==0.3.14b
 
-ccxt==1.57.94
+ccxt==1.58.47
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==35.0.0
 aiohttp==3.7.4.post0
@@ -12,7 +12,6 @@ arrow==1.2.0
 cachetools==4.2.2
 requests==2.26.0
 urllib3==1.26.7
-wrapt==1.13.1
 jsonschema==4.1.0
 TA-Lib==0.4.21
 technical==1.3.0
@@ -26,15 +25,15 @@ blosc==1.10.6
 py_find_1st==1.1.5
 
 # Load ticker files 30% faster
-python-rapidjson==1.4
+python-rapidjson==1.5
 
 # Notify systemd
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.68.1
+fastapi==0.70.0
 uvicorn==0.15.0
-pyjwt==2.2.0
+pyjwt==2.3.0
 aiofiles==0.7.0
 psutil==5.8.0
 
