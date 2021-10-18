@@ -16,7 +16,6 @@ hyperopt = [
 develop = [
     'coveralls',
     'flake8',
-    'flake8-type-annotations',
     'flake8-tidy-imports',
     'mypy',
     'pytest',

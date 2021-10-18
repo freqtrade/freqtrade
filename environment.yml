@@ -64,7 +64,6 @@ dependencies:
         - py_find_1st
         - tables
         - pytest-random-order
-        - flake8-type-annotations
         - ccxt
         - flake8-tidy-imports
         - -e .
