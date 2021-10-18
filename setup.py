@@ -50,7 +50,6 @@ setup(
         'cachetools',
         'requests',
         'urllib3',
-        'wrapt',
         'jsonschema',
         'TA-Lib',
         'pandas-ta',

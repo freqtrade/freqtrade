@@ -16,7 +16,6 @@ dependencies:
     - cachetools
     - requests
     - urllib3
-    - wrapt
     - jsonschema
     - TA-Lib
     - tabulate
