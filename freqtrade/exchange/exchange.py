@@ -75,6 +75,7 @@ class Exchange:
     # funding_fee_times is currently unused, but should ideally be used to properly
     # schedule refresh times
     funding_fee_times: List[int] = []  # hours of the day
+    funding_rate_history: Dict = {}
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -1680,13 +1681,17 @@ class Exchange:
             raise OperationalException(e) from e
 
     def _get_mark_price(self, pair: str, date: datetime) -> float:
+        """
+            Get's the mark price for a pair at a specific date and time in the past
+        """
+        # TODO-lev: Can maybe use self._api.fetchFundingRate, or get the most recent candlestick
         raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
 
     def _get_funding_rate(self, pair: str, when: datetime):
         """
             Get's the funding_rate for a pair at a specific date and time in the past
         """
-        # TODO-lev: implement
+        # TODO-lev: Maybe use self._api.fetchFundingRate or fetchFundingRateHistory with length 1
         raise OperationalException(f"get_funding_rate has not been implemented for {self.name}")
 
     def _get_funding_fee(
@@ -1709,7 +1714,6 @@ class Exchange:
 
     def fill_leverage_brackets(self):
         """
-            # TODO-lev: Should maybe be renamed, leverage_brackets might not be accurate for kraken
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
         """
@@ -1808,6 +1812,33 @@ class Exchange:
             )
 
         return fees
+
+    def get_funding_rate_history(self, pair: str, start: int, end: int):
+        '''
+            :param pair: quote/base currency pair
+            :param start: timestamp in ms of the beginning time
+            :param end: timestamp in ms of the end time
+        '''
+        if not self.exchange_has("fetchFundingRateHistory"):
+            raise ExchangeError(
+                f"CCXT has not implemented fetchFundingRateHistory for {self.name}; "
+                f"therefore, backtesting for {self.name} is currently unavailable"
+            )
+
+        try:
+            fund_history = self._api.fetch_funding_rate_history(
+                pair,
+                since=start,
+            )
+            for fund in fund_history:
+                self.funding_rate_history[pair][fund['timestamp']] = fund['funding_rate']
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
