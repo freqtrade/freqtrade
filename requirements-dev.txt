@@ -23,4 +23,4 @@ nbconvert==6.2.0
 types-cachetools==4.2.4
 types-filelock==3.2.0
 types-requests==2.25.11
-types-tabulate==0.8.2
+types-tabulate==0.8.3
