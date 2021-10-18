@@ -55,7 +55,7 @@ For more information regarding usage of the sqlite databases, for example to man
 ### Multiple instances using docker
 
 To run multiple instances of freqtrade using docker you will need to edit the docker-compose.yml file and add all the instances you want as separate services. Remember, you can separate your configuration into multiple files, so it's a good idea to think about making them modular, then if you need to edit something common to all bots, you can do that in a single config file. 
-```
+``` yml
 ---
 version: '3'
 services:
