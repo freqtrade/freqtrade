@@ -114,7 +114,7 @@ services:
       --strategy SampleStrategy
 
 ```
-You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary.
+You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary. Note, that you will need to use different database files, port mappings and telegram configurations for each instance, as mentioned above. 
 
 
 ## Configure the bot running as a systemd service
