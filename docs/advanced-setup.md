@@ -103,7 +103,7 @@ services:
     # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
     # before enabling this.
     ports:
-      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8081:8080"
     # Default command used when running `docker compose up`
     command: >
       trade
