@@ -33,3 +33,15 @@ class Gateio(Exchange):
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
                 f'Exchange {self.name} does not support market orders.')
+
+    def get_funding_rate_history(
+        self,
+        start: int,
+        end: int
+    ) -> Dict:
+        '''
+            :param start: timestamp in ms of the beginning time
+            :param end: timestamp in ms of the end time
+        '''
+        # TODO-lev: Has a max limit into the past of 333 days
+        return super().get_funding_rate_history(start, end)
