@@ -11,7 +11,7 @@ import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State, TradingMode
+from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -3564,7 +3564,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
 @ pytest.mark.parametrize("is_short,val1,val2", [
     (False, 1.5, 1.1),
     (True, 0.5, 0.9)
-    ])
+])
 def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
                             is_short, val1, val2, fee, caplog, mocker) -> None:
     patch_RPCManager(mocker)
@@ -4668,19 +4668,19 @@ def test_leverage_prep():
 
 
 @pytest.mark.parametrize('trading_mode,calls,t1,t2', [
-    (TradingMode.SPOT, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    (TradingMode.MARGIN, 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
-    (TradingMode.FUTURES, 31, "2021-09-01 00:00:02", "2021-09-01 08:00:01"),
-    (TradingMode.FUTURES, 32, "2021-09-01 00:00:00", "2021-09-01 08:00:01"),
-    (TradingMode.FUTURES, 32, "2021-09-01 00:00:02", "2021-09-01 08:00:02"),
-    (TradingMode.FUTURES, 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:04"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:05"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:06"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
-    (TradingMode.FUTURES, 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
+    ('spot', 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('margin', 0, "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('futures', 31, "2021-09-01 00:00:02", "2021-09-01 08:00:01"),
+    ('futures', 32, "2021-09-01 00:00:00", "2021-09-01 08:00:01"),
+    ('futures', 32, "2021-09-01 00:00:02", "2021-09-01 08:00:02"),
+    ('futures', 33, "2021-09-01 00:00:00", "2021-09-01 08:00:02"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:02"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:03"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:04"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:05"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:06"),
+    ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
+    ('futures', 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
 ])
 def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
                              t1, t2):
