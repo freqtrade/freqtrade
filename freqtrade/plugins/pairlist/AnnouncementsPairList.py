@@ -11,7 +11,6 @@ from abc import abstractmethod
 from bs4 import BeautifulSoup
 from cachetools.ttl import TTLCache
 from datetime import datetime, timedelta
-from functools import cached_property
 from requests import get
 from typing import Any, Dict, List, Optional
 
@@ -96,8 +95,8 @@ class BinanceAnnouncement(AnnouncementMixin):
 
             try:
                 response = get(url)
-            except ConnectionResetError:
-                raise TemporaryError(f"Binance url ({url}) is not available.")
+            except Exception as e:
+                raise TemporaryError(f"Binance url ({url}) is not available. Original Exception: {e}")
 
             if response.status_code != 200:
                 raise TemporaryError(f"Invalid response from url: {url}.\n"
@@ -142,9 +141,10 @@ class BinanceAnnouncement(AnnouncementMixin):
                 self._save_df(df)
             return df
 
-        except TemporaryError:
+        except TemporaryError as e:
             # exception handled, re-raise
-            raise
+            logger.error(e)
+            raise e
 
         except Exception as e:
             # exception not handled raise OperationalException
