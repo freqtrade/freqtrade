@@ -1071,44 +1071,23 @@ class FreqtradeBot(LoggingMixin):
                 continue
 
             fully_cancelled = self.update_trade_state(trade, trade.open_order_id, order)
+            is_entering = order['side'] == trade.enter_side
+            not_closed = order['status'] == 'open' or fully_cancelled
+            side = trade.enter_side if is_entering else trade.exit_side
+            timed_out = self._check_timed_out(side, order)
+            time_method = 'check_sell_timeout' if order['side'] == 'sell' else 'check_buy_timeout'
 
-            if (
-                order['side'] == trade.enter_side and
-                (order['status'] == 'open' or fully_cancelled) and
-                (fully_cancelled or
-                    self._check_timed_out(trade.enter_side, order) or
-                    strategy_safe_wrapper(
-                        (
-                            self.strategy.check_sell_timeout
-                            if trade.is_short else
-                            self.strategy.check_buy_timeout
-                        ),
-                        default_retval=False
-                    )(
-                        pair=trade.pair,
-                        trade=trade,
-                        order=order
-                    )
-                 )
-            ):
-                self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
-
-            elif (
-                order['side'] == trade.exit_side and
-                (order['status'] == 'open' or fully_cancelled) and
-                (fully_cancelled or
-                    self._check_timed_out(trade.exit_side, order) or
-                    strategy_safe_wrapper(
-                        self.strategy.check_sell_timeout,
-                        default_retval=False
-                    )(
-                        pair=trade.pair,
-                        trade=trade,
-                        order=order
-                    )
-                 )
-            ):
-                self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+            if not_closed and (fully_cancelled or timed_out or (
+                strategy_safe_wrapper(getattr(self.strategy, time_method), default_retval=False)(
+                    pair=trade.pair,
+                    trade=trade,
+                    order=order
+                )
+            )):
+                if is_entering:
+                    self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                else:
+                    self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
     def cancel_all_open_orders(self) -> None:
         """
