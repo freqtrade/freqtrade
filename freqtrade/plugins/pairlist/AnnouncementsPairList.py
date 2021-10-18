@@ -236,6 +236,7 @@ class AnnouncementsPairList(IPairList):
     """
     # sleep at least 3 seconds every request by default
     REFRESH_PERIOD = 3
+    STATIC = False
 
     def __init__(self, exchange, pairlistmanager,
                  config: Dict[str, Any], pairlistconfig: Dict[str, Any],
@@ -305,7 +306,11 @@ class AnnouncementsPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        df = self.pair_exchange.update_announcements()
+        if self.STATIC:
+            df = self.pair_exchange._get_df()
+        else:
+            df = self.pair_exchange.update_announcements()
+
         # TODO improve performance
         pairlist = [
             v for v in pairlist if not df[
@@ -329,3 +334,7 @@ class AnnouncementsPairList(IPairList):
             return exchange
 
         raise OperationalException(f'Exchange `{self._pair_exchange}` is not supported yet')
+
+
+class StaticAnnouncementsPairList(AnnouncementsPairList):
+    STATIC = True
