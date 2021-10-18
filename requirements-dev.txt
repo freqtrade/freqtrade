@@ -4,7 +4,7 @@
 -r requirements-hyperopt.txt
 
 coveralls==3.2.0
-flake8==4.0.0
+flake8==4.0.1
 flake8-tidy-imports==4.5.0
 mypy==0.910
 pytest==6.2.5
