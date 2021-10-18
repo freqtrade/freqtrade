@@ -20,10 +20,6 @@ class RPCMessageType(Enum):
     SHORT_FILL = 'short_fill'
     SHORT_CANCEL = 'short_cancel'
 
-    EXIT_SHORT = 'exit_short'
-    EXIT_SHORT_FILL = 'exit_short_fill'
-    EXIT_SHORT_CANCEL = 'exit_short_cancel'
-
     def __repr__(self):
         return self.value
 
