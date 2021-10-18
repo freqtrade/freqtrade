@@ -44,7 +44,8 @@ SELL_IDX = 4
 LOW_IDX = 5
 HIGH_IDX = 6
 BUY_TAG_IDX = 7
-SELL_TAG_IDX = 8
+EXIT_TAG_IDX = 8
+
 
 class Backtesting:
     """
@@ -247,7 +248,7 @@ class Backtesting:
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
-        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag', 'sell_tag']
+        headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag', 'exit_tag']
         data: Dict = {}
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
@@ -259,7 +260,7 @@ class Backtesting:
                 pair_data.loc[:, 'buy'] = 0  # cleanup if buy_signal is exist
                 pair_data.loc[:, 'sell'] = 0  # cleanup if sell_signal is exist
                 pair_data.loc[:, 'buy_tag'] = None  # cleanup if buy_tag is exist
-                pair_data.loc[:, 'sell_tag'] = None  # cleanup if sell_tag is exist
+                pair_data.loc[:, 'exit_tag'] = None  # cleanup if exit_tag is exist
 
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair}).copy()
@@ -271,7 +272,7 @@ class Backtesting:
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
             df_analyzed.loc[:, 'sell'] = df_analyzed.loc[:, 'sell'].shift(1)
             df_analyzed.loc[:, 'buy_tag'] = df_analyzed.loc[:, 'buy_tag'].shift(1)
-            df_analyzed.loc[:, 'sell_tag'] = df_analyzed.loc[:, 'sell_tag'].shift(1)
+            df_analyzed.loc[:, 'exit_tag'] = df_analyzed.loc[:, 'exit_tag'].shift(1)
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
@@ -359,8 +360,10 @@ class Backtesting:
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
-            if(sell_row[SELL_TAG_IDX] is not None):
-                trade.sell_tag = sell_row[SELL_TAG_IDX]
+            if(sell_row[EXIT_TAG_IDX] is not None):
+                trade.exit_tag = sell_row[EXIT_TAG_IDX]
+            else:
+                trade.exit_tag = None
             trade.sell_reason = sell.sell_reason
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
@@ -389,7 +392,7 @@ class Backtesting:
             detail_data = detail_data.loc[
                 (detail_data['date'] >= sell_candle_time) &
                 (detail_data['date'] < sell_candle_end)
-             ].copy()
+            ].copy()
             if len(detail_data) == 0:
                 # Fall back to "regular" data if no detail data was found for this candle
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
@@ -435,7 +438,7 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
             has_buy_tag = len(row) >= BUY_TAG_IDX + 1
-            has_sell_tag = len(row) >= SELL_TAG_IDX + 1
+            has_exit_tag = len(row) >= EXIT_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -446,7 +449,7 @@ class Backtesting:
                 fee_close=self.fee,
                 is_open=True,
                 buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
-                sell_tag=row[SELL_TAG_IDX] if has_sell_tag else None,
+                exit_tag=row[EXIT_TAG_IDX] if has_exit_tag else None,
                 exchange='backtesting',
             )
             return trade

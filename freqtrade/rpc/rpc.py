@@ -105,7 +105,7 @@ class RPC:
         val = {
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
-            'stake_currency_decimals':  decimals_per_coin(config['stake_currency']),
+            'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
             'stake_amount': config['stake_amount'],
             'available_capital': config.get('available_capital'),
             'max_open_trades': (config['max_open_trades']
@@ -696,16 +696,15 @@ class RPC:
         [x.update({'profit': round(x['profit'] * 100, 2)}) for x in buy_tags]
         return buy_tags
 
-
-    def _rpc_sell_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+    def _rpc_exit_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
         """
         Handler for sell tag performance.
         Shows a performance statistic from finished trades
         """
-        sell_tags = Trade.get_sell_tag_performance(pair)
+        exit_tags = Trade.get_exit_tag_performance(pair)
         # Round and convert to %
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in sell_tags]
-        return sell_tags
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in exit_tags]
+        return exit_tags
 
     def _rpc_mix_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
         """

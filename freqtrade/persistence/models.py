@@ -258,7 +258,7 @@ class LocalTrade():
     sell_order_status: str = ''
     strategy: str = ''
     buy_tag: Optional[str] = None
-    sell_tag: Optional[str] = None
+    exit_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
     def __init__(self, **kwargs):
@@ -325,8 +325,9 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason':  (f' ({self.sell_reason})' if self.sell_reason else ''), #+str(self.sell_reason) ## CHANGE TO BUY TAG IF NEEDED
-            'sell_tag': (f' ({self.sell_tag})' if self.sell_tag else '') ,
+            # +str(self.sell_reason) ## CHANGE TO BUY TAG IF NEEDED
+            'sell_reason': (f' ({self.sell_reason})' if self.sell_reason else ''),
+            'exit_tag': (f' ({self.exit_tag})' if self.exit_tag else ''),
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -708,7 +709,7 @@ class Trade(_DECL_BASE, LocalTrade):
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
-    sell_tag = Column(String(100), nullable=True)
+    exit_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
@@ -873,28 +874,28 @@ class Trade(_DECL_BASE, LocalTrade):
 
         if(pair is not None):
             tag_perf = Trade.query.with_entities(
-            Trade.buy_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .filter(Trade.pair.lower() == pair.lower()) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.buy_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .filter(Trade.pair == pair) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
         else:
             tag_perf = Trade.query.with_entities(
-            Trade.buy_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .group_by(Trade.pair) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.buy_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .group_by(Trade.buy_tag) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
 
         return [
             {
-                'buy_tag': buy_tag,
+                'buy_tag': buy_tag if buy_tag is not None else "Other",
                 'profit': profit,
                 'profit_abs': profit_abs,
                 'count': count
@@ -903,81 +904,102 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_sell_tag_performance(pair: str) -> List[Dict[str, Any]]:
+    def get_exit_tag_performance(pair: str) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on sell tag performance
+        Returns List of dicts containing all Trades, based on exit tag performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
         if(pair is not None):
             tag_perf = Trade.query.with_entities(
-            Trade.sell_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .filter(Trade.pair.lower() == pair.lower()) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.exit_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .filter(Trade.pair == pair) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
         else:
             tag_perf = Trade.query.with_entities(
-            Trade.sell_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .group_by(Trade.pair) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.exit_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .group_by(Trade.exit_tag) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
 
         return [
             {
-                'sell_tag': sell_tag,
+                'exit_tag': exit_tag if exit_tag is not None else "Other",
                 'profit': profit,
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for sell_tag, profit, profit_abs, count in tag_perf
+            for exit_tag, profit, profit_abs, count in tag_perf
         ]
 
     @staticmethod
     def get_mix_tag_performance(pair: str) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on buy_tag + sell_tag performance
+        Returns List of dicts containing all Trades, based on buy_tag + exit_tag performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
         if(pair is not None):
             tag_perf = Trade.query.with_entities(
-            Trade.buy_tag,
-            Trade.sell_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .filter(Trade.pair.lower() == pair.lower()) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.id,
+                Trade.buy_tag,
+                Trade.exit_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .filter(Trade.pair == pair) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
+
         else:
             tag_perf = Trade.query.with_entities(
-            Trade.buy_tag,
-            Trade.sell_tag,
-            func.sum(Trade.close_profit).label('profit_sum'),
-            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-            func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
-            .group_by(Trade.pair) \
-            .order_by(desc('profit_sum_abs')) \
-            .all()
+                Trade.id,
+                Trade.buy_tag,
+                Trade.exit_tag,
+                func.sum(Trade.close_profit).label('profit_sum'),
+                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+                func.count(Trade.pair).label('count')
+            ).filter(Trade.is_open.is_(False))\
+                .group_by(Trade.id) \
+                .order_by(desc('profit_sum_abs')) \
+                .all()
 
-        return [
-            {   'mix_tag': str(buy_tag) + " " +str(sell_tag),
-                'profit': profit,
-                'profit_abs': profit_abs,
-                'count': count
-            }
-            for buy_tag, sell_tag, profit, profit_abs, count in tag_perf
-        ]
+        return_list = []
+        for id, buy_tag, exit_tag, profit, profit_abs, count in tag_perf:
+            buy_tag = buy_tag if buy_tag is not None else "Other"
+            exit_tag = exit_tag if exit_tag is not None else "Other"
+
+            if(exit_tag is not None and buy_tag is not None):
+                mix_tag = buy_tag + " " + exit_tag
+                i = 0
+                if not any(item["mix_tag"] == mix_tag for item in return_list):
+                    return_list.append({'mix_tag': mix_tag,
+                                        'profit': profit,
+                                        'profit_abs': profit_abs,
+                                        'count': count})
+                else:
+                    while i < len(return_list):
+                        if return_list[i]["mix_tag"] == mix_tag:
+                            print("item below")
+                            print(return_list[i])
+                            return_list[i] = {
+                                'mix_tag': mix_tag,
+                                'profit': profit + return_list[i]["profit"],
+                                'profit_abs': profit_abs + return_list[i]["profit_abs"],
+                                'count': 1 + return_list[i]["count"]}
+                        i += 1
+
+        return return_list
 
     @staticmethod
     def get_best_pair(start_date: datetime = datetime.fromtimestamp(0)):
