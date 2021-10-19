@@ -360,6 +360,13 @@ class Backtesting:
             trade.sell_reason = sell.sell_reason
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
+            # call the custom exit price,with default value as previous closerate
+            current_profit = trade.calc_profit_ratio(closerate)
+            closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                              default_retval=closerate)(
+                pair=trade.pair, trade=trade,
+                current_time=sell_row[DATE_IDX],
+                proposed_rate=closerate, current_profit=current_profit)
 
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
@@ -407,13 +414,18 @@ class Backtesting:
             stake_amount = self.wallets.get_trade_stake_amount(pair, None)
         except DependencyException:
             return None
+        # let's call the custom entry price, using the open price as default price
+        propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
+                                             default_retval=row[OPEN_IDX])(
+            pair=pair, current_time=row[DATE_IDX].to_pydatetime(),
+            proposed_rate=row[OPEN_IDX])  # default value is the open rate
 
-        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05) or 0
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
 
         stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                              default_retval=stake_amount)(
-            pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=propose_rate,
             proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
@@ -424,7 +436,7 @@ class Backtesting:
         time_in_force = self.strategy.order_time_in_force['sell']
         # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
-                pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
+                pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
                 time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
             return None
 
@@ -433,10 +445,10 @@ class Backtesting:
             has_buy_tag = len(row) >= BUY_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
-                open_rate=row[OPEN_IDX],
+                open_rate=propose_rate,
                 open_date=row[DATE_IDX].to_pydatetime(),
                 stake_amount=stake_amount,
-                amount=round(stake_amount / row[OPEN_IDX], 8),
+                amount=round(stake_amount / propose_rate, 8),
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
