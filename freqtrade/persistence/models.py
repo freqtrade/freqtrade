@@ -325,7 +325,6 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            # +str(self.sell_reason) ## CHANGE TO BUY TAG IF NEEDED
             'sell_reason': (f' ({self.sell_reason})' if self.sell_reason else ''),
             'exit_tag': (f' ({self.exit_tag})' if self.exit_tag else ''),
             'sell_order_status': self.sell_order_status,
@@ -904,15 +903,15 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_exit_tag_performance(pair: str) -> List[Dict[str, Any]]:
+    def get_sell_reason_performance(pair: str) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on exit tag performance
+        Returns List of dicts containing all Trades, based on sell reason performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
         if(pair is not None):
             tag_perf = Trade.query.with_entities(
-                Trade.exit_tag,
+                Trade.sell_reason,
                 func.sum(Trade.close_profit).label('profit_sum'),
                 func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
                 func.count(Trade.pair).label('count')
@@ -922,29 +921,29 @@ class Trade(_DECL_BASE, LocalTrade):
                 .all()
         else:
             tag_perf = Trade.query.with_entities(
-                Trade.exit_tag,
+                Trade.sell_reason,
                 func.sum(Trade.close_profit).label('profit_sum'),
                 func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
                 func.count(Trade.pair).label('count')
             ).filter(Trade.is_open.is_(False))\
-                .group_by(Trade.exit_tag) \
+                .group_by(Trade.sell_reason) \
                 .order_by(desc('profit_sum_abs')) \
                 .all()
 
         return [
             {
-                'exit_tag': exit_tag if exit_tag is not None else "Other",
+                'sell_reason': sell_reason if sell_reason is not None else "Other",
                 'profit': profit,
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for exit_tag, profit, profit_abs, count in tag_perf
+            for sell_reason, profit, profit_abs, count in tag_perf
         ]
 
     @staticmethod
     def get_mix_tag_performance(pair: str) -> List[Dict[str, Any]]:
         """
-        Returns List of dicts containing all Trades, based on buy_tag + exit_tag performance
+        Returns List of dicts containing all Trades, based on buy_tag + sell_reason performance
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
@@ -952,7 +951,7 @@ class Trade(_DECL_BASE, LocalTrade):
             tag_perf = Trade.query.with_entities(
                 Trade.id,
                 Trade.buy_tag,
-                Trade.exit_tag,
+                Trade.sell_reason,
                 func.sum(Trade.close_profit).label('profit_sum'),
                 func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
                 func.count(Trade.pair).label('count')
@@ -965,7 +964,7 @@ class Trade(_DECL_BASE, LocalTrade):
             tag_perf = Trade.query.with_entities(
                 Trade.id,
                 Trade.buy_tag,
-                Trade.exit_tag,
+                Trade.sell_reason,
                 func.sum(Trade.close_profit).label('profit_sum'),
                 func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
                 func.count(Trade.pair).label('count')
@@ -975,12 +974,12 @@ class Trade(_DECL_BASE, LocalTrade):
                 .all()
 
         return_list = []
-        for id, buy_tag, exit_tag, profit, profit_abs, count in tag_perf:
+        for id, buy_tag, sell_reason, profit, profit_abs, count in tag_perf:
             buy_tag = buy_tag if buy_tag is not None else "Other"
-            exit_tag = exit_tag if exit_tag is not None else "Other"
+            sell_reason = sell_reason if sell_reason is not None else "Other"
 
-            if(exit_tag is not None and buy_tag is not None):
-                mix_tag = buy_tag + " " + exit_tag
+            if(sell_reason is not None and buy_tag is not None):
+                mix_tag = buy_tag + " " + sell_reason
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,
@@ -990,8 +989,6 @@ class Trade(_DECL_BASE, LocalTrade):
                 else:
                     while i < len(return_list):
                         if return_list[i]["mix_tag"] == mix_tag:
-                            print("item below")
-                            print(return_list[i])
                             return_list[i] = {
                                 'mix_tag': mix_tag,
                                 'profit': profit + return_list[i]["profit"],

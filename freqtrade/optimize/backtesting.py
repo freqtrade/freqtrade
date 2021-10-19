@@ -360,11 +360,10 @@ class Backtesting:
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
-            if(sell_row[EXIT_TAG_IDX] is not None):
-                trade.exit_tag = sell_row[EXIT_TAG_IDX]
-            else:
-                trade.exit_tag = None
             trade.sell_reason = sell.sell_reason
+            if(sell_row[EXIT_TAG_IDX] is not None):
+                trade.sell_reason = sell_row[EXIT_TAG_IDX]
+                trade.exit_tag = sell_row[EXIT_TAG_IDX]
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 

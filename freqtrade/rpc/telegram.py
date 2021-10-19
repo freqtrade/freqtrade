@@ -156,7 +156,7 @@ class Telegram(RPCHandler):
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
             CommandHandler('buys', self._buy_tag_performance),
-            CommandHandler('sells', self._exit_tag_performance),
+            CommandHandler('sells', self._sell_reason_performance),
             CommandHandler('mix_tags', self._mix_tag_performance),
             CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
@@ -244,8 +244,8 @@ class Telegram(RPCHandler):
         msg['duration'] = msg['close_date'].replace(
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         msg['duration_min'] = msg['duration'].total_seconds() / 60
-        msg['tags'] = self._get_tags_string(msg)
 
+        msg['buy_tag'] = msg['buy_tag'] if "buy_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
 
         # Check if all sell properties are available.
@@ -261,7 +261,7 @@ class Telegram(RPCHandler):
 
         message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
                    "*Profit:* `{profit_percent:.2f}%{profit_extra}`\n"
-                   "{tags}"
+                   "*Buy Tag:* `{buy_tag}`\n"
                    "*Sell Reason:* `{sell_reason}`\n"
                    "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                    "*Amount:* `{amount:.8f}`\n"
@@ -357,18 +357,6 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _get_tags_string(self, msg):
-        """
-        Get string lines for buy/sell tags to display when a sell is made
-        """
-        tag_lines = ""
-
-        if ("buy_tag" in msg.keys() and msg['buy_tag'] is not None):
-            tag_lines += ("*Buy Tag:* `{buy_tag}`\n").format(msg['buy_tag'])
-        if ("exit_tag" in msg.keys() and msg['exit_tag'] is not None):
-            tag_lines += ("*Sell Tag:* `{exit_tag}`\n").format(msg['exit_tag'])
-        return tag_lines
-
     @authorized_only
     def _status(self, update: Update, context: CallbackContext) -> None:
         """
@@ -401,7 +389,6 @@ class Telegram(RPCHandler):
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
-                    "*Sell Tag:* `{exit_tag}`" if r['exit_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
@@ -925,7 +912,7 @@ class Telegram(RPCHandler):
             self._send_msg(str(e))
 
     @authorized_only
-    def _exit_tag_performance(self, update: Update, context: CallbackContext) -> None:
+    def _sell_reason_performance(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /sells.
         Shows a performance statistic from finished trades
@@ -938,11 +925,11 @@ class Telegram(RPCHandler):
             if context.args:
                 pair = context.args[0]
 
-            trades = self._rpc._rpc_exit_tag_performance(pair)
-            output = "<b>Sell Tag Performance:</b>\n"
+            trades = self._rpc._rpc_sell_reason_performance(pair)
+            output = "<b>Sell Reason Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i+1}.\t <code>{trade['exit_tag']}\t"
+                    f"{i+1}.\t <code>{trade['sell_reason']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit']:.2f}%) "
                     f"({trade['count']})</code>\n")
@@ -954,7 +941,7 @@ class Telegram(RPCHandler):
                     output += stat_line
 
             self._send_msg(output, parse_mode=ParseMode.HTML,
-                           reload_able=True, callback_path="update_exit_tag_performance",
+                           reload_able=True, callback_path="update_sell_reason_performance",
                            query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))

@@ -1150,6 +1150,7 @@ class FreqtradeBot(LoggingMixin):
         trade.close_rate_requested = limit
         trade.sell_reason = sell_reason.sell_reason
         if(exit_tag is not None):
+            trade.sell_reason = exit_tag
             trade.exit_tag = exit_tag
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
@@ -1191,8 +1192,8 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
-            'exit_tag': trade.exit_tag,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
             'stake_currency': self.config['stake_currency'],
@@ -1235,8 +1236,8 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
-            'exit_tag': trade.exit_tag,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
             'stake_currency': self.config['stake_currency'],
