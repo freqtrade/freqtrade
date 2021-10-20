@@ -363,7 +363,6 @@ class Backtesting:
             trade.sell_reason = sell.sell_reason
             if(sell_row[EXIT_TAG_IDX] is not None):
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
-                trade.exit_tag = sell_row[EXIT_TAG_IDX]
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
 
@@ -437,7 +436,6 @@ class Backtesting:
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             # Enter trade
             has_buy_tag = len(row) >= BUY_TAG_IDX + 1
-            has_exit_tag = len(row) >= EXIT_TAG_IDX + 1
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
@@ -448,7 +446,6 @@ class Backtesting:
                 fee_close=self.fee,
                 is_open=True,
                 buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
-                exit_tag=row[EXIT_TAG_IDX] if has_exit_tag else None,
                 exchange='backtesting',
             )
             return trade

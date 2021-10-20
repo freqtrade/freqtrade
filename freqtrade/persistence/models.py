@@ -258,7 +258,6 @@ class LocalTrade():
     sell_order_status: str = ''
     strategy: str = ''
     buy_tag: Optional[str] = None
-    exit_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
     def __init__(self, **kwargs):
@@ -326,7 +325,6 @@ class LocalTrade():
             'profit_abs': self.close_profit_abs,
 
             'sell_reason': (f' ({self.sell_reason})' if self.sell_reason else ''),
-            'exit_tag': (f' ({self.exit_tag})' if self.exit_tag else ''),
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -708,7 +706,6 @@ class Trade(_DECL_BASE, LocalTrade):
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
-    exit_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):

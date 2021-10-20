@@ -1151,7 +1151,6 @@ class FreqtradeBot(LoggingMixin):
         trade.sell_reason = sell_reason.sell_reason
         if(exit_tag is not None):
             trade.sell_reason = exit_tag
-            trade.exit_tag = exit_tag
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)

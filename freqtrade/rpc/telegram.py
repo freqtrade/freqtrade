@@ -180,7 +180,7 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._balance, pattern='update_balance'),
             CallbackQueryHandler(self._performance, pattern='update_performance'),
             CallbackQueryHandler(self._performance, pattern='update_buy_tag_performance'),
-            CallbackQueryHandler(self._performance, pattern='update_exit_tag_performance'),
+            CallbackQueryHandler(self._performance, pattern='update_sell_reason_performance'),
             CallbackQueryHandler(self._performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._forcebuy_inline),
@@ -963,7 +963,6 @@ class Telegram(RPCHandler):
             trades = self._rpc._rpc_mix_tag_performance(pair)
             output = "<b>Mix Tag Performance:</b>\n"
             for i, trade in enumerate(trades):
-                print(str(trade))
                 stat_line = (
                     f"{i+1}.\t <code>{trade['mix_tag']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
