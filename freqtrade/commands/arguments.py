@@ -31,7 +31,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_loss", "disableparamexport"]
+                                        "hyperopt_loss", "disableparamexport",
+                                        "hyperopt_ignore_missing_space"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
@@ -62,9 +63,9 @@ ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "d
 
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "timerange",
-                      "download_trades", "exchange", "timeframes", "erase", "dataformat_ohlcv",
-                      "dataformat_trades"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "include_inactive",
+                      "timerange", "download_trades", "exchange", "timeframes",
+                      "erase", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",

@@ -355,6 +355,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
+    "include_inactive": Arg(
+        '--include-inactive-pairs',
+        help='Also download data from inactive pairs.',
+        action='store_true',
+    ),
     "new_pairs_days": Arg(
         '--new-pairs-days',
         help='Download data of new pairs for given number of days. Default: `%(default)s`.',
@@ -557,5 +562,11 @@ AVAILABLE_CLI_OPTIONS = {
         '--no-header',
         help='Do not print epoch details header.',
         action='store_true',
+    ),
+    "hyperopt_ignore_missing_space": Arg(
+        "--ignore-missing-spaces", "--ignore-unparameterized-spaces",
+        help=("Suppress errors for any requested Hyperopt spaces "
+              "that do not contain any parameters."),
+        action="store_true",
     ),
 }

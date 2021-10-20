@@ -281,7 +281,7 @@ bitmax              True     missing opt: fetchMyTrades
 bitmex              False    Various reasons.
 bitpanda            True
 bitso               False    missing: fetchOHLCV
-bitstamp            False    Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983
+bitstamp            True     missing opt: fetchTickers
 bitstamp1           False    missing: fetchOrder, fetchOHLCV
 bittrex             True
 bitvavo             True

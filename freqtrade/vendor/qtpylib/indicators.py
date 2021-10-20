@@ -339,11 +339,13 @@ def vwap(bars):
     (input can be pandas series or numpy array)
     bars are usually mid [ (h+l)/2 ] or typical [ (h+l+c)/3 ]
     """
-    typical = ((bars['high'] + bars['low'] + bars['close']) / 3).values
-    volume = bars['volume'].values
+    raise ValueError("using `qtpylib.vwap` facilitates lookahead bias. Please use "
+                     "`qtpylib.rolling_vwap` instead, which calculates vwap in a rolling manner.")
+    # typical = ((bars['high'] + bars['low'] + bars['close']) / 3).values
+    # volume = bars['volume'].values
 
-    return pd.Series(index=bars.index,
-                     data=np.cumsum(volume * typical) / np.cumsum(volume))
+    # return pd.Series(index=bars.index,
+    #                  data=np.cumsum(volume * typical) / np.cumsum(volume))
 
 
 # ---------------------------------------------

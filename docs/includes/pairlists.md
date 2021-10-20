@@ -52,6 +52,8 @@ To skip pair validation against active markets, set `"allow_inactive": true` wit
 This can be useful for backtesting expired pairs (like quarterly spot-markets).
 This option must be configured along with `exchange.skip_pair_validation` in the exchange configuration.
 
+When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in `'pair_whitelist'` will be added to the end of the pairlist.
+
 #### Volume Pair List
 
 `VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
@@ -194,17 +196,22 @@ Trade count is used as a tie breaker.
 You can use the `minutes` parameter to only consider performance of the past X minutes (rolling window).
 Not defining this parameter (or setting it to 0) will use all-time performance.
 
+The optional `min_profit` parameter defines the minimum profit a pair must have to be considered.
+Pairs below this level will be filtered out.
+Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without without a way to recover.
+
 ```json
 "pairlists": [
     // ...
     {
         "method": "PerformanceFilter",
-        "minutes": 1440  // rolling 24h
+        "minutes": 1440,  // rolling 24h
+        "min_profit": 0.01
     }
 ],
 ```
 
-!!! Note
+!!! Warning "Backtesting"
     `PerformanceFilter` does not support backtesting mode.
 
 #### PrecisionFilter

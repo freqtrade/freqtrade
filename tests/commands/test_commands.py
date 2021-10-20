@@ -754,6 +754,46 @@ def test_download_data_no_pairs(mocker, caplog):
         start_download_data(pargs)
 
 
+def test_download_data_all_pairs(mocker, markets):
+
+    mocker.patch.object(Path, "exists", MagicMock(return_value=False))
+
+    dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_ohlcv_data',
+                           MagicMock(return_value=["ETH/BTC", "XRP/BTC"]))
+    patch_exchange(mocker)
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets)
+    )
+    args = [
+        "download-data",
+        "--exchange",
+        "binance",
+        "--pairs",
+        ".*/USDT"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_download_data(pargs)
+    expected = set(['ETH/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
+    assert dl_mock.call_count == 1
+
+    dl_mock.reset_mock()
+    args = [
+        "download-data",
+        "--exchange",
+        "binance",
+        "--pairs",
+        ".*/USDT",
+        "--include-inactive-pairs",
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_download_data(pargs)
+    expected = set(['ETH/USDT', 'LTC/USDT', 'XRP/USDT', 'NEO/USDT', 'TKN/USDT'])
+    assert set(dl_mock.call_args_list[0][1]['pairs']) == expected
+
+
 def test_download_data_trades(mocker, caplog):
     dl_mock = mocker.patch('freqtrade.commands.data_commands.refresh_backtest_trades_data',
                            MagicMock(return_value=[]))
@@ -903,7 +943,7 @@ def test_hyperopt_list(mocker, capsys, caplog, saved_hyperopt_results, tmpdir):
     mocker.patch(
         'freqtrade.optimize.hyperopt_tools.HyperoptTools._test_hyperopt_results_exist',
         return_value=True
-        )
+    )
 
     def fake_iterator(*args, **kwargs):
         yield from [saved_hyperopt_results]
@@ -1309,9 +1349,10 @@ def test_start_list_data(testdatadir, capsys):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: Short trades?
 def test_show_trades(mocker, fee, capsys, caplog):
     mocker.patch("freqtrade.persistence.init_db")
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     args = [
         "show-trades",
         "--db-url",
