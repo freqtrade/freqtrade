@@ -458,7 +458,8 @@ def test_api_balance(botclient, mocker, rpc_balance, tickers):
     assert 'starting_capital_ratio' in response
 
 
-def test_api_count(botclient, mocker, ticker, fee, markets):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_count(botclient, mocker, ticker, fee, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -475,7 +476,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets):
     assert rc.json()["max"] == 1
 
     # Create some test data
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
     assert rc.json()["current"] == 4
@@ -556,7 +557,8 @@ def test_api_daily(botclient, mocker, ticker, fee, markets):
     assert rc.json()['data'][0]['date'] == str(datetime.utcnow().date())
 
 
-def test_api_trades(botclient, mocker, fee, markets):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_trades(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -569,7 +571,7 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['trades_count'] == 0
     assert rc.json()['total_trades'] == 0
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, is_short)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trades")
@@ -584,6 +586,7 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['total_trades'] == 2
 
 
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -596,7 +599,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Trade not found.'
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
@@ -604,6 +607,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert rc.json()['trade_id'] == 3
 
 
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_api_delete_trade(botclient, mocker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -619,7 +623,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
     # Error - trade won't exist yet.
     assert_response(rc, 502)
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
@@ -695,6 +699,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -710,7 +715,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 200)
     assert rc.json()['trade_count'] == 0
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     # Simulate fulfilled LIMIT_BUY order for trade
 
     rc = client_get(client, f"{BASE_URI}/profit")
@@ -746,7 +751,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_api_stats(botclient, mocker, ticker, fee, markets,):
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
+def test_api_stats(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -762,7 +768,7 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
     assert 'durations' in rc.json()
     assert 'sell_reasons' in rc.json()
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
@@ -820,6 +826,10 @@ def test_api_performance(botclient, fee):
                          {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_abs': -0.1150375}]
 
 
+# TODO-lev: @pytest.mark.parametrize('is_short,side', [
+#     (True, "short"),
+#     (False, "long")
+# ])
 def test_api_status(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -835,7 +845,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc, 200)
     assert rc.json() == []
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
@@ -888,7 +898,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'is_open': True,
         'max_rate': ANY,
         'min_rate': ANY,
-        'open_order_id': 'dry_run_buy_12345',
+        'open_order_id': 'dry_run_buy_long_12345',
         'open_rate_requested': ANY,
         'open_trade_value': 15.1668225,
         'sell_reason': None,

@@ -209,8 +209,14 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
-                     enter_short=False, exit_short=False, enter_tag: Optional[str] = None) -> None:
+def patch_get_signal(
+    freqtrade: FreqtradeBot,
+    enter_long=True,
+    exit_long=False,
+    enter_short=False,
+    exit_short=False,
+    enter_tag: Optional[str] = None
+) -> None:
     """
     :param mocker: mocker to patch IStrategy class
     :param value: which value IStrategy.get_signal() must return
@@ -241,7 +247,7 @@ def patch_get_signal(freqtrade: FreqtradeBot, enter_long=True, exit_long=False,
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, use_db: bool = True):
+def create_mock_trades(fee, is_short: bool, use_db: bool = True):
     """
     Create some fake trades ...
     """
@@ -252,22 +258,22 @@ def create_mock_trades(fee, use_db: bool = True):
             LocalTrade.add_bt_trade(trade)
 
     # Simulate dry_run entries
-    trade = mock_trade_1(fee)
+    trade = mock_trade_1(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_2(fee)
+    trade = mock_trade_2(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_3(fee)
+    trade = mock_trade_3(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_4(fee)
+    trade = mock_trade_4(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_5(fee)
+    trade = mock_trade_5(fee, is_short)
     add_trade(trade)
 
-    trade = mock_trade_6(fee)
+    trade = mock_trade_6(fee, is_short)
     add_trade(trade)
 
     if use_db:
@@ -286,22 +292,22 @@ def create_mock_trades_with_leverage(fee, use_db: bool = True):
             LocalTrade.add_bt_trade(trade)
 
     # Simulate dry_run entries
-    trade = mock_trade_1(fee)
+    trade = mock_trade_1(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_2(fee)
+    trade = mock_trade_2(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_3(fee)
+    trade = mock_trade_3(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_4(fee)
+    trade = mock_trade_4(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_5(fee)
+    trade = mock_trade_5(fee, False)
     add_trade(trade)
 
-    trade = mock_trade_6(fee)
+    trade = mock_trade_6(fee, False)
     add_trade(trade)
 
     trade = short_trade(fee)
@@ -324,7 +330,7 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
         else:
             LocalTrade.add_bt_trade(trade)
 
-        # Simulate dry_run entries
+    # Simulate dry_run entries
     trade = mock_trade_usdt_1(fee)
     add_trade(trade)
 
@@ -2297,6 +2303,7 @@ def limit_sell_order_usdt_open():
         'timestamp': arrow.utcnow().int_timestamp,
         'price': 2.20,
         'amount': 30.0,
+        'cost': 66.0,
         'filled': 0.0,
         'remaining': 30.0,
         'status': 'open'
@@ -2341,4 +2348,28 @@ def market_sell_order_usdt():
         'filled': 30.0,
         'remaining': 0.0,
         'status': 'closed'
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_order(limit_buy_order_usdt, limit_sell_order_usdt):
+    return {
+        'buy': limit_buy_order_usdt,
+        'sell': limit_sell_order_usdt
+    }
+
+
+@pytest.fixture(scope='function')
+def market_order(market_buy_order_usdt, market_sell_order_usdt):
+    return {
+        'buy': market_buy_order_usdt,
+        'sell': market_sell_order_usdt
+    }
+
+
+@pytest.fixture(scope='function')
+def limit_order_open(limit_buy_order_usdt_open, limit_sell_order_usdt_open):
+    return {
+        'buy': limit_buy_order_usdt_open,
+        'sell': limit_sell_order_usdt_open
     }

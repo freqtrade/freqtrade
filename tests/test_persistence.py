@@ -1514,11 +1514,12 @@ def test_adjust_min_max_rates(fee):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize('use_db', [True, False])
-def test_get_open(fee, use_db):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_get_open(fee, is_short, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
 
-    create_mock_trades(fee, use_db)
+    create_mock_trades(fee, is_short, use_db)
     assert len(Trade.get_open_trades()) == 4
 
     Trade.use_db = True
@@ -1874,14 +1875,15 @@ def test_fee_updated(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize('is_short', [True, False])
 @pytest.mark.parametrize('use_db', [True, False])
-def test_total_open_trades_stakes(fee, use_db):
+def test_total_open_trades_stakes(fee, is_short, use_db):
 
     Trade.use_db = use_db
     Trade.reset_trades()
     res = Trade.total_open_trades_stakes()
     assert res == 0
-    create_mock_trades(fee, use_db)
+    create_mock_trades(fee, is_short, use_db)
     res = Trade.total_open_trades_stakes()
     assert res == 0.004
 
@@ -1889,6 +1891,7 @@ def test_total_open_trades_stakes(fee, use_db):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 @pytest.mark.parametrize('use_db', [True, False])
 def test_get_total_closed_profit(fee, use_db):
 
@@ -1896,7 +1899,7 @@ def test_get_total_closed_profit(fee, use_db):
     Trade.reset_trades()
     res = Trade.get_total_closed_profit()
     assert res == 0
-    create_mock_trades(fee, use_db)
+    create_mock_trades(fee, False, use_db)
     res = Trade.get_total_closed_profit()
     assert res == 0.000739127
 
@@ -1904,11 +1907,12 @@ def test_get_total_closed_profit(fee, use_db):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 @pytest.mark.parametrize('use_db', [True, False])
 def test_get_trades_proxy(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
-    create_mock_trades(fee, use_db)
+    create_mock_trades(fee, False, use_db)
     trades = Trade.get_trades_proxy()
     assert len(trades) == 6
 
@@ -1937,9 +1941,10 @@ def test_get_trades_backtest():
 
 
 @pytest.mark.usefixtures("init_persistence")
+# @pytest.mark.parametrize('is_short', [True, False])
 def test_get_overall_performance(fee):
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     res = Trade.get_overall_performance()
 
     assert len(res) == 2
@@ -1949,12 +1954,13 @@ def test_get_overall_performance(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_get_best_pair(fee):
 
     res = Trade.get_best_pair()
     assert res is None
 
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
     res = Trade.get_best_pair()
     assert len(res) == 2
     assert res[0] == 'XRP/BTC'
@@ -2036,8 +2042,9 @@ def test_update_order_from_ccxt(caplog):
 
 
 @pytest.mark.usefixtures("init_persistence")
+# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_select_order(fee):
-    create_mock_trades(fee)
+    create_mock_trades(fee, False)
 
     trades = Trade.get_trades().all()
 

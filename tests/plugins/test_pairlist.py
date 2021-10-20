@@ -679,7 +679,7 @@ def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None
     assert pm.whitelist == ['ETH/BTC', 'TKN/BTC', 'XRP/BTC']
 
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
-        create_mock_trades(fee)
+        create_mock_trades(fee, False)
         pm.refresh_pairlist()
         assert pm.whitelist == ['XRP/BTC']
         assert log_has_re(r'Removing pair .* since .* is below .*', caplog)

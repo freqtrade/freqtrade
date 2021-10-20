@@ -804,8 +804,14 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             self._lev_prep(pair, leverage)
-            order = self._api.create_order(pair, ordertype, side,
-                                           amount, rate_for_order, params)
+            order = self._api.create_order(
+                pair,
+                ordertype,
+                side,
+                amount,
+                rate_for_order,
+                params
+            )
             self._log_exchange_response('create_order', order)
             return order
 
