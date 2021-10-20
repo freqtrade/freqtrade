@@ -1969,7 +1969,7 @@ def test_handle_trade(
     assert trade.close_date is not None
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_overlapping_signals(
     default_conf_usdt, ticker_usdt, limit_order_open, fee, mocker, is_short
 ) -> None:
@@ -2045,7 +2045,7 @@ def test_handle_overlapping_signals(
     assert freqtrade.handle_trade(trades[0]) is True
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee, mocker, caplog,
                           is_short) -> None:
 
@@ -2087,7 +2087,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
                    caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_trade_use_sell_signal(
     default_conf_usdt, ticker_usdt, limit_order_open, fee, mocker, caplog, is_short
 ) -> None:
@@ -2129,7 +2129,7 @@ def test_handle_trade_use_sell_signal(
                    caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_close_trade(
     default_conf_usdt, ticker_usdt, limit_order_open,
     limit_order, fee, mocker, is_short
@@ -2176,7 +2176,7 @@ def test_bot_loop_start_called_once(mocker, default_conf_usdt, caplog):
     assert ftbot.strategy.analyze.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy_usercustom(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, is_short
@@ -2251,7 +2251,7 @@ def test_check_handle_timedout_buy_usercustom(
         assert freqtrade.strategy.check_buy_timeout.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, is_short
@@ -2292,7 +2292,7 @@ def test_check_handle_timedout_buy(
         assert freqtrade.strategy.check_buy_timeout.call_count == 0
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_cancelled_buy(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     limit_sell_order_old, fee, mocker, caplog, is_short
@@ -2325,7 +2325,7 @@ def test_check_handle_cancelled_buy(
         f"{'Sell' if is_short else 'Buy'} order cancelled on exchange for Trade.*", caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_buy_exception(
     default_conf_usdt, ticker_usdt, limit_buy_order_old, open_trade,
     is_short, fee, mocker
@@ -2354,7 +2354,7 @@ def test_check_handle_timedout_buy_exception(
     assert nb_trades == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_sell_usercustom(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker,
     is_short, open_trade_usdt
@@ -2406,7 +2406,7 @@ def test_check_handle_timedout_sell_usercustom(
     assert freqtrade.strategy.check_sell_timeout.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_sell(
     default_conf_usdt, ticker_usdt, limit_sell_order_old,
     mocker, is_short, open_trade_usdt
@@ -2439,7 +2439,7 @@ def test_check_handle_timedout_sell(
     assert freqtrade.strategy.check_sell_timeout.call_count == 0
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_cancelled_sell(
     default_conf_usdt, ticker_usdt, limit_sell_order_old, open_trade_usdt,
     is_short, mocker, caplog
@@ -2471,7 +2471,7 @@ def test_check_handle_cancelled_sell(
     assert log_has_re("Sell order cancelled on exchange for Trade.*", caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_partial(
     default_conf_usdt, ticker_usdt, limit_buy_order_old_partial, is_short,
     open_trade, mocker
@@ -2503,7 +2503,7 @@ def test_check_handle_timedout_partial(
     assert trades[0].stake_amount == open_trade.open_rate * trades[0].amount
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_partial_fee(
     default_conf_usdt, ticker_usdt, open_trade, caplog, fee, is_short,
     limit_buy_order_old_partial, trades_for_order,
@@ -2545,7 +2545,7 @@ def test_check_handle_timedout_partial_fee(
     assert pytest.approx(trades[0].fee_open) == 0.001
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_handle_timedout_partial_except(
     default_conf_usdt, ticker_usdt, open_trade, caplog, fee, is_short,
     limit_buy_order_old_partial, trades_for_order,
@@ -2619,7 +2619,7 @@ def test_check_handle_timedout_exception(default_conf_usdt, ticker_usdt, open_tr
                       caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
                              is_short) -> None:
     patch_RPCManager(mocker)
@@ -2667,9 +2667,9 @@ def test_handle_cancel_enter(mocker, caplog, default_conf_usdt, limit_order,
     assert log_has_re(r"Order .* for .* not cancelled.", caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-@ pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
-                          indirect=['limit_buy_order_canceled_empty'])
+@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("limit_buy_order_canceled_empty", ['binance', 'ftx', 'kraken', 'bittrex'],
+                         indirect=['limit_buy_order_canceled_empty'])
 def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_short,
                                        limit_buy_order_canceled_empty) -> None:
     patch_RPCManager(mocker)
@@ -2690,8 +2690,8 @@ def test_handle_cancel_enter_exchanges(mocker, caplog, default_conf_usdt, is_sho
     assert nofiy_mock.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-@ pytest.mark.parametrize('cancelorder', [
+@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize('cancelorder', [
     {},
     {'remaining': None},
     'String Return value',
@@ -2789,7 +2789,7 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     assert freqtrade.handle_cancel_exit(trade, order, reason) == 'error cancelling order'
 
 
-@ pytest.mark.parametrize("is_short, open_rate, amt", [
+@pytest.mark.parametrize("is_short, open_rate, amt", [
     (False, 2.0, 30.0),
     (True, 2.02, 29.70297029),
 ])
@@ -2864,7 +2864,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     } == last_msg
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_down,
                                  ticker_usdt_sell_up, mocker, is_short) -> None:
     rpc_mock = patch_RPCManager(mocker)
@@ -2993,7 +2993,7 @@ def test_execute_trade_exit_custom_exit_price(
     } == last_msg
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         default_conf_usdt, ticker_usdt, fee, is_short, ticker_usdt_sell_down,
         ticker_usdt_sell_up, mocker) -> None:
@@ -3091,7 +3091,7 @@ def test_execute_trade_exit_sloe_cancel_exception(
     assert log_has('Could not cancel stoploss order abcd', caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_with_stoploss_on_exchange(
         default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, is_short, mocker) -> None:
 
@@ -3309,7 +3309,7 @@ def test_execute_trade_exit_market_order(
     } == last_msg
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_usdt, fee, is_short,
                                                      ticker_usdt_sell_up, mocker) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -3345,7 +3345,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     assert mock_insuf.call_count == 1
 
 
-@ pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type,is_short', [
+@pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type,is_short', [
     # Enable profit
     (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value, False),
     (True, 2.18, 2.2, False, True, SellType.SELL_SIGNAL.value, True),
@@ -3439,7 +3439,7 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_order, limit_order_ope
     assert trade.amount != amnt
 
 
-@ pytest.mark.parametrize('amount_wallet,has_err', [
+@pytest.mark.parametrize('amount_wallet,has_err', [
     (95.29, False),
     (91.29, True)
 ])
@@ -3476,7 +3476,7 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
         assert wallet_update.call_count == 1
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
                       ticker_usdt_sell_down, mocker, caplog, is_short) -> None:
     patch_RPCManager(mocker)
@@ -3515,7 +3515,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     assert log_has_re(f"Pair {trade.pair} is still locked.*", caplog)
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short", [False, True])
 def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_open, is_short,
                                   fee, mocker) -> None:
     patch_RPCManager(mocker)
@@ -3561,7 +3561,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
     assert trade.sell_reason == SellType.ROI.value
 
 
-@ pytest.mark.parametrize("is_short,val1,val2", [
+@pytest.mark.parametrize("is_short,val1,val2", [
     (False, 1.5, 1.1),
     (True, 0.5, 0.9)
 ])
@@ -3623,7 +3623,7 @@ def test_trailing_stop_loss(default_conf_usdt, limit_order_open,
     assert trade.sell_reason == SellType.TRAILING_STOP_LOSS.value
 
 
-@ pytest.mark.parametrize('offset,trail_if_reached,second_sl,is_short', [
+@pytest.mark.parametrize('offset,trail_if_reached,second_sl,is_short', [
     (0, False, 2.0394, False),
     (0.011, False, 2.0394, False),
     (0.055, True, 1.8, False),
@@ -3845,7 +3845,7 @@ def test_get_real_amount_no_trade(default_conf_usdt, buy_order_fee, caplog, mock
     )
 
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     'fee_par,fee_reduction_amount,use_ticker_usdt_rate,expected_log', [
         # basic, amount does not change
         ({'cost': 0.008, 'currency': 'ETH'}, 0, False, None),
@@ -3898,7 +3898,7 @@ def test_get_real_amount(
         assert log_has(expected_log, caplog)
 
 
-@ pytest.mark.parametrize(
+@pytest.mark.parametrize(
     'fee_cost, fee_currency, fee_reduction_amount, expected_fee, expected_log_amount', [
         # basic, amount is reduced by fee
         (None, None, 0.001, 0.001, 7.992),
@@ -4050,7 +4050,7 @@ def test_get_real_amount_open_trade_usdt(default_conf_usdt, fee, mocker):
     assert freqtrade.get_real_amount(trade, order) == amount
 
 
-@ pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
+@pytest.mark.parametrize('amount,fee_abs,wallet,amount_exp', [
     (8.0, 0.0, 10, 8),
     (8.0, 0.0, 0, 8),
     (8.0, 0.1, 0, 7.9),
@@ -4079,11 +4079,11 @@ def test_apply_fee_conditional(default_conf_usdt, fee, mocker,
     assert walletmock.call_count == 1
 
 
-@ pytest.mark.parametrize("delta, is_high_delta", [
+@pytest.mark.parametrize("delta, is_high_delta", [
     (0.1, False),
     (100, True),
 ])
-@ pytest.mark.parametrize('is_short, open_rate', [
+@pytest.mark.parametrize('is_short, open_rate', [
     (False, 2.0),
     (True, 2.02),
 ])
@@ -4129,7 +4129,7 @@ def test_order_book_depth_of_market(
         assert whitelist == default_conf_usdt['exchange']['pair_whitelist']
 
 
-@ pytest.mark.parametrize('exception_thrown,ask,last,order_book_top,order_book', [
+@pytest.mark.parametrize('exception_thrown,ask,last,order_book_top,order_book', [
     (False, 0.045, 0.046, 2, None),
     (True,  0.042, 0.046, 1, {'bids': [[]], 'asks': [[]]})
 ])
@@ -4182,7 +4182,7 @@ def test_check_depth_of_market(default_conf_usdt, mocker, order_book_l2) -> None
     assert freqtrade._check_depth_of_market('ETH/BTC', conf, side=SignalDirection.LONG) is False
 
 
-@ pytest.mark.parametrize('is_short', [False, True])
+@pytest.mark.parametrize('is_short', [False, True])
 def test_order_book_ask_strategy(
         default_conf_usdt, limit_buy_order_usdt_open, limit_buy_order_usdt, fee, is_short,
         limit_sell_order_usdt_open, mocker, order_book_l2, caplog) -> None:
@@ -4263,7 +4263,7 @@ def test_startup_trade_reinit(default_conf_usdt, edge_conf, mocker):
     assert reinit_mock.call_count == 0
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_buy_order_usdt_open,
                              caplog):
     default_conf_usdt['dry_run'] = True
@@ -4296,8 +4296,8 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
                       caplog)
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short,buy_calls,sell_calls", [
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short,buy_calls,sell_calls", [
     (False, 1, 2),
     (True, 2, 1),
 ])
@@ -4325,8 +4325,8 @@ def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, lim
     assert sell_mock.call_count == sell_calls
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_check_for_open_trades(mocker, default_conf_usdt, fee, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4343,8 +4343,8 @@ def test_check_for_open_trades(mocker, default_conf_usdt, fee, is_short):
     assert 'Handle these trades manually' in freqtrade.rpc.send_msg.call_args[0][0]['status']
 
 
-@ pytest.mark.parametrize("is_short", [False, True])
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.usefixtures("init_persistence")
 def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     create_mock_trades(fee, is_short=is_short)
@@ -4370,8 +4370,8 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
     assert len(Order.get_open_orders()) == 2
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4434,8 +4434,8 @@ def test_update_closed_trades_without_assigned_fees(mocker, default_conf_usdt, f
             assert trade.fee_close_currency is not None
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog, is_short):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.update_trade_state')
@@ -4483,7 +4483,7 @@ def test_reupdate_enter_order_fees(mocker, default_conf_usdt, fee, caplog, is_sh
                           r".* for order .*\.", caplog)
 
 
-@ pytest.mark.usefixtures("init_persistence")
+@pytest.mark.usefixtures("init_persistence")
 def test_handle_insufficient_funds(mocker, default_conf_usdt, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_rlo = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.refind_lost_order')
@@ -4521,8 +4521,8 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee):
     assert mock_bof.call_count == 1
 
 
-@ pytest.mark.usefixtures("init_persistence")
-@ pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [False, True])
 def test_refind_lost_order(mocker, default_conf_usdt, fee, caplog, is_short):
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
