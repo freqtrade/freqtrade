@@ -353,7 +353,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         results['open_timestamp'] = results['open_date'].view(int64) // 1e6
         results['close_timestamp'] = results['close_date'].view(int64) // 1e6
 
-    backtest_days = (max_date - min_date).days
+    backtest_days = (max_date - min_date).days or 1
     strat_stats = {
         'trades': results.to_dict(orient='records'),
         'locks': [lock.to_json() for lock in content['locks']],
@@ -380,7 +380,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'backtest_run_start_ts': content['backtest_start_time'],
         'backtest_run_end_ts': content['backtest_end_time'],
 
-        'trades_per_day': round(len(results) / backtest_days, 2) if backtest_days > 0 else 0,
+        'trades_per_day': round(len(results) / backtest_days, 2),
         'market_change': market_change,
         'pairlist': list(btdata.keys()),
         'stake_amount': config['stake_amount'],
