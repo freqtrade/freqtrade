@@ -3240,3 +3240,30 @@ def test_validate_trading_mode_and_collateral(
             exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
     else:
         exchange.validate_trading_mode_and_collateral(trading_mode, collateral)
+
+
+@pytest.mark.parametrize("exchange_name,trading_mode,ccxt_config", [
+    ("binance", "spot", {}),
+    ("binance", "margin", {"options": {"defaultType": "margin"}}),
+    ("binance", "futures", {"options": {"defaultType": "future"}}),
+    ("kraken", "spot", {}),
+    ("kraken", "margin", {}),
+    ("kraken", "futures", {}),
+    ("ftx", "spot", {}),
+    ("ftx", "margin", {}),
+    ("ftx", "futures", {}),
+    ("bittrex", "spot", {}),
+    ("bittrex", "margin", {}),
+    ("bittrex", "futures", {}),
+])
+def test__ccxt_config(
+    default_conf,
+    mocker,
+    exchange_name,
+    trading_mode,
+    ccxt_config
+):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange._ccxt_config == ccxt_config
