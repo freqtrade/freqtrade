@@ -220,15 +220,12 @@ def generate_days_breakdown_stats(trade_list: List, starting_balance: int) -> Li
     days_stats = []
     for name, day in days:
         profit_abs = day['profit_abs'].sum().round(10)
-        profit_total = day['profit_abs'].sum() / starting_balance
         wins = sum(day['profit_abs'] > 0)
         draws = sum(day['profit_abs'] == 0)
         loses = sum(day['profit_abs'] < 0)
-        profit_percentage = round(profit_total * 100.0, 2)
         days_stats.append(
             {
                 'date': name.strftime('%d/%m/%Y'),
-                'profit_percentage': profit_percentage,
                 'profit_abs': profit_abs,
                 'wins': wins,
                 'draws': draws,
@@ -542,14 +539,13 @@ def text_table_days_breakdown(days_breakdown_stats: List[Dict[str, Any]],
     """
     headers = [
         'Day',
-        'Profit %',
         f'Tot Profit {stake_currency}',
         'Wins',
         'Draws',
         'Losses',
     ]
     output = [[
-        d['date'], d['profit_percentage'], round_coin_value(d['profit_abs'], stake_currency, False),
+        d['date'], round_coin_value(d['profit_abs'], stake_currency, False),
         d['wins'], d['draws'], d['loses'],
     ] for d in days_breakdown_stats]
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
