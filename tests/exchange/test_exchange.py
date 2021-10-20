@@ -3260,8 +3260,9 @@ def test_validate_trading_mode_and_collateral(
     ("ftx", "margin", {}),
     ("ftx", "futures", {}),
     ("bittrex", "spot", {}),
-    ("bittrex", "margin", {}),
-    ("bittrex", "futures", {}),
+    ("gateio", "spot", {}),
+    ("gateio", "margin", {"options": {"defaultType": "margin"}}),
+    ("gateio", "futures", {"options": {"defaultType": "future"}}),
 ])
 def test__ccxt_config(
     default_conf,
