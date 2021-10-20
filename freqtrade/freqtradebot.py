@@ -865,7 +865,8 @@ class FreqtradeBot(LoggingMixin):
 
         if should_sell.sell_flag:
             logger.info(
-                f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. Tag: {exit_tag if exit_tag is not None else "None"}')
+                f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. '
+                f'Tag: {exit_tag if exit_tag is not None else "None"}')
             self.execute_trade_exit(trade, exit_rate, should_sell, exit_tag)
             return True
         return False

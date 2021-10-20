@@ -54,4 +54,6 @@ def _build_backtest_dataframe(data):
         frame[column] = frame[column].astype('float64')
     if 'buy_tag' not in columns:
         frame['buy_tag'] = None
+    if 'exit_tag' not in columns:
+        frame['exit_tag'] = None
     return frame

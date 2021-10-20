@@ -324,7 +324,7 @@ class LocalTrade():
             'profit_pct': round(self.close_profit * 100, 2) if self.close_profit else None,
             'profit_abs': self.close_profit_abs,
 
-            'sell_reason': (f' ({self.sell_reason})' if self.sell_reason else ''),
+            'sell_reason': self.sell_reason,
             'sell_order_status': self.sell_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
@@ -970,7 +970,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 .order_by(desc('profit_sum_abs')) \
                 .all()
 
-        return_list = []
+        return_list: List[Dict] = []
         for id, buy_tag, sell_reason, profit, profit_abs, count in tag_perf:
             buy_tag = buy_tag if buy_tag is not None else "Other"
             sell_reason = sell_reason if sell_reason is not None else "Other"
