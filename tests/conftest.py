@@ -278,7 +278,6 @@ def create_mock_trades(fee, is_short: bool, use_db: bool = True):
 
     if use_db:
         Trade.commit()
-        Trade.query.session.flush()
 
 
 def create_mock_trades_with_leverage(fee, use_db: bool = True):
@@ -351,7 +350,6 @@ def create_mock_trades_usdt(fee, use_db: bool = True):
 
     if use_db:
         Trade.commit()
-        Trade.query.session.flush()
 
 
 def get_sides(is_short: bool) -> Tuple[str, str]:

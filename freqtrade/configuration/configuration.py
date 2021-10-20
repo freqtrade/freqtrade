@@ -407,6 +407,9 @@ class Configuration:
         self._args_to_config(config, argname='days',
                              logstring='Detected --days: {}')
 
+        self._args_to_config(config, argname='include_inactive',
+                             logstring='Detected --include-inactive-pairs: {}')
+
         self._args_to_config(config, argname='download_trades',
                              logstring='Detected --dl-trades: {}')
 

@@ -698,7 +698,6 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-@pytest.mark.usefixtures("init_persistence")
 # TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
 def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
@@ -750,9 +749,8 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
                          }
 
 
-@pytest.mark.usefixtures("init_persistence")
 # TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_api_stats(botclient, mocker, ticker, fee, markets):
+def test_api_stats(botclient, mocker, ticker, fee, markets,):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -817,7 +815,7 @@ def test_api_performance(botclient, fee):
     trade.close_profit_abs = trade.calc_profit()
 
     Trade.query.session.add(trade)
-    Trade.query.session.flush()
+    Trade.commit()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)

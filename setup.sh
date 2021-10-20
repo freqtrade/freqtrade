@@ -30,7 +30,7 @@ function check_installed_python() {
             check_installed_pip
             return
         fi
-    done 
+    done
 
     echo "No usable python found. Please make sure to have python3.7 or newer installed"
     exit 1
@@ -95,11 +95,19 @@ function install_talib() {
         return
     fi
 
-    cd build_helpers && ./install_ta-lib.sh && cd ..
+    cd build_helpers && ./install_ta-lib.sh
+
+    if [ $? -ne 0 ]; then
+        echo "Quitting. Please fix the above error before continuing."
+        cd ..
+        exit 1
+    fi;
+
+    cd ..
 }
 
-function install_mac_newer_python_dependencies() {    
-    
+function install_mac_newer_python_dependencies() {
+
     if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
     then
         echo "-------------------------"
@@ -115,7 +123,7 @@ function install_mac_newer_python_dependencies() {
         echo "Installing c-blosc"
         echo "-------------------------"
         brew install c-blosc
-    fi    
+    fi
     export CBLOSC_DIR=$(brew --prefix)
 }
 
@@ -130,7 +138,7 @@ function install_macos() {
     fi
     #Gets number after decimal in python version
     version=$(egrep -o 3.\[0-9\]+ <<< $PYTHON | sed 's/3.//g')
-    
+
     if [[ $version -ge 9 ]]; then               #Checks if python version >= 3.9
         install_mac_newer_python_dependencies
     fi
