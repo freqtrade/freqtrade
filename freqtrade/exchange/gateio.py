@@ -1,7 +1,8 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
+from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
@@ -26,6 +27,31 @@ class Gateio(Exchange):
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
 
     funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
+
+    _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
+        # TradingMode.SPOT always supported and not required in this list
+        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
+    ]
+
+    @property
+    def _ccxt_config(self) -> Dict:
+        # Parameters to add directly to ccxt sync/async initialization.
+        if self.trading_mode == TradingMode.MARGIN:
+            return {
+                "options": {
+                    "defaultType": "margin"
+                }
+            }
+        elif self.trading_mode == TradingMode.FUTURES:
+            return {
+                "options": {
+                    "defaultType": "future"
+                }
+            }
+        else:
+            return {}
 
     def validate_ordertypes(self, order_types: Dict) -> None:
         super().validate_ordertypes(order_types)
