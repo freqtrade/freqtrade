@@ -219,12 +219,14 @@ def _get_resample_from_period(period: str) -> str:
     if period == 'week':
         return '1w'
     if period == 'month':
-        return '1m'
+        return '1M'
     raise ValueError(f"Period {period} is not supported.")
 
 
 def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dict[str, Any]]:
     results = DataFrame.from_records(trade_list)
+    if len(results) == 0:
+        return []
     results['close_date'] = to_datetime(results['close_date'], utc=True)
     resample = _get_resample_from_period(period)
     period = results.resample(resample, on='close_date')
