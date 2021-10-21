@@ -193,11 +193,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=float,
         metavar='FLOAT',
     ),
-    "show_days": Arg(
-        '--show-days',
-        help='Print days breakdown for backtest results',
-        action='store_true',
-        default=False,
+    "backtest_breakdown": Arg(
+        '--breakdown',
+        help='Show backtesting breakdown per [day, week, month].',
+        nargs='+',
+        choices=constants.BACKTEST_BREAKDOWNS
     ),
     # Edge
     "stoploss_range": Arg(

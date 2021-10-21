@@ -213,17 +213,28 @@ def generate_edge_table(results: dict) -> str:
                     floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")  # type: ignore
 
 
-def generate_days_breakdown_stats(trade_list: List, starting_balance: int) -> List[Dict[str, Any]]:
+def _get_resample_from_period(period: str) -> str:
+    if period == 'day':
+        return '1d'
+    if period == 'week':
+        return '1w'
+    if period == 'month':
+        return '1m'
+    raise ValueError(f"Period {period} is not supported.")
+
+
+def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dict[str, Any]]:
     results = DataFrame.from_records(trade_list)
     results['close_date'] = to_datetime(results['close_date'], utc=True)
-    days = results.resample('1d', on='close_date')
-    days_stats = []
-    for name, day in days:
+    resample = _get_resample_from_period(period)
+    period = results.resample(resample, on='close_date')
+    stats = []
+    for name, day in period:
         profit_abs = day['profit_abs'].sum().round(10)
         wins = sum(day['profit_abs'] > 0)
         draws = sum(day['profit_abs'] == 0)
         loses = sum(day['profit_abs'] < 0)
-        days_stats.append(
+        stats.append(
             {
                 'date': name.strftime('%d/%m/%Y'),
                 'profit_abs': profit_abs,
@@ -232,7 +243,7 @@ def generate_days_breakdown_stats(trade_list: List, starting_balance: int) -> Li
                 'loses': loses
             }
         )
-    return days_stats
+    return stats
 
 
 def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
@@ -529,8 +540,8 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
-def text_table_days_breakdown(days_breakdown_stats: List[Dict[str, Any]],
-                              stake_currency: str) -> str:
+def text_table_periodic_breakdown(days_breakdown_stats: List[Dict[str, Any]],
+                                  stake_currency: str, period: str) -> str:
     """
     Generate small table with Backtest results by days
     :param days_breakdown_stats: Days breakdown metrics
@@ -538,7 +549,7 @@ def text_table_days_breakdown(days_breakdown_stats: List[Dict[str, Any]],
     :return: pretty printed table with tabulate as string
     """
     headers = [
-        'Day',
+        period.capitalize(),
         f'Tot Profit {stake_currency}',
         'Wins',
         'Draws',
@@ -663,7 +674,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
 
 
 def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency: str,
-                         show_days=False):
+                         backtest_breakdown=[]):
     """
     Print results for one strategy
     """
@@ -685,13 +696,13 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' LEFT OPEN TRADES REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if show_days:
-        days_breakdown_stats = generate_days_breakdown_stats(
-            trade_list=results['trades'], starting_balance=results['starting_balance'])
-        table = text_table_days_breakdown(days_breakdown_stats=days_breakdown_stats,
-                                          stake_currency=stake_currency)
+    for period in backtest_breakdown:
+        days_breakdown_stats = generate_periodic_breakdown_stats(
+            trade_list=results['trades'], period=period)
+        table = text_table_periodic_breakdown(days_breakdown_stats=days_breakdown_stats,
+                                              stake_currency=stake_currency, period=period)
         if isinstance(table, str) and len(table) > 0:
-            print(' DAYS BREAKDOWN '.center(len(table.splitlines()[0]), '='))
+            print(f' {period.upper()} BREAKDOWN '.center(len(table.splitlines()[0]), '='))
         print(table)
 
     table = text_table_add_metrics(results)
@@ -708,7 +719,9 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
     stake_currency = config['stake_currency']
 
     for strategy, results in backtest_stats['strategy'].items():
-        show_backtest_result(strategy, results, stake_currency, config.get('show_days', False))
+        show_backtest_result(
+            strategy, results, stake_currency,
+            config.get('backtest_breakdown', []))
 
     if len(backtest_stats['strategy']) > 1:
         # Print Strategy summary table

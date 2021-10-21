@@ -269,8 +269,8 @@ class Configuration:
         self._args_to_config(config, argname='export',
                              logstring='Parameter --export detected: {} ...')
 
-        self._args_to_config(config, argname='show_days',
-                             logstring='Parameter --show-days detected ...')
+        self._args_to_config(config, argname='backtest_breakdown',
+                             logstring='Parameter --breakdown detected ...')
 
         self._args_to_config(config, argname='disableparamexport',
                              logstring='Parameter --disableparamexport detected: {} ...')
