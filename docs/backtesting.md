@@ -21,6 +21,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--timeframe-detail TIMEFRAME_DETAIL]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export {none,trades}] [--export-filename PATH]
+                             [--breakdown {day,week,month} [{day,week,month} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -30,7 +31,7 @@ optional arguments:
                         Specify what timerange of data to use.
   --data-format-ohlcv {json,jsongz,hdf5}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `None`).
+                        (default: `json`).
   --max-open-trades INT
                         Override the value of the `max_open_trades`
                         configuration setting.
@@ -65,8 +66,7 @@ optional arguments:
                         set either in config or via command line. When using
                         this together with `--export trades`, the strategy-
                         name is injected into the filename (so `backtest-
-                        data.json` becomes `backtest-data-
-                        SampleStrategy.json`
+                        data.json` becomes `backtest-data-SampleStrategy.json`
   --export {none,trades}
                         Export backtest results (default: trades).
   --export-filename PATH
@@ -74,7 +74,8 @@ optional arguments:
                         Requires `--export` to be set as well. Example:
                         `--export-filename=user_data/backtest_results/backtest
                         _today.json`
-  --show-days           Print a days breakdown table of the backtest results
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -429,6 +430,31 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
+
+### Daily / Weekly / Monthly breakdown
+
+You can get an overview over daily / weekly or monthly results by using the `--breakdown <>` switch.
+
+To visualize daily and weekly breakdowns, you can use the following:
+
+``` bash
+freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
+```
+
+``` output
+======================== DAY BREAKDOWN =========================
+|        Day |   Tot Profit USDT |   Wins |   Draws |   Losses |
+|------------+-------------------+--------+---------+----------|
+| 03/07/2021 |           200.0   |      2 |       0 |        0 |
+| 04/07/2021 |           -50.31  |      0 |       0 |        2 |
+| 05/07/2021 |           220.611 |      3 |       2 |        0 |
+| 06/07/2021 |           150.974 |      3 |       0 |        2 |
+| 07/07/2021 |           -70.193 |      1 |       0 |        2 |
+| 08/07/2021 |           212.413 |      2 |       0 |        3 |
+
+```
+
+The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day.
 
 ### Further backtest-result analysis
 
