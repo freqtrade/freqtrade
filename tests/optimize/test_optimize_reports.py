@@ -15,7 +15,9 @@ from freqtrade.edge import PairInfo
 from freqtrade.enums import SellType
 from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
                                                  generate_daily_stats, generate_edge_table,
-                                                 generate_pair_metrics, generate_periodic_breakdown_stats, generate_sell_reason_stats,
+                                                 generate_pair_metrics,
+                                                 generate_periodic_breakdown_stats,
+                                                 generate_sell_reason_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, store_backtest_stats,
                                                  text_table_bt_results, text_table_sell_reason,

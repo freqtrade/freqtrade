@@ -228,10 +228,10 @@ def generate_periodic_breakdown_stats(trade_list: List, period: str) -> List[Dic
     if len(results) == 0:
         return []
     results['close_date'] = to_datetime(results['close_date'], utc=True)
-    resample = _get_resample_from_period(period)
-    period = results.resample(resample, on='close_date')
+    resample_period = _get_resample_from_period(period)
+    resampled = results.resample(resample_period, on='close_date')
     stats = []
-    for name, day in period:
+    for name, day in resampled:
         profit_abs = day['profit_abs'].sum().round(10)
         wins = sum(day['profit_abs'] > 0)
         draws = sum(day['profit_abs'] == 0)
