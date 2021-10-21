@@ -150,19 +150,22 @@ def generate_tag_metrics(tag_type: str,
 
     tabular_data = []
 
-    for tag, count in results[tag_type].value_counts().iteritems():
-        result = results[results[tag_type] == tag]
-        if skip_nan and result['profit_abs'].isnull().all():
-            continue
+    if tag_type in results.columns:
+        for tag, count in results[tag_type].value_counts().iteritems():
+            result = results[results[tag_type] == tag]
+            if skip_nan and result['profit_abs'].isnull().all():
+                continue
 
-        tabular_data.append(_generate_tag_result_line(result, starting_balance, tag))
+            tabular_data.append(_generate_tag_result_line(result, starting_balance, tag))
 
-    # Sort by total profit %:
-    tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
+        # Sort by total profit %:
+        tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
 
-    # Append Total
-    tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
-    return tabular_data
+        # Append Total
+        tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
+        return tabular_data
+    else:
+        return None
 
 
 def _generate_tag_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
@@ -732,14 +735,15 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    table = text_table_tags(
-        "buy_tag",
-        results['results_per_buy_tag'],
-        stake_currency=stake_currency)
+    if(results['results_per_buy_tag'] is not None):
+        table = text_table_tags(
+            "buy_tag",
+            results['results_per_buy_tag'],
+            stake_currency=stake_currency)
 
-    if isinstance(table, str) and len(table) > 0:
-        print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
-    print(table)
+        if isinstance(table, str) and len(table) > 0:
+            print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
+        print(table)
 
     table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
                                    stake_currency=stake_currency)

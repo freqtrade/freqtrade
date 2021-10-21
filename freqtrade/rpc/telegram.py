@@ -107,10 +107,9 @@ class Telegram(RPCHandler):
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
         valid_keys: List[str] = [r'/start$', r'/stop$', r'/status$', r'/status table$',
-                                 r'/trades$', r'/performance$', r'/daily$', r'/daily \d+$',
-                                 r'/profit$', r'/profit \d+',
+                                 r'/trades$', r'/performance$', r'/buys', r'/sells', r'/mix_tags',
+                                 r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
-                                 r'/buys', r'/sells', r'/mix_tags',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
                                  r'/forcebuy$', r'/help$', r'/version$']
@@ -179,9 +178,9 @@ class Telegram(RPCHandler):
             CallbackQueryHandler(self._profit, pattern='update_profit'),
             CallbackQueryHandler(self._balance, pattern='update_balance'),
             CallbackQueryHandler(self._performance, pattern='update_performance'),
-            CallbackQueryHandler(self._performance, pattern='update_buy_tag_performance'),
-            CallbackQueryHandler(self._performance, pattern='update_sell_reason_performance'),
-            CallbackQueryHandler(self._performance, pattern='update_mix_tag_performance'),
+            CallbackQueryHandler(self._buy_tag_performance, pattern='update_buy_tag_performance'),
+            CallbackQueryHandler(self._sell_reason_performance, pattern='update_sell_reason_performance'),
+            CallbackQueryHandler(self._mix_tag_performance, pattern='update_mix_tag_performance'),
             CallbackQueryHandler(self._count, pattern='update_count'),
             CallbackQueryHandler(self._forcebuy_inline),
         ]
