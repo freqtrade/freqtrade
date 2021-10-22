@@ -183,3 +183,30 @@ class Ftx(Exchange):
             :nominal_value: Here for super method, not used on FTX
         """
         return 20.0
+
+    def _get_mark_price_history(
+        self,
+        pair: str,
+        start: int,
+        end: Optional[int]
+    ) -> Dict:
+        """
+            Get's the mark price history for a pair
+        """
+        if end:
+            params = {
+                'endTime': end
+            }
+        else:
+            params = {}
+
+        candles = self._api.fetch_index_ohlcv(
+            pair,
+            timeframe="1h",
+            since=start,
+            params=params
+        )
+        history = {}
+        for candle in candles:
+            history[candle[0]] = candle[1]
+        return history
