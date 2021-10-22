@@ -1636,23 +1636,8 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _get_mark_price(self, pair: str, date: datetime) -> float:
-        """
-            Get's the mark price for a pair at a specific date and time in the past
-        """
-        # TODO-lev: Can maybe use self._api.fetchFundingRate, or get the most recent candlestick
-        raise OperationalException(f'_get_mark_price has not been implemented on {self.name}')
-
-    def _get_funding_rate(self, pair: str, when: datetime):
-        """
-            Get's the funding_rate for a pair at a specific date and time in the past
-        """
-        # TODO-lev: Maybe use self._api.fetchFundingRate or fetchFundingRateHistory with length 1
-        raise OperationalException(f"get_funding_rate has not been implemented for {self.name}")
-
     def _get_funding_fee(
         self,
-        pair: str,
         contract_size: float,
         funding_rate: float,
         mark_price: float,
@@ -1726,12 +1711,39 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def _get_mark_price_history(
+        self,
+        pair: str,
+        start: int,
+        end: Optional[int]
+    ) -> Dict:
+        """
+            Get's the mark price history for a pair
+        """
+        if end:
+            params = {
+                'endTime': end
+            }
+        else:
+            params = {}
+
+        candles = self._api.fetch_mark_ohlcv(
+            pair,
+            timeframe="1h",
+            since=start,
+            params=params
+        )
+        history = {}
+        for candle in candles:
+            history[candle[0]] = candle[1]
+        return history
+
     def calculate_funding_fees(
         self,
         pair: str,
         amount: float,
         open_date: datetime,
-        close_date: datetime
+        close_date: Optional[datetime]
     ) -> float:
         """
             calculates the sum of all funding fees that occurred for a pair during a futures trade
@@ -1742,11 +1754,22 @@ class Exchange:
         """
 
         fees: float = 0
+        if close_date:
+            close_date_timestamp: Optional[int] = int(close_date.timestamp())
+        funding_rate_history = self.get_funding_rate_history(
+            pair,
+            int(open_date.timestamp()),
+            close_date_timestamp
+        )
+        mark_price_history = self._get_mark_price_history(
+            pair,
+            int(open_date.timestamp()),
+            close_date_timestamp
+        )
         for date in self._get_funding_fee_dates(open_date, close_date):
-            funding_rate = self._get_funding_rate(pair, date)
-            mark_price = self._get_mark_price(pair, date)
+            funding_rate = funding_rate_history[date.timestamp]
+            mark_price = mark_price_history[date.timestamp]
             fees += self._get_funding_fee(
-                pair=pair,
                 contract_size=amount,
                 mark_price=mark_price,
                 funding_rate=funding_rate
@@ -1756,10 +1779,12 @@ class Exchange:
 
     def get_funding_rate_history(
         self,
+        pair: str,
         start: int,
-        end: int
+        end: Optional[int] = None
     ) -> Dict:
         '''
+            :param pair: quote/base currency pair
             :param start: timestamp in ms of the beginning time
             :param end: timestamp in ms of the end time
         '''
@@ -1771,19 +1796,14 @@ class Exchange:
 
         try:
             funding_history: Dict = {}
-            for pair, market in self.markets.items():
-                if market['swap']:
-                    response = self._api.fetch_funding_rate_history(
-                        pair,
-                        limit=1000,
-                        since=start,
-                        params={
-                            'endTime': end
-                        }
-                    )
-                    funding_history[pair] = {}
-                    for fund in response:
-                        funding_history[pair][fund['timestamp']] = fund['funding_rate']
+            response = self._api.fetch_funding_rate_history(
+                pair,
+                limit=1000,
+                start=start,
+                end=end
+            )
+            for fund in response:
+                funding_history[fund['timestamp']] = fund['fundingRate']
             return funding_history
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
