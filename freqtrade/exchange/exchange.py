@@ -179,6 +179,10 @@ class Exchange:
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
 
+        self._leverage_brackets: Dict = {}
+        if self.trading_mode != TradingMode.SPOT:
+            self.fill_leverage_brackets()
+
     def __del__(self):
         """
         Destructor - clean up async stuff
@@ -1635,7 +1639,7 @@ class Exchange:
         """
             Assigns property _leverage_brackets to a dictionary of information about the leverage
             allowed on each pair
-            Not used by most exchanges, only used by Binance at time of writing
+            Not used if the exchange has a static max leverage value for the account or each pair
         """
         return
 

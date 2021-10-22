@@ -2,7 +2,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
@@ -37,12 +37,6 @@ class Binance(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
     ]
-
-    def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
-        super().__init__(config, validate)
-        self._leverage_brackets: Dict = {}
-        if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
 
     @property
     def _ccxt_config(self) -> Dict:
