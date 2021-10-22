@@ -250,20 +250,3 @@ def test_get_order_id(mocker, default_conf):
         }
     }
     assert exchange.get_order_id_conditional(order) == '1111'
-
-
-@pytest.mark.parametrize('pair,nominal_value,max_lev', [
-    ("ADA/BTC", 0.0, 20.0),
-    ("BTC/EUR", 100.0, 20.0),
-    ("ZEC/USD", 173.31, 20.0),
-])
-def test_get_max_leverage_ftx(default_conf, mocker, pair, nominal_value, max_lev):
-    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
-    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
-
-
-def test_fill_leverage_brackets_ftx(default_conf, mocker):
-    # FTX only has one account wide leverage, so there's no leverage brackets
-    exchange = get_patched_exchange(mocker, default_conf, id="ftx")
-    exchange.fill_leverage_brackets()
-    assert exchange._leverage_brackets == {}

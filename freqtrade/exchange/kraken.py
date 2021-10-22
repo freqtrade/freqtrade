@@ -139,40 +139,6 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def fill_leverage_brackets(self):
-        """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
-        """
-        leverages = {}
-
-        for pair, market in self.markets.items():
-            leverages[pair] = [1]
-            info = market['info']
-            leverage_buy = info.get('leverage_buy', [])
-            leverage_sell = info.get('leverage_sell', [])
-            if len(leverage_buy) > 0 or len(leverage_sell) > 0:
-                if leverage_buy != leverage_sell:
-                    logger.warning(
-                        f"The buy({leverage_buy}) and sell({leverage_sell}) leverage are not equal"
-                        "for {pair}. Please notify freqtrade because this has never happened before"
-                    )
-                    if max(leverage_buy) <= max(leverage_sell):
-                        leverages[pair] += [int(lev) for lev in leverage_buy]
-                    else:
-                        leverages[pair] += [int(lev) for lev in leverage_sell]
-                else:
-                    leverages[pair] += [int(lev) for lev in leverage_buy]
-        self._leverage_brackets = leverages
-
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
-        """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: Here for super class, not needed on Kraken
-        """
-        return float(max(self._leverage_brackets[pair]))
-
     def _set_leverage(
         self,
         leverage: float,

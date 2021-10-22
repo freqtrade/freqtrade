@@ -667,6 +667,7 @@ usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [--profitable] [-n INT] [--print-json]
                                [--hyperopt-filename FILENAME] [--no-header]
                                [--disable-param-export]
+                               [--breakdown {day,week,month} [{day,week,month} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -680,6 +681,8 @@ optional arguments:
   --no-header           Do not print epoch details header.
   --disable-param-export
                         Disable automatic hyperopt parameter export.
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

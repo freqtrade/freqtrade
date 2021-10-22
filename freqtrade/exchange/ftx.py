@@ -169,21 +169,6 @@ class Ftx(Exchange):
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
 
-    def fill_leverage_brackets(self):
-        """
-            FTX leverage is static across the account, and doesn't change from pair to pair,
-            so _leverage_brackets doesn't need to be set
-        """
-        return
-
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
-        """
-            Returns the maximum leverage that a pair can be traded at, which is always 20 on ftx
-            :param pair: Here for super method, not used on FTX
-            :nominal_value: Here for super method, not used on FTX
-        """
-        return 20.0
-
     def _get_mark_price_history(
         self,
         pair: str,
@@ -191,7 +176,7 @@ class Ftx(Exchange):
         end: Optional[int]
     ) -> Dict:
         """
-            Get's the mark price history for a pair
+            Get's the index price history for a pair
         """
         if end:
             params = {
