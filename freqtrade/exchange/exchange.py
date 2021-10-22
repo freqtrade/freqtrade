@@ -1819,9 +1819,12 @@ class Exchange:
 
         return fees
 
-    def get_funding_rate_history(self, pair: str, start: int, end: int):
+    def get_funding_rate_history(
+        self,
+        start: int,
+        end: int
+    ) -> Dict:
         '''
-            :param pair: quote/base currency pair
             :param start: timestamp in ms of the beginning time
             :param end: timestamp in ms of the end time
         '''
@@ -1832,12 +1835,21 @@ class Exchange:
             )
 
         try:
-            fund_history = self._api.fetch_funding_rate_history(
-                pair,
-                since=start,
-            )
-            for fund in fund_history:
-                self.funding_rate_history[pair][fund['timestamp']] = fund['funding_rate']
+            funding_history: Dict = {}
+            for pair, market in self.markets.items():
+                if market['swap']:
+                    response = self._api.fetch_funding_rate_history(
+                        pair,
+                        limit=1000,
+                        since=start,
+                        params={
+                            'endTime': end
+                        }
+                    )
+                    funding_history[pair] = {}
+                    for fund in response:
+                        funding_history[pair][fund['timestamp']] = fund['funding_rate']
+            return funding_history
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
