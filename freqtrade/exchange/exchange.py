@@ -1808,7 +1808,7 @@ class Exchange:
         pair: str,
         amount: float,
         open_date: datetime,
-        close_date: datetime
+        close_date: Optional[datetime]
     ) -> float:
         """
             calculates the sum of all funding fees that occurred for a pair during a futures trade
@@ -1820,7 +1820,7 @@ class Exchange:
 
         fees: float = 0
         if close_date:
-            close_date_timestamp = int(close_date.timestamp())
+            close_date_timestamp: Optional[int] = int(close_date.timestamp())
         funding_rate_history = self.get_funding_rate_history(
             pair,
             int(open_date.timestamp()),
@@ -1846,7 +1846,7 @@ class Exchange:
         self,
         pair: str,
         start: int,
-        end: Optional[int]
+        end: Optional[int] = None
     ) -> Dict:
         '''
             :param pair: quote/base currency pair

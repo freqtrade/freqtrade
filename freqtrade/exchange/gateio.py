@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
@@ -36,12 +36,13 @@ class Gateio(Exchange):
 
     def get_funding_rate_history(
         self,
+        pair: str,
         start: int,
-        end: int
+        end: Optional[int] = None
     ) -> Dict:
         '''
             :param start: timestamp in ms of the beginning time
             :param end: timestamp in ms of the end time
         '''
         # TODO-lev: Has a max limit into the past of 333 days
-        return super().get_funding_rate_history(start, end)
+        return super().get_funding_rate_history(pair, start, end)

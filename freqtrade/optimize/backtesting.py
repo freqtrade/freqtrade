@@ -3,7 +3,6 @@
 """
 This module contains the backtesting logic
 """
-import ccxt
 import logging
 from collections import defaultdict
 from copy import deepcopy
@@ -127,10 +126,6 @@ class Backtesting:
         self.progress = BTProgress()
         self.abort = False
 
-        self.funding_rate_history = getattr(ccxt, self._exchange_name).load_funding_rate_history(
-            self.timerange.startts,
-            self.timerange.stopts
-        )
         self.init_backtest()
 
     def __del__(self):
