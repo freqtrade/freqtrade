@@ -340,6 +340,51 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
     return fig
 
 
+def createVolumeProfileData(df: pd.DataFrame, bar_split: int = 50,
+                            history_bars: int = None) -> pd.DataFrame:
+    """
+    Generate the Volume Profile Date for the given dataframe
+    :param df: DataFrame with candle data
+    :param bar_split: in how many bars should the PriceRange be spit (default=50)
+    :param history_bars: how many history bars should be considered (default=all)
+    :return: DataFrame with Price/Trade Date
+    """
+
+    df_vol = pd.DataFrame(columns=['price_lower', 'price_upper',
+                          'price_avg', 'volume', 'volume_buy', 'volume_sell'])
+
+    div = df['close'].max() - df['close'].min()
+    step = div/bar_split
+    for i in range(0, bar_split):
+        # finding the priceRange
+        price_lower = df['close'].min() + step*i
+        price_upper = df['close'].min() + step*(i+1)
+        price_avg = (price_lower + price_upper)/2
+
+        # the volume for the given priceRange
+        if history_bars is not None:
+            dt_tail = df.tail(history_bars)
+        else:
+            dt_tail = df
+
+        volume_comb = dt_tail[(dt_tail['close'] >= price_lower) & (
+            dt_tail['close'] < price_upper)]['volume'].sum()
+
+        volume_buy = dt_tail[(dt_tail['close'] >= price_lower) & (
+            dt_tail['close'] < price_upper)]['volume_buy'].sum()
+
+        volume_sell = dt_tail[(dt_tail['close'] >= price_lower) & (
+            dt_tail['close'] < price_upper)]['volume_sell'].sum()
+
+        df_vol = df_vol.append({'price_lower': price_lower,
+                                'price_upper': price_upper,
+                                'price_avg': price_avg,
+                                'volume': volume_comb,
+                                'volume_buy': volume_buy,
+                                'volume_sell': volume_sell}, ignore_index=True)
+    return df_vol
+
+
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
                                indicators2: List[str] = [],
@@ -362,16 +407,21 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     # Define the graph
     fig = make_subplots(
         rows=rows,
-        cols=1,
+        cols=2,  # ToDo: Check if 2 columns (instead of one) cause any issues somewhere else
+                 # ToDo: when showVolumeProfile==false, don't show the second column
+        column_widths=[8, 1],  # set the width of the Volume Profile
         shared_xaxes=True,
+        shared_yaxes=True,
         row_width=row_widths + [1, 4],
         vertical_spacing=0.0001,
+        horizontal_spacing=0.0001,
     )
     fig['layout'].update(title=pair)
     fig['layout']['yaxis1'].update(title='Price')
-    fig['layout']['yaxis2'].update(title='Volume')
+    fig['layout']['yaxis3'].update(title='Volume')
     for i, name in enumerate(plot_config['subplots']):
-        fig['layout'][f'yaxis{3 + i}'].update(title=name)
+        fig['layout'][f'yaxis{5 + i }'].update(title=name)
+        # ToDo: if more then one subplot is used, the title is not shown
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
     fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
@@ -436,15 +486,75 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig = add_indicators(fig=fig, row=1, indicators=plot_config['main_plot'], data=data)
     fig = add_areas(fig, 1, data, plot_config['main_plot'])
     fig = plot_trades(fig, trades)
-    # sub plot: Volume goes to row 2
-    volume = go.Bar(
-        x=data['date'],
-        y=data['volume'],
-        name='Volume',
-        marker_color='DarkSlateGrey',
-        marker_line_color='DarkSlateGrey'
-    )
-    fig.add_trace(volume, 2, 1)
+
+    # VolumeProfile
+    volume_config = plot_config['volume'] if 'volume' in plot_config else {}
+    showBuySell = volume_config['showBuySell'] if 'showBuySell' in volume_config else 'false'
+    showVolumeProfile = volume_config['showVolumeProfile'] if 'showVolumeProfile' in \
+        volume_config else 'false'
+    VolumeProfileHistoryBars = volume_config['VolumeProfileHistoryBars'] if \
+        'VolumeProfileHistoryBars' in volume_config else -1
+    VolumeProfilePriceRangeSplices = volume_config[
+        'VolumeProfilePriceRangeSplices'] if 'VolumeProfilePriceRangeSplices' in \
+        volume_config else 50
+
+    if showVolumeProfile.lower() == 'true':
+        volumeProfileData = createVolumeProfileData(
+            data, VolumeProfilePriceRangeSplices, VolumeProfileHistoryBars)
+
+        volume_buy = go.Bar(
+            x=volumeProfileData['volume_buy'],
+            y=volumeProfileData['price_avg'],
+            name='VolumeProfile Buy',
+            marker_color='Green',
+            marker_line_color='Green',
+            orientation='h',
+        )
+        volume_sell = go.Bar(
+            x=volumeProfileData['volume_sell'],
+            y=volumeProfileData['price_avg'],
+            name='VolumeProfile Sell',
+            marker_color='Red',
+            marker_line_color='Red',
+            orientation='h',
+        )
+
+        fig.add_trace(volume_sell, 1, 2)
+        fig.add_trace(volume_buy, 1, 2)
+        fig.update_layout(barmode='stack')
+
+    # standard volume plot
+    if showBuySell.lower() == 'true':  # show volume plot split by sell & buy trades
+        volume_red = go.Bar(
+            x=data['date'],
+            y=data['volume'] * (data['high']-data['close']) / (data['high']-data['low']),
+            name='Volume Sell',
+            marker_color='Red',
+            marker_line_color='Red'
+        )
+        fig.add_trace(volume_red, 2, 1)
+
+        volume_green = go.Bar(
+            x=data['date'],
+
+            y=data['volume'] * (data['close']-data['low']) / (data['high']-data['low']),
+            name='Volume Buy',
+            marker_color='Green',
+            marker_line_color='Green'
+        )
+        fig.add_trace(volume_green, 2, 1)
+
+    else:  # show 'normal' gray volume plot
+        # sub plot: Volume goes to row 2
+        volume = go.Bar(
+            x=data['date'],
+            y=data['volume'],
+            name='Volume',
+            marker_color='DarkSlateGrey',
+            marker_line_color='DarkSlateGrey'
+        )
+        fig.add_trace(volume, 2, 1)
+
     # add each sub plot to a separate row
     for i, label in enumerate(plot_config['subplots']):
         sub_config = plot_config['subplots'][label]

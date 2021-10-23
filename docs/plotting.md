@@ -211,6 +211,12 @@ Sample configuration with inline comments explaining the process:
             "RSI": {
                 'rsi': {'color': 'red'}
             }
+        },
+        'volume': {
+            'showBuySell': 'true',
+            'showVolumeProfile': 'true',
+            # 'VolumeProfileHistoryBars': 96,  # default: all
+            # 'VolumeProfilePriceRangeSplices': 100  # default: 50
         }
     }
 
