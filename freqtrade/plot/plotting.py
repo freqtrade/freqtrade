@@ -432,8 +432,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis3'].update(title='Volume')
     for i, name in enumerate(plot_config['subplots']):
-        fig['layout'][f'yaxis{5 + i }'].update(title=name)
-        # ToDo: if more then one subplot is used, the title is not shown
+        fig['layout'][f'yaxis{5 + i*2 }'].update(title=name)
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
     fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
