@@ -404,12 +404,24 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     plot_config = create_plotconfig(indicators1, indicators2, plot_config)
     rows = 2 + len(plot_config['subplots'])
     row_widths = [1 for _ in plot_config['subplots']]
+
+    # load  VolumeProfile configurations
+    volume_config = plot_config['volume'] if 'volume' in plot_config else {}
+    showBuySell = volume_config['showBuySell'] if 'showBuySell' in volume_config else 'false'
+    showVolumeProfile = volume_config['showVolumeProfile'] if 'showVolumeProfile' in \
+        volume_config else 'false'
+    VolumeProfileHistoryBars = volume_config['VolumeProfileHistoryBars'] if \
+        'VolumeProfileHistoryBars' in volume_config else -1
+    VolumeProfilePriceRangeSplices = volume_config[
+        'VolumeProfilePriceRangeSplices'] if 'VolumeProfilePriceRangeSplices' in \
+        volume_config else 50
+
     # Define the graph
     fig = make_subplots(
         rows=rows,
         cols=2,  # ToDo: Check if 2 columns (instead of one) cause any issues somewhere else
-                 # ToDo: when showVolumeProfile==false, don't show the second column
-        column_widths=[8, 1],  # set the width of the Volume Profile
+        # set the width of the Volume Profile
+        column_widths=[8, 1 if showVolumeProfile.lower() == 'true' else 0],
         shared_xaxes=True,
         shared_yaxes=True,
         row_width=row_widths + [1, 4],
@@ -488,15 +500,6 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig = plot_trades(fig, trades)
 
     # VolumeProfile
-    volume_config = plot_config['volume'] if 'volume' in plot_config else {}
-    showBuySell = volume_config['showBuySell'] if 'showBuySell' in volume_config else 'false'
-    showVolumeProfile = volume_config['showVolumeProfile'] if 'showVolumeProfile' in \
-        volume_config else 'false'
-    VolumeProfileHistoryBars = volume_config['VolumeProfileHistoryBars'] if \
-        'VolumeProfileHistoryBars' in volume_config else -1
-    VolumeProfilePriceRangeSplices = volume_config[
-        'VolumeProfilePriceRangeSplices'] if 'VolumeProfilePriceRangeSplices' in \
-        volume_config else 50
 
     if showVolumeProfile.lower() == 'true':
         volumeProfileData = createVolumeProfileData(
