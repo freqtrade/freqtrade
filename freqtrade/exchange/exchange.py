@@ -80,6 +80,7 @@ class Exchange:
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
+    name_for_futures_market = 'swap'
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """

@@ -37,6 +37,7 @@ class Binance(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
     ]
+    name_for_futures_market = 'future'
 
     @property
     def _ccxt_config(self) -> Dict:
