@@ -3262,7 +3262,7 @@ def test_validate_trading_mode_and_collateral(
     ("bittrex", "spot", {}),
     ("gateio", "spot", {}),
     ("gateio", "margin", {"options": {"defaultType": "margin"}}),
-    ("gateio", "futures", {"options": {"defaultType": "future"}}),
+    ("gateio", "futures", {"options": {"defaultType": "swap"}}),
 ])
 def test__ccxt_config(
     default_conf,

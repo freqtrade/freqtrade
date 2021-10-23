@@ -47,7 +47,7 @@ class Gateio(Exchange):
         elif self.trading_mode == TradingMode.FUTURES:
             return {
                 "options": {
-                    "defaultType": "future"
+                    "defaultType": "swap"
                 }
             }
         else:
