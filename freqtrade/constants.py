@@ -25,7 +25,7 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'AnnouncementsPairList',
+AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList', 'AnnouncementsPairList', 'StaticAnnouncementsPairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']

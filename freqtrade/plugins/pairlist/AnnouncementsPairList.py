@@ -9,6 +9,7 @@ Supported exchanges:
 """
 from abc import abstractmethod
 from bs4 import BeautifulSoup
+from cachetools import cached
 from cachetools.ttl import TTLCache
 from datetime import datetime, timedelta
 from requests import get
@@ -22,7 +23,7 @@ import pandas as pd
 
 from freqtrade.exceptions import OperationalException, TemporaryError
 from freqtrade.plugins.pairlist.IPairList import IPairList
-
+from freqtrade.persistence import binanceannouncements
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,6 @@ class AnnouncementMixin:
     ANNOUNCEMENT_COL: str
 
     def __init__(self, refresh_period: Optional[int] = None, *args, **kwargs):
-        # 0 is not allowed, so `or` clause will work everytime
         self._refresh_period = refresh_period or self.REFRESH_PERIOD
 
     @abstractmethod
@@ -72,12 +72,15 @@ class BinanceAnnouncement(AnnouncementMixin):
 
     # storage
     COLS = ['Token', 'Text', 'Link', 'Datetime discover', 'Datetime announcement']
-    DB = "BinanceAnnouncements_announcements.csv"
 
     TOKEN_COL = 'Token'
     ANNOUNCEMENT_COL = 'Datetime announcement'
 
     _df: Optional[pd.DataFrame] = None
+
+    def __init__(self, refresh_period: Optional[int] = None, *args, **kwargs):
+        self.db_path = kwargs.get('db_path', "user_data/data/BinanceAnnouncements_announcements.csv")
+        self._refresh_period = refresh_period or self.REFRESH_PERIOD
 
     def update_announcements(self, page_number=1, page_size=10, history=False) -> pd.DataFrame:
         response = None
@@ -91,7 +94,7 @@ class BinanceAnnouncement(AnnouncementMixin):
 
         try:
             now = datetime.now(tz=pytz.utc)
-            df = self._get_df()
+            df = self.get_df()
 
             try:
                 response = get(url)
@@ -163,7 +166,7 @@ class BinanceAnnouncement(AnnouncementMixin):
                 (item in article_text_lower)  # key matched
                 and (
                     not have_df  # is first time data
-                    or not (token is None or token in df['Token'].values)  # not an existing or null token
+                    or not (token is None or token in df[self.TOKEN_COL].values)  # not an existing or null token
                 )
             )
             if conditions_buy:
@@ -181,21 +184,30 @@ class BinanceAnnouncement(AnnouncementMixin):
     def _get_tokens(self, text: str):
         return self.BINANCE_TOKEN_REGEX.findall(text)
 
-    def _get_df(self):
+    def get_df(self):
+        """Get Dataframe from CSV file or from Database"""
         if self._df is None:
-            try:
-                self._df = pd.read_csv(self.db_path, parse_dates=['Datetime announcement', 'Datetime discover'])
-            except FileNotFoundError:
-                pass
+            self.load_csv_db() if self.db_path.endswith('csv') else self.load_db()
         return self._df
+
+    def load_csv_db(self):
+        try:
+            self._df = pd.read_csv(self.db_path, parse_dates=['Datetime discover', 'Datetime announcement'])
+        except FileNotFoundError:
+            pass
+
+    def load_db(self):
+        try:
+            self._df = binanceannouncements.get_df(self.db_path)
+        except binanceannouncements.ProgrammingError:
+            pass
+
+    def save_db(self):
+        binanceannouncements.save_df(self._df, self.db_path)
 
     def _save_df(self, df: pd.DataFrame):
         self._df = df.sort_values(by='Datetime announcement')
-        self._df.to_csv(self.db_path, index=False)
-
-    @property
-    def db_path(self) -> str:
-        return "".join(["user_data/data/", self.DB])
+        self._df.to_csv(self.db_path, index=False) if self.db_path.endswith('csv') else self.save_db()
 
     def get_datetime_announcement(self, announcement_url: str):
         response = get(announcement_url)
@@ -257,7 +269,7 @@ class AnnouncementsPairList(IPairList):
 
         pair_exchange_kwargs = self._pairlistconfig.get('exchange_kwargs', {})
         try:
-            self.pair_exchange = self._init_pair_exchange(**pair_exchange_kwargs)
+            self.pair_exchange = self._init_pair_exchange(config, **pair_exchange_kwargs)
         except AssertionError as e:
             raise OperationalException(f"Announcement class is improperly configured. Exception: {e}") from e
 
@@ -268,7 +280,14 @@ class AnnouncementsPairList(IPairList):
         If no Pairlist requires tickers, an empty Dict is passed
         as tickers argument to filter_pairlist
         """
-        return True
+        # Set at False.
+        # This PairList needs tickers but not with standard frequency.
+        # So we take it caching for more time. see _get_cached_tickers. ttl=3600
+        return False
+
+    @cached(TTLCache(maxsize=1, ttl=3600))
+    def _get_cached_tickers(self):
+        return self._exchange.get_tickers()
 
     def short_desc(self) -> str:
         """
@@ -287,6 +306,7 @@ class AnnouncementsPairList(IPairList):
             # Item found - no refresh necessary
             return pairlist.copy()
         else:
+            tickers = self._get_cached_tickers()
             filtered_tickers = [
                 v for k, v in tickers.items()
                 if (self._exchange.get_pair_quote_currency(k) == self._stake_currency)
@@ -306,26 +326,23 @@ class AnnouncementsPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        if self.STATIC:
-            df = self.pair_exchange._get_df()
-        else:
-            df = self.pair_exchange.update_announcements()
+        df = self.pair_exchange.get_df() if self.STATIC else self.pair_exchange.update_announcements()
+        df = df[df[self.pair_exchange.ANNOUNCEMENT_COL] > (datetime.now(tz=pytz.utc) - timedelta(hours=self._hours))]
+        if df.empty:
+            return []
 
-        # TODO improve performance
-        pairlist = [
-            v for v in pairlist if not df[
-                (df[self.pair_exchange.TOKEN_COL] == get_token_from_pair(v, 0)) &
-                (df[self.pair_exchange.ANNOUNCEMENT_COL] > (
-                    datetime.now().replace(tzinfo=pytz.utc) - timedelta(hours=self._hours)
-                ))
-            ].empty
-        ]
-        return pairlist
+        pairs = [get_token_from_pair(v, 0) for v in pairlist]
+        df = df[df[self.pair_exchange.TOKEN_COL].isin(pairs)]
+        return [f"{token}/{self._stake_currency}" for token in df[self.pair_exchange.TOKEN_COL]]
 
-    def _init_pair_exchange(self, **pair_exchange_kwargs):
+    def _init_pair_exchange(self, config, **pair_exchange_kwargs):
         exchange = None
         if self._pair_exchange == 'binance':
-            exchange = BinanceAnnouncement(refresh_period=self._refresh_period, **pair_exchange_kwargs)
+            exchange = BinanceAnnouncement(
+                db_path=config.get('ba_database_uri', None),
+                refresh_period=self._refresh_period,
+                **pair_exchange_kwargs
+            )
 
         if exchange:
             assert hasattr(exchange, 'update_announcements'), '`update_announcements` method is required'
@@ -334,6 +351,9 @@ class AnnouncementsPairList(IPairList):
             return exchange
 
         raise OperationalException(f'Exchange `{self._pair_exchange}` is not supported yet')
+
+    def _validate_pair(self, pair: str, ticker: Dict[str, Any]) -> bool:
+        return NotImplemented
 
 
 class StaticAnnouncementsPairList(AnnouncementsPairList):
