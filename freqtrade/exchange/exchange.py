@@ -75,7 +75,6 @@ class Exchange:
     # funding_fee_times is currently unused, but should ideally be used to properly
     # schedule refresh times
     funding_fee_times: List[int] = []  # hours of the day
-    funding_rate_history: Dict = {}
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -160,9 +159,6 @@ class Exchange:
         self._api_async = self._init_ccxt(
             exchange_config, ccxt_async, ccxt_kwargs=ccxt_async_config)
 
-        if self.trading_mode != TradingMode.SPOT:
-            self.fill_leverage_brackets()
-
         logger.info('Using Exchange "%s"', self.name)
 
         if validate:
@@ -184,6 +180,9 @@ class Exchange:
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
+
+        if self.trading_mode != TradingMode.SPOT:
+            self.fill_leverage_brackets()
 
     def __del__(self):
         """
@@ -1636,6 +1635,30 @@ class Exchange:
                 f'Could not get funding fees due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def fill_leverage_brackets(self):
+        """
+            Assigns property _leverage_brackets to a dictionary of information about the leverage
+            allowed on each pair
+            Not used if the exchange has a static max leverage value for the account or each pair
+        """
+        return
+
+    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+        """
+            Returns the maximum leverage that a pair can be traded at
+            :param pair: The base/quote currency pair being traded
+            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        """
+        market = self.markets[pair]
+        if (
+            'limits' in market and
+            'leverage' in market['limits'] and
+            'max' in market['limits']['leverage']
+        ):
+            return market['limits']['leverage']['max']
+        else:
+            return 1.0
 
     def _get_funding_fee(
         self,

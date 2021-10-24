@@ -125,7 +125,6 @@ class Backtesting:
 
         self.progress = BTProgress()
         self.abort = False
-
         self.init_backtest()
 
     def __del__(self):
