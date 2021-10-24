@@ -770,6 +770,9 @@ class Telegram(RPCHandler):
         """
         if context.args:
             pair = context.args[0]
+            if pair not in self._rpc._rpc_whitelist()['whitelist']: # check the pair is in whitelist 
+                self._send_msg(msg=f"{pair} is not in whitelist.")
+                return
             price = float(context.args[1]) if len(context.args) > 1 else None
             self._forcebuy_action(pair, price)
         else:
