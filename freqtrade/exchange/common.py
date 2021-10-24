@@ -16,8 +16,6 @@ API_FETCH_ORDER_RETRY_COUNT = 5
 
 BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
-    "bitstamp": "Does not provide history. "
-                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
     "phemex": "Does not provide history. ",
     "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
 }

@@ -25,13 +25,15 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
-                         'CalmarHyperOptLoss', 'CalmarHyperOptLossDaily']
+                         'CalmarHyperOptLoss', 'CalmarHyperOptLossDaily',
+                         'MaxDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
 AVAILABLE_PROTECTIONS = ['CooldownPeriod', 'LowProfitPairs', 'MaxDrawdown', 'StoplossGuard']
 AVAILABLE_DATAHANDLERS = ['json', 'jsongz', 'hdf5']
+BACKTEST_BREAKDOWNS = ['day', 'week', 'month']
 DRY_RUN_WALLET = 1000
 DATETIME_PRINT_FORMAT = '%Y-%m-%d %H:%M:%S'
 MATH_CLOSE_PREC = 1e-14  # Precision used for float comparisons
@@ -144,6 +146,10 @@ CONF_SCHEMA = {
         'sell_profit_offset': {'type': 'number'},
         'ignore_roi_if_buy_signal': {'type': 'boolean'},
         'ignore_buying_expired_candle_after': {'type': 'number'},
+        'backtest_breakdown': {
+            'type': 'array',
+            'items': {'type': 'string', 'enum': BACKTEST_BREAKDOWNS}
+        },
         'bot_name': {'type': 'string'},
         'unfilledtimeout': {
             'type': 'object',

@@ -122,6 +122,16 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     Look into the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py).
     Then uncomment indicators you need.
 
+#### Indicator libraries
+
+Out of the box, freqtrade installs the following technical libraries:
+
+* [ta-lib](http://mrjbq7.github.io/ta-lib/)
+* [pandas-ta](https://twopirllc.github.io/pandas-ta/)
+* [technical](https://github.com/freqtrade/technical/)
+
+Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
+
 ### Strategy startup period
 
 Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.

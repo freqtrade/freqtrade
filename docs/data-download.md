@@ -22,6 +22,7 @@ usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH]
                                [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
                                [--days INT] [--new-pairs-days INT]
+                               [--include-inactive-pairs]
                                [--timerange TIMERANGE] [--dl-trades]
                                [--exchange EXCHANGE]
                                [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
@@ -38,6 +39,8 @@ optional arguments:
   --days INT            Download data for given number of days.
   --new-pairs-days INT  Download data of new pairs for given number of days.
                         Default: `None`.
+  --include-inactive-pairs
+                        Also download data from inactive pairs.
   --timerange TIMERANGE
                         Specify what timerange of data to use.
   --dl-trades           Download trades instead of OHLCV data. The bot will
@@ -52,10 +55,10 @@ optional arguments:
                         exchange/pairs/timeframes.
   --data-format-ohlcv {json,jsongz,hdf5}
                         Storage format for downloaded candle (OHLCV) data.
-                        (default: `None`).
+                        (default: `json`).
   --data-format-trades {json,jsongz,hdf5}
                         Storage format for downloaded trades data. (default:
-                        `None`).
+                        `jsongz`).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -79,6 +82,82 @@ Common arguments:
     `download-data` is a strategy-independent command. The idea is to download a big chunk of data once, and then iteratively increase the amount of data stored.
 
     For that reason, `download-data` does not care about the "startup-period" defined in a strategy. It's up to the user to download additional days if the backtest should start at a specific point in time (while respecting startup period).
+
+### Pairs file
+
+In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
+If you are using Binance for example:
+
+- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
+- update the `pairs.json` file to contain the currency pairs you are interested in.
+
+```bash
+mkdir -p user_data/data/binance
+touch user_data/data/binance/pairs.json
+```
+
+The format of the `pairs.json` file is a simple json list.
+Mixing different stake-currencies is allowed for this file, since it's only used for downloading.
+
+``` json
+[
+    "ETH/BTC",
+    "ETH/USDT",
+    "BTC/USDT",
+    "XRP/ETH"
+]
+```
+
+!!! Tip "Downloading all data for one quote currency"
+    Often, you'll want to download data for all pairs of a specific quote-currency. In such cases, you can use the following shorthand:
+    `freqtrade download-data --exchange binance --pairs .*/USDT <...>`. The provided "pairs" string will be expanded to contain all active pairs on the exchange.
+    To also download data for inactive (delisted) pairs, add `--include-inactive-pairs` to the command.
+
+??? Note "Permission denied errors"
+    If your configuration directory `user_data` was made by docker, you may get the following error:
+
+    ```
+    cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
+    ```
+
+    You can fix the permissions of your user-data directory as follows:
+
+    ```
+    sudo chown -R $UID:$GID user_data
+    ```
+
+### Start download
+
+Then run:
+
+```bash
+freqtrade download-data --exchange binance
+```
+
+This will download historical candle (OHLCV) data for all the currency pairs you defined in `pairs.json`.
+
+Alternatively, specify the pairs directly
+
+```bash
+freqtrade download-data --exchange binance --pairs ETH/USDT XRP/USDT BTC/USDT
+```
+
+or as regex (to download all active USDT pairs)
+
+```bash
+freqtrade download-data --exchange binance --pairs .*/USDT
+```
+
+### Other Notes
+
+- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
+- To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
+- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
+- To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
+- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020. Eventually set end dates are ignored.
+- Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
+- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
+
 
 ### Data format
 
@@ -204,6 +283,61 @@ It'll also remove original jsongz data files (`--erase` parameter).
 freqtrade convert-trade-data --format-from jsongz --format-to json --datadir ~/.freqtrade/data/kraken --erase
 ```
 
+### Sub-command trades to ohlcv
+
+When you need to use `--dl-trades` (kraken only) to download data, conversion of trades data to ohlcv data is the last step.
+This command will allow you to repeat this last step for additional timeframes without re-downloading the data.
+
+```
+usage: freqtrade trades-to-ohlcv [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [-p PAIRS [PAIRS ...]]
+                                 [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+                                 [--exchange EXCHANGE]
+                                 [--data-format-ohlcv {json,jsongz,hdf5}]
+                                 [--data-format-trades {json,jsongz,hdf5}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
+                        Specify which tickers to download. Space-separated
+                        list. Default: `1m 5m`.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  --data-format-trades {json,jsongz,hdf5}
+                        Storage format for downloaded trades data. (default:
+                        `jsongz`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+```
+
+#### Example trade-to-ohlcv conversion
+
+``` bash
+freqtrade trades-to-ohlcv --exchange kraken -t 5m 1h 1d --pairs BTC/EUR ETH/EUR
+```
+
 ### Sub-command list-data
 
 You can get a list of downloaded data using the `list-data` sub-command.
@@ -256,64 +390,6 @@ ADA/ETH     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
 ETH/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
 ETH/USDT    5m, 15m, 30m, 1h, 2h, 4h
 ```
-
-### Pairs file
-
-In alternative to the whitelist from `config.json`, a `pairs.json` file can be used.
-
-If you are using Binance for example:
-
-- create a directory `user_data/data/binance` and copy or create the `pairs.json` file in that directory.
-- update the `pairs.json` file to contain the currency pairs you are interested in.
-
-```bash
-mkdir -p user_data/data/binance
-cp tests/testdata/pairs.json user_data/data/binance
-```
-
-If your configuration directory `user_data` was made by docker, you may get the following error:
-
-```
-cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
-```
-
-You can fix the permissions of your user-data directory as follows:
-
-```
-sudo chown -R $UID:$GID user_data
-```
-
-The format of the `pairs.json` file is a simple json list.
-Mixing different stake-currencies is allowed for this file, since it's only used for downloading.
-
-``` json
-[
-    "ETH/BTC",
-    "ETH/USDT",
-    "BTC/USDT",
-    "XRP/ETH"
-]
-```
-
-### Start download
-
-Then run:
-
-```bash
-freqtrade download-data --exchange binance
-```
-
-This will download historical candle (OHLCV) data for all the currency pairs you defined in `pairs.json`.
-
-### Other Notes
-
-- To use a different directory than the exchange specific default, use `--datadir user_data/data/some_directory`.
-- To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)
-- To use `pairs.json` from some other directory, use `--pairs-file some_other_dir/pairs.json`.
-- To download historical candle (OHLCV) data for only 10 days, use `--days 10` (defaults to 30 days).
-- To download historical candle (OHLCV) data from a fixed starting point, use `--timerange 20200101-` - which will download all data from January 1st, 2020. Eventually set end dates are ignored.
-- Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
-- To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 
 ### Trades (tick) data
 
