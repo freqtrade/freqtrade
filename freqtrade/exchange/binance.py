@@ -200,24 +200,36 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool = False,
-                                        raise_: bool = False
-                                        ) -> Tuple[str, str, List]:
+    async def _async_get_historic_ohlcv(
+        self,
+        pair: str,
+        timeframe: str,
+        since_ms: int,
+        is_new_pair: bool,
+        raise_: bool = False,
+        price: Optional[str] = None
+    ) -> Tuple[str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
+        :param price: "mark" if retrieving the mark price cnadles
         """
         if is_new_pair:
-            x = await self._async_get_candle_history(pair, timeframe, 0)
+            x = await self._async_get_candle_history(pair, timeframe, 0, price)
             if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[2][0][0]
                 logger.info(f"Candle-data for {pair} available starting with "
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
+
         return await super()._async_get_historic_ohlcv(
-            pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair,
-            raise_=raise_)
+            pair=pair,
+            timeframe=timeframe,
+            since_ms=since_ms,
+            is_new_pair=is_new_pair,
+            raise_=raise_,
+            price=price
+        )
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
