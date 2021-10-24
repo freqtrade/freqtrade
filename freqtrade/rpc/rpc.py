@@ -689,7 +689,7 @@ class RPC:
         [x.update({'profit': round(x['profit'] * 100, 2)}) for x in pair_rates]
         return pair_rates
 
-    def _rpc_buy_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+    def _rpc_buy_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for buy tag performance.
         Shows a performance statistic from finished trades
@@ -699,7 +699,7 @@ class RPC:
         [x.update({'profit': round(x['profit'] * 100, 2)}) for x in buy_tags]
         return buy_tags
 
-    def _rpc_sell_reason_performance(self, pair: str) -> List[Dict[str, Any]]:
+    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for sell reason performance.
         Shows a performance statistic from finished trades
@@ -709,7 +709,7 @@ class RPC:
         [x.update({'profit': round(x['profit'] * 100, 2)}) for x in sell_reasons]
         return sell_reasons
 
-    def _rpc_mix_tag_performance(self, pair: str) -> List[Dict[str, Any]]:
+    def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for mix tag (buy_tag + sell_reason) performance.
         Shows a performance statistic from finished trades

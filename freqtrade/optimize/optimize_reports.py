@@ -165,7 +165,7 @@ def generate_tag_metrics(tag_type: str,
         tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
         return tabular_data
     else:
-        return None
+        return []
 
 
 def _generate_tag_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:

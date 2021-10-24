@@ -861,7 +861,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_buy_tag_performance(pair: str) -> List[Dict[str, Any]]:
+    def get_buy_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, based on buy tag performance
         Can either be average for all pairs or a specific pair provided
@@ -900,7 +900,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_sell_reason_performance(pair: str) -> List[Dict[str, Any]]:
+    def get_sell_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, based on sell reason performance
         Can either be average for all pairs or a specific pair provided
@@ -938,7 +938,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_mix_tag_performance(pair: str) -> List[Dict[str, Any]]:
+    def get_mix_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, based on buy_tag + sell_reason performance
         Can either be average for all pairs or a specific pair provided
