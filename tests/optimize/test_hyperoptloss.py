@@ -5,6 +5,7 @@ import pytest
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
+from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
 
@@ -85,6 +86,9 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SharpeHyperOptLoss",
     "SharpeHyperOptLossDaily",
     "MaxDrawDownHyperOptLoss",
+    "CalmarHyperOptLossDaily",
+    "CalmarHyperOptLoss",
+
 ])
 def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunction) -> None:
     results_over = hyperopt_results.copy()
@@ -96,11 +100,32 @@ def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunct
 
     default_conf.update({'hyperopt_loss': lossfunction})
     hl = HyperOptLossResolver.load_hyperoptloss(default_conf)
-    correct = hl.hyperopt_loss_function(hyperopt_results, len(hyperopt_results),
-                                        datetime(2019, 1, 1), datetime(2019, 5, 1))
-    over = hl.hyperopt_loss_function(results_over, len(results_over),
-                                     datetime(2019, 1, 1), datetime(2019, 5, 1))
-    under = hl.hyperopt_loss_function(results_under, len(results_under),
-                                      datetime(2019, 1, 1), datetime(2019, 5, 1))
+    correct = hl.hyperopt_loss_function(
+        hyperopt_results,
+        trade_count=len(hyperopt_results),
+        min_date=datetime(2019, 1, 1),
+        max_date=datetime(2019, 5, 1),
+        config=default_conf,
+        processed=None,
+        backtest_stats={'profit_total': hyperopt_results['profit_abs'].sum()}
+        )
+    over = hl.hyperopt_loss_function(
+        results_over,
+        trade_count=len(results_over),
+        min_date=datetime(2019, 1, 1),
+        max_date=datetime(2019, 5, 1),
+        config=default_conf,
+        processed=None,
+        backtest_stats={'profit_total': results_over['profit_abs'].sum()}
+    )
+    under = hl.hyperopt_loss_function(
+        results_under,
+        trade_count=len(results_under),
+        min_date=datetime(2019, 1, 1),
+        max_date=datetime(2019, 5, 1),
+        config=default_conf,
+        processed=None,
+        backtest_stats={'profit_total': results_under['profit_abs'].sum()}
+    )
     assert over < correct
     assert under > correct
