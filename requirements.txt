@@ -41,4 +41,4 @@ psutil==5.8.0
 colorama==0.4.4
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.20
+prompt-toolkit==3.0.21
