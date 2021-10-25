@@ -144,7 +144,14 @@ function install_macos() {
 # Install bot Debian_ubuntu
 function install_debian() {
     sudo apt-get update
-    sudo apt-get install -y build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
+    sudo apt-get install -y gcc build-essential autoconf libtool pkg-config make wget git $(echo lib${PYTHON}-dev ${PYTHON}-venv)
+    install_talib
+}
+
+# Install bot RedHat_CentOS
+function install_redhat() {
+    sudo yum update
+    sudo yum install -y gcc gcc-c++ build-essential autoconf libtool pkg-config make wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
     install_talib
 }
 
@@ -201,17 +208,18 @@ function install() {
     
     echo_block "Installing mandatory dependencies"
 
-    if [ "$(uname -s)" == "Darwin" ]
-    then
+    if [ "$(uname -s)" == "Darwin" ]; then
         echo "macOS detected. Setup for this system in-progress"
         install_macos
-    elif [ -x "$(command -v apt-get)" ]
-    then
+    elif [ -x "$(command -v apt-get)" ]; then
         echo "Debian/Ubuntu detected. Setup for this system in-progress"
         install_debian
+    elif [ -x "$(command -v yum)" ]; then
+        echo "Red Hat/CentOS detected. Setup for this system in-progress"
+        install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python3.6 or Python3.7, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.6 - 3.9, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
