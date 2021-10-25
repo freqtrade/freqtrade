@@ -364,11 +364,13 @@ def generateBuySellVolumes(dataframe) -> pd.DataFrame:
 
         candles['volume_buy'].iat[i] = (candles['volume'].iat[i] *
                                         (candles['close'].iat[i]-candles['low'].iat[i]) /
-                                        (candles['high'].iat[i]-candles['low'].iat[i])) if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
+                                        (candles['high'].iat[i]-candles['low'].iat[i])) \
+            if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
 
         candles['volume_sell'].iat[i] = (candles['volume'].iat[i] *
                                          (candles['high'].iat[i]-candles['close'].iat[i]) /
-                                         (candles['high'].iat[i]-candles['low'].iat[i])) if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
+                                         (candles['high'].iat[i]-candles['low'].iat[i])) \
+            if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
 
     return candles
 

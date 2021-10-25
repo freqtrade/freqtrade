@@ -13,9 +13,10 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.plot.plotting import (add_areas, add_indicators, add_profit, create_plotconfig, createVolumeProfileData,
-                                     generate_candlestick_graph, generate_plot_filename,
-                                     generate_profit_graph, generateBuySellVolumes, init_plotscript, load_and_plot_trades,
+from freqtrade.plot.plotting import (add_areas, add_indicators, add_profit, create_plotconfig,
+                                     createVolumeProfileData, generate_candlestick_graph,
+                                     generate_plot_filename, generate_profit_graph,
+                                     generateBuySellVolumes, init_plotscript, load_and_plot_trades,
                                      plot_profit, plot_trades, store_plot_file)
 from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re, patch_exchange
@@ -314,12 +315,13 @@ def test_generate_candlestick_graph_withVolumeProfile(default_conf, mocker, test
     data['buy'] = 0
     data['sell'] = 0
 
-    indicators1 = []
-    indicators2 = []
     fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
                                      plot_config={'main_plot': {'sma': {}, 'ema200': {}},
                                                   'subplots': {'Other': {'macdsignal': {}}},
-                                                  'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 60}})
+                                                  'volume': {'showBuySell': 'true',
+                                                             'showVolumeProfile': 'true',
+                                                             'VolumeProfileHistoryBars': 96,
+                                                             'VolumeProfilePriceRangeSplices': 60}})
     assert isinstance(fig, go.Figure)
     assert fig.layout.title.text == pair
     figure = fig.layout.figure
@@ -568,20 +570,24 @@ def test_plot_profit(default_conf, mocker, testdatadir):
     # No indicators, use plot_conf with just volume profile
     ([], [],
      {
-        'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100},
+        'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true',
+                   'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100},
     },
         {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
          'subplots': {'Other': {'macd': {}, 'macdsignal': {}}},
-         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true',
+                    'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100}},
     ),
     # No indicators, use full plot_conf with volume profile
     ([], [],
         {'main_plot': {'sma': {}, 'ema200': {}},
          'subplots': {'Other': {'macdsignal': {}}},
-         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true',
+                    'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
         {'main_plot': {'sma': {}, 'ema200': {}},
          'subplots': {'Other': {'macdsignal': {}}},
-         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true',
+                    'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
      )
 
 ])
