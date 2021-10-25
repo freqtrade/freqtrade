@@ -16,6 +16,12 @@ from freqtrade.misc import pair_to_filename
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
+# ToDo:
+# generate the buy/Sell data here and not in the strategy to make it independet
+# show just the VolumeProfile for the displayed area
+#       idea:   bind the y-axis of the volume profile to the x-axis of the candels and see if
+#           it is possible to groups and sum the (buy/sell)-volume together
+# adding unit tests
 
 
 logger = logging.getLogger(__name__)
@@ -340,7 +346,26 @@ def add_areas(fig, row: int, data: pd.DataFrame, indicators) -> make_subplots:
     return fig
 
 
-def createVolumeProfileData(df: pd.DataFrame, bar_split: int = 50,
+def generateBuySellVolumes(dataframe) -> pd.DataFrame:
+    candles = dataframe.copy()
+
+    candles['volume_buy'] = 0
+    candles['volume_sell'] = 0
+
+    for i in range(len(candles)):
+
+        candles['volume_buy'].iat[i] = candles['volume'].iat[i] * \
+            (candles['close'].iat[i]-candles['low'].iat[i]) / \
+            (candles['high'].iat[i]-candles['low'].iat[i])
+
+        candles['volume_sell'].iat[i] = candles['volume'].iat[i] * \
+            (candles['high'].iat[i]-candles['close'].iat[i]) / \
+            (candles['high'].iat[i]-candles['low'].iat[i])
+
+    return candles
+
+
+def createVolumeProfileData(data: pd.DataFrame, bar_split: int = 50,
                             history_bars: int = None) -> pd.DataFrame:
     """
     Generate the Volume Profile Date for the given dataframe
@@ -349,6 +374,10 @@ def createVolumeProfileData(df: pd.DataFrame, bar_split: int = 50,
     :param history_bars: how many history bars should be considered (default=all)
     :return: DataFrame with Price/Trade Date
     """
+    df = data.copy()
+
+    df["volume_buy"] = generateBuySellVolumes(df)["volume_buy"]
+    df["volume_sell"] = generateBuySellVolumes(df)["volume_sell"]
 
     df_vol = pd.DataFrame(columns=['price_lower', 'price_upper',
                           'price_avg', 'volume', 'volume_buy', 'volume_sell'])
@@ -501,6 +530,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     # VolumeProfile
 
     if showVolumeProfile.lower() == 'true':
+
         volumeProfileData = createVolumeProfileData(
             data, VolumeProfilePriceRangeSplices, VolumeProfileHistoryBars)
 
@@ -508,16 +538,16 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             x=volumeProfileData['volume_buy'],
             y=volumeProfileData['price_avg'],
             name='VolumeProfile Buy',
-            marker_color='Green',
-            marker_line_color='Green',
+            marker_color='rgba(99, 146, 52, 0.6)',
+            marker_line_color='rgba(99, 146, 52, 0.6)',
             orientation='h',
         )
         volume_sell = go.Bar(
             x=volumeProfileData['volume_sell'],
             y=volumeProfileData['price_avg'],
             name='VolumeProfile Sell',
-            marker_color='Red',
-            marker_line_color='Red',
+            marker_color='rgba(208, 41, 41, 0.6)',
+            marker_line_color='rgba(208, 41, 41, 0.6)',
             orientation='h',
         )
 
@@ -531,8 +561,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             x=data['date'],
             y=data['volume'] * (data['high']-data['close']) / (data['high']-data['low']),
             name='Volume Sell',
-            marker_color='Red',
-            marker_line_color='Red'
+            marker_color='rgba(208, 41, 41, 0.6)',
+            marker_line_color='rgba(208, 41, 41, 0.6)'
         )
         fig.add_trace(volume_red, 2, 1)
 
@@ -541,8 +571,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 
             y=data['volume'] * (data['close']-data['low']) / (data['high']-data['low']),
             name='Volume Buy',
-            marker_color='Green',
-            marker_line_color='Green'
+            marker_color='rgba(99, 146, 52, 0.6)',
+            marker_line_color='rgba(99, 146, 52, 0.6)'
         )
         fig.add_trace(volume_green, 2, 1)
 
