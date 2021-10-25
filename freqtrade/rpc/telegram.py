@@ -1033,7 +1033,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         forcebuy_text = ("*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. "
-                         "Optionally takes a rate at which to buy.` \n")
+                         "Optionally takes a rate at which to buy (only applies to limit orders).` \n")
         message = ("*/start:* `Starts the trader`\n"
                    "*/stop:* `Stops the trader`\n"
                    "*/status <trade_id>|[table]:* `Lists all open trades`\n"
