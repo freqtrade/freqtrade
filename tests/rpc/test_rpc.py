@@ -827,6 +827,120 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit'], 6.2)
 
+    # TEST FOR TRADES WITH NO BUY TAG
+    # TEST TRADE WITH ONE BUY_TAG AND OTHER TWO TRADES WITH THE SAME TAG
+    # TEST THE SAME FOR A PAIR
+
+
+def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
+                                    limit_sell_order, mocker) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    res = rpc._rpc_buy_tag_performance(None)
+    assert len(res) == 1
+    assert res[0]['pair'] == 'ETH/BTC'
+    assert res[0]['count'] == 1
+    assert prec_satoshi(res[0]['profit'], 6.2)
+
+    # TEST FOR TRADES WITH NO SELL REASON
+    # TEST TRADE WITH ONE SELL REASON AND OTHER TWO TRADES WITH THE SAME reason
+    # TEST THE SAME FOR A PAIR
+
+
+def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, fee,
+                                        limit_sell_order, mocker) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    res = rpc._rpc_sell_reason_performance(None)
+    assert len(res) == 1
+    assert res[0]['pair'] == 'ETH/BTC'
+    assert res[0]['count'] == 1
+    assert prec_satoshi(res[0]['profit'], 6.2)
+
+    # TEST FOR TRADES WITH NO TAGS
+    # TEST TRADE WITH ONE TAG MIX AND OTHER TWO TRADES WITH THE SAME TAG MIX
+    # TEST THE SAME FOR A PAIR
+
+
+def test_mix_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
+                                    limit_sell_order, mocker) -> None:
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    res = rpc._rpc_mix_tag_performance(None)
+    assert len(res) == 1
+    assert res[0]['pair'] == 'ETH/BTC'
+    assert res[0]['count'] == 1
+    assert prec_satoshi(res[0]['profit'], 6.2)
+
 
 def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())

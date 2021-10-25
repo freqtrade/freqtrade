@@ -978,6 +978,105 @@ def test_performance_handle(default_conf, update, ticker, fee,
     assert 'Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
+    # TEST FOR TRADES WITH NO BUY TAG
+    # TEST TRADE WITH ONE BUY_TAG AND OTHER TWO TRADES WITH THE SAME TAG
+    # TEST THE SAME FOR A PAIR
+
+
+def test_buy_tag_performance_handle(default_conf, update, ticker, fee,
+                                    limit_buy_order, limit_sell_order, mocker) -> None:
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    telegram._buy_tag_performance(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'Performance' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+
+    # TEST FOR TRADES WITH NO SELL REASON
+    # TEST TRADE WITH ONE SELL REASON AND OTHER TWO TRADES WITH THE SAME reason
+    # TEST THE SAME FOR A PAIR
+
+
+def test_sell_reason_performance_handle(default_conf, update, ticker, fee,
+                                        limit_buy_order, limit_sell_order, mocker) -> None:
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    telegram._sell_reason_performance(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'Performance' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+
+    # TEST FOR TRADES WITH NO TAGS
+    # TEST TRADE WITH ONE TAG MIX AND OTHER TWO TRADES WITH THE SAME TAG MIX
+    # TEST THE SAME FOR A PAIR
+
+
+def test_mix_tag_performance_handle(default_conf, update, ticker, fee,
+                                    limit_buy_order, limit_sell_order, mocker) -> None:
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        fetch_ticker=ticker,
+        get_fee=fee,
+    )
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+
+    # Create some test data
+    freqtradebot.enter_positions()
+    trade = Trade.query.first()
+    assert trade
+
+    # Simulate fulfilled LIMIT_BUY order for trade
+    trade.update(limit_buy_order)
+
+    # Simulate fulfilled LIMIT_SELL order for trade
+    trade.update(limit_sell_order)
+
+    trade.close_date = datetime.utcnow()
+    trade.is_open = False
+    telegram._mix_tag_performance(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert 'Performance' in msg_mock.call_args_list[0][0][0]
+    assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+
 
 def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
     mocker.patch.multiple(

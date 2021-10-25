@@ -850,7 +850,8 @@ class Trade(_DECL_BASE, LocalTrade):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum_abs')) \
             .all()
-        return [
+
+        response = [
             {
                 'pair': pair,
                 'profit': profit,
@@ -859,6 +860,8 @@ class Trade(_DECL_BASE, LocalTrade):
             }
             for pair, profit, profit_abs, count in pair_rates
         ]
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
+        return response
 
     @staticmethod
     def get_buy_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
@@ -868,36 +871,31 @@ class Trade(_DECL_BASE, LocalTrade):
         NOTE: Not supported in Backtesting.
         """
 
+        filters = [Trade.is_open.is_(False)]
         if(pair is not None):
-            tag_perf = Trade.query.with_entities(
-                Trade.buy_tag,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .filter(Trade.pair == pair) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
-        else:
-            tag_perf = Trade.query.with_entities(
-                Trade.buy_tag,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .group_by(Trade.buy_tag) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
+            filters.append(Trade.pair == pair)
 
-        return [
+        buy_tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.buy_tag) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        response = [
             {
                 'buy_tag': buy_tag if buy_tag is not None else "Other",
                 'profit': profit,
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for buy_tag, profit, profit_abs, count in tag_perf
+            for buy_tag, profit, profit_abs, count in buy_tag_perf
         ]
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
+        return response
 
     @staticmethod
     def get_sell_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
@@ -906,36 +904,32 @@ class Trade(_DECL_BASE, LocalTrade):
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
-        if(pair is not None):
-            tag_perf = Trade.query.with_entities(
-                Trade.sell_reason,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .filter(Trade.pair == pair) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
-        else:
-            tag_perf = Trade.query.with_entities(
-                Trade.sell_reason,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .group_by(Trade.sell_reason) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
 
-        return [
+        filters = [Trade.is_open.is_(False)]
+        if(pair is not None):
+            filters.append(Trade.pair == pair)
+
+        sell_tag_perf = Trade.query.with_entities(
+            Trade.sell_reason,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.sell_reason) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        response = [
             {
                 'sell_reason': sell_reason if sell_reason is not None else "Other",
                 'profit': profit,
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for sell_reason, profit, profit_abs, count in tag_perf
+            for sell_reason, profit, profit_abs, count in sell_tag_perf
         ]
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
+        return response
 
     @staticmethod
     def get_mix_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
@@ -944,34 +938,25 @@ class Trade(_DECL_BASE, LocalTrade):
         Can either be average for all pairs or a specific pair provided
         NOTE: Not supported in Backtesting.
         """
-        if(pair is not None):
-            tag_perf = Trade.query.with_entities(
-                Trade.id,
-                Trade.buy_tag,
-                Trade.sell_reason,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .filter(Trade.pair == pair) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
 
-        else:
-            tag_perf = Trade.query.with_entities(
-                Trade.id,
-                Trade.buy_tag,
-                Trade.sell_reason,
-                func.sum(Trade.close_profit).label('profit_sum'),
-                func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
-                func.count(Trade.pair).label('count')
-            ).filter(Trade.is_open.is_(False))\
-                .group_by(Trade.id) \
-                .order_by(desc('profit_sum_abs')) \
-                .all()
+        filters = [Trade.is_open.is_(False)]
+        if(pair is not None):
+            filters.append(Trade.pair == pair)
+
+        mix_tag_perf = Trade.query.with_entities(
+            Trade.id,
+            Trade.buy_tag,
+            Trade.sell_reason,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.id) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
 
         return_list: List[Dict] = []
-        for id, buy_tag, sell_reason, profit, profit_abs, count in tag_perf:
+        for id, buy_tag, sell_reason, profit, profit_abs, count in mix_tag_perf:
             buy_tag = buy_tag if buy_tag is not None else "Other"
             sell_reason = sell_reason if sell_reason is not None else "Other"
 
@@ -993,6 +978,7 @@ class Trade(_DECL_BASE, LocalTrade):
                                 'count': 1 + return_list[i]["count"]}
                         i += 1
 
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in return_list]
         return return_list
 
     @staticmethod
