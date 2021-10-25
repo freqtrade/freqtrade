@@ -403,10 +403,9 @@ class StackingDemo(IStrategy):
         dataframe.loc[
             (
                 (
-#                    (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
-#                    (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
-#                    (dataframe['tema'] > dataframe['tema'].shift(1)) |  # Guard: tema is raising
-                    (dataframe['close'] < dataframe['close'].shift(1)) |
+                    (qtpylib.crossed_above(dataframe['rsi'], 30)) &  # Signal: RSI crosses above 30
+                    (dataframe['tema'] <= dataframe['bb_middleband']) &  # Guard: tema below BB middle
+                    (dataframe['tema'] > dataframe['tema'].shift(1)) |  # Guard: tema is raising
                     # use either buy signal or rebuy flag to trigger a buy
                     (self.custom_info[metadata["pair"]]["rebuy"] == 1)
                 ) &
@@ -426,11 +425,10 @@ class StackingDemo(IStrategy):
         dataframe.loc[
             (
                 (
-#                    (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
-#                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
-#                    (dataframe['tema'] < dataframe['tema'].shift(1)) |  # Guard: tema is falling
+                    (qtpylib.crossed_above(dataframe['rsi'], 70)) &  # Signal: RSI crosses above 70
+                    (dataframe['tema'] > dataframe['bb_middleband']) &  # Guard: tema above BB middle
+                    (dataframe['tema'] < dataframe['tema'].shift(1)) |  # Guard: tema is falling
                     # use either sell signal or resell flag to trigger a sell
-                    (dataframe['close'] > dataframe['close'].shift(1)) |
                     (self.custom_info[metadata["pair"]]["resell"] == 1)
                 ) &
                 (dataframe['volume'] > 0)  # Make sure Volume is not 0
