@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 #encoding=utf8
 
+function echo_block() {
+    echo "----------------------------"
+    echo $1
+    echo "----------------------------"
+}
+
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
    if [ $? -ne 0 ]; then
-        echo "-----------------------------"
-        echo "Installing Pip for ${PYTHON}"
-        echo "-----------------------------"
+        echo_block "Installing Pip for ${PYTHON}"
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         ${PYTHON} get-pip.py
         rm get-pip.py
@@ -37,9 +41,7 @@ function check_installed_python() {
 }
 
 function updateenv() {
-    echo "-------------------------"
-    echo "Updating your virtual env"
-    echo "-------------------------"
+    echo_block "Updating your virtual env"
     if [ ! -f .env/bin/activate ]; then
         echo "Something went wrong, no virtual environment found."
         exit 1
@@ -110,18 +112,14 @@ function install_mac_newer_python_dependencies() {
 
     if [ ! $(brew --prefix --installed hdf5 2>/dev/null) ]
     then
-        echo "-------------------------"
-        echo "Installing hdf5"
-        echo "-------------------------"
+        echo_block "Installing hdf5"
         brew install hdf5
     fi
     export HDF5_DIR=$(brew --prefix)
 
     if [ ! $(brew --prefix --installed c-blosc 2>/dev/null) ]
     then
-        echo "-------------------------"
-        echo "Installing c-blosc"
-        echo "-------------------------"
+        echo_block "Installing c-blosc"
         brew install c-blosc
     fi
     export CBLOSC_DIR=$(brew --prefix)
@@ -131,9 +129,7 @@ function install_mac_newer_python_dependencies() {
 function install_macos() {
     if [ ! -x "$(command -v brew)" ]
     then
-        echo "-------------------------"
-        echo "Installing Brew"
-        echo "-------------------------"
+        echo_block "Installing Brew"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
     #Gets number after decimal in python version
@@ -160,9 +156,7 @@ function update() {
 
 # Reset Develop or Stable branch
 function reset() {
-    echo "----------------------------"
-    echo "Resetting branch and virtual env"
-    echo "----------------------------"
+    echo_block "Resetting branch and virtual env"
 
     if [ "1" == $(git branch -vv |grep -cE "\* develop|\* stable") ]
     then
@@ -200,16 +194,12 @@ function reset() {
 }
 
 function config() {
-
-    echo "-------------------------"
-    echo "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
-    echo "-------------------------"
+    echo_block "Please use 'freqtrade new-config -c config.json' to generate a new configuration file."
 }
 
 function install() {
-    echo "-------------------------"
-    echo "Installing mandatory dependencies"
-    echo "-------------------------"
+    
+    echo_block "Installing mandatory dependencies"
 
     if [ "$(uname -s)" == "Darwin" ]
     then
@@ -228,20 +218,14 @@ function install() {
     echo
     reset
     config
-    echo "-------------------------"
-    echo "Run the bot !"
-    echo "-------------------------"
+    echo_block "Run the bot !"
     echo "You can now use the bot by executing 'source .env/bin/activate; freqtrade <subcommand>'."
     echo "You can see the list of available bot sub-commands by executing 'source .env/bin/activate; freqtrade --help'."
     echo "You verify that freqtrade is installed successfully by running 'source .env/bin/activate; freqtrade --version'."
 }
 
 function plot() {
-    echo "
-    -----------------------------------------
-    Installing dependencies for Plotting scripts
-    -----------------------------------------
-    "
+    echo_block "Installing dependencies for Plotting scripts"
     ${PYTHON} -m pip install plotly --upgrade
 }
 
