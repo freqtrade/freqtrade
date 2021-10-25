@@ -8,7 +8,7 @@ cryptography==35.0.0
 aiohttp==3.7.4.post0
 SQLAlchemy==1.4.26
 python-telegram-bot==13.7
-arrow==1.2.0
+arrow==1.2.1
 cachetools==4.2.2
 requests==2.26.0
 urllib3==1.26.7
