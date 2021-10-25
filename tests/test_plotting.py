@@ -13,9 +13,9 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data import history
 from freqtrade.data.btanalysis import create_cum_profit, load_backtest_data
 from freqtrade.exceptions import OperationalException
-from freqtrade.plot.plotting import (add_areas, add_indicators, add_profit, create_plotconfig,
+from freqtrade.plot.plotting import (add_areas, add_indicators, add_profit, create_plotconfig, createVolumeProfileData,
                                      generate_candlestick_graph, generate_plot_filename,
-                                     generate_profit_graph, init_plotscript, load_and_plot_trades,
+                                     generate_profit_graph, generateBuySellVolumes, init_plotscript, load_and_plot_trades,
                                      plot_profit, plot_trades, store_plot_file)
 from freqtrade.resolvers import StrategyResolver
 from tests.conftest import get_args, log_has, log_has_re, patch_exchange
@@ -59,6 +59,33 @@ def test_init_plotscript(default_conf, mocker, testdatadir):
     assert "ohlcv" in ret
     assert "TRX/BTC" in ret["ohlcv"]
     assert "ADA/BTC" in ret["ohlcv"]
+
+
+def test_generate_volumeProfile(default_conf, testdatadir):
+    pair = "UNITTEST/BTC"
+    timerange = TimeRange(None, 'line', 0, -1000)
+
+    data = history.load_pair_history(pair=pair, timeframe='1m',
+                                     datadir=testdatadir, timerange=timerange)
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    data = strategy.analyze_ticker(data, {'pair': pair})
+
+    buysell_volumes = generateBuySellVolumes(data)
+
+    assert buysell_volumes['volume_buy'].any()
+    assert buysell_volumes['volume_sell'].any()
+
+    volumeProfile = createVolumeProfileData(buysell_volumes, 50, 100)
+
+    assert volumeProfile['price_lower'].any()
+    assert volumeProfile['price_upper'].any()
+    assert volumeProfile['price_avg'].any()
+    assert volumeProfile['volume'].any()
+    assert volumeProfile['volume_buy'].any()
+    assert volumeProfile['volume_sell'].any()
+
+    assert len(volumeProfile.index) == 50
 
 
 def test_add_indicators(default_conf, testdatadir, caplog):
@@ -274,6 +301,47 @@ def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir)
     assert trades_mock.call_count == 1
 
 
+def test_generate_candlestick_graph_withVolumeProfile(default_conf, mocker, testdatadir, caplog):
+    row_mock = mocker.patch('freqtrade.plot.plotting.add_indicators',
+                            MagicMock(side_effect=fig_generating_mock))
+    trades_mock = mocker.patch('freqtrade.plot.plotting.plot_trades',
+                               MagicMock(side_effect=fig_generating_mock))
+
+    pair = "UNITTEST/BTC"
+    timerange = TimeRange(None, 'line', 0, -1000)
+    data = history.load_pair_history(pair=pair, timeframe='1m',
+                                     datadir=testdatadir, timerange=timerange)
+    data['buy'] = 0
+    data['sell'] = 0
+
+    indicators1 = []
+    indicators2 = []
+    fig = generate_candlestick_graph(pair=pair, data=data, trades=None,
+                                     plot_config={'main_plot': {'sma': {}, 'ema200': {}},
+                                                  'subplots': {'Other': {'macdsignal': {}}},
+                                                  'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 60}})
+    assert isinstance(fig, go.Figure)
+    assert fig.layout.title.text == pair
+    figure = fig.layout.figure
+
+    assert len(figure.data) == 5
+    # Candlesticks are plotted first
+    candles = find_trace_in_fig_data(figure.data, "Price")
+    assert isinstance(candles, go.Candlestick)
+
+    assert isinstance(find_trace_in_fig_data(figure.data, "Volume Sell"), go.Bar)
+    assert isinstance(find_trace_in_fig_data(figure.data, "Volume Buy"), go.Bar)
+
+    assert isinstance(find_trace_in_fig_data(figure.data, "VolumeProfile Sell"), go.Bar)
+    assert isinstance(find_trace_in_fig_data(figure.data, "VolumeProfile Buy"), go.Bar)
+
+    assert row_mock.call_count == 2
+    assert trades_mock.call_count == 1
+
+    assert log_has("No buy-signals found.", caplog)
+    assert log_has("No sell-signals found.", caplog)
+
+
 def test_generate_Plot_filename():
     fn = generate_plot_filename("UNITTEST/BTC", "5m")
     assert fn == "freqtrade-plot-UNITTEST_BTC-5m.html"
@@ -469,6 +537,7 @@ def test_plot_profit(default_conf, mocker, testdatadir):
     ([], [], {},
      {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
       'subplots': {'Other': {'macd': {}, 'macdsignal': {}}}}),
+
     # use indicators
     (['sma', 'ema3'], ['macd'], {},
      {'main_plot': {'sma': {}, 'ema3': {}}, 'subplots': {'Other': {'macd': {}}}}),
@@ -496,6 +565,25 @@ def test_plot_profit(default_conf, mocker, testdatadir):
      {'main_plot': {'sma': {}}, 'subplots': {'RSI': {'rsi': {'color': 'red'}}}},
      {'main_plot': {'sma': {}}, 'subplots': {'Other': {'macd': {}, 'macd_signal': {}}}}
      ),
+    # No indicators, use plot_conf with just volume profile
+    ([], [],
+     {
+        'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100},
+    },
+        {'main_plot': {'sma': {}, 'ema3': {}, 'ema5': {}},
+         'subplots': {'Other': {'macd': {}, 'macdsignal': {}}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 96, 'VolumeProfilePriceRangeSplices': 100}},
+    ),
+    # No indicators, use full plot_conf with volume profile
+    ([], [],
+        {'main_plot': {'sma': {}, 'ema200': {}},
+         'subplots': {'Other': {'macdsignal': {}}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
+        {'main_plot': {'sma': {}, 'ema200': {}},
+         'subplots': {'Other': {'macdsignal': {}}},
+         'volume': {'showBuySell': 'true', 'showVolumeProfile': 'true', 'VolumeProfileHistoryBars': 9, 'VolumeProfilePriceRangeSplices': 111}},
+     )
+
 ])
 def test_create_plotconfig(ind1, ind2, plot_conf, exp):
 

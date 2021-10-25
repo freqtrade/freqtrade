@@ -16,12 +16,13 @@ from freqtrade.misc import pair_to_filename
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy import IStrategy
-# ToDo:
-# generate the buy/Sell data here and not in the strategy to make it independet
-# show just the VolumeProfile for the displayed area
-#       idea:   bind the y-axis of the volume profile to the x-axis of the candels and see if
-#           it is possible to groups and sum the (buy/sell)-volume together
-# adding unit tests
+
+
+# Possible later improvement:
+# just show the volume profile for the zoomed-in area:
+#       currently the volume profile is always based on all data in the plot
+#       check if it is possible to bind the y-axis of the volume profile to the x-axis
+#       of the candels and group by price-read and sum the (buy/sell)-volume together
 
 
 logger = logging.getLogger(__name__)
@@ -261,7 +262,14 @@ def create_plotconfig(indicators1: List[str], indicators2: List[str],
     :return: plot_config - eventually with indicators 1 and 2
     """
 
-    if plot_config:
+    if plot_config and 'main_plot' not in plot_config and 'subplots' not in plot_config:
+        # if just the volumeProfile config is set but main_plot and subplots are empty
+        indicators1 = ['sma', 'ema3', 'ema5']
+        plot_config['main_plot'] = {ind: {} for ind in indicators1}
+        indicators2 = ['macd', 'macdsignal']
+        plot_config['subplots'] = {'Other': {ind: {} for ind in indicators2}}
+
+    elif plot_config:
         if indicators1:
             plot_config['main_plot'] = {ind: {} for ind in indicators1}
         if indicators2:
@@ -354,13 +362,13 @@ def generateBuySellVolumes(dataframe) -> pd.DataFrame:
 
     for i in range(len(candles)):
 
-        candles['volume_buy'].iat[i] = candles['volume'].iat[i] * \
-            (candles['close'].iat[i]-candles['low'].iat[i]) / \
-            (candles['high'].iat[i]-candles['low'].iat[i])
+        candles['volume_buy'].iat[i] = (candles['volume'].iat[i] *
+                                        (candles['close'].iat[i]-candles['low'].iat[i]) /
+                                        (candles['high'].iat[i]-candles['low'].iat[i])) if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
 
-        candles['volume_sell'].iat[i] = candles['volume'].iat[i] * \
-            (candles['high'].iat[i]-candles['close'].iat[i]) / \
-            (candles['high'].iat[i]-candles['low'].iat[i])
+        candles['volume_sell'].iat[i] = (candles['volume'].iat[i] *
+                                         (candles['high'].iat[i]-candles['close'].iat[i]) /
+                                         (candles['high'].iat[i]-candles['low'].iat[i])) if (candles['high'].iat[i]-candles['low'].iat[i]) > 0 else 0
 
     return candles
 
@@ -574,7 +582,8 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             marker_color='rgba(99, 146, 52, 0.6)',
             marker_line_color='rgba(99, 146, 52, 0.6)'
         )
-        fig.add_trace(volume_green, 2, 1)
+        fig.add_trace(volume_green, 2, 1,)
+        fig.update_layout(barmode='stack')
 
     else:  # show 'normal' gray volume plot
         # sub plot: Volume goes to row 2
