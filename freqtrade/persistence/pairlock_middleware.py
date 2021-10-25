@@ -104,6 +104,24 @@ class PairLocks():
             PairLock.query.session.commit()
 
     @staticmethod
+    def unlock_reason(reason: str, now: Optional[datetime] = None) -> None:
+        """
+        Release all locks for this reason.
+        :param reason: Which reason to unlock
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.now(timezone.utc)
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+        logger.info(f"Releasing all locks with reason \'{reason}\'.")
+        locks = PairLocks.get_all_locks()
+        for lock in locks:
+            if lock.reason == reason:
+                lock.active = False
+        if PairLocks.use_db:
+            PairLock.query.session.commit()
+
+    @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:
         """
         :param now: Datetime object (generated via datetime.now(timezone.utc)).

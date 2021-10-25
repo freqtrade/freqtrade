@@ -443,6 +443,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
+    def unlock_reason(self, reason: str) -> None:
+        """
+        Unlocks all pairs previously locked using lock_pair with specified reason.
+        Not used by freqtrade itself, but intended to be used if users lock pairs
+        manually from within the strategy, to allow an easy way to unlock pairs.
+        :param reason: Unlock pairs to allow trading again
+        """
+        PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
+
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
