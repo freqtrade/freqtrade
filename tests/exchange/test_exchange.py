@@ -25,7 +25,7 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
-EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx']
+EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'gateio']
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
@@ -3206,6 +3206,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("bittrex", TradingMode.MARGIN, Collateral.ISOLATED, True),
     ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
     ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
+    ("gateio", TradingMode.MARGIN, Collateral.ISOLATED, True),
 
     # TODO-lev: Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
@@ -3215,6 +3216,9 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
     ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
     ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("gateio", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
+    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, True),
 
     # TODO-lev: Uncomment once implemented
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
@@ -3223,7 +3227,10 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
-    # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False)
+    # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("gateio", TradingMode.MARGIN, Collateral.CROSS, False),
+    # ("gateio", TradingMode.FUTURES, Collateral.CROSS, False),
+    # ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
 ])
 def test_validate_trading_mode_and_collateral(
     default_conf,
@@ -3253,8 +3260,9 @@ def test_validate_trading_mode_and_collateral(
     ("ftx", "margin", {}),
     ("ftx", "futures", {}),
     ("bittrex", "spot", {}),
-    ("bittrex", "margin", {}),
-    ("bittrex", "futures", {}),
+    ("gateio", "spot", {}),
+    ("gateio", "margin", {"options": {"defaultType": "margin"}}),
+    ("gateio", "futures", {"options": {"defaultType": "swap"}}),
 ])
 def test__ccxt_config(
     default_conf,
