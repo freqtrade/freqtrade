@@ -23,11 +23,19 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
-                                   mock_trade_5, mock_trade_6)
+from tests.conftest_trades import (
+    mock_trade_1,
+    mock_trade_2,
+    mock_trade_3,
+    mock_trade_4,
+    mock_trade_5,
+    mock_trade_6,
+    mock_trade_7,
+    mock_trade_8,
+    mock_trade_9)
 from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mock_trade_usdt_3,
                                         mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6)
-
+from tests.conftest_trades_tags import (mock_trade_tags_1, mock_trade_tags_2, mock_trade_tags_3)
 
 logging.getLogger('').setLevel(logging.INFO)
 
@@ -223,6 +231,30 @@ def create_mock_trades(fee, use_db: bool = True):
     add_trade(trade)
 
     trade = mock_trade_6(fee)
+    add_trade(trade)
+
+    if use_db:
+        Trade.commit()
+
+
+def create_mock_trades_tags(fee, use_db: bool = True):
+    """
+    Create some fake trades to simulate buy tags and sell reasons
+    """
+    def add_trade(trade):
+        if use_db:
+            Trade.query.session.add(trade)
+        else:
+            LocalTrade.add_bt_trade(trade)
+
+    # Simulate dry_run entries
+    trade = mock_trade_tags_1(fee)
+    add_trade(trade)
+
+    trade = mock_trade_tags_2(fee)
+    add_trade(trade)
+
+    trade = mock_trade_tags_3(fee)
     add_trade(trade)
 
     if use_db:
