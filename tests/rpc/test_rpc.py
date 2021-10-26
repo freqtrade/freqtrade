@@ -885,11 +885,11 @@ def test_buy_tag_performance_handle2(mocker, default_conf, markets, fee):
     )
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    create_mock_trades_tags(fee)
+    #create_mock_trades(fee) #this works
+    create_mock_trades_tags(fee)  #this doesn't
     rpc = RPC(freqtradebot)
 
     trades = Trade.query.all()
-    print(str(trades[0].buy_tag))
 
     res = rpc._rpc_performance()
     print(res)
