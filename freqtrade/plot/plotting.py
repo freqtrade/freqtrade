@@ -424,6 +424,45 @@ def createVolumeProfileData(data: pd.DataFrame, bar_split: int = 50,
     return df_vol
 
 
+def add_volumeProfile(data: pd.DataFrame, fig, plot_config: Dict[str, Dict]):
+    # load VolumeProfile configurations
+    volume_config = plot_config['volume'] if 'volume' in plot_config else {}
+    showVolumeProfile = volume_config['showVolumeProfile'] if 'showVolumeProfile' in \
+        volume_config else 'false'
+    VolumeProfileHistoryBars = volume_config['VolumeProfileHistoryBars'] if \
+        'VolumeProfileHistoryBars' in volume_config else -1
+    VolumeProfilePriceRangeSplices = volume_config[
+        'VolumeProfilePriceRangeSplices'] if 'VolumeProfilePriceRangeSplices' in \
+        volume_config else 50
+
+    # Show VolumeProfile
+    if showVolumeProfile.lower() == 'true':
+
+        volumeProfileData = createVolumeProfileData(
+            data, VolumeProfilePriceRangeSplices, VolumeProfileHistoryBars)
+
+        volume_buy = go.Bar(
+            x=volumeProfileData['volume_buy'],
+            y=volumeProfileData['price_avg'],
+            name='VolumeProfile Buy',
+            marker_color='rgba(99, 146, 52, 0.6)',
+            marker_line_color='rgba(99, 146, 52, 0.6)',
+            orientation='h',
+        )
+        volume_sell = go.Bar(
+            x=volumeProfileData['volume_sell'],
+            y=volumeProfileData['price_avg'],
+            name='VolumeProfile Sell',
+            marker_color='rgba(208, 41, 41, 0.6)',
+            marker_line_color='rgba(208, 41, 41, 0.6)',
+            orientation='h',
+        )
+
+        fig.add_trace(volume_sell, 1, 2)
+        fig.add_trace(volume_buy, 1, 2)
+        fig.update_layout(barmode='stack')
+
+
 def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFrame = None, *,
                                indicators1: List[str] = [],
                                indicators2: List[str] = [],
@@ -449,11 +488,6 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     showBuySell = volume_config['showBuySell'] if 'showBuySell' in volume_config else 'false'
     showVolumeProfile = volume_config['showVolumeProfile'] if 'showVolumeProfile' in \
         volume_config else 'false'
-    VolumeProfileHistoryBars = volume_config['VolumeProfileHistoryBars'] if \
-        'VolumeProfileHistoryBars' in volume_config else -1
-    VolumeProfilePriceRangeSplices = volume_config[
-        'VolumeProfilePriceRangeSplices'] if 'VolumeProfilePriceRangeSplices' in \
-        volume_config else 50
 
     # Define the graph
     fig = make_subplots(
@@ -537,33 +571,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
     fig = add_areas(fig, 1, data, plot_config['main_plot'])
     fig = plot_trades(fig, trades)
 
-    # VolumeProfile
-
-    if showVolumeProfile.lower() == 'true':
-
-        volumeProfileData = createVolumeProfileData(
-            data, VolumeProfilePriceRangeSplices, VolumeProfileHistoryBars)
-
-        volume_buy = go.Bar(
-            x=volumeProfileData['volume_buy'],
-            y=volumeProfileData['price_avg'],
-            name='VolumeProfile Buy',
-            marker_color='rgba(99, 146, 52, 0.6)',
-            marker_line_color='rgba(99, 146, 52, 0.6)',
-            orientation='h',
-        )
-        volume_sell = go.Bar(
-            x=volumeProfileData['volume_sell'],
-            y=volumeProfileData['price_avg'],
-            name='VolumeProfile Sell',
-            marker_color='rgba(208, 41, 41, 0.6)',
-            marker_line_color='rgba(208, 41, 41, 0.6)',
-            orientation='h',
-        )
-
-        fig.add_trace(volume_sell, 1, 2)
-        fig.add_trace(volume_buy, 1, 2)
-        fig.update_layout(barmode='stack')
+    add_volumeProfile(data, fig, plot_config)
 
     # standard volume plot
     if showBuySell.lower() == 'true':  # show volume plot split by sell & buy trades
