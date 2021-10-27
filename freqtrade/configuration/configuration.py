@@ -498,4 +498,3 @@ class Configuration:
                 config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config:
                     config['pairs'].sort()
-

@@ -1429,4 +1429,3 @@ class FreqtradeBot(LoggingMixin):
         return max(
             min(valid_custom_price, max_custom_price_allowed),
             min_custom_price_allowed)
-
