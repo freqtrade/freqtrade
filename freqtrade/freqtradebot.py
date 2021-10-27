@@ -4,7 +4,7 @@ Freqtrade is the main module of this bot. It contains the class Freqtrade()
 import copy
 import logging
 import traceback
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional
@@ -359,12 +359,10 @@ class FreqtradeBot(LoggingMixin):
             logger.info("Active pair whitelist is empty.")
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        # Allow rebuying of the same pair if allow_position_stacking is set to True
-        if not self.config['allow_position_stacking']:
-            for trade in Trade.get_open_trades():
-                if trade.pair in whitelist:
-                    whitelist.remove(trade.pair)
-                    logger.debug('Ignoring %s in pair whitelist', trade.pair)
+        for trade in Trade.get_open_trades():
+            if trade.pair in whitelist:
+                whitelist.remove(trade.pair)
+                logger.debug('Ignoring %s in pair whitelist', trade.pair)
 
         if not whitelist:
             logger.info("No currency pair in active pair whitelist, "
@@ -593,11 +591,6 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
 
         self._notify_enter(trade, order_type)
-
-        # Lock pair for 1 timeframe duration to prevent immediate rebuys
-        if self.config['allow_position_stacking']:
-            self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc) + timedelta(minutes=timeframe_to_minutes(self.config['timeframe'])),
-                                        reason='Prevent immediate rebuys')
 
         return True
 
@@ -1436,3 +1429,4 @@ class FreqtradeBot(LoggingMixin):
         return max(
             min(valid_custom_price, max_custom_price_allowed),
             min_custom_price_allowed)
+

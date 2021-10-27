@@ -137,12 +137,6 @@ class Configuration:
         setup_logging(config)
 
     def _process_trading_options(self, config: Dict[str, Any]) -> None:
-
-        # Allow_position_stacking defaults to False
-        if not config.get('allow_position_stacking'):
-            config['allow_position_stacking'] = False
-        logger.info('Allow_position_stacking is set to ' + str(config['allow_position_stacking']))
-
         if config['runmode'] not in TRADING_MODES:
             return
 
@@ -504,3 +498,4 @@ class Configuration:
                 config['pairs'] = load_file(pairs_file)
                 if 'pairs' in config:
                     config['pairs'].sort()
+
