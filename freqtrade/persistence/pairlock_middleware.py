@@ -113,13 +113,26 @@ class PairLocks():
         """
         if not now:
             now = datetime.now(timezone.utc)
-        logger.info(f"Releasing all locks with reason \'{reason}\'.")
-        locks = PairLocks.get_all_locks()
-        for lock in locks:
-            if lock.reason == reason:
-                lock.active = False
+
+        def local_unlock(lock):
+            lock.active = False
+
         if PairLocks.use_db:
+            # used in live modes
+            logger.info(f"Releasing all locks with reason \'{reason}\':")
+            filters = [PairLock.lock_end_time > now,
+                       PairLock.active.is_(True),
+                       PairLock.reason == reason
+                       ]
+            locks = PairLock.query.filter(*filters)
+            for lock in locks:
+                logger.info(f"Releasing lock for \'{lock.pair}\' with reason \'{reason}\'.")
+                lock.active = False
             PairLock.query.session.commit()
+        else:
+            # no logging in backtesting to increase speed
+            locks = filter(lambda reason: reason == reason, PairLocks.locks)
+            locks = map(local_unlock, locks)
 
     @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:
