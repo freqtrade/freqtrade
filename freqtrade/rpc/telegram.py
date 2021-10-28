@@ -25,6 +25,7 @@ from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
+from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 
 
@@ -59,7 +60,8 @@ def authorized_only(command_handler: Callable[..., None]) -> Callable[..., Any]:
                 update.message.chat_id
             )
             return wrapper
-
+        # Rollback session to avoid getting data stored in a transaction.
+        Trade.query.session.rollback()
         logger.debug(
             'Executing handler: %s for chat_id: %s',
             command_handler.__name__,
@@ -1031,7 +1033,8 @@ class Telegram(RPCHandler):
         :return: None
         """
         forcebuy_text = ("*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. "
-                         "Optionally takes a rate at which to buy.` \n")
+                         "Optionally takes a rate at which to buy "
+                         "(only applies to limit orders).` \n")
         message = ("*/start:* `Starts the trader`\n"
                    "*/stop:* `Stops the trader`\n"
                    "*/status <trade_id>|[table]:* `Lists all open trades`\n"

@@ -1,4 +1,3 @@
-
 import io
 import logging
 from copy import deepcopy
@@ -64,10 +63,11 @@ class HyperoptTools():
             'export_time': datetime.now(timezone.utc),
         }
         logger.info(f"Dumping parameters to {filename}")
-        rapidjson.dump(final_params, filename.open('w'), indent=2,
-                       default=hyperopt_serializer,
-                       number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
-                       )
+        with filename.open('w') as f:
+            rapidjson.dump(final_params, f, indent=2,
+                           default=hyperopt_serializer,
+                           number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                           )
 
     @staticmethod
     def try_export_params(config: Dict[str, Any], strategy_name: str, params: Dict):

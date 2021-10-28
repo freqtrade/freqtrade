@@ -702,7 +702,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
     assert hasattr(hyperopt, "position_stacking")
 
 
-def test_simplified_interface_all_failed(mocker, hyperopt_conf) -> None:
+def test_simplified_interface_all_failed(mocker, hyperopt_conf, caplog) -> None:
     mocker.patch('freqtrade.optimize.hyperopt.dump', MagicMock())
     mocker.patch('freqtrade.optimize.hyperopt.file_dump_json')
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.load_bt_data',
@@ -724,7 +724,13 @@ def test_simplified_interface_all_failed(mocker, hyperopt_conf) -> None:
     hyperopt.custom_hyperopt.generate_roi_table = MagicMock(return_value={})
 
     with pytest.raises(OperationalException, match=r"The 'protection' space is included into *"):
-        hyperopt.start()
+        hyperopt.init_spaces()
+
+    hyperopt.config['hyperopt_ignore_missing_space'] = True
+    caplog.clear()
+    hyperopt.init_spaces()
+    assert log_has_re(r"The 'protection' space is included into *", caplog)
+    assert hyperopt.protection_space == []
 
 
 def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:

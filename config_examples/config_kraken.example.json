@@ -28,10 +28,8 @@
         "name": "kraken",
         "key": "your_exchange_key",
         "secret": "your_exchange_key",
-        "ccxt_config": {"enableRateLimit": true},
+        "ccxt_config": {},
         "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 1000
         },
         "pair_whitelist": [
             "ADA/EUR",

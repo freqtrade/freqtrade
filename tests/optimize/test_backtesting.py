@@ -1102,6 +1102,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
+        '--breakdown', 'day',
         '--strategy-list',
         'StrategyTestV2',
         'TestStrategyLegacyV1',
@@ -1130,6 +1131,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     captured = capsys.readouterr()
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
+    assert 'DAY BREAKDOWN' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
     assert '2017-11-14 21:17:00 -> 2017-11-14 22:58:00 | Max open trades : 1' in captured.out
     assert 'STRATEGY SUMMARY' in captured.out

@@ -2,6 +2,7 @@
 import logging
 from typing import Dict
 
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
 
@@ -23,3 +24,10 @@ class Gateio(Exchange):
     }
 
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
+
+    def validate_ordertypes(self, order_types: Dict) -> None:
+        super().validate_ordertypes(order_types)
+
+        if any(v == 'market' for k, v in order_types.items()):
+            raise OperationalException(
+                    f'Exchange {self.name} does not support market orders.')

@@ -131,9 +131,9 @@ def test_load_pairlist_noexist(mocker, markets, default_conf):
                                        default_conf, {}, 1)
 
 
-def test_load_pairlist_verify_multi(mocker, markets, default_conf):
+def test_load_pairlist_verify_multi(mocker, markets_static, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets))
+    mocker.patch('freqtrade.exchange.Exchange.markets', PropertyMock(return_value=markets_static))
     plm = PairListManager(freqtrade.exchange, default_conf)
     # Call different versions one after the other, should always consider what was passed in
     # and have no side-effects (therefore the same check multiple times)
@@ -415,10 +415,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # SpreadFilter only
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
-    # Static Pairlist after VolumePairList, on a non-first position
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+    # Static Pairlist after VolumePairList, on a non-first position (appends pairs)
+    ([{"method": "VolumePairList", "number_assets": 2, "sort_key": "quoteVolume"},
       {"method": "StaticPairList"}],
-        "BTC", 'static_in_the_middle'),
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'TRST/BTC', 'SWT/BTC', 'BCC/BTC', 'HOT/BTC']),
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
@@ -468,13 +468,6 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-
-    if whitelist_result == 'static_in_the_middle':
-        with pytest.raises(OperationalException,
-                           match=r"StaticPairList can only be used in the first position "
-                                 r"in the list of Pairlist Handlers."):
-            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-        return
 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -665,11 +658,11 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
+def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None:
     whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
     whitelist_conf['pairlists'] = [
         {"method": "StaticPairList"},
-        {"method": "PerformanceFilter", "minutes": 60}
+        {"method": "PerformanceFilter", "minutes": 60, "min_profit": 0.01}
     ]
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
     exchange = get_patched_exchange(mocker, whitelist_conf)
@@ -681,7 +674,8 @@ def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee) -> None:
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         create_mock_trades(fee)
         pm.refresh_pairlist()
-        assert pm.whitelist == ['XRP/BTC', 'ETH/BTC', 'TKN/BTC']
+        assert pm.whitelist == ['XRP/BTC']
+        assert log_has_re(r'Removing pair .* since .* is below .*', caplog)
 
         # Move to "outside" of lookback window, so original sorting is restored.
         t.move_to("2021-09-01 07:00:00 +00:00")

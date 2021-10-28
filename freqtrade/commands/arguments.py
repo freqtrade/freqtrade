@@ -23,7 +23,8 @@ ARGS_COMMON_OPTIMIZE = ["timeframe", "timerange", "dataformat_ohlcv",
 
 ARGS_BACKTEST = ARGS_COMMON_OPTIMIZE + ["position_stacking", "use_max_market_positions",
                                         "enable_protections", "dry_run_wallet", "timeframe_detail",
-                                        "strategy_list", "export", "exportfilename"]
+                                        "strategy_list", "export", "exportfilename",
+                                        "backtest_breakdown"]
 
 ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "position_stacking", "use_max_market_positions",
@@ -31,7 +32,8 @@ ARGS_HYPEROPT = ARGS_COMMON_OPTIMIZE + ["hyperopt", "hyperopt_path",
                                         "epochs", "spaces", "print_all",
                                         "print_colorized", "print_json", "hyperopt_jobs",
                                         "hyperopt_random_state", "hyperopt_min_trades",
-                                        "hyperopt_loss", "disableparamexport"]
+                                        "hyperopt_loss", "disableparamexport",
+                                        "hyperopt_ignore_missing_space"]
 
 ARGS_EDGE = ARGS_COMMON_OPTIMIZE + ["stoploss_range"]
 
@@ -58,11 +60,13 @@ ARGS_BUILD_STRATEGY = ["user_data_dir", "strategy", "template"]
 ARGS_CONVERT_DATA = ["pairs", "format_from", "format_to", "erase"]
 ARGS_CONVERT_DATA_OHLCV = ARGS_CONVERT_DATA + ["timeframes"]
 
+ARGS_CONVERT_TRADES = ["pairs", "timeframes", "exchange", "dataformat_ohlcv", "dataformat_trades"]
+
 ARGS_LIST_DATA = ["exchange", "dataformat_ohlcv", "pairs"]
 
-ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "timerange",
-                      "download_trades", "exchange", "timeframes", "erase", "dataformat_ohlcv",
-                      "dataformat_trades"]
+ARGS_DOWNLOAD_DATA = ["pairs", "pairs_file", "days", "new_pairs_days", "include_inactive",
+                      "timerange", "download_trades", "exchange", "timeframes",
+                      "erase", "dataformat_ohlcv", "dataformat_trades"]
 
 ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
                        "db_url", "trade_source", "export", "exportfilename",
@@ -71,7 +75,7 @@ ARGS_PLOT_DATAFRAME = ["pairs", "indicators1", "indicators2", "plot_limit",
 ARGS_PLOT_PROFIT = ["pairs", "timerange", "export", "exportfilename", "db_url",
                     "trade_source", "timeframe", "plot_auto_open"]
 
-ARGS_INSTALL_UI = ["erase_ui_only"]
+ARGS_INSTALL_UI = ["erase_ui_only", 'ui_version']
 
 ARGS_SHOW_TRADES = ["db_url", "trade_ids", "print_json"]
 
@@ -86,12 +90,12 @@ ARGS_HYPEROPT_LIST = ["hyperopt_list_best", "hyperopt_list_profitable",
 
 ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperopt_show_index",
                       "print_json", "hyperoptexportfilename", "hyperopt_show_no_header",
-                      "disableparamexport"]
+                      "disableparamexport", "backtest_breakdown"]
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
                     "hyperopt-list", "hyperopt-show",
-                    "plot-dataframe", "plot-profit", "show-trades"]
+                    "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
 
@@ -169,14 +173,14 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtesting, start_convert_data, start_create_userdir,
-                                        start_download_data, start_edge, start_hyperopt,
-                                        start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                        start_list_data, start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_list_timeframes,
-                                        start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_test_pairlist,
-                                        start_trading, start_webserver)
+        from freqtrade.commands import (start_backtesting, start_convert_data, start_convert_trades,
+                                        start_create_userdir, start_download_data, start_edge,
+                                        start_hyperopt, start_hyperopt_list, start_hyperopt_show,
+                                        start_install_ui, start_list_data, start_list_exchanges,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes, start_new_config, start_new_strategy,
+                                        start_plot_dataframe, start_plot_profit, start_show_trades,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -235,6 +239,15 @@ class Arguments:
         )
         convert_trade_data_cmd.set_defaults(func=partial(start_convert_data, ohlcv=False))
         self._build_args(optionlist=ARGS_CONVERT_DATA, parser=convert_trade_data_cmd)
+
+        # Add trades-to-ohlcv subcommand
+        convert_trade_data_cmd = subparsers.add_parser(
+            'trades-to-ohlcv',
+            help='Convert trade data to OHLCV data.',
+            parents=[_common_parser],
+        )
+        convert_trade_data_cmd.set_defaults(func=start_convert_trades)
+        self._build_args(optionlist=ARGS_CONVERT_TRADES, parser=convert_trade_data_cmd)
 
         # Add list-data subcommand
         list_data_cmd = subparsers.add_parser(

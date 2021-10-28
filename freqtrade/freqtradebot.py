@@ -139,7 +139,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Only update open orders on startup
         # This will update the database after the initial migration
-        self.update_open_orders()
+        self.startup_update_open_orders()
 
     def process(self) -> None:
         """
@@ -237,7 +237,7 @@ class FreqtradeBot(LoggingMixin):
         open_trades = len(Trade.get_open_trades())
         return max(0, self.config['max_open_trades'] - open_trades)
 
-    def update_open_orders(self):
+    def startup_update_open_orders(self):
         """
         Updates open orders based on order list kept in the database.
         Mainly updates the state of orders - but may also close trades

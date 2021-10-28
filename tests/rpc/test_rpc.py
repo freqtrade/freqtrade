@@ -1003,7 +1003,7 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert len(ret['blacklist']) == 4
     assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
     assert ret['blacklist'] == ['DOGE/BTC', 'HOT/BTC', 'ETH/BTC', 'XRP/.*']
-    assert ret['blacklist_expanded'] == ['ETH/BTC', 'XRP/BTC']
+    assert ret['blacklist_expanded'] == ['ETH/BTC', 'XRP/BTC', 'XRP/USDT']
     assert 'errors' in ret
     assert isinstance(ret['errors'], dict)
 
