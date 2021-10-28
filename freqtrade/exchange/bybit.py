@@ -30,4 +30,3 @@ class Bybit(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
     ]
-    name_for_futures_market = 'linear'
