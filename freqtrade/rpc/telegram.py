@@ -887,7 +887,7 @@ class Telegram(RPCHandler):
         """
         try:
             pair = None
-            if context.args:
+            if context.args and isinstance(context.args[0], str):
                 pair = context.args[0]
 
             trades = self._rpc._rpc_buy_tag_performance(pair)
@@ -922,7 +922,7 @@ class Telegram(RPCHandler):
         """
         try:
             pair = None
-            if context.args:
+            if context.args and isinstance(context.args[0], str):
                 pair = context.args[0]
 
             trades = self._rpc._rpc_sell_reason_performance(pair)
@@ -957,7 +957,7 @@ class Telegram(RPCHandler):
         """
         try:
             pair = None
-            if context.args:
+            if context.args and isinstance(context.args[0], str):
                 pair = context.args[0]
 
             trades = self._rpc._rpc_mix_tag_performance(pair)
