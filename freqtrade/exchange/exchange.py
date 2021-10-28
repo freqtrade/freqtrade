@@ -1746,7 +1746,7 @@ class Exchange:
         """
         if end:
             params = {
-                'endTime': end
+                'until': end
             }
         else:
             params = {}
