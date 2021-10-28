@@ -1815,7 +1815,7 @@ class Exchange:
         if not self.exchange_has("fetchFundingRateHistory"):
             raise ExchangeError(
                 f"CCXT has not implemented fetchFundingRateHistory for {self.name}; "
-                f"therefore, backtesting for {self.name} is currently unavailable"
+                f"therefore, dry-run/backtesting for {self.name} is currently unavailable"
             )
 
         try:
