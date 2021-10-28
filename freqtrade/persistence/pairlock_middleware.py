@@ -128,7 +128,7 @@ class PairLocks():
             PairLock.query.session.commit()
         else:
             # used in backtesting mode; don't show log messages for speed
-            locks = PairLocks.get_locks(None)
+            locks = PairLocks.get_pair_locks(None)
             for lock in locks:
                 if lock.reason == reason:
                     lock.active = False
