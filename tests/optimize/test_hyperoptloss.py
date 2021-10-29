@@ -5,7 +5,6 @@ import pytest
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_loss_short_trade_dur import ShortTradeDurHyperOptLoss
-from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
 
@@ -86,7 +85,6 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
     "SharpeHyperOptLoss",
     "SharpeHyperOptLossDaily",
     "MaxDrawDownHyperOptLoss",
-    "CalmarHyperOptLossDaily",
     "CalmarHyperOptLoss",
 
 ])
