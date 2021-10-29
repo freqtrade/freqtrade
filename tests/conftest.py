@@ -23,15 +23,11 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.worker import Worker
-from tests.conftest_trades import (
-    mock_trade_1,
-    mock_trade_2,
-    mock_trade_3,
-    mock_trade_4,
-    mock_trade_5,
-    mock_trade_6)
+from tests.conftest_trades import (mock_trade_1, mock_trade_2, mock_trade_3, mock_trade_4,
+                                   mock_trade_5, mock_trade_6)
 from tests.conftest_trades_usdt import (mock_trade_usdt_1, mock_trade_usdt_2, mock_trade_usdt_3,
                                         mock_trade_usdt_4, mock_trade_usdt_5, mock_trade_usdt_6)
+
 
 logging.getLogger('').setLevel(logging.INFO)
 
