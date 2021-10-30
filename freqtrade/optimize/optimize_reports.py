@@ -737,7 +737,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         print('\nFor more details, please look at the detail tables above')
 
 
-def show_filtered_pairlist(config: Dict, backtest_stats: Dict):
+def show_sorted_pairlist(config: Dict, backtest_stats: Dict):
     if config.get('backtest_show_pair_list', False):
         for strategy, results in backtest_stats['strategy'].items():
             print(f"Pairs for Strategy {strategy}: \n[")

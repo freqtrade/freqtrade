@@ -3,11 +3,9 @@ from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
-from freqtrade.data.btanalysis import load_backtest_stats
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
-from freqtrade.optimize.optimize_reports import show_backtest_results, show_filtered_pairlist
 
 
 logger = logging.getLogger(__name__)
@@ -63,11 +61,13 @@ def start_backtest_show(args: Dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
+    from freqtrade.optimize.optimize_reports import show_backtest_results, show_sorted_pairlist
+    from freqtrade.data.btanalysis import load_backtest_stats
+
     results = load_backtest_stats(config['exportfilename'])
 
-    # print(results)
     show_backtest_results(config, results)
-    show_filtered_pairlist(config, results)
+    show_sorted_pairlist(config, results)
 
 
 def start_hyperopt(args: Dict[str, Any]) -> None:
