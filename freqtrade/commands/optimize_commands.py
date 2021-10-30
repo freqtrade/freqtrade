@@ -1,15 +1,13 @@
-from freqtrade.data.btanalysis import get_latest_backtest_filename
-import pandas
-from pandas.io import json
-from freqtrade.optimize import backtesting
 import logging
 from typing import Any, Dict
 
 from freqtrade import constants
 from freqtrade.configuration import setup_utils_configuration
+from freqtrade.data.btanalysis import load_backtest_stats
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import round_coin_value
+from freqtrade.optimize.optimize_reports import show_backtest_results, show_filtered_pairlist
 
 
 logger = logging.getLogger(__name__)
@@ -57,27 +55,19 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     backtesting = Backtesting(config)
     backtesting.start()
 
+
 def start_backtest_filter(args: Dict[str, Any]) -> None:
     """
-    List backtest pairs previously filtered
+    Show previous backtest result
     """
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    no_header = config.get('backtest_show_pair_list', False)
-    results_file = get_latest_backtest_filename(
-        config['user_data_dir'] / 'backtest_results/')
+    results = load_backtest_stats(config['exportfilename'])
 
-    logger.info("Using Backtesting result {results_file}")
-
-    # load data using Python JSON module
-    with open(config['user_data_dir'] / 'backtest_results/' / results_file,'r') as f:
-        data = json.loads(f.read())
-        strategy = list(data["strategy"])[0]
-        trades = data["strategy"][strategy]
-
-        print(trades)
-
+    # print(results)
+    show_backtest_results(config, results)
+    show_filtered_pairlist(config, results)
 
     logger.info("Backtest filtering complete. ")
 

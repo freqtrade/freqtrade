@@ -736,17 +736,12 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         print('=' * len(table.splitlines()[0]))
         print('\nFor more details, please look at the detail tables above')
 
-def show_backtest_results_filtered(config: Dict, backtest_stats: Dict):
-    stake_currency = config['stake_currency']
 
-    for strategy, results in backtest_stats['strategy'].items():
-        show_backtest_result(strategy, results, stake_currency)
-
-    if len(backtest_stats['strategy']) > 1:
-        # Print Strategy summary table
-
-        table = text_table_strategy(backtest_stats['strategy_comparison'], stake_currency)
-        print(' STRATEGY SUMMARY '.center(len(table.splitlines()[0]), '='))
-        print(table)
-        print('=' * len(table.splitlines()[0]))
-        print('\nFor more details, please look at the detail tables above')
+def show_filtered_pairlist(config: Dict, backtest_stats: Dict):
+    if config.get('backtest_show_pair_list', False):
+        for strategy, results in backtest_stats['strategy'].items():
+            print("Pairs for Strategy: \n[")
+            for result in results['results_per_pair']:
+                if result["key"] != 'TOTAL':
+                    print(f'"{result["key"]}",  // {round(result["profit_mean_pct"], 2)}%')
+            print("]")
