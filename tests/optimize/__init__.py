@@ -54,4 +54,10 @@ def _build_backtest_dataframe(data):
         frame[column] = frame[column].astype('float64')
     if 'buy_tag' not in columns:
         frame['buy_tag'] = None
+
+    # Ensure all candles make kindof sense
+    assert all(frame['low'] <= frame['close'])
+    assert all(frame['low'] <= frame['open'])
+    assert all(frame['high'] >= frame['close'])
+    assert all(frame['high'] >= frame['open'])
     return frame
