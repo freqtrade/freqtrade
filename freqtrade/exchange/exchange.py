@@ -1738,24 +1738,16 @@ class Exchange:
     def _get_mark_price_history(
         self,
         pair: str,
-        start: int,
-        end: Optional[int]
+        start: int
     ) -> Dict:
         """
             Get's the mark price history for a pair
         """
-        if end:
-            params = {
-                'until': end
-            }
-        else:
-            params = {}
 
         candles = self._api.fetch_mark_ohlcv(
             pair,
             timeframe="1h",
-            since=start,
-            params=params
+            since=start
         )
         history = {}
         for candle in candles:
