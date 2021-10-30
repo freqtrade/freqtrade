@@ -1,3 +1,5 @@
+# Leverage
+
 !!! Warning "Beta feature"
     This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.
 
@@ -24,7 +26,7 @@ Regular trading mode (low risk)
 - No Liquidation.
 - Profits gained/lost are equal to the change in value of the assets (minus trading fees).
 
-#### Leverage trading modes
+### Leverage trading modes
 
 # TODO-lev: include a resource to help calculate stoplosses that are above the liquidation price
 
@@ -42,6 +44,7 @@ Perpetual swaps (also known as Perpetual Futures) are contracts traded at a pric
 
 In addition to the gains/losses from the change in price of the contract, traders also exchange funding fees, which are gains/losses worth an amount that is derived from the difference in price between the contract and the underlying asset. The difference in price between a contract and the underlying asset varies between exchanges.
 
+In addition to the gains/losses from the change in price of the futures contract, traders also exchange funding fees, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.
 
 ``` json
 "trading_mode": "futures"
@@ -55,12 +58,16 @@ The possible values are: `isolated`, or `cross`(*currently unavailable*)
 
 Each market(trading pair), keeps collateral in a separate account
 
+``` json
+"collateral": "isolated"
+```
+
 #### CROSS
 *currently unavailable*
 One account is used to share collateral between markets (trading pairs). Margin is taken from total account balance to avoid liquidation when needed.
 
 ``` json
-"collateral": "isolated"
+"collateral": "cross"
 ```
 
 ### Developer
@@ -94,4 +101,3 @@ $$\begin{align*}
 #### FUTURES MODE
 
 Funding fees are either added or subtracted from the total amount of a trade
-

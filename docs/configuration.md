@@ -449,45 +449,6 @@ The possible values are: `gtc` (default), `fok` or `ioc`.
     This is ongoing work. For now, it is supported only for binance and kucoin.
     Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.
 
-### Exchange configuration
-
-Freqtrade is based on [CCXT library](https://github.com/ccxt/ccxt) that supports over 100 cryptocurrency
-exchange markets and trading APIs. The complete up-to-date list can be found in the
-[CCXT repo homepage](https://github.com/ccxt/ccxt/tree/master/python).
- However, the bot was tested by the development team with only Bittrex, Binance and Kraken,
- so these are the only officially supported exchanges:
-
-- [Bittrex](https://bittrex.com/): "bittrex"
-- [Binance](https://www.binance.com/): "binance"
-- [Kraken](https://kraken.com/): "kraken"
-
-Feel free to test other exchanges and submit your PR to improve the bot.
-
-Some exchanges require special configuration, which can be found on the [Exchange-specific Notes](exchanges.md) documentation page.
-
-#### Sample exchange configuration
-
-A exchange configuration for "binance" would look as follows:
-
-```json
-"exchange": {
-    "name": "binance",
-    "key": "your_exchange_key",
-    "secret": "your_exchange_secret",
-    "ccxt_config": {"enableRateLimit": true},
-    "ccxt_async_config": {
-        "enableRateLimit": true,
-        "rateLimit": 200
-    },
-```
-
-This configuration enables binance, as well as rate-limiting to avoid bans from the exchange.
-`"rateLimit": 200` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
-
-!!! Note
-    Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
-    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
-
 ### What values can be used for fiat_display_currency?
 
 The `fiat_display_currency` configuration parameter sets the base currency to use for the
@@ -527,9 +488,9 @@ creating trades on the exchange.
 ```json
 "exchange": {
     "name": "bittrex",
-        "key": "key",
-        "secret": "secret",
-        ...
+    "key": "key",
+    "secret": "secret",
+    ...
 }
 ```
 
