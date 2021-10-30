@@ -2,7 +2,7 @@
 This module contains the class to persist trades into SQLite
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Query, declarative_base, relationship, scoped_session
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import safe_value_fallback
@@ -159,9 +159,9 @@ class Order(_DECL_BASE):
             self.order_date = datetime.fromtimestamp(order['timestamp'] / 1000, tz=timezone.utc)
 
         self.ft_is_open = True
-        if self.status in ('closed', 'canceled', 'cancelled'):
+        if self.status in NON_OPEN_EXCHANGE_STATES:
             self.ft_is_open = False
-            if order.get('filled', 0) > 0:
+            if (order.get('filled', 0.0) or 0.0) > 0:
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
@@ -257,6 +257,7 @@ class LocalTrade():
     sell_reason: str = ''
     sell_order_status: str = ''
     strategy: str = ''
+    buy_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
     def __init__(self, **kwargs):
@@ -288,6 +289,7 @@ class LocalTrade():
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
+            'buy_tag': self.buy_tag,
             'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,
@@ -352,12 +354,12 @@ class LocalTrade():
         LocalTrade.trades_open = []
         LocalTrade.total_profit = 0
 
-    def adjust_min_max_rates(self, current_price: float) -> None:
+    def adjust_min_max_rates(self, current_price: float, current_price_low: float) -> None:
         """
         Adjust the max_rate and min_rate.
         """
         self.max_rate = max(current_price, self.max_rate or self.open_rate)
-        self.min_rate = min(current_price, self.min_rate or self.open_rate)
+        self.min_rate = min(current_price_low, self.min_rate or self.open_rate)
 
     def _set_new_stoploss(self, new_loss: float, stoploss: float):
         """Assign new stop value"""
@@ -636,7 +638,7 @@ class LocalTrade():
 
             # skip case if trailing-stop changed the stoploss already.
             if (trade.stop_loss == trade.initial_stop_loss
-               and trade.initial_stop_loss_pct != desired_stoploss):
+                    and trade.initial_stop_loss_pct != desired_stoploss):
                 # Stoploss value got changed
 
                 logger.info(f"Stoploss for {trade} needs adjustment...")
@@ -703,6 +705,7 @@ class Trade(_DECL_BASE, LocalTrade):
     sell_reason = Column(String(100), nullable=True)
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
+    buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
@@ -802,6 +805,19 @@ class Trade(_DECL_BASE, LocalTrade):
                                  ]).all()
 
     @staticmethod
+    def get_total_closed_profit() -> float:
+        """
+        Retrieves total realized profit
+        """
+        if Trade.use_db:
+            total_profit = Trade.query.with_entities(
+                func.sum(Trade.close_profit_abs)).filter(Trade.is_open.is_(False)).scalar()
+        else:
+            total_profit = sum(
+                t.close_profit_abs for t in LocalTrade.get_trades_proxy(is_open=False))
+        return total_profit or 0
+
+    @staticmethod
     def total_open_trades_stakes() -> float:
         """
         Calculates total invested amount in open trades
@@ -816,17 +832,21 @@ class Trade(_DECL_BASE, LocalTrade):
         return total_open_stake_amount or 0
 
     @staticmethod
-    def get_overall_performance() -> List[Dict[str, Any]]:
+    def get_overall_performance(minutes=None) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, including profit and trade count
         NOTE: Not supported in Backtesting.
         """
+        filters = [Trade.is_open.is_(False)]
+        if minutes:
+            start_date = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+            filters.append(Trade.close_date >= start_date)
         pair_rates = Trade.query.with_entities(
             Trade.pair,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
-        ).filter(Trade.is_open.is_(False))\
+        ).filter(*filters)\
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum_abs')) \
             .all()
@@ -841,7 +861,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_best_pair():
+    def get_best_pair(start_date: datetime = datetime.fromtimestamp(0)):
         """
         Get best pair with closed trade.
         NOTE: Not supported in Backtesting.
@@ -849,7 +869,7 @@ class Trade(_DECL_BASE, LocalTrade):
         """
         best_pair = Trade.query.with_entities(
             Trade.pair, func.sum(Trade.close_profit).label('profit_sum')
-        ).filter(Trade.is_open.is_(False)) \
+        ).filter(Trade.is_open.is_(False) & (Trade.close_date >= start_date)) \
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum')).first()
         return best_pair
@@ -876,7 +896,7 @@ class PairLock(_DECL_BASE):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time})')
+                f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
@@ -885,7 +905,6 @@ class PairLock(_DECL_BASE):
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """
-
         filters = [PairLock.lock_end_time > now,
                    # Only active locks
                    PairLock.active.is_(True), ]

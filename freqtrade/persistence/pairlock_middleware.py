@@ -30,7 +30,8 @@ class PairLocks():
             PairLocks.locks = []
 
     @staticmethod
-    def lock_pair(pair: str, until: datetime, reason: str = None, *, now: datetime = None) -> None:
+    def lock_pair(pair: str, until: datetime, reason: str = None, *,
+                  now: datetime = None) -> PairLock:
         """
         Create PairLock from now to "until".
         Uses database by default, unless PairLocks.use_db is set to False,
@@ -52,6 +53,7 @@ class PairLocks():
             PairLock.query.session.commit()
         else:
             PairLocks.locks.append(lock)
+        return lock
 
     @staticmethod
     def get_pair_locks(pair: Optional[str], now: Optional[datetime] = None) -> List[PairLock]:
@@ -102,6 +104,36 @@ class PairLocks():
             PairLock.query.session.commit()
 
     @staticmethod
+    def unlock_reason(reason: str, now: Optional[datetime] = None) -> None:
+        """
+        Release all locks for this reason.
+        :param reason: Which reason to unlock
+        :param now: Datetime object (generated via datetime.now(timezone.utc)).
+            defaults to datetime.now(timezone.utc)
+        """
+        if not now:
+            now = datetime.now(timezone.utc)
+
+        if PairLocks.use_db:
+            # used in live modes
+            logger.info(f"Releasing all locks with reason '{reason}':")
+            filters = [PairLock.lock_end_time > now,
+                       PairLock.active.is_(True),
+                       PairLock.reason == reason
+                       ]
+            locks = PairLock.query.filter(*filters)
+            for lock in locks:
+                logger.info(f"Releasing lock for {lock.pair} with reason '{reason}'.")
+                lock.active = False
+            PairLock.query.session.commit()
+        else:
+            # used in backtesting mode; don't show log messages for speed
+            locks = PairLocks.get_pair_locks(None)
+            for lock in locks:
+                if lock.reason == reason:
+                    lock.active = False
+
+    @staticmethod
     def is_global_lock(now: Optional[datetime] = None) -> bool:
         """
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
@@ -126,7 +158,9 @@ class PairLocks():
 
     @staticmethod
     def get_all_locks() -> List[PairLock]:
-
+        """
+        Return all locks, also locks with expired end date
+        """
         if PairLocks.use_db:
             return PairLock.query.all()
         else:

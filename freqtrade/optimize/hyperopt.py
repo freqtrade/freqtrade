@@ -12,7 +12,6 @@ from math import ceil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import progressbar
 import rapidjson
 from colorama import Fore, Style
@@ -20,18 +19,19 @@ from colorama import init as colorama_init
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from pandas import DataFrame
 
-from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
+from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN
 from freqtrade.data.converter import trim_dataframes
 from freqtrade.data.history import get_timerange
-from freqtrade.misc import file_dump_json, plural
+from freqtrade.exceptions import OperationalException
+from freqtrade.misc import deep_merge_dicts, file_dump_json, plural
 from freqtrade.optimize.backtesting import Backtesting
 # Import IHyperOpt and IHyperOptLoss to allow unpickling classes from these modules
 from freqtrade.optimize.hyperopt_auto import HyperOptAuto
 from freqtrade.optimize.hyperopt_interface import IHyperOpt  # noqa: F401
 from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F401
-from freqtrade.optimize.hyperopt_tools import HyperoptTools
+from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
-from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver, HyperOptResolver
+from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
 
 
 # Suppress scikit-learn FutureWarnings from skopt
@@ -67,6 +67,7 @@ class Hyperopt:
     def __init__(self, config: Dict[str, Any]) -> None:
         self.buy_space: List[Dimension] = []
         self.sell_space: List[Dimension] = []
+        self.protection_space: List[Dimension] = []
         self.roi_space: List[Dimension] = []
         self.stoploss_space: List[Dimension] = []
         self.trailing_space: List[Dimension] = []
@@ -79,7 +80,10 @@ class Hyperopt:
         if not self.config.get('hyperopt'):
             self.custom_hyperopt = HyperOptAuto(self.config)
         else:
-            self.custom_hyperopt = HyperOptResolver.load_hyperopt(self.config)
+            raise OperationalException(
+                "Using separate Hyperopt files has been removed in 2021.9. Please convert "
+                "your existing Hyperopt file to the new Hyperoptable strategy interface")
+
         self.backtesting._set_strategy(self.backtesting.strategylist[0])
         self.custom_hyperopt.strategy = self.backtesting.strategy
 
@@ -99,17 +103,6 @@ class Hyperopt:
 
         self.num_epochs_saved = 0
         self.current_best_epoch: Optional[Dict[str, Any]] = None
-
-        # Populate functions here (hasattr is slow so should not be run during "regular" operations)
-        if hasattr(self.custom_hyperopt, 'populate_indicators'):
-            self.backtesting.strategy.advise_indicators = (  # type: ignore
-                self.custom_hyperopt.populate_indicators)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_buy_trend'):
-            self.backtesting.strategy.advise_buy = (  # type: ignore
-                self.custom_hyperopt.populate_buy_trend)  # type: ignore
-        if hasattr(self.custom_hyperopt, 'populate_sell_trend'):
-            self.backtesting.strategy.advise_sell = (  # type: ignore
-                self.custom_hyperopt.populate_sell_trend)  # type: ignore
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if self.config.get('use_max_market_positions', True):
@@ -163,13 +156,9 @@ class Hyperopt:
         While not a valid json object - this allows appending easily.
         :param epoch: result dictionary for this epoch.
         """
-        def default_parser(x):
-            if isinstance(x, np.integer):
-                return int(x)
-            return str(x)
-
+        epoch[FTHYPT_FILEVERSION] = 2
         with self.results_file.open('a') as f:
-            rapidjson.dump(epoch, f, default=default_parser,
+            rapidjson.dump(epoch, f, default=hyperopt_serializer,
                            number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
             f.write("\n")
 
@@ -191,6 +180,8 @@ class Hyperopt:
             result['buy'] = {p.name: params.get(p.name) for p in self.buy_space}
         if HyperoptTools.has_space(self.config, 'sell'):
             result['sell'] = {p.name: params.get(p.name) for p in self.sell_space}
+        if HyperoptTools.has_space(self.config, 'protection'):
+            result['protection'] = {p.name: params.get(p.name) for p in self.protection_space}
         if HyperoptTools.has_space(self.config, 'roi'):
             result['roi'] = {str(k): v for k, v in
                              self.custom_hyperopt.generate_roi_table(params).items()}
@@ -199,6 +190,25 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             result['trailing'] = self.custom_hyperopt.generate_trailing_params(params)
 
+        return result
+
+    def _get_no_optimize_details(self) -> Dict[str, Any]:
+        """
+        Get non-optimized parameters
+        """
+        result: Dict[str, Any] = {}
+        strategy = self.backtesting.strategy
+        if not HyperoptTools.has_space(self.config, 'roi'):
+            result['roi'] = {str(k): v for k, v in strategy.minimal_roi.items()}
+        if not HyperoptTools.has_space(self.config, 'stoploss'):
+            result['stoploss'] = {'stoploss': strategy.stoploss}
+        if not HyperoptTools.has_space(self.config, 'trailing'):
+            result['trailing'] = {
+                'trailing_stop': strategy.trailing_stop,
+                'trailing_stop_positive': strategy.trailing_stop_positive,
+                'trailing_stop_positive_offset': strategy.trailing_stop_positive_offset,
+                'trailing_only_offset_is_reached': strategy.trailing_only_offset_is_reached,
+            }
         return result
 
     def print_results(self, results) -> None:
@@ -222,10 +232,16 @@ class Hyperopt:
         """
         Assign the dimensions in the hyperoptimization space.
         """
+        if HyperoptTools.has_space(self.config, 'protection'):
+            # Protections can only be optimized when using the Parameter interface
+            logger.debug("Hyperopt has 'protection' space")
+            # Enable Protections if protection space is selected.
+            self.config['enable_protections'] = True
+            self.protection_space = self.custom_hyperopt.protection_space()
 
         if HyperoptTools.has_space(self.config, 'buy'):
             logger.debug("Hyperopt has 'buy' space")
-            self.buy_space = self.custom_hyperopt.indicator_space()
+            self.buy_space = self.custom_hyperopt.buy_indicator_space()
 
         if HyperoptTools.has_space(self.config, 'sell'):
             logger.debug("Hyperopt has 'sell' space")
@@ -242,29 +258,41 @@ class Hyperopt:
         if HyperoptTools.has_space(self.config, 'trailing'):
             logger.debug("Hyperopt has 'trailing' space")
             self.trailing_space = self.custom_hyperopt.trailing_space()
-        self.dimensions = (self.buy_space + self.sell_space + self.roi_space +
-                           self.stoploss_space + self.trailing_space)
+
+        self.dimensions = (self.buy_space + self.sell_space + self.protection_space
+                           + self.roi_space + self.stoploss_space + self.trailing_space)
+
+    def assign_params(self, params_dict: Dict, category: str) -> None:
+        """
+        Assign hyperoptable parameters
+        """
+        for attr_name, attr in self.backtesting.strategy.enumerate_parameters(category):
+            if attr.optimize:
+                # noinspection PyProtectedMember
+                attr.value = params_dict[attr_name]
 
     def generate_optimizer(self, raw_params: List[Any], iteration=None) -> Dict:
         """
-        Used Optimize function. Called once per epoch to optimize whatever is configured.
+        Used Optimize function.
+        Called once per epoch to optimize whatever is configured.
         Keep this function as optimized as possible!
         """
         backtest_start_time = datetime.now(timezone.utc)
         params_dict = self._get_params_dict(self.dimensions, raw_params)
 
         # Apply parameters
+        if HyperoptTools.has_space(self.config, 'buy'):
+            self.assign_params(params_dict, 'buy')
+
+        if HyperoptTools.has_space(self.config, 'sell'):
+            self.assign_params(params_dict, 'sell')
+
+        if HyperoptTools.has_space(self.config, 'protection'):
+            self.assign_params(params_dict, 'protection')
+
         if HyperoptTools.has_space(self.config, 'roi'):
             self.backtesting.strategy.minimal_roi = (  # type: ignore
                 self.custom_hyperopt.generate_roi_table(params_dict))
-
-        if HyperoptTools.has_space(self.config, 'buy'):
-            self.backtesting.strategy.advise_buy = (  # type: ignore
-                self.custom_hyperopt.buy_strategy_generator(params_dict))
-
-        if HyperoptTools.has_space(self.config, 'sell'):
-            self.backtesting.strategy.advise_sell = (  # type: ignore
-                self.custom_hyperopt.sell_strategy_generator(params_dict))
 
         if HyperoptTools.has_space(self.config, 'stoploss'):
             self.backtesting.strategy.stoploss = params_dict['stoploss']
@@ -310,7 +338,8 @@ class Hyperopt:
         results_explanation = HyperoptTools.format_results_explanation_string(
             strat_stats, self.config['stake_currency'])
 
-        not_optimized = self.backtesting.strategy.get_params_dict()
+        not_optimized = self.backtesting.strategy.get_no_optimize_params()
+        not_optimized = deep_merge_dicts(not_optimized, self._get_no_optimize_details())
 
         trade_count = strat_stats['total_trades']
         total_profit = strat_stats['profit_total']
@@ -324,7 +353,8 @@ class Hyperopt:
             loss = self.calculate_loss(results=backtesting_results['results'],
                                        trade_count=trade_count,
                                        min_date=min_date, max_date=max_date,
-                                       config=self.config, processed=processed)
+                                       config=self.config, processed=processed,
+                                       backtest_stats=strat_stats)
         return {
             'loss': loss,
             'params_dict': params_dict,
@@ -336,10 +366,20 @@ class Hyperopt:
         }
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
+        estimator = self.custom_hyperopt.generate_estimator()
+
+        acq_optimizer = "sampling"
+        if isinstance(estimator, str):
+            if estimator not in ("GP", "RF", "ET", "GBRT"):
+                raise OperationalException(f"Estimator {estimator} not supported.")
+            else:
+                acq_optimizer = "auto"
+
+        logger.info(f"Using estimator {estimator}.")
         return Optimizer(
             dimensions,
-            base_estimator="ET",
-            acq_optimizer="auto",
+            base_estimator=estimator,
+            acq_optimizer=acq_optimizer,
             n_initial_points=INITIAL_POINTS,
             acq_optimizer_kwargs={'n_jobs': cpu_count},
             random_state=self.random_state,
@@ -357,18 +397,17 @@ class Hyperopt:
         data, timerange = self.backtesting.load_bt_data()
         logger.info("Dataload complete. Calculating indicators")
 
-        preprocessed = self.backtesting.strategy.ohlcvdata_to_dataframe(data)
+        preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
-        # Trim startup period from analyzed dataframe
+        # Trim startup period from analyzed dataframe to get correct dates for output.
         processed = trim_dataframes(preprocessed, timerange, self.backtesting.required_startup)
-
         self.min_date, self.max_date = get_timerange(processed)
 
         logger.info(f'Hyperopting with data from {self.min_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'up to {self.max_date.strftime(DATETIME_PRINT_FORMAT)} '
                     f'({(self.max_date - self.min_date).days} days)..')
-
-        dump(processed, self.data_pickle_file)
+        # Store non-trimmed data - will be trimmed after signal generation.
+        dump(preprocessed, self.data_pickle_file)
 
     def start(self) -> None:
         self.random_state = self._set_random_state(self.config.get('hyperopt_random_state', None))
@@ -423,9 +462,9 @@ class Hyperopt:
                         ' [', progressbar.ETA(), ', ', progressbar.Timer(), ']',
                     ]
                 with progressbar.ProgressBar(
-                         max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
-                         widgets=widgets
-                     ) as pbar:
+                    max_value=self.total_epochs, redirect_stdout=False, redirect_stderr=False,
+                    widgets=widgets
+                ) as pbar:
                     EVALS = ceil(self.total_epochs / jobs)
                     for i in range(EVALS):
                         # Correct the number of epochs to be processed for the last
@@ -469,6 +508,11 @@ class Hyperopt:
                     f"saved to '{self.results_file}'.")
 
         if self.current_best_epoch:
+            HyperoptTools.try_export_params(
+                self.config,
+                self.backtesting.strategy.get_strategy_name(),
+                self.current_best_epoch)
+
             HyperoptTools.show_epoch_details(self.current_best_epoch, self.total_epochs,
                                              self.print_json)
         else:

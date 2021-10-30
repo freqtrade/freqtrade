@@ -1,7 +1,7 @@
 {
     "max_open_trades": 3,
-    "stake_currency": "BTC",
-    "stake_amount": 0.05,
+    "stake_currency": "USD",
+    "stake_amount": 50,
     "tradable_balance_ratio": 0.99,
     "fiat_display_currency": "USD",
     "timeframe": "5m",
@@ -13,7 +13,7 @@
     },
     "bid_strategy": {
         "ask_last_balance": 0.0,
-        "use_order_book": false,
+        "use_order_book": true,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
@@ -21,41 +21,34 @@
         }
     },
     "ask_strategy": {
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
+        "use_order_book": true,
+        "order_book_top": 1
     },
     "exchange": {
-        "name": "binance",
+        "name": "ftx",
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
-        "ccxt_config": {"enableRateLimit": true},
-        "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 200
-        },
+        "ccxt_config": {},
+        "ccxt_async_config": {},
         "pair_whitelist": [
-            "ALGO/BTC",
-            "ATOM/BTC",
-            "BAT/BTC",
-            "BCH/BTC",
-            "BRD/BTC",
-            "EOS/BTC",
-            "ETH/BTC",
-            "IOTA/BTC",
-            "LINK/BTC",
-            "LTC/BTC",
-            "NEO/BTC",
-            "NXS/BTC",
-            "XMR/BTC",
-            "XRP/BTC",
-            "XTZ/BTC"
+            "BTC/USD",
+            "ETH/USD",
+            "BNB/USD",
+            "USDT/USD",
+            "LTC/USD",
+            "SRM/USD",
+            "SXP/USD",
+            "XRP/USD",
+            "DOGE/USD",
+            "1INCH/USD",
+            "CHZ/USD",
+            "MATIC/USD",
+            "LINK/USD",
+            "OXY/USD",
+            "SUSHI/USD"
         ],
         "pair_blacklist": [
-            "BNB/BTC"
+            "FTT/USD"
         ]
     },
     "pairlists": [

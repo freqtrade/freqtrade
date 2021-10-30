@@ -19,6 +19,7 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
+    :param method: Bot running mode
     :return: Configuration
     """
     config = setup_utils_configuration(args, method)

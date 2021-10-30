@@ -312,7 +312,7 @@ class FtRestClient():
         :param limit: Limit result to the last n candles.
         :return: json object
         """
-        return self._get("available_pairs", params={
+        return self._get("pair_candles", params={
             "pair": pair,
             "timeframe": timeframe,
             "limit": limit,
@@ -333,6 +333,13 @@ class FtRestClient():
             "strategy": strategy,
             "timerange": timerange if timerange else '',
         })
+
+    def sysinfo(self):
+        """Provides system information (CPU, RAM usage)
+
+        :return: json object
+        """
+        return self._get("sysinfo")
 
 
 def add_arguments():

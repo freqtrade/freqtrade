@@ -2,7 +2,7 @@
 Performance pair list filter
 """
 import logging
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -15,11 +15,19 @@ logger = logging.getLogger(__name__)
 
 class PerformanceFilter(IPairList):
 
+    def __init__(self, exchange, pairlistmanager,
+                 config: Dict[str, Any], pairlistconfig: Dict[str, Any],
+                 pairlist_pos: int) -> None:
+        super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
+
+        self._minutes = pairlistconfig.get('minutes', 0)
+        self._min_profit = pairlistconfig.get('min_profit', None)
+
     @property
     def needstickers(self) -> bool:
         """
         Boolean property defining if tickers are necessary.
-        If no Pairlist requries tickers, an empty List is passed
+        If no Pairlist requires tickers, an empty List is passed
         as tickers argument to filter_pairlist
         """
         return False
@@ -40,7 +48,7 @@ class PerformanceFilter(IPairList):
         """
         # Get the trading performance for pairs from database
         try:
-            performance = pd.DataFrame(Trade.get_overall_performance())
+            performance = pd.DataFrame(Trade.get_overall_performance(self._minutes))
         except AttributeError:
             # Performancefilter does not work in backtesting.
             self.log_once("PerformanceFilter is not available in this mode.", logger.warning)
@@ -61,6 +69,14 @@ class PerformanceFilter(IPairList):
         sorted_df = list_df.merge(performance, on='pair', how='left')\
             .fillna(0).sort_values(by=['count', 'pair'], ascending=True)\
             .sort_values(by=['profit'], ascending=False)
+        if self._min_profit is not None:
+            removed = sorted_df[sorted_df['profit'] < self._min_profit]
+            for _, row in removed.iterrows():
+                self.log_once(
+                    f"Removing pair {row['pair']} since {row['profit']} is "
+                    f"below {self._min_profit}", logger.info)
+            sorted_df = sorted_df[sorted_df['profit'] >= self._min_profit]
+
         pairlist = sorted_df['pair'].tolist()
 
         return pairlist

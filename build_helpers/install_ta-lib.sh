@@ -11,10 +11,18 @@ if [ ! -f "${INSTALL_LOC}/lib/libta_lib.a" ]; then
   && curl 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD' -o config.guess \
   && curl 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD' -o config.sub \
   && ./configure --prefix=${INSTALL_LOC}/ \
-  && make -j$(nproc) \
-  && which sudo && sudo make install || make install \
-  && cd ..
+  && make
+  if [ $? -ne 0 ]; then
+    echo "Failed building ta-lib."
+    cd .. && rm -rf ./ta-lib/
+    exit 1
+  fi
+  which sudo && sudo make install || make install
+  if [ -x "$(command -v apt-get)" ]; then
+    echo "Updating library path using ldconfig"
+    sudo ldconfig
+  fi
+  cd .. && rm -rf ./ta-lib/
 else
   echo "TA-lib already installed, skipping installation"
 fi
-#  && sed -i.bak "s|0.00000001|0.000000000000000001 |g" src/ta_func/ta_utility.h \

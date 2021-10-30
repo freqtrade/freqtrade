@@ -79,6 +79,7 @@ def validate_config_consistency(conf: Dict[str, Any]) -> None:
     _validate_whitelist(conf)
     _validate_protections(conf)
     _validate_unlimited_amount(conf)
+    _validate_ask_orderbook(conf)
 
     # validate configuration before returning
     logger.info('Validating configuration ...')
@@ -114,7 +115,7 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
     if conf.get('stoploss') == 0.0:
         raise OperationalException(
             'The config stoploss needs to be different from 0 to avoid problems with sell orders.'
-            )
+        )
     # Skip if trailing stoploss is not activated
     if not conf.get('trailing_stop', False):
         return
@@ -149,7 +150,7 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
     if not conf.get('edge', {}).get('enabled'):
         return
 
-    if not conf.get('ask_strategy', {}).get('use_sell_signal', True):
+    if not conf.get('use_sell_signal', True):
         raise OperationalException(
             "Edge requires `use_sell_signal` to be True, otherwise no sells will happen."
         )
@@ -179,10 +180,30 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
             raise OperationalException(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"
-                )
+            )
 
         if ('lookback_period' in prot and 'lookback_period_candles' in prot):
             raise OperationalException(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
                 f"Please fix the protection {prot.get('method')}"
+            )
+
+
+def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
+    ask_strategy = conf.get('ask_strategy', {})
+    ob_min = ask_strategy.get('order_book_min')
+    ob_max = ask_strategy.get('order_book_max')
+    if ob_min is not None and ob_max is not None and ask_strategy.get('use_order_book'):
+        if ob_min != ob_max:
+            raise OperationalException(
+                "Using order_book_max != order_book_min in ask_strategy is no longer supported."
+                "Please pick one value and use `order_book_top` in the future."
+            )
+        else:
+            # Move value to order_book_top
+            ask_strategy['order_book_top'] = ob_min
+            logger.warning(
+                "DEPRECATED: "
+                "Please use `order_book_top` instead of `order_book_min` and `order_book_max` "
+                "for your `ask_strategy` configuration."
             )

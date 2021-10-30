@@ -68,7 +68,7 @@ def test_PairLocks(use_db):
     # Global lock
     PairLocks.lock_pair('*', lock_time)
     assert PairLocks.is_global_lock(lock_time + timedelta(minutes=-50))
-    # Global lock also locks every pair seperately
+    # Global lock also locks every pair separately
     assert PairLocks.is_pair_locked(pair, lock_time + timedelta(minutes=-50))
     assert PairLocks.is_pair_locked('XRP/USDT', lock_time + timedelta(minutes=-50))
 
@@ -113,6 +113,31 @@ def test_PairLocks_getlongestlock(use_db):
     lock = PairLocks.get_pair_longest_lock(pair)
     # Must be longer than above
     assert lock.lock_end_time.replace(tzinfo=timezone.utc) > arrow.utcnow().shift(minutes=14)
+
+    PairLocks.reset_locks()
+    PairLocks.use_db = True
+
+
+@pytest.mark.parametrize('use_db', (False, True))
+@pytest.mark.usefixtures("init_persistence")
+def test_PairLocks_reason(use_db):
+    PairLocks.timeframe = '5m'
+    PairLocks.use_db = use_db
+    # No lock should be present
+    if use_db:
+        assert len(PairLock.query.all()) == 0
+
+    assert PairLocks.use_db == use_db
+
+    PairLocks.lock_pair('XRP/USDT', arrow.utcnow().shift(minutes=4).datetime, 'TestLock1')
+    PairLocks.lock_pair('ETH/USDT', arrow.utcnow().shift(minutes=4).datetime, 'TestLock2')
+
+    assert PairLocks.is_pair_locked('XRP/USDT')
+    assert PairLocks.is_pair_locked('ETH/USDT')
+
+    PairLocks.unlock_reason('TestLock1')
+    assert not PairLocks.is_pair_locked('XRP/USDT')
+    assert PairLocks.is_pair_locked('ETH/USDT')
 
     PairLocks.reset_locks()
     PairLocks.use_db = True

@@ -16,8 +16,6 @@ API_FETCH_ORDER_RETRY_COUNT = 5
 
 BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
-    "bitstamp": "Does not provide history. "
-                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
     "phemex": "Does not provide history. ",
     "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
 }
@@ -49,6 +47,19 @@ EXCHANGE_HAS_OPTIONAL = [
     'fetchTickers',  # For volumepairlist?
     'fetchTrades',  # Downloading trades data
 ]
+
+
+def remove_credentials(config) -> None:
+    """
+    Removes exchange keys from the configuration and specifies dry-run
+    Used for backtesting / hyperopt / edge and utils.
+    Modifies the input dict!
+    """
+    if config.get('dry_run', False):
+        config['exchange']['key'] = ''
+        config['exchange']['secret'] = ''
+        config['exchange']['password'] = ''
+        config['exchange']['uid'] = ''
 
 
 def calculate_backoff(retrycount, max_retries):

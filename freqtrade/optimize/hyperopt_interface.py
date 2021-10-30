@@ -5,11 +5,11 @@ This module defines the interface to apply for hyperopt
 import logging
 import math
 from abc import ABC
-from typing import Any, Callable, Dict, List
+from typing import Dict, List, Union
 
+from sklearn.base import RegressorMixin
 from skopt.space import Categorical, Dimension, Integer
 
-from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import round_dict
 from freqtrade.optimize.space import SKDecimal
@@ -18,12 +18,7 @@ from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 
-
-def _format_exception_message(method: str, space: str) -> str:
-    return (f"The '{space}' space is included into the hyperoptimization "
-            f"but {method}() method is not found in your "
-            f"custom Hyperopt class. You should either implement this "
-            f"method or remove the '{space}' space from hyperoptimization.")
+EstimatorType = Union[RegressorMixin, str]
 
 
 class IHyperOpt(ABC):
@@ -45,29 +40,13 @@ class IHyperOpt(ABC):
         IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
 
-    def buy_strategy_generator(self, params: Dict[str, Any]) -> Callable:
+    def generate_estimator(self) -> EstimatorType:
         """
-        Create a buy strategy generator.
+        Return base_estimator.
+        Can be any of "GP", "RF", "ET", "GBRT" or an instance of a class
+        inheriting from RegressorMixin (from sklearn).
         """
-        raise OperationalException(_format_exception_message('buy_strategy_generator', 'buy'))
-
-    def sell_strategy_generator(self, params: Dict[str, Any]) -> Callable:
-        """
-        Create a sell strategy generator.
-        """
-        raise OperationalException(_format_exception_message('sell_strategy_generator', 'sell'))
-
-    def indicator_space(self) -> List[Dimension]:
-        """
-        Create an indicator space.
-        """
-        raise OperationalException(_format_exception_message('indicator_space', 'buy'))
-
-    def sell_indicator_space(self) -> List[Dimension]:
-        """
-        Create a sell indicator space.
-        """
-        raise OperationalException(_format_exception_message('sell_indicator_space', 'sell'))
+        return 'ET'
 
     def generate_roi_table(self, params: Dict) -> Dict[int, float]:
         """

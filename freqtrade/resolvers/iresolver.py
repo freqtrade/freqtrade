@@ -58,6 +58,9 @@ class IResolver:
         # Generate spec based on absolute path
         # Pass object_name as first argument to have logging print a reasonable name.
         spec = importlib.util.spec_from_file_location(object_name or "", str(module_path))
+        if not spec:
+            return iter([None])
+
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore # importlib does not use typehints
@@ -88,7 +91,7 @@ class IResolver:
         logger.debug(f"Searching for {cls.object_type.__name__} {object_name} in '{directory}'")
         for entry in directory.iterdir():
             # Only consider python files
-            if not str(entry).endswith('.py'):
+            if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
                 continue
             if entry.is_symlink() and not entry.is_file():
@@ -132,7 +135,7 @@ class IResolver:
                     extra_dir: Optional[str] = None) -> Any:
         """
         Search and loads the specified object as configured in hte child class.
-        :param objectname: name of the module to import
+        :param object_name: name of the module to import
         :param config: configuration dictionary
         :param extra_dir: additional directory to search for the given pairlist
         :raises: OperationalException if the class is invalid or does not exist.
@@ -160,13 +163,13 @@ class IResolver:
         :param directory: Path to search
         :param enum_failed: If True, will return None for modules which fail.
             Otherwise, failing modules are skipped.
-        :return: List of dicts containing 'name', 'class' and 'location' entires
+        :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
         objects = []
         for entry in directory.iterdir():
             # Only consider python files
-            if not str(entry).endswith('.py'):
+            if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
                 continue
             module_path = entry.resolve()

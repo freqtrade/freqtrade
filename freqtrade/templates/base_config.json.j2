@@ -1,3 +1,10 @@
+{%set volume_pairlist = '{
+            "method": "VolumePairList",
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "min_value": 0,
+            "refresh_period": 1800
+        }' %}
 {
     "max_open_trades": {{ max_open_trades }},
     "stake_currency": "{{ stake_currency }}",
@@ -15,7 +22,7 @@
     "bid_strategy": {
         "price_side": "bid",
         "ask_last_balance": 0.0,
-        "use_order_book": false,
+        "use_order_book": true,
         "order_book_top": 1,
         "check_depth_of_market": {
             "enabled": false,
@@ -24,16 +31,12 @@
     },
     "ask_strategy": {
         "price_side": "ask",
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
+        "use_order_book": true,
+        "order_book_top": 1
     },
     {{ exchange | indent(4) }},
     "pairlists": [
-        {"method": "StaticPairList"}
+        {{ '{"method": "StaticPairList"}' if exchange_name == 'bittrex' else  volume_pairlist }}
     ],
     "edge": {
         "enabled": false,

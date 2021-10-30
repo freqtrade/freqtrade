@@ -28,13 +28,13 @@ class PairListManager():
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
             pairlist_handler = PairListResolver.load_pairlist(
-                    pairlist_handler_config['method'],
-                    exchange=exchange,
-                    pairlistmanager=self,
-                    config=config,
-                    pairlistconfig=pairlist_handler_config,
-                    pairlist_pos=len(self._pairlist_handlers)
-                    )
+                pairlist_handler_config['method'],
+                exchange=exchange,
+                pairlistmanager=self,
+                config=config,
+                pairlistconfig=pairlist_handler_config,
+                pairlist_pos=len(self._pairlist_handlers)
+            )
             self._tickers_needed |= pairlist_handler.needstickers
             self._pairlist_handlers.append(pairlist_handler)
 
@@ -83,7 +83,8 @@ class PairListManager():
         pairlist = self._pairlist_handlers[0].gen_pairlist(tickers)
 
         # Process all Pairlist Handlers in the chain
-        for pairlist_handler in self._pairlist_handlers:
+        # except for the first one, which is the generator.
+        for pairlist_handler in self._pairlist_handlers[1:]:
             pairlist = pairlist_handler.filter_pairlist(pairlist, tickers)
 
         # Validation against blacklist happens after the chain of Pairlist Handlers

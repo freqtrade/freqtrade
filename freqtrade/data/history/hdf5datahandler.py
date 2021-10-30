@@ -52,8 +52,8 @@ class HDF5DataHandler(IDataHandler):
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
-        :timeframe: Timeframe - used to generate filename
-        :data: Dataframe containing OHLCV data
+        :param timeframe: Timeframe - used to generate filename
+        :param data: Dataframe containing OHLCV data
         :return: None
         """
         key = self._pair_ohlcv_key(pair, timeframe)

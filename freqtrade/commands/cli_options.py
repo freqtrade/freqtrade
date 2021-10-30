@@ -1,7 +1,7 @@
 """
 Definition of cli arguments used in arguments.py
 """
-from argparse import ArgumentTypeError
+from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
@@ -135,6 +135,10 @@ AVAILABLE_CLI_OPTIONS = {
         help='Override the value of the `stake_amount` configuration setting.',
     ),
     # Backtesting
+    "timeframe_detail": Arg(
+        '--timeframe-detail',
+        help='Specify detail timeframe for backtesting (`1m`, `5m`, `30m`, `1h`, `1d`).',
+    ),
     "position_stacking": Arg(
         '--eps', '--enable-position-stacking',
         help='Allow buying the same pair multiple times (position stacking).',
@@ -162,13 +166,14 @@ AVAILABLE_CLI_OPTIONS = {
         'Please note that ticker-interval needs to be set either in config '
         'or via command line. When using this together with `--export trades`, '
         'the strategy-name is injected into the filename '
-        '(so `backtest-data.json` becomes `backtest-data-DefaultStrategy.json`',
+        '(so `backtest-data.json` becomes `backtest-data-SampleStrategy.json`',
         nargs='+',
     ),
     "export": Arg(
         '--export',
-        help='Export backtest results, argument are: trades. '
-        'Example: `--export=trades`',
+        help='Export backtest results (default: trades).',
+        choices=constants.EXPORT_OPTIONS,
+
     ),
     "exportfilename": Arg(
         '--export-filename',
@@ -177,11 +182,22 @@ AVAILABLE_CLI_OPTIONS = {
         'Example: `--export-filename=user_data/backtest_results/backtest_today.json`',
         metavar='PATH',
     ),
+    "disableparamexport": Arg(
+        '--disable-param-export',
+        help="Disable automatic hyperopt parameter export.",
+        action='store_true',
+    ),
     "fee": Arg(
         '--fee',
         help='Specify fee ratio. Will be applied twice (on trade entry and exit).',
         type=float,
         metavar='FLOAT',
+    ),
+    "backtest_breakdown": Arg(
+        '--breakdown',
+        help='Show backtesting breakdown per [day, week, month].',
+        nargs='+',
+        choices=constants.BACKTEST_BREAKDOWNS
     ),
     # Edge
     "stoploss_range": Arg(
@@ -193,13 +209,13 @@ AVAILABLE_CLI_OPTIONS = {
     # Hyperopt
     "hyperopt": Arg(
         '--hyperopt',
-        help='Specify hyperopt class name which will be used by the bot.',
+        help=SUPPRESS,
         metavar='NAME',
         required=False,
     ),
     "hyperopt_path": Arg(
         '--hyperopt-path',
-        help='Specify additional lookup path for Hyperopt and Hyperopt Loss functions.',
+        help='Specify additional lookup path for Hyperopt Loss functions.',
         metavar='PATH',
     ),
     "backtest_path": Arg(
@@ -217,7 +233,7 @@ AVAILABLE_CLI_OPTIONS = {
     "spaces": Arg(
         '--spaces',
         help='Specify which parameters to hyperopt. Space-separated list.',
-        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'default'],
+        choices=['all', 'buy', 'sell', 'roi', 'stoploss', 'trailing', 'protection', 'default'],
         nargs='+',
         default='default',
     ),
@@ -350,6 +366,11 @@ AVAILABLE_CLI_OPTIONS = {
         type=check_int_positive,
         metavar='INT',
     ),
+    "include_inactive": Arg(
+        '--include-inactive-pairs',
+        help='Also download data from inactive pairs.',
+        action='store_true',
+    ),
     "new_pairs_days": Arg(
         '--new-pairs-days',
         help='Download data of new pairs for given number of days. Default: `%(default)s`.',
@@ -376,12 +397,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "dataformat_ohlcv": Arg(
         '--data-format-ohlcv',
-        help='Storage format for downloaded candle (OHLCV) data. (default: `%(default)s`).',
+        help='Storage format for downloaded candle (OHLCV) data. (default: `json`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "dataformat_trades": Arg(
         '--data-format-trades',
-        help='Storage format for downloaded trades data. (default: `%(default)s`).',
+        help='Storage format for downloaded trades data. (default: `jsongz`).',
         choices=constants.AVAILABLE_DATAHANDLERS,
     ),
     "exchange": Arg(
@@ -408,6 +429,12 @@ AVAILABLE_CLI_OPTIONS = {
         help="Clean UI folder, don't download new version.",
         action='store_true',
         default=False,
+    ),
+    "ui_version": Arg(
+        '--ui-version',
+        help=('Specify a specific version of FreqUI to install. '
+              'Not specifying this installs the latest version.'),
+        type=str,
     ),
     # Templating options
     "template": Arg(
@@ -546,5 +573,11 @@ AVAILABLE_CLI_OPTIONS = {
         '--no-header',
         help='Do not print epoch details header.',
         action='store_true',
+    ),
+    "hyperopt_ignore_missing_space": Arg(
+        "--ignore-missing-spaces", "--ignore-unparameterized-spaces",
+        help=("Suppress errors for any requested Hyperopt spaces "
+              "that do not contain any parameters."),
+        action="store_true",
     ),
 }

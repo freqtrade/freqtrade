@@ -14,6 +14,10 @@
     "trailing_stop_positive": 0.005,
     "trailing_stop_positive_offset": 0.0051,
     "trailing_only_offset_is_reached": false,
+    "use_sell_signal": true,
+    "sell_profit_only": false,
+    "sell_profit_offset": 0.0,
+    "ignore_roi_if_buy_signal": false,
     "minimal_roi": {
         "40":  0.0,
         "30":  0.01,
@@ -28,7 +32,7 @@
     },
     "bid_strategy": {
         "price_side": "bid",
-        "use_order_book": false,
+        "use_order_book": true,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
         "check_depth_of_market": {
@@ -38,13 +42,8 @@
     },
     "ask_strategy":{
         "price_side": "ask",
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": false
+        "use_order_book": true,
+        "order_book_top": 1
     },
     "order_types": {
         "buy": "limit",
@@ -79,45 +78,14 @@
             "refresh_period": 1440
         }
     ],
-    "protections": [
-        {
-            "method": "StoplossGuard",
-            "lookback_period_candles": 60,
-            "trade_limit": 4,
-            "stop_duration_candles": 60,
-            "only_per_pair": false
-        },
-        {
-            "method": "CooldownPeriod",
-            "stop_duration_candles": 20
-        },
-        {
-            "method": "MaxDrawdown",
-            "lookback_period_candles": 200,
-            "trade_limit": 20,
-            "stop_duration_candles": 10,
-            "max_allowed_drawdown": 0.2
-        },
-        {
-            "method": "LowProfitPairs",
-            "lookback_period_candles": 360,
-            "trade_limit": 1,
-            "stop_duration_candles": 2,
-            "required_profit": 0.02
-        }
-    ],
     "exchange": {
         "name": "binance",
         "sandbox": false,
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "password": "",
-        "ccxt_config": {"enableRateLimit": true},
-        "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 500,
-            "aiohttp_trust_env": false
-        },
+        "ccxt_config": {},
+        "ccxt_async_config": {},
         "pair_whitelist": [
             "ALGO/BTC",
             "ATOM/BTC",
@@ -177,8 +145,12 @@
             },
             "sell_fill": "on",
             "buy_cancel": "on",
-            "sell_cancel": "on"
-        }
+            "sell_cancel": "on",
+            "protection_trigger": "off",
+            "protection_trigger_global": "on"
+        },
+        "reload": true,
+        "balance_dust_level": 0.01
     },
     "api_server": {
         "enabled": false,
@@ -200,7 +172,7 @@
         "heartbeat_interval": 60
     },
     "disable_dataframe_checks": false,
-    "strategy": "DefaultStrategy",
+    "strategy": "SampleStrategy",
     "strategy_path": "user_data/strategies/",
     "dataformat_ohlcv": "json",
     "dataformat_trades": "jsongz"

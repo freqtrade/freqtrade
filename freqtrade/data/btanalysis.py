@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 BT_DATA_COLUMNS_OLD = ["pair", "profit_percent", "open_date", "close_date", "index",
                        "trade_duration", "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
-# Mid-term format, crated by BacktestResult Named Tuple
+# Mid-term format, created by BacktestResult Named Tuple
 BT_DATA_COLUMNS_MID = ['pair', 'profit_percent', 'open_date', 'close_date', 'trade_duration',
                        'open_rate', 'close_rate', 'open_at_end', 'sell_reason', 'fee_open',
                        'fee_close', 'amount', 'profit_abs', 'profit_ratio']
@@ -30,7 +30,7 @@ BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'fee_open', 'fee_close', 'trade_duration',
                    'profit_ratio', 'profit_abs', 'sell_reason',
                    'initial_stop_loss_abs', 'initial_stop_loss_ratio', 'stop_loss_abs',
-                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', ]
+                   'stop_loss_ratio', 'min_rate', 'max_rate', 'is_open', 'buy_tag']
 
 
 def get_latest_optimize_filename(directory: Union[Path, str], variant: str) -> str:

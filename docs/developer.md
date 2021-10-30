@@ -2,13 +2,13 @@
 
 This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.
 
-All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/p7nuUNVfP7) or [slack](https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw) where you can ask questions.
+All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We [track issues](https://github.com/freqtrade/freqtrade/issues) on [GitHub](https://github.com) and also have a dev channel on [discord](https://discord.gg/p7nuUNVfP7) where you can ask questions.
 
 ## Documentation
 
 Documentation is available at [https://freqtrade.io](https://www.freqtrade.io/) and needs to be provided with every new feature PR.
 
-Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/extensions/admonition/).
+Special fields for the documentation (like Note boxes, ...) can be found [here](https://squidfunk.github.io/mkdocs-material/reference/admonitions/).
 
 To test the documentation locally use the following commands.
 
@@ -240,10 +240,17 @@ The `IProtection` parent class provides a helper method for this in `calculate_l
 !!! Note
     This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.
 
+!!! Note
+    Make sure to use an up-to-date version of CCXT before running any of the below tests.
+    You can get the latest version of ccxt by running `pip install -U ccxt` with activated virtual environment.
+    Native docker is not supported for these tests, however the available dev-container will support all required actions and eventually necessary changes.
+
 Most exchanges supported by CCXT should work out of the box.
 
 To quickly test the public endpoints of an exchange, add a configuration for your exchange to `test_ccxt_compat.py` and run these tests with `pytest --longrun tests/exchange/test_ccxt_compat.py`.
 Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).
+
+Also try to use `freqtrade download-data` for an extended timerange and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
 
 ### Stoploss On Exchange
 

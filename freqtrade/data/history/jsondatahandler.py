@@ -55,14 +55,14 @@ class JsonDataHandler(IDataHandler):
             format looks as follows:
             [[<date>,<open>,<high>,<low>,<close>]]
         :param pair: Pair - used to generate filename
-        :timeframe: Timeframe - used to generate filename
-        :data: Dataframe containing OHLCV data
+        :param timeframe: Timeframe - used to generate filename
+        :param data: Dataframe containing OHLCV data
         :return: None
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
         _data = data.copy()
         # Convert date to int
-        _data['date'] = _data['date'].astype(np.int64) // 1000 // 1000
+        _data['date'] = _data['date'].view(np.int64) // 1000 // 1000
 
         # Reset index, select only appropriate columns and save as json
         _data.reset_index(drop=True).loc[:, self._columns].to_json(

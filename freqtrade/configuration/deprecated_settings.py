@@ -3,7 +3,7 @@ Functions to handle deprecated settings
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from freqtrade.exceptions import OperationalException
 
@@ -12,23 +12,24 @@ logger = logging.getLogger(__name__)
 
 
 def check_conflicting_settings(config: Dict[str, Any],
-                               section1: str, name1: str,
-                               section2: str, name2: str) -> None:
-    section1_config = config.get(section1, {})
-    section2_config = config.get(section2, {})
-    if name1 in section1_config and name2 in section2_config:
+                               section_old: str, name_old: str,
+                               section_new: Optional[str], name_new: str) -> None:
+    section_new_config = config.get(section_new, {}) if section_new else config
+    section_old_config = config.get(section_old, {})
+    if name_new in section_new_config and name_old in section_old_config:
+        new_name = f"{section_new}.{name_new}" if section_new else f"{name_new}"
         raise OperationalException(
-            f"Conflicting settings `{section1}.{name1}` and `{section2}.{name2}` "
+            f"Conflicting settings `{new_name}` and `{section_old}.{name_old}` "
             "(DEPRECATED) detected in the configuration file. "
             "This deprecated setting will be removed in the next versions of Freqtrade. "
-            f"Please delete it from your configuration and use the `{section1}.{name1}` "
+            f"Please delete it from your configuration and use the `{new_name}` "
             "setting instead."
         )
 
 
 def process_removed_setting(config: Dict[str, Any],
                             section1: str, name1: str,
-                            section2: str, name2: str) -> None:
+                            section2: Optional[str], name2: str) -> None:
     """
     :param section1: Removed section
     :param name1: Removed setting name
@@ -37,27 +38,32 @@ def process_removed_setting(config: Dict[str, Any],
     """
     section1_config = config.get(section1, {})
     if name1 in section1_config:
+        section_2 = f"{section2}.{name2}" if section2 else f"{name2}"
         raise OperationalException(
-            f"Setting `{section1}.{name1}` has been moved to `{section2}.{name2}. "
-            f"Please delete it from your configuration and use the `{section2}.{name2}` "
+            f"Setting `{section1}.{name1}` has been moved to `{section_2}. "
+            f"Please delete it from your configuration and use the `{section_2}` "
             "setting instead."
         )
 
 
 def process_deprecated_setting(config: Dict[str, Any],
-                               section1: str, name1: str,
-                               section2: str, name2: str) -> None:
-    section2_config = config.get(section2, {})
+                               section_old: str, name_old: str,
+                               section_new: Optional[str], name_new: str
+                               ) -> None:
+    check_conflicting_settings(config, section_old, name_old, section_new, name_new)
+    section_old_config = config.get(section_old, {})
 
-    if name2 in section2_config:
+    if name_old in section_old_config:
+        section_2 = f"{section_new}.{name_new}" if section_new else f"{name_new}"
         logger.warning(
             "DEPRECATED: "
-            f"The `{section2}.{name2}` setting is deprecated and "
+            f"The `{section_old}.{name_old}` setting is deprecated and "
             "will be removed in the next versions of Freqtrade. "
-            f"Please use the `{section1}.{name1}` setting in your configuration instead."
+            f"Please use the `{section_2}` setting in your configuration instead."
         )
-        section1_config = config.get(section1, {})
-        section1_config[name1] = section2_config[name2]
+
+        section_new_config = config.get(section_new, {}) if section_new else config
+        section_new_config[name_new] = section_old_config[name_old]
 
 
 def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
@@ -65,15 +71,24 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
     # Kept for future deprecated / moved settings
     # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
     #                            'experimental', 'use_sell_signal')
-    # process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
-    #                            'experimental', 'use_sell_signal')
+    process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
+                               None, 'use_sell_signal')
+    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
+                               None, 'sell_profit_only')
+    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_offset',
+                               None, 'sell_profit_offset')
+    process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_buy_signal',
+                               None, 'ignore_roi_if_buy_signal')
+    process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
+                               None, 'ignore_buying_expired_candle_after')
 
+    # Legacy way - having them in experimental ...
     process_removed_setting(config, 'experimental', 'use_sell_signal',
-                            'ask_strategy', 'use_sell_signal')
+                            None, 'use_sell_signal')
     process_removed_setting(config, 'experimental', 'sell_profit_only',
-                            'ask_strategy', 'sell_profit_only')
+                            None, 'sell_profit_only')
     process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
-                            'ask_strategy', 'ignore_roi_if_buy_signal')
+                            None, 'ignore_roi_if_buy_signal')
 
     if (config.get('edge', {}).get('enabled', False)
        and 'capital_available_percentage' in config.get('edge', {})):
@@ -93,5 +108,8 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
             raise OperationalException(
                 "Both 'timeframe' and 'ticker_interval' detected."
                 "Please remove 'ticker_interval' from your configuration to continue operating."
-                )
+            )
         config['timeframe'] = config['ticker_interval']
+
+    if 'protections' in config:
+        logger.warning("DEPRECATED: Setting 'protections' in the configuration is deprecated.")

@@ -1,9 +1,9 @@
 {
-    "max_open_trades": 3,
-    "stake_currency": "BTC",
-    "stake_amount": 0.05,
+    "max_open_trades": 5,
+    "stake_currency": "EUR",
+    "stake_amount": 10,
     "tradable_balance_ratio": 0.99,
-    "fiat_display_currency": "USD",
+    "fiat_display_currency": "EUR",
     "timeframe": "5m",
     "dry_run": true,
     "cancel_open_orders_on_exit": false,
@@ -12,7 +12,7 @@
         "sell": 30
     },
     "bid_strategy": {
-        "use_order_book": false,
+        "use_order_book": true,
         "ask_last_balance": 0.0,
         "order_book_top": 1,
         "check_depth_of_market": {
@@ -21,36 +21,40 @@
         }
     },
     "ask_strategy":{
-        "use_order_book": false,
-        "order_book_min": 1,
-        "order_book_max": 1,
-        "use_sell_signal": true,
-        "sell_profit_only": false,
-        "ignore_roi_if_buy_signal": false
+        "use_order_book": true,
+        "order_book_top": 1
     },
     "exchange": {
-        "name": "bittrex",
+        "name": "kraken",
         "key": "your_exchange_key",
-        "secret": "your_exchange_secret",
-        "ccxt_config": {"enableRateLimit": true},
+        "secret": "your_exchange_key",
+        "ccxt_config": {},
         "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 500
         },
         "pair_whitelist": [
-            "ETH/BTC",
-            "LTC/BTC",
-            "ETC/BTC",
-            "RVN/BTC",
-            "CRO/BTC",
-            "XLM/BTC",
-            "XRP/BTC",
-            "TRX/BTC",
-            "ADA/BTC",
-            "DOT/BTC"
+            "ADA/EUR",
+            "ATOM/EUR",
+            "BAT/EUR",
+            "BCH/EUR",
+            "BTC/EUR",
+            "DAI/EUR",
+            "DASH/EUR",
+            "EOS/EUR",
+            "ETC/EUR",
+            "ETH/EUR",
+            "LINK/EUR",
+            "LTC/EUR",
+            "QTUM/EUR",
+            "REP/EUR",
+            "WAVES/EUR",
+            "XLM/EUR",
+            "XMR/EUR",
+            "XRP/EUR",
+            "XTZ/EUR",
+            "ZEC/EUR"
         ],
         "pair_blacklist": [
-            "DOGE/BTC"
+
         ]
     },
     "pairlists": [
@@ -90,5 +94,6 @@
     "forcebuy_enable": false,
     "internals": {
         "process_throttle_secs": 5
-    }
+    },
+    "download_trades": true
 }

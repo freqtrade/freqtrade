@@ -55,7 +55,7 @@ class AwesomeStrategy(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         # Obtain last available candle. Do not use current_time to look up latest candle, because 
-        # current_time points to curret incomplete candle whose data is not available.
+        # current_time points to current incomplete candle whose data is not available.
         last_candle = dataframe.iloc[-1].squeeze()
         # <...>
 
@@ -83,7 +83,7 @@ It is possible to define custom sell signals, indicating that specified position
 
 For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
 
-Using custom_sell() signals in place of stoplosses though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -113,6 +113,36 @@ class AwesomeStrategy(IStrategy):
 ```
 
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
+
+## Buy Tag
+
+When your strategy has multiple buy signals, you can name the signal that triggered.
+Then you can access you buy signal on `custom_sell`
+
+```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe.loc[
+        (
+            (dataframe['rsi'] < 35) &
+            (dataframe['volume'] > 0)
+        ),
+        ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+
+    return dataframe
+
+def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+    if trade.buy_tag == 'buy_signal_rsi' and last_candle['rsi'] > 80:
+        return 'sell_signal_rsi'
+    return None
+
+```
+
+!!! Note
+    `buy_tag` is limited to 100 characters, remaining data will be truncated.
+
 
 ## Custom stoploss
 
@@ -243,7 +273,7 @@ class AwesomeStrategy(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit < 0.04:
-            return -1 # return a value bigger than the inital stoploss to keep using the inital stoploss
+            return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
 
         # After reaching the desired offset, allow the stoploss to trail by half the profit
         desired_stoploss = current_profit / 2
@@ -257,6 +287,12 @@ class AwesomeStrategy(IStrategy):
 Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
 
 The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
+
+### Calculating stoploss percentage from absolute price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss at specified absolute price level, we need to use `stop_rate` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_absolute()`](strategy-customization.md#stoploss_from_absolute) can be used to convert from an absolute price, to a current price relative stop which can be returned from `custom_stoploss()`.
 
 #### Stepped stoploss
 
@@ -326,6 +362,55 @@ class AwesomeStrategy(IStrategy):
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
 ---
+
+## Custom order price rules
+
+By default, freqtrade use the orderbook to automatically set an order price([Relevant documentation](configuration.md#prices-used-for-orders)), you also have the option to create custom order prices based on your strategy.
+
+You can use this feature by creating a `custom_entry_price()` function in your strategy file to customize entry prices and `custom_exit_price()` for exits.
+
+!!! Note
+    If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
+
+### Custom order entry and exit price example
+
+``` python
+from datetime import datetime, timedelta, timezone
+from freqtrade.persistence import Trade
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def custom_entry_price(self, pair: str, current_time: datetime,
+                           proposed_rate, **kwargs) -> float:
+
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                timeframe=self.timeframe)
+        new_entryprice = dataframe['bollinger_10_lowerband'].iat[-1]
+        
+        return new_entryprice
+
+    def custom_exit_price(self, pair: str, trade: Trade,
+                          current_time: datetime, proposed_rate: float,
+                          current_profit: float, **kwargs) -> float:
+
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                                timeframe=self.timeframe)
+        new_exitprice = dataframe['bollinger_10_upperband'].iat[-1]
+        
+        return new_exitprice
+
+```
+
+!!! Warning
+    Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the `custom_price_max_distance_ratio` parameter.
+
+!!! Example
+    If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98.
+
+!!! Warning "No backtesting support"
+    Custom entry-prices are currently not supported during backtesting.
 
 ## Custom order timeout rules
 
@@ -454,7 +539,7 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -469,6 +554,7 @@ class AwesomeStrategy(IStrategy):
         :param amount: Amount in target (quote) currency that's going to be traded.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -490,7 +576,8 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str, **kwargs) -> bool:
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular sell order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -508,6 +595,7 @@ class AwesomeStrategy(IStrategy):
         :param sell_reason: Sell reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is placed on the exchange.
             False aborts the process
@@ -520,6 +608,39 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
+
+### Stake size management
+
+It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.
+
+```python
+class AwesomeStrategy(IStrategy):
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        current_candle = dataframe.iloc[-1].squeeze()
+
+        if current_candle['fastk_rsi_1h'] > current_candle['fastd_rsi_1h']:
+            if self.config['stake_amount'] == 'unlimited':
+                # Use entire available wallet during favorable conditions when in compounding mode.
+                return max_stake
+            else:
+                # Compound profits during favorable conditions instead of using a static stake.
+                return self.wallets.get_total_stake_amount() / self.config['max_open_trades']
+
+        # Use default stake amount.
+        return proposed_stake
+```
+
+Freqtrade will fall back to the `proposed_stake` value should your code raise an exception. The exception itself will be logged.
+
+!!! Tip
+    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.
+
+!!! Tip
+    Returning `0` or `None` will prevent trades from being placed.
 
 ---
 
@@ -580,3 +701,33 @@ The variable 'content', will contain the strategy file in a BASE64 encoded form.
 ```
 
 Please ensure that 'NameOfStrategy' is identical to the strategy name!
+
+## Performance warning
+
+When executing a strategy, one can sometimes be greeted by the following in the logs
+
+> PerformanceWarning: DataFrame is highly fragmented.
+
+This is a warning from [`pandas`](https://github.com/pandas-dev/pandas) and as the warning continues to say:
+use `pd.concat(axis=1)`.
+This can have slight performance implications, which are usually only visible during hyperopt (when optimizing an indicator).
+
+For example:
+
+```python
+for val in self.buy_ema_short.range:
+    dataframe[f'ema_short_{val}'] = ta.EMA(dataframe, timeperiod=val)
+```
+
+should be rewritten to
+
+```python
+frames = [dataframe]
+for val in self.buy_ema_short.range:
+    frames.append({
+        f'ema_short_{val}': ta.EMA(dataframe, timeperiod=val)
+    })
+
+# Append columns to existing dataframe
+merged_frame = pd.concat(frames, axis=1)
+```

@@ -1,4 +1,4 @@
-FROM python:3.9.5-slim-buster as base
+FROM python:3.9.7-slim-buster as base
 
 # Setup env
 ENV LANG C.UTF-8
@@ -13,7 +13,7 @@ RUN mkdir /freqtrade \
   && apt-get update \
   && apt-get -y install sudo libatlas3-base curl sqlite3 libhdf5-serial-dev  \
   && apt-get clean \
-  && useradd -u 1000 -G sudo -U -m ftuser \
+  && useradd -u 1000 -G sudo -U -m -s /bin/bash ftuser \
   && chown ftuser:ftuser /freqtrade \
   # Allow sudoers
   && echo "ftuser ALL=(ALL) NOPASSWD: /bin/chown" >> /etc/sudoers

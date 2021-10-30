@@ -26,9 +26,7 @@ optional arguments:
 ├── data
 ├── hyperopt_results
 ├── hyperopts
-│   ├── sample_hyperopt_advanced.py
 │   ├── sample_hyperopt_loss.py
-│   └── sample_hyperopt.py
 ├── notebooks
 │   └── strategy_analysis_example.ipynb
 ├── plot
@@ -111,46 +109,11 @@ Using the advanced template (populates all optional functions and methods)
 freqtrade new-strategy --strategy AwesomeStrategy --template advanced
 ```
 
-## Create new hyperopt
+## List Strategies
 
-Creates a new hyperopt from a template similar to SampleHyperopt.
-The file will be named inline with your class name, and will not overwrite existing files.
+Use the `list-strategies` subcommand to see all strategies in one particular directory.
 
-Results will be located in `user_data/hyperopts/<classname>.py`.
-
-``` output
-usage: freqtrade new-hyperopt [-h] [--userdir PATH] [--hyperopt NAME]
-                              [--template {full,minimal,advanced}]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --userdir PATH, --user-data-dir PATH
-                        Path to userdata directory.
-  --hyperopt NAME       Specify hyperopt class name which will be used by the
-                        bot.
-  --template {full,minimal,advanced}
-                        Use a template which is either `minimal`, `full`
-                        (containing multiple sample indicators) or `advanced`.
-                        Default: `full`.
-```
-
-### Sample usage of new-hyperopt
-
-```bash
-freqtrade new-hyperopt --hyperopt AwesomeHyperopt
-```
-
-With custom user directory
-
-```bash
-freqtrade new-hyperopt --userdir ~/.freqtrade/ --hyperopt AwesomeHyperopt
-```
-
-## List Strategies and List Hyperopts
-
-Use the `list-strategies` subcommand to see all strategies in one particular directory and the `list-hyperopts` subcommand to list custom Hyperopts.
-
-These subcommands are useful for finding problems in your environment with loading strategies or hyperopt classes: modules with strategies or hyperopt classes that contain errors and failed to load are printed in red (LOAD FAILED), while strategies or hyperopt classes with duplicate names are printed in yellow (DUPLICATE NAME).
+This subcommand is useful for finding problems in your environment with loading strategies: modules with strategies that contain errors and failed to load are printed in red (LOAD FAILED), while strategies with duplicate names are printed in yellow (DUPLICATE NAME).
 
 ```
 usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH]
@@ -179,62 +142,26 @@ Common arguments:
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 ```
-```
-usage: freqtrade list-hyperopts [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                                [-d PATH] [--userdir PATH]
-                                [--hyperopt-path PATH] [-1] [--no-color]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
-                        Hyperopt Loss functions.
-  -1, --one-column      Print output in one column.
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-
-Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --logfile FILE        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c PATH, --config PATH
-                        Specify configuration file (default: `config.json`).
-                        Multiple --config options may be used. Can be set to
-                        `-` to read config from stdin.
-  -d PATH, --datadir PATH
-                        Path to directory with historical backtesting data.
-  --userdir PATH, --user-data-dir PATH
-                        Path to userdata directory.
-```
 
 !!! Warning
     Using these commands will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.
 
-Example: Search default strategies and hyperopts directories (within the default userdir).
+Example: Search default strategies directories (within the default userdir).
 
 ``` bash
 freqtrade list-strategies
-freqtrade list-hyperopts
 ```
 
-Example: Search strategies and hyperopts directory within the userdir.
+Example: Search strategies  directory within the userdir.
 
 ``` bash
 freqtrade list-strategies --userdir ~/.freqtrade/
-freqtrade list-hyperopts --userdir ~/.freqtrade/
 ```
 
 Example: Search dedicated strategy path.
 
 ``` bash
 freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/
-```
-
-Example: Search dedicated hyperopt path.
-
-``` bash
-freqtrade list-hyperopt --hyperopt-path ~/.freqtrade/hyperopts/
 ```
 
 ## List Exchanges
@@ -354,7 +281,7 @@ bitmax              True     missing opt: fetchMyTrades
 bitmex              False    Various reasons.
 bitpanda            True
 bitso               False    missing: fetchOHLCV
-bitstamp            False    Does not provide history. Details in https://github.com/freqtrade/freqtrade/issues/1983
+bitstamp            True     missing opt: fetchTickers
 bitstamp1           False    missing: fetchOrder, fetchOHLCV
 bittrex             True
 bitvavo             True
@@ -614,6 +541,42 @@ Show whitelist when using a [dynamic pairlist](plugins.md#pairlists).
 freqtrade test-pairlist --config config.json --quote USDT BTC
 ```
 
+## Webserver mode
+
+!!! Warning "Experimental"
+    Webserver mode is an experimental mode to increase backesting and strategy development productivity.
+    There may still be bugs - so if you happen to stumble across these, please report them as github issues, thanks.
+
+Run freqtrade in webserver mode.
+Freqtrade will start the webserver and allow FreqUI to start and control backtesting processes.
+This has the advantage that data will not be reloaded between backtesting runs (as long as timeframe and timerange remain identical).
+FreqUI will also show the backtesting results.
+
+```
+usage: freqtrade webserver [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                           [--userdir PATH]
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+```
+
 ## List Hyperopt results
 
 You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the `hyperopt-list` sub-command.
@@ -702,7 +665,9 @@ You can show the details of any hyperoptimization epoch previously evaluated by 
 usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                                [-d PATH] [--userdir PATH] [--best]
                                [--profitable] [-n INT] [--print-json]
-                               [--hyperopt-filename PATH] [--no-header]
+                               [--hyperopt-filename FILENAME] [--no-header]
+                               [--disable-param-export]
+                               [--breakdown {day,week,month} [{day,week,month} ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -714,6 +679,10 @@ optional arguments:
                         Hyperopt result filename.Example: `--hyperopt-
                         filename=hyperopt_results_2020-09-27_16-20-48.pickle`
   --no-header           Do not print epoch details header.
+  --disable-param-export
+                        Disable automatic hyperopt parameter export.
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).

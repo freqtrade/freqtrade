@@ -49,7 +49,7 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
                           fill_missing: bool = True,
                           drop_incomplete: bool = True) -> DataFrame:
     """
-    Clense a OHLCV dataframe by
+    Cleanse a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
       * dropping last candles if requested
       * Filling up missing data (if requested)
@@ -242,7 +242,7 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
     :param config: Config dictionary
     :param convert_from: Source format
     :param convert_to: Target format
-    :param erase: Erase souce data (does not apply if source and target format are identical)
+    :param erase: Erase source data (does not apply if source and target format are identical)
     """
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
@@ -267,7 +267,7 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
     :param config: Config dictionary
     :param convert_from: Source format
     :param convert_to: Target format
-    :param erase: Erase souce data (does not apply if source and target format are identical)
+    :param erase: Erase source data (does not apply if source and target format are identical)
     """
     from freqtrade.data.history.idatahandler import get_datahandler
     src = get_datahandler(config['datadir'], convert_from)
