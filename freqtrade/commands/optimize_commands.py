@@ -56,7 +56,7 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     backtesting.start()
 
 
-def start_backtest_filter(args: Dict[str, Any]) -> None:
+def start_backtest_show(args: Dict[str, Any]) -> None:
     """
     Show previous backtest result
     """
@@ -68,8 +68,6 @@ def start_backtest_filter(args: Dict[str, Any]) -> None:
     # print(results)
     show_backtest_results(config, results)
     show_filtered_pairlist(config, results)
-
-    logger.info("Backtest filtering complete. ")
 
 
 def start_hyperopt(args: Dict[str, Any]) -> None:

@@ -41,7 +41,7 @@ ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
-ARGS_BACKTEST_FILTER = ["exportfilename", "backtest_show_pair_list"]
+ARGS_BACKTEST_SHOW = ["exportfilename", "backtest_show_pair_list"]
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
@@ -175,7 +175,7 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtest_filter, start_backtesting,
+        from freqtrade.commands import (start_backtest_show, start_backtesting,
                                         start_convert_data, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
                                         start_hyperopt, start_hyperopt_list, start_hyperopt_show,
@@ -267,14 +267,14 @@ class Arguments:
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
-        # Add backtest-filter subcommand
-        backtest_filter_cmd = subparsers.add_parser(
-            'backtest-filter',
-            help='Filter Backtest results',
+        # Add backtest-show subcommand
+        backtest_show_cmd = subparsers.add_parser(
+            'backtest-show',
+            help='Show past Backtest results',
             parents=[_common_parser],
         )
-        backtest_filter_cmd.set_defaults(func=start_backtest_filter)
-        self._build_args(optionlist=ARGS_BACKTEST_FILTER, parser=backtest_filter_cmd)
+        backtest_show_cmd.set_defaults(func=start_backtest_show)
+        self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtest_show_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
