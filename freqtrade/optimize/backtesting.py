@@ -312,7 +312,9 @@ class Backtesting:
                     # Worst case: price ticks tiny bit above open and dives down.
                     stop_rate = sell_row[OPEN_IDX] * (1 - abs(trade.stop_loss_pct))
                     assert stop_rate < sell_row[HIGH_IDX]
-                return stop_rate
+                # Limit lower-end to candle low to avoid sells below the low.
+                # This still remains "worst case" - but "worst realistic case".
+                return max(sell_row[LOW_IDX], stop_rate)
 
             # Set close_rate to stoploss
             return trade.stop_loss
