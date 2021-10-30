@@ -80,6 +80,8 @@ class Exchange:
         # TradingMode.SPOT always supported and not required in this list
     ]
 
+    mark_ohlcv_price = 'mark'
+
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
         Initializes this module with the given config,
@@ -1744,15 +1746,32 @@ class Exchange:
             Get's the mark price history for a pair
         """
 
-        candles = self._api.fetch_mark_ohlcv(
-            pair,
-            timeframe="1h",
-            since=start
-        )
-        history = {}
-        for candle in candles:
-            history[candle[0]] = candle[1]
-        return history
+        try:
+            candles = self._api.fetch_ohlcv(
+                pair,
+                timeframe="1h",
+                since=start,
+                params={
+                    'price': self.mark_ohlcv_price
+                }
+            )
+            history = {}
+            for candle in candles:
+                history[candle[0]] = candle[1]
+            return history
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching historical '
+                f'mark price candle (OHLCV) data. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch historical mark price candle (OHLCV) data '
+                                 f'for pair {pair} due to {e.__class__.__name__}. '
+                                 f'Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
+                                       f'for pair {pair}. Message: {e}') from e
 
     def calculate_funding_fees(
         self,
@@ -1779,8 +1798,7 @@ class Exchange:
         )
         mark_price_history = self._get_mark_price_history(
             pair,
-            int(open_date.timestamp()),
-            close_date_timestamp
+            int(open_date.timestamp())
         )
         for date in self._get_funding_fee_dates(open_date, close_date):
             funding_rate = funding_rate_history[date.timestamp]

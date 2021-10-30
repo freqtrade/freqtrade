@@ -1,6 +1,6 @@
 """ FTX exchange subclass """
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import ccxt
 
@@ -28,6 +28,7 @@ class Ftx(Exchange):
         # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: Uncomment once supported
     ]
+    mark_ohlcv_price = 'index'
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
@@ -168,30 +169,3 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
-
-    def _get_mark_price_history(
-        self,
-        pair: str,
-        start: int,
-        end: Optional[int]
-    ) -> Dict:
-        """
-            Get's the mark price history for a pair
-        """
-        if end:
-            params = {
-                'endTime': end
-            }
-        else:
-            params = {}
-
-        candles = self._api.fetch_index_ohlcv(
-            pair,
-            timeframe="1h",
-            since=start,
-            params=params
-        )
-        history = {}
-        for candle in candles:
-            history[candle[0]] = candle[1]
-        return history
