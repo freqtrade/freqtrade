@@ -896,7 +896,8 @@ Sometimes it may be desired to lock a pair after certain events happen (e.g. mul
 Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until, [reason])`.
 `until` must be a datetime object in the future, after which trading will be re-enabled for that pair, while `reason` is an optional string detailing why the pair was locked.
 
-Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)` or `self.unlock_reason(<reason>)` - providing reason the pair was locked with.
+`self.unlock_reason(<reason>)` will unlock all pairs currently locked with the provided reason.
 
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 

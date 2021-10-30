@@ -575,6 +575,13 @@ def test_is_pair_locked(default_conf):
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
 
+    # Lock with reason
+    reason = "TestLockR"
+    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime, reason)
+    assert strategy.is_pair_locked(pair)
+    strategy.unlock_reason(reason)
+    assert not strategy.is_pair_locked(pair)
+
     pair = 'BTC/USDT'
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
