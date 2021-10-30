@@ -740,7 +740,7 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
 def show_filtered_pairlist(config: Dict, backtest_stats: Dict):
     if config.get('backtest_show_pair_list', False):
         for strategy, results in backtest_stats['strategy'].items():
-            print("Pairs for Strategy: \n[")
+            print(f"Pairs for Strategy {strategy}: \n[")
             for result in results['results_per_pair']:
                 if result["key"] != 'TOTAL':
                     print(f'"{result["key"]}",  // {round(result["profit_mean_pct"], 2)}%')
