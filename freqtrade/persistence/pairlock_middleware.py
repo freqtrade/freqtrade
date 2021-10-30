@@ -116,14 +116,14 @@ class PairLocks():
 
         if PairLocks.use_db:
             # used in live modes
-            logger.info(f"Releasing all locks with reason \'{reason}\':")
+            logger.info(f"Releasing all locks with reason '{reason}':")
             filters = [PairLock.lock_end_time > now,
                        PairLock.active.is_(True),
                        PairLock.reason == reason
                        ]
             locks = PairLock.query.filter(*filters)
             for lock in locks:
-                logger.info(f"Releasing lock for {lock.pair} with reason \'{reason}\'.")
+                logger.info(f"Releasing lock for {lock.pair} with reason '{reason}'.")
                 lock.active = False
             PairLock.query.session.commit()
         else:
