@@ -381,7 +381,8 @@ class HyperStrategyMixin(object):
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
-                params = json_load(filename.open('r'))
+                with filename.open('r') as f:
+                    params = json_load(f)
                 if params.get('strategy_name') != self.__class__.__name__:
                     raise OperationalException('Invalid parameter file provided.')
                 return params

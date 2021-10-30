@@ -54,6 +54,21 @@ you can't say much from few trades.
 
 Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
 
+### Why does my bot not sell everything it bought?
+
+This is called "coin dust" and can happen on all exchanges.
+It happens because many exchanges subtract fees from the "receiving currency" - so you buy 100 COIN - but you only get 99.9 COIN.
+As COIN is trading in full lot sizes (1COIN steps), you cannot sell 0.9 COIN (or 99.9 COIN) - but you need to round down to 99 COIN.
+
+This is not a bot-problem, but will also happen while manual trading.
+
+While freqtrade can handle this (it'll sell 99 COIN), fees are often below the minimum tradable lot-size (you can only trade full COIN, not 0.9 COIN).
+Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next time freqtrade buys COIN, it'll eat into the remaining small balance, this time selling everything it bought, and therefore slowly declining the dust balance (although it most likely will never reach exactly 0).
+
+Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.  
+On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
+Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
+
 ### I want to use incomplete candles
 
 Freqtrade will not provide incomplete candles to strategies. Using incomplete candles will lead to repainting and consequently to strategies with "ghost" buys, which are impossible to both backtest, and verify after they happened.
