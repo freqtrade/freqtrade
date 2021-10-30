@@ -2,7 +2,6 @@
 This module contains the argument manager class
 """
 import argparse
-from freqtrade.commands.optimize_commands import start_backtest_filter
 from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -42,7 +41,7 @@ ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
-ARGS_BACKTEST_FILTER = ["backtest_path"]
+ARGS_BACKTEST_FILTER = []
 
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
