@@ -3290,21 +3290,161 @@ def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 
-def test_get_mark_price():
+@pytest.mark.parametrize('contract_size,funding_rate,mark_price,funding_fee', [
+    (10, 0.0001, 2.0, 0.002),
+    (10, 0.0002, 2.0, 0.004),
+    (10, 0.0002, 2.5, 0.005)
+])
+def test__get_funding_fee(
+    default_conf,
+    mocker,
+    contract_size,
+    funding_rate,
+    mark_price,
+    funding_fee
+):
+    exchange = get_patched_exchange(mocker, default_conf)
+    assert exchange._get_funding_fee(contract_size, funding_rate, mark_price) == funding_fee
+
+
+@pytest.mark.parametrize('exchange,d1,d2', [
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('binance', "2021-09-01 00:00:15", "2021-09-01 08:00:00"),
+    ('binance', "2021-09-01 00:00:16", "2021-09-01 08:00:00"),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 07:59:45"),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 07:59:44"),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 12:00:00"),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00"),
+    ('kraken', "2021-09-01 00:00:16", "2021-09-01 08:00:00"),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 07:59:45"),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 07:59:44"),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 12:00:00"),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('ftx', "2021-09-01 00:00:15", "2021-09-01 08:00:00"),
+    ('ftx', "2021-09-01 00:00:16", "2021-09-01 08:00:00"),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 07:59:45"),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 07:59:44"),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 12:00:00"),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 08:00:00"),
+    ('gateio', "2021-09-01 00:00:15", "2021-09-01 08:00:00"),
+    ('gateio', "2021-09-01 00:00:16", "2021-09-01 08:00:00"),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 07:59:45"),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 07:59:44"),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 12:00:00"),
+])
+def test__get_funding_fee_dates(exchange, d1, d2):
     return
 
 
-def test_get_funding_fee_dates():
-    return
+def test__get_mark_price_history(mocker, default_conf):
+    api_mock = MagicMock()
+    api_mock.fetch_ohlcv = MagicMock(return_value=[
+        [
+            1635674520000,
+            1.954,
+            1.95435369,
+            1.9524,
+            1.95255532,
+            0
+        ],
+        [
+            1635674580000,
+            1.95255532,
+            1.95356934,
+            1.9507,
+            1.9507,
+            0
+        ],
+        [
+            1635674640000,
+            1.9505,
+            1.95240962,
+            1.9502,
+            1.9506914,
+            0
+        ],
+        [
+            1635674700000,
+            1.95067489,
+            1.95124984,
+            1.94852208,
+            1.9486,
+            0
+        ]
+    ])
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
+
+    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    mark_prices = exchange._get_mark_price_history("ADA/USDT", 1635674520000)
+    assert mark_prices == {
+        1635674520000: 1.954,
+        1635674580000: 1.95255532,
+        1635674640000: 1.9505,
+        1635674700000: 1.95067489,
+    }
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "_get_mark_price_history",
+        "fetch_ohlcv",
+        pair="ADA/USDT",
+        since=1635674520000
+    )
+
+
+def test_get_funding_rate_history(mocker, default_conf):
+    api_mock = MagicMock()
+    api_mock.fetch_funding_rate_history = MagicMock(return_value=[
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00042396,
+            "timestamp":  1635580800001
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00036859,
+            "timestamp":  1635609600013
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.0005205,
+            "timestamp":  1635638400008
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00068396,
+            "timestamp":  1635667200010
+        }
+    ])
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
+
+    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    funding_rates = exchange.get_funding_rate_history('ADA/USDT', 1635580800001)
+
+    assert funding_rates == {
+        1635580800001: 0.00042396,
+        1635609600013: 0.00036859,
+        1635638400008: 0.0005205,
+        1635667200010: 0.00068396,
+    }
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf,
+        api_mock,
+        "binance",
+        "get_funding_rate_history",
+        "fetch_funding_rate_history",
+        pair="ADA/USDT",
+        since=1635580800001
+    )
 
 
 def test_calculate_funding_fees():
-    return
-
-
-def test__get_funding_rate(default_conf, mocker):
-    return
-
-
-def test__get_funding_fee():
     return

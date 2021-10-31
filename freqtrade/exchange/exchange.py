@@ -1739,7 +1739,7 @@ class Exchange:
     def _get_mark_price_history(
         self,
         pair: str,
-        start: int
+        since: int
     ) -> Dict:
         """
             Get's the mark price history for a pair
@@ -1749,7 +1749,7 @@ class Exchange:
             candles = self._api.fetch_ohlcv(
                 pair,
                 timeframe="1h",
-                since=start,
+                since=since,
                 params={
                     'price': self._ft_has["mark_ohlcv_price"]
                 }
@@ -1813,12 +1813,11 @@ class Exchange:
     def get_funding_rate_history(
         self,
         pair: str,
-        start: int,
-        end: Optional[int] = None
+        since: int,
     ) -> Dict:
         '''
             :param pair: quote/base currency pair
-            :param start: timestamp in ms of the beginning time
+            :param since: timestamp in ms of the beginning time
             :param end: timestamp in ms of the end time
         '''
         if not self.exchange_has("fetchFundingRateHistory"):
@@ -1827,13 +1826,13 @@ class Exchange:
                 f"therefore, dry-run/backtesting for {self.name} is currently unavailable"
             )
 
+        # TODO-lev: Gateio has a max limit into the past of 333 days
         try:
             funding_history: Dict = {}
             response = self._api.fetch_funding_rate_history(
                 pair,
                 limit=1000,
-                start=start,
-                end=end
+                since=since
             )
             for fund in response:
                 funding_history[fund['timestamp']] = fund['fundingRate']
