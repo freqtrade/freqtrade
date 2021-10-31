@@ -175,15 +175,15 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtest_show, start_backtesting, start_convert_data,
-                                        start_convert_trades, start_create_userdir,
-                                        start_download_data, start_edge, start_hyperopt,
-                                        start_hyperopt_list, start_hyperopt_show, start_install_ui,
-                                        start_list_data, start_list_exchanges, start_list_markets,
-                                        start_list_strategies, start_list_timeframes,
-                                        start_new_config, start_new_strategy, start_plot_dataframe,
-                                        start_plot_profit, start_show_trades, start_test_pairlist,
-                                        start_trading, start_webserver)
+        from freqtrade.commands import (start_backtesting, start_backtesting_show,
+                                        start_convert_data, start_convert_trades,
+                                        start_create_userdir, start_download_data, start_edge,
+                                        start_hyperopt, start_hyperopt_list, start_hyperopt_show,
+                                        start_install_ui, start_list_data, start_list_exchanges,
+                                        start_list_markets, start_list_strategies,
+                                        start_list_timeframes, start_new_config, start_new_strategy,
+                                        start_plot_dataframe, start_plot_profit, start_show_trades,
+                                        start_test_pairlist, start_trading, start_webserver)
 
         subparsers = self.parser.add_subparsers(dest='command',
                                                 # Use custom message when no subhandler is added
@@ -267,14 +267,14 @@ class Arguments:
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
 
-        # Add backtest-show subcommand
-        backtest_show_cmd = subparsers.add_parser(
-            'backtest-show',
+        # Add backtesting-show subcommand
+        backtesting_show_cmd = subparsers.add_parser(
+            'backtesting-show',
             help='Show past Backtest results',
             parents=[_common_parser],
         )
-        backtest_show_cmd.set_defaults(func=start_backtest_show)
-        self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtest_show_cmd)
+        backtesting_show_cmd.set_defaults(func=start_backtesting_show)
+        self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',

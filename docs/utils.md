@@ -586,9 +586,9 @@ Adding `--show-pair-list` outputs a sorted pair list you can easily copy/paste i
     Only using winning pairs can lead to an overfitted strategy, which will not work well on future data. Make sure to extensively test your strategy in dry-run before risking real money.
 
 ```
-usage: freqtrade backtest-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
-                               [-d PATH] [--userdir PATH]
-                               [--export-filename PATH] [--show-pair-list]
+usage: freqtrade backtesting-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                  [-d PATH] [--userdir PATH]
+                                  [--export-filename PATH] [--show-pair-list]
 
 optional arguments:
   -h, --help            show this help message and exit

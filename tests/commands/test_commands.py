@@ -8,7 +8,7 @@ from zipfile import ZipFile
 import arrow
 import pytest
 
-from freqtrade.commands import (start_backtest_show, start_convert_data, start_convert_trades,
+from freqtrade.commands import (start_backtesting_show, start_convert_data, start_convert_trades,
                                 start_create_userdir, start_download_data, start_hyperopt_list,
                                 start_hyperopt_show, start_install_ui, start_list_data,
                                 start_list_exchanges, start_list_markets, start_list_strategies,
@@ -1391,17 +1391,17 @@ def test_show_trades(mocker, fee, capsys, caplog):
         start_show_trades(pargs)
 
 
-def test_backtest_show(mocker, testdatadir, capsys):
+def test_backtesting_show(mocker, testdatadir, capsys):
     sbr = mocker.patch('freqtrade.optimize.optimize_reports.show_backtest_results')
     args = [
-        "backtest-show",
+        "backtesting-show",
         "--export-filename",
         f"{testdatadir / 'backtest-result_new.json'}",
         "--show-pair-list"
     ]
     pargs = get_args(args)
     pargs['config'] = None
-    start_backtest_show(pargs)
+    start_backtesting_show(pargs)
     assert sbr.call_count == 1
     out, err = capsys.readouterr()
     assert "Pairs for Strategy" in out
