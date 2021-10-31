@@ -1,6 +1,6 @@
 """ Gate.io exchange subclass """
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import OperationalException
@@ -59,16 +59,3 @@ class Gateio(Exchange):
         if any(v == 'market' for k, v in order_types.items()):
             raise OperationalException(
                 f'Exchange {self.name} does not support market orders.')
-
-    def get_funding_rate_history(
-        self,
-        pair: str,
-        start: int,
-        end: Optional[int] = None
-    ) -> Dict:
-        '''
-            :param start: timestamp in ms of the beginning time
-            :param end: timestamp in ms of the end time
-        '''
-        # TODO-lev: Has a max limit into the past of 333 days
-        return super().get_funding_rate_history(pair, start, end)
