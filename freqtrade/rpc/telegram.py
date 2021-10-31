@@ -861,7 +861,7 @@ class Telegram(RPCHandler):
                 stat_line = (
                     f"{i+1}.\t <code>{trade['pair']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
-                    f"({trade['profit']:.2f}%) "
+                    f"({trade['profit_pct']:.2f}%) "
                     f"({trade['count']})</code>\n")
 
                 if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
@@ -896,7 +896,7 @@ class Telegram(RPCHandler):
                 stat_line = (
                     f"{i+1}.\t <code>{trade['buy_tag']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
-                    f"({trade['profit']:.2f}%) "
+                    f"({trade['profit_pct']:.2f}%) "
                     f"({trade['count']})</code>\n")
 
                 if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
@@ -931,7 +931,7 @@ class Telegram(RPCHandler):
                 stat_line = (
                     f"{i+1}.\t <code>{trade['sell_reason']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
-                    f"({trade['profit']:.2f}%) "
+                    f"({trade['profit_pct']:.2f}%) "
                     f"({trade['count']})</code>\n")
 
                 if len(output + stat_line) >= MAX_TELEGRAM_MESSAGE_LENGTH:
@@ -1158,7 +1158,7 @@ class Telegram(RPCHandler):
                    "                `pending sell orders are marked with a double asterisk (**)`\n"
                    "*/buys <pair|none>:* `Shows the buy_tag performance`\n"
                    "*/sells <pair|none>:* `Shows the sell reason performance`\n"
-                   "*/mix_tag <pair|none>:* `Shows combined buy tag + sell reason performance`\n"
+                   "*/mix_tags <pair|none>:* `Shows combined buy tag + sell reason performance`\n"
                    "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
                    "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
                    "over the last n days`\n"

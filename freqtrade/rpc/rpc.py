@@ -161,8 +161,6 @@ class RPC:
                         current_rate = NAN
                 else:
                     current_rate = trade.close_rate
-
-                buy_tag = trade.buy_tag
                 current_profit = trade.calc_profit_ratio(current_rate)
                 current_profit_abs = trade.calc_profit(current_rate)
                 current_profit_fiat: Optional[float] = None
@@ -193,7 +191,6 @@ class RPC:
                     profit_pct=round(current_profit * 100, 2),
                     profit_abs=current_profit_abs,
                     profit_fiat=current_profit_fiat,
-                    buy_tag=buy_tag,
 
                     stoploss_current_dist=stoploss_current_dist,
                     stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),

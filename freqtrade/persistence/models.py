@@ -850,18 +850,17 @@ class Trade(_DECL_BASE, LocalTrade):
             .group_by(Trade.pair) \
             .order_by(desc('profit_sum_abs')) \
             .all()
-
-        response = [
+        return [
             {
                 'pair': pair,
-                'profit': profit,
+                'profit_ratio': profit,
+                'profit': round(profit * 100, 2),  # Compatibility mode
+                'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
             for pair, profit, profit_abs, count in pair_rates
         ]
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
-        return response
 
     @staticmethod
     def get_buy_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
@@ -885,17 +884,16 @@ class Trade(_DECL_BASE, LocalTrade):
             .order_by(desc('profit_sum_abs')) \
             .all()
 
-        response = [
+        return [
             {
                 'buy_tag': buy_tag if buy_tag is not None else "Other",
-                'profit': profit,
+                'profit_ratio': profit,
+                'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
             for buy_tag, profit, profit_abs, count in buy_tag_perf
         ]
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
-        return response
 
     @staticmethod
     def get_sell_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
@@ -919,17 +917,16 @@ class Trade(_DECL_BASE, LocalTrade):
             .order_by(desc('profit_sum_abs')) \
             .all()
 
-        response = [
+        return [
             {
                 'sell_reason': sell_reason if sell_reason is not None else "Other",
-                'profit': profit,
+                'profit_ratio': profit,
+                'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
             for sell_reason, profit, profit_abs, count in sell_tag_perf
         ]
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in response]
-        return response
 
     @staticmethod
     def get_mix_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:

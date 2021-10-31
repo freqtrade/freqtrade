@@ -202,10 +202,10 @@ class FreqtradeBot(LoggingMixin):
             msg = {
                 'type': RPCMessageType.WARNING,
                 'status': f"{len(open_trades)} open trades active.\n\n"
-                f"Handle these trades manually on {self.exchange.name}, "
-                f"or '/start' the bot again and use '/stopbuy' "
-                f"to handle open trades gracefully. \n"
-                f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+                          f"Handle these trades manually on {self.exchange.name}, "
+                          f"or '/start' the bot again and use '/stopbuy' "
+                          f"to handle open trades gracefully. \n"
+                          f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
             }
             self.rpc.send_msg(msg)
 

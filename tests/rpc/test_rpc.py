@@ -822,11 +822,10 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     trade.close_date = datetime.utcnow()
     trade.is_open = False
     res = rpc._rpc_performance()
-    print(str(res))
     assert len(res) == 1
     assert res[0]['pair'] == 'ETH/BTC'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 6.2)
+    assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
 def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
@@ -861,7 +860,7 @@ def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert len(res) == 1
     assert res[0]['buy_tag'] == 'Other'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 6.2)
+    assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
     trade.buy_tag = "TEST_TAG"
     res = rpc._rpc_buy_tag_performance(None)
@@ -869,7 +868,7 @@ def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert len(res) == 1
     assert res[0]['buy_tag'] == 'TEST_TAG'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 6.2)
+    assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
 def test_buy_tag_performance_handle_2(mocker, default_conf, markets, fee):
@@ -888,17 +887,17 @@ def test_buy_tag_performance_handle_2(mocker, default_conf, markets, fee):
     assert len(res) == 2
     assert res[0]['buy_tag'] == 'TEST1'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 0.5)
+    assert prec_satoshi(res[0]['profit_pct'], 0.5)
     assert res[1]['buy_tag'] == 'Other'
     assert res[1]['count'] == 1
-    assert prec_satoshi(res[1]['profit'], 1.0)
+    assert prec_satoshi(res[1]['profit_pct'], 1.0)
 
     # Test for a specific pair
     res = rpc._rpc_buy_tag_performance('ETC/BTC')
     assert len(res) == 1
     assert res[0]['count'] == 1
     assert res[0]['buy_tag'] == 'TEST1'
-    assert prec_satoshi(res[0]['profit'], 0.5)
+    assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 
 def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, fee,
@@ -933,7 +932,7 @@ def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, f
     assert len(res) == 1
     assert res[0]['sell_reason'] == 'Other'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 6.2)
+    assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
     trade.sell_reason = "TEST1"
     res = rpc._rpc_sell_reason_performance(None)
@@ -941,7 +940,7 @@ def test_sell_reason_performance_handle(default_conf, ticker, limit_buy_order, f
     assert len(res) == 1
     assert res[0]['sell_reason'] == 'TEST1'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 6.2)
+    assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
 def test_sell_reason_performance_handle_2(mocker, default_conf, markets, fee):
@@ -960,17 +959,17 @@ def test_sell_reason_performance_handle_2(mocker, default_conf, markets, fee):
     assert len(res) == 2
     assert res[0]['sell_reason'] == 'sell_signal'
     assert res[0]['count'] == 1
-    assert prec_satoshi(res[0]['profit'], 0.5)
+    assert prec_satoshi(res[0]['profit_pct'], 0.5)
     assert res[1]['sell_reason'] == 'roi'
     assert res[1]['count'] == 1
-    assert prec_satoshi(res[1]['profit'], 1.0)
+    assert prec_satoshi(res[1]['profit_pct'], 1.0)
 
     # Test for a specific pair
     res = rpc._rpc_sell_reason_performance('ETC/BTC')
     assert len(res) == 1
     assert res[0]['count'] == 1
     assert res[0]['sell_reason'] == 'sell_signal'
-    assert prec_satoshi(res[0]['profit'], 0.5)
+    assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 
 def test_mix_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
