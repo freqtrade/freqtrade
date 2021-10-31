@@ -1808,7 +1808,7 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, True, None, 'sell_signal1'))
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == limit_sell_order_usdt['id']
 
@@ -1819,6 +1819,7 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_profit == 0.09451372
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
+    assert trade.sell_reason == 'sell_signal1'
 
 
 def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_order_usdt_open,

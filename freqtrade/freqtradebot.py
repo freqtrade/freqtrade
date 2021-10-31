@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_tag, exit_tag) = self.strategy.get_signal(
+        (buy, sell, buy_tag, _) = self.strategy.get_signal(
             pair,
             self.strategy.timeframe,
             analyzed_df
@@ -707,7 +707,7 @@ class FreqtradeBot(LoggingMixin):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell, buy_tag, exit_tag) = self.strategy.get_signal(
+            (buy, sell, _, exit_tag) = self.strategy.get_signal(
                 trade.pair,
                 self.strategy.timeframe,
                 analyzed_df
