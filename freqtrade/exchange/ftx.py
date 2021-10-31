@@ -20,6 +20,7 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
+        "mark_ohlcv_price": "index"
     }
     funding_fee_times: List[int] = list(range(0, 24))
 
@@ -28,7 +29,6 @@ class Ftx(Exchange):
         # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: Uncomment once supported
     ]
-    mark_ohlcv_price = 'index'
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """

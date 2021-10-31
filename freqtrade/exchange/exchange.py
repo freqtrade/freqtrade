@@ -69,6 +69,7 @@ class Exchange:
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
+        "mark_ohlcv_price": "mark"
     }
     _ft_has: Dict = {}
 
@@ -79,8 +80,6 @@ class Exchange:
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
-
-    mark_ohlcv_price = 'mark'
 
     def __init__(self, config: Dict[str, Any], validate: bool = True) -> None:
         """
@@ -1752,7 +1751,7 @@ class Exchange:
                 timeframe="1h",
                 since=start,
                 params={
-                    'price': self.mark_ohlcv_price
+                    'price': self._ft_has["mark_ohlcv_price"]
                 }
             )
             history = {}
