@@ -10,8 +10,7 @@
     "stake_currency": "{{ stake_currency }}",
     "stake_amount": {{ stake_amount }},
     "tradable_balance_ratio": 0.99,
-    "fiat_display_currency": "{{ fiat_display_currency }}",
-    "timeframe": "{{ timeframe }}",
+    "fiat_display_currency": "{{ fiat_display_currency }}",{{ ('\n    "timeframe": "' + timeframe + '",') if timeframe else '' }}
     "dry_run": {{ dry_run | lower }},
     "cancel_open_orders_on_exit": false,
     "unfilledtimeout": {
