@@ -3427,20 +3427,20 @@ def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     mark_prices = exchange._get_mark_price_history("ADA/USDT", 1630454400000)
     assert mark_prices == {
-        1630454400000: 2.770211435326142,
-        1630458000000: 2.735269545167237,
-        1630461600000: 2.7491481048915243,
-        1630465200000: 2.760401812866193,
-        1630468800000: 2.7620775456230717,
-        1630472400000: 2.7728718875620535,
-        1630476000000: 2.788924005374514,
-        1630479600000: 2.7813766192350453,
-        1630483200000: 2.779641041095253,
-        1630486800000: 2.77978981220767,
-        1630490400000: 2.846414592861413,
-        1630494000000: 2.8180253150511034,
-        1630497600000: 2.8179208712533828,
-        1630501200000: 2.829210740051151,
+        1630454400000: 2.77,
+        1630458000000: 2.73,
+        1630461600000: 2.74,
+        1630465200000: 2.76,
+        1630468800000: 2.76,
+        1630472400000: 2.77,
+        1630476000000: 2.78,
+        1630479600000: 2.78,
+        1630483200000: 2.77,
+        1630486800000: 2.77,
+        1630490400000: 2.84,
+        1630494000000: 2.81,
+        1630497600000: 2.81,
+        1630501200000: 2.82,
     }
 
     ccxt_exceptionhandlers(
@@ -3493,5 +3493,102 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     )
 
 
-def test_calculate_funding_fees():
-    return
+@pytest.mark.parametrize('exchange,d1,d2,amount,expected_fees', [
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
+    ('binance', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
+    ('binance', "2021-09-01 00:00:16", "2021-09-01 08:00:00",  30.0, -0.0002493),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0006647999999999999),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
+    ('binance', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
+    ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0012443999999999999),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 12:00:00", 30.0,  0.0045759),
+    ('kraken', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0008289),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 08:00:00", 30.0,  0.0010008000000000003),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 12:00:00", 30.0,  0.0146691),
+    ('ftx', "2021-09-01 00:00:01", "2021-09-01 08:00:00", 30.0,  0.0016656000000000002),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
+    ('gateio', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
+    ('gateio', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
+    ('binance', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235000000000001),
+    ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
+    ('ftx', "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.0016680000000000002),
+])
+def test_calculate_funding_fees(
+    mocker,
+    default_conf,
+    funding_rate_history,
+    mark_ohlcv,
+    exchange,
+    d1,
+    d2,
+    amount,
+    expected_fees
+):
+    '''
+    nominal_value = mark_price * contract_size
+    funding_fee = nominal_value * funding_rate
+    contract_size: 30
+        time: 0, mark_price: 2.77, nominal_value: 83.1, fundingRate: -0.000008, fundingFee: -0.0006647999999999999
+        time: 1, mark_price: 2.73, nominal_value: 81.9, fundingRate: -0.000004, fundingFee: -0.0003276
+        time: 2, mark_price: 2.74, nominal_value: 82.2, fundingRate: 0.000012, fundingFee: 0.0009864000000000001
+        time: 3, mark_price: 2.76, nominal_value: 82.8, fundingRate: -0.000003, fundingFee: -0.0002484
+        time: 4, mark_price: 2.76, nominal_value: 82.8, fundingRate: -0.000007, fundingFee: -0.0005796
+        time: 5, mark_price: 2.77, nominal_value: 83.1, fundingRate: 0.000003, fundingFee: 0.0002493
+        time: 6, mark_price: 2.78, nominal_value: 83.39999999999999, fundingRate: 0.000019, fundingFee: 0.0015846
+        time: 7, mark_price: 2.78, nominal_value: 83.39999999999999, fundingRate: 0.000003, fundingFee: 0.00025019999999999996
+        time: 8, mark_price: 2.77, nominal_value: 83.1, fundingRate: -0.000003, fundingFee: -0.0002493
+        time: 9, mark_price: 2.77, nominal_value: 83.1, fundingRate: 0, fundingFee: 0.0
+        time: 10, mark_price: 2.84, nominal_value: 85.19999999999999, fundingRate: 0.000013, fundingFee: 0.0011075999999999998
+        time: 11, mark_price: 2.81, nominal_value: 84.3, fundingRate: 0.000077, fundingFee: 0.0064911
+        time: 12, mark_price: 2.81, nominal_value: 84.3, fundingRate: 0.000072, fundingFee: 0.0060696
+        time: 13, mark_price: 2.82, nominal_value: 84.6, fundingRate: 0.000097, fundingFee: 0.008206199999999999
+
+    contract_size: 50
+        time: 0, mark_price: 2.77, nominal_value: 138.5, fundingRate: -0.000008, fundingFee: -0.001108
+        time: 1, mark_price: 2.73, nominal_value: 136.5, fundingRate: -0.000004, fundingFee: -0.0005459999999999999
+        time: 2, mark_price: 2.74, nominal_value: 137.0, fundingRate: 0.000012, fundingFee: 0.001644
+        time: 3, mark_price: 2.76, nominal_value: 138.0, fundingRate: -0.000003, fundingFee: -0.00041400000000000003
+        time: 4, mark_price: 2.76, nominal_value: 138.0, fundingRate: -0.000007, fundingFee: -0.000966
+        time: 5, mark_price: 2.77, nominal_value: 138.5, fundingRate: 0.000003, fundingFee: 0.0004155
+        time: 6, mark_price: 2.78, nominal_value: 139.0, fundingRate: 0.000019, fundingFee: 0.002641
+        time: 7, mark_price: 2.78, nominal_value: 139.0, fundingRate: 0.000003, fundingFee: 0.000417
+        time: 8, mark_price: 2.77, nominal_value: 138.5, fundingRate: -0.000003, fundingFee: -0.0004155
+        time: 9, mark_price: 2.77, nominal_value: 138.5, fundingRate: 0, fundingFee: 0.0
+        time: 10, mark_price: 2.84, nominal_value: 142.0, fundingRate: 0.000013, fundingFee: 0.001846
+        time: 11, mark_price: 2.81, nominal_value: 140.5, fundingRate: 0.000077, fundingFee: 0.0108185
+        time: 12, mark_price: 2.81, nominal_value: 140.5, fundingRate: 0.000072, fundingFee: 0.010116
+        time: 13, mark_price: 2.82, nominal_value: 141.0, fundingRate: 0.000097, fundingFee: 0.013677
+    '''
+    d1 = datetime.strptime(f"{d1} +0000", '%Y-%m-%d %H:%M:%S %z')
+    d2 = datetime.strptime(f"{d2} +0000", '%Y-%m-%d %H:%M:%S %z')
+    api_mock = MagicMock()
+    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history)
+    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
+    funding_fees = exchange.calculate_funding_fees('ADA/USDT', amount, d1, d2)
+    assert funding_fees == expected_fees
+
+
+def test_calculate_funding_fees_datetime_called(
+    mocker,
+    default_conf,
+    funding_rate_history,
+    mark_ohlcv
+):
+    api_mock = MagicMock()
+    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
+    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history)
+    datetime = MagicMock()
+    datetime.now = MagicMock()
+    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
+    type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
+
+    # TODO-lev: Add datetime MagicMock
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange.calculate_funding_fees('ADA/USDT', 30.0, datetime("2021-09-01 00:00:00"))
+    assert datetime.now.call_count == 1

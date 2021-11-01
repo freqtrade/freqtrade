@@ -1711,8 +1711,8 @@ class Exchange:
 
     def _get_funding_fee_dates(self, d1: datetime, d2: datetime):
         d1_hours = d1.hour + 1 if self.funding_fee_cutoff(d1) else d1.hour
-        d1 = datetime(d1.year, d1.month, d1.day, d1_hours)
-        d2 = datetime(d2.year, d2.month, d2.day, d2.hour)
+        d1 = datetime(d1.year, d1.month, d1.day, d1_hours, tzinfo=timezone.utc)
+        d2 = datetime(d2.year, d2.month, d2.day, d2.hour, tzinfo=timezone.utc)
 
         results = []
         d3 = d1
@@ -1799,15 +1799,15 @@ class Exchange:
             close_date = datetime.now(timezone.utc)
         funding_rate_history = self.get_funding_rate_history(
             pair,
-            int(open_date.timestamp())
+            int(open_date.timestamp() * 1000)
         )
         mark_price_history = self._get_mark_price_history(
             pair,
-            int(open_date.timestamp())
+            int(open_date.timestamp() * 1000)
         )
         for date in self._get_funding_fee_dates(open_date, close_date):
-            funding_rate = funding_rate_history[date.timestamp]
-            mark_price = mark_price_history[date.timestamp]
+            funding_rate = funding_rate_history[int(date.timestamp()) * 1000]
+            mark_price = mark_price_history[int(date.timestamp()) * 1000]
             fees += self._get_funding_fee(
                 contract_size=amount,
                 mark_price=mark_price,
