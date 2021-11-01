@@ -735,3 +735,13 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         print(table)
         print('=' * len(table.splitlines()[0]))
         print('\nFor more details, please look at the detail tables above')
+
+
+def show_sorted_pairlist(config: Dict, backtest_stats: Dict):
+    if config.get('backtest_show_pair_list', False):
+        for strategy, results in backtest_stats['strategy'].items():
+            print(f"Pairs for Strategy {strategy}: \n[")
+            for result in results['results_per_pair']:
+                if result["key"] != 'TOTAL':
+                    print(f'"{result["key"]}",  // {round(result["profit_mean_pct"], 2)}%')
+            print("]")

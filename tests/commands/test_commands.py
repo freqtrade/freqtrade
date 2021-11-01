@@ -8,12 +8,12 @@ from zipfile import ZipFile
 import arrow
 import pytest
 
-from freqtrade.commands import (start_convert_data, start_convert_trades, start_create_userdir,
-                                start_download_data, start_hyperopt_list, start_hyperopt_show,
-                                start_install_ui, start_list_data, start_list_exchanges,
-                                start_list_markets, start_list_strategies, start_list_timeframes,
-                                start_new_strategy, start_show_trades, start_test_pairlist,
-                                start_trading, start_webserver)
+from freqtrade.commands import (start_backtesting_show, start_convert_data, start_convert_trades,
+                                start_create_userdir, start_download_data, start_hyperopt_list,
+                                start_hyperopt_show, start_install_ui, start_list_data,
+                                start_list_exchanges, start_list_markets, start_list_strategies,
+                                start_list_timeframes, start_new_strategy, start_show_trades,
+                                start_test_pairlist, start_trading, start_webserver)
 from freqtrade.commands.deploy_commands import (clean_ui_subdir, download_and_install_ui,
                                                 get_ui_download_url, read_ui_version)
 from freqtrade.configuration import setup_utils_configuration
@@ -1389,3 +1389,19 @@ def test_show_trades(mocker, fee, capsys, caplog):
 
     with pytest.raises(OperationalException, match=r"--db-url is required for this command."):
         start_show_trades(pargs)
+
+
+def test_backtesting_show(mocker, testdatadir, capsys):
+    sbr = mocker.patch('freqtrade.optimize.optimize_reports.show_backtest_results')
+    args = [
+        "backtesting-show",
+        "--export-filename",
+        f"{testdatadir / 'backtest-result_new.json'}",
+        "--show-pair-list"
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_backtesting_show(pargs)
+    assert sbr.call_count == 1
+    out, err = capsys.readouterr()
+    assert "Pairs for Strategy" in out

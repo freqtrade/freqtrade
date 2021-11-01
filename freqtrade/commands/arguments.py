@@ -41,6 +41,8 @@ ARGS_LIST_STRATEGIES = ["strategy_path", "print_one_column", "print_colorized"]
 
 ARGS_LIST_HYPEROPTS = ["hyperopt_path", "print_one_column", "print_colorized"]
 
+ARGS_BACKTEST_SHOW = ["exportfilename", "backtest_show_pair_list"]
+
 ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
@@ -94,7 +96,7 @@ ARGS_HYPEROPT_SHOW = ["hyperopt_list_best", "hyperopt_list_profitable", "hyperop
 
 NO_CONF_REQURIED = ["convert-data", "convert-trade-data", "download-data", "list-timeframes",
                     "list-markets", "list-pairs", "list-strategies", "list-data",
-                    "hyperopt-list", "hyperopt-show",
+                    "hyperopt-list", "hyperopt-show", "backtest-filter",
                     "plot-dataframe", "plot-profit", "show-trades", "trades-to-ohlcv"]
 
 NO_CONF_ALLOWED = ["create-userdir", "list-exchanges", "new-strategy"]
@@ -173,7 +175,8 @@ class Arguments:
         self.parser = argparse.ArgumentParser(description='Free, open source crypto trading bot')
         self._build_args(optionlist=['version'], parser=self.parser)
 
-        from freqtrade.commands import (start_backtesting, start_convert_data, start_convert_trades,
+        from freqtrade.commands import (start_backtesting, start_backtesting_show,
+                                        start_convert_data, start_convert_trades,
                                         start_create_userdir, start_download_data, start_edge,
                                         start_hyperopt, start_hyperopt_list, start_hyperopt_show,
                                         start_install_ui, start_list_data, start_list_exchanges,
@@ -263,6 +266,15 @@ class Arguments:
                                                 parents=[_common_parser, _strategy_parser])
         backtesting_cmd.set_defaults(func=start_backtesting)
         self._build_args(optionlist=ARGS_BACKTEST, parser=backtesting_cmd)
+
+        # Add backtesting-show subcommand
+        backtesting_show_cmd = subparsers.add_parser(
+            'backtesting-show',
+            help='Show past Backtest results',
+            parents=[_common_parser],
+        )
+        backtesting_show_cmd.set_defaults(func=start_backtesting_show)
+        self._build_args(optionlist=ARGS_BACKTEST_SHOW, parser=backtesting_show_cmd)
 
         # Add edge subcommand
         edge_cmd = subparsers.add_parser('edge', help='Edge module.',
