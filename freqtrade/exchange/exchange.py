@@ -1795,12 +1795,11 @@ class Exchange:
         """
 
         fees: float = 0
-        if close_date:
-            close_date_timestamp: Optional[int] = int(close_date.timestamp())
+        if not close_date:
+            close_date = datetime.now(timezone.utc)
         funding_rate_history = self.get_funding_rate_history(
             pair,
-            int(open_date.timestamp()),
-            close_date_timestamp
+            int(open_date.timestamp())
         )
         mark_price_history = self._get_mark_price_history(
             pair,
