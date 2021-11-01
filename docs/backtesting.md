@@ -478,6 +478,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - Trailing Stoploss is only adjusted if it's below the candle's low (otherwise it would be triggered)
+  - On trade entry candles that trigger trailing stoploss, the "minimum offset" (`stop_positive_offset`) is assumed (instead of high) - and the stop is calculated from this point
   - High happens first - adjusting stoploss
   - Low uses the adjusted stoploss (so sells with large high-low difference are backtested correctly)
   - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
