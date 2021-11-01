@@ -93,6 +93,18 @@ If this happens for all pairs in the pairlist, this might indicate a recent exch
 
 Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
 
+### I'm getting "Outdated history for pair xxx" in the log
+
+The bot is trying to tell you that it got an outdated last candle (not the last complete candle).
+As a consequence, Freqtrade will not enter a trade for this pair - as trading on old information is usually not what is desired.
+
+This warning can point to one of the below problems:
+
+* Exchange downtime -> Check your exchange status page / blog / twitter feed for details.
+* Wrong system time -> Ensure your system-time is correct.
+* Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
+* API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
+
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 
 Currently known to happen for US Bittrex users.  
