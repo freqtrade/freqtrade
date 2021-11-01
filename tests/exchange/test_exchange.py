@@ -3337,42 +3337,9 @@ def test__get_funding_fee_dates(exchange, d1, d2):
     return
 
 
-def test__get_mark_price_history(mocker, default_conf):
+def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
     api_mock = MagicMock()
-    api_mock.fetch_ohlcv = MagicMock(return_value=[
-        [
-            1635674520000,
-            1.954,
-            1.95435369,
-            1.9524,
-            1.95255532,
-            0
-        ],
-        [
-            1635674580000,
-            1.95255532,
-            1.95356934,
-            1.9507,
-            1.9507,
-            0
-        ],
-        [
-            1635674640000,
-            1.9505,
-            1.95240962,
-            1.9502,
-            1.9506914,
-            0
-        ],
-        [
-            1635674700000,
-            1.95067489,
-            1.95124984,
-            1.94852208,
-            1.9486,
-            0
-        ]
-    ])
+    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
 
     # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
@@ -3397,30 +3364,9 @@ def test__get_mark_price_history(mocker, default_conf):
     )
 
 
-def test_get_funding_rate_history(mocker, default_conf):
+def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     api_mock = MagicMock()
-    api_mock.fetch_funding_rate_history = MagicMock(return_value=[
-        {
-            "symbol": "ADA/USDT",
-            "fundingRate":  0.00042396,
-            "timestamp":  1635580800001
-        },
-        {
-            "symbol": "ADA/USDT",
-            "fundingRate":  0.00036859,
-            "timestamp":  1635609600013
-        },
-        {
-            "symbol": "ADA/USDT",
-            "fundingRate":  0.0005205,
-            "timestamp":  1635638400008
-        },
-        {
-            "symbol": "ADA/USDT",
-            "fundingRate":  0.00068396,
-            "timestamp":  1635667200010
-        }
-    ])
+    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history)
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)

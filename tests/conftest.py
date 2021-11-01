@@ -2365,3 +2365,67 @@ def limit_order_open(limit_buy_order_usdt_open, limit_sell_order_usdt_open):
         'buy': limit_buy_order_usdt_open,
         'sell': limit_sell_order_usdt_open
     }
+
+
+@pytest.fixture(scope='function')
+def mark_ohlcv():
+    return [
+        [
+            1635674520000,
+            1.954,
+            1.95435369,
+            1.9524,
+            1.95255532,
+            0
+        ],
+        [
+            1635674580000,
+            1.95255532,
+            1.95356934,
+            1.9507,
+            1.9507,
+            0
+        ],
+        [
+            1635674640000,
+            1.9505,
+            1.95240962,
+            1.9502,
+            1.9506914,
+            0
+        ],
+        [
+            1635674700000,
+            1.95067489,
+            1.95124984,
+            1.94852208,
+            1.9486,
+            0
+        ]
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00042396,
+            "timestamp":  1635580800001
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00036859,
+            "timestamp":  1635609600013
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.0005205,
+            "timestamp":  1635638400008
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate":  0.00068396,
+            "timestamp":  1635667200010
+        }
+    ]
