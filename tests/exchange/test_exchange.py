@@ -3425,12 +3425,22 @@ def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
 
     # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    mark_prices = exchange._get_mark_price_history("ADA/USDT", 1635674520000)
+    mark_prices = exchange._get_mark_price_history("ADA/USDT", 1630454400000)
     assert mark_prices == {
-        1635674520000: 1.954,
-        1635674580000: 1.95255532,
-        1635674640000: 1.9505,
-        1635674700000: 1.95067489,
+        1630454400000: 2.770211435326142,
+        1630458000000: 2.735269545167237,
+        1630461600000: 2.7491481048915243,
+        1630465200000: 2.760401812866193,
+        1630468800000: 2.7620775456230717,
+        1630472400000: 2.7728718875620535,
+        1630476000000: 2.788924005374514,
+        1630479600000: 2.7813766192350453,
+        1630483200000: 2.779641041095253,
+        1630486800000: 2.77978981220767,
+        1630490400000: 2.846414592861413,
+        1630494000000: 2.8180253150511034,
+        1630497600000: 2.8179208712533828,
+        1630501200000: 2.829210740051151,
     }
 
     ccxt_exceptionhandlers(
@@ -3441,7 +3451,7 @@ def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
         "_get_mark_price_history",
         "fetch_ohlcv",
         pair="ADA/USDT",
-        since=1635674520000
+        since=1635580800001
     )
 
 
@@ -3455,10 +3465,20 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     funding_rates = exchange.get_funding_rate_history('ADA/USDT', 1635580800001)
 
     assert funding_rates == {
-        1635580800001: 0.00042396,
-        1635609600013: 0.00036859,
-        1635638400008: 0.0005205,
-        1635667200010: 0.00068396,
+        1630454400000: -0.000008,
+        1630458000000: -0.000004,
+        1630461600000: 0.000012,
+        1630465200000: -0.000003,
+        1630468800000: -0.000007,
+        1630472400000: 0.000003,
+        1630476000000: 0.000019,
+        1630479600000: 0.000003,
+        1630483200000: 0,
+        1630486800000: -0.000003,
+        1630490400000: 0.000013,
+        1630494000000: 0.000077,
+        1630497600000: 0.000072,
+        1630501200000: 0.000097,
     }
 
     ccxt_exceptionhandlers(
@@ -3469,7 +3489,7 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
         "get_funding_rate_history",
         "fetch_funding_rate_history",
         pair="ADA/USDT",
-        since=1635580800001
+        since=1630454400000
     )
 
 
