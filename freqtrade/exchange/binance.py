@@ -178,6 +178,8 @@ class Binance(Exchange):
             :param pair: The base/quote currency pair being traded
             :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
+        if pair not in self._leverage_brackets:
+            return 1.0
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
         for [min_amount, margin_req] in pair_brackets:

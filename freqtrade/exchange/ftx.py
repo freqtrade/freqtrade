@@ -29,7 +29,6 @@ class Ftx(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: Uncomment once supported
     ]
 
-
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
