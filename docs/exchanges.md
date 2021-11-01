@@ -41,12 +41,12 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
     "ccxt_config": {"enableRateLimit": true},
     "ccxt_async_config": {
         "enableRateLimit": true,
-        "rateLimit": 3100
+        "rateLimit": 200
     },
 ```
 
 This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
-`"rateLimit": 3100` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+`"rateLimit": 200` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
 
 !!! Note
     Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
