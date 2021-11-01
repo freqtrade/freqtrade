@@ -343,7 +343,9 @@ class Exchange:
         Ensures that Configured mode aligns to
         """
         return (
-            (self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
+            market.get('quote', None) is not None
+            and market.get('base', None) is not None
+            and (self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
             or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
             or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market))
         )

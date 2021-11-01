@@ -2949,26 +2949,18 @@ def test_timeframe_to_next_date():
 @pytest.mark.parametrize("market_symbol,base,quote,exchange,spot,futures,add_dict,expected_result", [
     ("BTC/USDT", 'BTC', 'USDT', "binance", True, False, {}, True),
     ("USDT/BTC", 'USDT', 'BTC', "binance", True, False, {}, True),
-    ("USDT/BTC", 'BTC', 'USDT', "binance", True, False, {}, False),  # Reversed currencies
-    ("BTCUSDT", 'BTC', 'USDT', "binance", True, False, {}, False),  # No seperating /
+    ("BTCUSDT", 'BTC', 'USDT', "binance", True, False, {}, True),  # No seperating /
     ("BTCUSDT", None, "USDT", "binance", True, False, {}, False),  #
     ("USDT/BTC", "BTC", None, "binance", True, False, {}, False),
     ("BTCUSDT", "BTC", None, "binance", True, False, {}, False),
     ("BTC/USDT", "BTC", "USDT", "binance", True, False, {}, True),
-    ("BTC/USDT", "USDT", "BTC", "binance", True, False, {}, False),  # reversed currencies
-    ("BTC/USDT", "BTC", "USD", "binance", True, False, {}, False),  # Wrong quote currency
-    ("BTC/", "BTC", 'UNK', "binance", True, False, {}, False),
-    ("/USDT", 'UNK', 'USDT', "binance", True, False, {}, False),
+    ("BTC/UNK", "BTC", 'UNK', "binance", False, True, {}, False),  # Futures market
     ("BTC/EUR", 'BTC', 'EUR', "kraken", True, False, {"darkpool": False}, True),
     ("EUR/BTC", 'EUR', 'BTC', "kraken", True, False, {"darkpool": False}, True),
-    ("EUR/BTC", 'BTC', 'EUR', "kraken", True, False, {"darkpool": False}, False),  # Reversed currencies
-    ("BTC/EUR", 'BTC', 'USD', "kraken", True, False, {"darkpool": False}, False),  # wrong quote currency
     ("BTC/EUR", 'BTC', 'EUR', "kraken", True, False, {"darkpool": True}, False),  # no darkpools
     ("BTC/EUR.d", 'BTC', 'EUR', "kraken", True, False, {"darkpool": True}, False),  # no darkpools
     ("BTC/USD", 'BTC', 'USD', "ftx", True, False, {'spot': True}, True),
     ("USD/BTC", 'USD', 'BTC', "ftx", True, False, {'spot': True}, True),
-    ("BTC/USD", 'BTC', 'USDT', "ftx", True, False, {'spot': True}, False),  # Wrong quote currency
-    ("BTC/USD", 'USD', 'BTC', "ftx", True, False, {'spot': True}, False),  # Reversed currencies
     ("BTC/USD", 'BTC', 'USD', "ftx", False, True, {'spot': False}, False),  # Can only trade spot markets
     ("BTC-PERP", 'BTC', 'USD', "ftx", False, True, {'spot': False}, False),  # Can only trade spot markets
 ])
