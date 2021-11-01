@@ -3410,9 +3410,9 @@ def test__get_funding_fee(
     ('gateio', "2021-09-01 00:00:01", "2021-09-01 08:00:00", ["2021-09-01 08"]),
 ])
 def test__get_funding_fee_dates(mocker, default_conf, exchange, d1, d2, funding_times):
-    expected_result = [datetime.strptime(d, '%Y-%m-%d %H') for d in funding_times]
-    d1 = datetime.strptime(d1, '%Y-%m-%d %H:%M:%S')
-    d2 = datetime.strptime(d2, '%Y-%m-%d %H:%M:%S')
+    expected_result = [datetime.strptime(f"{d} +0000", '%Y-%m-%d %H %z') for d in funding_times]
+    d1 = datetime.strptime(f"{d1} +0000", '%Y-%m-%d %H:%M:%S %z')
+    d2 = datetime.strptime(f"{d2} +0000", '%Y-%m-%d %H:%M:%S %z')
     exchange = get_patched_exchange(mocker, default_conf, id=exchange)
     result = exchange._get_funding_fee_dates(d1, d2)
     assert result == expected_result
@@ -3473,8 +3473,8 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
         1630472400000: 0.000003,
         1630476000000: 0.000019,
         1630479600000: 0.000003,
-        1630483200000: 0,
-        1630486800000: -0.000003,
+        1630483200000: -0.000003,
+        1630486800000: 0,
         1630490400000: 0.000013,
         1630494000000: 0.000077,
         1630497600000: 0.000072,
