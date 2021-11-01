@@ -777,6 +777,8 @@ def get_markets():
             'base': 'ETH',
             'quote': 'USDT',
             'spot': True,
+            'future': True,
+            'margin': True,
             'type': 'spot',
             'precision': {
                 'amount': 8,
@@ -802,6 +804,8 @@ def get_markets():
             'quote': 'USDT',
             'active': False,
             'spot': True,
+            'future': True,
+            'margin': True,
             'type': 'spot',
             'precision': {
                 'amount': 8,
