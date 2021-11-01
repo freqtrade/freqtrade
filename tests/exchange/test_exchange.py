@@ -3583,21 +3583,38 @@ def test_calculate_funding_fees(
     assert funding_fees == expected_fees
 
 
+@pytest.mark.parametrize('name,expected_fees_8,expected_fees_10,expected_fees_12', [
+    ('binance', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
+    ('kraken', -0.0014937, -0.0014937, 0.0045759),
+    ('ftx', 0.0010008000000000003, 0.0021084, 0.0146691),
+    ('gateio', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
+])
 def test_calculate_funding_fees_datetime_called(
     mocker,
     default_conf,
     funding_rate_history,
-    mark_ohlcv
+    mark_ohlcv,
+    name,
+    time_machine,
+    expected_fees_8,
+    expected_fees_10,
+    expected_fees_12
 ):
     api_mock = MagicMock()
     api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
     api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history)
-    datetime = MagicMock()
-    datetime.now = MagicMock()
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
-    # TODO-lev: Add datetime MagicMock
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    exchange.calculate_funding_fees('ADA/USDT', 30.0, datetime("2021-09-01 00:00:00"))
-    assert datetime.now.call_count == 1
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id=name)
+    d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
+
+    time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    assert funding_fees == expected_fees_8
+    time_machine.move_to("2021-09-01 10:00:00 +00:00")
+    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    assert funding_fees == expected_fees_10
+    time_machine.move_to("2021-09-01 12:00:00 +00:00")
+    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    assert funding_fees == expected_fees_12

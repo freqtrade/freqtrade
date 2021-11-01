@@ -1743,6 +1743,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    @retrier
     def _get_mark_price_history(
         self,
         pair: str,
@@ -1784,7 +1785,7 @@ class Exchange:
         pair: str,
         amount: float,
         open_date: datetime,
-        close_date: Optional[datetime]
+        close_date: Optional[datetime] = None
     ) -> float:
         """
             calculates the sum of all funding fees that occurred for a pair during a futures trade
@@ -1816,6 +1817,7 @@ class Exchange:
 
         return fees
 
+    @retrier
     def get_funding_rate_history(
         self,
         pair: str,
