@@ -129,10 +129,9 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
     quote_currencies = args.get('quote_currencies', [])
 
     try:
-        # TODO-lev: Add leverage amount to get markets that support a certain leverage
         pairs = exchange.get_markets(base_currencies=base_currencies,
                                      quote_currencies=quote_currencies,
-                                     pairs_only=pairs_only,
+                                     tradable_only=pairs_only,
                                      active_only=active_only)
         # Sort the pairs/markets by symbol
         pairs = dict(sorted(pairs.items()))
@@ -152,15 +151,19 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                         if quote_currencies else ""))
 
         headers = ["Id", "Symbol", "Base", "Quote", "Active",
-                   *(['Is pair'] if not pairs_only else [])]
+                   "Spot", "Margin", "Future", "Leverage"]
 
-        tabular_data = []
-        for _, v in pairs.items():
-            tabular_data.append({'Id': v['id'], 'Symbol': v['symbol'],
-                                 'Base': v['base'], 'Quote': v['quote'],
-                                 'Active': market_is_active(v),
-                                 **({'Is pair': exchange.market_is_tradable(v)}
-                                    if not pairs_only else {})})
+        tabular_data = [{
+                'Id': v['id'],
+                'Symbol': v['symbol'],
+                'Base': v['base'],
+                'Quote': v['quote'],
+                'Active': market_is_active(v),
+                'Spot': 'Spot' if exchange.market_is_spot(v) else '',
+                'Margin': 'Margin' if exchange.market_is_margin(v) else '',
+                'Future': 'Future' if exchange.market_is_future(v) else '',
+                'Leverage': exchange.get_max_leverage(v['symbol'], 20)
+            } for _, v in pairs.items()]
 
         if (args.get('print_one_column', False) or
                 args.get('list_pairs_print_json', False) or

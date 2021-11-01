@@ -280,7 +280,9 @@ class Exchange:
             timeframe, self._ft_has.get('ohlcv_candle_limit')))
 
     def get_markets(self, base_currencies: List[str] = None, quote_currencies: List[str] = None,
-                    pairs_only: bool = False, active_only: bool = False) -> Dict[str, Any]:
+                    spot_only: bool = False, margin_only: bool = False, futures_only: bool = False,
+                    tradable_only: bool = True,
+                    active_only: bool = False) -> Dict[str, Any]:
         """
         Return exchange ccxt markets, filtered out by base currency and quote currency
         if this was requested in parameters.
@@ -295,8 +297,14 @@ class Exchange:
             markets = {k: v for k, v in markets.items() if v['base'] in base_currencies}
         if quote_currencies:
             markets = {k: v for k, v in markets.items() if v['quote'] in quote_currencies}
-        if pairs_only:
+        if tradable_only:
             markets = {k: v for k, v in markets.items() if self.market_is_tradable(v)}
+        if spot_only:
+            markets = {k: v for k, v in markets.items() if self.market_is_spot(v)}
+        if margin_only:
+            markets = {k: v for k, v in markets.items() if self.market_is_margin(v)}
+        if futures_only:
+            markets = {k: v for k, v in markets.items() if self.market_is_future(v)}
         if active_only:
             markets = {k: v for k, v in markets.items() if market_is_active(v)}
         return markets
@@ -320,18 +328,25 @@ class Exchange:
         """
         return self.markets.get(pair, {}).get('base', '')
 
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        return market.get('future', False) is True
+
+    def market_is_spot(self, market: Dict[str, Any]) -> bool:
+        return market.get('spot', False) is True
+
+    def market_is_margin(self, market: Dict[str, Any]) -> bool:
+        return market.get('margin', False) is True
+
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
         """
         Check if the market symbol is tradable by Freqtrade.
-        By default, checks if it's splittable by `/` and both sides correspond to base / quote
+        Ensures that Configured mode aligns to
         """
-        symbol_parts = market['symbol'].split('/')
-        return (len(symbol_parts) == 2 and
-                len(symbol_parts[0]) > 0 and
-                len(symbol_parts[1]) > 0 and
-                symbol_parts[0] == market.get('base') and
-                symbol_parts[1] == market.get('quote')
-                )
+        return (
+            (self.trading_mode == TradingMode.SPOT and self.market_is_spot(market))
+            or (self.trading_mode == TradingMode.MARGIN and self.market_is_margin(market))
+            or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market))
+        )
 
     def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
