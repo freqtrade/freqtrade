@@ -459,7 +459,7 @@ The output will show a table containing the realized absolute Profit (in stake c
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
-You can then load the trades to perform further analysis as shown in our [data analysis](data-analysis.md#backtesting) backtesting section.
+You can then load the trades to perform further analysis as shown in the [data analysis](data-analysis.md#backtesting) backtesting section.
 
 ## Assumptions made by backtesting
 

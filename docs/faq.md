@@ -42,7 +42,7 @@ position for a trade. Be patient!
 ### I have made 12 trades already, why is my total profit negative?
 
 I understand your disappointment but unfortunately 12 trades is just
-not enough to say anything. If you run backtesting, you can see that our
+not enough to say anything. If you run backtesting, you can see that the
 current algorithm does leave you on the plus side, but that is after
 thousands of trades and even there, you will be left with losses on
 specific coins that you have traded tens if not hundreds of times. We

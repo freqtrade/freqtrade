@@ -48,7 +48,7 @@ Sample configuration (tested using IFTTT).
     },
 ```
 
-The url in `webhook.url` should point to the correct url for your webhook. If you're using [IFTTT](https://ifttt.com) (as shown in the sample above) please insert our event and key to the url.
+The url in `webhook.url` should point to the correct url for your webhook. If you're using [IFTTT](https://ifttt.com) (as shown in the sample above) please insert your event and key to the url.
 
 You can set the POST body format to Form-Encoded (default) or JSON-Encoded. Use `"format": "form"` or `"format": "json"` respectively. Example configuration for Mattermost Cloud integration:
 
