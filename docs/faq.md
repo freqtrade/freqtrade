@@ -42,7 +42,7 @@ position for a trade. Be patient!
 ### I have made 12 trades already, why is my total profit negative?
 
 I understand your disappointment but unfortunately 12 trades is just
-not enough to say anything. If you run backtesting, you can see that our
+not enough to say anything. If you run backtesting, you can see that the
 current algorithm does leave you on the plus side, but that is after
 thousands of trades and even there, you will be left with losses on
 specific coins that you have traded tens if not hundreds of times. We
@@ -53,6 +53,21 @@ you can't say much from few trades.
 ### I’d like to make changes to the config. Can I do that without having to kill the bot?
 
 Yes. You can edit your config and use the `/reload_config` command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.
+
+### Why does my bot not sell everything it bought?
+
+This is called "coin dust" and can happen on all exchanges.
+It happens because many exchanges subtract fees from the "receiving currency" - so you buy 100 COIN - but you only get 99.9 COIN.
+As COIN is trading in full lot sizes (1COIN steps), you cannot sell 0.9 COIN (or 99.9 COIN) - but you need to round down to 99 COIN.
+
+This is not a bot-problem, but will also happen while manual trading.
+
+While freqtrade can handle this (it'll sell 99 COIN), fees are often below the minimum tradable lot-size (you can only trade full COIN, not 0.9 COIN).
+Leaving the dust (0.9 COIN) on the exchange makes usually sense, as the next time freqtrade buys COIN, it'll eat into the remaining small balance, this time selling everything it bought, and therefore slowly declining the dust balance (although it most likely will never reach exactly 0).
+
+Where possible (e.g. on binance), the use of the exchange's dedicated fee currency will fix this.  
+On binance, it's sufficient to have BNB in your account, and have "Pay fees in BNB" enabled in your profile. Your BNB balance will slowly decline (as it's used to pay fees) - but you'll no longer encounter dust (Freqtrade will include the fees in the profit calculations).
+Other exchanges don't offer such possibilities, where it's simply something you'll have to accept or move to a different exchange.
 
 ### I want to use incomplete candles
 
@@ -77,6 +92,18 @@ On low volume pairs, this is a rather common occurrence.
 If this happens for all pairs in the pairlist, this might indicate a recent exchange downtime. Please check your exchange's public channels for details.
 
 Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
+
+### I'm getting "Outdated history for pair xxx" in the log
+
+The bot is trying to tell you that it got an outdated last candle (not the last complete candle).
+As a consequence, Freqtrade will not enter a trade for this pair - as trading on old information is usually not what is desired.
+
+This warning can point to one of the below problems:
+
+* Exchange downtime -> Check your exchange status page / blog / twitter feed for details.
+* Wrong system time -> Ensure your system-time is correct.
+* Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
+* API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
 
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 

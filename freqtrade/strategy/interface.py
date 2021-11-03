@@ -65,9 +65,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
-    _ft_params_from_file: Dict = {}
+    _ft_params_from_file: Dict
     # associated minimal roi
-    minimal_roi: Dict
+    minimal_roi: Dict = {}
 
     # associated stoploss
     stoploss: float
@@ -442,6 +442,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Unlock pair to allow trading again
         """
         PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
+
+    def unlock_reason(self, reason: str) -> None:
+        """
+        Unlocks all pairs previously locked using lock_pair with specified reason.
+        Not used by freqtrade itself, but intended to be used if users lock pairs
+        manually from within the strategy, to allow an easy way to unlock pairs.
+        :param reason: Unlock pairs to allow trading again
+        """
+        PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
 
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """

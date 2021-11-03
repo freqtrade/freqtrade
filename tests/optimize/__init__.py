@@ -56,4 +56,10 @@ def _build_backtest_dataframe(data):
         frame['buy_tag'] = None
     if 'exit_tag' not in columns:
         frame['exit_tag'] = None
+
+    # Ensure all candles make kindof sense
+    assert all(frame['low'] <= frame['close'])
+    assert all(frame['low'] <= frame['open'])
+    assert all(frame['high'] >= frame['close'])
+    assert all(frame['high'] >= frame['open'])
     return frame

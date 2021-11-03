@@ -56,17 +56,21 @@ class StrategyResolver(IResolver):
         if strategy._ft_params_from_file:
             # Set parameters from Hyperopt results file
             params = strategy._ft_params_from_file
-            strategy.minimal_roi = params.get('roi', strategy.minimal_roi)
+            strategy.minimal_roi = params.get('roi', getattr(strategy, 'minimal_roi', {}))
 
-            strategy.stoploss = params.get('stoploss', {}).get('stoploss', strategy.stoploss)
+            strategy.stoploss = params.get('stoploss', {}).get(
+                'stoploss', getattr(strategy, 'stoploss', -0.1))
             trailing = params.get('trailing', {})
-            strategy.trailing_stop = trailing.get('trailing_stop', strategy.trailing_stop)
-            strategy.trailing_stop_positive = trailing.get('trailing_stop_positive',
-                                                           strategy.trailing_stop_positive)
+            strategy.trailing_stop = trailing.get(
+                'trailing_stop', getattr(strategy, 'trailing_stop', False))
+            strategy.trailing_stop_positive = trailing.get(
+                'trailing_stop_positive', getattr(strategy, 'trailing_stop_positive', None))
             strategy.trailing_stop_positive_offset = trailing.get(
-                'trailing_stop_positive_offset', strategy.trailing_stop_positive_offset)
+                'trailing_stop_positive_offset',
+                getattr(strategy, 'trailing_stop_positive_offset', 0))
             strategy.trailing_only_offset_is_reached = trailing.get(
-                'trailing_only_offset_is_reached', strategy.trailing_only_offset_is_reached)
+                'trailing_only_offset_is_reached',
+                getattr(strategy, 'trailing_only_offset_is_reached', 0.0))
 
         # Set attributes
         # Check if we need to override configuration

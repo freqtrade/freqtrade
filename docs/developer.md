@@ -252,6 +252,9 @@ Completing these tests successfully a good basis point (it's a requirement, actu
 
 Also try to use `freqtrade download-data` for an extended timerange and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).
 
+These are prerequisites to have an exchange listed as either Supported or Community tested (listed on the homepage).
+The below are "extras", which will make an exchange better (feature-complete) - but are not absolutely necessary for either of the 2 categories.
+
 ### Stoploss On Exchange
 
 Check if the new exchange supports Stoploss on Exchange orders through their API.

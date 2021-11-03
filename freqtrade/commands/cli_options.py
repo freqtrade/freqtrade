@@ -152,6 +152,12 @@ AVAILABLE_CLI_OPTIONS = {
         action='store_false',
         default=True,
     ),
+    "backtest_show_pair_list": Arg(
+        '--show-pair-list',
+        help='Show backtesting pairlist sorted by profit.',
+        action='store_true',
+        default=False,
+    ),
     "enable_protections": Arg(
         '--enable-protections', '--enableprotections',
         help='Enable protections for backtesting.'

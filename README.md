@@ -44,7 +44,7 @@ Exchanges confirmed working by the community:
 
 We invite you to read the bot documentation to ensure you understand how the bot is working.
 
-Please find the complete documentation on our [website](https://www.freqtrade.io).
+Please find the complete documentation on the [freqtrade website](https://www.freqtrade.io).
 
 ## Features
 
@@ -121,7 +121,7 @@ optional arguments:
 
 ### Telegram RPC commands
 
-Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on our [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
+Telegram is not mandatory. However, this is a great way to control your bot. More details and the full command list on the [documentation](https://www.freqtrade.io/en/latest/telegram-usage/)
 
 - `/start`: Starts the trader.
 - `/stop`: Stops the trader.
@@ -152,10 +152,10 @@ For any questions not covered by the documentation or for further information ab
 ### [Bugs / Issues](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 
 If you discover a bug in the bot, please
-[search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
+[search the issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue)
 first. If it hasn't been reported, please
 [create a new issue](https://github.com/freqtrade/freqtrade/issues/new/choose) and
-ensure you follow the template guide so that our team can assist you as
+ensure you follow the template guide so that the team can assist you as
 quickly as possible.
 
 ### [Feature Requests](https://github.com/freqtrade/freqtrade/labels/enhancement)
@@ -169,13 +169,13 @@ in the bug reports.
 
 ### [Pull Requests](https://github.com/freqtrade/freqtrade/pulls)
 
-Feel like our bot is missing a feature? We welcome your pull requests!
+Feel like the bot is missing a feature? We welcome your pull requests!
 
-Please read our
+Please read the
 [Contributing document](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md)
 to understand the requirements before sending your pull-requests.
 
-Coding is not a necessity to contribute - maybe start with improving our documentation?
+Coding is not a necessity to contribute - maybe start with improving the documentation?
 Issues labeled [good first issue](https://github.com/freqtrade/freqtrade/labels/good%20first%20issue) can be good first contributions, and will help get you familiar with the codebase.
 
 **Note** before starting any major new feature work, *please open an issue describing what you are planning to do* or talk to us on [discord](https://discord.gg/p7nuUNVfP7) (please use the #dev channel for this). This will ensure that interested parties can give valuable feedback on the feature, and let others know that you are working on it.

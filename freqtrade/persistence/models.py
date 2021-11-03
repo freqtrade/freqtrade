@@ -1014,7 +1014,7 @@ class PairLock(_DECL_BASE):
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)
         return (f'PairLock(id={self.id}, pair={self.pair}, lock_time={lock_time}, '
-                f'lock_end_time={lock_end_time})')
+                f'lock_end_time={lock_end_time}, reason={self.reason}, active={self.active})')
 
     @staticmethod
     def query_pair_locks(pair: Optional[str], now: datetime) -> Query:
@@ -1023,7 +1023,6 @@ class PairLock(_DECL_BASE):
         :param pair: Pair to check for. Returns all current locks if pair is empty
         :param now: Datetime object (generated via datetime.now(timezone.utc)).
         """
-
         filters = [PairLock.lock_end_time > now,
                    # Only active locks
                    PairLock.active.is_(True), ]

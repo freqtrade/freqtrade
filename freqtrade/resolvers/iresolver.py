@@ -91,7 +91,7 @@ class IResolver:
         logger.debug(f"Searching for {cls.object_type.__name__} {object_name} in '{directory}'")
         for entry in directory.iterdir():
             # Only consider python files
-            if not str(entry).endswith('.py'):
+            if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
                 continue
             if entry.is_symlink() and not entry.is_file():
@@ -169,7 +169,7 @@ class IResolver:
         objects = []
         for entry in directory.iterdir():
             # Only consider python files
-            if not str(entry).endswith('.py'):
+            if entry.suffix != '.py':
                 logger.debug('Ignoring %s', entry)
                 continue
             module_path = entry.resolve()

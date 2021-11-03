@@ -312,7 +312,7 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 The Metadata-dict should not be modified and does not persist information across multiple calls.
 Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
 
-## Additional data (informative_pairs)
+## Informative Pairs
 
 ### Get data for non-tradeable pairs
 
@@ -340,6 +340,133 @@ A full sample can be found [in the DataProvider section](#complete-data-provider
     to avoid hammering the exchange with too many requests and risk being blocked.
 
 ***
+
+### Informative pairs decorator (`@informative()`)
+
+In most common case it is possible to easily define informative pairs by using a decorator. All decorated `populate_indicators_*` methods run in isolation,
+not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main `populate_indicators()` method.
+When hyperopting, use of hyperoptable parameter `.value` attribute is not supported. Please use `.range` attribute. See [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter)
+for more information.
+
+??? info "Full documentation"
+    ``` python
+    def informative(timeframe: str, asset: str = '',
+                    fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
+                    ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
+        """
+        A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
+        define informative indicators.
+
+        Example usage:
+
+            @informative('1h')
+            def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+                dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+                return dataframe
+
+        :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
+        :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
+        current pair.
+        :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
+        specified, defaults to:
+        * {base}_{quote}_{column}_{timeframe} if asset is specified. 
+        * {column}_{timeframe} if asset is not specified.
+        Format string supports these format variables:
+        * {asset} - full name of the asset, for example 'BTC/USDT'.
+        * {base} - base currency in lower case, for example 'eth'.
+        * {BASE} - same as {base}, except in upper case.
+        * {quote} - quote currency in lower case, for example 'usdt'.
+        * {QUOTE} - same as {quote}, except in upper case.
+        * {column} - name of dataframe column.
+        * {timeframe} - timeframe of informative dataframe.
+        :param ffill: ffill dataframe after merging informative pair.
+        """
+    ```
+
+??? Example "Fast and easy way to define informative pairs"
+
+    Most of the time we do not need power and flexibility offered by `merge_informative_pair()`, therefore we can use a decorator to quickly define informative pairs.
+
+    ``` python
+
+    from datetime import datetime
+    from freqtrade.persistence import Trade
+    from freqtrade.strategy import IStrategy, informative
+
+    class AwesomeStrategy(IStrategy):
+        
+        # This method is not required. 
+        # def informative_pairs(self): ...
+
+        # Define informative upper timeframe for each pair. Decorators can be stacked on same 
+        # method. Available in populate_indicators as 'rsi_30m' and 'rsi_1h'.
+        @informative('30m')
+        @informative('1h')
+        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+        # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
+        # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
+        # instead of hardcoding actual stake currency. Available in populate_indicators and other 
+        # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
+        @informative('1h', 'BTC/{stake}')
+        def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+
+        # Define BTC/ETH informative pair. You must specify quote currency if it is different from
+        # stake currency. Available in populate_indicators and other methods as 'eth_btc_rsi_1h'.
+        @informative('1h', 'ETH/BTC')
+        def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+    
+        # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
+        # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
+        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
+        @informative('1h', 'BTC/{stake}', '{column}')
+        def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
+            return dataframe
+    
+        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+            # Strategy timeframe indicators for current pair.
+            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+            # Informative pairs are available in this method.
+            dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
+            return dataframe
+
+    ```
+
+!!! Note
+    Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
+    manually as described [in the DataProvider section](#complete-data-provider-sample).
+
+!!! Note
+    Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
+
+    ``` python
+    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        stake = self.config['stake_currency']
+        dataframe.loc[
+            (
+                (dataframe[f'btc_{stake}_rsi_1h'] < 35)
+                &
+                (dataframe['volume'] > 0)
+            ),
+            ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+    
+        return dataframe
+    ```
+
+    Alternatively column renaming may be used to remove stake currency from column names: `@informative('1h', 'BTC/{stake}', fmt='{base}_{column}_{timeframe}')`.
+
+!!! Warning "Duplicate method names"
+    Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
+    will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
+    created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
+
 
 ## Additional data (DataProvider)
 
@@ -384,9 +511,9 @@ The strategy might look something like this:
 
 *Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
-Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
+Since we can't resample the data we will have to use an informative pair; and since the whitelist will be dynamic we don't know which pair(s) to use.
 
 This is where calling `self.dp.current_whitelist()` comes in handy.
 
@@ -686,131 +813,6 @@ In some situations it may be confusing to deal with stops relative to current ra
 
     ```
 
-### *@informative()*
-
-``` python
-def informative(timeframe: str, asset: str = '',
-                fmt: Optional[Union[str, Callable[[KwArg(str)], str]]] = None,
-                ffill: bool = True) -> Callable[[PopulateIndicators], PopulateIndicators]:
-    """
-    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
-    define informative indicators.
-
-    Example usage:
-
-        @informative('1h')
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-    :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.
-    :param asset: Informative asset, for example BTC, BTC/USDT, ETH/BTC. Do not specify to use
-    current pair.
-    :param fmt: Column format (str) or column formatter (callable(name, asset, timeframe)). When not
-    specified, defaults to:
-    * {base}_{quote}_{column}_{timeframe} if asset is specified. 
-    * {column}_{timeframe} if asset is not specified.
-    Format string supports these format variables:
-    * {asset} - full name of the asset, for example 'BTC/USDT'.
-    * {base} - base currency in lower case, for example 'eth'.
-    * {BASE} - same as {base}, except in upper case.
-    * {quote} - quote currency in lower case, for example 'usdt'.
-    * {QUOTE} - same as {quote}, except in upper case.
-    * {column} - name of dataframe column.
-    * {timeframe} - timeframe of informative dataframe.
-    :param ffill: ffill dataframe after merging informative pair.
-    """
-```
-
-In most common case it is possible to easily define informative pairs by using a decorator. All decorated `populate_indicators_*` methods run in isolation,
-not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main `populate_indicators()` method.
-When hyperopting, use of hyperoptable parameter `.value` attribute is not supported. Please use `.range` attribute. See [optimizing an indicator parameter](hyperopt.md#optimizing-an-indicator-parameter)
-for more information.
-
-??? Example "Fast and easy way to define informative pairs"
-
-    Most of the time we do not need power and flexibility offered by `merge_informative_pair()`, therefore we can use a decorator to quickly define informative pairs.
-
-    ``` python
-
-    from datetime import datetime
-    from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, informative
-
-    class AwesomeStrategy(IStrategy):
-        
-        # This method is not required. 
-        # def informative_pairs(self): ...
-
-        # Define informative upper timeframe for each pair. Decorators can be stacked on same 
-        # method. Available in populate_indicators as 'rsi_30m' and 'rsi_1h'.
-        @informative('30m')
-        @informative('1h')
-        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-        # Define BTC/STAKE informative pair. Available in populate_indicators and other methods as
-        # 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable 
-        # instead of hardcoding actual stake currency. Available in populate_indicators and other 
-        # methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).
-        @informative('1h', 'BTC/{stake}')
-        def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-
-        # Define BTC/ETH informative pair. You must specify quote currency if it is different from
-        # stake currency. Available in populate_indicators and other methods as 'eth_btc_rsi_1h'.
-        @informative('1h', 'ETH/BTC')
-        def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-    
-        # Define BTC/STAKE informative pair. A custom formatter may be specified for formatting
-        # column names. A callable `fmt(**kwargs) -> str` may be specified, to implement custom
-        # formatting. Available in populate_indicators and other methods as 'rsi_upper'.
-        @informative('1h', 'BTC/{stake}', '{column}')
-        def populate_indicators_btc_1h_2(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            dataframe['rsi_upper'] = ta.RSI(dataframe, timeperiod=14)
-            return dataframe
-    
-        def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-            # Strategy timeframe indicators for current pair.
-            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
-            # Informative pairs are available in this method.
-            dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
-            return dataframe
-
-    ```
-
-!!! Note
-    Do not use `@informative` decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
-    manually as described [in the DataProvider section](#complete-data-provider-sample).
-
-!!! Note
-    Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.
-
-    ``` python
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        stake = self.config['stake_currency']
-        dataframe.loc[
-            (
-                (dataframe[f'btc_{stake}_rsi_1h'] < 35)
-                &
-                (dataframe['volume'] > 0)
-            ),
-            ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
-    
-        return dataframe
-    ```
-
-    Alternatively column renaming may be used to remove stake currency from column names: `@informative('1h', 'BTC/{stake}', fmt='{base}_{column}_{timeframe}')`.
-
-!!! Warning "Duplicate method names"
-    Methods tagged with `@informative()` decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
-    will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
-    created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!
-
 ## Additional data (Wallets)
 
 The strategy provides access to the `Wallets` object. This contains the current balances on the exchange.
@@ -894,7 +896,8 @@ Sometimes it may be desired to lock a pair after certain events happen (e.g. mul
 Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until, [reason])`.
 `until` must be a datetime object in the future, after which trading will be re-enabled for that pair, while `reason` is an optional string detailing why the pair was locked.
 
-Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)` or `self.unlock_reason(<reason>)` - providing reason the pair was locked with.
+`self.unlock_reason(<reason>)` will unlock all pairs currently locked with the provided reason.
 
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
@@ -966,7 +969,7 @@ The following lists some common patterns which should be avoided to prevent frus
 
 ## Further strategy ideas
 
-To get additional Ideas for strategies, head over to our [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
+To get additional Ideas for strategies, head over to the [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 
