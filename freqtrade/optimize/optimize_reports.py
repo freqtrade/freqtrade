@@ -797,7 +797,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if(results['results_per_buy_tag'] is not None):
+    if results.get('results_per_buy_tag') is not None:
         table = text_table_tags(
             "buy_tag",
             results['results_per_buy_tag'],
