@@ -151,7 +151,7 @@ function install_debian() {
 # Install bot RedHat_CentOS
 function install_redhat() {
     sudo yum update
-    sudo yum install -y gcc gcc-c++ build-essential autoconf libtool pkg-config make wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
+    sudo yum install -y gcc gcc-c++ make autoconf libtool pkg-config wget git $(echo ${PYTHON}-devel | sed 's/\.//g')
     install_talib
 }
 
