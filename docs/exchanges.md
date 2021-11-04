@@ -182,6 +182,23 @@ Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force)
 For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
 Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
 
+## OKEX
+
+OKEX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+
+```json
+"exchange": {
+    "name": "okex",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+    // ...
+}
+```
+
+!!! Warning
+    OKEX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
