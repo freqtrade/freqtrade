@@ -93,7 +93,7 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool
+                                        since_ms: int, is_new_pair: bool = False
                                         ) -> List:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date

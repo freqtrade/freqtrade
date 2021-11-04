@@ -1223,8 +1223,8 @@ class Exchange:
                                   drop_incomplete=self._ohlcv_partial_candle)
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool
-                                        ) -> List:
+                                        since_ms: int, is_new_pair: bool = False
+                                        ) -> Tuple[str, str, List]:
         """
         Download historic ohlcv
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
