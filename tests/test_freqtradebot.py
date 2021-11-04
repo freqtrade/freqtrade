@@ -20,9 +20,9 @@ from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.strategy.interface import SellCheckTuple
 from freqtrade.worker import Worker
-from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_patched_worker,
-                            log_has, log_has_re, patch_edge, patch_exchange, patch_get_signal,
-                            patch_wallet, patch_whitelist)
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt, get_patched_freqtradebot,
+                            get_patched_worker, log_has, log_has_re, patch_edge, patch_exchange,
+                            patch_get_signal, patch_wallet, patch_whitelist)
 from tests.conftest_trades import (MOCK_TRADE_COUNT, enter_side, exit_side, mock_order_1,
                                    mock_order_2, mock_order_2_sell, mock_order_3, mock_order_3_sell,
                                    mock_order_4, mock_order_5_stoploss, mock_order_6_sell)
@@ -4682,8 +4682,8 @@ def test_leverage_prep():
     ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
     ('futures', 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
 ])
-def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
-                             t1, t2):
+def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls, time_machine,
+                                      t1, t2):
     time_machine.move_to(f"{t1} +00:00")
 
     patch_RPCManager(mocker)
@@ -4698,3 +4698,95 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     freqtrade._schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
+
+
+def test_update_funding_fees(mocker, default_conf, time_machine, fee):
+    '''
+        nominal_value = mark_price * contract_size
+        funding_fee = nominal_value * funding_rate
+        contract_size = 123
+        "LTC/BTC"
+            time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
+            time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792
+        "ETH/BTC"
+            time: 0, mark: 2.4, fundRate: 0.0001, nominal_value: 295.2, fundFee: 0.02952
+            time: 8, mark: 2.5, fundRate: 0.0001, nominal_value: 307.5, fundFee: 0.03075
+        "ETC/BTC"
+            time: 0, mark: 4.3, fundRate: 0.00031077, nominal_value: 528.9, fundFee: 0.164366253
+            time: 8, mark: 4.1, fundRate: 0.00022655, nominal_value: 504.3, fundFee: 0.114249165
+        "XRP/BTC"
+            time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
+            time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
+    '''
+    time_machine.move_to("2021-09-01 00:00:00")
+
+    funding_rates = {
+        "LTC/BTC": {
+            1630454400000: 0.00032583,
+            1630483200000: 0.00024472,
+        },
+        "ETH/BTC": {
+            1630454400000: 0.0001,
+            1630483200000: 0.0001,
+        },
+        "ETC/BTC": {
+            1630454400000: 0.00031077,
+            1630483200000: 0.00022655,
+        },
+        "XRP/BTC": {
+            1630454400000: 0.00049426,
+            1630483200000: 0.00032715,
+        }
+    }
+
+    mark_prices = {
+        "LTC/BTC": {
+            1630454400000: 3.3,
+            1630483200000: 3.2,
+        },
+        "ETH/BTC": {
+            1630454400000: 2.4,
+            1630483200000: 2.5,
+        },
+        "ETC/BTC": {
+            1630454400000: 4.3,
+            1630483200000: 4.1,
+        },
+        "XRP/BTC": {
+            1630454400000: 1.2,
+            1630483200000: 1.2,
+        }
+    }
+
+    mocker.patch(
+        'freqtrade.exchange.Exchange._get_mark_price_history',
+        side_effect=[
+            mark_prices["LTC/BTC"],
+            mark_prices["ETH/BTC"],
+            mark_prices["ETC/BTC"],
+            mark_prices["XRP/BTC"],
+        ]
+    )
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_funding_rate_history',
+        side_effect=[
+            funding_rates["LTC/BTC"],
+            funding_rates["ETH/BTC"],
+            funding_rates["ETC/BTC"],
+            funding_rates["XRP/BTC"],
+        ]
+    )
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
+    default_conf['dry_run'] = True
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    create_mock_trades(fee, False)
+    time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    freqtrade._schedule.run_pending()
+
+    trades = Trade.get_open_trades()
+    for trade in trades:
+        assert trade.funding_fees == 123 * mark_prices[trade.pair] * funding_rates[trade.pair]
+    return

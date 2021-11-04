@@ -1807,8 +1807,8 @@ class Exchange:
             int(open_date.timestamp() * 1000)
         )
         for date in self._get_funding_fee_dates(open_date, close_date):
-            funding_rate = funding_rate_history[int(date.timestamp()) * 1000]
-            mark_price = mark_price_history[int(date.timestamp()) * 1000]
+            funding_rate = funding_rate_history[int(date.timestamp() * 1000)]
+            mark_price = mark_price_history[int(date.timestamp() * 1000)]
             fees += self._get_funding_fee(
                 contract_size=amount,
                 mark_price=mark_price,
