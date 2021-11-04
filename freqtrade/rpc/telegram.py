@@ -159,6 +159,8 @@ class Telegram(RPCHandler):
             CommandHandler('mix_tags', self._mix_tag_performance),
             CommandHandler('stats', self._stats),
             CommandHandler('daily', self._daily),
+            CommandHandler('weekly', self._weekly),
+            CommandHandler('monthly', self._monthly),
             CommandHandler('count', self._count),
             CommandHandler('locks', self._locks),
             CommandHandler(['unlock', 'delete_locks'], self._delete_locks),
@@ -175,6 +177,7 @@ class Telegram(RPCHandler):
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
             CallbackQueryHandler(self._daily, pattern='update_daily'),
+            CallbackQueryHandler(self._monthly, pattern='update_monthly'),
             CallbackQueryHandler(self._profit, pattern='update_profit'),
             CallbackQueryHandler(self._balance, pattern='update_balance'),
             CallbackQueryHandler(self._performance, pattern='update_performance'),
@@ -489,7 +492,7 @@ class Telegram(RPCHandler):
                   f"{day['fiat_value']:.3f} {stats['fiat_display_currency']}",
                   f"{day['trade_count']} trades"] for day in stats['data']],
                 headers=[
-                    'Day',
+                    'Month',
                     f'Profit {stake_cur}',
                     f'Profit {fiat_disp_cur}',
                     'Trades',
@@ -498,6 +501,84 @@ class Telegram(RPCHandler):
             message = f'<b>Daily Profit over the last {timescale} days</b>:\n<pre>{stats_tab}</pre>'
             self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
                            callback_path="update_daily", query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _weekly(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /weekly <n>
+        Returns a weekly profit (in BTC) over the last n weeks.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
+        try:
+            timescale = int(context.args[0]) if context.args else 8
+        except (TypeError, ValueError, IndexError):
+            timescale = 8
+        try:
+            stats = self._rpc._rpc_weekly_profit(
+                timescale,
+                stake_cur,
+                fiat_disp_cur
+            )
+            stats_tab = tabulate(
+                [[week['date'],
+                  f"{round_coin_value(week['abs_profit'], stats['stake_currency'])}",
+                  f"{week['fiat_value']:.3f} {stats['fiat_display_currency']}",
+                  f"{week['trade_count']} trades"] for week in stats['data']],
+                headers=[
+                    'Week',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    'Trades',
+                ],
+                tablefmt='simple')
+            message = f'<b>Weekly Profit over the last {timescale} weeks</b>:\n<pre>{stats_tab}</pre>'
+            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
+                           callback_path="update_weekly", query=update.callback_query)
+        except RPCException as e:
+            self._send_msg(str(e))
+
+    @authorized_only
+    def _monthly(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /monthly <n>
+        Returns a monthly profit (in BTC) over the last n months.
+        :param bot: telegram bot
+        :param update: message update
+        :return: None
+        """
+        stake_cur = self._config['stake_currency']
+        fiat_disp_cur = self._config.get('fiat_display_currency', '')
+        try:
+            timescale = int(context.args[0]) if context.args else 6
+        except (TypeError, ValueError, IndexError):
+            timescale = 6
+        try:
+            stats = self._rpc._rpc_monthly_profit(
+                timescale,
+                stake_cur,
+                fiat_disp_cur
+            )
+            stats_tab = tabulate(
+                [[month['date'],
+                  f"{round_coin_value(month['abs_profit'], stats['stake_currency'])}",
+                  f"{month['fiat_value']:.3f} {stats['fiat_display_currency']}",
+                  f"{month['trade_count']} trades"] for month in stats['data']],
+                headers=[
+                    'Month',
+                    f'Profit {stake_cur}',
+                    f'Profit {fiat_disp_cur}',
+                    'Trades',
+                ],
+                tablefmt='simple')
+            message = f'<b>Monthly Profit over the last {timescale} months</b>:\n<pre>{stats_tab}</pre>'
+            self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
+                           callback_path="update_monthly", query=update.callback_query)
         except RPCException as e:
             self._send_msg(str(e))
 
