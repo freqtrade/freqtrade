@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -1205,9 +1205,11 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
-        return asyncio.get_event_loop().run_until_complete(
+        pair, timeframe, data = asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, is_new_pair=is_new_pair))
+        logger.info(f"Downloaded data for {pair} with length {len(data)}.")
+        return data
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
                                  since_ms: int) -> DataFrame:
@@ -1223,7 +1225,8 @@ class Exchange:
                                   drop_incomplete=self._ohlcv_partial_candle)
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool = False
+                                        since_ms: int, is_new_pair: bool = False,
+                                        raise_: bool = False
                                         ) -> Tuple[str, str, List]:
         """
         Download historic ohlcv
@@ -1248,15 +1251,17 @@ class Exchange:
             for res in results:
                 if isinstance(res, Exception):
                     logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    if raise_:
+                        raise
                     continue
-                # Deconstruct tuple if it's not an exception
-                p, _, new_data = res
-                if p == pair:
-                    data.extend(new_data)
+                else:
+                    # Deconstruct tuple if it's not an exception
+                    p, _, new_data = res
+                    if p == pair:
+                        data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        logger.info(f"Downloaded data for {pair} with length {len(data)}.")
-        return data
+        return pair, timeframe, data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True
@@ -1276,10 +1281,23 @@ class Exchange:
         cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if (((pair, timeframe) not in self._klines)
+            if ((pair, timeframe) not in self._klines
                     or self._now_is_time_to_refresh(pair, timeframe)):
-                input_coroutines.append(self._async_get_candle_history(pair, timeframe,
-                                                                       since_ms=since_ms))
+                call_count = self._ft_has.get('ohlcv_candle_call_count', 1)
+                if not since_ms and call_count > 1:
+                    # Multiple calls for one pair - to get more history
+                    one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
+                    move_to = one_call * call_count
+                    now = timeframe_to_next_date(timeframe)
+                    since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
+
+                if since_ms:
+                    input_coroutines.append(self._async_get_historic_ohlcv(
+                        pair, timeframe, since_ms=since_ms, raise_=True))
+                else:
+                    # One call ... "regular" refresh
+                    input_coroutines.append(self._async_get_candle_history(
+                        pair, timeframe, since_ms=since_ms))
             else:
                 logger.debug(
                     "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",

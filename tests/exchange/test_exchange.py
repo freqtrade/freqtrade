@@ -1506,6 +1506,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     assert exchange._async_get_candle_history.call_count == 2
     # Returns twice the above OHLCV data
     assert len(ret) == 2
+    assert log_has_re(r'Downloaded data for .* with length .*\.', caplog)
 
     caplog.clear()
 
@@ -1587,12 +1588,13 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/USDT'
-    res = await exchange._async_get_historic_ohlcv(pair, "5m",
-                                                   1500000000000, is_new_pair=False)
+    respair, restf, res = await exchange._async_get_historic_ohlcv(
+        pair, "5m", 1500000000000, is_new_pair=False)
+    assert respair == pair
+    assert restf == '5m'
     # Call with very old timestamp - causes tons of requests
     assert exchange._api_async.fetch_ohlcv.call_count > 200
     assert res[0] == ohlcv[0]
-    assert log_has_re(r'Downloaded data for .* with length .*\.', caplog)
 
 
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
