@@ -186,7 +186,7 @@ def get_patched_worker(mocker, config) -> Worker:
     return Worker(args=None, config=config)
 
 
-def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False, None)) -> None:
+def patch_get_signal(freqtrade: FreqtradeBot, value=(True, False, None, None)) -> None:
     """
     :param mocker: mocker to patch IStrategy class
     :param value: which value IStrategy.get_signal() must return

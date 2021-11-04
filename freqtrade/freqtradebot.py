@@ -201,11 +201,11 @@ class FreqtradeBot(LoggingMixin):
         if len(open_trades) != 0:
             msg = {
                 'type': RPCMessageType.WARNING,
-                'status':  f"{len(open_trades)} open trades active.\n\n"
-                           f"Handle these trades manually on {self.exchange.name}, "
-                           f"or '/start' the bot again and use '/stopbuy' "
-                           f"to handle open trades gracefully. \n"
-                           f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+                'status': f"{len(open_trades)} open trades active.\n\n"
+                          f"Handle these trades manually on {self.exchange.name}, "
+                          f"or '/start' the bot again and use '/stopbuy' "
+                          f"to handle open trades gracefully. \n"
+                          f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
             }
             self.rpc.send_msg(msg)
 
@@ -420,7 +420,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # running get_signal on historical data fetched
-        (buy, sell, buy_tag) = self.strategy.get_signal(
+        (buy, sell, buy_tag, _) = self.strategy.get_signal(
             pair,
             self.strategy.timeframe,
             analyzed_df
@@ -700,21 +700,22 @@ class FreqtradeBot(LoggingMixin):
         logger.debug('Handling %s ...', trade)
 
         (buy, sell) = (False, False)
+        exit_tag = None
 
         if (self.config.get('use_sell_signal', True) or
                 self.config.get('ignore_roi_if_buy_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (buy, sell, _) = self.strategy.get_signal(
+            (buy, sell, _, exit_tag) = self.strategy.get_signal(
                 trade.pair,
                 self.strategy.timeframe,
                 analyzed_df
             )
 
         logger.debug('checking sell')
-        exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
-        if self._check_and_execute_exit(trade, exit_rate, buy, sell):
+        sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        if self._check_and_execute_exit(trade, sell_rate, buy, sell, exit_tag):
             return True
 
         logger.debug('Found no sell signal for %s.', trade)
@@ -852,18 +853,21 @@ class FreqtradeBot(LoggingMixin):
                                    f"for pair {trade.pair}.")
 
     def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                buy: bool, sell: bool) -> bool:
+                                buy: bool, sell: bool, exit_tag: Optional[str]) -> bool:
         """
         Check and execute exit
         """
+
         should_sell = self.strategy.should_sell(
             trade, exit_rate, datetime.now(timezone.utc), buy, sell,
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
         if should_sell.sell_flag:
-            logger.info(f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}')
-            self.execute_trade_exit(trade, exit_rate, should_sell)
+            logger.info(
+                f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. '
+                f'Tag: {exit_tag if exit_tag is not None else "None"}')
+            self.execute_trade_exit(trade, exit_rate, should_sell, exit_tag)
             return True
         return False
 
@@ -1064,7 +1068,12 @@ class FreqtradeBot(LoggingMixin):
             raise DependencyException(
                 f"Not enough amount to sell. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
-    def execute_trade_exit(self, trade: Trade, limit: float, sell_reason: SellCheckTuple) -> bool:
+    def execute_trade_exit(
+            self,
+            trade: Trade,
+            limit: float,
+            sell_reason: SellCheckTuple,
+            exit_tag: Optional[str] = None) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
@@ -1140,7 +1149,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.sell_reason
+        trade.sell_reason = exit_tag or sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1181,6 +1190,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
@@ -1224,6 +1234,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
