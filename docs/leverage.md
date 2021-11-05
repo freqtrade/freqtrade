@@ -80,24 +80,6 @@ For longs, the currency which pays the interest fee for the `borrowed` will alre
 
 All Fees are included in `current_profit` calculations during the trade.
 
-#### Binance margin trading interest formula
-
-$$
-I (interest) = P (borrowed money) * R (daily_interest/24) * ceiling(T) (in hours)
-$$
-
-[source](https://www.binance.com/en/support/faq/360030157812)
-
-#### Kraken margin trading interest formula
-
-$$\begin{align*}
-& Opening fee = P (borrowed_money) * R (quat_hourly_interest) \\
-& Rollover fee = P (borrowed_money) * R (quat_hourly_interest) * ceiling(T/4) (in hours) \\
-& I (interest) = Opening_fee + Rollover_fee
-\end{align*}$$
-
-[source](https://support.kraken.com/hc/en-us/articles/206161568-What-are-the-fees-for-margin-trading-)
-
 #### FUTURES MODE
 
 Funding fees are either added or subtracted from the total amount of a trade
