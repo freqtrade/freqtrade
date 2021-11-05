@@ -1675,6 +1675,15 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
     freqtrade.update_trade_state(trade, '123')
 
     assert log_has_re('Found open order for.*', caplog)
+    limit_buy_order_usdt_new = deepcopy(limit_buy_order_usdt)
+    limit_buy_order_usdt_new['filled'] = 0.0
+    limit_buy_order_usdt_new['statuss'] = 'canceled'
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt_new)
+    res = freqtrade.update_trade_state(trade, '123')
+    # Cancelled empty
+    assert res is True
 
 
 @pytest.mark.parametrize('initial_amount,has_rounding_fee', [
