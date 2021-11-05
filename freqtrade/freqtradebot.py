@@ -1281,6 +1281,11 @@ class FreqtradeBot(LoggingMixin):
 
         trade.update_order(order)
 
+        if self.exchange.check_order_canceled_empty(order):
+            # Trade has been cancelled on exchange
+            # Handling of this will happen in check_handle_timeout.
+            return True
+
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order)
@@ -1292,10 +1297,6 @@ class FreqtradeBot(LoggingMixin):
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
-        if self.exchange.check_order_canceled_empty(order):
-            # Trade has been cancelled on exchange
-            # Handling of this will happen in check_handle_timeout.
-            return True
         trade.update(order)
         Trade.commit()
 
