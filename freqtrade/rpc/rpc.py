@@ -358,7 +358,7 @@ class RPC:
 
         data = [
             {
-                'date': f"{key.year}-{key.month}",
+                'date': f"{key.year}-{key.month:02d}",
                 'abs_profit': value["amount"],
                 'fiat_value': self._fiat_converter.convert_amount(
                     value['amount'],

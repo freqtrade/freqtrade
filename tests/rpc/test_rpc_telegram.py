@@ -12,7 +12,6 @@ from unittest.mock import ANY, MagicMock
 
 import arrow
 import pytest
-from dateutil.relativedelta import relativedelta
 from telegram import Chat, Message, ReplyKeyboardMarkup, Update
 from telegram.error import BadRequest, NetworkError, TelegramError
 
@@ -503,36 +502,15 @@ def test_weekly_handle(default_conf, update, ticker, limit_buy_order, fee,
         trade.close_date = datetime.utcnow()
         trade.is_open = False
 
-    # Make like the first trade was open and closed more than 8 weeks ago
-    trades[0].open_date = datetime.utcnow() - timedelta(weeks=8, days=2)
-    trades[0].close_date = datetime.utcnow() - timedelta(weeks=8, days=1)
-
-    # /weekly
+    # /weekly 1
     # By default, the 8 previous weeks are shown
     # So the previous modified trade should be excluded from the stats
     context = MagicMock()
-    context.args = []
+    context.args = ["1"]
     telegram._weekly(update=update, context=context)
-    # assert str('  0.00012434 BTC') in msg_mock.call_args_list[0][0][0]
-    # assert str('  1.865 USD') in msg_mock.call_args_list[0][0][0]
-    # assert str('  2 trades') in msg_mock.call_args_list[0][0][0]
-
-    # The time-shifted trade should not appear
-    assert str('  0.00006217 BTC') not in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') not in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trades') not in msg_mock.call_args_list[0][0][0]
-
-    # Reset msg_mock
-    msg_mock.reset_mock()
-    context.args = ["10"]
-    telegram._weekly(update=update, context=context)
-    assert msg_mock.call_count == 1
-    assert "Weekly Profit over the last 10 weeks (starting from Monday)</b>:" \
-           in msg_mock.call_args_list[0][0][0]
-    # Now, the time-shifted trade should be included
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trades') in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
 
 def test_weekly_wrong_input(default_conf, update, ticker, mocker) -> None:
@@ -547,7 +525,7 @@ def test_weekly_wrong_input(default_conf, update, ticker, mocker) -> None:
     # Try invalid data
     msg_mock.reset_mock()
     freqtradebot.state = State.RUNNING
-    # /daily -2
+    # /weekly -3
     context = MagicMock()
     context.args = ["-3"]
     telegram._weekly(update=update, context=context)
@@ -617,6 +595,7 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     context.args = []
     telegram._monthly(update=update, context=context)
     assert msg_mock.call_count == 1
+    # Default to 6 months
     assert 'Monthly Profit over the last 6 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     assert current_month in msg_mock.call_args_list[0][0][0]
@@ -639,35 +618,19 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
         trade.close_date = datetime.utcnow()
         trade.is_open = False
 
-    # Make like the first trade was open and closed more than 6 months ago
-    trades[0].open_date = datetime.utcnow() - relativedelta(months=6, days=5)
-    trades[0].close_date = datetime.utcnow() - relativedelta(months=6, days=3)
-
-    # /monthly
-    # By default, the 6 previous months are shown
-    # So the previous modified trade should be excluded from the stats
+    # /monthly 12
     context = MagicMock()
-    context.args = []
-    telegram._monthly(update=update, context=context)
-    # assert str('  0.00012434 BTC') in msg_mock.call_args_list[0][0][0]
-    # assert str('  1.865 USD') in msg_mock.call_args_list[0][0][0]
-    # assert str('  2 trades') in msg_mock.call_args_list[0][0][0]
-
-    # The time-shifted trade should not appear
-    assert str('  0.00006217 BTC') not in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') not in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trades') not in msg_mock.call_args_list[0][0][0]
-
-    # Reset msg_mock
-    msg_mock.reset_mock()
-    context.args = ["8"]
+    context.args = ["12"]
     telegram._monthly(update=update, context=context)
     assert msg_mock.call_count == 1
+    assert 'Monthly Profit over the last 12 months</b>:' in msg_mock.call_args_list[0][0][0]
+    assert str('  0.00018651 BTC') in msg_mock.call_args_list[0][0][0]
+    assert str('  2.798 USD') in msg_mock.call_args_list[0][0][0]
+    assert str('  3 trades') in msg_mock.call_args_list[0][0][0]
 
-    # Now, the time-shifted trade should be included
-    assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
-    assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
-    assert str('  1 trades') in msg_mock.call_args_list[0][0][0]
+    # The one-digit months should contain a zero, Eg: September 2021 = "2021-09"
+    # Since we loaded the last 12 months, any month should appear
+    assert str('-09') in msg_mock.call_args_list[0][0][0]
 
 
 def test_monthly_wrong_input(default_conf, update, ticker, mocker) -> None:
@@ -682,7 +645,7 @@ def test_monthly_wrong_input(default_conf, update, ticker, mocker) -> None:
     # Try invalid data
     msg_mock.reset_mock()
     freqtradebot.state = State.RUNNING
-    # /daily -2
+    # /monthly -3
     context = MagicMock()
     context.args = ["-3"]
     telegram._monthly(update=update, context=context)
