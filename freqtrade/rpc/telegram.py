@@ -492,7 +492,7 @@ class Telegram(RPCHandler):
                   f"{day['fiat_value']:.3f} {stats['fiat_display_currency']}",
                   f"{day['trade_count']} trades"] for day in stats['data']],
                 headers=[
-                    'Month',
+                    'Day',
                     f'Profit {stake_cur}',
                     f'Profit {fiat_disp_cur}',
                     'Trades',
@@ -531,13 +531,14 @@ class Telegram(RPCHandler):
                   f"{week['fiat_value']:.3f} {stats['fiat_display_currency']}",
                   f"{week['trade_count']} trades"] for week in stats['data']],
                 headers=[
-                    'Week',
+                    'Monday',
                     f'Profit {stake_cur}',
                     f'Profit {fiat_disp_cur}',
                     'Trades',
                 ],
                 tablefmt='simple')
-            message = f'<b>Weekly Profit over the last {timescale} weeks</b>:\n<pre>{stats_tab}</pre>'
+            message = f'<b>Weekly Profit over the last {timescale} weeks ' \
+                      f'(starting from Monday)</b>:\n<pre>{stats_tab}</pre> '
             self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
                            callback_path="update_weekly", query=update.callback_query)
         except RPCException as e:
@@ -576,7 +577,8 @@ class Telegram(RPCHandler):
                     'Trades',
                 ],
                 tablefmt='simple')
-            message = f'<b>Monthly Profit over the last {timescale} months</b>:\n<pre>{stats_tab}</pre>'
+            message = f'<b>Monthly Profit over the last {timescale} months' \
+                      f'</b>:\n<pre>{stats_tab}</pre> '
             self._send_msg(message, parse_mode=ParseMode.HTML, reload_able=True,
                            callback_path="update_monthly", query=update.callback_query)
         except RPCException as e:
