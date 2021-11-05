@@ -312,7 +312,6 @@ Return the balance of all crypto-currency your have on the exchange.
 Per default `/daily` will return the 7 last days. The example below if for `/daily 3`:
 
 > **Daily Profit over the last 3 days:**
-
 ```
 Day         Profit BTC      Profit USD
 ----------  --------------  ------------
@@ -327,7 +326,6 @@ Per default `/weekly` will return the 8 last weeks, including the current week. 
 from Monday. The example below if for `/weekly 3`:
 
 > **Weekly Profit over the last 3 weeks (starting from Monday):**
-
 ```
 Monday         Profit BTC      Profit USD
 ----------  --------------  ------------
@@ -342,7 +340,6 @@ Per default `/monthly` will return the 6 last months, including the current mont
 if for `/monthly 3`:
 
 > **Monthly Profit over the last 3 months:**
-
 ```
 Month         Profit BTC      Profit USD
 ----------  --------------  ------------
