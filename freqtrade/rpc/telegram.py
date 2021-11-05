@@ -177,6 +177,7 @@ class Telegram(RPCHandler):
         callbacks = [
             CallbackQueryHandler(self._status_table, pattern='update_status_table'),
             CallbackQueryHandler(self._daily, pattern='update_daily'),
+            CallbackQueryHandler(self._weekly, pattern='update_weekly'),
             CallbackQueryHandler(self._monthly, pattern='update_monthly'),
             CallbackQueryHandler(self._profit, pattern='update_profit'),
             CallbackQueryHandler(self._balance, pattern='update_balance'),
