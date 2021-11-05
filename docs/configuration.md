@@ -37,6 +37,15 @@ Using this scheme, all configuration settings will also be available as environm
 
 Please note that Environment variables will overwrite corresponding settings in your configuration, but command line Arguments will always win.
 
+Common example:
+
+```
+FREQTRADE__TELEGRAM__CHAT_ID=<telegramchatid>
+FREQTRADE__TELEGRAM__TOKEN=<telegramToken>
+FREQTRADE__EXCHANGE__KEY=<yourExchangeKey>
+FREQTRADE__EXCHANGE__SECRET=<yourExchangeSecret>
+```
+
 !!! Note
     Environment variables detected are logged at startup - so if you can't find why a value is not what you think it should be based on the configuration, make sure it's not loaded from an environment variable.
 
