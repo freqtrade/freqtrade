@@ -4,12 +4,12 @@ This module contains class to define a RPC communications
 import logging
 from abc import abstractmethod
 from datetime import date, datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
 from math import isnan
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import arrow
 import psutil
+from dateutil.relativedelta import relativedelta
 from numpy import NAN, inf, int64, mean
 from pandas import DataFrame
 
@@ -294,13 +294,14 @@ class RPC:
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
         today = datetime.utcnow().date()
+        first_iso_day_of_week = today - timedelta(days=today.weekday())  # Monday
         profit_weeks: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
 
         for week in range(0, timescale):
-            profitweek = today - timedelta(weeks=week)
+            profitweek = first_iso_day_of_week - timedelta(weeks=week)
             trades = Trade.get_trades(trade_filter=[
                 Trade.is_open.is_(False),
                 Trade.close_date >= profitweek,
@@ -335,14 +336,14 @@ class RPC:
     def _rpc_monthly_profit(
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        today = datetime.utcnow().date()
+        first_day_of_month = datetime.utcnow().date().replace(day=1)
         profit_months: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException('timescale must be an integer greater than 0')
 
         for month in range(0, timescale):
-            profitmonth = today - relativedelta(months=month)
+            profitmonth = first_day_of_month - relativedelta(months=month)
             trades = Trade.get_trades(trade_filter=[
                 Trade.is_open.is_(False),
                 Trade.close_date >= profitmonth,
@@ -357,7 +358,7 @@ class RPC:
 
         data = [
             {
-                'date': key,
+                'date': f"{key.year}-{key.month}",
                 'abs_profit': value["amount"],
                 'fiat_value': self._fiat_converter.convert_amount(
                     value['amount'],
