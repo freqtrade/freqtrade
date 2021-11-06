@@ -920,6 +920,13 @@ class FreqtradeBot(LoggingMixin):
                                                                  trade=trade,
                                                                  order=order))):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                canceled_count = trade.get_exit_order_count()
+                max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
+                if max_timeouts > 0 and canceled_count >= max_timeouts:
+                    logger.warning(f'Emergencyselling trade {trade}, as the sell order '
+                                   f'timed out {max_timeouts} times.')
+                    self.execute_trade_exit(trade, order.get('price'), sell_reason=SellCheckTuple(
+                        sell_type=SellType.EMERGENCY_SELL))
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -1283,7 +1290,7 @@ class FreqtradeBot(LoggingMixin):
 
         if self.exchange.check_order_canceled_empty(order):
             # Trade has been cancelled on exchange
-            # Handling of this will happen in check_handle_timeout.
+            # Handling of this will happen in check_handle_timedout.
             return True
 
         # Try update amount (binance-fix)
