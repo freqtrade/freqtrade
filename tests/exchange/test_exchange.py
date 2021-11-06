@@ -3290,21 +3290,32 @@ def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
     assert exchange.get_max_leverage(pair, nominal_value) == max_lev
 
 
-@pytest.mark.parametrize('contract_size,funding_rate,mark_price,funding_fee', [
-    (10, 0.0001, 2.0, 0.002),
-    (10, 0.0002, 2.0, 0.004),
-    (10, 0.0002, 2.5, 0.005)
-])
+@pytest.mark.parametrize(
+    'size,funding_rate,mark_price,time_in_ratio,funding_fee,kraken_fee', [
+        (10, 0.0001, 2.0, 1.0, 0.002, 0.002),
+        (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
+        (10, 0.0002, 2.5, None, 0.005, None),
+    ])
 def test__get_funding_fee(
     default_conf,
     mocker,
-    contract_size,
+    size,
     funding_rate,
     mark_price,
-    funding_fee
+    funding_fee,
+    kraken_fee,
+    time_in_ratio
 ):
     exchange = get_patched_exchange(mocker, default_conf)
-    assert exchange._get_funding_fee(contract_size, funding_rate, mark_price) == funding_fee
+    kraken = get_patched_exchange(mocker, default_conf, id="kraken")
+
+    assert exchange._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == funding_fee
+
+    if (kraken_fee is None):
+        with pytest.raises(OperationalException):
+            kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio)
+    else:
+        assert kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == kraken_fee
 
 
 @pytest.mark.parametrize('exchange,d1,d2,funding_times', [
@@ -3536,9 +3547,9 @@ def test_calculate_funding_fees(
     expected_fees
 ):
     '''
-        nominal_value = mark_price * contract_size
+        nominal_value = mark_price * size
         funding_fee = nominal_value * funding_rate
-        contract_size: 30
+        size: 30
             time: 0, mark: 2.77, nominal_value: 83.1, fundRate: -0.000008, fundFee: -0.0006648
             time: 1, mark: 2.73, nominal_value: 81.9, fundRate: -0.000004, fundFee: -0.0003276
             time: 2, mark: 2.74, nominal_value: 82.2, fundRate: 0.000012, fundFee: 0.0009864
@@ -3554,7 +3565,7 @@ def test_calculate_funding_fees(
             time: 12, mark: 2.81, nominal_value: 84.3, fundRate: 0.000072, fundFee: 0.0060696
             time: 13, mark: 2.82, nominal_value: 84.6, fundRate: 0.000097, fundFee: 0.0082062
 
-        contract_size: 50
+        size: 50
             time: 0, mark: 2.77, nominal_value: 138.5, fundRate: -0.000008, fundFee: -0.001108
             time: 1, mark: 2.73, nominal_value: 136.5, fundRate: -0.000004, fundFee: -0.000546
             time: 2, mark: 2.74, nominal_value: 137.0, fundRate: 0.000012, fundFee: 0.001644

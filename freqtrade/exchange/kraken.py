@@ -156,3 +156,25 @@ class Kraken(Exchange):
         if leverage > 1.0:
             params['leverage'] = leverage
         return params
+
+    def _get_funding_fee(
+        self,
+        size: float,
+        funding_rate: float,
+        mark_price: float,
+        time_in_ratio: Optional[float] = None
+    ) -> float:
+        """
+            Calculates a single funding fee
+            :param size: contract size * number of contracts
+            :param mark_price: The price of the asset that the contract is based off of
+            :param funding_rate: the interest rate and the premium
+                - interest rate:
+                - premium: varies by price difference between the perpetual contract and mark price
+            :param time_in_ratio: time elapsed within funding period without position alteration
+        """
+        if not time_in_ratio:
+            raise OperationalException(
+                f"time_in_ratio is required for {self.name}._get_funding_fee")
+        nominal_value = mark_price * size
+        return nominal_value * funding_rate * time_in_ratio

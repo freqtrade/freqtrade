@@ -4702,9 +4702,9 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
 
 def test_update_funding_fees(mocker, default_conf, time_machine, fee):
     '''
-        nominal_value = mark_price * contract_size
+        nominal_value = mark_price * size
         funding_fee = nominal_value * funding_rate
-        contract_size = 123
+        size = 123
         "LTC/BTC"
             time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
             time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792

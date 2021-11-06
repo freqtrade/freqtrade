@@ -1662,19 +1662,21 @@ class Exchange:
 
     def _get_funding_fee(
         self,
-        contract_size: float,
+        size: float,
         funding_rate: float,
         mark_price: float,
+        time_in_ratio: Optional[float] = None
     ) -> float:
         """
             Calculates a single funding fee
-            :param contract_size: The amount/quanity
+            :param size: contract size * number of contracts
             :param mark_price: The price of the asset that the contract is based off of
             :param funding_rate: the interest rate and the premium
                 - interest rate:
                 - premium: varies by price difference between the perpetual contract and mark price
+            :param time_in_ratio: Not used by most exchange classes
         """
-        nominal_value = mark_price * contract_size
+        nominal_value = mark_price * size
         return nominal_value * funding_rate
 
     @retrier
@@ -1812,7 +1814,7 @@ class Exchange:
             funding_rate = funding_rate_history[int(date.timestamp() * 1000)]
             mark_price = mark_price_history[int(date.timestamp() * 1000)]
             fees += self._get_funding_fee(
-                contract_size=amount,
+                size=amount,
                 mark_price=mark_price,
                 funding_rate=funding_rate
             )
