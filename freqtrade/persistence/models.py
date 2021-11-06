@@ -496,8 +496,7 @@ class LocalTrade():
         Get amount of failed exiting orders
         assumes full exits.
         """
-        orders = [o for o in self.orders if o.ft_order_side == 'sell']
-        return len(orders)
+        return len([o for o in self.orders if o.ft_order_side == 'sell'])
 
     def _calc_open_trade_value(self) -> float:
         """
