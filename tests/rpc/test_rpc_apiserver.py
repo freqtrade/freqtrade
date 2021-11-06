@@ -520,7 +520,7 @@ def test_api_locks(botclient):
     assert rc.json()['lock_count'] == 0
 
 
-def test_api_show_config(botclient, mocker):
+def test_api_show_config(botclient):
     ftbot, client = botclient
     patch_get_signal(ftbot)
 
@@ -536,6 +536,8 @@ def test_api_show_config(botclient, mocker):
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
+    assert 'unfilledtimeout' in rc.json()
+    assert 'version' in rc.json()
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):

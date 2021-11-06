@@ -207,7 +207,10 @@ CONF_SCHEMA = {
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergencysell': {
+                    'type': 'string',
+                    'enum': ORDERTYPE_POSSIBILITIES,
+                    'default': 'market'},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
                 'stoploss_on_exchange_interval': {'type': 'number'},
