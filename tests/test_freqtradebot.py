@@ -4718,7 +4718,7 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
             time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
             time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
     '''
-    time_machine.move_to("2021-09-01 00:00:00")
+    time_machine.move_to("2021-09-01 00:00:00 +00:00")
 
     funding_rates = {
         "LTC/BTC": {

@@ -1711,6 +1711,8 @@ class Exchange:
 
     def _get_funding_fee_dates(self, d1: datetime, d2: datetime):
         d1_hours = d1.hour + 1 if self.funding_fee_cutoff(d1) else d1.hour
+        if d1_hours == 24:
+            d1_hours = 0
         d1 = datetime(d1.year, d1.month, d1.day, d1_hours, tzinfo=timezone.utc)
         d2 = datetime(d2.year, d2.month, d2.day, d2.hour, tzinfo=timezone.utc)
 
