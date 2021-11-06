@@ -11,6 +11,7 @@ from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_oh
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.exchange.exchange import market_is_active
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 
@@ -47,11 +48,13 @@ def start_download_data(args: Dict[str, Any]) -> None:
 
     # Init exchange
     exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    markets = [p for p, m in exchange.markets.items() if market_is_active(m)
+               or config.get('include_inactive')]
+    expanded_pairs = expand_pairlist(config['pairs'], markets)
+
     # Manual validations of relevant settings
     if not config['exchange'].get('skip_pair_validation', False):
-        exchange.validate_pairs(config['pairs'])
-    expanded_pairs = expand_pairlist(config['pairs'], list(exchange.markets))
-
+        exchange.validate_pairs(expanded_pairs)
     logger.info(f"About to download pairs: {expanded_pairs}, "
                 f"intervals: {config['timeframes']} to {config['datadir']}")
 
@@ -87,6 +90,41 @@ def start_download_data(args: Dict[str, Any]) -> None:
         if pairs_not_available:
             logger.info(f"Pairs [{','.join(pairs_not_available)}] not available "
                         f"on exchange {exchange.name}.")
+
+
+def start_convert_trades(args: Dict[str, Any]) -> None:
+
+    config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
+
+    timerange = TimeRange()
+
+    # Remove stake-currency to skip checks which are not relevant for datadownload
+    config['stake_currency'] = ''
+
+    if 'pairs' not in config:
+        raise OperationalException(
+            "Downloading data requires a list of pairs. "
+            "Please check the documentation on how to configure this.")
+
+    # Init exchange
+    exchange = ExchangeResolver.load_exchange(config['exchange']['name'], config, validate=False)
+    # Manual validations of relevant settings
+    if not config['exchange'].get('skip_pair_validation', False):
+        exchange.validate_pairs(config['pairs'])
+    expanded_pairs = expand_pairlist(config['pairs'], list(exchange.markets))
+
+    logger.info(f"About to Convert pairs: {expanded_pairs}, "
+                f"intervals: {config['timeframes']} to {config['datadir']}")
+
+    for timeframe in config['timeframes']:
+        exchange.validate_timeframes(timeframe)
+    # Convert downloaded trade data to different timeframes
+    convert_trades_to_ohlcv(
+        pairs=expanded_pairs, timeframes=config['timeframes'],
+        datadir=config['datadir'], timerange=timerange, erase=bool(config.get('erase')),
+        data_format_ohlcv=config['dataformat_ohlcv'],
+        data_format_trades=config['dataformat_trades'],
+    )
 
 
 def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:

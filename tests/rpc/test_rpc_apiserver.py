@@ -95,7 +95,7 @@ def test_api_not_found(botclient):
     assert rc.json() == {"detail": "Not Found"}
 
 
-def test_api_ui_fallback(botclient):
+def test_api_ui_fallback(botclient, mocker):
     ftbot, client = botclient
 
     rc = client_get(client, "/favicon.ico")
@@ -109,9 +109,16 @@ def test_api_ui_fallback(botclient):
     rc = client_get(client, "/something")
     assert rc.status_code == 200
 
-    # Test directory traversal
+    # Test directory traversal without mock
     rc = client_get(client, '%2F%2F%2Fetc/passwd')
     assert rc.status_code == 200
+    # Allow both fallback or real UI
+    assert '`freqtrade install-ui`' in rc.text or '<!DOCTYPE html>' in rc.text
+
+    mocker.patch.object(Path, 'is_file', MagicMock(side_effect=[True, False]))
+    rc = client_get(client, '%2F%2F%2Fetc/passwd')
+    assert rc.status_code == 200
+
     assert '`freqtrade install-ui`' in rc.text
 
 
@@ -563,7 +570,6 @@ def test_api_trades(botclient, mocker, fee, markets):
     assert rc.json()['total_trades'] == 0
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trades")
     assert_response(rc)
@@ -590,7 +596,6 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert rc.json()['detail'] == 'Trade not found.'
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
     assert_response(rc)
@@ -613,10 +618,11 @@ def test_api_delete_trade(botclient, mocker, fee, markets):
     assert_response(rc, 502)
 
     create_mock_trades(fee)
-    Trade.query.session.flush()
+
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
     trades[1].stoploss_order_id = '1234'
+    Trade.commit()
     assert len(trades) > 2
 
     rc = client_delete(client, f"{BASE_URI}/trades/1")
@@ -686,7 +692,6 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-@pytest.mark.usefixtures("init_persistence")
 def test_api_profit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -737,7 +742,6 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
                          }
 
 
-@pytest.mark.usefixtures("init_persistence")
 def test_api_stats(botclient, mocker, ticker, fee, markets,):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -803,7 +807,7 @@ def test_api_performance(botclient, fee):
     trade.close_profit_abs = trade.calc_profit()
 
     Trade.query.session.add(trade)
-    Trade.query.session.flush()
+    Trade.commit()
 
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
@@ -937,7 +941,7 @@ def test_api_blacklist(botclient, mocker):
                      data='{"blacklist": ["XRP/.*"]}')
     assert_response(rc)
     assert rc.json() == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"],
-                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC"],
+                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
                          "length": 4,
                          "method": ["StaticPairList"],
                          "errors": {},
@@ -1269,6 +1273,16 @@ def test_list_available_pairs(botclient):
     assert rc.json()['length'] == 1
     assert rc.json()['pairs'] == ['XRP/ETH']
     assert len(rc.json()['pair_interval']) == 1
+
+
+def test_sysinfo(botclient):
+    ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/sysinfo")
+    assert_response(rc)
+    result = rc.json()
+    assert 'cpu_pct' in result
+    assert 'ram_pct' in result
 
 
 def test_api_backtesting(botclient, mocker, fee, caplog):

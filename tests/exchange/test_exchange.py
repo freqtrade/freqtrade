@@ -275,6 +275,7 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
     (234.43, 4, 0.5, 234.5),
     (234.53, 4, 0.5, 235.0),
     (0.891534, 4, 0.0001, 0.8916),
+    (64968.89, 4, 0.01, 64968.89),
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
@@ -293,7 +294,7 @@ def test_price_to_precision(default_conf, mocker, price, precision_mode, precisi
                  PropertyMock(return_value=precision_mode))
 
     pair = 'ETH/BTC'
-    assert pytest.approx(exchange.price_to_precision(pair, price)) == expected
+    assert exchange.price_to_precision(pair, price) == expected
 
 
 @pytest.mark.parametrize("price,precision_mode,precision,expected", [
@@ -1831,6 +1832,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('ask', 20, 19, 10, 0.3, 17),  # Between ask and last
     ('ask', 5, 6, 10, 1.0, 5),  # last bigger than ask
     ('ask', 5, 6, 10, 0.5, 5),  # last bigger than ask
+    ('ask', 20, 19, 10, None, 20),  # ask_last_balance missing
     ('ask', 10, 20, None, 0.5, 10),  # last not available - uses ask
     ('ask', 4, 5, None, 0.5, 4),  # last not available - uses ask
     ('ask', 4, 5, None, 1, 4),  # last not available - uses ask
@@ -1841,6 +1843,7 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     ('bid', 21, 20, 10, 0.7, 13),  # Between bid and last
     ('bid', 21, 20, 10, 0.3, 17),  # Between bid and last
     ('bid', 6, 5, 10, 1.0, 5),  # last bigger than bid
+    ('bid', 21, 20, 10, None, 20),  # ask_last_balance missing
     ('bid', 6, 5, 10, 0.5, 5),  # last bigger than bid
     ('bid', 21, 20, None, 0.5, 20),  # last not available - uses bid
     ('bid', 6, 5, None, 0.5, 5),  # last not available - uses bid
@@ -1850,7 +1853,10 @@ def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
 def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
                       last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
-    default_conf['bid_strategy']['ask_last_balance'] = last_ab
+    if last_ab is None:
+        del default_conf['bid_strategy']['ask_last_balance']
+    else:
+        default_conf['bid_strategy']['ask_last_balance'] = last_ab
     default_conf['bid_strategy']['price_side'] = side
     exchange = get_patched_exchange(mocker, default_conf)
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
@@ -1875,6 +1881,7 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('bid', 12.0, 11.2, 10.5, 1.0, 11.2),  # Last smaller than bid - uses bid
     ('bid', 12.0, 11.2, 10.5, 0.5, 11.2),  # Last smaller than bid - uses bid
     ('bid', 0.003, 0.002, 0.005, 0.0, 0.002),
+    ('bid', 0.003, 0.002, 0.005, None, 0.002),
     ('ask', 12.0, 11.0, 12.5, 0.0, 12.0),  # full ask side
     ('ask', 12.0, 11.0, 12.5, 1.0, 12.5),  # full last side
     ('ask', 12.0, 11.0, 12.5, 0.5, 12.25),  # between bid and lat
@@ -1885,13 +1892,15 @@ def test_get_buy_rate(mocker, default_conf, caplog, side, ask, bid,
     ('ask', 10.11, 11.2, 11.0, 0.0, 10.11),
     ('ask', 0.001, 0.002, 11.0, 0.0, 0.001),
     ('ask', 0.006, 1.0, 11.0, 0.0, 0.006),
+    ('ask', 0.006, 1.0, 11.0, None, 0.006),
 ])
 def test_get_sell_rate(default_conf, mocker, caplog, side, bid, ask,
                        last, last_ab, expected) -> None:
     caplog.set_level(logging.DEBUG)
 
     default_conf['ask_strategy']['price_side'] = side
-    default_conf['ask_strategy']['bid_last_balance'] = last_ab
+    if last_ab is not None:
+        default_conf['ask_strategy']['bid_last_balance'] = last_ab
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker',
                  return_value={'ask': ask, 'bid': bid, 'last': last})
     pair = "ETH/BTC"
@@ -2735,7 +2744,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         (['LTC'], ['NONEXISTENT'], False, False,
          []),
     ])
-def test_get_markets(default_conf, mocker, markets,
+def test_get_markets(default_conf, mocker, markets_static,
                      base_currencies, quote_currencies, pairs_only, active_only,
                      expected_keys):
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -2743,7 +2752,7 @@ def test_get_markets(default_conf, mocker, markets,
                           _load_async_markets=MagicMock(),
                           validate_pairs=MagicMock(),
                           validate_timeframes=MagicMock(),
-                          markets=PropertyMock(return_value=markets))
+                          markets=PropertyMock(return_value=markets_static))
     ex = Exchange(default_conf)
     pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
     assert sorted(pairs.keys()) == sorted(expected_keys)

@@ -113,6 +113,13 @@ git checkout develop
 
 You may later switch between branches at any time with the `git checkout stable`/`git checkout develop` commands.
 
+??? Note "Install from pypi"
+    An alternative way to install Freqtrade is from [pypi](https://pypi.org/project/freqtrade/). The downside is that this method requires ta-lib to be correctly installed beforehand, and is therefore currently not the recommended way to install Freqtrade.
+
+    ``` bash
+    pip install freqtrade
+    ```
+
 ------
 
 ## Script Installation

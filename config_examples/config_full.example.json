@@ -84,12 +84,8 @@
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "password": "",
-        "ccxt_config": {"enableRateLimit": true},
-        "ccxt_async_config": {
-            "enableRateLimit": true,
-            "rateLimit": 500,
-            "aiohttp_trust_env": false
-        },
+        "ccxt_config": {},
+        "ccxt_async_config": {},
         "pair_whitelist": [
             "ALGO/BTC",
             "ATOM/BTC",
