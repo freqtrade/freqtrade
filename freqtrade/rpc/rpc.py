@@ -293,7 +293,7 @@ class RPC:
     def _rpc_weekly_profit(
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         first_iso_day_of_week = today - timedelta(days=today.weekday())  # Monday
         profit_weeks: Dict[date, Dict] = {}
 
@@ -336,7 +336,7 @@ class RPC:
     def _rpc_monthly_profit(
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        first_day_of_month = datetime.utcnow().date().replace(day=1)
+        first_day_of_month = datetime.now(timezone.utc).date().replace(day=1)
         profit_months: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
