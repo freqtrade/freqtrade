@@ -8,6 +8,7 @@ Supported exchanges:
 
 """
 import random
+import time
 from abc import abstractmethod
 from bs4 import BeautifulSoup
 from cachetools import cached
@@ -106,12 +107,13 @@ class BinanceAnnouncement(AnnouncementMixin):
                 raise TemporaryError(f"Binance url ({url}) is not available. Original Exception: {e}")
 
             if not history:
-                while 'Age' in response.headers:
+                while 'Age' in (response.headers or {}):
                     try:
                         url = self.get_api_url(random.randint(1, 100), page_size)
                         response = get(url, headers=headers)
                     except Exception:
                         break
+                    time.sleep(0.5)
 
             if response.status_code != 200:
                 raise TemporaryError(f"Invalid response from url: {url}.\n"
@@ -120,8 +122,8 @@ class BinanceAnnouncement(AnnouncementMixin):
 
             logger.info("Updating from Binance...")
             updated_list = []
-
-            for article in response.json()['data']['articles']:
+            articles = response.json()['data']['articles'] or []
+            for article in articles:
                 article_link = self.get_announcement_url(article['code'])
                 article_text = article['title']
 
