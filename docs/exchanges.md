@@ -1,6 +1,6 @@
 # Exchange-specific Notes
 
-This page combines common gotchas and informations which are exchange-specific and most likely don't apply to other exchanges.
+This page combines common gotchas and Information which are exchange-specific and most likely don't apply to other exchanges.
 
 ## Exchange configuration
 
