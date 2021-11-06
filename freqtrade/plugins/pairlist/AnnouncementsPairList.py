@@ -7,6 +7,7 @@ Supported exchanges:
 - Binance
 
 """
+import random
 from abc import abstractmethod
 from bs4 import BeautifulSoup
 from cachetools import cached
@@ -83,6 +84,9 @@ class BinanceAnnouncement(AnnouncementMixin):
         self._refresh_period = refresh_period or self.REFRESH_PERIOD
 
     def update_announcements(self, page_number=1, page_size=10, history=False) -> pd.DataFrame:
+        headers = {
+            "Cache-Control": "max-age=0",
+        }
         response = None
         url = self.get_api_url(page_number, page_size)
 
@@ -97,9 +101,17 @@ class BinanceAnnouncement(AnnouncementMixin):
             df = self.get_df()
 
             try:
-                response = get(url)
+                response = get(url, headers=headers)
             except Exception as e:
                 raise TemporaryError(f"Binance url ({url}) is not available. Original Exception: {e}")
+
+            if not history:
+                while 'Age' in response.headers:
+                    try:
+                        url = self.get_api_url(random.randint(1, 100), page_size)
+                        response = get(url, headers=headers)
+                    except Exception:
+                        break
 
             if response.status_code != 200:
                 raise TemporaryError(f"Invalid response from url: {url}.\n"
@@ -326,7 +338,9 @@ class AnnouncementsPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new whitelist
         """
-        df = self.pair_exchange.get_df() if self.STATIC else self.pair_exchange.update_announcements()
+        df = self.pair_exchange.get_df() if self.STATIC else self.pair_exchange.update_announcements(
+            page_size=random.randint(1, 100)  # randomize page size to avoid binance caching document page
+        )
         df = df[df[self.pair_exchange.ANNOUNCEMENT_COL] > (datetime.now(tz=pytz.utc) - timedelta(hours=self._hours))]
         if df.empty:
             return []
