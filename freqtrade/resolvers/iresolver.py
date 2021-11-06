@@ -69,6 +69,8 @@ class IResolver:
             logger.warning(f"Could not import {module_path} due to '{err}'")
             if enum_failed:
                 return iter([None])
+        except Exception as e:
+            raise OperationalException(f"Error loading {module_path}: {e}") from e
 
         valid_objects_gen = (
             (obj, inspect.getsource(module)) for
