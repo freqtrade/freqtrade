@@ -251,7 +251,7 @@ class RPC:
     def _rpc_daily_profit(
             self, timescale: int,
             stake_currency: str, fiat_display_currency: str) -> Dict[str, Any]:
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         profit_days: Dict[date, Dict] = {}
 
         if not (isinstance(timescale, int) and timescale > 0):
