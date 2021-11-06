@@ -175,6 +175,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
+| `/weekly <n>` | Shows profit or loss per week, over the last n weeks (n defaults to 8)
+| `/monthly <n>` | Shows profit or loss per month, over the last n months (n defaults to 6)
 | `/stats` | Shows Wins / losses by Sell reason as well as Avg. holding durations for buys and sells
 | `/whitelist` | Show the current whitelist
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
@@ -307,8 +309,7 @@ Return the balance of all crypto-currency your have on the exchange.
 
 ### /daily <n>
 
-Per default `/daily` will return the 7 last days.
-The example below if for `/daily 3`:
+Per default `/daily` will return the 7 last days. The example below if for `/daily 3`:
 
 > **Daily Profit over the last 3 days:**
 ```
@@ -317,6 +318,34 @@ Day         Profit BTC      Profit USD
 2018-01-03  0.00224175 BTC  29,142 USD
 2018-01-02  0.00033131 BTC   4,307 USD
 2018-01-01  0.00269130 BTC  34.986 USD
+```
+
+### /weekly <n>
+
+Per default `/weekly` will return the 8 last weeks, including the current week. Each week starts
+from Monday. The example below if for `/weekly 3`:
+
+> **Weekly Profit over the last 3 weeks (starting from Monday):**
+```
+Monday         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01-03  0.00224175 BTC  29,142 USD
+2017-12-27  0.00033131 BTC   4,307 USD
+2017-12-20  0.00269130 BTC  34.986 USD
+```
+
+### /monthly <n>
+
+Per default `/monthly` will return the 6 last months, including the current month. The example below
+if for `/monthly 3`:
+
+> **Monthly Profit over the last 3 months:**
+```
+Month         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01     0.00224175 BTC  29,142 USD
+2017-12     0.00033131 BTC   4,307 USD
+2017-11     0.00269130 BTC  34.986 USD
 ```
 
 ### /whitelist

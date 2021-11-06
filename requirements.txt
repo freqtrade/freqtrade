@@ -42,3 +42,5 @@ colorama==0.4.4
 # Building config files interactively
 questionary==1.10.0
 prompt-toolkit==3.0.21
+# Extensions to datetime library
+python-dateutil==2.8.2
