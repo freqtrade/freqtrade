@@ -1080,12 +1080,130 @@ class Trade(_DECL_BASE, LocalTrade):
         return [
             {
                 'pair': pair,
-                'profit': profit,
+                'profit_ratio': profit,
+                'profit': round(profit * 100, 2),  # Compatibility mode
+                'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
             for pair, profit, profit_abs, count in pair_rates
         ]
+
+    @staticmethod
+    def get_buy_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on buy tag performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+
+        filters = [Trade.is_open.is_(False)]
+        if(pair is not None):
+            filters.append(Trade.pair == pair)
+
+        buy_tag_perf = Trade.query.with_entities(
+            Trade.buy_tag,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.buy_tag) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return [
+            {
+                'buy_tag': buy_tag if buy_tag is not None else "Other",
+                'profit_ratio': profit,
+                'profit_pct': round(profit * 100, 2),
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for buy_tag, profit, profit_abs, count in buy_tag_perf
+        ]
+
+    @staticmethod
+    def get_sell_reason_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on sell reason performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+
+        filters = [Trade.is_open.is_(False)]
+        if(pair is not None):
+            filters.append(Trade.pair == pair)
+
+        sell_tag_perf = Trade.query.with_entities(
+            Trade.sell_reason,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.sell_reason) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return [
+            {
+                'sell_reason': sell_reason if sell_reason is not None else "Other",
+                'profit_ratio': profit,
+                'profit_pct': round(profit * 100, 2),
+                'profit_abs': profit_abs,
+                'count': count
+            }
+            for sell_reason, profit, profit_abs, count in sell_tag_perf
+        ]
+
+    @staticmethod
+    def get_mix_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Returns List of dicts containing all Trades, based on buy_tag + sell_reason performance
+        Can either be average for all pairs or a specific pair provided
+        NOTE: Not supported in Backtesting.
+        """
+
+        filters = [Trade.is_open.is_(False)]
+        if(pair is not None):
+            filters.append(Trade.pair == pair)
+
+        mix_tag_perf = Trade.query.with_entities(
+            Trade.id,
+            Trade.buy_tag,
+            Trade.sell_reason,
+            func.sum(Trade.close_profit).label('profit_sum'),
+            func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
+            func.count(Trade.pair).label('count')
+        ).filter(*filters)\
+            .group_by(Trade.id) \
+            .order_by(desc('profit_sum_abs')) \
+            .all()
+
+        return_list: List[Dict] = []
+        for id, buy_tag, sell_reason, profit, profit_abs, count in mix_tag_perf:
+            buy_tag = buy_tag if buy_tag is not None else "Other"
+            sell_reason = sell_reason if sell_reason is not None else "Other"
+
+            if(sell_reason is not None and buy_tag is not None):
+                mix_tag = buy_tag + " " + sell_reason
+                i = 0
+                if not any(item["mix_tag"] == mix_tag for item in return_list):
+                    return_list.append({'mix_tag': mix_tag,
+                                        'profit': profit,
+                                        'profit_abs': profit_abs,
+                                        'count': count})
+                else:
+                    while i < len(return_list):
+                        if return_list[i]["mix_tag"] == mix_tag:
+                            return_list[i] = {
+                                'mix_tag': mix_tag,
+                                'profit': profit + return_list[i]["profit"],
+                                'profit_abs': profit_abs + return_list[i]["profit_abs"],
+                                'count': 1 + return_list[i]["count"]}
+                        i += 1
+
+        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in return_list]
+        return return_list
 
     @staticmethod
     def get_best_pair(start_date: datetime = datetime.fromtimestamp(0)):

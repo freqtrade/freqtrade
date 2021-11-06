@@ -530,6 +530,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalType.ENTER_SHORT.value] = 0
             dataframe[SignalType.EXIT_SHORT.value] = 0
             dataframe[SignalTagType.ENTER_TAG.value] = None
+            dataframe[SignalTagType.EXIT_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -643,7 +644,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         timeframe: str,
         dataframe: DataFrame,
         is_short: bool = None
-    ) -> Tuple[bool, bool]:
+    ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current exit signal based based on the buy/short or sell/exit_short
         columns of the dataframe.
@@ -657,19 +658,21 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
         if latest is None:
-            return False, False
+            return False, False, None
 
         if is_short:
             enter = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
             exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+
         else:
             enter = latest[SignalType.ENTER_LONG.value] == 1
             exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
+        exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
 
         logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) "
                      f"enter={enter} exit={exit_}")
 
-        return enter, exit_
+        return enter, exit_, exit_tag
 
     def get_entry_signal(
         self,

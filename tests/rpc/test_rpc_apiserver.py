@@ -820,8 +820,10 @@ def test_api_performance(botclient, fee):
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
     assert len(rc.json()) == 2
-    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_abs': 0.01872279},
-                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_abs': -0.1150375}]
+    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_pct': 7.61,
+                          'profit_ratio': 0.07609203, 'profit_abs': 0.01872279},
+                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_pct': -5.57,
+                          'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
 
 # TODO-lev: @pytest.mark.parametrize('is_short,side', [

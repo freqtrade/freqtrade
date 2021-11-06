@@ -42,7 +42,7 @@ position for a trade. Be patient!
 ### I have made 12 trades already, why is my total profit negative?
 
 I understand your disappointment but unfortunately 12 trades is just
-not enough to say anything. If you run backtesting, you can see that our
+not enough to say anything. If you run backtesting, you can see that the
 current algorithm does leave you on the plus side, but that is after
 thousands of trades and even there, you will be left with losses on
 specific coins that you have traded tens if not hundreds of times. We
@@ -92,6 +92,18 @@ On low volume pairs, this is a rather common occurrence.
 If this happens for all pairs in the pairlist, this might indicate a recent exchange downtime. Please check your exchange's public channels for details.
 
 Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a `_` - and is aligned with how exchanges usually represent 0 volume candles.
+
+### I'm getting "Outdated history for pair xxx" in the log
+
+The bot is trying to tell you that it got an outdated last candle (not the last complete candle).
+As a consequence, Freqtrade will not enter a trade for this pair - as trading on old information is usually not what is desired.
+
+This warning can point to one of the below problems:
+
+* Exchange downtime -> Check your exchange status page / blog / twitter feed for details.
+* Wrong system time -> Ensure your system-time is correct.
+* Barely traded pair -> Check the pair on the exchange webpage, look at the timeframe your strategy uses. If the pair does not have any volume in some candles (usually visualized with a "volume 0" bar, and a "_" as candle), this pair did not have any trades in this timeframe. These pairs should ideally be avoided, as they can cause problems with order-filling.
+* API problem -> API returns wrong data (this only here for completeness, and should not happen with supported exchanges).
 
 ### I'm getting the "RESTRICTED_MARKET" message in the log
 

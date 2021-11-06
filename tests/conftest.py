@@ -215,7 +215,8 @@ def patch_get_signal(
     exit_long=False,
     enter_short=False,
     exit_short=False,
-    enter_tag: Optional[str] = None
+    enter_tag: Optional[str] = None,
+    exit_tag: Optional[str] = None,
 ) -> None:
     """
     :param mocker: mocker to patch IStrategy class
@@ -237,9 +238,9 @@ def patch_get_signal(
 
     def patched_get_exit_signal(pair, timeframe, dataframe, is_short):
         if is_short:
-            return enter_short, exit_short
+            return enter_short, exit_short, exit_tag
         else:
-            return enter_long, exit_long
+            return enter_long, exit_long, exit_tag
 
     # returns (enter, exit)
     freqtrade.strategy.get_exit_signal = patched_get_exit_signal
@@ -247,7 +248,7 @@ def patch_get_signal(
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, is_short: bool, use_db: bool = True):
+def create_mock_trades(fee, is_short: bool = False, use_db: bool = True):
     """
     Create some fake trades ...
     """

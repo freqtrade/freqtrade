@@ -579,6 +579,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         0,  # exit_hsort
         '',  # Long Signal Name
         '',  # Short Signal Name
+        '',  # Exit Signal Name
     ]
 
     trade = backtesting._enter_trade(pair, row=row, direction='long')
@@ -596,27 +597,29 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
         0,  # exit_short
         '',  # long Signal Name
         '',  # Short Signal Name
+        '',  # Exit Signal Name
+
     ]
     row_detail = pd.DataFrame(
         [
             [
                 pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=0, tzinfo=timezone.utc),
-                200, 200.1, 197, 199, 1, 0, 0, 0, '', '',
+                200, 200.1, 197, 199, 1, 0, 0, 0, '', '', '',
             ], [
                 pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=1, tzinfo=timezone.utc),
-                199, 199.7, 199, 199.5, 0, 0, 0, 0, '', ''
+                199, 199.7, 199, 199.5, 0, 0, 0, 0, '', '', '',
             ], [
                 pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=2, tzinfo=timezone.utc),
-                199.5, 200.8, 199, 200.9, 0, 0, 0, 0, '', ''
+                199.5, 200.8, 199, 200.9, 0, 0, 0, 0, '', '', '',
             ], [
                 pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=3, tzinfo=timezone.utc),
-                200.5, 210.5, 193, 210.5, 0, 0, 0, 0, '', ''  # ROI sell (?)
+                200.5, 210.5, 193, 210.5, 0, 0, 0, 0, '', '', '',  # ROI sell (?)
             ], [
                 pd.Timestamp(year=2020, month=1, day=1, hour=5, minute=4, tzinfo=timezone.utc),
-                200, 200.1, 193, 199, 0, 0, 0, 0, '', ''
+                200, 200.1, 193, 199, 0, 0, 0, 0, '', '', '',
             ],
         ], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                    'enter_short', 'exit_short', 'long_tag', 'short_tag']
+                    'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag']
     )
 
     # No data available.
@@ -631,7 +634,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     # Assign empty ... no result.
     backtesting.detail_data[pair] = pd.DataFrame(
         [], columns=['date', 'open', 'high', 'low', 'close', 'enter_long', 'exit_long',
-                     'enter_short', 'exit_short', 'long_tag', 'short_tag'])
+                     'enter_short', 'exit_short', 'long_tag', 'short_tag', 'exit_tag'])
 
     res = backtesting._get_sell_trade_entry(trade, row)
     assert res is None
@@ -695,7 +698,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
-         'buy_tag': [None, None],
+         'buy_tag': [None, None]
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]

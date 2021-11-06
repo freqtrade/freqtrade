@@ -84,10 +84,18 @@ def ask_user_config() -> Dict[str, Any]:
             else val
         },
         {
+            "type": "select",
+            "name": "timeframe_in_config",
+            "message": "Tim",
+            "choices": ["Have the strategy define timeframe.", "Override in configuration."]
+        },
+        {
             "type": "text",
             "name": "timeframe",
             "message": "Please insert your desired timeframe (e.g. 5m):",
             "default": "5m",
+            "when": lambda x: x["timeframe_in_config"] == 'Override in configuration.'
+
         },
         {
             "type": "text",
@@ -107,6 +115,7 @@ def ask_user_config() -> Dict[str, Any]:
                 "ftx",
                 "kucoin",
                 "gateio",
+                "okex",
                 Separator(),
                 "other",
             ],
@@ -134,7 +143,7 @@ def ask_user_config() -> Dict[str, Any]:
             "type": "password",
             "name": "exchange_key_password",
             "message": "Insert Exchange API Key password",
-            "when": lambda x: not x['dry_run'] and x['exchange_name'] == 'kucoin'
+            "when": lambda x: not x['dry_run'] and x['exchange_name'] in ('kucoin', 'okex')
         },
         {
             "type": "confirm",
