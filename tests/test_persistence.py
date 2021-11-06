@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades, log_has, log_has_re
+from tests.conftest import create_mock_trades, create_mock_trades_usdt, log_has, log_has_re
 
 
 def test_init_create_session(default_conf):
@@ -1188,6 +1188,14 @@ def test_get_best_pair(fee):
     assert len(res) == 2
     assert res[0] == 'XRP/BTC'
     assert res[1] == 0.01
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_get_exit_order_count(fee):
+
+    create_mock_trades_usdt(fee)
+    trade = Trade.get_trades([Trade.pair == 'ETC/USDT']).first()
+    assert trade.get_exit_order_count() == 1
 
 
 @pytest.mark.usefixtures("init_persistence")

@@ -156,6 +156,7 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'number', 'minimum': 1},
                 'sell': {'type': 'number', 'minimum': 1},
+                'exit_timeout_count': {'type': 'number', 'minimum': 0, 'default': 0},
                 'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },

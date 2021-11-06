@@ -491,6 +491,13 @@ class LocalTrade():
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
+    def get_exit_order_count(self) -> int:
+        """
+        Get amount of failed exiting orders
+        assumes full exits.
+        """
+        return len([o for o in self.orders if o.ft_order_side == 'sell'])
+
     def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
@@ -775,7 +782,7 @@ class Trade(_DECL_BASE, LocalTrade):
             return Trade.query
 
     @staticmethod
-    def get_open_order_trades():
+    def get_open_order_trades() -> List['Trade']:
         """
         Returns all open trades
         NOTE: Not supported in Backtesting.
