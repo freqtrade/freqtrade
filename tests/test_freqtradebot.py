@@ -4760,21 +4760,12 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
 
     mocker.patch(
         'freqtrade.exchange.Exchange._get_mark_price_history',
-        side_effect=[
-            mark_prices["LTC/BTC"],
-            mark_prices["ETH/BTC"],
-            mark_prices["ETC/BTC"],
-            mark_prices["XRP/BTC"],
-        ]
+        side_effect=lambda pair, since: mark_prices[pair]
     )
+
     mocker.patch(
         'freqtrade.exchange.Exchange.get_funding_rate_history',
-        side_effect=[
-            funding_rates["LTC/BTC"],
-            funding_rates["ETH/BTC"],
-            funding_rates["ETC/BTC"],
-            funding_rates["XRP/BTC"],
-        ]
+        side_effect=lambda pair, since: funding_rates[pair]
     )
     patch_RPCManager(mocker)
     patch_exchange(mocker)
