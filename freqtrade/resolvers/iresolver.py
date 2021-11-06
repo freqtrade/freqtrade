@@ -70,7 +70,9 @@ class IResolver:
             if enum_failed:
                 return iter([None])
         except Exception as e:
-            raise OperationalException(f"Error loading {module_path}: {e}") from e
+            raise OperationalException(
+                f"Error loading {module_path}: {e.__class__.__name__}{e}"
+            ) from e
 
         valid_objects_gen = (
             (obj, inspect.getsource(module)) for
