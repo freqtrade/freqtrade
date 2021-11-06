@@ -365,9 +365,11 @@ class LocalTrade():
 
     def set_isolated_liq(
         self,
-        isolated_liq: Optional[float],
-        wallet_balance: Optional[float],
-        current_price: Optional[float]
+        isolated_liq: Optional[float] = None,
+        wallet_balance: Optional[float] = None,
+        current_price: Optional[float] = None,
+        maintenance_amt: Optional[float] = None,
+        mm_rate: Optional[float] = None,
     ):
         """
         Method you should use to set self.liquidation price.
@@ -389,9 +391,9 @@ class LocalTrade():
                 mm_ex_1=0.0,
                 upnl_ex_1=0.0,
                 position=self.amount * current_price,
-                wallet_balance=wallet_balance,
-                # TODO-lev: maintenance_amt,
-                # TODO-lev: mm_rate,
+                wallet_balance=self.amount / self.leverage,     # TODO-lev: Is this correct?
+                maintenance_amt=maintenance_amt,
+                mm_rate=mm_rate,
 
             )
         if isolated_liq is None:

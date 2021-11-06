@@ -16,7 +16,6 @@ def liquidation_price(
     upnl_ex_1: Optional[float],
     maintenance_amt: Optional[float],
     position: Optional[float],
-    entry_price: Optional[float],
     mm_rate: Optional[float]
 ) -> Optional[float]:
     if trading_mode == TradingMode.SPOT:
@@ -29,17 +28,33 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if None in [wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, entry_price,
-                    mm_rate]:
+        if (
+            wallet_balance is None or
+            mm_ex_1 is None or
+            upnl_ex_1 is None or
+            maintenance_amt is None or
+            position is None or
+            mm_rate is None
+        ):
             raise OperationalException(
                 f"Parameters wallet_balance, mm_ex_1, upnl_ex_1, "
-                f"maintenance_amt, position, entry_price, mm_rate "
+                f"maintenance_amt, position, mm_rate "
                 f"is required by liquidation_price when exchange is {exchange_name.lower()}")
 
         # Suppress incompatible type "Optional[float]"; expected "float" as the check exists above.
-        return binance(open_rate, is_short, leverage, trading_mode, collateral,  # type: ignore
-                       wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt,  # type: ignore
-                       position, entry_price, mm_rate)  # type: ignore
+        return binance(
+            open_rate=open_rate,
+            is_short=is_short,
+            leverage=leverage,
+            trading_mode=trading_mode,
+            collateral=collateral,  # type: ignore
+            wallet_balance=wallet_balance,
+            mm_ex_1=mm_ex_1,
+            upnl_ex_1=upnl_ex_1,
+            maintenance_amt=maintenance_amt,  # type: ignore
+            position=position,
+            mm_rate=mm_rate,
+        )  # type: ignore
     elif exchange_name.lower() == "kraken":
         return kraken(open_rate, is_short, leverage, trading_mode, collateral)
     elif exchange_name.lower() == "ftx":
@@ -76,12 +91,10 @@ def binance(
     upnl_ex_1: float,
     maintenance_amt: float,
     position: float,
-    entry_price: float,
     mm_rate: float,
 ):
     """
         Calculates the liquidation price on Binance
-        :param open_rate: open_rate
         :param is_short: true or false
         :param leverage: leverage in float
         :param trading_mode: spot, margin, futures
@@ -100,7 +113,7 @@ def binance(
 
         :param position: Absolute value of position size (one-way mode)
 
-        :param entry_price: Entry Price of position (one-way mode)
+        :param open_rate: Entry Price of position (one-way mode)
 
         :param mm_rate: Maintenance margin rate of position (one-way mode)
 
@@ -112,7 +125,7 @@ def binance(
     cum_b = maintenance_amt
     side_1 = -1 if is_short else 1
     position = abs(position)
-    ep1 = entry_price
+    ep1 = open_rate
     mmr_b = mm_rate
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
@@ -189,6 +202,17 @@ def ftx(
 
 
 if __name__ == '__main__':
-    print(liquidation_price("binance", 0.0, False, 1, TradingMode.FUTURES, Collateral.ISOLATED,
-                            1535443.01, 356512.508,
-                            0.0, 16300.000, 109.488, 32481.980, 0.025))
+    print(liquidation_price(
+        "binance",
+        32481.980,
+        False,
+        1,
+        TradingMode.FUTURES,
+        Collateral.ISOLATED,
+        1535443.01,
+        356512.508,
+        0.0,
+        16300.000,
+        109.488,
+        0.025
+    ))

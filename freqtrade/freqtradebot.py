@@ -21,6 +21,7 @@ from freqtrade.enums import (Collateral, RPCMessageType, RunMode, SellType, Sign
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.leverage import liquidation_price
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, cleanup_db, init_db
@@ -609,24 +610,32 @@ class FreqtradeBot(LoggingMixin):
         interest_rate = 0.0
         isolated_liq = None
 
-        # TODO-lev: Uncomment once liq and interest merged in
         # if TradingMode == TradingMode.MARGIN:
         #     interest_rate = self.exchange.get_interest_rate(
         #         pair=pair,
         #         open_rate=open_rate,
         #         is_short=is_short
         #     )
+        maintenance_amt, mm_rate = self.exchange.get_mm_amt_rate(pair, amount)
 
-        #     if self.collateral_type == Collateral.ISOLATED:
-
-        #         isolated_liq = liquidation_price(
-        #             exchange_name=self.exchange.name,
-        #             trading_mode=self.trading_mode,
-        #             open_rate=open_rate,
-        #             amount=amount,
-        #             leverage=leverage,
-        #             is_short=is_short
-        #         )
+        if self.collateral_type == Collateral.ISOLATED:
+            if self.config['dry_run']:
+                isolated_liq = liquidation_price(
+                    exchange_name=self.exchange.name,
+                    open_rate=open_rate,
+                    is_short=is_short,
+                    leverage=leverage,
+                    trading_mode=self.trading_mode,
+                    collateral=Collateral.ISOLATED,
+                    mm_ex_1=0.0,
+                    upnl_ex_1=0.0,
+                    position=amount * open_rate,
+                    wallet_balance=amount/leverage,  # TODO-lev: Is this correct?
+                    maintenance_amt=maintenance_amt,
+                    mm_rate=mm_rate,
+                )
+            else:
+                isolated_liq = self.exchange.get_liquidation_price(pair)
 
         return interest_rate, isolated_liq
 
