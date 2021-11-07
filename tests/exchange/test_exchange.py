@@ -941,10 +941,24 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     default_conf['startup_candle_count'] = 20
     ex = Exchange(default_conf)
     assert ex
-    default_conf['startup_candle_count'] = 600
+    # assumption is that the exchange provides 500 candles per call.s
+    assert ex.validate_required_startup_candles(200, '5m') == 1
+    assert ex.validate_required_startup_candles(499, '5m') == 1
+    assert ex.validate_required_startup_candles(600, '5m') == 2
+    assert ex.validate_required_startup_candles(501, '5m') == 2
+    assert ex.validate_required_startup_candles(499, '5m') == 1
+    assert ex.validate_required_startup_candles(1000, '5m') == 3
+    assert ex.validate_required_startup_candles(2499, '5m') == 5
+    assert log_has_re(r'Using 5 calls to get OHLCV. This.*', caplog)
 
-    with pytest.raises(OperationalException, match=r'This strategy requires 600.*'):
+    with pytest.raises(OperationalException, match=r'This strategy requires 2500.*'):
+        ex.validate_required_startup_candles(2500, '5m')
+
+    # Ensure the same also happens on init
+    default_conf['startup_candle_count'] = 6000
+    with pytest.raises(OperationalException, match=r'This strategy requires 6000.*'):
         Exchange(default_conf)
+
 
 
 def test_exchange_has(default_conf, mocker):
@@ -1632,12 +1646,14 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     exchange._api_async.fetch_ohlcv.reset_mock()
 
+    exchange.required_candle_call_count = 2
     res = exchange.refresh_latest_ohlcv(pairs)
     assert len(res) == len(pairs)
 
     assert log_has(f'Refreshing candle (OHLCV) data for {len(pairs)} pairs', caplog)
     assert exchange._klines
-    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert exchange._api_async.fetch_ohlcv.call_count == 4
+    exchange._api_async.fetch_ohlcv.reset_mock()
     for pair in pairs:
         assert isinstance(exchange.klines(pair), DataFrame)
         assert len(exchange.klines(pair)) > 0
@@ -1653,7 +1669,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
     assert len(res) == len(pairs)
 
-    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
     assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
                    f"timeframe {pairs[0][1]} ...",
                    caplog)

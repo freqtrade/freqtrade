@@ -155,8 +155,8 @@ class Exchange:
                 self.validate_pairs(config['exchange']['pair_whitelist'])
             self.validate_ordertypes(config.get('order_types', {}))
             self.validate_order_time_in_force(config.get('order_time_in_force', {}))
-            self.validate_required_startup_candles(config.get('startup_candle_count', 0),
-                                                   config.get('timeframe', ''))
+            self.required_candle_call_count = self.validate_required_startup_candles(
+                config.get('startup_candle_count', 0), config.get('timeframe', ''))
 
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = exchange_config.get(
@@ -477,10 +477,23 @@ class Exchange:
         Requires a grace-period of 5 candles - so a startup-period up to 494 is allowed by default.
         """
         candle_limit = self.ohlcv_candle_limit(timeframe)
-        if startup_candles + 5 > candle_limit:
+        # Require one more candle - to account for the still open candle.
+        candle_count = startup_candles + 1
+        # Allow 5 calls to the exchange per pair
+        required_candle_call_count = int(
+            (candle_count / candle_limit) + (0 if candle_count % candle_limit == 0 else 1))
+
+        if required_candle_call_count > 5:
+            # Only allow 5 calls per pair to somewhat limit the impact
             raise OperationalException(
-                f"This strategy requires {startup_candles} candles to start. "
-                f"{self.name} only provides {candle_limit - 5} for {timeframe}.")
+                f"This strategy requires {startup_candles} candles to start, which is more than 5x "
+                f"the amount of candles {self.name} provides for {timeframe}.")
+
+        if required_candle_call_count > 1:
+            logger.warning(f"Using {required_candle_call_count} calls to get OHLCV. "
+                           f"This can result in slower operations for the bot. Please check "
+                           f"if you really need {startup_candles} candles for your strategy")
+        return required_candle_call_count
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -1283,11 +1296,10 @@ class Exchange:
         for pair, timeframe in set(pair_list):
             if ((pair, timeframe) not in self._klines
                     or self._now_is_time_to_refresh(pair, timeframe)):
-                call_count = self._ft_has.get('ohlcv_candle_call_count', 1)
-                if not since_ms and call_count > 1:
+                if not since_ms and self.required_candle_call_count > 1:
                     # Multiple calls for one pair - to get more history
                     one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
-                    move_to = one_call * call_count
+                    move_to = one_call * self.required_candle_call_count
                     now = timeframe_to_next_date(timeframe)
                     since_ms = int((now - timedelta(seconds=move_to // 1000)).timestamp() * 1000)
 
