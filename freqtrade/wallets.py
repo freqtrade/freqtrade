@@ -250,12 +250,13 @@ class Wallets:
                 logger.warning("Minimum stake amount > available balance.")
             return 0
         if min_stake_amount is not None and stake_amount < min_stake_amount:
-            stake_amount = min_stake_amount
             if self._log:
                 logger.info(
                     f"Stake amount for pair {pair} is too small "
                     f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
                 )
+            stake_amount = min_stake_amount
+
         if stake_amount > max_stake_amount:
             stake_amount = max_stake_amount
             if self._log:
