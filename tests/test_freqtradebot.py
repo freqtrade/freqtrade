@@ -4780,7 +4780,7 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
     trades = Trade.get_open_trades()
     for trade in trades:
         assert trade.funding_fees == sum([
-            123 *
+            trade.amount *
             mark_prices[trade.pair][time] *
             funding_rates[trade.pair][time] for time in mark_prices[trade.pair].keys()
         ])

@@ -275,7 +275,7 @@ class FreqtradeBot(LoggingMixin):
                         trade.pair,
                         trade.amount,
                         trade.open_date
-                    ) + (trade.funding_fees or 0.0)
+                    )
                 else:
                     funding_fees = self.exchange.get_funding_fees_from_exchange(
                         trade.pair,
