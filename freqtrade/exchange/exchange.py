@@ -1768,9 +1768,10 @@ class Exchange:
             history = {}
             for candle in candles:
                 # TODO-lev: Round down to the nearest funding fee time, incase a timestamp ever has a delay of > 1s
-                seconds = int(candle[0] / 1000)  # The millisecond timestamps can be delayed ~20ms
+                # The millisecond timestamps can be delayed ~20ms
+                milliseconds = int(candle[0] / 1000) * 1000
                 opening_mark_price = candle[1]
-                history[seconds] = opening_mark_price
+                history[milliseconds] = opening_mark_price
             return history
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1806,16 +1807,16 @@ class Exchange:
             close_date = datetime.now(timezone.utc)
         funding_rate_history = self.get_funding_rate_history(
             pair,
-            int(open_date.timestamp())
+            int(open_date.timestamp()) * 1000
         )
         mark_price_history = self._get_mark_price_history(
             pair,
-            int(open_date.timestamp())
+            int(open_date.timestamp()) * 1000
         )
         funding_fee_dates = self._get_funding_fee_dates(open_date, close_date)
         for date in funding_fee_dates:
-            funding_rate = funding_rate_history[int(date.timestamp())]
-            mark_price = mark_price_history[int(date.timestamp())]
+            funding_rate = funding_rate_history[int(date.timestamp()) * 1000]
+            mark_price = mark_price_history[int(date.timestamp()) * 1000]
             fees += self._get_funding_fee(
                 size=amount,
                 mark_price=mark_price,
@@ -1841,7 +1842,7 @@ class Exchange:
                 f"therefore, dry-run/backtesting for {self.name} is currently unavailable"
             )
 
-        # TODO-lev: Gateio has a max limit into the past of 333 days
+        # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
         try:
             funding_history: Dict = {}
             response = self._api.fetch_funding_rate_history(
@@ -1850,7 +1851,7 @@ class Exchange:
                 since=since
             )
             for fund in response:
-                funding_history[fund['timestamp']] = fund['fundingRate']
+                funding_history[int(fund['timestamp'] / 1000) * 1000] = fund['fundingRate']
             return funding_history
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
