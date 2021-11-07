@@ -1767,12 +1767,18 @@ class Exchange:
             )
             history = {}
             for candle in candles:
-                # TODO: Round down to the nearest funding fee time,
-                # incase a timestamp ever has a delay of > 1s
-                milliseconds = int(candle[0] / 1000) * 1000
+                d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
                 # The millisecond timestamps can be delayed ~20ms
+                time = datetime(
+                    d.year,
+                    d.month,
+                    d.day,
+                    d.hour,
+                    tzinfo=timezone.utc
+                ).timestamp() * 1000
                 opening_mark_price = candle[1]
-                history[milliseconds] = opening_mark_price
+                history[time] = opening_mark_price
             return history
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1855,7 +1861,17 @@ class Exchange:
                 since=since
             )
             for fund in response:
-                funding_history[int(fund['timestamp'] / 1000) * 1000] = fund['fundingRate']
+                d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
+                # The millisecond timestamps can be delayed ~20ms
+                time = datetime(
+                    d.year,
+                    d.month,
+                    d.day,
+                    d.hour,
+                    tzinfo=timezone.utc
+                ).timestamp() * 1000
+                funding_history[time] = fund['fundingRate']
             return funding_history
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
