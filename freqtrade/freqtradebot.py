@@ -198,17 +198,17 @@ class FreqtradeBot(LoggingMixin):
         """
         open_trades = Trade.get_trades([Trade.is_open.is_(True)]).all()
 
-        if len(open_trades) != 0:
-            if self.state != State.RELOAD_CONFIG:
-                msg = {
-                    'type': RPCMessageType.WARNING,
-                    'status':  f"{len(open_trades)} open trades active.\n\n"
-                               f"Handle these trades manually on {self.exchange.name}, "
-                               f"or '/start' the bot again and use '/stopbuy' "
-                               f"to handle open trades gracefully. \n"
-                               f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}",
-                }
-                self.rpc.send_msg(msg)
+        if len(open_trades) != 0 and self.state != State.RELOAD_CONFIG:
+            msg = {
+                'type': RPCMessageType.WARNING,
+                'status':
+                    f"{len(open_trades)} open trades active.\n\n"
+                    f"Handle these trades manually on {self.exchange.name}, "
+                    f"or '/start' the bot again and use '/stopbuy' "
+                    f"to handle open trades gracefully. \n"
+                    f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}",
+            }
+            self.rpc.send_msg(msg)
 
     def _refresh_active_whitelist(self, trades: List[Trade] = []) -> List[str]:
         """
