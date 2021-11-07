@@ -1712,10 +1712,9 @@ class Exchange:
         return d.minute > 0 or d.second > 0
 
     def _get_funding_fee_dates(self, d1: datetime, d2: datetime):
-        d1_hours = d1.hour + 1 if self.funding_fee_cutoff(d1) else d1.hour
-        if d1_hours == 24:
-            d1_hours = 0
-        d1 = datetime(d1.year, d1.month, d1.day, d1_hours, tzinfo=timezone.utc)
+        d1 = datetime(d1.year, d1.month, d1.day, d1.hour, tzinfo=timezone.utc)
+        if self.funding_fee_cutoff(d1):
+            d1 += timedelta(hours=1)
         d2 = datetime(d2.year, d2.month, d2.day, d2.hour, tzinfo=timezone.utc)
 
         results = []
@@ -1768,7 +1767,10 @@ class Exchange:
             )
             history = {}
             for candle in candles:
-                history[candle[0]] = candle[1]
+                # TODO-lev: Round down to the nearest funding fee time, incase a timestamp ever has a delay of > 1s
+                seconds = int(candle[0] / 1000)  # The millisecond timestamps can be delayed ~20ms
+                opening_mark_price = candle[1]
+                history[seconds] = opening_mark_price
             return history
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1804,15 +1806,16 @@ class Exchange:
             close_date = datetime.now(timezone.utc)
         funding_rate_history = self.get_funding_rate_history(
             pair,
-            int(open_date.timestamp() * 1000)
+            int(open_date.timestamp())
         )
         mark_price_history = self._get_mark_price_history(
             pair,
-            int(open_date.timestamp() * 1000)
+            int(open_date.timestamp())
         )
-        for date in self._get_funding_fee_dates(open_date, close_date):
-            funding_rate = funding_rate_history[int(date.timestamp() * 1000)]
-            mark_price = mark_price_history[int(date.timestamp() * 1000)]
+        funding_fee_dates = self._get_funding_fee_dates(open_date, close_date)
+        for date in funding_fee_dates:
+            funding_rate = funding_rate_history[int(date.timestamp())]
+            mark_price = mark_price_history[int(date.timestamp())]
             fees += self._get_funding_fee(
                 size=amount,
                 mark_price=mark_price,
