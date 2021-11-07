@@ -960,7 +960,6 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
         Exchange(default_conf)
 
 
-
 def test_exchange_has(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf)
     assert not exchange.exchange_has('ASDFASDF')
