@@ -3519,6 +3519,7 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     ('binance', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0006647999999999999),
     ('binance', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
     ('binance', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
+    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
     # ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
     # ('kraken', "2021-09-01 01:00:14", "2021-09-01 08:00:00",  30.0, -0.0008289),
@@ -3532,6 +3533,7 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     ('gateio', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
     ('gateio', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235000000000001),
+    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
     ('ftx', "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.0016680000000000002),
 ])
@@ -3596,6 +3598,7 @@ def test_calculate_funding_fees(
 
 @pytest.mark.parametrize('name,expected_fees_8,expected_fees_10,expected_fees_12', [
     ('binance', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
+    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
     # ('kraken', -0.0014937, -0.0014937, 0.0045759),
     ('ftx', 0.0010008000000000003, 0.0021084, 0.0146691),
     ('gateio', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
