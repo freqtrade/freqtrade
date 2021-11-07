@@ -34,7 +34,12 @@ class HDF5DataHandler(IDataHandler):
                 if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
+    def ohlcv_get_pairs(
+        cls,
+        datadir: Path,
+        timeframe: str,
+        candle_type: Optional[str] = ""
+    ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -43,12 +48,23 @@ class HDF5DataHandler(IDataHandler):
         :return: List of Pairs
         """
 
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.h5)', p.name)
+        if candle_type:
+            candle_type = f"-{candle_type}"
+        else:
+            candle_type = ""
+
+        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle_type + '.h5)', p.name)
                 for p in datadir.glob(f"*{timeframe}.h5")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
-    def ohlcv_store(self, pair: str, timeframe: str, data: pd.DataFrame) -> None:
+    def ohlcv_store(
+        self,
+        pair: str,
+        timeframe: str,
+        data: pd.DataFrame,
+        candle_type: Optional[str] = ""
+    ) -> None:
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
@@ -59,7 +75,7 @@ class HDF5DataHandler(IDataHandler):
         key = self._pair_ohlcv_key(pair, timeframe)
         _data = data.copy()
 
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
 
         ds = pd.HDFStore(filename, mode='a', complevel=9, complib='blosc')
         ds.put(key, _data.loc[:, self._columns], format='table', data_columns=['date'])
@@ -67,7 +83,8 @@ class HDF5DataHandler(IDataHandler):
         ds.close()
 
     def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None) -> pd.DataFrame:
+                    timerange: Optional[TimeRange] = None,
+                    candle_type: Optional[str] = "") -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversion to a Pandas dataframe.
@@ -80,7 +97,12 @@ class HDF5DataHandler(IDataHandler):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         key = self._pair_ohlcv_key(pair, timeframe)
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(
+            self._datadir,
+            pair,
+            timeframe,
+            candle_type=candle_type
+        )
 
         if not filename.exists():
             return pd.DataFrame(columns=self._columns)
@@ -99,20 +121,26 @@ class HDF5DataHandler(IDataHandler):
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = "") -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         if filename.exists():
             filename.unlink()
             return True
         return False
 
-    def ohlcv_append(self, pair: str, timeframe: str, data: pd.DataFrame) -> None:
+    def ohlcv_append(
+        self,
+        pair: str,
+        timeframe: str,
+        data: pd.DataFrame,
+        candle_type: Optional[str] = ""
+    ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
@@ -201,9 +229,17 @@ class HDF5DataHandler(IDataHandler):
         return f"{pair}/trades"
 
     @classmethod
-    def _pair_data_filename(cls, datadir: Path, pair: str, timeframe: str) -> Path:
+    def _pair_data_filename(
+        cls,
+        datadir: Path,
+        pair: str,
+        timeframe: str,
+        candle_type: Optional[str] = ""
+    ) -> Path:
         pair_s = misc.pair_to_filename(pair)
-        filename = datadir.joinpath(f'{pair_s}-{timeframe}.h5')
+        if candle_type:
+            candle_type = f"-{candle_type}"
+        filename = datadir.joinpath(f'{pair_s}-{timeframe}{candle_type}.h5')
         return filename
 
     @classmethod

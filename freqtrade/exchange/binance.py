@@ -207,15 +207,15 @@ class Binance(Exchange):
         since_ms: int,
         is_new_pair: bool,
         raise_: bool = False,
-        price: Optional[str] = None
+        candle_type: Optional[str] = ""
     ) -> Tuple[str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
-        :param price: "mark" if retrieving the mark price cnadles
+        :param candle_type: "mark" if retrieving the mark price cnadles
         """
         if is_new_pair:
-            x = await self._async_get_candle_history(pair, timeframe, 0, price)
+            x = await self._async_get_candle_history(pair, timeframe, 0, candle_type)
             if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[2][0][0]
@@ -228,7 +228,7 @@ class Binance(Exchange):
             since_ms=since_ms,
             is_new_pair=is_new_pair,
             raise_=raise_,
-            price=price
+            candle_type=candle_type
         )
 
     def funding_fee_cutoff(self, open_date: datetime):

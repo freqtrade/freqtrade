@@ -35,7 +35,12 @@ class JsonDataHandler(IDataHandler):
                 if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
+    def ohlcv_get_pairs(
+        cls,
+        datadir: Path,
+        timeframe: str,
+        candle_type: Optional[str] = ""
+    ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -43,13 +48,23 @@ class JsonDataHandler(IDataHandler):
         :param timeframe: Timeframe to search pairs for
         :return: List of Pairs
         """
+        if candle_type:
+            candle_type = f"-{candle_type}"
+        else:
+            candle_type = ""
 
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.json)', p.name)
+        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle_type + '.json)', p.name)
                 for p in datadir.glob(f"*{timeframe}.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
-    def ohlcv_store(self, pair: str, timeframe: str, data: DataFrame) -> None:
+    def ohlcv_store(
+        self,
+        pair: str,
+        timeframe: str,
+        data: DataFrame,
+        candle_type: Optional[str] = ""
+    ) -> None:
         """
         Store data in json format "values".
             format looks as follows:
@@ -59,7 +74,12 @@ class JsonDataHandler(IDataHandler):
         :param data: Dataframe containing OHLCV data
         :return: None
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(
+            self._datadir,
+            pair,
+            timeframe,
+            candle_type
+        )
         _data = data.copy()
         # Convert date to int
         _data['date'] = _data['date'].view(np.int64) // 1000 // 1000
@@ -71,6 +91,7 @@ class JsonDataHandler(IDataHandler):
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
+                    candle_type: Optional[str] = ""
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
@@ -83,7 +104,7 @@ class JsonDataHandler(IDataHandler):
                         all data where possible.
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
         if not filename.exists():
             return DataFrame(columns=self._columns)
         try:
@@ -100,20 +121,26 @@ class JsonDataHandler(IDataHandler):
                                        infer_datetime_format=True)
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str) -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = "") -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
         :return: True when deleted, false if file did not exist.
         """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
         if filename.exists():
             filename.unlink()
             return True
         return False
 
-    def ohlcv_append(self, pair: str, timeframe: str, data: DataFrame) -> None:
+    def ohlcv_append(
+        self,
+        pair: str,
+        timeframe: str,
+        data: DataFrame,
+        candle_type: Optional[str] = ""
+    ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
@@ -187,9 +214,18 @@ class JsonDataHandler(IDataHandler):
         return False
 
     @classmethod
-    def _pair_data_filename(cls, datadir: Path, pair: str, timeframe: str) -> Path:
+    def _pair_data_filename(
+        cls,
+        datadir: Path,
+        pair: str,
+        timeframe: str,
+        candle_type: Optional[str] = ""
+    ) -> Path:
         pair_s = misc.pair_to_filename(pair)
-        filename = datadir.joinpath(f'{pair_s}-{timeframe}.{cls._get_file_extension()}')
+        if candle_type:
+            candle_type = f"-{candle_type}"
+        filename = datadir.joinpath(
+            f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
         return filename
 
     @classmethod

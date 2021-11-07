@@ -5,7 +5,7 @@ import itertools
 import logging
 from datetime import datetime, timezone
 from operator import itemgetter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
-                       fill_missing: bool = True, drop_incomplete: bool = True) -> DataFrame:
+                       fill_missing: bool = True, drop_incomplete: bool = True,
+                       candle_type: Optional[str] = "") -> DataFrame:
     """
     Converts a list with candle (OHLCV) data (in format returned by ccxt.fetch_ohlcv)
     to a Dataframe
@@ -42,12 +43,14 @@ def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
                           'volume': 'float'})
     return clean_ohlcv_dataframe(df, timeframe, pair,
                                  fill_missing=fill_missing,
-                                 drop_incomplete=drop_incomplete)
+                                 drop_incomplete=drop_incomplete,
+                                 candle_type=candle_type)
 
 
 def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
                           fill_missing: bool = True,
-                          drop_incomplete: bool = True) -> DataFrame:
+                          drop_incomplete: bool = True,
+                          candle_type: Optional[str] = "") -> DataFrame:
     """
     Cleanse a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
@@ -75,12 +78,17 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
         logger.debug('Dropping last candle')
 
     if fill_missing:
-        return ohlcv_fill_up_missing_data(data, timeframe, pair)
+        return ohlcv_fill_up_missing_data(data, timeframe, pair, candle_type)
     else:
         return data
 
 
-def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) -> DataFrame:
+def ohlcv_fill_up_missing_data(
+    dataframe: DataFrame,
+    timeframe: str,
+    pair: str,
+    candle_type: Optional[str] = ""
+) -> DataFrame:
     """
     Fills up missing data with 0 volume rows,
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
@@ -261,7 +269,13 @@ def convert_trades_format(config: Dict[str, Any], convert_from: str, convert_to:
             src.trades_purge(pair=pair)
 
 
-def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: str, erase: bool):
+def convert_ohlcv_format(
+    config: Dict[str, Any],
+    convert_from: str,
+    convert_to: str,
+    erase: bool,
+    candle_type: Optional[str] = ""
+):
     """
     Convert OHLCV from one format to another
     :param config: Config dictionary
@@ -279,8 +293,11 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
         config['pairs'] = []
         # Check timeframes or fall back to timeframe.
         for timeframe in timeframes:
-            config['pairs'].extend(src.ohlcv_get_pairs(config['datadir'],
-                                                       timeframe))
+            config['pairs'].extend(src.ohlcv_get_pairs(
+                config['datadir'],
+                timeframe,
+                candle_type=candle_type
+            ))
     logger.info(f"Converting candle (OHLCV) data for {config['pairs']}")
 
     for timeframe in timeframes:
@@ -289,10 +306,16 @@ def convert_ohlcv_format(config: Dict[str, Any], convert_from: str, convert_to: 
                                   timerange=None,
                                   fill_missing=False,
                                   drop_incomplete=False,
-                                  startup_candles=0)
-            logger.info(f"Converting {len(data)} candles for {pair}")
+                                  startup_candles=0,
+                                  candle_type=candle_type)
+            logger.info(f"Converting {len(data)} {candle_type} candles for {pair}")
             if len(data) > 0:
-                trg.ohlcv_store(pair=pair, timeframe=timeframe, data=data)
+                trg.ohlcv_store(
+                    pair=pair,
+                    timeframe=timeframe,
+                    data=data,
+                    candle_type=candle_type
+                )
                 if erase and convert_from != convert_to:
                     logger.info(f"Deleting source data for {pair} / {timeframe}")
-                    src.ohlcv_purge(pair=pair, timeframe=timeframe)
+                    src.ohlcv_purge(pair=pair, timeframe=timeframe, candle_type=candle_type)

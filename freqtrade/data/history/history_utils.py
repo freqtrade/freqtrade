@@ -161,7 +161,8 @@ def _download_pair_history(pair: str, *,
                            process: str = '',
                            new_pairs_days: int = 30,
                            data_handler: IDataHandler = None,
-                           timerange: Optional[TimeRange] = None) -> bool:
+                           timerange: Optional[TimeRange] = None,
+                           candle_type: Optional[str] = "") -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -198,25 +199,28 @@ def _download_pair_history(pair: str, *,
                                                since_ms=since_ms if since_ms else
                                                arrow.utcnow().shift(
                                                    days=-new_pairs_days).int_timestamp * 1000,
-                                               is_new_pair=data.empty
+                                               is_new_pair=data.empty,
+                                               candle_type=candle_type,
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
-                                           fill_missing=False, drop_incomplete=True)
+                                           fill_missing=False, drop_incomplete=True,
+                                           candle_type=candle_type)
         if data.empty:
             data = new_dataframe
         else:
             # Run cleaning again to ensure there were no duplicate candles
             # Especially between existing and new data.
             data = clean_ohlcv_dataframe(data.append(new_dataframe), timeframe, pair,
-                                         fill_missing=False, drop_incomplete=False)
+                                         fill_missing=False, drop_incomplete=False,
+                                         candle_type=candle_type)
 
         logger.debug("New  Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
         logger.debug("New End: %s",
                      f"{data.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
 
-        data_handler.ohlcv_store(pair, timeframe, data=data)
+        data_handler.ohlcv_store(pair, timeframe, data=data, candle_type=candle_type)
         return True
 
     except Exception:
@@ -229,7 +233,8 @@ def _download_pair_history(pair: str, *,
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
                                 datadir: Path, timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
-                                data_format: str = None) -> List[str]:
+                                data_format: str = None,
+                                candle_type: Optional[str] = "") -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -245,7 +250,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
         for timeframe in timeframes:
 
             if erase:
-                if data_handler.ohlcv_purge(pair, timeframe):
+                if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
                     logger.info(
                         f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
@@ -254,7 +259,8 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
                                    timerange=timerange, data_handler=data_handler,
-                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days)
+                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days,
+                                   candle_type=candle_type)
     return pairs_not_available
 
 
@@ -353,10 +359,16 @@ def refresh_backtest_trades_data(exchange: Exchange, pairs: List[str], datadir: 
     return pairs_not_available
 
 
-def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
-                            datadir: Path, timerange: TimeRange, erase: bool = False,
-                            data_format_ohlcv: str = 'json',
-                            data_format_trades: str = 'jsongz') -> None:
+def convert_trades_to_ohlcv(
+    pairs: List[str],
+    timeframes: List[str],
+    datadir: Path,
+    timerange: TimeRange,
+    erase: bool = False,
+    data_format_ohlcv: str = 'json',
+    data_format_trades: str = 'jsongz',
+    candle_type: Optional[str] = ""
+) -> None:
     """
     Convert stored trades data to ohlcv data
     """
@@ -367,12 +379,12 @@ def convert_trades_to_ohlcv(pairs: List[str], timeframes: List[str],
         trades = data_handler_trades.trades_load(pair)
         for timeframe in timeframes:
             if erase:
-                if data_handler_ohlcv.ohlcv_purge(pair, timeframe):
+                if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
                     logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
             try:
                 ohlcv = trades_to_ohlcv(trades, timeframe)
                 # Store ohlcv
-                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv)
+                data_handler_ohlcv.ohlcv_store(pair, timeframe, data=ohlcv, candle_type=candle_type)
             except ValueError:
                 logger.exception(f'Could not convert {pair} to OHLCV.')
 
