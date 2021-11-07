@@ -106,7 +106,7 @@ class RPC:
         val = {
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
-            'stake_currency_decimals':  decimals_per_coin(config['stake_currency']),
+            'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
             'stake_amount': config['stake_amount'],
             'available_capital': config.get('available_capital'),
             'max_open_trades': (config['max_open_trades']
@@ -683,9 +683,35 @@ class RPC:
         Shows a performance statistic from finished trades
         """
         pair_rates = Trade.get_overall_performance()
-        # Round and convert to %
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in pair_rates]
+
         return pair_rates
+
+    def _rpc_buy_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Handler for buy tag performance.
+        Shows a performance statistic from finished trades
+        """
+        buy_tags = Trade.get_buy_tag_performance(pair)
+
+        return buy_tags
+
+    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Handler for sell reason performance.
+        Shows a performance statistic from finished trades
+        """
+        sell_reasons = Trade.get_sell_reason_performance(pair)
+
+        return sell_reasons
+
+    def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Handler for mix tag (buy_tag + sell_reason) performance.
+        Shows a performance statistic from finished trades
+        """
+        mix_tags = Trade.get_mix_tag_performance(pair)
+
+        return mix_tags
 
     def _rpc_count(self) -> Dict[str, float]:
         """ Returns the number of trades running """

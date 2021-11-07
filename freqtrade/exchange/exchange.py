@@ -1887,7 +1887,7 @@ def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = Non
 
 
 def is_exchange_officially_supported(exchange_name: str) -> bool:
-    return exchange_name in ['bittrex', 'binance', 'kraken']
+    return exchange_name in ['bittrex', 'binance', 'kraken', 'ftx', 'gateio', 'okex']
 
 
 def ccxt_exchanges(ccxt_module: CcxtModuleType = None) -> List[str]:

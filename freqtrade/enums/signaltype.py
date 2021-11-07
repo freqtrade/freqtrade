@@ -16,6 +16,7 @@ class SignalTagType(Enum):
     Enum for signal columns
     """
     ENTER_TAG = "enter_tag"
+    EXIT_TAG = "exit_tag"
 
 
 class SignalDirection(Enum):

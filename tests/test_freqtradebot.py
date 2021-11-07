@@ -236,7 +236,7 @@ def test_edge_overrides_stoploss(limit_order, fee, caplog, mocker,
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
     if not ignore_strat_sl:
-        assert log_has('Exit for NEO/BTC detected. Reason: stop_loss', caplog)
+        assert log_has_re('Exit for NEO/BTC detected. Reason: stop_loss.*', caplog)
         assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
@@ -458,7 +458,6 @@ def test_create_trade_no_signal(default_conf_usdt, fee, mocker) -> None:
     )
     default_conf_usdt['stake_amount'] = 10
     freqtrade = FreqtradeBot(default_conf_usdt)
-    # patch_get_signal(freqtrade, enter_long=False)
     patch_get_signal(freqtrade, enter_long=False, exit_long=False)
 
     Trade.query = MagicMock()
@@ -1800,6 +1799,15 @@ def test_update_trade_state(
     freqtrade.update_trade_state(trade, '123')
 
     assert log_has_re('Found open order for.*', caplog)
+    limit_buy_order_usdt_new = deepcopy(limit_order)
+    limit_buy_order_usdt_new['filled'] = 0.0
+    limit_buy_order_usdt_new['status'] = 'canceled'
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt_new)
+    res = freqtrade.update_trade_state(trade, '123')
+    # Cancelled empty
+    assert res is True
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -1956,7 +1964,8 @@ def test_handle_trade(
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    patch_get_signal(freqtrade, enter_long=False, exit_short=is_short, exit_long=not is_short)
+    patch_get_signal(freqtrade, enter_long=False, exit_short=is_short,
+                     exit_long=not is_short, exit_tag='sell_signal1')
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == exit_order['id']
 
@@ -1967,6 +1976,7 @@ def test_handle_trade(
     assert trade.close_profit == close_profit
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
+    assert trade.sell_reason == 'sell_signal1'
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -2851,6 +2861,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'limit': 2.0 if is_short else 2.2,
         'amount': amt,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': open_rate,
         'current_rate': 2.01 if is_short else 2.3,
         'profit_amount': 0.29554455 if is_short else 5.685,
@@ -2906,6 +2917,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'limit': 2.2 if is_short else 2.01,
         'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.02 if is_short else 2.0,
         'current_rate': 2.2 if is_short else 2.0,
         'profit_amount': -5.65990099 if is_short else -0.00075,
@@ -2980,6 +2992,7 @@ def test_execute_trade_exit_custom_exit_price(
         'limit': limit,
         'amount': amount,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': open_rate,
         'current_rate': current_rate,
         'profit_amount': profit_amount,
@@ -3043,6 +3056,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'limit': 2.02 if is_short else 1.98,
         'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.02 if is_short else 2.0,
         'current_rate': 2.2 if is_short else 2.0,
         'profit_amount': -0.3 if is_short else -0.8985,
@@ -3295,6 +3309,7 @@ def test_execute_trade_exit_market_order(
         'limit': limit,
         'amount': round(amount, 9),
         'order_type': 'market',
+        'buy_tag': None,
         'open_rate': open_rate,
         'current_rate': current_rate,
         'profit_amount': profit_amount,

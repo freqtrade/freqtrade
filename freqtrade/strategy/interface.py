@@ -65,9 +65,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     _populate_fun_len: int = 0
     _buy_fun_len: int = 0
     _sell_fun_len: int = 0
-    _ft_params_from_file: Dict = {}
+    _ft_params_from_file: Dict
     # associated minimal roi
-    minimal_roi: Dict
+    minimal_roi: Dict = {}
 
     # associated stoploss
     stoploss: float
@@ -462,6 +462,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
+    def unlock_reason(self, reason: str) -> None:
+        """
+        Unlocks all pairs previously locked using lock_pair with specified reason.
+        Not used by freqtrade itself, but intended to be used if users lock pairs
+        manually from within the strategy, to allow an easy way to unlock pairs.
+        :param reason: Unlock pairs to allow trading again
+        """
+        PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
+
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
@@ -521,6 +530,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe[SignalType.ENTER_SHORT.value] = 0
             dataframe[SignalType.EXIT_SHORT.value] = 0
             dataframe[SignalTagType.ENTER_TAG.value] = None
+            dataframe[SignalTagType.EXIT_TAG.value] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -634,7 +644,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         timeframe: str,
         dataframe: DataFrame,
         is_short: bool = None
-    ) -> Tuple[bool, bool]:
+    ) -> Tuple[bool, bool, Optional[str]]:
         """
         Calculates current exit signal based based on the buy/short or sell/exit_short
         columns of the dataframe.
@@ -648,19 +658,21 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         latest, latest_date = self.get_latest_candle(pair, timeframe, dataframe)
         if latest is None:
-            return False, False
+            return False, False, None
 
         if is_short:
             enter = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
             exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+
         else:
             enter = latest[SignalType.ENTER_LONG.value] == 1
             exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
+        exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
 
         logger.debug(f"exit-trigger: {latest['date']} (pair={pair}) "
                      f"enter={enter} exit={exit_}")
 
-        return enter, exit_
+        return enter, exit_, exit_tag
 
     def get_entry_signal(
         self,

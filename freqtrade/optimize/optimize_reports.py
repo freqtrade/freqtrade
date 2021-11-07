@@ -55,6 +55,15 @@ def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
             'Win  Draw  Loss  Win%']
 
 
+def _get_line_header_sell(first_column: str, stake_currency: str) -> List[str]:
+    """
+    Generate header lines (goes in line with _generate_result_line())
+    """
+    return [first_column, 'Sells', 'Avg Profit %', 'Cum Profit %',
+            f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
+            'Win  Draw  Loss  Win%']
+
+
 def _generate_wins_draws_losses(wins, draws, losses):
     if wins > 0 and losses == 0:
         wl_ratio = '100'
@@ -125,6 +134,71 @@ def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_b
     # Append Total
     tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
     return tabular_data
+
+
+def generate_tag_metrics(tag_type: str,
+                         starting_balance: int,
+                         results: DataFrame,
+                         skip_nan: bool = False) -> List[Dict]:
+    """
+    Generates and returns a list of metrics for the given tag trades and the results dataframe
+    :param starting_balance: Starting balance
+    :param results: Dataframe containing the backtest results
+    :param skip_nan: Print "left open" open trades
+    :return: List of Dicts containing the metrics per pair
+    """
+
+    tabular_data = []
+
+    if tag_type in results.columns:
+        for tag, count in results[tag_type].value_counts().iteritems():
+            result = results[results[tag_type] == tag]
+            if skip_nan and result['profit_abs'].isnull().all():
+                continue
+
+            tabular_data.append(_generate_tag_result_line(result, starting_balance, tag))
+
+        # Sort by total profit %:
+        tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
+
+        # Append Total
+        tabular_data.append(_generate_result_line(results, starting_balance, 'TOTAL'))
+        return tabular_data
+    else:
+        return []
+
+
+def _generate_tag_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
+    """
+    Generate one result dict, with "first_column" as key.
+    """
+    profit_sum = result['profit_ratio'].sum()
+    # (end-capital - starting capital) / starting capital
+    profit_total = result['profit_abs'].sum() / starting_balance
+
+    return {
+        'key': first_column,
+        'trades': len(result),
+        'profit_mean': result['profit_ratio'].mean() if len(result) > 0 else 0.0,
+        'profit_mean_pct': result['profit_ratio'].mean() * 100.0 if len(result) > 0 else 0.0,
+        'profit_sum': profit_sum,
+        'profit_sum_pct': round(profit_sum * 100.0, 2),
+        'profit_total_abs': result['profit_abs'].sum(),
+        'profit_total': profit_total,
+        'profit_total_pct': round(profit_total * 100.0, 2),
+        'duration_avg': str(timedelta(
+                            minutes=round(result['trade_duration'].mean()))
+                            ) if not result.empty else '0:00',
+        # 'duration_max': str(timedelta(
+        #                     minutes=round(result['trade_duration'].max()))
+        #                     ) if not result.empty else '0:00',
+        # 'duration_min': str(timedelta(
+        #                     minutes=round(result['trade_duration'].min()))
+        #                     ) if not result.empty else '0:00',
+        'wins': len(result[result['profit_abs'] > 0]),
+        'draws': len(result[result['profit_abs'] == 0]),
+        'losses': len(result[result['profit_abs'] < 0]),
+    }
 
 
 def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
@@ -347,6 +421,10 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
                                          starting_balance=starting_balance,
                                          results=results, skip_nan=False)
+
+    buy_tag_results = generate_tag_metrics("buy_tag", starting_balance=starting_balance,
+                                           results=results, skip_nan=False)
+
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
@@ -370,6 +448,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'best_pair': best_pair,
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
+        'results_per_buy_tag': buy_tag_results,
         'sell_reason_summary': sell_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
@@ -542,6 +621,37 @@ def text_table_sell_reason(sell_reason_stats: List[Dict[str, Any]], stake_curren
     return tabulate(output, headers=headers, tablefmt="orgtbl", stralign="right")
 
 
+def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_currency: str) -> str:
+    """
+    Generates and returns a text table for the given backtest data and the results dataframe
+    :param pair_results: List of Dictionaries - one entry per pair + final TOTAL row
+    :param stake_currency: stake-currency - used to correctly name headers
+    :return: pretty printed table with tabulate as string
+    """
+    if(tag_type == "buy_tag"):
+        headers = _get_line_header("TAG", stake_currency)
+    else:
+        headers = _get_line_header_sell("TAG", stake_currency)
+    floatfmt = _get_line_floatfmt(stake_currency)
+    output = [
+        [
+            t['key'] if t['key'] is not None and len(
+                t['key']) > 0 else "OTHER",
+            t['trades'],
+            t['profit_mean_pct'],
+            t['profit_sum_pct'],
+            t['profit_total_abs'],
+            t['profit_total_pct'],
+            t['duration_avg'],
+            _generate_wins_draws_losses(
+                t['wins'],
+                t['draws'],
+                t['losses'])] for t in tag_results]
+    # Ignore type as floatfmt does allow tuples but mypy does not know that
+    return tabulate(output, headers=headers,
+                    floatfmt=floatfmt, tablefmt="orgtbl", stralign="right")
+
+
 def text_table_periodic_breakdown(days_breakdown_stats: List[Dict[str, Any]],
                                   stake_currency: str, period: str) -> str:
     """
@@ -687,6 +797,16 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
+    if results.get('results_per_buy_tag') is not None:
+        table = text_table_tags(
+            "buy_tag",
+            results['results_per_buy_tag'],
+            stake_currency=stake_currency)
+
+        if isinstance(table, str) and len(table) > 0:
+            print(' BUY TAG STATS '.center(len(table.splitlines()[0]), '='))
+        print(table)
+
     table = text_table_sell_reason(sell_reason_stats=results['sell_reason_summary'],
                                    stake_currency=stake_currency)
     if isinstance(table, str) and len(table) > 0:
@@ -714,6 +834,7 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
 
     if isinstance(table, str) and len(table) > 0:
         print('=' * len(table.splitlines()[0]))
+
     print()
 
 
@@ -735,3 +856,13 @@ def show_backtest_results(config: Dict, backtest_stats: Dict):
         print(table)
         print('=' * len(table.splitlines()[0]))
         print('\nFor more details, please look at the detail tables above')
+
+
+def show_sorted_pairlist(config: Dict, backtest_stats: Dict):
+    if config.get('backtest_show_pair_list', False):
+        for strategy, results in backtest_stats['strategy'].items():
+            print(f"Pairs for Strategy {strategy}: \n[")
+            for result in results['results_per_pair']:
+                if result["key"] != 'TOTAL':
+                    print(f'"{result["key"]}",  // {round(result["profit_mean_pct"], 2)}%')
+            print("]")

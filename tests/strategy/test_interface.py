@@ -42,29 +42,29 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history.loc[1, 'exit_long'] = 1
 
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, True)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, True, None)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False, None)
     mocked_history.loc[1, 'exit_long'] = 0
     mocked_history.loc[1, 'enter_long'] = 1
 
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (SignalDirection.LONG, None)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False, None)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False, None)
     mocked_history.loc[1, 'exit_long'] = 0
     mocked_history.loc[1, 'enter_long'] = 0
 
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False, None)
     mocked_history.loc[1, 'exit_long'] = 0
     mocked_history.loc[1, 'enter_long'] = 1
     mocked_history.loc[1, 'enter_tag'] = 'buy_signal_01'
 
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (SignalDirection.LONG, 'buy_signal_01')
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (True, False, None)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, False, None)
 
     mocked_history.loc[1, 'exit_long'] = 0
     mocked_history.loc[1, 'enter_long'] = 0
@@ -74,15 +74,18 @@ def test_returns_latest_signal(ohlcv_history):
 
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (SignalDirection.SHORT, 'sell_signal_01')
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (True, False)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
+    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (True, False, None)
 
     mocked_history.loc[1, 'enter_short'] = 0
     mocked_history.loc[1, 'exit_short'] = 1
+    mocked_history.loc[1, 'exit_tag'] = 'sell_signal_02'
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False)
-    assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (False, True)
+    assert _STRATEGY.get_exit_signal(
+        'ETH/BTC', '5m', mocked_history) == (False, False, 'sell_signal_02')
+    assert _STRATEGY.get_exit_signal(
+        'ETH/BTC', '5m', mocked_history, True) == (False, True, 'sell_signal_02')
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):
@@ -633,6 +636,13 @@ def test_is_pair_locked(default_conf):
     strategy.unlock_pair(pair)
     assert not strategy.is_pair_locked(pair)
 
+    # Lock with reason
+    reason = "TestLockR"
+    strategy.lock_pair(pair, arrow.now(timezone.utc).shift(minutes=4).datetime, reason)
+    assert strategy.is_pair_locked(pair)
+    strategy.unlock_reason(reason)
+    assert not strategy.is_pair_locked(pair)
+
     pair = 'BTC/USDT'
     # Lock until 14:30
     lock_time = datetime(2020, 5, 1, 14, 30, 0, tzinfo=timezone.utc)
@@ -704,7 +714,7 @@ def test_strategy_safe_wrapper(value):
 
     ret = strategy_safe_wrapper(working_method, message='DeadBeef')(value)
 
-    assert type(ret) == type(value)
+    assert isinstance(ret, type(value))
     assert ret == value
 
 

@@ -47,6 +47,11 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
+    'okex': {
+        'pair': 'BTC/USDT',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 

@@ -230,11 +230,11 @@ class FreqtradeBot(LoggingMixin):
         if len(open_trades) != 0:
             msg = {
                 'type': RPCMessageType.WARNING,
-                'status':  f"{len(open_trades)} open trades active.\n\n"
-                           f"Handle these trades manually on {self.exchange.name}, "
-                           f"or '/start' the bot again and use '/stopbuy' "
-                           f"to handle open trades gracefully. \n"
-                           f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+                'status': f"{len(open_trades)} open trades active.\n\n"
+                          f"Handle these trades manually on {self.exchange.name}, "
+                          f"or '/start' the bot again and use '/stopbuy' "
+                          f"to handle open trades gracefully. \n"
+                          f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
             }
             self.rpc.send_msg(msg)
 
@@ -863,6 +863,7 @@ class FreqtradeBot(LoggingMixin):
         logger.debug('Handling %s ...', trade)
 
         (enter, exit_) = (False, False)
+        exit_tag = None
         exit_signal_type = "exit_short" if trade.is_short else "exit_long"
 
         # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
@@ -871,7 +872,7 @@ class FreqtradeBot(LoggingMixin):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 
-            (enter, exit_) = self.strategy.get_exit_signal(
+            (enter, exit_, exit_tag) = self.strategy.get_exit_signal(
                 trade.pair,
                 self.strategy.timeframe,
                 analyzed_df,
@@ -880,7 +881,7 @@ class FreqtradeBot(LoggingMixin):
 
         logger.debug('checking exit')
         exit_rate = self.exchange.get_rate(trade.pair, refresh=True, side=trade.exit_side)
-        if self._check_and_execute_exit(trade, exit_rate, enter, exit_):
+        if self._check_and_execute_exit(trade, exit_rate, enter, exit_, exit_tag):
             return True
 
         logger.debug(f'Found no {exit_signal_type} signal for %s.', trade)
@@ -1029,7 +1030,7 @@ class FreqtradeBot(LoggingMixin):
                                    f"for pair {trade.pair}.")
 
     def _check_and_execute_exit(self, trade: Trade, exit_rate: float,
-                                enter: bool, exit_: bool) -> bool:
+                                enter: bool, exit_: bool, exit_tag: Optional[str]) -> bool:
         """
         Check and execute trade exit
         """
@@ -1043,8 +1044,9 @@ class FreqtradeBot(LoggingMixin):
         )
 
         if should_exit.sell_flag:
-            logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}')
-            self.execute_trade_exit(trade, exit_rate, should_exit)
+            logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}'
+                        f'Tag: {exit_tag if exit_tag is not None else "None"}')
+            self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag)
             return True
         return False
 
@@ -1258,6 +1260,7 @@ class FreqtradeBot(LoggingMixin):
         trade: Trade,
         limit: float,
         sell_reason: SellCheckTuple,  # TODO-lev update to exit_reason
+        exit_tag: Optional[str] = None
     ) -> bool:
         """
         Executes a trade exit for the given trade and limit
@@ -1337,7 +1340,7 @@ class FreqtradeBot(LoggingMixin):
         trade.open_order_id = order['id']
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
-        trade.sell_reason = sell_reason.sell_reason
+        trade.sell_reason = exit_tag or sell_reason.sell_reason
         # In case of market sell orders the order can be closed immediately
         if order.get('status', 'unknown') in ('closed', 'expired'):
             self.update_trade_state(trade, trade.open_order_id, order)
@@ -1378,6 +1381,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.utcnow(),
@@ -1421,6 +1425,7 @@ class FreqtradeBot(LoggingMixin):
             'current_rate': current_rate,
             'profit_amount': profit_trade,
             'profit_ratio': profit_ratio,
+            'buy_tag': trade.buy_tag,
             'sell_reason': trade.sell_reason,
             'open_date': trade.open_date,
             'close_date': trade.close_date or datetime.now(timezone.utc),
@@ -1467,6 +1472,11 @@ class FreqtradeBot(LoggingMixin):
 
         trade.update_order(order)
 
+        if self.exchange.check_order_canceled_empty(order):
+            # Trade has been cancelled on exchange
+            # Handling of this will happen in check_handle_timeout.
+            return True
+
         # Try update amount (binance-fix)
         try:
             new_amount = self.get_real_amount(trade, order)
@@ -1478,10 +1488,6 @@ class FreqtradeBot(LoggingMixin):
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
-        if self.exchange.check_order_canceled_empty(order):
-            # Trade has been cancelled on exchange
-            # Handling of this will happen in check_handle_timeout.
-            return True
         trade.update(order)
         Trade.commit()
 

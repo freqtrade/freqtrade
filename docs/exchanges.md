@@ -1,6 +1,6 @@
 # Exchange-specific Notes
 
-This page combines common gotchas and informations which are exchange-specific and most likely don't apply to other exchanges.
+This page combines common gotchas and Information which are exchange-specific and most likely don't apply to other exchanges.
 
 ## Exchange configuration
 
@@ -46,7 +46,7 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
 ```
 
 This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
-`"rateLimit": 3100` defines a wait-event of 0.2s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+`"rateLimit": 3100` defines a wait-event of 3.1s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
 
 !!! Note
     Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
@@ -181,6 +181,23 @@ Kucoin supports [time_in_force](configuration.md#understand-order_time_in_force)
 
 For Kucoin, please add `"KCS/<STAKE>"` to your blacklist to avoid issues.
 Accounts having KCS accounts use this to pay for fees - if your first trade happens to be on `KCS`, further trades will consume this position and make the initial KCS trade unsellable as the expected amount is not there anymore.
+
+## OKEX
+
+OKEX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
+
+```json
+"exchange": {
+    "name": "okex",
+    "key": "your_exchange_key",
+    "secret": "your_exchange_secret",
+    "password": "your_exchange_api_key_password",
+    // ...
+}
+```
+
+!!! Warning
+    OKEX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
 
 ## All exchanges
 

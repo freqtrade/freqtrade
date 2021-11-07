@@ -2108,6 +2108,10 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
+        'get_sell_reason_performance',
+        'get_buy_tag_performance',
+        'get_mix_tag_performance',
+
     )
 
     # Parent (LocalTrade) should have the same attributes

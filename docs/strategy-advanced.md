@@ -436,7 +436,7 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    # Set unfilledtimeout to 25 hours, since our maximum timeout from below is 24 hours.
+    # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
         'buy': 60 * 25,
         'sell': 60 * 25
@@ -475,7 +475,7 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    # Set unfilledtimeout to 25 hours, since our maximum timeout from below is 24 hours.
+    # Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
     unfilledtimeout = {
         'buy': 60 * 25,
         'sell': 60 * 25
