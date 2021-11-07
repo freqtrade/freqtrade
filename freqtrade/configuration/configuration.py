@@ -431,6 +431,8 @@ class Configuration:
 
         self._args_to_config(config, argname='new_pairs_days',
                              logstring='Detected --new-pairs-days: {}')
+        self._args_to_config(config, argname='trading_mode',
+                             logstring='Detected --trading-mode: {}')
 
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 

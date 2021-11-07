@@ -179,7 +179,6 @@ AVAILABLE_CLI_OPTIONS = {
         '--export',
         help='Export backtest results (default: trades).',
         choices=constants.EXPORT_OPTIONS,
-
     ),
     "exportfilename": Arg(
         '--export-filename',
@@ -348,6 +347,11 @@ AVAILABLE_CLI_OPTIONS = {
         help='Specify base currency(-ies). Space-separated list.',
         nargs='+',
         metavar='BASE_CURRENCY',
+    ),
+    "trading_mode": Arg(
+        '--trading-mode',
+        help='Select Trading mode',
+        choices=constants.TRADING_MODES,
     ),
     # Script options
     "pairs": Arg(

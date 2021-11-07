@@ -48,7 +48,8 @@ ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all"]
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column"]
 
 ARGS_LIST_PAIRS = ["exchange", "print_list", "list_pairs_print_json", "print_one_column",
-                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all"]
+                   "print_csv", "base_currencies", "quote_currencies", "list_pairs_all",
+                   "trading_mode"]
 
 ARGS_TEST_PAIRLIST = ["verbosity", "config", "quote_currencies", "print_one_column",
                       "list_pairs_print_json"]
