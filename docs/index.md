@@ -36,7 +36,7 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#binance-blacklist))
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
