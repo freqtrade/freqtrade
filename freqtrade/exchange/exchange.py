@@ -1711,18 +1711,18 @@ class Exchange:
         '''
         return d.minute > 0 or d.second > 0
 
-    def _get_funding_fee_dates(self, d1: datetime, d2: datetime):
-        if self.funding_fee_cutoff(d1):
-            d1 += timedelta(hours=1)
-        d1 = datetime(d1.year, d1.month, d1.day, d1.hour, tzinfo=timezone.utc)
-        d2 = datetime(d2.year, d2.month, d2.day, d2.hour, tzinfo=timezone.utc)
+    def _get_funding_fee_dates(self, start: datetime, end: datetime):
+        if self.funding_fee_cutoff(start):
+            start += timedelta(hours=1)
+        start = datetime(start.year, start.month, start.day, start.hour, tzinfo=timezone.utc)
+        end = datetime(end.year, end.month, end.day, end.hour, tzinfo=timezone.utc)
 
         results = []
-        d3 = d1
-        while d3 <= d2:
-            if d3.hour in self.funding_fee_times:
-                results.append(d3)
-            d3 += timedelta(hours=1)
+        iterator = start
+        while iterator <= end:
+            if iterator.hour in self.funding_fee_times:
+                results.append(iterator)
+            iterator += timedelta(hours=1)
 
         return results
 
