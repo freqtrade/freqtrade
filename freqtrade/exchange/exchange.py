@@ -1606,7 +1606,7 @@ class Exchange:
                                           until=until, from_id=from_id))
 
     @retrier
-    def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+    def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
             Returns the sum of all funding fees that were exchanged for a pair within a timeframe
             :param pair: (e.g. ADA/USDT)
@@ -1794,7 +1794,7 @@ class Exchange:
             raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
                                        f'for pair {pair}. Message: {e}') from e
 
-    def calculate_funding_fees(
+    def _calculate_funding_fees(
         self,
         pair: str,
         amount: float,
@@ -1825,15 +1825,42 @@ class Exchange:
         funding_fee_dates = self._get_funding_fee_dates(open_date, close_date)
         for date in funding_fee_dates:
             timestamp = int(date.timestamp()) * 1000
-            funding_rate = funding_rate_history[timestamp]
-            mark_price = mark_price_history[timestamp]
-            fees += self._get_funding_fee(
-                size=amount,
-                mark_price=mark_price,
-                funding_rate=funding_rate
-            )
+            if timestamp in funding_rate_history:
+                funding_rate = funding_rate_history[timestamp]
+            else:
+                logger.warning(
+                    f"Funding rate for {pair} at {date} not found in funding_rate_history"
+                    f"Funding fee calculation may be incorrect"
+                )
+            if timestamp in mark_price_history:
+                mark_price = mark_price_history[timestamp]
+            else:
+                logger.warning(
+                    f"Mark price for {pair} at {date} not found in funding_rate_history"
+                    f"Funding fee calculation may be incorrect"
+                )
+            if funding_rate and mark_price:
+                fees += self._get_funding_fee(
+                    size=amount,
+                    mark_price=mark_price,
+                    funding_rate=funding_rate
+                )
 
         return fees
+
+    def get_funding_fees(self, pair: str, amount: float, open_date: datetime):
+        if self._config['dry_run']:
+            funding_fees = self._calculate_funding_fees(
+                pair,
+                amount,
+                open_date
+            )
+        else:
+            funding_fees = self._get_funding_fees_from_exchange(
+                pair,
+                open_date
+            )
+        return funding_fees
 
     @retrier
     def get_funding_rate_history(

@@ -270,17 +270,11 @@ class FreqtradeBot(LoggingMixin):
         if self.trading_mode == TradingMode.FUTURES:
             trades = Trade.get_open_trades()
             for trade in trades:
-                if self.config['dry_run']:
-                    funding_fees = self.exchange.calculate_funding_fees(
-                        trade.pair,
-                        trade.amount,
-                        trade.open_date
-                    )
-                else:
-                    funding_fees = self.exchange.get_funding_fees_from_exchange(
-                        trade.pair,
-                        trade.open_date
-                    )
+                funding_fees = self.exchange.get_funding_fees(
+                    trade.pair,
+                    trade.amount,
+                    trade.open_date
+                )
                 trade.funding_fees = funding_fees
 
     def startup_update_open_orders(self):
@@ -712,7 +706,7 @@ class FreqtradeBot(LoggingMixin):
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         open_date = datetime.now(timezone.utc)
         if self.trading_mode == TradingMode.FUTURES:
-            funding_fees = self.exchange.get_funding_fees_from_exchange(pair, open_date)
+            funding_fees = self.exchange.get_funding_fees(pair, amount, open_date)
         else:
             funding_fees = 0.0
 

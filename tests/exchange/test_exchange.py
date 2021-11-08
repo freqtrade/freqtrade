@@ -3058,7 +3058,7 @@ def test_calculate_backoff(retrycount, max_retries, expected):
 
 
 @pytest.mark.parametrize("exchange_name", ['binance', 'ftx'])
-def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
+def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
     api_mock.fetch_funding_history = MagicMock(return_value=[
         {
@@ -3101,11 +3101,11 @@ def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     date_time = datetime.strptime("2021-09-01T00:00:01.000Z", '%Y-%m-%dT%H:%M:%S.%fZ')
     unix_time = int(date_time.timestamp())
     expected_fees = -0.001  # 0.14542341 + -0.14642341
-    fees_from_datetime = exchange.get_funding_fees_from_exchange(
+    fees_from_datetime = exchange._get_funding_fees_from_exchange(
         pair='XRP/USDT',
         since=date_time
     )
-    fees_from_unix_time = exchange.get_funding_fees_from_exchange(
+    fees_from_unix_time = exchange._get_funding_fees_from_exchange(
         pair='XRP/USDT',
         since=unix_time
     )
@@ -3118,7 +3118,7 @@ def test_get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         default_conf,
         api_mock,
         exchange_name,
-        "get_funding_fees_from_exchange",
+        "_get_funding_fees_from_exchange",
         "fetch_funding_history",
         pair="XRP/USDT",
         since=unix_time
@@ -3519,7 +3519,7 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     ('binance', "2021-09-01 00:00:00", "2021-09-01 07:59:59",  30.0, -0.0006647999999999999),
     ('binance', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
     ('binance', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
-    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0014937),
     # ('kraken', "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0008289),
     # ('kraken', "2021-09-01 01:00:14", "2021-09-01 08:00:00",  30.0, -0.0008289),
@@ -3533,11 +3533,11 @@ def test_get_funding_rate_history(mocker, default_conf, funding_rate_history):
     ('gateio', "2021-09-01 00:00:00", "2021-09-01 12:00:00",  30.0, -0.0009140999999999999),
     ('gateio', "2021-09-01 00:00:01", "2021-09-01 08:00:00",  30.0, -0.0002493),
     ('binance', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0015235000000000001),
-    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
     ('ftx', "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.0016680000000000002),
 ])
-def test_calculate_funding_fees(
+def test__calculate_funding_fees(
     mocker,
     default_conf,
     funding_rate_history,
@@ -3592,18 +3592,18 @@ def test_calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    funding_fees = exchange.calculate_funding_fees('ADA/USDT', amount, d1, d2)
+    funding_fees = exchange._calculate_funding_fees('ADA/USDT', amount, d1, d2)
     assert funding_fees == expected_fees
 
 
 @pytest.mark.parametrize('name,expected_fees_8,expected_fees_10,expected_fees_12', [
     ('binance', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
-    # TODO: Uncoment once calculate_funding_fees can pass time_in_ratio to exchange._get_funding_fee
+    # TODO: Uncoment once _calculate_funding_fees can pas time_in_ratio to exchange._get_funding_fee
     # ('kraken', -0.0014937, -0.0014937, 0.0045759),
     ('ftx', 0.0010008000000000003, 0.0021084, 0.0146691),
     ('gateio', -0.0009140999999999999, -0.0009140999999999999, -0.0009140999999999999),
 ])
-def test_calculate_funding_fees_datetime_called(
+def test__calculate_funding_fees_datetime_called(
     mocker,
     default_conf,
     funding_rate_history,
@@ -3624,11 +3624,11 @@ def test_calculate_funding_fees_datetime_called(
     d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
     assert funding_fees == expected_fees_8
     time_machine.move_to("2021-09-01 10:00:00 +00:00")
-    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
     assert funding_fees == expected_fees_10
     time_machine.move_to("2021-09-01 12:00:00 +00:00")
-    funding_fees = exchange.calculate_funding_fees('ADA/USDT', 30.0, d1)
+    funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
     assert funding_fees == expected_fees_12
