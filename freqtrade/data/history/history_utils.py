@@ -204,16 +204,14 @@ def _download_pair_history(pair: str, *,
                                                )
         # TODO: Maybe move parsing to exchange class (?)
         new_dataframe = ohlcv_to_dataframe(new_data, timeframe, pair,
-                                           fill_missing=False, drop_incomplete=True,
-                                           candle_type=candle_type)
+                                           fill_missing=False, drop_incomplete=True)
         if data.empty:
             data = new_dataframe
         else:
             # Run cleaning again to ensure there were no duplicate candles
             # Especially between existing and new data.
             data = clean_ohlcv_dataframe(data.append(new_dataframe), timeframe, pair,
-                                         fill_missing=False, drop_incomplete=False,
-                                         candle_type=candle_type)
+                                         fill_missing=False, drop_incomplete=False)
 
         logger.debug("New  Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')

@@ -212,8 +212,7 @@ class IDataHandler(ABC):
                                            pair=pair,
                                            fill_missing=fill_missing,
                                            drop_incomplete=(drop_incomplete and
-                                                            enddate == pairdf.iloc[-1]['date']),
-                                           candle_type=candle_type)
+                                                            enddate == pairdf.iloc[-1]['date']))
             self._check_empty_df(pairdf, pair, timeframe, warn_no_data, candle_type=candle_type)
             return pairdf
 

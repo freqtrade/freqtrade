@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -1339,8 +1339,7 @@ class Exchange:
         """
         ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms)
         return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
-                                  drop_incomplete=self._ohlcv_partial_candle,
-                                  candle_type=candle_type)
+                                  drop_incomplete=self._ohlcv_partial_candle)
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, is_new_pair: bool,
@@ -1441,8 +1440,7 @@ class Exchange:
             # keeping parsed dataframe in cache
             ohlcv_df = ohlcv_to_dataframe(
                 ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle,
-                candle_type=candle_type)
+                drop_incomplete=self._ohlcv_partial_candle)
             results_df[(pair, timeframe)] = ohlcv_df
             if cache:
                 self._klines[(pair, timeframe)] = ohlcv_df
@@ -1469,7 +1467,9 @@ class Exchange:
     ) -> Tuple[str, str, List]:
         """
         Asynchronously get candle history data using fetch_ohlcv
-        :param candle_type: "mark" if retrieving the mark price cnadles, "index" for index price candles
+        :param candle_type:
+            "mark" if retrieving the mark price cnadles
+            "index" for index price candles
         returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:

@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
-                       fill_missing: bool = True, drop_incomplete: bool = True,
-                       candle_type: Optional[str] = "") -> DataFrame:
+                       fill_missing: bool = True, drop_incomplete: bool = True) -> DataFrame:
     """
     Converts a list with candle (OHLCV) data (in format returned by ccxt.fetch_ohlcv)
     to a Dataframe
@@ -43,14 +42,12 @@ def ohlcv_to_dataframe(ohlcv: list, timeframe: str, pair: str, *,
                           'volume': 'float'})
     return clean_ohlcv_dataframe(df, timeframe, pair,
                                  fill_missing=fill_missing,
-                                 drop_incomplete=drop_incomplete,
-                                 candle_type=candle_type)
+                                 drop_incomplete=drop_incomplete)
 
 
 def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
                           fill_missing: bool = True,
-                          drop_incomplete: bool = True,
-                          candle_type: Optional[str] = "") -> DataFrame:
+                          drop_incomplete: bool = True) -> DataFrame:
     """
     Cleanse a OHLCV dataframe by
       * Grouping it by date (removes duplicate tics)
@@ -78,17 +75,12 @@ def clean_ohlcv_dataframe(data: DataFrame, timeframe: str, pair: str, *,
         logger.debug('Dropping last candle')
 
     if fill_missing:
-        return ohlcv_fill_up_missing_data(data, timeframe, pair, candle_type)
+        return ohlcv_fill_up_missing_data(data, timeframe, pair)
     else:
         return data
 
 
-def ohlcv_fill_up_missing_data(
-    dataframe: DataFrame,
-    timeframe: str,
-    pair: str,
-    candle_type: Optional[str] = ""
-) -> DataFrame:
+def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) -> DataFrame:
     """
     Fills up missing data with 0 volume rows,
     using the previous close as price for "open", "high" "low" and "close", volume is set to 0
