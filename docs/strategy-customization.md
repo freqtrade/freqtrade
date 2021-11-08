@@ -147,8 +147,9 @@ In this example strategy, this should be set to 100 (`startup_candle_count = 100
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
 
 !!! Warning "Using x calls to get OHLCV"
-    If you receive a warning like `WARNING - Using 3 calls to get OHLCV. This can result in slower operations for the bot. Please check if you really need 1500 candles for your strategy` - you should consider if you really need this much lookback.
-    This will make Freqtrade take longer to refresh candles - and should be avoided if possible.
+    If you receive a warning like `WARNING - Using 3 calls to get OHLCV. This can result in slower operations for the bot. Please check if you really need 1500 candles for your strategy` - you should consider if you really need this much historic data for your signals.
+    Having this will cause Freqtrade to make multiple calls for the same pair, which will obviously be slower than one network request.
+    As a consequence, Freqtrade will take longer to refresh candles - and should therefore be avoided if possible.
     This is capped to 5 total calls to avoid overloading the exchange, or make freqtrade too slow.
 
 !!! Warning
