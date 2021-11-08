@@ -4715,7 +4715,8 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
     assert freqtrade.update_funding_fees.call_count == calls
 
 
-def test_update_funding_fees(mocker, default_conf, time_machine, fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_update_funding_fees(mocker, default_conf, time_machine, fee, is_short, limit_order_open):
     '''
         nominal_value = mark_price * size
         funding_fee = nominal_value * funding_rate
@@ -4733,7 +4734,18 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
             time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
             time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
     '''
+    # SETUP
     time_machine.move_to("2021-09-01 00:00:00 +00:00")
+
+    open_order = limit_order_open[enter_side(is_short)]
+    bid = 0.11
+    enter_rate_mock = MagicMock(return_value=bid)
+    enter_mm = MagicMock(return_value=open_order)
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
+    default_conf['dry_run'] = True
 
     funding_rates = {
         "LTC/BTC": {
@@ -4743,10 +4755,6 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
         "ETH/BTC": {
             1630454400000: 0.0001,
             1630483200000: 0.0001,
-        },
-        "ETC/BTC": {
-            1630454400000: 0.00031077,
-            1630483200000: 0.00022655,
         },
         "XRP/BTC": {
             1630454400000: 0.00049426,
@@ -4763,10 +4771,6 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
             1630454400000: 2.4,
             1630483200000: 2.5,
         },
-        "ETC/BTC": {
-            1630454400000: 4.3,
-            1630483200000: 4.1,
-        },
         "XRP/BTC": {
             1630454400000: 1.2,
             1630483200000: 1.2,
@@ -4782,17 +4786,41 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee):
         'freqtrade.exchange.Exchange.get_funding_rate_history',
         side_effect=lambda pair, since: funding_rates[pair]
     )
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    default_conf['trading_mode'] = 'futures'
-    default_conf['collateral'] = 'isolated'
-    default_conf['dry_run'] = True
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=enter_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=enter_mm,
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    create_mock_trades(fee, False)
+
+    # initial funding fees,
+    freqtrade.execute_entry('ETH/BTC', 123)
+    freqtrade.execute_entry('LTC/BTC', 2.0)
+    freqtrade.execute_entry('XRP/BTC', 123)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 3
+    for trade in trades:
+        assert trade.funding_fees == (
+            trade.amount *
+            mark_prices[trade.pair][1630454400000] *
+            funding_rates[trade.pair][1630454400000]
+        )
+
+    # create_mock_trades(fee, False)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     freqtrade._schedule.run_pending()
 
-    trades = Trade.get_open_trades()
+    # Funding fees for 00:00 and 08:00
     for trade in trades:
         assert trade.funding_fees == sum([
             trade.amount *
