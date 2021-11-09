@@ -1,4 +1,4 @@
-""" Kucoin exchange subclass """
+"""Kucoin exchange subclass."""
 import logging
 from typing import Dict
 
@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class Kucoin(Exchange):
-    """
-    Kucoin exchange class. Contains adjustments needed for Freqtrade to work
-    with this exchange.
+    """Kucoin exchange class.
+
+    Contains adjustments needed for Freqtrade to work with this exchange.
 
     Please note that this exchange is not included in the list of exchanges
     officially supported by the Freqtrade development team. So some features

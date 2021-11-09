@@ -238,9 +238,9 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.9999, 4, 0.005, 2.995),
 ])
 def test_amount_to_precision(default_conf, mocker, amount, precision_mode, precision, expected):
-    '''
+    """
     Test rounds down
-    '''
+    """
 
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': precision}}})
 
@@ -279,9 +279,7 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
 
 ])
 def test_price_to_precision(default_conf, mocker, price, precision_mode, precision, expected):
-    '''
-    Test price to precision
-    '''
+    """Test price to precision"""
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'price': precision}}})
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
