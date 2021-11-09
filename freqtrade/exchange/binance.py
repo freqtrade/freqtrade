@@ -229,10 +229,10 @@ class Binance(Exchange):
         return await super()._async_get_historic_ohlcv(
             pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
 
-    def funding_fee_cutoff(self, d: datetime):
+    def funding_fee_cutoff(self, open_date: datetime):
         '''
         # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
-        :param d: The open date for a trade
+        :param open_date: The open date for a trade
         :return: The cutoff open time for when a funding fee is charged
         '''
-        return d.minute > 0 or (d.minute == 0 and d.second > 15)
+        return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)

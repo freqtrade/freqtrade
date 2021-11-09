@@ -1704,12 +1704,12 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def funding_fee_cutoff(self, d: datetime):
+    def funding_fee_cutoff(self, open_date: datetime):
         '''
-        :param d: The open date for a trade
+        :param open_date: The open date for a trade
         :return: The cutoff open time for when a funding fee is charged
         '''
-        return d.minute > 0 or d.second > 0
+        return open_date.minute > 0 or open_date.second > 0
 
     def _get_funding_fee_dates(self, start: datetime, end: datetime):
         if self.funding_fee_cutoff(start):
