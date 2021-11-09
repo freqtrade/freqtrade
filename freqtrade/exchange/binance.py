@@ -140,8 +140,8 @@ class Binance(Exchange):
     @retrier
     def fill_leverage_brackets(self):
         """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
+        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        allowed on each pair
         """
         if self.trading_mode == TradingMode.FUTURES:
             try:
@@ -175,9 +175,9 @@ class Binance(Exchange):
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
@@ -194,8 +194,8 @@ class Binance(Exchange):
         trading_mode: Optional[TradingMode] = None
     ):
         """
-            Set's the leverage before making a trade, in order to not
-            have the same leverage on every trade
+        Set's the leverage before making a trade, in order to not
+        have the same leverage on every trade
         """
         trading_mode = trading_mode or self.trading_mode
 
