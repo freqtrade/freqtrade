@@ -516,10 +516,10 @@ class Exchange:
         collateral: Optional[Collateral]  # Only None when trading_mode = TradingMode.SPOT
     ):
         """
-            Checks if freqtrade can perform trades using the configured
-            trading mode(Margin, Futures) and Collateral(Cross, Isolated)
-            Throws OperationalException:
-                If the trading_mode/collateral type are not supported by freqtrade on this exchange
+        Checks if freqtrade can perform trades using the configured
+        trading mode(Margin, Futures) and Collateral(Cross, Isolated)
+        Throws OperationalException:
+            If the trading_mode/collateral type are not supported by freqtrade on this exchange
         """
         if trading_mode != TradingMode.SPOT and (
             (trading_mode, collateral) not in self._supported_trading_mode_collateral_pairs
@@ -1648,7 +1648,7 @@ class Exchange:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        :param nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         market = self.markets[pair]
         if (
@@ -1728,10 +1728,10 @@ class Exchange:
 
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
-        '''
+        """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
-        '''
+        """
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
             # Some exchanges only support one collateral type
             return

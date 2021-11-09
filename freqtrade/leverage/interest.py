@@ -16,18 +16,18 @@ def interest(
     hours: Decimal
 ) -> Decimal:
     """
-        Equation to calculate interest on margin trades
+    Equation to calculate interest on margin trades
 
-        :param exchange_name: The exchanged being trading on
-        :param borrowed: The amount of currency being borrowed
-        :param rate: The rate of interest (i.e daily interest rate)
-        :param hours: The time in hours that the currency has been borrowed for
+    :param exchange_name: The exchanged being trading on
+    :param borrowed: The amount of currency being borrowed
+    :param rate: The rate of interest (i.e daily interest rate)
+    :param hours: The time in hours that the currency has been borrowed for
 
-        Raises:
-            OperationalException: Raised if freqtrade does
-            not support margin trading for this exchange
+    Raises:
+        OperationalException: Raised if freqtrade does
+        not support margin trading for this exchange
 
-        Returns: The amount of interest owed (currency matches borrowed)
+    Returns: The amount of interest owed (currency matches borrowed)
     """
     exchange_name = exchange_name.lower()
     if exchange_name == "binance":
