@@ -211,6 +211,8 @@ Using this parameter without `minutes` is highly discouraged, as it can lead to 
 ],
 ```
 
+As this Filter uses past performance of the bot, it'll have some startup-period - and should only be used after the bot has a few 100 trades in the database.
+
 !!! Warning "Backtesting"
     `PerformanceFilter` does not support backtesting mode.
 
