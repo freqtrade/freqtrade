@@ -195,6 +195,8 @@ class Order(_DECL_BASE):
     @staticmethod
     def get_open_orders() -> List['Order']:
         """
+        Retrieve open orders from the database
+        :return: List of open orders
         """
         return Order.query.filter(Order.ft_is_open.is_(True)).all()
 
