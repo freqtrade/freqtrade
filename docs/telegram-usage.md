@@ -58,6 +58,8 @@ For the Freqtrade configuration, you can then use the the full value (including 
 ```json
    "chat_id": "-1001332619709"
 ```
+!!! Warning "Using telegram groups"
+    When using telegram groups, you're giving every member of the telegram group access to your freqtrade bot and to all commands possible via telegram. Please make sure that you can trust everyone in the telegram group to avoid unpleasent surprises.
 
 ## Control telegram noise
 
