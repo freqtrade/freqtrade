@@ -198,7 +198,7 @@ Not defining this parameter (or setting it to 0) will use all-time performance.
 
 The optional `min_profit` parameter defines the minimum profit a pair must have to be considered.
 Pairs below this level will be filtered out.
-Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without without a way to recover.
+Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without a way to recover.
 
 ```json
 "pairlists": [
