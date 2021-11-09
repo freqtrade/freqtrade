@@ -1705,10 +1705,10 @@ class Exchange:
             raise OperationalException(e) from e
 
     def funding_fee_cutoff(self, open_date: datetime):
-        '''
+        """
         :param open_date: The open date for a trade
         :return: The cutoff open time for when a funding fee is charged
-        '''
+        """
         return open_date.minute > 0 or open_date.second > 0
 
     def _get_funding_fee_dates(self, start: datetime, end: datetime):
@@ -1849,30 +1849,26 @@ class Exchange:
         return fees
 
     def get_funding_fees(self, pair: str, amount: float, open_date: datetime):
+        """
+        Fetch funding fees, either from the exchange (live) or calculates them
+        based on funding rate/mark price history
+        :param pair: The quote/base pair of the trade
+        :param amount: Trade amount
+        :param open_date: Open date of the trade
+        """
         if self._config['dry_run']:
-            funding_fees = self._calculate_funding_fees(
-                pair,
-                amount,
-                open_date
-            )
+            funding_fees = self._calculate_funding_fees(pair, amount, open_date)
         else:
-            funding_fees = self._get_funding_fees_from_exchange(
-                pair,
-                open_date
-            )
+            funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
         return funding_fees
 
     @retrier
-    def get_funding_rate_history(
-        self,
-        pair: str,
-        since: int,
-    ) -> Dict:
-        '''
+    def get_funding_rate_history(self, pair: str, since: int) -> Dict:
+        """
         :param pair: quote/base currency pair
         :param since: timestamp in ms of the beginning time
         :param end: timestamp in ms of the end time
-        '''
+        """
         if not self.exchange_has("fetchFundingRateHistory"):
             raise ExchangeError(
                 f"CCXT has not implemented fetchFundingRateHistory for {self.name}; "
