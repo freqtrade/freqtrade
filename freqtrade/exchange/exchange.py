@@ -515,10 +515,10 @@ class Exchange:
         collateral: Optional[Collateral]  # Only None when trading_mode = TradingMode.SPOT
     ):
         """
-            Checks if freqtrade can perform trades using the configured
-            trading mode(Margin, Futures) and Collateral(Cross, Isolated)
-            Throws OperationalException:
-                If the trading_mode/collateral type are not supported by freqtrade on this exchange
+        Checks if freqtrade can perform trades using the configured
+        trading mode(Margin, Futures) and Collateral(Cross, Isolated)
+        Throws OperationalException:
+            If the trading_mode/collateral type are not supported by freqtrade on this exchange
         """
         if trading_mode != TradingMode.SPOT and (
             (trading_mode, collateral) not in self._supported_trading_mode_collateral_pairs
@@ -1607,10 +1607,10 @@ class Exchange:
     @retrier
     def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
-            Returns the sum of all funding fees that were exchanged for a pair within a timeframe
-            :param pair: (e.g. ADA/USDT)
-            :param since: The earliest time of consideration for calculating funding fees,
-                in unix time or as a datetime
+        Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+        :param pair: (e.g. ADA/USDT)
+        :param since: The earliest time of consideration for calculating funding fees,
+            in unix time or as a datetime
         """
         # TODO-lev: Add dry-run handling for this.
 
@@ -1637,17 +1637,17 @@ class Exchange:
 
     def fill_leverage_brackets(self):
         """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
-            Not used if the exchange has a static max leverage value for the account or each pair
+        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        allowed on each pair
+        Not used if the exchange has a static max leverage value for the account or each pair
         """
         return
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :param nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         market = self.markets[pair]
         if (
@@ -1667,8 +1667,8 @@ class Exchange:
         trading_mode: Optional[TradingMode] = None
     ):
         """
-            Set's the leverage before making a trade, in order to not
-            have the same leverage on every trade
+        Set's the leverage before making a trade, in order to not
+        have the same leverage on every trade
         """
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
             # Some exchanges only support one collateral type
@@ -1686,10 +1686,10 @@ class Exchange:
 
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
-        '''
-            Set's the margin mode on the exchange to cross or isolated for a specific pair
-            :param symbol: base/quote currency pair (e.g. "ADA/USDT")
-        '''
+        """
+        Set's the margin mode on the exchange to cross or isolated for a specific pair
+        :param symbol: base/quote currency pair (e.g. "ADA/USDT")
+        """
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
             # Some exchanges only support one collateral type
             return

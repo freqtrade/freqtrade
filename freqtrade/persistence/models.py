@@ -30,13 +30,13 @@ _SQL_DOCS_URL = 'http://docs.sqlalchemy.org/en/latest/core/engines.html#database
 
 def init_db(db_url: str, clean_open_orders: bool = False) -> None:
     """
-        Initializes this module with the given config,
-        registers all known command handlers
-        and starts polling for message updates
-        :param db_url: Database to use
-        :param clean_open_orders: Remove open orders from the database.
-            Useful for dry-run or if all orders have been reset on the exchange.
-        :return: None
+    Initializes this module with the given config,
+    registers all known command handlers
+    and starts polling for message updates
+    :param db_url: Database to use
+    :param clean_open_orders: Remove open orders from the database.
+        Useful for dry-run or if all orders have been reset on the exchange.
+    :return: None
     """
     kwargs = {}
 
@@ -329,8 +329,8 @@ class LocalTrade():
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
-            Method you should use to set self.stop_loss.
-            Assures stop_loss is not passed the liquidation price
+        Method you should use to set self.stop_loss.
+        Assures stop_loss is not passed the liquidation price
         """
         if self.isolated_liq is not None:
             if self.is_short:
@@ -352,8 +352,8 @@ class LocalTrade():
 
     def set_isolated_liq(self, isolated_liq: float):
         """
-            Method you should use to set self.liquidation price.
-            Assures stop_loss is not passed the liquidation price
+        Method you should use to set self.liquidation price.
+        Assures stop_loss is not passed the liquidation price
         """
         if self.stop_loss is not None:
             if self.is_short:

@@ -146,8 +146,8 @@ class Kraken(Exchange):
         trading_mode: Optional[TradingMode] = None
     ):
         """
-            Kraken set's the leverage as an option in the order object, so we need to
-            add it to params
+        Kraken set's the leverage as an option in the order object, so we need to
+        add it to params
         """
         return
 
