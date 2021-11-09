@@ -4718,21 +4718,21 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
 @pytest.mark.parametrize('is_short', [True, False])
 def test_update_funding_fees(mocker, default_conf, time_machine, fee, is_short, limit_order_open):
     '''
-        nominal_value = mark_price * size
-        funding_fee = nominal_value * funding_rate
-        size = 123
-        "LTC/BTC"
-            time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
-            time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792
-        "ETH/BTC"
-            time: 0, mark: 2.4, fundRate: 0.0001, nominal_value: 295.2, fundFee: 0.02952
-            time: 8, mark: 2.5, fundRate: 0.0001, nominal_value: 307.5, fundFee: 0.03075
-        "ETC/BTC"
-            time: 0, mark: 4.3, fundRate: 0.00031077, nominal_value: 528.9, fundFee: 0.164366253
-            time: 8, mark: 4.1, fundRate: 0.00022655, nominal_value: 504.3, fundFee: 0.114249165
-        "XRP/BTC"
-            time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
-            time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
+    nominal_value = mark_price * size
+    funding_fee = nominal_value * funding_rate
+    size = 123
+    "LTC/BTC"
+        time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
+        time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792
+    "ETH/BTC"
+        time: 0, mark: 2.4, fundRate: 0.0001, nominal_value: 295.2, fundFee: 0.02952
+        time: 8, mark: 2.5, fundRate: 0.0001, nominal_value: 307.5, fundFee: 0.03075
+    "ETC/BTC"
+        time: 0, mark: 4.3, fundRate: 0.00031077, nominal_value: 528.9, fundFee: 0.164366253
+        time: 8, mark: 4.1, fundRate: 0.00022655, nominal_value: 504.3, fundFee: 0.114249165
+    "XRP/BTC"
+        time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
+        time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
     '''
     # SETUP
     time_machine.move_to("2021-09-01 00:00:00 +00:00")

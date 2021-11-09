@@ -231,8 +231,8 @@ class Binance(Exchange):
 
     def funding_fee_cutoff(self, d: datetime):
         '''
-            # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
-            :param d: The open date for a trade
-            :return: The cutoff open time for when a funding fee is charged
+        # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
+        :param d: The open date for a trade
+        :return: The cutoff open time for when a funding fee is charged
         '''
         return d.minute > 0 or (d.minute == 0 and d.second > 15)

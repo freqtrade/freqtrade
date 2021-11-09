@@ -1608,10 +1608,10 @@ class Exchange:
     @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
-            Returns the sum of all funding fees that were exchanged for a pair within a timeframe
-            :param pair: (e.g. ADA/USDT)
-            :param since: The earliest time of consideration for calculating funding fees,
-                in unix time or as a datetime
+        Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+        :param pair: (e.g. ADA/USDT)
+        :param since: The earliest time of consideration for calculating funding fees,
+            in unix time or as a datetime
         """
         # TODO-lev: Add dry-run handling for this.
 
@@ -1638,17 +1638,17 @@ class Exchange:
 
     def fill_leverage_brackets(self):
         """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
-            Not used if the exchange has a static max leverage value for the account or each pair
+        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        allowed on each pair
+        Not used if the exchange has a static max leverage value for the account or each pair
         """
         return
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         market = self.markets[pair]
         if (
@@ -1668,13 +1668,13 @@ class Exchange:
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
-            Calculates a single funding fee
-            :param size: contract size * number of contracts
-            :param mark_price: The price of the asset that the contract is based off of
-            :param funding_rate: the interest rate and the premium
-                - interest rate:
-                - premium: varies by price difference between the perpetual contract and mark price
-            :param time_in_ratio: Not used by most exchange classes
+        Calculates a single funding fee
+        :param size: contract size * number of contracts
+        :param mark_price: The price of the asset that the contract is based off of
+        :param funding_rate: the interest rate and the premium
+            - interest rate:
+            - premium: varies by price difference between the perpetual contract and mark price
+        :param time_in_ratio: Not used by most exchange classes
         """
         nominal_value = mark_price * size
         return nominal_value * funding_rate
@@ -1687,8 +1687,8 @@ class Exchange:
         trading_mode: Optional[TradingMode] = None
     ):
         """
-            Set's the leverage before making a trade, in order to not
-            have the same leverage on every trade
+        Set's the leverage before making a trade, in order to not
+        have the same leverage on every trade
         """
         if self._config['dry_run'] or not self.exchange_has("setLeverage"):
             # Some exchanges only support one collateral type
@@ -1706,8 +1706,8 @@ class Exchange:
 
     def funding_fee_cutoff(self, d: datetime):
         '''
-            :param d: The open date for a trade
-            :return: The cutoff open time for when a funding fee is charged
+        :param d: The open date for a trade
+        :return: The cutoff open time for when a funding fee is charged
         '''
         return d.minute > 0 or d.second > 0
 
@@ -1729,8 +1729,8 @@ class Exchange:
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         '''
-            Set's the margin mode on the exchange to cross or isolated for a specific pair
-            :param pair: base/quote currency pair (e.g. "ADA/USDT")
+        Set's the margin mode on the exchange to cross or isolated for a specific pair
+        :param pair: base/quote currency pair (e.g. "ADA/USDT")
         '''
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
             # Some exchanges only support one collateral type
@@ -1753,7 +1753,7 @@ class Exchange:
         since: int
     ) -> Dict:
         """
-            Get's the mark price history for a pair
+        Get's the mark price history for a pair
         """
 
         try:
@@ -1802,11 +1802,11 @@ class Exchange:
         close_date: Optional[datetime] = None
     ) -> float:
         """
-            calculates the sum of all funding fees that occurred for a pair during a futures trade
-            :param pair: The quote/base pair of the trade
-            :param amount: The quantity of the trade
-            :param open_date: The date and time that the trade started
-            :param close_date: The date and time that the trade ended
+        calculates the sum of all funding fees that occurred for a pair during a futures trade
+        :param pair: The quote/base pair of the trade
+        :param amount: The quantity of the trade
+        :param open_date: The date and time that the trade started
+        :param close_date: The date and time that the trade ended
         """
 
         fees: float = 0
@@ -1869,9 +1869,9 @@ class Exchange:
         since: int,
     ) -> Dict:
         '''
-            :param pair: quote/base currency pair
-            :param since: timestamp in ms of the beginning time
-            :param end: timestamp in ms of the end time
+        :param pair: quote/base currency pair
+        :param since: timestamp in ms of the beginning time
+        :param end: timestamp in ms of the end time
         '''
         if not self.exchange_has("fetchFundingRateHistory"):
             raise ExchangeError(

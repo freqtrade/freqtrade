@@ -165,17 +165,17 @@ class Kraken(Exchange):
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
-            # ! This method will always error when run by Freqtrade because time_in_ratio is never
-            # ! passed to _get_funding_fee. For kraken futures to work in dry run and backtesting
-            # ! functionality must be added that passes the parameter time_in_ratio to
-            # ! _get_funding_fee when using Kraken
-            Calculates a single funding fee
-            :param size: contract size * number of contracts
-            :param mark_price: The price of the asset that the contract is based off of
-            :param funding_rate: the interest rate and the premium
-                - interest rate:
-                - premium: varies by price difference between the perpetual contract and mark price
-            :param time_in_ratio: time elapsed within funding period without position alteration
+        # ! This method will always error when run by Freqtrade because time_in_ratio is never
+        # ! passed to _get_funding_fee. For kraken futures to work in dry run and backtesting
+        # ! functionality must be added that passes the parameter time_in_ratio to
+        # ! _get_funding_fee when using Kraken
+        Calculates a single funding fee
+        :param size: contract size * number of contracts
+        :param mark_price: The price of the asset that the contract is based off of
+        :param funding_rate: the interest rate and the premium
+            - interest rate:
+            - premium: varies by price difference between the perpetual contract and mark price
+        :param time_in_ratio: time elapsed within funding period without position alteration
         """
         if not time_in_ratio:
             raise OperationalException(
