@@ -185,8 +185,9 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     (100, 11, 500, 100),
     (1000, 11, 500, 500),  # Above max-stake
     (20, 15, 10, 0),  # Minimum stake > max-stake
-    (1, 11, 100, 11),  # Below min stake
+    (9, 11, 100, 11),  # Below min stake
     (1, 15, 10, 0),  # Below min stake and min_stake > max_stake
+    (20, 50, 100, 0),  # Below min stake and stake * 1.3 > min_stake
 
 ])
 def test_validate_stake_amount(mocker, default_conf,

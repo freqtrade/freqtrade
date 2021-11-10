@@ -255,6 +255,15 @@ class Wallets:
                     f"Stake amount for pair {pair} is too small "
                     f"({stake_amount} < {min_stake_amount}), adjusting to {min_stake_amount}."
                 )
+            if stake_amount * 1.3 < min_stake_amount:
+                # Top-cap stake-amount adjustments to +30%.
+                if self._log:
+                    logger.info(
+                        f"Adjusted stake amount for pair {pair} is more than 30% bigger than "
+                        f"the desired stake ({stake_amount} * 1.3 > {max_stake_amount}), "
+                        f"ignoring trade."
+                    )
+                return 0
             stake_amount = min_stake_amount
 
         if stake_amount > max_stake_amount:
