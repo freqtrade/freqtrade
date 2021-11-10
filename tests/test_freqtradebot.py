@@ -3634,6 +3634,31 @@ def test_get_real_amount_invalid_order(default_conf_usdt, trades_for_order, buy_
     assert freqtrade.get_real_amount(trade, limit_buy_order_usdt) == amount
 
 
+def test_get_real_amount_fees_order(default_conf_usdt, market_buy_order_usdt_doublefee,
+                                    fee, mocker):
+
+    tfo_mock = mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination', return_value='BNB/USDT')
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 200})
+    trade = Trade(
+        pair='LTC/USDT',
+        amount=30.0,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    # Amount does not change
+    assert trade.fee_open == 0.0025
+    assert freqtrade.get_real_amount(trade, market_buy_order_usdt_doublefee) == 30.0
+    assert tfo_mock.call_count == 0
+    # Fetch fees from trades dict if available to get "proper" values
+    assert round(trade.fee_open, 4) == 0.001
+
+
 def test_get_real_amount_wrong_amount(default_conf_usdt, trades_for_order, buy_order_fee, fee,
                                       mocker):
     limit_buy_order_usdt = deepcopy(buy_order_fee)

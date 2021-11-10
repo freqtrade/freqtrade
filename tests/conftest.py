@@ -2222,6 +2222,46 @@ def market_buy_order_usdt():
 
 
 @pytest.fixture
+def market_buy_order_usdt_doublefee(market_buy_order_usdt):
+    order = deepcopy(market_buy_order_usdt)
+    order['fee'] = None
+    # Market orders filled with 2 trades can have fees in different currencies
+    # assuming the account runs out of BNB.
+    order['fees'] = [
+        {'cost': 0.00025125, 'currency': 'BNB'},
+        {'cost': 0.05030681, 'currency': 'USDT'},
+    ]
+    order['trades'] = [{
+        'timestamp': None,
+        'datetime': None,
+        'symbol': 'ETH/USDT',
+        'id': None,
+        'order': '123',
+        'type': 'market',
+        'side': 'sell',
+        'takerOrMaker': None,
+        'price': 2.01,
+        'amount': 25.0,
+        'cost': 50.25,
+        'fee': {'cost': 0.00025125, 'currency': 'BNB'}
+        }, {
+        'timestamp': None,
+        'datetime': None,
+        'symbol': 'ETH/USDT',
+        'id': None,
+        'order': '123',
+        'type': 'market',
+        'side': 'sell',
+        'takerOrMaker': None,
+        'price': 2.0,
+        'amount': 5,
+        'cost': 10,
+        'fee': {'cost': 0.0100306, 'currency': 'USDT'}
+        }]
+    return order
+
+
+@pytest.fixture
 def market_sell_order_usdt():
     return {
         'id': 'mocked_limit_sell',
