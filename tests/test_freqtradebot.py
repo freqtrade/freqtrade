@@ -4715,8 +4715,18 @@ def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls,
     assert freqtrade.update_funding_fees.call_count == calls
 
 
+@pytest.mark.parametrize('schedule_off', [False, True])
 @pytest.mark.parametrize('is_short', [True, False])
-def test_update_funding_fees(mocker, default_conf, time_machine, fee, is_short, limit_order_open):
+def test_update_funding_fees(
+    mocker,
+    default_conf,
+    time_machine,
+    fee,
+    ticker_usdt_sell_up,
+    is_short,
+    limit_order_open,
+    schedule_off
+):
     '''
     nominal_value = mark_price * size
     funding_fee = nominal_value * funding_rate
@@ -4818,7 +4828,21 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee, is_short, 
 
     # create_mock_trades(fee, False)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    freqtrade._schedule.run_pending()
+    if schedule_off:
+        for trade in trades:
+            assert trade.funding_fees == (
+                trade.amount *
+                mark_prices[trade.pair][1630454400000] *
+                funding_rates[trade.pair][1630454400000]
+            )
+            freqtrade.execute_trade_exit(
+                trade=trade,
+                # The values of the next 2 params are irrelevant for this test
+                limit=ticker_usdt_sell_up()['bid'],
+                sell_reason=SellCheckTuple(sell_type=SellType.ROI)
+            )
+    else:
+        freqtrade._schedule.run_pending()
 
     # Funding fees for 00:00 and 08:00
     for trade in trades:
@@ -4827,4 +4851,3 @@ def test_update_funding_fees(mocker, default_conf, time_machine, fee, is_short, 
             mark_prices[trade.pair][time] *
             funding_rates[trade.pair][time] for time in mark_prices[trade.pair].keys()
         ])
-    return
