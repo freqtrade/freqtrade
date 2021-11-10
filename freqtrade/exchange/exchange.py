@@ -1612,7 +1612,6 @@ class Exchange:
         :param since: The earliest time of consideration for calculating funding fees,
             in unix time or as a datetime
         """
-        # TODO-lev: Add dry-run handling for this.
 
         if not self.exchange_has("fetchFundingHistory"):
             raise OperationalException(
