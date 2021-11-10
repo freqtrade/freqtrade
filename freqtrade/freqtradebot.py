@@ -501,7 +501,7 @@ class FreqtradeBot(LoggingMixin):
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
                 min_stake=min_stake_amount, max_stake=max_stake_amount)
-        stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
             return False

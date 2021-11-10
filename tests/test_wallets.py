@@ -189,13 +189,13 @@ def test_get_trade_stake_amount_unlimited_amount(default_conf, ticker, balance_r
     (1, 15, 10, 0),  # Below min stake and min_stake > max_stake
 
 ])
-def test__validate_stake_amount(mocker, default_conf,
-                                stake_amount, min_stake_amount, max_stake_amount, expected):
+def test_validate_stake_amount(mocker, default_conf,
+                               stake_amount, min_stake_amount, max_stake_amount, expected):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch("freqtrade.wallets.Wallets.get_available_stake_amount",
                  return_value=max_stake_amount)
-    res = freqtrade.wallets._validate_stake_amount('XRP/USDT', stake_amount, min_stake_amount)
+    res = freqtrade.wallets.validate_stake_amount('XRP/USDT', stake_amount, min_stake_amount)
     assert res == expected
 
 

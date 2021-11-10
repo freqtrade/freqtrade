@@ -238,7 +238,7 @@ class Wallets:
 
         return self._check_available_stake_amount(stake_amount, available_amount)
 
-    def _validate_stake_amount(self, pair, stake_amount, min_stake_amount):
+    def validate_stake_amount(self, pair, stake_amount, min_stake_amount):
         if not stake_amount:
             logger.debug(f"Stake amount is {stake_amount}, ignoring possible trade for {pair}.")
             return 0
@@ -258,10 +258,10 @@ class Wallets:
             stake_amount = min_stake_amount
 
         if stake_amount > max_stake_amount:
-            stake_amount = max_stake_amount
             if self._log:
                 logger.info(
                     f"Stake amount for pair {pair} is too big "
                     f"({stake_amount} > {max_stake_amount}), adjusting to {max_stake_amount}."
                 )
+            stake_amount = max_stake_amount
         return stake_amount
