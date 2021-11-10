@@ -1618,7 +1618,6 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_buy_order_usd
 
     trade = MagicMock()
     trade.open_order_id = None
-    trade.open_fee = 0.001
     trade.pair = 'ETH/USDT'
     trades = [trade]
 
@@ -1725,7 +1724,6 @@ def test_update_trade_state_exception(mocker, default_conf_usdt,
 
     trade = MagicMock()
     trade.open_order_id = '123'
-    trade.open_fee = 0.001
 
     # Test raise of OperationalException exception
     mocker.patch(
@@ -1743,7 +1741,6 @@ def test_update_trade_state_orderexception(mocker, default_conf_usdt, caplog) ->
 
     trade = MagicMock()
     trade.open_order_id = '123'
-    trade.open_fee = 0.001
 
     # Test raise of OperationalException exception
     grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
