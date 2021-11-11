@@ -73,7 +73,7 @@ class Wallets:
             tot_profit = Trade.get_total_closed_profit()
         else:
             tot_profit = LocalTrade.total_profit
-        tot_in_trades = sum([trade.stake_amount for trade in open_trades])
+        tot_in_trades = sum(trade.stake_amount for trade in open_trades)
 
         current_stake = self.start_cap + tot_profit - tot_in_trades
         _wallets[self._config['stake_currency']] = Wallet(

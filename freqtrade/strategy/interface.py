@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SellCheckTuple(object):
+class SellCheckTuple:
     """
     NamedTuple for Sell type + reason
     """
