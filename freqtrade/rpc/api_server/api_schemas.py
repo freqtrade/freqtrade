@@ -95,6 +95,7 @@ class Profit(BaseModel):
     avg_duration: str
     best_pair: str
     best_rate: float
+    best_pair_profit_ratio: float
     winning_trades: int
     losing_trades: int
 

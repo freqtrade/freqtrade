@@ -284,10 +284,10 @@ class HyperoptTools():
         return (f"{results_metrics['total_trades']:6d} trades. "
                 f"{results_metrics['wins']}/{results_metrics['draws']}"
                 f"/{results_metrics['losses']} Wins/Draws/Losses. "
-                f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
-                f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
-                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_currency} "
-                f"({results_metrics['profit_total'] * 100: 7.2f}%). "
+                f"Avg profit {results_metrics['profit_mean']:7.2%}. "
+                f"Median profit {results_metrics['profit_median']:7.2%}. "
+                f"Total profit {results_metrics['profit_total_abs']:11.8f} {stake_currency} "
+                f"({results_metrics['profit_total']:8.2%}). "
                 f"Avg duration {results_metrics['holding_avg']} min."
                 )
 

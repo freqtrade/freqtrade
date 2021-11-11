@@ -224,9 +224,8 @@ class RPC:
                         trade.pair, refresh=False, side="sell")
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade_percent:.2f}%'
+                profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -534,7 +533,8 @@ class RPC:
             'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
-            'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,
+            'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,  # Deprecated
+            'best_pair_profit_ratio': best_pair[1] if best_pair else 0,
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
         }

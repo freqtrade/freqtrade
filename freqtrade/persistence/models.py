@@ -972,6 +972,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,
                                         'profit': profit,
+                                        'profit_pct': round(profit * 100, 2),
                                         'profit_abs': profit_abs,
                                         'count': count})
                 else:
@@ -980,11 +981,11 @@ class Trade(_DECL_BASE, LocalTrade):
                             return_list[i] = {
                                 'mix_tag': mix_tag,
                                 'profit': profit + return_list[i]["profit"],
+                                'profit_pct': round(profit + return_list[i]["profit"] * 100, 2),
                                 'profit_abs': profit_abs + return_list[i]["profit_abs"],
                                 'count': 1 + return_list[i]["count"]}
                         i += 1
 
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in return_list]
         return return_list
 
     @staticmethod

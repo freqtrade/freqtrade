@@ -169,8 +169,8 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
                 df_comb.loc[timeframe_to_prev_date(timeframe, lowdate), 'cum_profit'],
             ],
             mode='markers',
-            name=f"Max drawdown {max_drawdown * 100:.2f}%",
-            text=f"Max drawdown {max_drawdown * 100:.2f}%",
+            name=f"Max drawdown {max_drawdown:.2%}",
+            text=f"Max drawdown {max_drawdown:.2%}",
             marker=dict(
                 symbol='square-open',
                 size=9,
@@ -192,7 +192,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     # Trades can be empty
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
-        trades['desc'] = trades.apply(lambda row: f"{round(row['profit_ratio'] * 100, 1)}%, "
+        trades['desc'] = trades.apply(lambda row: f"{row['profit_ratio']:.2%}, "
                                                   f"{row['sell_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)

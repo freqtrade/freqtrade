@@ -717,6 +717,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {'avg_duration': ANY,
                          'best_pair': 'XRP/BTC',
                          'best_rate': 1.0,
+                         'best_pair_profit_ratio': 0.01,
                          'first_trade_date': ANY,
                          'first_trade_timestamp': ANY,
                          'latest_trade_date': '5 minutes ago',
