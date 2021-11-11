@@ -534,7 +534,8 @@ class RPC:
             'latest_trade_timestamp': int(last_date.timestamp() * 1000) if last_date else 0,
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
-            'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,
+            'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,  # Deprecated
+            'best_pair_profit_ratio': best_pair[1] if best_pair else 0,
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
         }
