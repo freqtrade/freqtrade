@@ -276,6 +276,8 @@ class FreqtradeBot(LoggingMixin):
                     trade.open_date
                 )
                 trade.funding_fees = funding_fees
+        else:
+            return 0.0
 
     def startup_update_open_orders(self):
         """
@@ -705,10 +707,7 @@ class FreqtradeBot(LoggingMixin):
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         open_date = datetime.now(timezone.utc)
-        if self.trading_mode == TradingMode.FUTURES:
-            funding_fees = self.exchange.get_funding_fees(pair, amount, open_date)
-        else:
-            funding_fees = 0.0
+        funding_fees = self.exchange.get_funding_fees(pair, amount, open_date)
 
         trade = Trade(
             pair=pair,
@@ -1263,6 +1262,7 @@ class FreqtradeBot(LoggingMixin):
         :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
+        trade.funding_fees = self.exchange.get_funding_fees(trade.pair, trade.amount, trade.open_date)
         exit_type = 'sell'  # TODO-lev: Update to exit
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
