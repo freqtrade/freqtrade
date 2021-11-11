@@ -4748,6 +4748,7 @@ def test_update_funding_fees(
     time_machine.move_to("2021-09-01 00:00:00 +00:00")
 
     open_order = limit_order_open[enter_side(is_short)]
+    open_exit_order = limit_order_open[exit_side(is_short)]
     bid = 0.11
     enter_rate_mock = MagicMock(return_value=bid)
     enter_mm = MagicMock(return_value=open_order)
@@ -4825,7 +4826,7 @@ def test_update_funding_fees(
             mark_prices[trade.pair][1630454400000] *
             funding_rates[trade.pair][1630454400000]
         )
-
+    mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
     # create_mock_trades(fee, False)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     if schedule_off:
