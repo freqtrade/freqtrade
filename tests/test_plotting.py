@@ -171,7 +171,7 @@ def test_plot_trades(testdatadir, caplog):
     assert len(trades) == len(trade_buy.x)
     assert trade_buy.marker.color == 'cyan'
     assert trade_buy.marker.symbol == 'circle-open'
-    assert trade_buy.text[0] == '4.0%, roi, 15 min'
+    assert trade_buy.text[0] == '3.99%, roi, 15 min'
 
     trade_sell = find_trace_in_fig_data(figure.data, 'Sell - Profit')
     assert isinstance(trade_sell, go.Scatter)
@@ -179,7 +179,7 @@ def test_plot_trades(testdatadir, caplog):
     assert len(trades.loc[trades['profit_ratio'] > 0]) == len(trade_sell.x)
     assert trade_sell.marker.color == 'green'
     assert trade_sell.marker.symbol == 'square-open'
-    assert trade_sell.text[0] == '4.0%, roi, 15 min'
+    assert trade_sell.text[0] == '3.99%, roi, 15 min'
 
     trade_sell_loss = find_trace_in_fig_data(figure.data, 'Sell - Loss')
     assert isinstance(trade_sell_loss, go.Scatter)
@@ -187,7 +187,7 @@ def test_plot_trades(testdatadir, caplog):
     assert len(trades.loc[trades['profit_ratio'] <= 0]) == len(trade_sell_loss.x)
     assert trade_sell_loss.marker.color == 'red'
     assert trade_sell_loss.marker.symbol == 'square-open'
-    assert trade_sell_loss.text[5] == '-10.4%, stop_loss, 720 min'
+    assert trade_sell_loss.text[5] == '-10.45%, stop_loss, 720 min'
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):

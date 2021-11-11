@@ -50,7 +50,7 @@ class PriceFilter(IPairList):
         """
         active_price_filters = []
         if self._low_price_ratio != 0:
-            active_price_filters.append(f"below {self._low_price_ratio * 100}%")
+            active_price_filters.append(f"below {self._low_price_ratio:.1%}")
         if self._min_price != 0:
             active_price_filters.append(f"below {self._min_price:.8f}")
         if self._max_price != 0:

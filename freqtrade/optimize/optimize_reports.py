@@ -728,16 +728,16 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Total profit %', f"{strat_results['profit_total']:.2%}"),
             ('Trades per day', strat_results['trades_per_day']),
             ('Avg. daily profit %',
-             f"{round(strat_results['profit_total'] / strat_results['backtest_days'] * 100, 2)}%"),
+             f"{(strat_results['profit_total'] / strat_results['backtest_days']):.2%}"),
             ('Avg. stake amount', round_coin_value(strat_results['avg_stake_amount'],
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
                                                     strat_results['stake_currency'])),
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
-                          f"{round(strat_results['best_pair']['profit_sum_pct'], 2)}%"),
+                          f"{strat_results['best_pair']['profit_sum']:.2%}"),
             ('Worst Pair', f"{strat_results['worst_pair']['key']} "
-                           f"{round(strat_results['worst_pair']['profit_sum_pct'], 2)}%"),
+                           f"{strat_results['worst_pair']['profit_sum']:.2%}"),
             ('Best trade', f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
             ('Worst trade', f"{worst_trade['pair']} "
                             f"{worst_trade['profit_ratio']:.2%}"),
@@ -864,5 +864,5 @@ def show_sorted_pairlist(config: Dict, backtest_stats: Dict):
             print(f"Pairs for Strategy {strategy}: \n[")
             for result in results['results_per_pair']:
                 if result["key"] != 'TOTAL':
-                    print(f'"{result["key"]}",  // {round(result["profit_mean_pct"], 2)}%')
+                    print(f'"{result["key"]}",  // {result["profit_mean"]:.2%}')
             print("]")
