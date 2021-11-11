@@ -82,7 +82,7 @@ class PriceFilter(IPairList):
             changeperc = compare / ticker['last']
             if changeperc > self._low_price_ratio:
                 self.log_once(f"Removed {pair} from whitelist, "
-                              f"because 1 unit is {changeperc * 100:.3f}%", logger.info)
+                              f"because 1 unit is {changeperc:.3%}", logger.info)
                 return False
 
         # Perform low_amount check

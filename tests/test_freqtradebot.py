@@ -3352,7 +3352,7 @@ def test_trailing_stop_loss_positive(
     )
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
+    caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 2.49%"
     if trail_if_reached:
         assert not log_has(caplog_text, caplog)
         assert not log_has("ETH/USDT - Adjusting stoploss...", caplog)
@@ -3372,7 +3372,7 @@ def test_trailing_stop_loss_positive(
     )
     assert freqtrade.handle_trade(trade) is False
     assert log_has(
-        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0572%",
+        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 5.72%",
         caplog
     )
     assert log_has("ETH/USDT - Adjusting stoploss...", caplog)

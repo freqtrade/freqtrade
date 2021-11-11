@@ -224,9 +224,8 @@ class RPC:
                         trade.pair, refresh=False, side="sell")
                 except (PricingError, ExchangeError):
                     current_rate = NAN
-                trade_percent = (100 * trade.calc_profit_ratio(current_rate))
                 trade_profit = trade.calc_profit(current_rate)
-                profit_str = f'{trade_percent:.2f}%'
+                profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
