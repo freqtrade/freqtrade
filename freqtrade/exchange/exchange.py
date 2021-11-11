@@ -1747,13 +1747,11 @@ class Exchange:
             raise OperationalException(e) from e
 
     @retrier
-    def _get_mark_price_history(
-        self,
-        pair: str,
-        since: int
-    ) -> Dict:
+    def _get_mark_price_history(self, pair: str, since: int) -> Dict:
         """
         Get's the mark price history for a pair
+        :param pair: The quote/base pair of the trade
+        :param since: The earliest time to start downloading candles, in ms.
         """
 
         try:
@@ -1803,6 +1801,7 @@ class Exchange:
     ) -> float:
         """
         calculates the sum of all funding fees that occurred for a pair during a futures trade
+        Only used during dry-run or if the exchange does not provide a funding_rates endpoint.
         :param pair: The quote/base pair of the trade
         :param amount: The quantity of the trade
         :param open_date: The date and time that the trade started
