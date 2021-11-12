@@ -1848,7 +1848,7 @@ class Exchange:
 
         return fees
 
-    def get_funding_fees(self, pair: str, amount: float, open_date: datetime):
+    def get_funding_fees(self, pair: str, amount: float, open_date: datetime) -> float:
         """
         Fetch funding fees, either from the exchange (live) or calculates them
         based on funding rate/mark price history
@@ -1856,11 +1856,14 @@ class Exchange:
         :param amount: Trade amount
         :param open_date: Open date of the trade
         """
-        if self._config['dry_run']:
-            funding_fees = self._calculate_funding_fees(pair, amount, open_date)
+        if self.trading_mode == TradingMode.FUTURES:
+            if self._config['dry_run']:
+                funding_fees = self._calculate_funding_fees(pair, amount, open_date)
+            else:
+                funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
+            return funding_fees
         else:
-            funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
-        return funding_fees
+            return 0.0
 
     @retrier
     def get_funding_rate_history(self, pair: str, since: int) -> Dict:

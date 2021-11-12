@@ -1262,7 +1262,11 @@ class FreqtradeBot(LoggingMixin):
         :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
-        trade.funding_fees = self.exchange.get_funding_fees(trade.pair, trade.amount, trade.open_date)
+        trade.funding_fees = self.exchange.get_funding_fees(
+            trade.pair,
+            trade.amount,
+            trade.open_date
+        )
         exit_type = 'sell'  # TODO-lev: Update to exit
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
