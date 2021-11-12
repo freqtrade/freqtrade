@@ -1609,12 +1609,11 @@ class Exchange:
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
         Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+        Dry-run handling happens as part of _calculate_funding_fees.
         :param pair: (e.g. ADA/USDT)
         :param since: The earliest time of consideration for calculating funding fees,
             in unix time or as a datetime
         """
-        # TODO-lev: Add dry-run handling for this.
-
         if not self.exchange_has("fetchFundingHistory"):
             raise OperationalException(
                 f"fetch_funding_history() is not available using {self.name}"
@@ -1889,13 +1888,8 @@ class Exchange:
                 d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
                 # Round down to the nearest hour, in case of a delayed timestamp
                 # The millisecond timestamps can be delayed ~20ms
-                time = datetime(
-                    d.year,
-                    d.month,
-                    d.day,
-                    d.hour,
-                    tzinfo=timezone.utc
-                ).timestamp() * 1000
+                time = int(timeframe_to_prev_date('1h', d).timestamp() * 1000)
+
                 funding_history[time] = fund['fundingRate']
             return funding_history
         except ccxt.DDoSProtection as e:

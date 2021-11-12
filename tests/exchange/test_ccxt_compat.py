@@ -12,7 +12,7 @@ import pytest
 
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_default_conf
+from tests.conftest import get_default_conf_usdt
 
 
 # Exchanges that should be tested
@@ -33,9 +33,11 @@ EXCHANGES = {
         'timeframe': '5m',
     },
     'ftx': {
-        'pair': 'BTC/USDT',
+        'pair': 'BTC/USD',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures_pair': 'BTC-PERP',
+        'futures': True,
     },
     'kucoin': {
         'pair': 'BTC/USDT',
@@ -46,6 +48,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures': True,
     },
     'okex': {
         'pair': 'BTC/USDT',
@@ -57,7 +60,7 @@ EXCHANGES = {
 
 @pytest.fixture(scope="class")
 def exchange_conf():
-    config = get_default_conf((Path(__file__).parent / "testdata").resolve())
+    config = get_default_conf_usdt((Path(__file__).parent / "testdata").resolve())
     config['exchange']['pair_whitelist'] = []
     config['exchange']['key'] = ''
     config['exchange']['secret'] = ''
@@ -71,6 +74,19 @@ def exchange(request, exchange_conf):
     exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 
     yield exchange, request.param
+
+
+@pytest.fixture(params=EXCHANGES, scope="class")
+def exchange_futures(request, exchange_conf):
+    if not EXCHANGES[request.param].get('futures') is True:
+        yield None, request.param
+    else:
+        exchange_conf['exchange']['name'] = request.param
+        exchange_conf['trading_mode'] = 'futures'
+        exchange_conf['collateral'] = 'cross'
+        exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
+
+        yield exchange, request.param
 
 
 @pytest.mark.longrun
@@ -148,6 +164,24 @@ class TestCCXTExchange():
         # Check if last-timeframe is within the last 2 intervals
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
+
+    @pytest.mark.skip("No futures support yet")
+    def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
+        # TODO-lev: enable this test once Futures mode is enabled.
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+
+        rate = exchange.get_funding_rate_history(pair, since)
+        assert isinstance(rate, dict)
+        this_hour = timeframe_to_prev_date('1h')
+        prev_hour = this_hour - timedelta(hours=1)
+        assert rate[int(this_hour.timestamp() * 1000)] != 0.0
+        assert rate[int(prev_hour.timestamp() * 1000)] != 0.0
 
     # TODO: tests fetch_trades (?)
 
