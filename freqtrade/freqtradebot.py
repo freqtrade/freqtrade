@@ -621,8 +621,9 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount, side='long')
-        # TODO-lev: Add non-hardcoded "side" parameter
+                min_stake=min_stake_amount, max_stake=max_stake_amount,
+                side='short' if is_short else 'long'
+            )
 
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
@@ -642,7 +643,6 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get('forcebuy', order_type)
         # TODO-lev: Will this work for shorting?
 
-        # TODO-lev: Add non-hardcoded "side" parameter
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
