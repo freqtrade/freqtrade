@@ -1617,7 +1617,8 @@ class Exchange:
 
         if not self.exchange_has("fetchFundingHistory"):
             raise OperationalException(
-                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+                f"fetch_funding_history() is not available using {self.name}"
+            )
 
         if type(since) is datetime:
             since = int(since.timestamp()) * 1000   # * 1000 for ms
@@ -1870,8 +1871,7 @@ class Exchange:
         """
         if not self.exchange_has("fetchFundingRateHistory"):
             raise ExchangeError(
-                f"CCXT has not implemented fetchFundingRateHistory for {self.name}; "
-                f"therefore, dry-run/backtesting for {self.name} is currently unavailable"
+                f"fetch_funding_rate_history is not available using {self.name}"
             )
 
         # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
