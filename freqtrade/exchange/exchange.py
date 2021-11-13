@@ -667,7 +667,10 @@ class Exchange:
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
         return self._get_stake_amount_considering_leverage(
-            max(min_stake_amounts) * amount_reserve_percent,
+            self._contract_size_to_amount(
+                pair,
+                max(min_stake_amounts) * amount_reserve_percent
+            ),
             leverage or 1.0
         )
 
@@ -835,6 +838,20 @@ class Exchange:
             params.update({param: time_in_force})
         return params
 
+    def _amount_to_contract_size(self, pair: str, amount: float):
+
+        if ('contractSize' in self._api.markets[pair]):
+            return amount / self._api.markets[pair]['contractSize']
+        else:
+            return amount
+
+    def _contract_size_to_amount(self, pair: str, amount: float):
+
+        if ('contractSize' in self._api.markets[pair]):
+            return amount * self._api.markets[pair]['contractSize']
+        else:
+            return amount
+
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, leverage: float = 1.0, time_in_force: str = 'gtc') -> Dict:
         # TODO-lev: remove default for leverage
@@ -852,6 +869,7 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             self._lev_prep(pair, leverage)
+            amount = self._amount_to_contract_size(pair, amount)
             order = self._api.create_order(
                 pair,
                 ordertype,
