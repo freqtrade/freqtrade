@@ -219,49 +219,25 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
-        content = []
-        # Buy Order Fill
+        message = "\N{CHECK MARK} *{exchange}:* Bought {pair} (#{trade_id})\n".format(**msg)
+        message += "*Buy Tag:* `{buy_tag}`\n".format(**msg) if msg.get('buy_tag', None) else ""
+        message += "*Amount:* `{amount:.8f}`\n".format(**msg)
+
         if msg['type'] == RPCMessageType.BUY_FILL:
-            content.append(
-                f"\N{CHECK MARK} *{msg['exchange']}:* Bought {msg['pair']}"
-                f" (#{msg['trade_id']})\n"
-            )
-            if msg.get('buy_tag', None):
-                content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-            content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
-            content.append(f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
-            content.append(
-                f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
-            )
-            if msg.get('fiat_currency', None):
-                content.append(
-                    f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-                )
+            message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
 
-            message = ''.join(content)
-            message += ")`"
-        # Buy Order Ask
-        else:
-            content.append(
-                f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
-                f" (#{msg['trade_id']})\n"
-            )
-            if msg.get('buy_tag', None):
-                content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-            content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
-            content.append(f"*Open Rate:* `{msg['limit']:.8f}`\n")
-            content.append(f"*Current Rate:* `{msg['current_rate']:.8f}`\n")
-            content.append(
-                f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
-            )
-            if msg.get('fiat_currency', None):
-                content.append(
-                    f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
-                )
+        elif msg['type'] == RPCMessageType.BUY:
+            message = message.replace('Bought', 'Buying')\
+                .replace("\N{CHECK MARK}", "\N{LARGE BLUE CIRCLE}")
+            message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
+                       f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
-            message = ''.join(content)
-            message += ")`"
+        message += f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
 
+        if msg.get('fiat_currency', None):
+            message += f", {round_coin_value(msg['stake_amount_fiat'], msg['fiat_currency'])}"
+
+        message += ")`"
         return message
 
     def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
