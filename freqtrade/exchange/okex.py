@@ -25,21 +25,3 @@ class Okex(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
         # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
     ]
-
-    @property
-    def _ccxt_config(self) -> Dict:
-        # Parameters to add directly to ccxt sync/async initialization.
-        if self.trading_mode == TradingMode.MARGIN:
-            return {
-                "options": {
-                    "defaultType": "margin"
-                }
-            }
-        elif self.trading_mode == TradingMode.FUTURES:
-            return {
-                "options": {
-                    "defaultType": "swap"
-                }
-            }
-        else:
-            return {}
