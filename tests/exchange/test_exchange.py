@@ -3253,9 +3253,10 @@ def test_validate_trading_mode_and_collateral(
     ("binance", "spot", {}),
     ("binance", "margin", {"options": {"defaultType": "margin"}}),
     ("binance", "futures", {"options": {"defaultType": "future"}}),
-    ("gateio", "spot", {}),
-    ("gateio", "margin", {"options": {"defaultType": "margin"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),
+    ("bibox", "spot", {"has": {"fetchCurrencies": False}}),
+    ("bibox", "margin", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "margin"}}),
+    ("bibox", "futures", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "swap"}}),
 ])
 def test__ccxt_config(
     default_conf,
