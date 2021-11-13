@@ -12,11 +12,14 @@ Also, several other strategies are available in the [strategy repository](https:
 You will however most likely have your own idea for a strategy.
 This document intends to help you convert your strategy idea into your own strategy.
 
-To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
+To get started, use `freqtrade new-strategy --strategy AwesomeStrategy` (you can obviously use your own naming for your strategy).
 This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
 
 !!! Note
     This is just a template file, which will most likely not be profitable out of the box.
+
+??? Hint "Different template levels"
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with most callbacks defined.
 
 ### Anatomy of a strategy
 
@@ -53,6 +56,46 @@ file as reference.**
     Since backtesting passes the full time range to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
+
+### Dataframe
+
+Freqtrade uses [pandas](https://pandas.pydata.org/) to store/provide the candlestick (OHLCV) data.
+Pandas is a great library developed for processing large amounts of data.
+
+Each row in a dataframe corresponds to one candle on a chart, with the latest candle always being the last in the dataframe (sorted by date).
+
+``` output
+> dataframe.head()
+                       date      open      high       low     close     volume
+0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253
+1 2021-11-09 23:30:00+00:00  67300.97  67301.34  67183.03  67187.01   61.38076
+2 2021-11-09 23:35:00+00:00  67187.02  67187.02  67031.93  67123.81  113.42728
+3 2021-11-09 23:40:00+00:00  67123.80  67222.40  67080.33  67160.48   78.96008
+4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292
+```
+
+Pandas provides fast ways to calculate metrics. To benefit from this speed, it's advised to not use loops, but use vectorized methods instead.
+
+Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
+
+As a dataframe is a table, simple python comparisons like the following will not work
+
+``` python
+    if dataframe['rsi'] > 30:
+        dataframe['buy'] = 1
+```
+
+The above section will fail with `The truth value of a Series is ambiguous. [...]`.
+
+This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe.
+
+``` python
+    dataframe.loc[
+        (dataframe['rsi'] > 30)
+    , 'buy'] = 1
+```
+
+With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
 
 ### Customize Indicators
 
