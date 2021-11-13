@@ -219,6 +219,7 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
+        msg['currency'] = msg['pair'].split('/')[0]
         content = []
         content.append(
             f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
@@ -226,7 +227,7 @@ class Telegram(RPCHandler):
         )
         if msg.get('buy_tag', None):
             content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-        content.append(f"*Amount:* `{msg['amount']:.8f} {msg['pair'].split('/')[0]}`\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}` {msg['currency']}\n")
         content.append(f"*Open Rate:* `{msg['limit']:.8f}`\n")
         content.append(f"*Current Rate:* `{msg['current_rate']:.8f}`\n")
         content.append(
@@ -241,13 +242,14 @@ class Telegram(RPCHandler):
         message += ")`"
         return message
 
-    def _format_buy_msg_fill(self, msg: Dict[str, Any]) -> str:
+    def _format_buy_fill_msg(self, msg: Dict[str, Any]) -> str:
         if self._rpc._fiat_converter:
             msg['stake_amount_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
         else:
             msg['stake_amount_fiat'] = 0
 
+        msg['currency'] = msg['pair'].split('/')[0]
         content = []
         content.append(
             f"\N{CHECK MARK} *{msg['exchange']}:* Bought {msg['pair']}"
@@ -255,7 +257,8 @@ class Telegram(RPCHandler):
         )
         if msg.get('buy_tag', None):
             content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-        content.append(f"*Amount:* `{msg['amount']:.8f} {msg['pair'].split('/')[0]}`\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}` {msg['currency']}\n")
+        content.append(f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
         content.append(
             f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
         )
@@ -269,38 +272,6 @@ class Telegram(RPCHandler):
         return message
 
     def _format_sell_msg(self, msg: Dict[str, Any]) -> str:
-        msg['amount'] = round(msg['amount'], 8)
-        msg['duration'] = msg['close_date'].replace(
-            microsecond=0) - msg['open_date'].replace(microsecond=0)
-        msg['duration_min'] = msg['duration'].total_seconds() / 60
-        msg['buy_tag'] = msg['buy_tag'] if "buy_tag" in msg.keys() else None
-
-        # Check if all sell properties are available.
-        # This might not be the case if the message origin is triggered by /forcesell
-        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
-                and self._rpc._fiat_converter):
-            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
-                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
-                                   ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
-        else:
-            msg['profit_extra'] = ''
-
-        msg['currency'] = msg['pair'].split('/')[0]
-        message = ("\N{LARGE RED CIRCLE} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                   "*Unrealized Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
-                   "*Buy Tag:* `{buy_tag}`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Amount:* `{amount:.8f}` {currency}\n"
-                   "*Open Rate:* `{open_rate:.8f}`\n"
-                   "*Current Rate:* `{current_rate:.8f}`\n"
-                   "*Close Rate:* `{close_rate:.8f}`").format(
-            **msg)  # TODO: Updated from `limit`, confirm this is correct variable?
-
-        return message
-
-    def _format_sell_msg_fill(self, msg: Dict[str, Any]) -> str:
         msg['amount'] = round(msg['amount'], 8)
         msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
         msg['duration'] = msg['close_date'].replace(
@@ -320,18 +291,49 @@ class Telegram(RPCHandler):
                                    ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
         else:
             msg['profit_extra'] = ''
-
         msg['currency'] = msg['pair'].split('/')[0]
+        message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
+                   "*Unrealized Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
+                   "*Buy Tag:* `{buy_tag}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}` {currency}\n"
+                   "*Open Rate:* `{open_rate:.8f}`\n"
+                   "*Current Rate:* `{current_rate:.8f}`\n"
+                   "*Close Rate:* `{limit:.8f}`").format(**msg)
+
+        return message
+
+    def _format_sell_fill_msg(self, msg: Dict[str, Any]) -> str:
         import pprint
         pprint.pprint(msg)
+        msg['amount'] = round(msg['amount'], 8)
+        msg['profit_percent'] = round(msg['profit_ratio'] * 100, 2)
+        msg['duration'] = msg['close_date'].replace(
+            microsecond=0) - msg['open_date'].replace(microsecond=0)
+        msg['duration_min'] = msg['duration'].total_seconds() / 60
+
+        msg['buy_tag'] = msg['buy_tag'] if "buy_tag" in msg.keys() else None
+        msg['emoji'] = self._get_sell_emoji(msg)
+
+        # Check if all sell properties are available.
+        # This might not be the case if the message origin is triggered by /forcesell
+        if (all(prop in msg for prop in ['gain', 'fiat_currency', 'stake_currency'])
+                and self._rpc._fiat_converter):
+            msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
+                msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
+            msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
+                                   ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
+        else:
+            msg['profit_extra'] = ''
+        msg['currency'] = msg['pair'].split('/')[0]
         message = ("{emoji} *{exchange}:* Sold {pair} (#{trade_id})\n"
                    "*Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
                    "*Buy Tag:* `{buy_tag}`\n"
                    "*Sell Reason:* `{sell_reason}`\n"
                    "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
                    "*Amount:* `{amount:.8f}` {currency}\n"
-                   "*Close Rate:* `{close_rate:.8f}`").format(
-            **msg)  # TODO: Updated from `limit`, confirm this is correct variable to use? Limit not in dict for _fill
+                   "*Close Rate:* `{close_rate:.8f}`").format(**msg)
 
         return message
 
@@ -347,10 +349,10 @@ class Telegram(RPCHandler):
                        "Reason: {reason}.".format(**msg))
 
         elif msg_type == RPCMessageType.BUY_FILL:
-            message = self._format_buy_msg_fill(msg)
+            message = self._format_buy_fill_msg(msg)
 
         elif msg_type == RPCMessageType.SELL_FILL:
-            message = self._format_sell_msg_fill(msg)
+            message = self._format_sell_fill_msg(msg)
 
         elif msg_type == RPCMessageType.SELL:
             message = self._format_sell_msg(msg)
@@ -360,11 +362,13 @@ class Telegram(RPCHandler):
                 "*Protection* triggered due to {reason}. "
                 "`{pair}` will be locked until `{lock_end_time}`."
             ).format(**msg)
+
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER_GLOBAL:
             message = (
                 "*Protection* triggered due to {reason}. "
                 "*All pairs* will be locked until `{lock_end_time}`."
             ).format(**msg)
+
         elif msg_type == RPCMessageType.STATUS:
             message = '*Status:* `{status}`'.format(**msg)
 
@@ -748,9 +752,9 @@ class Telegram(RPCHandler):
         duration_msg = tabulate(
             [
                 ['Wins', str(timedelta(seconds=durations['wins']))
-                if durations['wins'] != 'N/A' else 'N/A'],
+                 if durations['wins'] != 'N/A' else 'N/A'],
                 ['Losses', str(timedelta(seconds=durations['losses']))
-                if durations['losses'] != 'N/A' else 'N/A']
+                 if durations['losses'] != 'N/A' else 'N/A']
             ],
             headers=['', 'Avg. Duration']
         )
@@ -981,9 +985,9 @@ class Telegram(RPCHandler):
             trade_id = int(context.args[0])
             msg = self._rpc._rpc_delete(trade_id)
             self._send_msg((
-                               '`{result_msg}`\n'
-                               'Please make sure to take care of this asset on the exchange manually.'
-                           ).format(**msg))
+                '`{result_msg}`\n'
+                'Please make sure to take care of this asset on the exchange manually.'
+            ).format(**msg))
 
         except RPCException as e:
             self._send_msg(str(e))
@@ -1002,7 +1006,7 @@ class Telegram(RPCHandler):
             output = "<b>Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i + 1}.\t <code>{trade['pair']}\t"
+                    f"{i+1}.\t <code>{trade['pair']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
@@ -1037,7 +1041,7 @@ class Telegram(RPCHandler):
             output = "<b>Buy Tag Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i + 1}.\t <code>{trade['buy_tag']}\t"
+                    f"{i+1}.\t <code>{trade['buy_tag']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
@@ -1072,7 +1076,7 @@ class Telegram(RPCHandler):
             output = "<b>Sell Reason Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i + 1}.\t <code>{trade['sell_reason']}\t"
+                    f"{i+1}.\t <code>{trade['sell_reason']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
@@ -1107,7 +1111,7 @@ class Telegram(RPCHandler):
             output = "<b>Mix Tag Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i + 1}.\t <code>{trade['mix_tag']}\t"
+                    f"{i+1}.\t <code>{trade['mix_tag']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit']:.2%}) "
                     f"({trade['count']})</code>\n")
