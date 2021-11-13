@@ -1613,7 +1613,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Binance:* Buying ETH/BTC (#1)\n' \
            '*Buy Tag:* `buy_signal_01`\n' \
-           '*Amount:* `1333.33333333` ETH\n' \
+           '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
            '*Total:* `(0.00100000 BTC, 12.345 USD)`'
@@ -1702,7 +1702,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == '\N{CHECK MARK} *Binance:* Bought ETH/BTC (#1)\n' \
            '*Buy Tag:* `buy_signal_01`\n' \
-           '*Amount:* `1333.33333333` ETH\n' \
+           '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Total:* `(0.00100000 BTC, 12.345 USD)`'
 
@@ -1739,7 +1739,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1:00:00 (60.0 min)`\n'
-            '*Amount:* `1333.33333333` KEY\n'
+            '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Close Rate:* `0.00003201`'
@@ -1771,7 +1771,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
-            '*Amount:* `1333.33333333` KEY\n'
+            '*Amount:* `1333.33333333`\n'
             '*Open Rate:* `0.00007500`\n'
             '*Current Rate:* `0.00003201`\n'
             '*Close Rate:* `0.00003201`'
@@ -1842,7 +1842,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
-            '*Amount:* `1333.33333333` KEY\n'
+            '*Amount:* `1333.33333333`\n'
             '*Close Rate:* `0.00003201`'
             )
 
@@ -1905,7 +1905,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] == ('\N{LARGE BLUE CIRCLE} *Binance:* Buying ETH/BTC (#1)\n'
                                         '*Buy Tag:* `buy_signal_01`\n'
-                                        '*Amount:* `1333.33333333` ETH\n'
+                                        '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
                                         '*Total:* `(0.00100000 BTC)`')
@@ -1940,7 +1940,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
                                         '*Buy Tag:* `buy_signal1`\n'
                                         '*Sell Reason:* `stop_loss`\n'
                                         '*Duration:* `2:35:03 (155.1 min)`\n'
-                                        '*Amount:* `1333.33333333` KEY\n'
+                                        '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00007500`\n'
                                         '*Current Rate:* `0.00003201`\n'
                                         '*Close Rate:* `0.00003201`'

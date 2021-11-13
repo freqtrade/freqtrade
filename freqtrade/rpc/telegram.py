@@ -219,7 +219,6 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
-        msg['currency'] = msg['pair'].split('/')[0]
         content = []
         content.append(
             f"\N{LARGE BLUE CIRCLE} *{msg['exchange']}:* Buying {msg['pair']}"
@@ -227,7 +226,7 @@ class Telegram(RPCHandler):
         )
         if msg.get('buy_tag', None):
             content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-        content.append(f"*Amount:* `{msg['amount']:.8f}` {msg['currency']}\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
         content.append(f"*Open Rate:* `{msg['limit']:.8f}`\n")
         content.append(f"*Current Rate:* `{msg['current_rate']:.8f}`\n")
         content.append(
@@ -249,7 +248,6 @@ class Telegram(RPCHandler):
         else:
             msg['stake_amount_fiat'] = 0
 
-        msg['currency'] = msg['pair'].split('/')[0]
         content = []
         content.append(
             f"\N{CHECK MARK} *{msg['exchange']}:* Bought {msg['pair']}"
@@ -257,7 +255,7 @@ class Telegram(RPCHandler):
         )
         if msg.get('buy_tag', None):
             content.append(f"*Buy Tag:* `{msg['buy_tag']}`\n")
-        content.append(f"*Amount:* `{msg['amount']:.8f}` {msg['currency']}\n")
+        content.append(f"*Amount:* `{msg['amount']:.8f}`\n")
         content.append(f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
         content.append(
             f"*Total:* `({round_coin_value(msg['stake_amount'], msg['stake_currency'])}"
@@ -291,13 +289,13 @@ class Telegram(RPCHandler):
                                    ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
         else:
             msg['profit_extra'] = ''
-        msg['currency'] = msg['pair'].split('/')[0]
+
         message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
                    "*Unrealized Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
                    "*Buy Tag:* `{buy_tag}`\n"
                    "*Sell Reason:* `{sell_reason}`\n"
                    "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Amount:* `{amount:.8f}` {currency}\n"
+                   "*Amount:* `{amount:.8f}`\n"
                    "*Open Rate:* `{open_rate:.8f}`\n"
                    "*Current Rate:* `{current_rate:.8f}`\n"
                    "*Close Rate:* `{limit:.8f}`").format(**msg)
@@ -326,13 +324,13 @@ class Telegram(RPCHandler):
                                    ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
         else:
             msg['profit_extra'] = ''
-        msg['currency'] = msg['pair'].split('/')[0]
+
         message = ("{emoji} *{exchange}:* Sold {pair} (#{trade_id})\n"
                    "*Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
                    "*Buy Tag:* `{buy_tag}`\n"
                    "*Sell Reason:* `{sell_reason}`\n"
                    "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Amount:* `{amount:.8f}` {currency}\n"
+                   "*Amount:* `{amount:.8f}`\n"
                    "*Close Rate:* `{close_rate:.8f}`").format(**msg)
 
         return message
