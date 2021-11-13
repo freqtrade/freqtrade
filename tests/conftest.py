@@ -2389,7 +2389,7 @@ def mark_ohlcv():
 
 
 @pytest.fixture(scope='function')
-def funding_rate_history():
+def funding_rate_history_hourly():
     return [
         {
             "symbol": "ADA/USDT",
@@ -2475,4 +2475,22 @@ def funding_rate_history():
             "timestamp": 1630501200000,
             "datetime": "2021-09-01T13:00:00.000Z"
         },
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_octohourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        }
     ]

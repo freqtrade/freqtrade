@@ -4761,7 +4761,19 @@ def test_update_funding_fees(
     default_conf['collateral'] = 'isolated'
     default_conf['dry_run'] = True
 
-    funding_rates = {
+    funding_rates_midnight = {
+        "LTC/BTC": {
+            1630454400000: 0.00032583,
+        },
+        "ETH/BTC": {
+            1630454400000: 0.0001,
+        },
+        "XRP/BTC": {
+            1630454400000: 0.00049426,
+        }
+    }
+
+    funding_rates_eight = {
         "LTC/BTC": {
             1630454400000: 0.00032583,
             1630483200000: 0.00024472,
@@ -4798,7 +4810,7 @@ def test_update_funding_fees(
 
     mocker.patch(
         'freqtrade.exchange.Exchange.get_funding_rate_history',
-        side_effect=lambda pair, since: funding_rates[pair]
+        side_effect=lambda pair, since: funding_rates_midnight[pair]
     )
 
     mocker.patch.multiple(
@@ -4827,17 +4839,21 @@ def test_update_funding_fees(
         assert trade.funding_fees == (
             trade.amount *
             mark_prices[trade.pair][1630454400000] *
-            funding_rates[trade.pair][1630454400000]
+            funding_rates_midnight[trade.pair][1630454400000]
         )
     mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
     # create_mock_trades(fee, False)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_funding_rate_history',
+        side_effect=lambda pair, since: funding_rates_eight[pair]
+    )
     if schedule_off:
         for trade in trades:
             assert trade.funding_fees == (
                 trade.amount *
                 mark_prices[trade.pair][1630454400000] *
-                funding_rates[trade.pair][1630454400000]
+                funding_rates_eight[trade.pair][1630454400000]
             )
             freqtrade.execute_trade_exit(
                 trade=trade,
@@ -4853,5 +4869,5 @@ def test_update_funding_fees(
         assert trade.funding_fees == sum([
             trade.amount *
             mark_prices[trade.pair][time] *
-            funding_rates[trade.pair][time] for time in mark_prices[trade.pair].keys()
+            funding_rates_eight[trade.pair][time] for time in mark_prices[trade.pair].keys()
         ])

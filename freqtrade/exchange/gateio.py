@@ -26,8 +26,6 @@ class Gateio(Exchange):
 
     _headers = {'X-Gate-Channel-Id': 'freqtrade'}
 
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
-
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported

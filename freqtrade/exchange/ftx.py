@@ -22,7 +22,6 @@ class Ftx(Exchange):
         "ohlcv_candle_limit": 1500,
         "mark_ohlcv_price": "index"
     }
-    funding_fee_times: List[int] = list(range(0, 24))
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list

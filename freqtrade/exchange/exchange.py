@@ -73,10 +73,6 @@ class Exchange:
     }
     _ft_has: Dict = {}
 
-    # funding_fee_times is currently unused, but should ideally be used to properly
-    # schedule refresh times
-    funding_fee_times: List[int] = []  # hours of the day
-
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
     ]
@@ -1711,21 +1707,6 @@ class Exchange:
         """
         return open_date.minute > 0 or open_date.second > 0
 
-    def _get_funding_fee_dates(self, start: datetime, end: datetime):
-        if self.funding_fee_cutoff(start):
-            start += timedelta(hours=1)
-        start = datetime(start.year, start.month, start.day, start.hour, tzinfo=timezone.utc)
-        end = datetime(end.year, end.month, end.day, end.hour, tzinfo=timezone.utc)
-
-        results = []
-        iterator = start
-        while iterator <= end:
-            if iterator.hour in self.funding_fee_times:
-                results.append(iterator)
-            iterator += timedelta(hours=1)
-
-        return results
-
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         """
@@ -1808,6 +1789,16 @@ class Exchange:
         :param close_date: The date and time that the trade ended
         """
 
+        if self.funding_fee_cutoff(open_date):
+            open_date += timedelta(hours=1)
+        open_date = datetime(
+            open_date.year,
+            open_date.month,
+            open_date.day,
+            open_date.hour,
+            tzinfo=timezone.utc
+        )
+
         fees: float = 0
         if not close_date:
             close_date = datetime.now(timezone.utc)
@@ -1821,28 +1812,19 @@ class Exchange:
             pair,
             open_timestamp
         )
-        funding_fee_dates = self._get_funding_fee_dates(open_date, close_date)
-        for date in funding_fee_dates:
-            timestamp = int(date.timestamp()) * 1000
-            if timestamp in funding_rate_history:
-                funding_rate = funding_rate_history[timestamp]
-            else:
-                logger.warning(
-                    f"Funding rate for {pair} at {date} not found in funding_rate_history"
-                    f"Funding fee calculation may be incorrect"
-                )
+        for timestamp in funding_rate_history.keys():
+            funding_rate = funding_rate_history[timestamp]
             if timestamp in mark_price_history:
                 mark_price = mark_price_history[timestamp]
-            else:
-                logger.warning(
-                    f"Mark price for {pair} at {date} not found in funding_rate_history"
-                    f"Funding fee calculation may be incorrect"
-                )
-            if funding_rate and mark_price:
                 fees += self._get_funding_fee(
                     size=amount,
                     mark_price=mark_price,
                     funding_rate=funding_rate
+                )
+            else:
+                logger.warning(
+                    f"Mark price for {pair} at timestamp {timestamp} not found in "
+                    f"funding_rate_history Funding fee calculation may be incorrect"
                 )
 
         return fees

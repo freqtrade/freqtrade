@@ -24,5 +24,3 @@ class Bibox(Exchange):
     def _ccxt_config(self) -> Dict:
         # Parameters to add directly to ccxt sync/async initialization.
         return {"has": {"fetchCurrencies": False}}
-
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
