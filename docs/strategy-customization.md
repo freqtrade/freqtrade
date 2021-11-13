@@ -1016,6 +1016,10 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
+### Colliding signals
+
+When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing. This is to avoid trades that buy, and sell immediately. Obviously, this can lead to both missed entries, as well as missed exits.
+
 ## Further strategy ideas
 
 To get additional Ideas for strategies, head over to the [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
