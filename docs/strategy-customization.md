@@ -4,26 +4,13 @@ This page explains how to customize your strategies, add new indicators and set 
 
 Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
 
-## Install a custom strategy file
-
-This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
-
-Let assume you have a class called `AwesomeStrategy` in the file `AwesomeStrategy.py`:
-
-1. Move your file into `user_data/strategies` (you should have `user_data/strategies/AwesomeStrategy.py`
-2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
-
-```bash
-freqtrade trade --strategy AwesomeStrategy
-```
-
 ## Develop your own strategy
 
 The bot includes a default strategy file.
 Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
 You will however most likely have your own idea for a strategy.
-This document intends to help you develop one for yourself.
+This document intends to help you convert your strategy idea into your own strategy.
 
 To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
 This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
@@ -317,6 +304,19 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
 Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
+
+## Strategy file loading
+
+By default, freqtrade will attempt to load strategies from all `.py` files within `user_data/strategies`.
+
+Assuming your strategy is called `AwesomeStrategy`, stored in the file `user_data/strategies/AwesomeStrategy.py`, then you can start freqtrade with `freqtrade trade --strategy AwesomeStrategy`.
+Note that we're using the class-name, not the file name.
+
+You can use `freqtrade list-strategies` to see a list of all strategies Freqtrade is able to load (all strategies in the correct folder).
+It will also include a "status" field, highlighting potential problems.
+
+??? Hint "Customize strategy directory"
+    You can use a different directory by using `--strategy-path user_data/otherPath`. This parameter is available to all commands that require a strategy.
 
 ## Informative Pairs
 
