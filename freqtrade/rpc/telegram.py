@@ -285,27 +285,22 @@ class Telegram(RPCHandler):
         else:
             msg['profit_extra'] = ''
 
-        # Sell Order Fill
-        if msg['type'] == RPCMessageType.SELL_FILL:
-            message = ("{emoji} *{exchange}:* Sold {pair} (#{trade_id})\n"
-                       "*Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
-                       "*Buy Tag:* `{buy_tag}`\n"
-                       "*Sell Reason:* `{sell_reason}`\n"
-                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                       "*Amount:* `{amount:.8f}`\n"
-                       "*Close Rate:* `{close_rate:.8f}`").format(**msg)
+        message = ("{emoji} *{exchange}:* Sold {pair} (#{trade_id})\n"
+                   "*Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
+                   "*Buy Tag:* `{buy_tag}`\n"
+                   "*Sell Reason:* `{sell_reason}`\n"
+                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
+                   "*Amount:* `{amount:.8f}`\n").format(**msg)
 
-        # Sell Order Ask
-        else:
-            message = ("{emoji} *{exchange}:* Selling {pair} (#{trade_id})\n"
-                       "*Unrealized Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
-                       "*Buy Tag:* `{buy_tag}`\n"
-                       "*Sell Reason:* `{sell_reason}`\n"
-                       "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                       "*Amount:* `{amount:.8f}`\n"
-                       "*Open Rate:* `{open_rate:.8f}`\n"
-                       "*Current Rate:* `{current_rate:.8f}`\n"
-                       "*Close Rate:* `{limit:.8f}`").format(**msg)
+        if msg['type'] == RPCMessageType.SELL:
+            message = message.replace('Sold', 'Selling').replace('Profit', 'Unrealized Profit')
+            message += ("*Open Rate:* `{open_rate:.8f}`\n"
+                        "*Current Rate:* `{current_rate:.8f}`\n"
+                        "*Close Rate:* `{limit:.8f}`").format(**msg)
+
+        elif msg['type'] == RPCMessageType.SELL_FILL:
+            message += ("*Close Rate:* `{close_rate:.8f}`").format(**msg)
+
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
