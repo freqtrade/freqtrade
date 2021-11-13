@@ -1,6 +1,6 @@
 """ Kucoin exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from freqtrade.exchange import Exchange
 
