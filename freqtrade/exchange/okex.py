@@ -20,25 +20,8 @@ class Okex(Exchange):
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
+        # TODO-lev: Uncomment once supported
+        # (TradingMode.MARGIN, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
-
-    @property
-    def _ccxt_config(self) -> Dict:
-        # Parameters to add directly to ccxt sync/async initialization.
-        if self.trading_mode == TradingMode.MARGIN:
-            return {
-                "options": {
-                    "defaultType": "margin"
-                }
-            }
-        elif self.trading_mode == TradingMode.FUTURES:
-            return {
-                "options": {
-                    "defaultType": "swap"
-                }
-            }
-        else:
-            return {}

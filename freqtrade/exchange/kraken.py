@@ -26,8 +26,9 @@ class Kraken(Exchange):
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: No CCXT support
+        # TODO-lev: Uncomment once supported
+        # (TradingMode.MARGIN, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.CROSS)
     ]
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
