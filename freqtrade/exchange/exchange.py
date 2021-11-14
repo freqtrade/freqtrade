@@ -1763,13 +1763,7 @@ class Exchange:
                 d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
                 # Round down to the nearest hour, in case of a delayed timestamp
                 # The millisecond timestamps can be delayed ~20ms
-                time = datetime(
-                    d.year,
-                    d.month,
-                    d.day,
-                    d.hour,
-                    tzinfo=timezone.utc
-                ).timestamp() * 1000
+                time = timeframe_to_prev_date('1h', d).timestamp() * 1000
                 opening_mark_price = candle[1]
                 history[time] = opening_mark_price
             return history
@@ -1805,13 +1799,8 @@ class Exchange:
 
         if self.funding_fee_cutoff(open_date):
             open_date += timedelta(hours=1)
-        open_date = datetime(
-            open_date.year,
-            open_date.month,
-            open_date.day,
-            open_date.hour,
-            tzinfo=timezone.utc
-        )
+
+        open_date = timeframe_to_prev_date('1h', open_date)
 
         fees: float = 0
         if not close_date:
