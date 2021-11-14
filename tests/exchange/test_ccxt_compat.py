@@ -49,11 +49,16 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
+        'futures_fundingrate_tf': '8h',
+        'futures_pair': 'BTC/USDT:USDT',
     },
     'okex': {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures_fundingrate_tf': '8h',
+        'futures_pair': 'BTC/USDT:USDT',
+        'futures': True,
     },
 }
 
@@ -178,10 +183,11 @@ class TestCCXTExchange():
 
         rate = exchange.get_funding_rate_history(pair, since)
         assert isinstance(rate, dict)
-        this_hour = timeframe_to_prev_date('1h')
-        prev_hour = this_hour - timedelta(hours=1)
+        expected_tf = EXCHANGES[exchangename].get('futures_fundingrate_tf', '1h')
+        this_hour = timeframe_to_prev_date(expected_tf)
+        prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
         assert rate[int(this_hour.timestamp() * 1000)] != 0.0
-        assert rate[int(prev_hour.timestamp() * 1000)] != 0.0
+        assert rate[int(prev_tick.timestamp() * 1000)] != 0.0
 
     # TODO: tests fetch_trades (?)
 
