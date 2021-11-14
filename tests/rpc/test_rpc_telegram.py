@@ -731,7 +731,7 @@ def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
 
     telegram._stats(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    # assert 'No trades yet.' in msg_mock.call_args_list[0][0][0]
+    assert 'No trades yet.' in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
     # Create some test data

@@ -686,10 +686,16 @@ class Telegram(RPCHandler):
                 count['losses']
             ] for reason, count in stats['sell_reasons'].items()
         ]
-        sell_reasons_msg = tabulate(
-            sell_reasons_tabulate,
-            headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
-        )
+        sell_reasons_msg = 'No trades yet.'
+        for reason in chunks(sell_reasons_tabulate, 25):
+            sell_reasons_msg = tabulate(
+                reason,
+                headers=['Sell Reason', 'Sells', 'Wins', 'Losses']
+            )
+            if len(sell_reasons_tabulate) > 25:
+                self._send_msg(sell_reasons_msg, ParseMode.MARKDOWN)
+                sell_reasons_msg = ''
+
         durations = stats['durations']
         duration_msg = tabulate(
             [
