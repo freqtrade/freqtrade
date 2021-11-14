@@ -95,6 +95,7 @@ class Profit(BaseModel):
     avg_duration: str
     best_pair: str
     best_rate: float
+    short_trades: int
     winning_trades: int
     losing_trades: int
 
@@ -154,6 +155,7 @@ class TradeSchema(BaseModel):
     trade_id: int
     pair: str
     is_open: bool
+    is_short: bool
     exchange: str
     amount: float
     amount_requested: float
