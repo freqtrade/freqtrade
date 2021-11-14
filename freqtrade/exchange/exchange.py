@@ -69,6 +69,7 @@ class Exchange:
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
+        "ccxt_futures_name": "swap"
     }
     _ft_has: Dict = {}
 
@@ -234,7 +235,20 @@ class Exchange:
     @property
     def _ccxt_config(self) -> Dict:
         # Parameters to add directly to ccxt sync/async initialization.
-        return {}
+        if self.trading_mode == TradingMode.MARGIN:
+            return {
+                "options": {
+                    "defaultType": "margin"
+                }
+            }
+        elif self.trading_mode == TradingMode.FUTURES:
+            return {
+                "options": {
+                    "defaultType": self._ft_has["ccxt_futures_name"]
+                }
+            }
+        else:
+            return {}
 
     @property
     def name(self) -> str:

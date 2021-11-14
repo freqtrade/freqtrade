@@ -8,7 +8,7 @@ from freqtrade.persistence.models import Trade
 from .strats.strategy_test_v3 import StrategyTestV3
 
 
-def test_strategy_test_v2_structure():
+def test_strategy_test_v3_structure():
     assert hasattr(StrategyTestV3, 'minimal_roi')
     assert hasattr(StrategyTestV3, 'stoploss')
     assert hasattr(StrategyTestV3, 'timeframe')
@@ -21,7 +21,7 @@ def test_strategy_test_v2_structure():
     (True, 'short'),
     (False, 'long'),
 ])
-def test_strategy_test_v2(result, fee, is_short, side):
+def test_strategy_test_v3(result, fee, is_short, side):
     strategy = StrategyTestV3({})
 
     metadata = {'pair': 'ETH/BTC'}

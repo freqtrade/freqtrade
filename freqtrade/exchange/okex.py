@@ -26,21 +26,3 @@ class Okex(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),
         # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
-
-    @property
-    def _ccxt_config(self) -> Dict:
-        # Parameters to add directly to ccxt sync/async initialization.
-        if self.trading_mode == TradingMode.MARGIN:
-            return {
-                "options": {
-                    "defaultType": "margin"
-                }
-            }
-        elif self.trading_mode == TradingMode.FUTURES:
-            return {
-                "options": {
-                    "defaultType": "swap"
-                }
-            }
-        else:
-            return {}
