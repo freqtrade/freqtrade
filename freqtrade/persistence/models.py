@@ -16,8 +16,7 @@ from sqlalchemy.sql.schema import UniqueConstraint
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
 from freqtrade.enums import Collateral, SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.leverage import interest
-from freqtrade.leverage import liquidation_price
+from freqtrade.leverage import interest, liquidation_price
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
