@@ -1686,17 +1686,25 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_FILL,
-        'buy_tag': 'buy_signal_01',
         'trade_id': 1,
+        'buy_tag': 'buy_signal_01',
         'exchange': 'Binance',
-        'pair': 'ETH/USDT',
-        'open_rate': 200,
-        'stake_amount': 100,
-        'amount': 0.5,
-        'open_date': arrow.utcnow().datetime
+        'pair': 'ETH/BTC',
+        'stake_amount': 0.001,
+        # 'stake_amount_fiat': 0.0,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'USD',
+        'open_rate': 1.099e-05,
+        'amount': 1333.3333333333335,
+        'open_date': arrow.utcnow().shift(hours=-1)
     })
-    assert (msg_mock.call_args[0][0] == '\N{LARGE CIRCLE} *Binance:* '
-            'Buy order for ETH/USDT (#1) filled for 200.')
+
+    assert msg_mock.call_args[0][0] \
+        == '\N{CHECK MARK} *Binance:* Bought ETH/BTC (#1)\n' \
+           '*Buy Tag:* `buy_signal_01`\n' \
+           '*Amount:* `1333.33333333`\n' \
+           '*Open Rate:* `0.00001099`\n' \
+           '*Total:* `(0.00100000 BTC, 12.345 USD)`'
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1727,7 +1735,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
-            '*Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1:00:00 (60.0 min)`\n'
@@ -1759,7 +1767,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     })
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
-            '*Profit:* `-57.41%`\n'
+            '*Unrealized Profit:* `-57.41%`\n'
             '*Buy Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
@@ -1813,25 +1821,30 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
         'type': RPCMessageType.SELL_FILL,
         'trade_id': 1,
         'exchange': 'Binance',
-        'pair': 'ETH/USDT',
+        'pair': 'KEY/ETH',
         'gain': 'loss',
         'limit': 3.201e-05,
-        'amount': 0.1,
+        'amount': 1333.3333333333335,
         'order_type': 'market',
-        'open_rate': 500,
-        'close_rate': 550,
-        'current_rate': 3.201e-05,
+        'open_rate': 7.5e-05,
+        'close_rate': 3.201e-05,
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
-        'fiat_currency': 'USD',
         'buy_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
-        'open_date': arrow.utcnow().shift(hours=-1),
+        'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] \
-        == ('\N{LARGE CIRCLE} *Binance:* Sell order for ETH/USDT (#1) filled for 550.')
+        == ('\N{WARNING SIGN} *Binance:* Sold KEY/ETH (#1)\n'
+            '*Profit:* `-57.41%`\n'
+            '*Buy Tag:* `buy_signal1`\n'
+            '*Sell Reason:* `stop_loss`\n'
+            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
+            '*Amount:* `1333.33333333`\n'
+            '*Close Rate:* `0.00003201`'
+            )
 
 
 def test_send_msg_status_notification(default_conf, mocker) -> None:
@@ -1923,7 +1936,7 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
-                                        '*Profit:* `-57.41%`\n'
+                                        '*Unrealized Profit:* `-57.41%`\n'
                                         '*Buy Tag:* `buy_signal1`\n'
                                         '*Sell Reason:* `stop_loss`\n'
                                         '*Duration:* `2:35:03 (155.1 min)`\n'
