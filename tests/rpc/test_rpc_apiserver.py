@@ -586,10 +586,10 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     assert rc.json()['total_trades'] == 2
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_api_trade_single(botclient, mocker, fee, ticker, markets):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     ftbot, client = botclient
-    patch_get_signal(ftbot)
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         markets=PropertyMock(return_value=markets),
@@ -599,7 +599,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert_response(rc, 404)
     assert rc.json()['detail'] == 'Trade not found.'
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trade/3")
@@ -607,10 +607,10 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets):
     assert rc.json()['trade_id'] == 3
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_api_delete_trade(botclient, mocker, fee, markets):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     ftbot, client = botclient
-    patch_get_signal(ftbot)
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
     stoploss_mock = MagicMock()
     cancel_mock = MagicMock()
     mocker.patch.multiple(
@@ -749,10 +749,10 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
                          }
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_api_stats(botclient, mocker, ticker, fee, markets,):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_stats(botclient, mocker, ticker, fee, markets, is_short):
     ftbot, client = botclient
-    patch_get_signal(ftbot)
+    patch_get_signal(ftbot, enter_long=not is_short, enter_short=is_short)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         get_balances=MagicMock(return_value=ticker),
@@ -766,7 +766,7 @@ def test_api_stats(botclient, mocker, ticker, fee, markets,):
     assert 'durations' in rc.json()
     assert 'sell_reasons' in rc.json()
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
 
     rc = client_get(client, f"{BASE_URI}/stats")
     assert_response(rc, 200)
