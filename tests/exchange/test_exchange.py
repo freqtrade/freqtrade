@@ -398,9 +398,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss)
     expected_result = 2 * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 1, stoploss, 3.0)
-    assert isclose(result, expected_result/3)
 
     # min amount is set
     markets["ETH/BTC"]["limits"] = {
@@ -414,9 +411,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = 2 * 2 * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 5.0)
-    assert isclose(result, expected_result/5)
 
     # min amount and cost are set (cost is minimal)
     markets["ETH/BTC"]["limits"] = {
@@ -430,9 +424,6 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(2, 2 * 2) * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 10)
-    assert isclose(result, expected_result/10)
 
     # min amount and cost are set (amount is minial)
     markets["ETH/BTC"]["limits"] = {
@@ -446,24 +437,15 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss)
     expected_result = max(8, 2 * 2) * (1+0.05) / (1-abs(stoploss))
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, stoploss, 7.0)
-    assert isclose(result, expected_result/7.0)
 
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4)
     expected_result = max(8, 2 * 2) * 1.5
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -0.4, 8.0)
-    assert isclose(result, expected_result/8.0)
 
     # Really big stoploss
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     expected_result = max(8, 2 * 2) * 1.5
     assert isclose(result, expected_result)
-    # With Leverage
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
-    assert isclose(result, expected_result/12)
 
 
 def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
@@ -483,8 +465,6 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss)
     expected_result = max(0.0001, 0.001 * 0.020405) * (1+0.05) / (1-abs(stoploss))
     assert round(result, 8) == round(expected_result, 8)
-    result = exchange.get_min_pair_stake_amount('ETH/BTC', 0.020405, stoploss, 3.0)
-    assert round(result, 8) == round(expected_result/3, 8)
 
 
 def test_set_sandbox(default_conf, mocker):
@@ -3261,25 +3241,6 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
         pair="XRP/USDT",
         since=unix_time
     )
-
-
-@pytest.mark.parametrize('exchange', ['binance', 'kraken', 'ftx'])
-@pytest.mark.parametrize('stake_amount,leverage,min_stake_with_lev', [
-    (9.0, 3.0, 3.0),
-    (20.0, 5.0, 4.0),
-    (100.0, 100.0, 1.0)
-])
-def test_get_stake_amount_considering_leverage(
-    exchange,
-    stake_amount,
-    leverage,
-    min_stake_with_lev,
-    mocker,
-    default_conf
-):
-    exchange = get_patched_exchange(mocker, default_conf, id=exchange)
-    assert exchange._get_stake_amount_considering_leverage(
-        stake_amount, leverage) == min_stake_with_lev
 
 
 @pytest.mark.parametrize("exchange_name,trading_mode", [
