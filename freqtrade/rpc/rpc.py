@@ -156,8 +156,9 @@ class RPC:
                 # calculate profit and send message to user
                 if trade.is_open:
                     try:
+                        closing_side = "buy" if trade.is_short else "sell"
                         current_rate = self._freqtrade.exchange.get_rate(
-                            trade.pair, refresh=False, side="sell")
+                            trade.pair, refresh=False, side=closing_side)
                     except (ExchangeError, PricingError):
                         current_rate = NAN
                 else:
@@ -216,8 +217,9 @@ class RPC:
             for trade in trades:
                 # calculate profit and send message to user
                 try:
+                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side="sell")
+                        trade.pair, refresh=False, side=closing_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 trade_percent = (100 * trade.calc_profit_ratio(current_rate))
@@ -578,8 +580,9 @@ class RPC:
 
             if not fully_canceled:
                 # Get current rate and execute sell
+                closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
-                    trade.pair, refresh=False, side="sell")
+                    trade.pair, refresh=False, side=closing_side)
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 self._freqtrade.execute_trade_exit(trade, current_rate, sell_reason)
         # ---- EOF def _exec_forcesell ----

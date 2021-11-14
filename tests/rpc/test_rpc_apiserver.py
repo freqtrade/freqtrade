@@ -829,11 +829,8 @@ def test_api_performance(botclient, fee):
                           'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short,side', [
-#     (True, "short"),
-#     (False, "long")
-# ])
-def test_api_status(botclient, mocker, ticker, fee, markets):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_status(botclient, mocker, ticker, fee, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -848,7 +845,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc, 200)
     assert rc.json() == []
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short)
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
@@ -869,7 +866,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'profit_pct': ANY,
         'profit_abs': ANY,
         'profit_fiat': ANY,
-        'current_rate': 1.099e-05,
+        'current_rate': 1.098e-05 if is_short else 1.099e-05,
         'open_date': ANY,
         'open_timestamp': ANY,
         'open_order': None,
@@ -899,11 +896,12 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': True,
+        "is_short": is_short,        
         'max_rate': ANY,
         'min_rate': ANY,
-        'open_order_id': 'dry_run_buy_long_12345',
+        'open_order_id': 'dry_run_buy_short_12345' if is_short else 'dry_run_buy_long_12345',
         'open_rate_requested': ANY,
-        'open_trade_value': 15.1668225,
+        'open_trade_value': 15.0911775 if is_short else 15.1668225,
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
