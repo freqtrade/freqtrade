@@ -356,6 +356,7 @@ class RPC:
         durations = []
         winning_trades = 0
         losing_trades = 0
+        short_trades = 0
 
         for trade in trades:
             current_rate: float = 0.0
@@ -376,8 +377,9 @@ class RPC:
             else:
                 # Get current rate
                 try:
+                    closing_side = "buy" if trade.is_short else "sell"
                     current_rate = self._freqtrade.exchange.get_rate(
-                        trade.pair, refresh=False, side="sell")
+                        trade.pair, refresh=False, side=closing_side)
                 except (PricingError, ExchangeError):
                     current_rate = NAN
                 profit_ratio = trade.calc_profit_ratio(rate=current_rate)
@@ -386,6 +388,9 @@ class RPC:
                 trade.calc_profit(rate=trade.close_rate or current_rate)
             )
             profit_all_ratio.append(profit_ratio)
+
+            if trade.is_short:
+                short_trades += 1
 
         best_pair = Trade.get_best_pair(start_date)
 
@@ -446,6 +451,7 @@ class RPC:
             'avg_duration': str(timedelta(seconds=sum(durations) / num)).split('.')[0],
             'best_pair': best_pair[0] if best_pair else '',
             'best_rate': round(best_pair[1] * 100, 2) if best_pair else 0,
+            'short_trades': short_trades,
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
         }
