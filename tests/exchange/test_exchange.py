@@ -2896,6 +2896,8 @@ def test_timeframe_to_prev_date():
     # Does not round
     time = datetime(2019, 8, 12, 13, 20, 0, tzinfo=timezone.utc)
     assert timeframe_to_prev_date('5m', time) == time
+    time = datetime(2019, 8, 12, 13, 0, 0, tzinfo=timezone.utc)
+    assert timeframe_to_prev_date('1h', time) == time
 
 
 def test_timeframe_to_next_date():

@@ -4760,46 +4760,47 @@ def test_update_funding_fees(
     default_conf['trading_mode'] = 'futures'
     default_conf['collateral'] = 'isolated'
     default_conf['dry_run'] = True
-
+    timestamp_midnight = 1630454400000
+    timestamp_eight = 1630483200000
     funding_rates_midnight = {
         "LTC/BTC": {
-            1630454400000: 0.00032583,
+            timestamp_midnight: 0.00032583,
         },
         "ETH/BTC": {
-            1630454400000: 0.0001,
+            timestamp_midnight: 0.0001,
         },
         "XRP/BTC": {
-            1630454400000: 0.00049426,
+            timestamp_midnight: 0.00049426,
         }
     }
 
     funding_rates_eight = {
         "LTC/BTC": {
-            1630454400000: 0.00032583,
-            1630483200000: 0.00024472,
+            timestamp_midnight: 0.00032583,
+            timestamp_eight: 0.00024472,
         },
         "ETH/BTC": {
-            1630454400000: 0.0001,
-            1630483200000: 0.0001,
+            timestamp_midnight: 0.0001,
+            timestamp_eight: 0.0001,
         },
         "XRP/BTC": {
-            1630454400000: 0.00049426,
-            1630483200000: 0.00032715,
+            timestamp_midnight: 0.00049426,
+            timestamp_eight: 0.00032715,
         }
     }
 
     mark_prices = {
         "LTC/BTC": {
-            1630454400000: 3.3,
-            1630483200000: 3.2,
+            timestamp_midnight: 3.3,
+            timestamp_eight: 3.2,
         },
         "ETH/BTC": {
-            1630454400000: 2.4,
-            1630483200000: 2.5,
+            timestamp_midnight: 2.4,
+            timestamp_eight: 2.5,
         },
         "XRP/BTC": {
-            1630454400000: 1.2,
-            1630483200000: 1.2,
+            timestamp_midnight: 1.2,
+            timestamp_eight: 1.2,
         }
     }
 
@@ -4838,8 +4839,8 @@ def test_update_funding_fees(
     for trade in trades:
         assert trade.funding_fees == (
             trade.amount *
-            mark_prices[trade.pair][1630454400000] *
-            funding_rates_midnight[trade.pair][1630454400000]
+            mark_prices[trade.pair][timestamp_midnight] *
+            funding_rates_midnight[trade.pair][timestamp_midnight]
         )
     mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
     # create_mock_trades(fee, False)
@@ -4852,8 +4853,8 @@ def test_update_funding_fees(
         for trade in trades:
             assert trade.funding_fees == (
                 trade.amount *
-                mark_prices[trade.pair][1630454400000] *
-                funding_rates_eight[trade.pair][1630454400000]
+                mark_prices[trade.pair][timestamp_midnight] *
+                funding_rates_eight[trade.pair][timestamp_midnight]
             )
             freqtrade.execute_trade_exit(
                 trade=trade,
