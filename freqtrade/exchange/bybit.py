@@ -24,8 +24,6 @@ class Bybit(Exchange):
         "ccxt_futures_name": "linear"
     }
 
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
-
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
         # TODO-lev: Uncomment once supported
