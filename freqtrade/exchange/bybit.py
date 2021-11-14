@@ -27,6 +27,7 @@ class Bybit(Exchange):
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
+        # TODO-lev: Uncomment once supported
+        # (TradingMode.FUTURES, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
