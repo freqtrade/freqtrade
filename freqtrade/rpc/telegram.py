@@ -28,6 +28,7 @@ from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 
+
 logger = logging.getLogger(__name__)
 
 logger.debug('Included module rpc.telegram ...')
@@ -218,17 +219,20 @@ class Telegram(RPCHandler):
                 msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
         else:
             msg['stake_amount_fiat'] = 0
+        is_fill = msg['type'] == RPCMessageType.BUY_FILL
+        emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        message = "\N{CHECK MARK} *{exchange}:* Bought {pair} (#{trade_id})\n".format(**msg)
-        message += "*Buy Tag:* `{buy_tag}`\n".format(**msg) if msg.get('buy_tag', None) else ""
-        message += "*Amount:* `{amount:.8f}`\n".format(**msg)
+        message = (
+            f"{emoji} *{msg['exchange']}:* {'Bought' if is_fill else 'Buying'} {msg['pair']}"
+            f" (#{msg['trade_id']})\n"
+            )
+        message += f"*Buy Tag:* `{msg['buy_tag']}`\n" if msg.get('buy_tag', None) else ""
+        message += f"*Amount:* `{msg['amount']:.8f}`\n"
 
         if msg['type'] == RPCMessageType.BUY_FILL:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
 
         elif msg['type'] == RPCMessageType.BUY:
-            message = message.replace('Bought', 'Buying')\
-                .replace("\N{CHECK MARK}", "\N{LARGE BLUE CIRCLE}")
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
@@ -256,26 +260,29 @@ class Telegram(RPCHandler):
                 and self._rpc._fiat_converter):
             msg['profit_fiat'] = self._rpc._fiat_converter.convert_amount(
                 msg['profit_amount'], msg['stake_currency'], msg['fiat_currency'])
-            msg['profit_extra'] = (' ({gain}: {profit_amount:.8f} {stake_currency}'
-                                   ' / {profit_fiat:.3f} {fiat_currency})').format(**msg)
+            msg['profit_extra'] = (
+                f" ({msg['gain']}: {msg['profit_amount']:.8f} {msg['stake_currency']}"
+                f" / {msg['profit_fiat']:.3f} {msg['fiat_currency']})")
         else:
             msg['profit_extra'] = ''
-
-        message = ("{emoji} *{exchange}:* Sold {pair} (#{trade_id})\n"
-                   "*Profit:* `{profit_ratio:.2%}{profit_extra}`\n"
-                   "*Buy Tag:* `{buy_tag}`\n"
-                   "*Sell Reason:* `{sell_reason}`\n"
-                   "*Duration:* `{duration} ({duration_min:.1f} min)`\n"
-                   "*Amount:* `{amount:.8f}`\n").format(**msg)
+        is_fill = msg['type'] == RPCMessageType.SELL_FILL
+        message = (
+            f"{msg['emoji']} *{msg['exchange']}:* "
+            f"{'Sold' if is_fill else 'Selling'} {msg['pair']} (#{msg['trade_id']})\n"
+            f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
+            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"*Buy Tag:* `{msg['buy_tag']}`\n"
+            f"*Sell Reason:* `{msg['sell_reason']}`\n"
+            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
+            f"*Amount:* `{msg['amount']:.8f}`\n")
 
         if msg['type'] == RPCMessageType.SELL:
-            message = message.replace('Sold', 'Selling').replace('Profit', 'Unrealized Profit')
-            message += ("*Open Rate:* `{open_rate:.8f}`\n"
-                        "*Current Rate:* `{current_rate:.8f}`\n"
-                        "*Close Rate:* `{limit:.8f}`").format(**msg)
+            message += (f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
+                        f"*Close Rate:* `{msg['limit']:.8f}`")
 
         elif msg['type'] == RPCMessageType.SELL_FILL:
-            message += ("*Close Rate:* `{close_rate:.8f}`").format(**msg)
+            message += f"*Close Rate:* `{msg['close_rate']:.8f}`"
 
         return message
 
