@@ -922,8 +922,7 @@ class FreqtradeBot(LoggingMixin):
         Check if trade is fulfilled in which case the stoploss
         on exchange should be added immediately if stoploss on exchange
         is enabled.
-        # TODO-lev: liquidation price will always be on exchange, even though
-        # TODO-lev: stoploss_on_exchange might not be enabled
+        # TODO-lev: liquidation price always on exchange, even without stoploss_on_exchange
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
@@ -1517,7 +1516,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
-            # TODO-lev: won't be in base currency for shorts
+            # TODO-lev: settle currency for futures
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
         elif fee_abs != 0:
