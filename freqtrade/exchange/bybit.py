@@ -21,6 +21,7 @@ class Bybit(Exchange):
 
     _ft_has: Dict = {
         "ohlcv_candle_limit": 200,
+        "ccxt_futures_name": "linear"
     }
 
     funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
