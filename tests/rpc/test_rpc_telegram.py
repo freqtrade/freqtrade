@@ -1261,8 +1261,8 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert 'Winrate' not in msg_mock.call_args_list[0][0][0]
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_telegram_trades(mocker, update, default_conf, fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_telegram_trades(mocker, update, default_conf, fee, is_short):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -1280,7 +1280,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "<pre>" not in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short)
 
     context = MagicMock()
     context.args = [5]
@@ -1290,8 +1290,9 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Close Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
-    assert bool(re.search(r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(",
-                msg_mock.call_args_list[0][0][0]))
+    regex_pattern = r"just now[ ]*XRP\/BTC \(#3\)  -1.00% \(" if is_short else \
+                    r"just now[ ]*XRP\/BTC \(#3\)  1.00% \("
+    assert bool(re.search(regex_pattern, msg_mock.call_args_list[0][0][0]))
 
 
 @pytest.mark.parametrize('is_short', [True, False])

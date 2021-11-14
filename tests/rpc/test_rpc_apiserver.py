@@ -735,14 +735,16 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short):
                          'profit_all_percent_sum': 398.47 if is_short else -398.47,
                          'profit_all_ratio_sum': 3.98465727 if is_short else -3.9846604,
                          'profit_all_percent': 4.36 if is_short else -4.41,
-                         'profit_all_ratio': 0.043612222872799825 if is_short else -0.044063014216106644,
+                         'profit_all_ratio': 0.043612222872799825 if is_short
+                         else -0.044063014216106644,
                          'profit_closed_coin': -0.00673913 if is_short else 0.00073913,
                          'profit_closed_fiat': -83.19455985 if is_short else 9.124559849999999,
                          'profit_closed_ratio_mean': -0.0075 if is_short else 0.0075,
                          'profit_closed_percent_mean': -0.75 if is_short else 0.75,
                          'profit_closed_ratio_sum': -0.015 if is_short else 0.015,
                          'profit_closed_percent_sum': -1.5 if is_short else 1.5,
-                         'profit_closed_ratio': -6.739057628404269e-06 if is_short else 7.391275897987988e-07,
+                         'profit_closed_ratio': -6.739057628404269e-06 if is_short
+                         else 7.391275897987988e-07,
                          'profit_closed_percent': -0.0 if is_short else 0.0,
                          'trade_count': 6,
                          'closed_trade_count': 2,
@@ -896,7 +898,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': True,
-        "is_short": is_short,        
+        "is_short": is_short,
         'max_rate': ANY,
         'min_rate': ANY,
         'open_order_id': 'dry_run_buy_short_12345' if is_short else 'dry_run_buy_long_12345',
@@ -974,8 +976,8 @@ def test_api_whitelist(botclient):
         "method": ["StaticPairList"]
     }
 
-
-def test_api_forcebuy(botclient, mocker, fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_api_forcebuy(botclient, mocker, fee, is_short):
     ftbot, client = botclient
 
     rc = client_post(client, f"{BASE_URI}/forcebuy",
@@ -1004,6 +1006,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         open_order_id="123456",
         open_date=datetime.utcnow(),
         is_open=False,
+        is_short=is_short,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
         close_rate=0.265441,
@@ -1052,11 +1055,12 @@ def test_api_forcebuy(botclient, mocker, fee):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': False,
+        'is_short': is_short,
         'max_rate': None,
         'min_rate': None,
         'open_order_id': '123456',
         'open_rate_requested': None,
-        'open_trade_value': 0.24605460,
+        'open_trade_value': 0.2448274 if is_short else 0.24605460,
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
