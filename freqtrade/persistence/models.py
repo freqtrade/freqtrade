@@ -916,8 +916,8 @@ class Trade(_DECL_BASE, LocalTrade):
     max_rate = Column(Float, nullable=True, default=0.0)
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
-    sell_reason = Column(String(100), nullable=True)  # TODO-lev: Change to close_reason
-    sell_order_status = Column(String(100), nullable=True)  # TODO-lev: Change to close_order_status
+    sell_reason = Column(String(100), nullable=True)
+    sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     buy_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)

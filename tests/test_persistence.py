@@ -1907,12 +1907,12 @@ def test_get_total_closed_profit(fee, use_db):
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
+@pytest.mark.parametrize('is_short', [True, False])
 @pytest.mark.parametrize('use_db', [True, False])
-def test_get_trades_proxy(fee, use_db):
+def test_get_trades_proxy(fee, use_db, is_short):
     Trade.use_db = use_db
     Trade.reset_trades()
-    create_mock_trades(fee, False, use_db)
+    create_mock_trades(fee, is_short, use_db)
     trades = Trade.get_trades_proxy()
     assert len(trades) == 6
 
@@ -2042,48 +2042,48 @@ def test_update_order_from_ccxt(caplog):
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_select_order(fee):
-    create_mock_trades(fee, False)
+@pytest.mark.parametrize('is_short', [True, False])
+def test_select_order(fee, is_short):
+    create_mock_trades(fee, is_short)
 
     trades = Trade.get_trades().all()
 
     # Open buy order, no sell order
-    order = trades[0].select_order('buy', True)
+    order = trades[0].select_order(trades[0].enter_side, True)
     assert order is None
-    order = trades[0].select_order('buy', False)
+    order = trades[0].select_order(trades[0].enter_side, False)
     assert order is not None
-    order = trades[0].select_order('sell', None)
+    order = trades[0].select_order(trades[0].exit_side, None)
     assert order is None
 
     # closed buy order, and open sell order
-    order = trades[1].select_order('buy', True)
+    order = trades[1].select_order(trades[1].enter_side, True)
     assert order is None
-    order = trades[1].select_order('buy', False)
+    order = trades[1].select_order(trades[1].enter_side, False)
     assert order is not None
-    order = trades[1].select_order('buy', None)
+    order = trades[1].select_order(trades[1].enter_side, None)
     assert order is not None
-    order = trades[1].select_order('sell', True)
+    order = trades[1].select_order(trades[1].exit_side, True)
     assert order is None
-    order = trades[1].select_order('sell', False)
+    order = trades[1].select_order(trades[1].exit_side, False)
     assert order is not None
 
     # Has open buy order
-    order = trades[3].select_order('buy', True)
+    order = trades[3].select_order(trades[3].enter_side, True)
     assert order is not None
-    order = trades[3].select_order('buy', False)
+    order = trades[3].select_order(trades[3].enter_side, False)
     assert order is None
 
     # Open sell order
-    order = trades[4].select_order('buy', True)
+    order = trades[4].select_order(trades[4].enter_side, True)
     assert order is None
-    order = trades[4].select_order('buy', False)
+    order = trades[4].select_order(trades[4].enter_side, False)
     assert order is not None
 
-    order = trades[4].select_order('sell', True)
+    order = trades[4].select_order(trades[4].exit_side, True)
     assert order is not None
     assert order.ft_order_side == 'stoploss'
-    order = trades[4].select_order('sell', False)
+    order = trades[4].select_order(trades[4].exit_side, False)
     assert order is None
 
 

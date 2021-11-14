@@ -32,7 +32,7 @@ class StoplossGuard(IProtection):
     def _reason(self) -> str:
         """
         LockReason to use
-        #TODO-lev: check if min is the right word for shorts
+        # TODO-lev: check if min is the right word for shorts
         """
         return (f'{self._trade_limit} stoplosses in {self._lookback_period} min, '
                 f'locking for {self._stop_duration} min.')

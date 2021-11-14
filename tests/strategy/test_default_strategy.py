@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytest
 from pandas import DataFrame
 
 from freqtrade.persistence.models import Trade
@@ -16,7 +17,11 @@ def test_strategy_test_v2_structure():
     assert hasattr(StrategyTestV3, 'populate_sell_trend')
 
 
-def test_strategy_test_v2(result, fee):
+@pytest.mark.parametrize('is_short,side', [
+    (True, 'short'),
+    (False, 'long'),
+])
+def test_strategy_test_v2(result, fee, is_short, side):
     strategy = StrategyTestV3({})
 
     metadata = {'pair': 'ETH/BTC'}
@@ -32,16 +37,18 @@ def test_strategy_test_v2(result, fee):
         open_rate=19_000,
         amount=0.1,
         pair='ETH/BTC',
-        fee_open=fee.return_value
+        fee_open=fee.return_value,
+        is_short=is_short
     )
 
     assert strategy.confirm_trade_entry(pair='ETH/BTC', order_type='limit', amount=0.1,
                                         rate=20000, time_in_force='gtc',
-                                        current_time=datetime.utcnow(), side='long') is True
+                                        current_time=datetime.utcnow(),
+                                        side=side) is True
     assert strategy.confirm_trade_exit(pair='ETH/BTC', trade=trade, order_type='limit', amount=0.1,
                                        rate=20000, time_in_force='gtc', sell_reason='roi',
-                                       current_time=datetime.utcnow()) is True
+                                       current_time=datetime.utcnow(),
+                                       side=side) is True
 
-    # TODO-lev: Test for shorts?
     assert strategy.custom_stoploss(pair='ETH/BTC', trade=trade, current_time=datetime.now(),
                                     current_rate=20_000, current_profit=0.05) == strategy.stoploss
