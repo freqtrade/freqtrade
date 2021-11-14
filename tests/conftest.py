@@ -248,33 +248,35 @@ def patch_get_signal(
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, is_short: bool = False, use_db: bool = True):
+def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = True):
     """
     Create some fake trades ...
+    :param is_short: Optional bool, None creates a mix of long and short trades.
     """
     def add_trade(trade):
         if use_db:
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
-
+    is_short1 = is_short if is_short is not None else True
+    is_short2 = is_short if is_short is not None else False
     # Simulate dry_run entries
-    trade = mock_trade_1(fee, is_short)
+    trade = mock_trade_1(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_2(fee, is_short)
+    trade = mock_trade_2(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_3(fee, is_short)
+    trade = mock_trade_3(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_4(fee, is_short)
+    trade = mock_trade_4(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_5(fee, is_short)
+    trade = mock_trade_5(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_6(fee, is_short)
+    trade = mock_trade_6(fee, is_short1)
     add_trade(trade)
 
     if use_db:

@@ -4317,7 +4317,7 @@ def test_sync_wallet_dry_run(mocker, default_conf_usdt, ticker_usdt, fee, limit_
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short,buy_calls,sell_calls", [
     (False, 1, 2),
-    (True, 2, 1),
+    (True, 1, 2),
 ])
 def test_cancel_all_open_orders(mocker, default_conf_usdt, fee, limit_order, limit_order_open,
                                 is_short, buy_calls, sell_calls):
