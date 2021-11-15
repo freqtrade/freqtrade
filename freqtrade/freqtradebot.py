@@ -268,12 +268,16 @@ class FreqtradeBot(LoggingMixin):
 
     def update_funding_fees(self):
         if self.trading_mode == TradingMode.FUTURES:
-            for trade in Trade.get_open_trades():
-                funding_fees = self.exchange.get_funding_fees_from_exchange(
+            trades = Trade.get_open_trades()
+            for trade in trades:
+                funding_fees = self.exchange.get_funding_fees(
                     trade.pair,
+                    trade.amount,
                     trade.open_date
                 )
                 trade.funding_fees = funding_fees
+        else:
+            return 0.0
 
     def startup_update_open_orders(self):
         """
@@ -617,8 +621,9 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount, side='long')
-        # TODO-lev: Add non-hardcoded "side" parameter
+                min_stake=min_stake_amount, max_stake=max_stake_amount,
+                side='short' if is_short else 'long'
+            )
 
         stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
 
@@ -638,7 +643,6 @@ class FreqtradeBot(LoggingMixin):
             order_type = self.strategy.order_types.get('forcebuy', order_type)
         # TODO-lev: Will this work for shorting?
 
-        # TODO-lev: Add non-hardcoded "side" parameter
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
                 time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
@@ -703,10 +707,7 @@ class FreqtradeBot(LoggingMixin):
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         open_date = datetime.now(timezone.utc)
-        if self.trading_mode == TradingMode.FUTURES:
-            funding_fees = self.exchange.get_funding_fees_from_exchange(pair, open_date)
-        else:
-            funding_fees = 0.0
+        funding_fees = self.exchange.get_funding_fees(pair, amount, open_date)
 
         trade = Trade(
             pair=pair,
@@ -922,8 +923,7 @@ class FreqtradeBot(LoggingMixin):
         Check if trade is fulfilled in which case the stoploss
         on exchange should be added immediately if stoploss on exchange
         is enabled.
-        # TODO-lev: liquidation price will always be on exchange, even though
-        # TODO-lev: stoploss_on_exchange might not be enabled
+        # TODO-lev: liquidation price always on exchange, even without stoploss_on_exchange
         """
 
         logger.debug('Handling stoploss on exchange %s ...', trade)
@@ -1261,6 +1261,11 @@ class FreqtradeBot(LoggingMixin):
         :param sell_reason: Reason the sell was triggered
         :return: True if it succeeds (supported) False (not supported)
         """
+        trade.funding_fees = self.exchange.get_funding_fees(
+            trade.pair,
+            trade.amount,
+            trade.open_date
+        )
         exit_type = 'sell'  # TODO-lev: Update to exit
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
@@ -1517,7 +1522,7 @@ class FreqtradeBot(LoggingMixin):
         self.wallets.update()
         if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
-            # TODO-lev: won't be in base currency for shorts
+            # TODO-lev: settle currency for futures
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
         elif fee_abs != 0:

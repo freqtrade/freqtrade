@@ -3,8 +3,8 @@ from enum import Enum
 
 class TradingMode(Enum):
     """
-        Enum to distinguish between
-        spot, margin, futures or any other trading method
+    Enum to distinguish between
+    spot, margin, futures or any other trading method
     """
     SPOT = "spot"
     MARGIN = "margin"

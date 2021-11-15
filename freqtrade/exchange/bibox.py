@@ -1,6 +1,6 @@
 """ Bibox exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from freqtrade.exchange import Exchange
 
@@ -23,6 +23,6 @@ class Bibox(Exchange):
     @property
     def _ccxt_config(self) -> Dict:
         # Parameters to add directly to ccxt sync/async initialization.
-        return {"has": {"fetchCurrencies": False}}
-
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
+        config = {"has": {"fetchCurrencies": False}}
+        config.update(super()._ccxt_config)
+        return config

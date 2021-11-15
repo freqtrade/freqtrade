@@ -906,7 +906,6 @@ def test_execute_entry_confirm_error(mocker, default_conf_usdt, fee, limit_order
     pair = 'ETH/USDT'
 
     freqtrade.strategy.confirm_trade_entry = MagicMock(side_effect=ValueError)
-    # TODO-lev: KeyError happens on short, why?
     assert freqtrade.execute_entry(pair, stake_amount)
 
     limit_order[enter_side(is_short)]['id'] = '222'
@@ -1228,7 +1227,6 @@ def test_create_stoploss_order_insufficient_funds(
 def test_handle_stoploss_on_exchange_trailing(
     mocker, default_conf_usdt, fee, is_short, bid, ask, limit_order, stop_price, amt, hang_price
 ) -> None:
-    # TODO-lev: test for short
     # When trailing stoploss is set
     enter_order = limit_order[enter_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
@@ -1435,7 +1433,6 @@ def test_handle_stoploss_on_exchange_custom_stop(
     enter_order = limit_order[enter_side(is_short)]
     exit_order = limit_order[exit_side(is_short)]
     # When trailing stoploss is set
-    # TODO-lev: test for short
     stoploss = MagicMock(return_value={'id': 13434334})
     patch_RPCManager(mocker)
     mocker.patch.multiple(
@@ -2973,9 +2970,11 @@ def test_execute_trade_exit_custom_exit_price(
 
     # Set a custom exit price
     freqtrade.strategy.custom_exit_price = lambda **kwargs: 2.25
-    # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL))
+    freqtrade.execute_trade_exit(
+        trade=trade,
+        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.SELL_SIGNAL)
+    )
 
     # Sell price must be different to default bid price
 
@@ -3098,7 +3097,6 @@ def test_execute_trade_exit_sloe_cancel_exception(
     freqtrade.config['dry_run'] = False
     trade.stoploss_order_id = "abcd"
 
-    # TODO-lev: side="buy"
     freqtrade.execute_trade_exit(trade=trade, limit=1234,
                                  sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
     assert create_order_mock.call_count == 2
@@ -3152,9 +3150,11 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
         fetch_ticker=ticker_usdt_sell_up
     )
 
-    # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
+    freqtrade.execute_trade_exit(
+        trade=trade,
+        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS)
+    )
 
     trade = Trade.query.first()
     trade.is_short = is_short
@@ -3288,7 +3288,6 @@ def test_execute_trade_exit_market_order(
     )
     freqtrade.config['order_types']['sell'] = 'market'
 
-    # TODO-lev: side="buy"
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
@@ -3354,9 +3353,11 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     )
 
     sell_reason = SellCheckTuple(sell_type=SellType.ROI)
-    # TODO-lev: side="buy"
-    assert not freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_up()['bid'],
-                                            sell_reason=sell_reason)
+    assert not freqtrade.execute_trade_exit(
+        trade=trade,
+        limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
+        sell_reason=sell_reason
+    )
     assert mock_insuf.call_count == 1
 
 
@@ -3517,9 +3518,11 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
         fetch_ticker=ticker_usdt_sell_down
     )
 
-    # TODO-lev: side="buy"
-    freqtrade.execute_trade_exit(trade=trade, limit=ticker_usdt_sell_down()['bid'],
-                                 sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS))
+    freqtrade.execute_trade_exit(
+        trade=trade,
+        limit=ticker_usdt_sell_down()['ask' if is_short else 'bid'],
+        sell_reason=SellCheckTuple(sell_type=SellType.STOP_LOSS)
+    )
     trade.close(ticker_usdt_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair)
 
@@ -4697,8 +4700,8 @@ def test_leverage_prep():
     ('futures', 33, "2021-08-31 23:59:59", "2021-09-01 08:00:07"),
     ('futures', 33, "2021-08-31 23:59:58", "2021-09-01 08:00:07"),
 ])
-def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_machine,
-                             t1, t2):
+def test_update_funding_fees_schedule(mocker, default_conf, trading_mode, calls, time_machine,
+                                      t1, t2):
     time_machine.move_to(f"{t1} +00:00")
 
     patch_RPCManager(mocker)
@@ -4713,3 +4716,159 @@ def test_update_funding_fees(mocker, default_conf, trading_mode, calls, time_mac
     freqtrade._schedule.run_pending()
 
     assert freqtrade.update_funding_fees.call_count == calls
+
+
+@pytest.mark.parametrize('schedule_off', [False, True])
+@pytest.mark.parametrize('is_short', [True, False])
+def test_update_funding_fees(
+    mocker,
+    default_conf,
+    time_machine,
+    fee,
+    ticker_usdt_sell_up,
+    is_short,
+    limit_order_open,
+    schedule_off
+):
+    '''
+    nominal_value = mark_price * size
+    funding_fee = nominal_value * funding_rate
+    size = 123
+    "LTC/BTC"
+        time: 0, mark: 3.3, fundRate: 0.00032583, nominal_value: 405.9, fundFee: 0.132254397
+        time: 8, mark: 3.2, fundRate: 0.00024472, nominal_value: 393.6, fundFee: 0.096321792
+    "ETH/BTC"
+        time: 0, mark: 2.4, fundRate: 0.0001, nominal_value: 295.2, fundFee: 0.02952
+        time: 8, mark: 2.5, fundRate: 0.0001, nominal_value: 307.5, fundFee: 0.03075
+    "ETC/BTC"
+        time: 0, mark: 4.3, fundRate: 0.00031077, nominal_value: 528.9, fundFee: 0.164366253
+        time: 8, mark: 4.1, fundRate: 0.00022655, nominal_value: 504.3, fundFee: 0.114249165
+    "XRP/BTC"
+        time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
+        time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
+    '''
+    # SETUP
+    time_machine.move_to("2021-09-01 00:00:00 +00:00")
+
+    open_order = limit_order_open[enter_side(is_short)]
+    open_exit_order = limit_order_open[exit_side(is_short)]
+    bid = 0.11
+    enter_rate_mock = MagicMock(return_value=bid)
+    enter_mm = MagicMock(return_value=open_order)
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
+    default_conf['dry_run'] = True
+    timestamp_midnight = 1630454400000
+    timestamp_eight = 1630483200000
+    funding_rates_midnight = {
+        "LTC/BTC": {
+            timestamp_midnight: 0.00032583,
+        },
+        "ETH/BTC": {
+            timestamp_midnight: 0.0001,
+        },
+        "XRP/BTC": {
+            timestamp_midnight: 0.00049426,
+        }
+    }
+
+    funding_rates_eight = {
+        "LTC/BTC": {
+            timestamp_midnight: 0.00032583,
+            timestamp_eight: 0.00024472,
+        },
+        "ETH/BTC": {
+            timestamp_midnight: 0.0001,
+            timestamp_eight: 0.0001,
+        },
+        "XRP/BTC": {
+            timestamp_midnight: 0.00049426,
+            timestamp_eight: 0.00032715,
+        }
+    }
+
+    mark_prices = {
+        "LTC/BTC": {
+            timestamp_midnight: 3.3,
+            timestamp_eight: 3.2,
+        },
+        "ETH/BTC": {
+            timestamp_midnight: 2.4,
+            timestamp_eight: 2.5,
+        },
+        "XRP/BTC": {
+            timestamp_midnight: 1.2,
+            timestamp_eight: 1.2,
+        }
+    }
+
+    mocker.patch(
+        'freqtrade.exchange.Exchange._get_mark_price_history',
+        side_effect=lambda pair, since: mark_prices[pair]
+    )
+
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_funding_rate_history',
+        side_effect=lambda pair, since: funding_rates_midnight[pair]
+    )
+
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=enter_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 1.9,
+            'ask': 2.2,
+            'last': 1.9
+        }),
+        create_order=enter_mm,
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+
+    # initial funding fees,
+    freqtrade.execute_entry('ETH/BTC', 123)
+    freqtrade.execute_entry('LTC/BTC', 2.0)
+    freqtrade.execute_entry('XRP/BTC', 123)
+
+    trades = Trade.get_open_trades()
+    assert len(trades) == 3
+    for trade in trades:
+        assert trade.funding_fees == (
+            trade.amount *
+            mark_prices[trade.pair][timestamp_midnight] *
+            funding_rates_midnight[trade.pair][timestamp_midnight]
+        )
+    mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
+    # create_mock_trades(fee, False)
+    time_machine.move_to("2021-09-01 08:00:00 +00:00")
+    mocker.patch(
+        'freqtrade.exchange.Exchange.get_funding_rate_history',
+        side_effect=lambda pair, since: funding_rates_eight[pair]
+    )
+    if schedule_off:
+        for trade in trades:
+            assert trade.funding_fees == (
+                trade.amount *
+                mark_prices[trade.pair][timestamp_midnight] *
+                funding_rates_eight[trade.pair][timestamp_midnight]
+            )
+            freqtrade.execute_trade_exit(
+                trade=trade,
+                # The values of the next 2 params are irrelevant for this test
+                limit=ticker_usdt_sell_up()['bid'],
+                sell_reason=SellCheckTuple(sell_type=SellType.ROI)
+            )
+    else:
+        freqtrade._schedule.run_pending()
+
+    # Funding fees for 00:00 and 08:00
+    for trade in trades:
+        assert trade.funding_fees == sum([
+            trade.amount *
+            mark_prices[trade.pair][time] *
+            funding_rates_eight[trade.pair][time] for time in mark_prices[trade.pair].keys()
+        ])

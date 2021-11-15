@@ -2404,3 +2404,131 @@ def limit_order_open(limit_buy_order_usdt_open, limit_sell_order_usdt_open):
         'buy': limit_buy_order_usdt_open,
         'sell': limit_sell_order_usdt_open
     }
+
+
+@pytest.fixture(scope='function')
+def mark_ohlcv():
+    return [
+        [1630454400000, 2.77, 2.77, 2.73, 2.73, 0],
+        [1630458000000, 2.73, 2.76, 2.72, 2.74, 0],
+        [1630461600000, 2.74, 2.76, 2.74, 2.76, 0],
+        [1630465200000, 2.76, 2.76, 2.74, 2.76, 0],
+        [1630468800000, 2.76, 2.77, 2.75, 2.77, 0],
+        [1630472400000, 2.77, 2.79, 2.75, 2.78, 0],
+        [1630476000000, 2.78, 2.80, 2.77, 2.77, 0],
+        [1630479600000, 2.78, 2.79, 2.77, 2.77, 0],
+        [1630483200000, 2.77, 2.79, 2.77, 2.78, 0],
+        [1630486800000, 2.77, 2.84, 2.77, 2.84, 0],
+        [1630490400000, 2.84, 2.85, 2.81, 2.81, 0],
+        [1630494000000, 2.81, 2.83, 2.81, 2.81, 0],
+        [1630497600000, 2.81, 2.84, 2.81, 2.82, 0],
+        [1630501200000, 2.82, 2.83, 2.81, 2.81, 0],
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_hourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000004,
+            "timestamp": 1630458000000,
+            "datetime": "2021-09-01T01:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000012,
+            "timestamp": 1630461600000,
+            "datetime": "2021-09-01T02:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630465200000,
+            "datetime": "2021-09-01T03:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000007,
+            "timestamp": 1630468800000,
+            "datetime": "2021-09-01T04:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630472400000,
+            "datetime": "2021-09-01T05:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000019,
+            "timestamp": 1630476000000,
+            "datetime": "2021-09-01T06:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630479600000,
+            "datetime": "2021-09-01T07:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0,
+            "timestamp": 1630486800000,
+            "datetime": "2021-09-01T09:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000013,
+            "timestamp": 1630490400000,
+            "datetime": "2021-09-01T10:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000077,
+            "timestamp": 1630494000000,
+            "datetime": "2021-09-01T11:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000072,
+            "timestamp": 1630497600000,
+            "datetime": "2021-09-01T12:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000097,
+            "timestamp": 1630501200000,
+            "datetime": "2021-09-01T13:00:00.000Z"
+        },
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_octohourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        }
+    ]

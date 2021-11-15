@@ -1294,8 +1294,8 @@ def test_telegram_trades(mocker, update, default_conf, fee):
                 msg_mock.call_args_list[0][0][0]))
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_telegram_delete_trade(mocker, update, default_conf, fee):
+@pytest.mark.parametrize('is_short', [True, False])
+def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     context = MagicMock()
@@ -1305,7 +1305,7 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee):
     assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short)
 
     context = MagicMock()
     context.args = [1]

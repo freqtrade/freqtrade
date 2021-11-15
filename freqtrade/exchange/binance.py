@@ -1,6 +1,7 @@
 """ Binance exchange subclass """
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -27,34 +28,16 @@ class Binance(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "fromId",
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
+        "ccxt_futures_name": "future"
     }
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
-    # but the schedule won't check within this timeframe
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.ISOLATED) # TODO-lev: Uncomment once supported
+        # TODO-lev: Uncomment once supported
+        # (TradingMode.MARGIN, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
-
-    @property
-    def _ccxt_config(self) -> Dict:
-        # Parameters to add directly to ccxt sync/async initialization.
-        if self.trading_mode == TradingMode.MARGIN:
-            return {
-                "options": {
-                    "defaultType": "margin"
-                }
-            }
-        elif self.trading_mode == TradingMode.FUTURES:
-            return {
-                "options": {
-                    "defaultType": "future"
-                }
-            }
-        else:
-            return {}
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
@@ -139,8 +122,8 @@ class Binance(Exchange):
     @retrier
     def fill_leverage_brackets(self):
         """
-            Assigns property _leverage_brackets to a dictionary of information about the leverage
-            allowed on each pair
+        Assigns property _leverage_brackets to a dictionary of information about the leverage
+        allowed on each pair
         """
         if self.trading_mode == TradingMode.FUTURES:
             try:
@@ -174,9 +157,9 @@ class Binance(Exchange):
 
     def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
         """
-            Returns the maximum leverage that a pair can be traded at
-            :param pair: The base/quote currency pair being traded
-            :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        Returns the maximum leverage that a pair can be traded at
+        :param pair: The base/quote currency pair being traded
+        :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
         if pair not in self._leverage_brackets:
             return 1.0
@@ -195,8 +178,8 @@ class Binance(Exchange):
         trading_mode: Optional[TradingMode] = None
     ):
         """
-            Set's the leverage before making a trade, in order to not
-            have the same leverage on every trade
+        Set's the leverage before making a trade, in order to not
+        have the same leverage on every trade
         """
         trading_mode = trading_mode or self.trading_mode
 
@@ -229,3 +212,11 @@ class Binance(Exchange):
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
         return await super()._async_get_historic_ohlcv(
             pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
+
+    def funding_fee_cutoff(self, open_date: datetime):
+        """
+        # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
+        :param open_date: The open date for a trade
+        :return: The cutoff open time for when a funding fee is charged
+        """
+        return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)

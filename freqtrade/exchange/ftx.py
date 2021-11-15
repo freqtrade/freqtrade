@@ -20,13 +20,14 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
+        "mark_ohlcv_price": "index"
     }
-    funding_fee_times: List[int] = list(range(0, 24))
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
-        # (TradingMode.MARGIN, Collateral.CROSS),  # TODO-lev: Uncomment once supported
-        # (TradingMode.FUTURES, Collateral.CROSS)  # TODO-lev: Uncomment once supported
+        # TODO-lev: Uncomment once supported
+        # (TradingMode.MARGIN, Collateral.CROSS),
+        # (TradingMode.FUTURES, Collateral.CROSS)
     ]
 
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
