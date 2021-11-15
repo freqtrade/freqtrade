@@ -778,6 +778,7 @@ def get_markets():
             'quote': 'USDT',
             'spot': True,
             'future': True,
+            'swap': True,
             'margin': True,
             'type': 'spot',
             'precision': {
@@ -805,6 +806,7 @@ def get_markets():
             'active': False,
             'spot': True,
             'future': True,
+            'swap': True,
             'margin': True,
             'type': 'spot',
             'precision': {

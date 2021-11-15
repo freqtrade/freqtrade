@@ -26,6 +26,7 @@ EXCHANGES = {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
+        'futures': True,
     },
     'kraken': {
         'pair': 'BTC/USDT',
@@ -82,13 +83,19 @@ def exchange(request, exchange_conf):
 
 
 @pytest.fixture(params=EXCHANGES, scope="class")
-def exchange_futures(request, exchange_conf):
+def exchange_futures(request, exchange_conf, class_mocker):
     if not EXCHANGES[request.param].get('futures') is True:
         yield None, request.param
     else:
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['collateral'] = 'cross'
+        # TODO-lev This mock should no longer be necessary once futures are enabled.
+        class_mocker.patch(
+            'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
+        class_mocker.patch(
+            'freqtrade.exchange.binance.Binance.fill_leverage_brackets')
+
         exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 
         yield exchange, request.param
@@ -103,6 +110,20 @@ class TestCCXTExchange():
         markets = exchange.markets
         assert pair in markets
         assert isinstance(markets[pair], dict)
+        assert exchange.market_is_spot(markets[pair])
+
+    def test_load_markets_futures(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename]['pair']
+        pair = EXCHANGES[exchangename].get('futures_pair', pair)
+        markets = exchange.markets
+        assert pair in markets
+        assert isinstance(markets[pair], dict)
+
+        assert exchange.market_is_future(markets[pair])
 
     def test_ccxt_fetch_tickers(self, exchange):
         exchange, exchangename = exchange

@@ -159,3 +159,7 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
+
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        # TODO-lev: This should be unified in ccxt to "swap"...
+        return market.get('future', False) is True

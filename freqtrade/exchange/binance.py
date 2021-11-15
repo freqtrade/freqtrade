@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
@@ -118,6 +118,10 @@ class Binance(Exchange):
                 f'Could not place {side} order due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        # TODO-lev: This should be unified in ccxt to "swap"...
+        return market.get('future', False) is True
 
     @retrier
     def fill_leverage_brackets(self):

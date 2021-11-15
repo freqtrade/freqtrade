@@ -2985,6 +2985,10 @@ def test_timeframe_to_next_date():
         ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'spot', {}, False),
         ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'margin', {}, False),
         ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
+
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'spot', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'margin', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'futures', {}, True),
     ])
 def test_market_is_tradable(
         mocker, default_conf, market_symbol, base,
@@ -2999,6 +3003,7 @@ def test_market_is_tradable(
         'quote': quote,
         'spot': spot,
         'future': futures,
+        'swap': futures,
         'margin': margin,
         **(add_dict),
     }

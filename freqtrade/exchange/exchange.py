@@ -340,7 +340,7 @@ class Exchange:
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
-        return market.get('future', False) is True or market.get('futures') is True
+        return market.get('swap', False) is True
 
     def market_is_spot(self, market: Dict[str, Any]) -> bool:
         return market.get('spot', False) is True
