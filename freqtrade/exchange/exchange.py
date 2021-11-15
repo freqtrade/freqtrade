@@ -7,7 +7,7 @@ import http
 import inspect
 import logging
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -69,13 +69,10 @@ class Exchange:
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
+        "mark_ohlcv_price": "mark",
         "ccxt_futures_name": "swap"
     }
     _ft_has: Dict = {}
-
-    # funding_fee_times is currently unused, but should ideally be used to properly
-    # schedule refresh times
-    funding_fee_times: List[int] = []  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -90,6 +87,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self._leverage_brackets: Dict = {}
 
         self._config.update(config)
 
@@ -180,7 +178,6 @@ class Exchange:
         self.markets_refresh_interval: int = exchange_config.get(
             "markets_refresh_interval", 60) * 60
 
-        self._leverage_brackets: Dict = {}
         if self.trading_mode != TradingMode.SPOT:
             self.fill_leverage_brackets()
 
@@ -1619,17 +1616,18 @@ class Exchange:
                                           until=until, from_id=from_id))
 
     @retrier
-    def get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
+    def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
         Returns the sum of all funding fees that were exchanged for a pair within a timeframe
+        Dry-run handling happens as part of _calculate_funding_fees.
         :param pair: (e.g. ADA/USDT)
         :param since: The earliest time of consideration for calculating funding fees,
             in unix time or as a datetime
         """
-
         if not self.exchange_has("fetchFundingHistory"):
             raise OperationalException(
-                f"fetch_funding_history() has not been implemented on ccxt.{self.name}")
+                f"fetch_funding_history() is not available using {self.name}"
+            )
 
         if type(since) is datetime:
             since = int(since.timestamp()) * 1000   # * 1000 for ms
@@ -1672,6 +1670,25 @@ class Exchange:
         else:
             return 1.0
 
+    def _get_funding_fee(
+        self,
+        size: float,
+        funding_rate: float,
+        mark_price: float,
+        time_in_ratio: Optional[float] = None
+    ) -> float:
+        """
+        Calculates a single funding fee
+        :param size: contract size * number of contracts
+        :param mark_price: The price of the asset that the contract is based off of
+        :param funding_rate: the interest rate and the premium
+            - interest rate:
+            - premium: varies by price difference between the perpetual contract and mark price
+        :param time_in_ratio: Not used by most exchange classes
+        """
+        nominal_value = mark_price * size
+        return nominal_value * funding_rate
+
     @retrier
     def _set_leverage(
         self,
@@ -1697,11 +1714,18 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def funding_fee_cutoff(self, open_date: datetime):
+        """
+        :param open_date: The open date for a trade
+        :return: The cutoff open time for when a funding fee is charged
+        """
+        return open_date.minute > 0 or open_date.second > 0
+
     @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
-        :param symbol: base/quote currency pair (e.g. "ADA/USDT")
+        :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
         if self._config['dry_run'] or not self.exchange_has("setMarginMode"):
             # Some exchanges only support one collateral type
@@ -1709,6 +1733,150 @@ class Exchange:
 
         try:
             self._api.set_margin_mode(pair, collateral.value, params)
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
+    @retrier
+    def _get_mark_price_history(self, pair: str, since: int) -> Dict:
+        """
+        Get's the mark price history for a pair
+        :param pair: The quote/base pair of the trade
+        :param since: The earliest time to start downloading candles, in ms.
+        """
+
+        try:
+            candles = self._api.fetch_ohlcv(
+                pair,
+                timeframe="1h",
+                since=since,
+                params={
+                    'price': self._ft_has["mark_ohlcv_price"]
+                }
+            )
+            history = {}
+            for candle in candles:
+                d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
+                # The millisecond timestamps can be delayed ~20ms
+                time = timeframe_to_prev_date('1h', d).timestamp() * 1000
+                opening_mark_price = candle[1]
+                history[time] = opening_mark_price
+            return history
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching historical '
+                f'mark price candle (OHLCV) data. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch historical mark price candle (OHLCV) data '
+                                 f'for pair {pair} due to {e.__class__.__name__}. '
+                                 f'Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
+                                       f'for pair {pair}. Message: {e}') from e
+
+    def _calculate_funding_fees(
+        self,
+        pair: str,
+        amount: float,
+        open_date: datetime,
+        close_date: Optional[datetime] = None
+    ) -> float:
+        """
+        calculates the sum of all funding fees that occurred for a pair during a futures trade
+        Only used during dry-run or if the exchange does not provide a funding_rates endpoint.
+        :param pair: The quote/base pair of the trade
+        :param amount: The quantity of the trade
+        :param open_date: The date and time that the trade started
+        :param close_date: The date and time that the trade ended
+        """
+
+        if self.funding_fee_cutoff(open_date):
+            open_date += timedelta(hours=1)
+
+        open_date = timeframe_to_prev_date('1h', open_date)
+
+        fees: float = 0
+        if not close_date:
+            close_date = datetime.now(timezone.utc)
+        open_timestamp = int(open_date.timestamp()) * 1000
+        # close_timestamp = int(close_date.timestamp()) * 1000
+        funding_rate_history = self.get_funding_rate_history(
+            pair,
+            open_timestamp
+        )
+        mark_price_history = self._get_mark_price_history(
+            pair,
+            open_timestamp
+        )
+        for timestamp in funding_rate_history.keys():
+            funding_rate = funding_rate_history[timestamp]
+            if timestamp in mark_price_history:
+                mark_price = mark_price_history[timestamp]
+                fees += self._get_funding_fee(
+                    size=amount,
+                    mark_price=mark_price,
+                    funding_rate=funding_rate
+                )
+            else:
+                logger.warning(
+                    f"Mark price for {pair} at timestamp {timestamp} not found in "
+                    f"funding_rate_history Funding fee calculation may be incorrect"
+                )
+
+        return fees
+
+    def get_funding_fees(self, pair: str, amount: float, open_date: datetime) -> float:
+        """
+        Fetch funding fees, either from the exchange (live) or calculates them
+        based on funding rate/mark price history
+        :param pair: The quote/base pair of the trade
+        :param amount: Trade amount
+        :param open_date: Open date of the trade
+        """
+        if self.trading_mode == TradingMode.FUTURES:
+            if self._config['dry_run']:
+                funding_fees = self._calculate_funding_fees(pair, amount, open_date)
+            else:
+                funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
+            return funding_fees
+        else:
+            return 0.0
+
+    @retrier
+    def get_funding_rate_history(self, pair: str, since: int) -> Dict:
+        """
+        :param pair: quote/base currency pair
+        :param since: timestamp in ms of the beginning time
+        :param end: timestamp in ms of the end time
+        """
+        if not self.exchange_has("fetchFundingRateHistory"):
+            raise ExchangeError(
+                f"fetch_funding_rate_history is not available using {self.name}"
+            )
+
+        # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
+        try:
+            funding_history: Dict = {}
+            response = self._api.fetch_funding_rate_history(
+                pair,
+                limit=1000,
+                since=since
+            )
+            for fund in response:
+                d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
+                # The millisecond timestamps can be delayed ~20ms
+                time = int(timeframe_to_prev_date('1h', d).timestamp() * 1000)
+
+                funding_history[time] = fund['fundingRate']
+            return funding_history
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:

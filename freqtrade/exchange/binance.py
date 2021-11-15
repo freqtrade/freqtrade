@@ -1,6 +1,7 @@
 """ Binance exchange subclass """
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -29,8 +30,6 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
         "ccxt_futures_name": "future"
     }
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
-    # but the schedule won't check within this timeframe
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -211,3 +210,11 @@ class Binance(Exchange):
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
         return await super()._async_get_historic_ohlcv(
             pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
+
+    def funding_fee_cutoff(self, open_date: datetime):
+        """
+        # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
+        :param open_date: The open date for a trade
+        :return: The cutoff open time for when a funding fee is charged
+        """
+        return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)

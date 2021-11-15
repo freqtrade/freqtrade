@@ -23,7 +23,6 @@ class Kraken(Exchange):
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
     }
-    funding_fee_times: List[int] = [0, 4, 8, 12, 16, 20]  # hours of the day
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
         # TradingMode.SPOT always supported and not required in this list
@@ -157,3 +156,29 @@ class Kraken(Exchange):
         if leverage > 1.0:
             params['leverage'] = leverage
         return params
+
+    def _get_funding_fee(
+        self,
+        size: float,
+        funding_rate: float,
+        mark_price: float,
+        time_in_ratio: Optional[float] = None
+    ) -> float:
+        """
+        # ! This method will always error when run by Freqtrade because time_in_ratio is never
+        # ! passed to _get_funding_fee. For kraken futures to work in dry run and backtesting
+        # ! functionality must be added that passes the parameter time_in_ratio to
+        # ! _get_funding_fee when using Kraken
+        Calculates a single funding fee
+        :param size: contract size * number of contracts
+        :param mark_price: The price of the asset that the contract is based off of
+        :param funding_rate: the interest rate and the premium
+            - interest rate:
+            - premium: varies by price difference between the perpetual contract and mark price
+        :param time_in_ratio: time elapsed within funding period without position alteration
+        """
+        if not time_in_ratio:
+            raise OperationalException(
+                f"time_in_ratio is required for {self.name}._get_funding_fee")
+        nominal_value = mark_price * size
+        return nominal_value * funding_rate * time_in_ratio

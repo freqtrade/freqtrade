@@ -1,6 +1,6 @@
 """ Bibox exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from freqtrade.exchange import Exchange
 
@@ -26,5 +26,3 @@ class Bibox(Exchange):
         config = {"has": {"fetchCurrencies": False}}
         config.update(super()._ccxt_config)
         return config
-
-    funding_fee_times: List[int] = [0, 8, 16]  # hours of the day
