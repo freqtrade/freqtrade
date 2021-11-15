@@ -248,33 +248,35 @@ def patch_get_signal(
     freqtrade.exchange.refresh_latest_ohlcv = lambda p: None
 
 
-def create_mock_trades(fee, is_short: bool = False, use_db: bool = True):
+def create_mock_trades(fee, is_short: Optional[bool] = False, use_db: bool = True):
     """
     Create some fake trades ...
+    :param is_short: Optional bool, None creates a mix of long and short trades.
     """
     def add_trade(trade):
         if use_db:
             Trade.query.session.add(trade)
         else:
             LocalTrade.add_bt_trade(trade)
-
+    is_short1 = is_short if is_short is not None else True
+    is_short2 = is_short if is_short is not None else False
     # Simulate dry_run entries
-    trade = mock_trade_1(fee, is_short)
+    trade = mock_trade_1(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_2(fee, is_short)
+    trade = mock_trade_2(fee, is_short1)
     add_trade(trade)
 
-    trade = mock_trade_3(fee, is_short)
+    trade = mock_trade_3(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_4(fee, is_short)
+    trade = mock_trade_4(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_5(fee, is_short)
+    trade = mock_trade_5(fee, is_short2)
     add_trade(trade)
 
-    trade = mock_trade_6(fee, is_short)
+    trade = mock_trade_6(fee, is_short1)
     add_trade(trade)
 
     if use_db:
@@ -2366,3 +2368,131 @@ def limit_order_open(limit_buy_order_usdt_open, limit_sell_order_usdt_open):
         'buy': limit_buy_order_usdt_open,
         'sell': limit_sell_order_usdt_open
     }
+
+
+@pytest.fixture(scope='function')
+def mark_ohlcv():
+    return [
+        [1630454400000, 2.77, 2.77, 2.73, 2.73, 0],
+        [1630458000000, 2.73, 2.76, 2.72, 2.74, 0],
+        [1630461600000, 2.74, 2.76, 2.74, 2.76, 0],
+        [1630465200000, 2.76, 2.76, 2.74, 2.76, 0],
+        [1630468800000, 2.76, 2.77, 2.75, 2.77, 0],
+        [1630472400000, 2.77, 2.79, 2.75, 2.78, 0],
+        [1630476000000, 2.78, 2.80, 2.77, 2.77, 0],
+        [1630479600000, 2.78, 2.79, 2.77, 2.77, 0],
+        [1630483200000, 2.77, 2.79, 2.77, 2.78, 0],
+        [1630486800000, 2.77, 2.84, 2.77, 2.84, 0],
+        [1630490400000, 2.84, 2.85, 2.81, 2.81, 0],
+        [1630494000000, 2.81, 2.83, 2.81, 2.81, 0],
+        [1630497600000, 2.81, 2.84, 2.81, 2.82, 0],
+        [1630501200000, 2.82, 2.83, 2.81, 2.81, 0],
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_hourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000004,
+            "timestamp": 1630458000000,
+            "datetime": "2021-09-01T01:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000012,
+            "timestamp": 1630461600000,
+            "datetime": "2021-09-01T02:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630465200000,
+            "datetime": "2021-09-01T03:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000007,
+            "timestamp": 1630468800000,
+            "datetime": "2021-09-01T04:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630472400000,
+            "datetime": "2021-09-01T05:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000019,
+            "timestamp": 1630476000000,
+            "datetime": "2021-09-01T06:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000003,
+            "timestamp": 1630479600000,
+            "datetime": "2021-09-01T07:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0,
+            "timestamp": 1630486800000,
+            "datetime": "2021-09-01T09:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000013,
+            "timestamp": 1630490400000,
+            "datetime": "2021-09-01T10:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000077,
+            "timestamp": 1630494000000,
+            "datetime": "2021-09-01T11:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000072,
+            "timestamp": 1630497600000,
+            "datetime": "2021-09-01T12:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": 0.000097,
+            "timestamp": 1630501200000,
+            "datetime": "2021-09-01T13:00:00.000Z"
+        },
+    ]
+
+
+@pytest.fixture(scope='function')
+def funding_rate_history_octohourly():
+    return [
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000008,
+            "timestamp": 1630454400000,
+            "datetime": "2021-09-01T00:00:00.000Z"
+        },
+        {
+            "symbol": "ADA/USDT",
+            "fundingRate": -0.000003,
+            "timestamp": 1630483200000,
+            "datetime": "2021-09-01T08:00:00.000Z"
+        }
+    ]
