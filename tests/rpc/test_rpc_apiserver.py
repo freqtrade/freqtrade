@@ -602,6 +602,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
 
     create_mock_trades(fee, is_short=is_short)
     Trade.query.session.flush()
+
     rc = client_get(client, f"{BASE_URI}/trade/3")
     assert_response(rc)
     assert rc.json()['trade_id'] == 3
@@ -699,7 +700,11 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-@pytest.mark.parametrize('is_short', [True, False, None])
+@pytest.mark.parametrize('is_short', [
+    (True),
+    (False),
+    (None),
+])
 def test_api_profit(botclient, mocker, ticker, fee, markets, is_short):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -758,7 +763,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short):
         'short_trades': 6 if is_short else 3 if is_short is None else 0,
         'winning_trades': 0 if is_short else 1 if is_short is None else 2,
         'losing_trades': 2 if is_short else 1 if is_short is None else 0,
-        }
+    }
 
 
 @pytest.mark.parametrize('is_short', [True, False])
