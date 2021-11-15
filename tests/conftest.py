@@ -16,7 +16,7 @@ from telegram import Chat, Message, Update
 from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
-from freqtrade.edge import Edge, PairInfo
+from freqtrade.edge import PairInfo
 from freqtrade.enums import RunMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
@@ -139,11 +139,6 @@ def patch_edge(mocker) -> None:
     ))
     mocker.patch('freqtrade.edge.Edge.calculate', MagicMock(return_value=True))
 
-
-def get_patched_edge(mocker, config) -> Edge:
-    patch_edge(mocker)
-    edge = Edge(config)
-    return edge
 
 # Functions for recurrent object patching
 

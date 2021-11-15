@@ -2017,15 +2017,6 @@ def test_get_sell_rate_exception(default_conf, mocker, caplog):
     assert exchange.get_rate(pair, refresh=True, side="sell") == 0.13
 
 
-def make_fetch_ohlcv_mock(data):
-    def fetch_ohlcv_mock(pair, timeframe, since):
-        if since:
-            assert since > data[-1][0]
-            return []
-        return data
-    return fetch_ohlcv_mock
-
-
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.asyncio
 async def test___async_get_candle_history_sort(default_conf, mocker, exchange_name):

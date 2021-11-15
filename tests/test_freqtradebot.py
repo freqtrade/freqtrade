@@ -170,12 +170,8 @@ def test_edge_called_in_process(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_edge(mocker)
 
-    def _refresh_whitelist(list):
-        return ['ETH/USDT', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
-
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(edge_conf)
-    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     patch_get_signal(freqtrade)
     freqtrade.process()
     assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
@@ -664,9 +660,6 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     patch_RPCManager(mocker)
     patch_exchange(mocker)
 
-    def _refresh_whitelist(list):
-        return ['ETH/USDT', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
-
     refresh_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -682,7 +675,6 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     mocker.patch('time.sleep', return_value=None)
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     freqtrade.strategy.informative_pairs = inf_pairs
     # patch_get_signal(freqtrade)
 
