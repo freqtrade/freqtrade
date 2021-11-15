@@ -22,7 +22,7 @@ nbconvert==6.2.0
 # mypy types
 types-cachetools==4.2.4
 types-filelock==3.2.1
-types-requests==2.25.11
+types-requests==2.26.0
 types-tabulate==0.8.3
 
 # Extensions to datetime library
