@@ -5,6 +5,7 @@ However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
 """
 
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -87,6 +88,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
     if not EXCHANGES[request.param].get('futures') is True:
         yield None, request.param
     else:
+        exchange_conf = deepcopy(exchange_conf)
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['collateral'] = 'cross'
