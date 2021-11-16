@@ -434,9 +434,9 @@ def test_list_markets(mocker, markets_static, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert ("Id,Symbol,Base,Quote,Active,Is pair" in captured.out)
-    assert ("blkbtc,BLK/BTC,BLK,BTC,True,True" in captured.out)
-    assert ("USD-LTC,LTC/USD,LTC,USD,True,True" in captured.out)
+    assert ("Id,Symbol,Base,Quote,Active,Spot,Margin,Future,Leverage" in captured.out)
+    assert ("blkbtc,BLK/BTC,BLK,BTC,True,Spot" in captured.out)
+    assert ("USD-LTC,LTC/USD,LTC,USD,True,Spot" in captured.out)
 
     # Test --one-column
     args = [

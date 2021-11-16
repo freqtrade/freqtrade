@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
@@ -119,6 +119,10 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        # TODO-lev: This should be unified in ccxt to "swap"...
+        return market.get('future', False) is True
+
     @retrier
     def fill_leverage_brackets(self):
         """
@@ -161,6 +165,8 @@ class Binance(Exchange):
         :param pair: The base/quote currency pair being traded
         :nominal_value: The total value of the trade in quote currency (collateral + debt)
         """
+        if pair not in self._leverage_brackets:
+            return 1.0
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
         for [min_amount, margin_req] in pair_brackets:

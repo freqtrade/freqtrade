@@ -2760,7 +2760,8 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
 
 
 @pytest.mark.parametrize(
-    "base_currencies, quote_currencies, pairs_only, active_only, expected_keys", [
+    "base_currencies,quote_currencies,tradable_only,active_only,spot_only,"
+    "futures_only,expected_keys", [
         # Testing markets (in conftest.py):
         # 'BLK/BTC':  'active': True
         # 'BTT/BTC':  'active': True
@@ -2775,48 +2776,62 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         # 'XLTCUSDT': 'active': True, not a pair
         # 'XRP/BTC':  'active': False
         # all markets
-        ([], [], False, False,
+        ([], [], False, False, False, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
+        # all markets, only spot pairs
+        ([], [], False, False, True, False,
+         ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
+          'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active markets
-        ([], [], False, True,
+        ([], [], False, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XLTCUSDT', 'XRP/BTC']),
         # all pairs
-        ([], [], True, False,
+        ([], [], True, False, False, False,
          ['BLK/BTC', 'BTT/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD',
           'LTC/USDT', 'NEO/BTC', 'TKN/BTC', 'XRP/BTC']),
         # active pairs
-        ([], [], True, True,
+        ([], [], True, True, False, False,
          ['BLK/BTC', 'ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'NEO/BTC',
           'TKN/BTC', 'XRP/BTC']),
         # all markets, base=ETH, LTC
-        (['ETH', 'LTC'], [], False, False,
+        (['ETH', 'LTC'], [], False, False, False, False,
          ['ETH/BTC', 'ETH/USDT', 'LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC
-        (['LTC'], [], False, False,
+        (['LTC'], [], False, False, False, False,
          ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # spot markets, base=LTC
+        (['LTC'], [], False, False, True, False,
+         ['LTC/BTC', 'LTC/ETH', 'LTC/USD', 'LTC/USDT']),
         # all markets, quote=USDT
-        ([], ['USDT'], False, False,
+        ([], ['USDT'], False, False, False, False,
          ['ETH/USDT', 'LTC/USDT', 'XLTCUSDT']),
+        # Futures markets, quote=USDT
+        ([], ['USDT'], False, False, False, True,
+         ['ETH/USDT', 'LTC/USDT']),
         # all markets, quote=USDT, USD
-        ([], ['USDT', 'USD'], False, False,
+        ([], ['USDT', 'USD'], False, False, False, False,
          ['ETH/USDT', 'LTC/USD', 'LTC/USDT', 'XLTCUSDT']),
+        # spot markets, quote=USDT, USD
+        ([], ['USDT', 'USD'], False, False, True, False,
+         ['ETH/USDT', 'LTC/USD', 'LTC/USDT']),
         # all markets, base=LTC, quote=USDT
-        (['LTC'], ['USDT'], False, False,
+        (['LTC'], ['USDT'], False, False, False, False,
          ['LTC/USDT', 'XLTCUSDT']),
         # all pairs, base=LTC, quote=USDT
-        (['LTC'], ['USDT'], True, False,
+        (['LTC'], ['USDT'], True, False, False, False,
          ['LTC/USDT']),
         # all markets, base=LTC, quote=USDT, NONEXISTENT
-        (['LTC'], ['USDT', 'NONEXISTENT'], False, False,
+        (['LTC'], ['USDT', 'NONEXISTENT'], False, False, False, False,
          ['LTC/USDT', 'XLTCUSDT']),
         # all markets, base=LTC, quote=NONEXISTENT
-        (['LTC'], ['NONEXISTENT'], False, False,
+        (['LTC'], ['NONEXISTENT'], False, False, False, False,
          []),
     ])
 def test_get_markets(default_conf, mocker, markets_static,
-                     base_currencies, quote_currencies, pairs_only, active_only,
+                     base_currencies, quote_currencies, tradable_only, active_only,
+                     spot_only, futures_only,
                      expected_keys):
     mocker.patch.multiple('freqtrade.exchange.Exchange',
                           _init_ccxt=MagicMock(return_value=MagicMock()),
@@ -2825,7 +2840,12 @@ def test_get_markets(default_conf, mocker, markets_static,
                           validate_timeframes=MagicMock(),
                           markets=PropertyMock(return_value=markets_static))
     ex = Exchange(default_conf)
-    pairs = ex.get_markets(base_currencies, quote_currencies, pairs_only, active_only)
+    pairs = ex.get_markets(base_currencies,
+                           quote_currencies,
+                           tradable_only=tradable_only,
+                           spot_only=spot_only,
+                           futures_only=futures_only,
+                           active_only=active_only)
     assert sorted(pairs.keys()) == sorted(expected_keys)
 
 
@@ -2928,39 +2948,63 @@ def test_timeframe_to_next_date():
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
 
 
-@pytest.mark.parametrize("market_symbol,base,quote,exchange,add_dict,expected_result", [
-    ("BTC/USDT", 'BTC', 'USDT', "binance", {}, True),
-    ("USDT/BTC", 'USDT', 'BTC', "binance", {}, True),
-    ("USDT/BTC", 'BTC', 'USDT', "binance", {}, False),  # Reversed currencies
-    ("BTCUSDT", 'BTC', 'USDT', "binance", {}, False),  # No seperating /
-    ("BTCUSDT", None, "USDT", "binance", {}, False),  #
-    ("USDT/BTC", "BTC", None, "binance", {}, False),
-    ("BTCUSDT", "BTC", None, "binance", {}, False),
-    ("BTC/USDT", "BTC", "USDT", "binance", {}, True),
-    ("BTC/USDT", "USDT", "BTC", "binance", {}, False),  # reversed currencies
-    ("BTC/USDT", "BTC", "USD", "binance", {}, False),  # Wrong quote currency
-    ("BTC/", "BTC", 'UNK', "binance", {}, False),
-    ("/USDT", 'UNK', 'USDT', "binance", {}, False),
-    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": False}, True),
-    ("EUR/BTC", 'EUR', 'BTC', "kraken", {"darkpool": False}, True),
-    ("EUR/BTC", 'BTC', 'EUR', "kraken", {"darkpool": False}, False),  # Reversed currencies
-    ("BTC/EUR", 'BTC', 'USD', "kraken", {"darkpool": False}, False),  # wrong quote currency
-    ("BTC/EUR", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
-    ("BTC/EUR.d", 'BTC', 'EUR', "kraken", {"darkpool": True}, False),  # no darkpools
-    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': True}, True),
-    ("USD/BTC", 'USD', 'BTC', "ftx", {'spot': True}, True),
-    ("BTC/USD", 'BTC', 'USDT', "ftx", {'spot': True}, False),  # Wrong quote currency
-    ("BTC/USD", 'USD', 'BTC', "ftx", {'spot': True}, False),  # Reversed currencies
-    ("BTC/USD", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
-    ("BTC-PERP", 'BTC', 'USD', "ftx", {'spot': False}, False),  # Can only trade spot markets
-])
-def test_market_is_tradable(mocker, default_conf, market_symbol, base,
-                            quote, add_dict, exchange, expected_result) -> None:
+@pytest.mark.parametrize(
+    "market_symbol,base,quote,exchange,spot,margin,futures,trademode,add_dict,expected_result",
+    [
+        ("BTC/USDT", 'BTC', 'USDT', "binance", True, False, False, 'spot', {}, True),
+        ("USDT/BTC", 'USDT', 'BTC', "binance", True, False, False, 'spot', {}, True),
+        # No seperating /
+        ("BTCUSDT", 'BTC', 'USDT', "binance", True, False, False, 'spot', {}, True),
+        ("BTCUSDT", None, "USDT", "binance", True, False, False, 'spot', {}, False),
+        ("USDT/BTC", "BTC", None, "binance", True, False, False, 'spot', {}, False),
+        ("BTCUSDT", "BTC", None, "binance", True, False, False, 'spot', {}, False),
+        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, 'spot', {}, True),
+        # Futures mode, spot pair
+        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, 'futures', {}, False),
+        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, 'margin', {}, False),
+        ("BTC/USDT", "BTC", "USDT", "binance", True, True, True, 'margin', {}, True),
+        ("BTC/USDT", "BTC", "USDT", "binance", False, True, False, 'margin', {}, True),
+        # Futures mode, futures pair
+        ("BTC/USDT", "BTC", "USDT", "binance", False, False, True, 'futures', {}, True),
+        # Futures market
+        ("BTC/UNK", "BTC", 'UNK', "binance", False, False, True, 'spot', {}, False),
+        ("BTC/EUR", 'BTC', 'EUR', "kraken", True, False, False, 'spot', {"darkpool": False}, True),
+        ("EUR/BTC", 'EUR', 'BTC', "kraken", True, False, False, 'spot', {"darkpool": False}, True),
+        # no darkpools
+        ("BTC/EUR", 'BTC', 'EUR', "kraken", True, False, False, 'spot',
+         {"darkpool": True}, False),
+        # no darkpools
+        ("BTC/EUR.d", 'BTC', 'EUR', "kraken", True, False, False, 'spot',
+         {"darkpool": True}, False),
+        ("BTC/USD", 'BTC', 'USD', "ftx", True, False, False, 'spot', {}, True),
+        ("USD/BTC", 'USD', 'BTC', "ftx", True, False, False, 'spot', {}, True),
+        # Can only trade spot markets
+        ("BTC/USD", 'BTC', 'USD', "ftx", False, False, True, 'spot', {}, False),
+        ("BTC/USD", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
+        # Can only trade spot markets
+        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'spot', {}, False),
+        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'margin', {}, False),
+        ("BTC-PERP", 'BTC', 'USD', "ftx", False, False, True, 'futures', {}, True),
+
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'spot', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'margin', {}, False),
+        ("BTC/USDT:USDT", 'BTC', 'USD', "okex", False, False, True, 'futures', {}, True),
+    ])
+def test_market_is_tradable(
+        mocker, default_conf, market_symbol, base,
+        quote, spot, margin, futures, trademode, add_dict, exchange, expected_result
+        ) -> None:
+    default_conf['trading_mode'] = trademode
+    mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
     ex = get_patched_exchange(mocker, default_conf, id=exchange)
     market = {
         'symbol': market_symbol,
         'base': base,
         'quote': quote,
+        'spot': spot,
+        'future': futures,
+        'swap': futures,
+        'margin': margin,
         **(add_dict),
     }
     assert ex.market_is_tradable(market) == expected_result

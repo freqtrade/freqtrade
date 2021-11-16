@@ -30,16 +30,6 @@ class Ftx(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS)
     ]
 
-    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
-        """
-        Check if the market symbol is tradable by Freqtrade.
-        Default checks + check if pair is spot pair (no futures trading yet).
-        """
-        parent_check = super().market_is_tradable(market)
-
-        return (parent_check and
-                market.get('spot', False) is True)
-
     def stoploss_adjust(self, stop_loss: float, order: Dict, side: str) -> bool:
         """
         Verify stop_loss against stoploss-order value (limit or price)
@@ -169,3 +159,7 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
+
+    def market_is_future(self, market: Dict[str, Any]) -> bool:
+        # TODO-lev: This should be unified in ccxt to "swap"...
+        return market.get('future', False) is True
