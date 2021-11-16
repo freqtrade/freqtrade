@@ -701,44 +701,45 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
 
 
 @pytest.mark.parametrize(
-        'is_short, best_pair, best_rate, profit_all_coin, profit_all_fiat,'
-        'profit_all_percent_mean, profit_all_ratio_mean, profit_all_percent_sum,'
-        'profit_all_ratio_sum, profit_all_percent, profit_all_ratio,'
-        'profit_closed_coin, profit_closed_fiat, profit_closed_ratio_mean,'
-        'profit_closed_percent_mean, profit_closed_ratio_sum,'
-        'profit_closed_percent_sum, profit_closed_ratio,'
-        'profit_closed_percent, winning_trades, losing_trades',
-        [
-            (True, 'ETC/BTC', -0.5, 43.61269123, 538398.67323435,
-             66.41, 0.664109545, 398.47,
-             3.98465727, 4.36, 0.043612222872799825,
-             -0.00673913, -83.19455985, -0.0075,
-             -0.75, -0.015,
-             -1.5, -6.739057628404269e-06,
-             -0.0, 0, 2),
-            (False, 'XRP/BTC', 1.0, -44.0631579, -543959.6842755,
-             -66.41, -0.6641100666666667, -398.47,
-             -3.9846604, -4.41, -0.044063014216106644,
-             0.00073913, 9.124559849999999, 0.0075,
-             0.75, 0.015,
-             1.5, 7.391275897987988e-07,
-             0.0, 2, 0),
-            (None, 'XRP/BTC', 1.0, -14.43790415, -178235.92673175,
-             0.08, 0.000835751666666662, 0.5,
-             0.005014509999999972, -1.44, -0.014437768014451796,
-             -0.00542913, -67.02260985, 0.0025,
-             0.25, 0.005,
-             0.5, -5.429078808526421e-06,
-             -0.0, 1, 1)
-        ])
-def test_api_profit(
-    botclient, mocker, ticker, fee, markets, is_short, best_pair, best_rate, profit_all_coin,
-    profit_all_fiat, profit_all_percent_mean, profit_all_ratio_mean, profit_all_percent_sum,
-    profit_all_ratio_sum, profit_all_percent, profit_all_ratio, profit_closed_coin,
-    profit_closed_fiat, profit_closed_ratio_mean, profit_closed_percent_mean,
-    profit_closed_ratio_sum, profit_closed_percent_sum, profit_closed_ratio,
-    profit_closed_percent, winning_trades, losing_trades
-):
+    'is_short,expected',
+    [(
+        True,
+        {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'profit_all_coin': 43.61269123,
+         'profit_all_fiat': 538398.67323435, 'profit_all_percent_mean': 66.41,
+         'profit_all_ratio_mean': 0.664109545, 'profit_all_percent_sum': 398.47,
+         'profit_all_ratio_sum': 3.98465727, 'profit_all_percent': 4.36,
+         'profit_all_ratio': 0.043612222872799825, 'profit_closed_coin': -0.00673913,
+         'profit_closed_fiat': -83.19455985, 'profit_closed_ratio_mean': -0.0075,
+         'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
+         'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
+         'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2}
+     ),
+     (
+        False,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -44.0631579,
+         'profit_all_fiat': -543959.6842755, 'profit_all_percent_mean': -66.41,
+         'profit_all_ratio_mean': -0.6641100666666667, 'profit_all_percent_sum': -398.47,
+         'profit_all_ratio_sum': -3.9846604, 'profit_all_percent': -4.41,
+         'profit_all_ratio': -0.044063014216106644, 'profit_closed_coin': 0.00073913,
+         'profit_closed_fiat': 9.124559849999999, 'profit_closed_ratio_mean': 0.0075,
+         'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
+         'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
+         'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0}
+     ),
+     (
+        None,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -14.43790415,
+         'profit_all_fiat': -178235.92673175, 'profit_all_percent_mean': 0.08,
+         'profit_all_ratio_mean': 0.000835751666666662, 'profit_all_percent_sum': 0.5,
+         'profit_all_ratio_sum': 0.005014509999999972, 'profit_all_percent': -1.44,
+         'profit_all_ratio': -0.014437768014451796, 'profit_closed_coin': -0.00542913,
+         'profit_closed_fiat': -67.02260985, 'profit_closed_ratio_mean': 0.0025,
+         'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
+         'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
+         'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1}
+     )
+     ])
+def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -761,32 +762,32 @@ def test_api_profit(
     # raise ValueError(rc.json())
     assert rc.json() == {
         'avg_duration': ANY,
-        'best_pair': best_pair,
-        'best_rate': best_rate,
+        'best_pair': expected['best_pair'],
+        'best_rate': expected['best_rate'],
         'first_trade_date': ANY,
         'first_trade_timestamp': ANY,
         'latest_trade_date': '5 minutes ago',
         'latest_trade_timestamp': ANY,
-        'profit_all_coin': profit_all_coin,
-        'profit_all_fiat': profit_all_fiat,
-        'profit_all_percent_mean': profit_all_percent_mean,
-        'profit_all_ratio_mean': profit_all_ratio_mean,
-        'profit_all_percent_sum': profit_all_percent_sum,
-        'profit_all_ratio_sum': profit_all_ratio_sum,
-        'profit_all_percent': profit_all_percent,
-        'profit_all_ratio': profit_all_ratio,
-        'profit_closed_coin': profit_closed_coin,
-        'profit_closed_fiat': profit_closed_fiat,
-        'profit_closed_ratio_mean': profit_closed_ratio_mean,
-        'profit_closed_percent_mean': profit_closed_percent_mean,
-        'profit_closed_ratio_sum': profit_closed_ratio_sum,
-        'profit_closed_percent_sum': profit_closed_percent_sum,
-        'profit_closed_ratio': profit_closed_ratio,
-        'profit_closed_percent': profit_closed_percent,
+        'profit_all_coin': expected['profit_all_coin'],
+        'profit_all_fiat': expected['profit_all_fiat'],
+        'profit_all_percent_mean': expected['profit_all_percent_mean'],
+        'profit_all_ratio_mean': expected['profit_all_ratio_mean'],
+        'profit_all_percent_sum': expected['profit_all_percent_sum'],
+        'profit_all_ratio_sum': expected['profit_all_ratio_sum'],
+        'profit_all_percent': expected['profit_all_percent'],
+        'profit_all_ratio': expected['profit_all_ratio'],
+        'profit_closed_coin': expected['profit_closed_coin'],
+        'profit_closed_fiat': expected['profit_closed_fiat'],
+        'profit_closed_ratio_mean': expected['profit_closed_ratio_mean'],
+        'profit_closed_percent_mean': expected['profit_closed_percent_mean'],
+        'profit_closed_ratio_sum': expected['profit_closed_ratio_sum'],
+        'profit_closed_percent_sum': expected['profit_closed_percent_sum'],
+        'profit_closed_ratio': expected['profit_closed_ratio'],
+        'profit_closed_percent': expected['profit_closed_percent'],
         'trade_count': 6,
         'closed_trade_count': 2,
-        'winning_trades': winning_trades,
-        'losing_trades': losing_trades,
+        'winning_trades': expected['winning_trades'],
+        'losing_trades': expected['losing_trades'],
     }
 
 
