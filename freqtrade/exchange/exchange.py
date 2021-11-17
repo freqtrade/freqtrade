@@ -649,7 +649,10 @@ class Exchange:
 
         if ('amount' in limits and 'min' in limits['amount']
                 and limits['amount']['min'] is not None):
-            self._contract_size_to_amount(pair, min_stake_amounts.append(limits['amount']['min'] * price))
+            self._contract_size_to_amount(
+                pair,
+                min_stake_amounts.append(limits['amount']['min'] * price)
+            )
 
         if not min_stake_amounts:
             return None
@@ -837,15 +840,15 @@ class Exchange:
 
     def _amount_to_contract_size(self, pair: str, amount: float):
 
-        if ('contractSize' in self.markets[pair]):
-            return amount / self.markets[pair]['contractSize']
+        if ('contractSize' in self._api.markets[pair]):
+            return amount / self._api.markets[pair]['contractSize']
         else:
             return amount
 
     def _contract_size_to_amount(self, pair: str, amount: float):
 
-        if ('contractSize' in self.markets[pair]):
-            return amount * self.markets[pair]['contractSize']
+        if ('contractSize' in self._api.markets[pair]):
+            return amount * self._api.markets[pair]['contractSize']
         else:
             return amount
 
