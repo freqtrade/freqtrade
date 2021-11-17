@@ -1018,7 +1018,7 @@ The following lists some common patterns which should be avoided to prevent frus
 
 ### Colliding signals
 
-When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing. This is to avoid trades that buy, and sell immediately. Obviously, this can lead to both missed entries, as well as missed exits.
+When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing and ignore the entry (buy) signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
 
 ## Further strategy ideas
 

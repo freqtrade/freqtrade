@@ -145,10 +145,12 @@ Currently available callbacks:
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 
+!!! Tip "Callback calling sequence"
+    You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
 
 ### Bot loop start
 
-A simple callback which is called once at the start of every bot throttling iteration.
+A simple callback which is called once at the start of every bot throttling iteration (roughly every 5 seconds, unless configured differently).
 This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
 
 ``` python
@@ -174,7 +176,7 @@ class AwesomeStrategy(IStrategy):
 
 ### Custom Stake size
 
-It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.
+Called before entering a trade, makes it possible to manage your position size when placing a new trade.
 
 ```python
 class AwesomeStrategy(IStrategy):
@@ -207,14 +209,16 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 
 ### Custom sell signal
 
-It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. 
+Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
+
+Allows to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need trade data to make an exit decision.
 
 For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
 
 Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
-    Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+    Returning a (none-empty) `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
 
 An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
 
@@ -244,9 +248,11 @@ See [Dataframe access](#dataframe-access) for more information about dataframe u
 
 ### Custom stoploss
 
-The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
-
+Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed. 
 The usage of the custom stoploss method must be enabled by setting `use_custom_stoploss=True` on the strategy object.
+
+The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade).
+
 The method must return a stoploss value (float / number) as a percentage of the current price.
 E.g. If the `current_rate` is 200 USD, then returning `0.02` will set the stoploss price 2% lower, at 196 USD.
 
@@ -469,6 +475,8 @@ By default, freqtrade use the orderbook to automatically set an order price([Rel
 
 You can use this feature by creating a `custom_entry_price()` function in your strategy file to customize entry prices and `custom_exit_price()` for exits.
 
+Each of these methods are called right before placing an order on the exchange.
+
 !!! Note
     If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
 
@@ -522,6 +530,9 @@ However, freqtrade also offers a custom callback for both order types, which all
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
 
 #### Custom order timeout example
+
+Called for every open order until that order is either filled or cancelled.
+`check_buy_timeout()` is called for trade entries, while `check_sell_timeout()` is called for trade exit orders.
 
 A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
 It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.
