@@ -587,6 +587,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
+        amount = self._amount_to_contract_size(pair, amount)
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -649,9 +650,11 @@ class Exchange:
 
         if ('amount' in limits and 'min' in limits['amount']
                 and limits['amount']['min'] is not None):
-            self._contract_size_to_amount(
-                pair,
-                min_stake_amounts.append(limits['amount']['min'] * price)
+            min_stake_amounts.append(
+                self._contract_size_to_amount(
+                    pair,
+                    limits['amount']['min'] * price
+                )
             )
 
         if not min_stake_amounts:
@@ -688,7 +691,7 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self.amount_to_precision(pair, amount)
+        _amount = self._contract_size_to_amount(pair, self.amount_to_precision(pair, amount))
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -840,15 +843,15 @@ class Exchange:
 
     def _amount_to_contract_size(self, pair: str, amount: float):
 
-        if ('contractSize' in self._api.markets[pair]):
-            return amount / self._api.markets[pair]['contractSize']
+        if ('contractSize' in self.markets[pair]):
+            return amount / self.markets[pair]['contractSize']
         else:
             return amount
 
     def _contract_size_to_amount(self, pair: str, amount: float):
 
-        if ('contractSize' in self._api.markets[pair]):
-            return amount * self._api.markets[pair]['contractSize']
+        if ('contractSize' in self.markets[pair]):
+            return amount * self.markets[pair]['contractSize']
         else:
             return amount
 
@@ -869,7 +872,6 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             self._lev_prep(pair, leverage)
-            amount = self._amount_to_contract_size(pair, amount)
             order = self._api.create_order(
                 pair,
                 ordertype,
@@ -1269,7 +1271,7 @@ class Exchange:
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets()
-
+            # TODO-lev: Convert this amount to contract size?
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
         except ccxt.DDoSProtection as e:
