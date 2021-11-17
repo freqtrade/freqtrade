@@ -631,12 +631,8 @@ class Exchange:
         else:
             return 1 / pow(10, precision)
 
-    def get_min_pair_stake_amount(
-        self,
-        pair: str,
-        price: float,
-        stoploss: float
-    ) -> Optional[float]:
+    def get_min_pair_stake_amount(self, pair: str, price: float, stoploss: float,
+                                  leverage: Optional[float] = 1.0) -> Optional[float]:
         try:
             market = self.markets[pair]
         except KeyError:
@@ -653,7 +649,7 @@ class Exchange:
 
         if ('amount' in limits and 'min' in limits['amount']
                 and limits['amount']['min'] is not None):
-            min_stake_amounts.append(limits['amount']['min'] * price)
+            self._contract_size_to_amount(pair, min_stake_amounts.append(limits['amount']['min'] * price))
 
         if not min_stake_amounts:
             return None
@@ -670,10 +666,19 @@ class Exchange:
         # The value returned should satisfy both limits: for amount (base currency) and
         # for cost (quote, stake currency), so max() is used here.
         # See also #2575 at github.
-        return self._contract_size_to_amount(
-            pair,
-            max(min_stake_amounts) * amount_reserve_percent
+        return self._get_stake_amount_considering_leverage(
+            max(min_stake_amounts) * amount_reserve_percent,
+            leverage or 1.0
         )
+
+    def _get_stake_amount_considering_leverage(self, stake_amount: float, leverage: float):
+        """
+        Takes the minimum stake amount for a pair with no leverage and returns the minimum
+        stake amount when leverage is considered
+        :param stake_amount: The stake amount for a pair before leverage is considered
+        :param leverage: The amount of leverage being used on the current trade
+        """
+        return stake_amount / leverage
 
     # Dry-run methods
 
