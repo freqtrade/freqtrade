@@ -499,7 +499,7 @@ def test_telegram_stats(default_conf, update, ticker, ticker_sell_up, fee,
     msg_mock.reset_mock()
 
     # Create some test data
-    create_mock_trades(fee, is_short)
+    create_mock_trades(fee, is_short=is_short)
 
     telegram._stats(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
@@ -1261,8 +1261,10 @@ def test_edge_enabled(edge_conf, update, mocker) -> None:
     assert 'Winrate' not in msg_mock.call_args_list[0][0][0]
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_telegram_trades(mocker, update, default_conf, fee):
+@pytest.mark.parametrize('is_short,regex_pattern',
+                         [(True, r"just now[ ]*XRP\/BTC \(#3\)  -1.00% \("),
+                          (False, r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(")])
+def test_telegram_trades(mocker, update, default_conf, fee, is_short, regex_pattern):
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -1280,7 +1282,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "<pre>" not in msg_mock.call_args_list[0][0][0]
     msg_mock.reset_mock()
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
 
     context = MagicMock()
     context.args = [5]
@@ -1290,8 +1292,7 @@ def test_telegram_trades(mocker, update, default_conf, fee):
     assert "Profit (" in msg_mock.call_args_list[0][0][0]
     assert "Close Date" in msg_mock.call_args_list[0][0][0]
     assert "<pre>" in msg_mock.call_args_list[0][0][0]
-    assert bool(re.search(r"just now[ ]*XRP\/BTC \(#3\)  1.00% \(",
-                msg_mock.call_args_list[0][0][0]))
+    assert bool(re.search(regex_pattern, msg_mock.call_args_list[0][0][0]))
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -1305,7 +1306,7 @@ def test_telegram_delete_trade(mocker, update, default_conf, fee, is_short):
     assert "Trade-id not set." in msg_mock.call_args_list[0][0][0]
 
     msg_mock.reset_mock()
-    create_mock_trades(fee, is_short)
+    create_mock_trades(fee, is_short=is_short)
 
     context = MagicMock()
     context.args = [1]

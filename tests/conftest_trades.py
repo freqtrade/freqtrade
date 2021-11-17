@@ -317,6 +317,7 @@ def mock_trade_6(fee, is_short: bool):
         buy_tag='TEST2',
         open_order_id=f"prod_sell_{direc(is_short)}_6",
         timeframe=5,
+        is_short=is_short
     )
     o = Order.parse_from_ccxt_object(mock_order_6(is_short), 'LTC/BTC', enter_side(is_short))
     trade.orders.append(o)

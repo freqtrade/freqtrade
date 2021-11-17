@@ -154,6 +154,7 @@ class TradeSchema(BaseModel):
     trade_id: int
     pair: str
     is_open: bool
+    is_short: bool
     exchange: str
     amount: float
     amount_requested: float

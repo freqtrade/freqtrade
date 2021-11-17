@@ -476,7 +476,7 @@ def test_api_count(botclient, mocker, ticker, fee, markets, is_short):
     assert rc.json()["max"] == 1
 
     # Create some test data
-    create_mock_trades(fee, is_short)
+    create_mock_trades(fee, is_short=is_short)
     rc = client_get(client, f"{BASE_URI}/count")
     assert_response(rc)
     assert rc.json()["current"] == 4
@@ -571,7 +571,7 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     assert rc.json()['trades_count'] == 0
     assert rc.json()['total_trades'] == 0
 
-    create_mock_trades(fee, is_short)
+    create_mock_trades(fee, is_short=is_short)
     Trade.query.session.flush()
 
     rc = client_get(client, f"{BASE_URI}/trades")
@@ -579,6 +579,7 @@ def test_api_trades(botclient, mocker, fee, markets, is_short):
     assert len(rc.json()['trades']) == 2
     assert rc.json()['trades_count'] == 2
     assert rc.json()['total_trades'] == 2
+    assert rc.json()['trades'][0]['is_short'] == is_short
     rc = client_get(client, f"{BASE_URI}/trades?limit=1")
     assert_response(rc)
     assert len(rc.json()['trades']) == 1
@@ -605,6 +606,7 @@ def test_api_trade_single(botclient, mocker, fee, ticker, markets, is_short):
     rc = client_get(client, f"{BASE_URI}/trade/3")
     assert_response(rc)
     assert rc.json()['trade_id'] == 3
+    assert rc.json()['is_short'] == is_short
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -623,7 +625,7 @@ def test_api_delete_trade(botclient, mocker, fee, markets, is_short):
     # Error - trade won't exist yet.
     assert_response(rc, 502)
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
 
     ftbot.strategy.order_types['stoploss_on_exchange'] = True
     trades = Trade.query.all()
@@ -698,8 +700,46 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_api_profit(botclient, mocker, ticker, fee, markets):
+@pytest.mark.parametrize(
+    'is_short,expected',
+    [(
+        True,
+        {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'profit_all_coin': 43.61269123,
+         'profit_all_fiat': 538398.67323435, 'profit_all_percent_mean': 66.41,
+         'profit_all_ratio_mean': 0.664109545, 'profit_all_percent_sum': 398.47,
+         'profit_all_ratio_sum': 3.98465727, 'profit_all_percent': 4.36,
+         'profit_all_ratio': 0.043612222872799825, 'profit_closed_coin': -0.00673913,
+         'profit_closed_fiat': -83.19455985, 'profit_closed_ratio_mean': -0.0075,
+         'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
+         'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
+         'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2}
+     ),
+     (
+        False,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -44.0631579,
+         'profit_all_fiat': -543959.6842755, 'profit_all_percent_mean': -66.41,
+         'profit_all_ratio_mean': -0.6641100666666667, 'profit_all_percent_sum': -398.47,
+         'profit_all_ratio_sum': -3.9846604, 'profit_all_percent': -4.41,
+         'profit_all_ratio': -0.044063014216106644, 'profit_closed_coin': 0.00073913,
+         'profit_closed_fiat': 9.124559849999999, 'profit_closed_ratio_mean': 0.0075,
+         'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
+         'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
+         'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0}
+     ),
+     (
+        None,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -14.43790415,
+         'profit_all_fiat': -178235.92673175, 'profit_all_percent_mean': 0.08,
+         'profit_all_ratio_mean': 0.000835751666666662, 'profit_all_percent_sum': 0.5,
+         'profit_all_ratio_sum': 0.005014509999999972, 'profit_all_percent': -1.44,
+         'profit_all_ratio': -0.014437768014451796, 'profit_closed_coin': -0.00542913,
+         'profit_closed_fiat': -67.02260985, 'profit_closed_ratio_mean': 0.0025,
+         'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
+         'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
+         'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1}
+     )
+     ])
+def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -714,39 +754,41 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
     assert_response(rc, 200)
     assert rc.json()['trade_count'] == 0
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
     # Simulate fulfilled LIMIT_BUY order for trade
 
     rc = client_get(client, f"{BASE_URI}/profit")
     assert_response(rc)
-    assert rc.json() == {'avg_duration': ANY,
-                         'best_pair': 'XRP/BTC',
-                         'best_rate': 1.0,
-                         'first_trade_date': ANY,
-                         'first_trade_timestamp': ANY,
-                         'latest_trade_date': '5 minutes ago',
-                         'latest_trade_timestamp': ANY,
-                         'profit_all_coin': -44.0631579,
-                         'profit_all_fiat': -543959.6842755,
-                         'profit_all_percent_mean': -66.41,
-                         'profit_all_ratio_mean': -0.6641100666666667,
-                         'profit_all_percent_sum': -398.47,
-                         'profit_all_ratio_sum': -3.9846604,
-                         'profit_all_percent': -4.41,
-                         'profit_all_ratio': -0.044063014216106644,
-                         'profit_closed_coin': 0.00073913,
-                         'profit_closed_fiat': 9.124559849999999,
-                         'profit_closed_ratio_mean': 0.0075,
-                         'profit_closed_percent_mean': 0.75,
-                         'profit_closed_ratio_sum': 0.015,
-                         'profit_closed_percent_sum': 1.5,
-                         'profit_closed_ratio': 7.391275897987988e-07,
-                         'profit_closed_percent': 0.0,
-                         'trade_count': 6,
-                         'closed_trade_count': 2,
-                         'winning_trades': 2,
-                         'losing_trades': 0,
-                         }
+    # raise ValueError(rc.json())
+    assert rc.json() == {
+        'avg_duration': ANY,
+        'best_pair': expected['best_pair'],
+        'best_rate': expected['best_rate'],
+        'first_trade_date': ANY,
+        'first_trade_timestamp': ANY,
+        'latest_trade_date': '5 minutes ago',
+        'latest_trade_timestamp': ANY,
+        'profit_all_coin': expected['profit_all_coin'],
+        'profit_all_fiat': expected['profit_all_fiat'],
+        'profit_all_percent_mean': expected['profit_all_percent_mean'],
+        'profit_all_ratio_mean': expected['profit_all_ratio_mean'],
+        'profit_all_percent_sum': expected['profit_all_percent_sum'],
+        'profit_all_ratio_sum': expected['profit_all_ratio_sum'],
+        'profit_all_percent': expected['profit_all_percent'],
+        'profit_all_ratio': expected['profit_all_ratio'],
+        'profit_closed_coin': expected['profit_closed_coin'],
+        'profit_closed_fiat': expected['profit_closed_fiat'],
+        'profit_closed_ratio_mean': expected['profit_closed_ratio_mean'],
+        'profit_closed_percent_mean': expected['profit_closed_percent_mean'],
+        'profit_closed_ratio_sum': expected['profit_closed_ratio_sum'],
+        'profit_closed_percent_sum': expected['profit_closed_percent_sum'],
+        'profit_closed_ratio': expected['profit_closed_ratio'],
+        'profit_closed_percent': expected['profit_closed_percent'],
+        'trade_count': 6,
+        'closed_trade_count': 2,
+        'winning_trades': expected['winning_trades'],
+        'losing_trades': expected['losing_trades'],
+    }
 
 
 @pytest.mark.parametrize('is_short', [True, False])
@@ -826,11 +868,12 @@ def test_api_performance(botclient, fee):
                           'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
 
-# TODO-lev: @pytest.mark.parametrize('is_short,side', [
-#     (True, "short"),
-#     (False, "long")
-# ])
-def test_api_status(botclient, mocker, ticker, fee, markets):
+@pytest.mark.parametrize(
+    'is_short,current_rate,open_order_id,open_trade_value',
+    [(True, 1.098e-05, 'dry_run_buy_short_12345', 15.0911775),
+     (False, 1.099e-05, 'dry_run_buy_long_12345', 15.1668225)])
+def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
+                    current_rate, open_order_id, open_trade_value):
     ftbot, client = botclient
     patch_get_signal(ftbot)
     mocker.patch.multiple(
@@ -845,7 +888,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc, 200)
     assert rc.json() == []
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short=is_short)
 
     rc = client_get(client, f"{BASE_URI}/status")
     assert_response(rc)
@@ -866,7 +909,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'profit_pct': ANY,
         'profit_abs': ANY,
         'profit_fiat': ANY,
-        'current_rate': 1.099e-05,
+        'current_rate': current_rate,
         'open_date': ANY,
         'open_timestamp': ANY,
         'open_order': None,
@@ -896,11 +939,12 @@ def test_api_status(botclient, mocker, ticker, fee, markets):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': True,
+        "is_short": is_short,
         'max_rate': ANY,
         'min_rate': ANY,
-        'open_order_id': 'dry_run_buy_long_12345',
+        'open_order_id': open_order_id,
         'open_rate_requested': ANY,
-        'open_trade_value': 15.1668225,
+        'open_trade_value': open_trade_value,
         'sell_reason': None,
         'sell_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
@@ -974,6 +1018,7 @@ def test_api_whitelist(botclient):
     }
 
 
+# TODO -lev: add test for forcebuy (short) when feature is supported
 def test_api_forcebuy(botclient, mocker, fee):
     ftbot, client = botclient
 
@@ -1003,6 +1048,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         open_order_id="123456",
         open_date=datetime.utcnow(),
         is_open=False,
+        is_short=False,
         fee_close=fee.return_value,
         fee_open=fee.return_value,
         close_rate=0.265441,
@@ -1051,6 +1097,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'fee_open_cost': None,
         'fee_open_currency': None,
         'is_open': False,
+        'is_short': False,
         'max_rate': None,
         'min_rate': None,
         'open_order_id': '123456',
