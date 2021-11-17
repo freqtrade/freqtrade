@@ -77,43 +77,6 @@ class AwesomeStrategy(IStrategy):
 
 ***
 
-## Custom sell signal
-
-It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. 
-
-For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
-
-Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
-
-!!! Note
-    Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
-
-An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
-
-``` python
-class AwesomeStrategy(IStrategy):
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                    current_profit: float, **kwargs):
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        last_candle = dataframe.iloc[-1].squeeze()
-
-        # Above 20% profit, sell when rsi < 80
-        if current_profit > 0.2:
-            if last_candle['rsi'] < 80:
-                return 'rsi_below_80'
-
-        # Between 2% and 10%, sell if EMA-long above EMA-short
-        if 0.02 < current_profit < 0.1:
-            if last_candle['emalong'] > last_candle['emashort']:
-                return 'ema_long_below_80'
-
-        # Sell any positions at a loss if they are held for more than one day.
-        if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
-            return 'unclog'
-```
-
-See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
-
 ## Buy Tag
 
 When your strategy has multiple buy signals, you can name the signal that triggered.
@@ -164,7 +127,26 @@ The provided exit-tag is then used as sell-reason - and shown as such in backtes
 !!! Note
     `sell_reason` is limited to 100 characters, remaining data will be truncated.
 
-## Bot loop start callback
+## Callbacks
+
+While the main strategy functions (`populate_indicators()`, `populate_buy_trend()`, `populate_sell_trend()`) should be used in a vectorized way, and are only called [once during backtesting](bot-basics.md#backtesting-hyperopt-execution-logic), callbacks are called "whenever needed".
+
+As such, you should avoid doing heavy calculations in callbacks to avoid delays during operations.
+Depending on the callback used, they may be called when entering / exiting a trade, or throughout the duration of a trade.
+
+Currently available callbacks:
+
+* [`bot_loop_start()`](#bot-loop-start)
+* [`custom_stake_amount()`](#custom-stake-size)
+* [`custom_sell()`](#custom-sell-signal)
+* [`custom_stoploss()`](#custom-stoploss)
+* [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
+* [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)
+* [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
+* [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
+
+
+### Bot loop start
 
 A simple callback which is called once at the start of every bot throttling iteration.
 This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.
@@ -190,7 +172,77 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
-## Custom stoploss
+### Custom Stake size
+
+It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.
+
+```python
+class AwesomeStrategy(IStrategy):
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        current_candle = dataframe.iloc[-1].squeeze()
+
+        if current_candle['fastk_rsi_1h'] > current_candle['fastd_rsi_1h']:
+            if self.config['stake_amount'] == 'unlimited':
+                # Use entire available wallet during favorable conditions when in compounding mode.
+                return max_stake
+            else:
+                # Compound profits during favorable conditions instead of using a static stake.
+                return self.wallets.get_total_stake_amount() / self.config['max_open_trades']
+
+        # Use default stake amount.
+        return proposed_stake
+```
+
+Freqtrade will fall back to the `proposed_stake` value should your code raise an exception. The exception itself will be logged.
+
+!!! Tip
+    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.
+
+!!! Tip
+    Returning `0` or `None` will prevent trades from being placed.
+
+### Custom sell signal
+
+It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. 
+
+For example you could implement a 1:2 risk-reward ROI with `custom_sell()`.
+
+Using custom_sell() signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+
+!!! Note
+    Returning a `string` or `True` from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (`use_sell_signal=False` or `sell_profit_only=True` while profit is below `sell_profit_offset`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+
+An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:
+
+``` python
+class AwesomeStrategy(IStrategy):
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+
+        # Above 20% profit, sell when rsi < 80
+        if current_profit > 0.2:
+            if last_candle['rsi'] < 80:
+                return 'rsi_below_80'
+
+        # Between 2% and 10%, sell if EMA-long above EMA-short
+        if 0.02 < current_profit < 0.1:
+            if last_candle['emalong'] > last_candle['emashort']:
+                return 'ema_long_below_80'
+
+        # Sell any positions at a loss if they are held for more than one day.
+        if current_profit < 0.0 and (current_time - trade.open_date_utc).days >= 1:
+            return 'unclog'
+```
+
+See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
+
+### Custom stoploss
 
 The stoploss price can only ever move upwards - if the stoploss value returned from `custom_stoploss` would result in a lower stoploss price than was previously set, it will be ignored. The traditional `stoploss` value serves as an absolute lower level and will be instated as the initial stoploss.
 
@@ -244,12 +296,12 @@ Stoploss on exchange works similar to `trailing_stop`, and the stoploss on excha
 !!! Tip "Trailing stoploss"
     It's recommended to disable `trailing_stop` when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.
 
-### Custom stoploss examples
+#### Custom stoploss examples
 
 The next section will show some examples on what's possible with the custom stoploss function.
 Of course, many more things are possible, and all examples can be combined at will.
 
-#### Time based trailing stop
+##### Time based trailing stop
 
 Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
 
@@ -274,7 +326,7 @@ class AwesomeStrategy(IStrategy):
         return 1
 ```
 
-#### Different stoploss per pair
+##### Different stoploss per pair
 
 Use a different stoploss depending on the pair.
 In this example, we'll trail the highest price with 10% trailing stoploss for `ETH/BTC` and `XRP/BTC`, with 5% trailing stoploss for `LTC/BTC` and with 15% for all other pairs.
@@ -299,7 +351,7 @@ class AwesomeStrategy(IStrategy):
         return -0.15
 ```
 
-#### Trailing stoploss with positive offset
+##### Trailing stoploss with positive offset
 
 Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.
 
@@ -328,19 +380,7 @@ class AwesomeStrategy(IStrategy):
         return max(min(desired_stoploss, 0.05), 0.025)
 ```
 
-#### Calculating stoploss relative to open price
-
-Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
-
-The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
-
-### Calculating stoploss percentage from absolute price
-
-Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss at specified absolute price level, we need to use `stop_rate` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
-
-The helper function [`stoploss_from_absolute()`](strategy-customization.md#stoploss_from_absolute) can be used to convert from an absolute price, to a current price relative stop which can be returned from `custom_stoploss()`.
-
-#### Stepped stoploss
+##### Stepped stoploss
 
 Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.
 
@@ -375,7 +415,7 @@ class AwesomeStrategy(IStrategy):
         return 1
 ```
 
-#### Custom stoploss using an indicator from dataframe example
+##### Custom stoploss using an indicator from dataframe example
 
 Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.
 
@@ -407,9 +447,23 @@ class AwesomeStrategy(IStrategy):
 
 See [Dataframe access](#dataframe-access) for more information about dataframe use in strategy callbacks.
 
+#### Common helpers for stoploss calculations
+
+##### Stoploss relative to open price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss relative to the *open* price, we need to use `current_profit` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_open()`](strategy-customization.md#stoploss_from_open) can be used to convert from an open price relative stop, to a current price relative stop which can be returned from `custom_stoploss()`.
+
+##### Stoploss percentage from absolute price
+
+Stoploss values returned from `custom_stoploss()` always specify a percentage relative to `current_rate`. In order to set a stoploss at specified absolute price level, we need to use `stop_rate` to calculate what percentage relative to the `current_rate` will give you the same result as if the percentage was specified from the open price.
+
+The helper function [`stoploss_from_absolute()`](strategy-customization.md#stoploss_from_absolute) can be used to convert from an absolute price, to a current price relative stop which can be returned from `custom_stoploss()`.
+
 ---
 
-## Custom order price rules
+### Custom order price rules
 
 By default, freqtrade use the orderbook to automatically set an order price([Relevant documentation](configuration.md#prices-used-for-orders)), you also have the option to create custom order prices based on your strategy.
 
@@ -418,7 +472,7 @@ You can use this feature by creating a `custom_entry_price()` function in your s
 !!! Note
     If your custom pricing function return None or an invalid value, price will fall back to `proposed_rate`, which is based on the regular pricing configuration.
 
-### Custom order entry and exit price example
+#### Custom order entry and exit price example
 
 ``` python
 from datetime import datetime, timedelta, timezone
@@ -458,7 +512,7 @@ class AwesomeStrategy(IStrategy):
 !!! Warning "No backtesting support"
     Custom entry-prices are currently not supported during backtesting.
 
-## Custom order timeout rules
+### Custom order timeout rules
 
 Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the `unfilledtimeout` section.
 
@@ -467,7 +521,7 @@ However, freqtrade also offers a custom callback for both order types, which all
 !!! Note
     Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.
 
-### Custom order timeout example
+#### Custom order timeout example
 
 A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
 It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.
@@ -511,7 +565,7 @@ class AwesomeStrategy(IStrategy):
 !!! Note
     For the above example, `unfilledtimeout` must be set to something bigger than 24h, otherwise that type of timeout will apply first.
 
-### Custom order timeout example (using additional data)
+#### Custom order timeout example (using additional data)
 
 ``` python
 from datetime import datetime
@@ -547,9 +601,9 @@ class AwesomeStrategy(IStrategy):
 
 ---
 
-## Bot order confirmation
+### Bot order confirmation
 
-### Trade entry (buy order) confirmation
+#### Trade entry (buy order) confirmation
 
 `confirm_trade_entry()` can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).
 
@@ -583,7 +637,7 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
-### Trade exit (sell order) confirmation
+#### Trade exit (sell order) confirmation
 
 `confirm_trade_exit()` can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).
 
@@ -628,39 +682,6 @@ class AwesomeStrategy(IStrategy):
         return True
 
 ```
-
-### Stake size management
-
-It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.
-
-```python
-class AwesomeStrategy(IStrategy):
-    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-        current_candle = dataframe.iloc[-1].squeeze()
-
-        if current_candle['fastk_rsi_1h'] > current_candle['fastd_rsi_1h']:
-            if self.config['stake_amount'] == 'unlimited':
-                # Use entire available wallet during favorable conditions when in compounding mode.
-                return max_stake
-            else:
-                # Compound profits during favorable conditions instead of using a static stake.
-                return self.wallets.get_total_stake_amount() / self.config['max_open_trades']
-
-        # Use default stake amount.
-        return proposed_stake
-```
-
-Freqtrade will fall back to the `proposed_stake` value should your code raise an exception. The exception itself will be logged.
-
-!!! Tip
-    You do not _have_ to ensure that `min_stake <= returned_value <= max_stake`. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.
-
-!!! Tip
-    Returning `0` or `None` will prevent trades from being placed.
 
 ---
 
