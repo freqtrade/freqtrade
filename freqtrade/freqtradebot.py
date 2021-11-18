@@ -219,19 +219,20 @@ class FreqtradeBot(LoggingMixin):
 
     def check_for_open_trades(self):
         """
-        Notify the user when the bot is stopped
+        Notify the user when the bot is stopped (not reloaded)
         and there are still open trades active.
         """
         open_trades = Trade.get_trades([Trade.is_open.is_(True)]).all()
 
-        if len(open_trades) != 0:
+        if len(open_trades) != 0 and self.state != State.RELOAD_CONFIG:
             msg = {
                 'type': RPCMessageType.WARNING,
-                'status': f"{len(open_trades)} open trades active.\n\n"
-                          f"Handle these trades manually on {self.exchange.name}, "
-                          f"or '/start' the bot again and use '/stopbuy' "
-                          f"to handle open trades gracefully. \n"
-                          f"{'Trades are simulated.' if self.config['dry_run'] else ''}",
+                'status':
+                    f"{len(open_trades)} open trades active.\n\n"
+                    f"Handle these trades manually on {self.exchange.name}, "
+                    f"or '/start' the bot again and use '/stopbuy' "
+                    f"to handle open trades gracefully. \n"
+                    f"{'Note: Trades are simulated (dry run).' if self.config['dry_run'] else ''}",
             }
             self.rpc.send_msg(msg)
 
@@ -622,7 +623,7 @@ class FreqtradeBot(LoggingMixin):
                 side='short' if is_short else 'long'
             )
 
-        stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
             return False
@@ -1075,6 +1076,7 @@ class FreqtradeBot(LoggingMixin):
             side = trade.enter_side if is_entering else trade.exit_side
             timed_out = self._check_timed_out(side, order)
             time_method = 'check_sell_timeout' if order['side'] == 'sell' else 'check_buy_timeout'
+            max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
 
             if not_closed and (fully_cancelled or timed_out or (
                 strategy_safe_wrapper(getattr(self.strategy, time_method), default_retval=False)(
@@ -1087,6 +1089,13 @@ class FreqtradeBot(LoggingMixin):
                     self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 else:
                     self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
+                    canceled_count = trade.get_exit_order_count()
+                    if max_timeouts > 0 and canceled_count >= max_timeouts:
+                        logger.warning(f'Emergencyselling trade {trade}, as the sell order '
+                                       f'timed out {max_timeouts} times.')
+                        self.execute_trade_exit(
+                            trade, order.get('price'),
+                            sell_reason=SellCheckTuple(sell_type=SellType.EMERGENCY_SELL))
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -1468,7 +1477,7 @@ class FreqtradeBot(LoggingMixin):
 
         if self.exchange.check_order_canceled_empty(order):
             # Trade has been cancelled on exchange
-            # Handling of this will happen in check_handle_timeout.
+            # Handling of this will happen in check_handle_timedout.
             return True
 
         # Try update amount (binance-fix)
@@ -1559,14 +1568,17 @@ class FreqtradeBot(LoggingMixin):
                     return self.apply_fee_conditional(trade, trade_base_currency,
                                                       amount=order_amount, fee_abs=fee_cost)
                 return order_amount
-        return self.fee_detection_from_trades(trade, order, order_amount)
+        return self.fee_detection_from_trades(trade, order, order_amount, order.get('trades', []))
 
-    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float) -> float:
+    def fee_detection_from_trades(self, trade: Trade, order: Dict, order_amount: float,
+                                  trades: List) -> float:
         """
-        fee-detection fallback to Trades. Parses result of fetch_my_trades to get correct fee.
+        fee-detection fallback to Trades.
+        Either uses provided trades list or the result of fetch_my_trades to get correct fee.
         """
-        trades = self.exchange.get_trades_for_order(self.exchange.get_order_id_conditional(order),
-                                                    trade.pair, trade.open_date)
+        if not trades:
+            trades = self.exchange.get_trades_for_order(
+                self.exchange.get_order_id_conditional(order), trade.pair, trade.open_date)
 
         if len(trades) == 0:
             logger.info("Applying fee on amount for %s failed: myTrade-Dict empty found", trade)

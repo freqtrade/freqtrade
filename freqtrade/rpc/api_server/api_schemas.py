@@ -95,6 +95,7 @@ class Profit(BaseModel):
     avg_duration: str
     best_pair: str
     best_rate: float
+    best_pair_profit_ratio: float
     winning_trades: int
     losing_trades: int
 
@@ -123,7 +124,26 @@ class Daily(BaseModel):
     stake_currency: str
 
 
+class UnfilledTimeout(BaseModel):
+    buy: int
+    sell: int
+    unit: str
+    exit_timeout_count: Optional[int]
+
+
+class OrderTypes(BaseModel):
+    buy: str
+    sell: str
+    emergencysell: Optional[str]
+    forcesell: Optional[str]
+    forcebuy: Optional[str]
+    stoploss: str
+    stoploss_on_exchange: bool
+    stoploss_on_exchange_interval: Optional[int]
+
+
 class ShowConfig(BaseModel):
+    version: str
     dry_run: bool
     stake_currency: str
     stake_amount: Union[float, str]
@@ -136,6 +156,8 @@ class ShowConfig(BaseModel):
     trailing_stop_positive: Optional[float]
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
+    unfilledtimeout: UnfilledTimeout
+    order_types: OrderTypes
     use_custom_stoploss: Optional[bool]
     timeframe: Optional[str]
     timeframe_ms: int

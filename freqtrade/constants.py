@@ -160,6 +160,7 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'number', 'minimum': 1},
                 'sell': {'type': 'number', 'minimum': 1},
+                'exit_timeout_count': {'type': 'number', 'minimum': 0, 'default': 0},
                 'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },
@@ -210,7 +211,10 @@ CONF_SCHEMA = {
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergencysell': {
+                    'type': 'string',
+                    'enum': ORDERTYPE_POSSIBILITIES,
+                    'default': 'market'},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
                 'stoploss_on_exchange_interval': {'type': 'number'},

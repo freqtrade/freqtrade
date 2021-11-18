@@ -427,6 +427,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                  return_value=(Arrow(2017, 12, 10), Arrow(2017, 12, 13)))
     patch_exchange(mocker)
     mocker.patch.object(Path, 'open')
+    mocker.patch('freqtrade.configuration.config_validation.validate_config_schema')
     mocker.patch('freqtrade.optimize.hyperopt.load', return_value={'XRP/BTC': None})
 
     optimizer_param = {

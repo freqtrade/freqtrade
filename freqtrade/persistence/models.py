@@ -200,6 +200,8 @@ class Order(_DECL_BASE):
     @staticmethod
     def get_open_orders() -> List['Order']:
         """
+        Retrieve open orders from the database
+        :return: List of open orders
         """
         return Order.query.filter(Order.ft_is_open.is_(True)).all()
 
@@ -620,6 +622,13 @@ class LocalTrade():
     def update_order(self, order: Dict) -> None:
         Order.update_orders(self.orders, order)
 
+    def get_exit_order_count(self) -> int:
+        """
+        Get amount of failed exiting orders
+        assumes full exits.
+        """
+        return len([o for o in self.orders if o.ft_order_side == 'sell'])
+
     def _calc_open_trade_value(self) -> float:
         """
         Calculate the open_rate including open_fee.
@@ -1002,7 +1011,7 @@ class Trade(_DECL_BASE, LocalTrade):
             return Trade.query
 
     @staticmethod
-    def get_open_order_trades():
+    def get_open_order_trades() -> List['Trade']:
         """
         Returns all open trades
         NOTE: Not supported in Backtesting.
@@ -1190,6 +1199,7 @@ class Trade(_DECL_BASE, LocalTrade):
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,
                                         'profit': profit,
+                                        'profit_pct': round(profit * 100, 2),
                                         'profit_abs': profit_abs,
                                         'count': count})
                 else:
@@ -1198,11 +1208,11 @@ class Trade(_DECL_BASE, LocalTrade):
                             return_list[i] = {
                                 'mix_tag': mix_tag,
                                 'profit': profit + return_list[i]["profit"],
+                                'profit_pct': round(profit + return_list[i]["profit"] * 100, 2),
                                 'profit_abs': profit_abs + return_list[i]["profit_abs"],
                                 'count': 1 + return_list[i]["count"]}
                         i += 1
 
-        [x.update({'profit': round(x['profit'] * 100, 2)}) for x in return_list]
         return return_list
 
     @staticmethod

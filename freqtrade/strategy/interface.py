@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SellCheckTuple(object):
+class SellCheckTuple:
     """
     NamedTuple for Sell type + reason
     """
@@ -868,7 +868,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if self.trailing_stop_positive is not None and bound_profit > sl_offset:
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
-                                 f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
+                                 f"offset: {sl_offset:.4g} profit: {current_profit:.2%}")
 
                 trade.adjust_stop_loss(bound or current_rate, stop_loss_value)
 

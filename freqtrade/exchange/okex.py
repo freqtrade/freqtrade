@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 
 class Okex(Exchange):
-    """
-    Okex exchange class. Contains adjustments needed for Freqtrade to work
-    with this exchange.
+    """Okex exchange class.
+
+    Contains adjustments needed for Freqtrade to work with this exchange.
     """
 
     _ft_has: Dict = {

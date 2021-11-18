@@ -14,8 +14,8 @@ from freqtrade import constants
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import (create_mock_trades, create_mock_trades_with_leverage, get_sides,
-                            log_has, log_has_re)
+from tests.conftest import (create_mock_trades, create_mock_trades_usdt,
+                            create_mock_trades_with_leverage, get_sides, log_has, log_has_re)
 
 
 spot, margin, futures = TradingMode.SPOT, TradingMode.MARGIN, TradingMode.FUTURES
@@ -1978,6 +1978,13 @@ def test_get_best_pair_lev(fee):
     assert len(res) == 2
     assert res[0] == 'DOGE/BTC'
     assert res[1] == 0.1713156134055116
+
+
+def test_get_exit_order_count(fee):
+
+    create_mock_trades_usdt(fee)
+    trade = Trade.get_trades([Trade.pair == 'ETC/USDT']).first()
+    assert trade.get_exit_order_count() == 1
 
 
 @pytest.mark.usefixtures("init_persistence")

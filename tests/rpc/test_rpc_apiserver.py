@@ -521,7 +521,7 @@ def test_api_locks(botclient):
     assert rc.json()['lock_count'] == 0
 
 
-def test_api_show_config(botclient, mocker):
+def test_api_show_config(botclient):
     ftbot, client = botclient
     patch_get_signal(ftbot)
 
@@ -537,6 +537,8 @@ def test_api_show_config(botclient, mocker):
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
+    assert 'unfilledtimeout' in rc.json()
+    assert 'version' in rc.json()
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -704,7 +706,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     'is_short,expected',
     [(
         True,
-        {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'profit_all_coin': 43.61269123,
+        {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'best_pair_profit_ratio': -0.005,
+         'profit_all_coin': 43.61269123,
          'profit_all_fiat': 538398.67323435, 'profit_all_percent_mean': 66.41,
          'profit_all_ratio_mean': 0.664109545, 'profit_all_percent_sum': 398.47,
          'profit_all_ratio_sum': 3.98465727, 'profit_all_percent': 4.36,
@@ -716,7 +719,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
      ),
      (
         False,
-        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -44.0631579,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
+         'profit_all_coin': -44.0631579,
          'profit_all_fiat': -543959.6842755, 'profit_all_percent_mean': -66.41,
          'profit_all_ratio_mean': -0.6641100666666667, 'profit_all_percent_sum': -398.47,
          'profit_all_ratio_sum': -3.9846604, 'profit_all_percent': -4.41,
@@ -728,7 +732,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
      ),
      (
         None,
-        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'profit_all_coin': -14.43790415,
+        {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
+         'profit_all_coin': -14.43790415,
          'profit_all_fiat': -178235.92673175, 'profit_all_percent_mean': 0.08,
          'profit_all_ratio_mean': 0.000835751666666662, 'profit_all_percent_sum': 0.5,
          'profit_all_ratio_sum': 0.005014509999999972, 'profit_all_percent': -1.44,
@@ -763,6 +768,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected)
     assert rc.json() == {
         'avg_duration': ANY,
         'best_pair': expected['best_pair'],
+        'best_pair_profit_ratio': expected['best_pair_profit_ratio'],
         'best_rate': expected['best_rate'],
         'first_trade_date': ANY,
         'first_trade_timestamp': ANY,
@@ -1185,7 +1191,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert isinstance(rc.json()['columns'], list)
     assert rc.json()['columns'] == ['date', 'open', 'high',
                                     'low', 'close', 'volume', 'sma', 'buy', 'sell',
-                                    '__date_ts', '_buy_signal_open', '_sell_signal_open']
+                                    '__date_ts', '_buy_signal_close', '_sell_signal_close']
     assert 'pair' in rc.json()
     assert rc.json()['pair'] == 'XRP/BTC'
 
@@ -1196,7 +1202,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
             [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 1511686200000, None, None],
              ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.88e-05, None],
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.893e-05,
+                 None],
              ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 0, 0, 1511686800000, None, None]
 

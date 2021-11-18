@@ -26,6 +26,8 @@ Alternatively (e.g. if your system is not supported by the setup.sh script), fol
 
 This will install all required tools for development, including `pytest`, `flake8`, `mypy`, and `coveralls`.
 
+Before opening a pull request, please familiarize yourself with our [Contributing Guidelines](https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md).
+
 ### Devcontainer setup
 
 The fastest and easiest way to get started is to use [VSCode](https://code.visualstudio.com/) with the Remote container extension.

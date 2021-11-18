@@ -379,16 +379,6 @@ class Backtesting:
 
         if sell.sell_flag:
             trade.close_date = sell_candle_time
-            trade.sell_reason = sell.sell_reason
-
-            # Checks and adds an exit tag, after checking that the length of the
-            # sell_row has the length for an exit tag column
-            if(
-                len(sell_row) > EXIT_TAG_IDX
-                and sell_row[EXIT_TAG_IDX] is not None
-                and len(sell_row[EXIT_TAG_IDX]) > 0
-            ):
-                trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
@@ -402,6 +392,17 @@ class Backtesting:
                     sell_reason=sell.sell_reason,
                     current_time=sell_candle_time):
                 return None
+
+            trade.sell_reason = sell.sell_reason
+
+            # Checks and adds an exit tag, after checking that the length of the
+            # sell_row has the length for an exit tag column
+            if(
+                len(sell_row) > EXIT_TAG_IDX
+                and sell_row[EXIT_TAG_IDX] is not None
+                and len(sell_row[EXIT_TAG_IDX]) > 0
+            ):
+                trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
             trade.close(closerate, show_msg=False)
             return trade
@@ -451,7 +452,7 @@ class Backtesting:
             pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
             proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
             side=direction)
-        stake_amount = self.wallets._validate_stake_amount(pair, stake_amount, min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
             return None

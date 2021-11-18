@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 
 from freqtrade.exceptions import StrategyError
 
@@ -14,6 +15,9 @@ def strategy_safe_wrapper(f, message: str = "", default_retval=None, supress_err
     """
     def wrapper(*args, **kwargs):
         try:
+            if 'trade' in kwargs:
+                # Protect accidental modifications from within the strategy
+                kwargs['trade'] = deepcopy(kwargs['trade'])
             return f(*args, **kwargs)
         except ValueError as error:
             logger.warning(
