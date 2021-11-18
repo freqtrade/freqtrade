@@ -346,5 +346,5 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "refresh_period": 86400
     },
     {"method": "ShuffleFilter", "seed": 42}
-    ],
+],
 ```
