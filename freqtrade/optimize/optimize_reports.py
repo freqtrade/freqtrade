@@ -415,20 +415,20 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         return {}
     config = content['config']
     max_open_trades = min(config['max_open_trades'], len(btdata.keys()))
-    starting_balance = config['dry_run_wallet']
+    start_balance = config['dry_run_wallet']
     stake_currency = config['stake_currency']
 
     pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
-                                         starting_balance=starting_balance,
+                                         starting_balance=start_balance,
                                          results=results, skip_nan=False)
 
-    buy_tag_results = generate_tag_metrics("buy_tag", starting_balance=starting_balance,
+    buy_tag_results = generate_tag_metrics("buy_tag", starting_balance=start_balance,
                                            results=results, skip_nan=False)
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
     left_open_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
-                                              starting_balance=starting_balance,
+                                              starting_balance=start_balance,
                                               results=results.loc[results['is_open']],
                                               skip_nan=True)
     daily_stats = generate_daily_stats(results)
@@ -460,8 +460,12 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
         'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
         'profit_median': results['profit_ratio'].median() if len(results) > 0 else 0,
-        'profit_total': results['profit_abs'].sum() / starting_balance,
+        'profit_total': results['profit_abs'].sum() / start_balance,
+        'profit_total_long': results.loc[~results['is_short'], 'profit_abs'].sum() / start_balance,
+        'profit_total_short': results.loc[results['is_short'], 'profit_abs'].sum() / start_balance,
         'profit_total_abs': results['profit_abs'].sum(),
+        'profit_total_long_abs': results.loc[~results['is_short'], 'profit_abs'].sum(),
+        'profit_total_short_abs': results.loc[results['is_short'], 'profit_abs'].sum(),
         'backtest_start': min_date.strftime(DATETIME_PRINT_FORMAT),
         'backtest_start_ts': int(min_date.timestamp() * 1000),
         'backtest_end': max_date.strftime(DATETIME_PRINT_FORMAT),
@@ -477,8 +481,8 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'stake_amount': config['stake_amount'],
         'stake_currency': config['stake_currency'],
         'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
-        'starting_balance': starting_balance,
-        'dry_run_wallet': starting_balance,
+        'starting_balance': start_balance,
+        'dry_run_wallet': start_balance,
         'final_balance': content['final_balance'],
         'rejected_signals': content['rejected_signals'],
         'max_open_trades': max_open_trades,
@@ -522,7 +526,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
             'max_drawdown_high': high_val,
         })
 
-        csum_min, csum_max = calculate_csum(results, starting_balance)
+        csum_min, csum_max = calculate_csum(results, start_balance)
         strat_stats.update({
             'csum_min': csum_min,
             'csum_max': csum_max
@@ -711,6 +715,19 @@ def text_table_add_metrics(strat_results: Dict) -> str:
         best_trade = max(strat_results['trades'], key=lambda x: x['profit_ratio'])
         worst_trade = min(strat_results['trades'], key=lambda x: x['profit_ratio'])
 
+        short_metrics = [
+            ('', ''),  # Empty line to improve readability
+            ('Long / Short',
+             f"{strat_results.get('trade_count_long', 'total_trades')} / "
+             f"{strat_results.get('trade_count_short', 0)}"),
+            ('Total profit Long %', f"{strat_results['profit_total_long']:.2%}"),
+            ('Total profit Short %', f"{strat_results['profit_total_short']:.2%}"),
+            ('Absolute profit Long', round_coin_value(strat_results['profit_total_long_abs'],
+                                                      strat_results['stake_currency'])),
+            ('Absolute profit Short', round_coin_value(strat_results['profit_total_short_abs'],
+                                                       strat_results['stake_currency'])),
+        ] if strat_results.get('trade_count_short', 0) > 0 else []
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
@@ -721,9 +738,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('', ''),  # Empty line to improve readability
             ('Total/Daily Avg Trades',
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
-            ('Long / Short',
-             f"{strat_results.get('trade_count_long', 'total_trades')} / "
-             f"{strat_results.get('trade_count_short', 0)}"),
+
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],
@@ -738,6 +753,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                                    strat_results['stake_currency'])),
             ('Total trade volume', round_coin_value(strat_results['total_volume'],
                                                     strat_results['stake_currency'])),
+            *short_metrics,
             ('', ''),  # Empty line to improve readability
             ('Best Pair', f"{strat_results['best_pair']['key']} "
                           f"{strat_results['best_pair']['profit_sum']:.2%}"),
