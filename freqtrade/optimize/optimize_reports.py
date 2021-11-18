@@ -454,6 +454,8 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         # 'days_breakdown_stats': days_breakdown_stats,
 
         'total_trades': len(results),
+        'trade_count_long': len(results.loc[~results['is_short']]),
+        'trade_count_short': len(results.loc[results['is_short']]),
         'total_volume': float(results['stake_amount'].sum()),
         'avg_stake_amount': results['stake_amount'].mean() if len(results) > 0 else 0,
         'profit_mean': results['profit_ratio'].mean() if len(results) > 0 else 0,
@@ -719,6 +721,9 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('', ''),  # Empty line to improve readability
             ('Total/Daily Avg Trades',
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}"),
+            ('Long / Short',
+             f"{strat_results.get('trade_count_long', 'total_trades')} / "
+             f"{strat_results.get('trade_count_short', 0)}"),
             ('Starting balance', round_coin_value(strat_results['starting_balance'],
                                                   strat_results['stake_currency'])),
             ('Final balance', round_coin_value(strat_results['final_balance'],

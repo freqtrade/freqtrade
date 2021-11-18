@@ -76,6 +76,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                  "close_rate": [0.002546, 0.003014, 0.003103, 0.003217],
                                  "trade_duration": [123, 34, 31, 14],
                                  "is_open": [False, False, False, True],
+                                 "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
                                  "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
@@ -124,6 +125,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
              "close_rate": [0.002546, 0.003014, 0.0032903, 0.003217],
              "trade_duration": [123, 34, 31, 14],
              "is_open": [False, False, False, True],
+             "is_short": [False, False, False, False],
              "stake_amount": [0.01, 0.01, 0.01, 0.01],
              "sell_reason": [SellType.ROI, SellType.ROI,
                              SellType.STOP_LOSS, SellType.FORCE_SELL]
