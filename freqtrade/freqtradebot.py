@@ -106,12 +106,9 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        self.trading_mode: TradingMode = TradingMode.SPOT
+        self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
+
         self.collateral_type: Optional[Collateral] = None
-
-        if 'trading_mode' in self.config:
-            self.trading_mode = TradingMode(self.config['trading_mode'])
-
         if 'collateral_type' in self.config:
             self.collateral_type = Collateral(self.config['collateral_type'])
 

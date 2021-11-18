@@ -130,11 +130,8 @@ class Exchange:
         self._trades_pagination = self._ft_has['trades_pagination']
         self._trades_pagination_arg = self._ft_has['trades_pagination_arg']
 
-        self.trading_mode: TradingMode = (
-            TradingMode(config.get('trading_mode'))
-            if config.get('trading_mode')
-            else TradingMode.SPOT
-        )
+        self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
+
         self.collateral: Optional[Collateral] = (
             Collateral(config.get('collateral'))
             if config.get('collateral')

@@ -18,6 +18,7 @@ from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import BacktestState, SellType
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin
@@ -122,7 +123,8 @@ class Backtesting:
 
         # TODO-lev: This should come from the configuration setting or better a
         # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
-        self._can_short = False
+        self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
+        self._can_short = self.trading_mode == TradingMode.MARGIN
 
         self.progress = BTProgress()
         self.abort = False
