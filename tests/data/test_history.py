@@ -801,18 +801,30 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
     assert unlinkmock.call_count == 1
 
 
-def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir, tmpdir):
+@pytest.mark.parametrize('pair, timeframe, candle_type, candle_append', [
+    ('UNITTEST/BTC', '5m', '',  ''),
+    # TODO-lev: The test below
+    # ('UNITTEST/USDT', '1h', 'mark', '-mark'),
+])
+def test_hdf5datahandler_ohlcv_load_and_resave(
+    testdatadir,
+    tmpdir,
+    pair,
+    timeframe,
+    candle_type,
+    candle_append
+):
     tmpdir1 = Path(tmpdir)
     dh = HDF5DataHandler(testdatadir)
-    ohlcv = dh.ohlcv_load('UNITTEST/BTC', '5m')
+    ohlcv = dh.ohlcv_load(pair, timeframe, candle_type=candle_type)
     assert isinstance(ohlcv, DataFrame)
     assert len(ohlcv) > 0
 
-    file = tmpdir1 / 'UNITTEST_NEW-5m.h5'
+    file = tmpdir1 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
     assert not file.is_file()
 
     dh1 = HDF5DataHandler(tmpdir1)
-    dh1.ohlcv_store('UNITTEST/NEW', '5m', ohlcv)
+    dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
     assert not ohlcv[ohlcv['date'] < '2018-01-15'].empty
@@ -821,15 +833,15 @@ def test_hdf5datahandler_ohlcv_load_and_resave(testdatadir, tmpdir):
     timerange = TimeRange.parse_timerange('20180115-20180119')
 
     # Call private function to ensure timerange is filtered in hdf5
-    ohlcv = dh._ohlcv_load('UNITTEST/BTC', '5m', timerange)
-    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', '5m', timerange)
+    ohlcv = dh._ohlcv_load(pair, timeframe, timerange, candle_type=candle_type)
+    ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
     assert len(ohlcv) == len(ohlcv1)
     assert ohlcv.equals(ohlcv1)
     assert ohlcv[ohlcv['date'] < '2018-01-15'].empty
     assert ohlcv[ohlcv['date'] > '2018-01-19'].empty
 
     # Try loading inexisting file
-    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', '5m')
+    ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
     assert ohlcv.empty
 
 
