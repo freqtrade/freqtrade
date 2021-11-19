@@ -43,6 +43,7 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Determine buy-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Before a buy order is placed, `confirm_trade_entry()` strategy callback is called.
+  * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
 
 This loop will be repeated again and again until the bot is stopped.
 
