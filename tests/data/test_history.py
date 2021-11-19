@@ -143,19 +143,31 @@ def test_testdata_path(testdatadir) -> None:
     assert str(Path('tests') / 'testdata') in str(testdatadir)
 
 
-@pytest.mark.parametrize("pair,expected_result", [
-    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m.json'),
-    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-5m.json'),
-    ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json'),
-    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json'),
-    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json'),
-    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json'),
+@pytest.mark.parametrize("pair,expected_result,candle_type", [
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m.json', ""),
+    ("Fabric Token/ETH", 'freqtrade/hello/world/Fabric_Token_ETH-5m.json', ""),
+    ("ETHH20", 'freqtrade/hello/world/ETHH20-5m.json', ""),
+    (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json', ""),
+    ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json', ""),
+    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json', ""),
+    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m-mark.json', "mark"),
+    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m-index.json', "index"),
 ])
-def test_json_pair_data_filename(pair, expected_result):
-    fn = JsonDataHandler._pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
+def test_json_pair_data_filename(pair, expected_result, candle_type):
+    fn = JsonDataHandler._pair_data_filename(
+        Path('freqtrade/hello/world'),
+        pair,
+        '5m',
+        candle_type
+    )
     assert isinstance(fn, Path)
     assert fn == Path(expected_result)
-    fn = JsonGzDataHandler._pair_data_filename(Path('freqtrade/hello/world'), pair, '5m')
+    fn = JsonGzDataHandler._pair_data_filename(
+        Path('freqtrade/hello/world'),
+        pair,
+        '5m',
+        candle_type
+    )
     assert isinstance(fn, Path)
     assert fn == Path(expected_result + '.gz')
 
