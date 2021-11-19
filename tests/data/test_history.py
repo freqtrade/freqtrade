@@ -669,6 +669,12 @@ def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     df = dh.ohlcv_load('XRP/ETH', '5m')
     assert len(df) == 711
 
+    df_mark = dh.ohlcv_load('XRP/USDT', '1h', candle_type="mark")
+    assert len(df_mark) == 99
+
+    df_no_mark = dh.ohlcv_load('XRP/USDT', '1h')
+    assert len(df_no_mark) == 0
+
     # Failure case (empty array)
     df1 = dh.ohlcv_load('NOPAIR/XXX', '4m')
     assert len(df1) == 0
