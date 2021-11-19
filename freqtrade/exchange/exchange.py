@@ -1480,11 +1480,12 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = self._ft_has.get('ohlcv_params', {})
+            if candle_type:
+                params = params.update({'price': candle_type})
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
                                                      limit=self.ohlcv_candle_limit(timeframe),
-                                                     params=params,
-                                                     candle_type=candle_type)
+                                                     params=params)
 
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
