@@ -54,7 +54,7 @@ class HDF5DataHandler(IDataHandler):
             candle_type = ""
 
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle_type + '.h5)', p.name)
-                for p in datadir.glob(f"*{timeframe}.h5")]
+                for p in datadir.glob(f"*{timeframe}{candle_type}.h5")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 

@@ -629,6 +629,16 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
     pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
     assert set(pairs) == {'UNITTEST/BTC'}
 
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', 'mark')
+    assert set(pairs) == {'UNITTEST/USDT', 'XRP/USDT'}
+
+    # TODO-lev: The tests below
+    # pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m')
+    # assert set(pairs) == {'UNITTEST/BTC'}
+
+    # pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
+    # assert set(pairs) == {'UNITTEST/BTC'}
+
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir)

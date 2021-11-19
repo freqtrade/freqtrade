@@ -54,7 +54,7 @@ class JsonDataHandler(IDataHandler):
             candle_type = ""
 
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle_type + '.json)', p.name)
-                for p in datadir.glob(f"*{timeframe}.{cls._get_file_extension()}")]
+                for p in datadir.glob(f"*{timeframe}{candle_type}.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
