@@ -108,6 +108,8 @@ class RPC:
         val = {
             'version': __version__,
             'dry_run': config['dry_run'],
+            'trading_mode': config.get('trading_mode', 'spot'),
+            'short_allowed': config.get('trading_mode', 'spot') != 'spot',
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
             'stake_amount': config['stake_amount'],
@@ -909,20 +911,21 @@ class RPC:
     def _convert_dataframe_to_dict(strategy: str, pair: str, timeframe: str, dataframe: DataFrame,
                                    last_analyzed: datetime) -> Dict[str, Any]:
         has_content = len(dataframe) != 0
-        buy_signals = 0
-        sell_signals = 0
+        signals = {
+            'enter_long': 0,
+            'exit_long': 0,
+            'enter_short': 0,
+            'exit_short': 0,
+        }
         if has_content:
 
             dataframe.loc[:, '__date_ts'] = dataframe.loc[:, 'date'].view(int64) // 1000 // 1000
             # Move signal close to separate column when signal for easy plotting
-            if 'buy' in dataframe.columns:
-                buy_mask = (dataframe['buy'] == 1)
-                buy_signals = int(buy_mask.sum())
-                dataframe.loc[buy_mask, '_buy_signal_close'] = dataframe.loc[buy_mask, 'close']
-            if 'sell' in dataframe.columns:
-                sell_mask = (dataframe['sell'] == 1)
-                sell_signals = int(sell_mask.sum())
-                dataframe.loc[sell_mask, '_sell_signal_close'] = dataframe.loc[sell_mask, 'close']
+            for sig_type in signals.keys():
+                if sig_type in dataframe.columns:
+                    mask = (dataframe[sig_type] == 1)
+                    signals[sig_type] = int(mask.sum())
+                    dataframe.loc[mask, f'_{sig_type}_signal_close'] = dataframe.loc[mask, 'close']
             dataframe = dataframe.replace([inf, -inf], NAN)
             dataframe = dataframe.replace({NAN: None})
 
@@ -934,8 +937,12 @@ class RPC:
             'columns': list(dataframe.columns),
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
-            'buy_signals': buy_signals,
-            'sell_signals': sell_signals,
+            'buy_signals': signals['enter_long'],  # Deprecated
+            'sell_signals': signals['exit_long'],  # Deprecated
+            'enter_long_signals': signals['enter_long'],
+            'exit_long_signals': signals['exit_long'],
+            'enter_short_signals': signals['enter_short'],
+            'exit_short_signals': signals['exit_short'],
             'last_analyzed': last_analyzed,
             'last_analyzed_ts': int(last_analyzed.timestamp()),
             'data_start': '',

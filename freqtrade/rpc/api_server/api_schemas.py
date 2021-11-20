@@ -145,6 +145,8 @@ class OrderTypes(BaseModel):
 class ShowConfig(BaseModel):
     version: str
     dry_run: bool
+    trading_mode: str
+    short_allowed: bool
     stake_currency: str
     stake_amount: Union[float, str]
     available_capital: Optional[float]
@@ -339,6 +341,10 @@ class PairHistory(BaseModel):
     length: int
     buy_signals: int
     sell_signals: int
+    enter_long_signals: int
+    exit_long_signals: int
+    enter_short_signals: int
+    exit_short_signals: int
     last_analyzed: datetime
     last_analyzed_ts: int
     data_start_ts: int
