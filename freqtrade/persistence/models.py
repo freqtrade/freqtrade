@@ -283,7 +283,7 @@ class LocalTrade():
     @property
     def has_no_leverage(self) -> bool:
         """Returns true if this is a non-leverage, non-short trade"""
-        return ((self.leverage or self.leverage is None) == 1.0 and not self.is_short)
+        return ((self.leverage == 1.0 or self.leverage is None) and not self.is_short)
 
     @property
     def borrowed(self) -> float:
