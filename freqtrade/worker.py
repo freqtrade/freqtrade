@@ -113,12 +113,16 @@ class Worker:
         if self._heartbeat_interval:
             now = time.time()
             if (now - self._heartbeat_msg) > self._heartbeat_interval:
+                version = __version__
+                strategy_version = self.freqtrade.strategy.version()
+                if (strategy_version != None):
+                    version += ', strategy_version: ' + strategy_version 
                 logger.info(f"Bot heartbeat. PID={getpid()}, "
-                            f"version='{__version__}', state='{state.name}'")
+                            f"version='{version}', state='{state.name}'")
                 self._heartbeat_msg = now
 
         return state
-
+    
     def _throttle(self, func: Callable[..., Any], throttle_secs: float, *args, **kwargs) -> Any:
         """
         Throttles the given callable that it
