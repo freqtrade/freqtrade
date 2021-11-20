@@ -317,19 +317,13 @@ class AwesomeStrategy(IStrategy):
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
 
-Sample:
+Sample of setting a 10% stoploss:
 
 ``` python
 stoploss = -0.10
 ```
 
-This would signify a stoploss of -10%.
-
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
-
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.
-
-For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Timeframe (formerly ticker interval)
 
@@ -346,7 +340,7 @@ The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `p
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
+Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
 
 ## Strategy file loading
 
