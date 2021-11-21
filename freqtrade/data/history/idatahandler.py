@@ -39,7 +39,7 @@ class IDataHandler(ABC):
         cls,
         datadir: Path,
         timeframe: str,
-        candle_type: Optional[str] = ""
+        candle_type: Optional[str] = ''
     ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
@@ -55,7 +55,7 @@ class IDataHandler(ABC):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: Optional[str] = ''
     ) -> None:
         """
         Store ohlcv data.
@@ -68,7 +68,7 @@ class IDataHandler(ABC):
     @abstractmethod
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    candle_type: Optional[str] = ""
+                    candle_type: Optional[str] = ''
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
@@ -83,7 +83,7 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = "") -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = '') -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
@@ -97,7 +97,7 @@ class IDataHandler(ABC):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: Optional[str] = ''
     ) -> None:
         """
         Append data to existing data structures
@@ -165,7 +165,7 @@ class IDataHandler(ABC):
                    drop_incomplete: bool = True,
                    startup_candles: int = 0,
                    warn_no_data: bool = True,
-                   candle_type: Optional[str] = ""
+                   candle_type: Optional[str] = ''
                    ) -> DataFrame:
         """
         Load cached candle (OHLCV) data for the given pair.
@@ -190,7 +190,7 @@ class IDataHandler(ABC):
             timerange=timerange_startup,
             candle_type=candle_type
         )
-        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data, candle_type):
+        if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
             return pairdf
         else:
             enddate = pairdf.iloc[-1]['date']
@@ -202,8 +202,7 @@ class IDataHandler(ABC):
                     pairdf,
                     pair,
                     timeframe,
-                    warn_no_data,
-                    candle_type
+                    warn_no_data
                 ):
                     return pairdf
 
@@ -213,7 +212,7 @@ class IDataHandler(ABC):
                                            fill_missing=fill_missing,
                                            drop_incomplete=(drop_incomplete and
                                                             enddate == pairdf.iloc[-1]['date']))
-            self._check_empty_df(pairdf, pair, timeframe, warn_no_data, candle_type=candle_type)
+            self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
             return pairdf
 
     def _check_empty_df(
@@ -221,8 +220,7 @@ class IDataHandler(ABC):
         pairdf: DataFrame,
         pair: str,
         timeframe: str,
-        warn_no_data: bool,
-        candle_type: Optional[str] = ""
+        warn_no_data: bool
     ):
         """
         Warn on empty dataframe
@@ -240,8 +238,7 @@ class IDataHandler(ABC):
         self,
         pair,
         pairdata: DataFrame,
-        timerange: TimeRange,
-        candle_type: Optional[str] = ""
+        timerange: TimeRange
     ):
         """
         Validates pairdata for missing data at start end end and logs warnings.
