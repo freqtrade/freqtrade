@@ -70,6 +70,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'max_rate': ANY,
         'strategy': ANY,
         'buy_tag': ANY,
+        'enter_tag': ANY,
         'timeframe': 5,
         'open_order_id': ANY,
         'close_date': None,
@@ -143,6 +144,7 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'max_rate': ANY,
         'strategy': ANY,
         'buy_tag': ANY,
+        'enter_tag': ANY,
         'timeframe': ANY,
         'open_order_id': ANY,
         'close_date': None,
@@ -842,8 +844,8 @@ def test_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
-def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
-                                    limit_sell_order, mocker) -> None:
+def test_enter_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
+                                      limit_sell_order, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -869,23 +871,23 @@ def test_buy_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
-    res = rpc._rpc_buy_tag_performance(None)
+    res = rpc._rpc_enter_tag_performance(None)
 
     assert len(res) == 1
-    assert res[0]['buy_tag'] == 'Other'
+    assert res[0]['enter_tag'] == 'Other'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
-    trade.buy_tag = "TEST_TAG"
-    res = rpc._rpc_buy_tag_performance(None)
+    trade.enter_tag = "TEST_TAG"
+    res = rpc._rpc_enter_tag_performance(None)
 
     assert len(res) == 1
-    assert res[0]['buy_tag'] == 'TEST_TAG'
+    assert res[0]['enter_tag'] == 'TEST_TAG'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
 
-def test_buy_tag_performance_handle_2(mocker, default_conf, markets, fee):
+def test_enter_tag_performance_handle_2(mocker, default_conf, markets, fee):
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -896,21 +898,21 @@ def test_buy_tag_performance_handle_2(mocker, default_conf, markets, fee):
     create_mock_trades(fee)
     rpc = RPC(freqtradebot)
 
-    res = rpc._rpc_buy_tag_performance(None)
+    res = rpc._rpc_enter_tag_performance(None)
 
     assert len(res) == 2
-    assert res[0]['buy_tag'] == 'TEST1'
+    assert res[0]['enter_tag'] == 'TEST1'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
-    assert res[1]['buy_tag'] == 'Other'
+    assert res[1]['enter_tag'] == 'Other'
     assert res[1]['count'] == 1
     assert prec_satoshi(res[1]['profit_pct'], 1.0)
 
     # Test for a specific pair
-    res = rpc._rpc_buy_tag_performance('ETC/BTC')
+    res = rpc._rpc_enter_tag_performance('ETC/BTC')
     assert len(res) == 1
     assert res[0]['count'] == 1
-    assert res[0]['buy_tag'] == 'TEST1'
+    assert res[0]['enter_tag'] == 'TEST1'
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 
@@ -1020,7 +1022,7 @@ def test_mix_tag_performance_handle(default_conf, ticker, limit_buy_order, fee,
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 6.2)
 
-    trade.buy_tag = "TESTBUY"
+    trade.enter_tag = "TESTBUY"
     trade.sell_reason = "TESTSELL"
     res = rpc._rpc_mix_tag_performance(None)
 

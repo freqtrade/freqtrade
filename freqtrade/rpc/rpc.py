@@ -782,12 +782,12 @@ class RPC:
 
         return pair_rates
 
-    def _rpc_buy_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_enter_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for buy tag performance.
         Shows a performance statistic from finished trades
         """
-        buy_tags = Trade.get_buy_tag_performance(pair)
+        buy_tags = Trade.get_enter_tag_performance(pair)
 
         return buy_tags
 
