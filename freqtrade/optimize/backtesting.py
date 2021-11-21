@@ -368,6 +368,10 @@ class Backtesting:
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
+        # TODO-lev: add interest / funding fees to trade object ->
+        # Must be done either here, or one level higher ->
+        # (if we don't want to do it at "detail" level)
+
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
         exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]

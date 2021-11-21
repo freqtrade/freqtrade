@@ -606,12 +606,14 @@ class FreqtradeBot(LoggingMixin):
         if not enter_limit_requested:
             raise PricingError(f'Could not determine {side} price.')
 
+        # Min-stake-amount should actually include Leverage - this way our "minimal"
+        # stake- amount might be higher than necessary.
+        # We do however also need min-stake to determine leverage, therefore this is ignored as
+        # edge-case for now.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(
             pair,
             enter_limit_requested,
             self.strategy.stoploss,
-            # TODO-lev: This is problematic... we need stake-amount to determine max_leverage
-            # leverage=leverage
         )
 
         if not self.edge:
