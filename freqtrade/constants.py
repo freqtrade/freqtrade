@@ -467,7 +467,7 @@ CANCEL_REASON = {
 }
 
 # List of pairs with their timeframes
-PairWithTimeframe = Tuple[str, str]
+PairWithTimeframe = Tuple[str, str, str]
 ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list

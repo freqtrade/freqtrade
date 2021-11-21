@@ -29,9 +29,12 @@ class JsonDataHandler(IDataHandler):
         :param datadir: Directory to search for ohlcv files
         :return: List of Tuples of (pair, timeframe)
         """
-        _tmp = [re.search(r'^([a-zA-Z_]+)\-(\d+\S+)(?=.json)', p.name)
-                for p in datadir.glob(f"*.{cls._get_file_extension()}")]
-        return [(match[1].replace('_', '/'), match[2]) for match in _tmp
+        _tmp = [
+            re.search(
+                r'^([a-zA-Z_]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.json)',
+                p.name
+            ) for p in datadir.glob(f"*.{cls._get_file_extension()}")]
+        return [(match[1].replace('_', '/'), match[2], match[3]) for match in _tmp
                 if match and len(match.groups()) > 1]
 
     @classmethod

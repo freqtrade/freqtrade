@@ -161,10 +161,16 @@ def start_list_data(args: Dict[str, Any]) -> None:
 
     print(f"Found {len(paircombs)} pair / timeframe combinations.")
     groupedpair = defaultdict(list)
-    for pair, timeframe in sorted(paircombs, key=lambda x: (x[0], timeframe_to_minutes(x[1]))):
-        groupedpair[pair].append(timeframe)
+    for pair, timeframe, candle_type in sorted(
+        paircombs,
+        key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
+    ):
+        groupedpair[(pair, candle_type)].append(timeframe)
 
     if groupedpair:
-        print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
-                       headers=("Pair", "Timeframe"),
-                       tablefmt='psql', stralign='right'))
+        print(tabulate([
+            (pair, ', '.join(timeframes), candle_type)
+            for (pair, candle_type), timeframes in groupedpair.items()
+        ],
+            headers=("Pair", "Timeframe", "Type"),
+            tablefmt='psql', stralign='right'))
