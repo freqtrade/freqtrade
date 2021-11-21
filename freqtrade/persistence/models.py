@@ -390,6 +390,7 @@ class LocalTrade():
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
             'buy_tag': self.buy_tag,
+            'enter_tag': self.buy_tag,
             'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,

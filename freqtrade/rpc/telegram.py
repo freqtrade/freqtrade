@@ -226,7 +226,7 @@ class Telegram(RPCHandler):
             f"{emoji} *{msg['exchange']}:* {'Bought' if is_fill else 'Buying'} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
-        message += f"*Buy Tag:* `{msg['buy_tag']}`\n" if msg.get('buy_tag', None) else ""
+        message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
 
         if msg['type'] == RPCMessageType.BUY_FILL:
@@ -251,7 +251,7 @@ class Telegram(RPCHandler):
             microsecond=0) - msg['open_date'].replace(microsecond=0)
         msg['duration_min'] = msg['duration'].total_seconds() / 60
 
-        msg['buy_tag'] = msg['buy_tag'] if "buy_tag" in msg.keys() else None
+        msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
 
         # Check if all sell properties are available.
@@ -397,7 +397,7 @@ class Telegram(RPCHandler):
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
-                    "*Buy Tag:* `{buy_tag}`" if r['buy_tag'] else "",
+                    "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",
                     "*Close Rate:* `{close_rate}`" if r['close_rate'] else "",
                     "*Current Rate:* `{current_rate:.8f}`",
@@ -989,7 +989,7 @@ class Telegram(RPCHandler):
             output = "<b>Buy Tag Performance:</b>\n"
             for i, trade in enumerate(trades):
                 stat_line = (
-                    f"{i+1}.\t <code>{trade['buy_tag']}\t"
+                    f"{i+1}.\t <code>{trade['enter_tag']}\t"
                     f"{round_coin_value(trade['profit_abs'], self._config['stake_currency'])} "
                     f"({trade['profit_ratio']:.2%}) "
                     f"({trade['count']})</code>\n")
