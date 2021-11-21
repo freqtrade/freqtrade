@@ -1311,7 +1311,7 @@ class Exchange:
 
     def get_historic_ohlcv(self, pair: str, timeframe: str,
                            since_ms: int, is_new_pair: bool = False,
-                           candle_type: Optional[str] = "") -> List:
+                           candle_type: str = '') -> List:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -1329,7 +1329,7 @@ class Exchange:
         return data
 
     def get_historic_ohlcv_as_df(self, pair: str, timeframe: str,
-                                 since_ms: int, candle_type: Optional[str] = "") -> DataFrame:
+                                 since_ms: int, candle_type: str = '') -> DataFrame:
         """
         Minimal wrapper around get_historic_ohlcv - converting the result into a dataframe
         :param pair: Pair to download
@@ -1344,7 +1344,7 @@ class Exchange:
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
                                         since_ms: int, is_new_pair: bool,
                                         raise_: bool = False,
-                                        candle_type: Optional[str] = ""
+                                        candle_type: str = ''
                                         ) -> Tuple[str, str, List]:
         """
         Download historic ohlcv
@@ -1383,8 +1383,8 @@ class Exchange:
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True,
-                             candle_type: Optional[str] = ""
-                             ) -> Dict[Tuple[str, str], DataFrame]:
+                             candle_type: str = ''
+                             ) -> Dict[Tuple[str, str, str], DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
         Loops asynchronously over pair_list and downloads all pairs async (semi-parallel).
@@ -1450,7 +1450,12 @@ class Exchange:
 
         return results_df
 
-    def _now_is_time_to_refresh(self, pair: str, timeframe: str) -> bool:
+    def _now_is_time_to_refresh(
+        self,
+        pair: str,
+        timeframe: str,
+        candle_type: str = ''
+    ) -> bool:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
 
@@ -1463,8 +1468,8 @@ class Exchange:
         pair: str,
         timeframe: str,
         since_ms: Optional[int] = None,
-        candle_type: Optional[str] = "",
-    ) -> Tuple[str, str, List]:
+        candle_type: str = '',
+    ) -> Tuple[str, str, str, List]:
         """
         Asynchronously get candle history data using fetch_ohlcv
         :param candle_type:

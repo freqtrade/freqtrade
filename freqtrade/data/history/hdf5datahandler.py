@@ -42,7 +42,7 @@ class HDF5DataHandler(IDataHandler):
         cls,
         datadir: Path,
         timeframe: str,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
@@ -67,7 +67,7 @@ class HDF5DataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: pd.DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> None:
         """
         Store data in hdf5 file.
@@ -88,7 +88,7 @@ class HDF5DataHandler(IDataHandler):
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    candle_type: Optional[str] = "") -> pd.DataFrame:
+                    candle_type: str = '') -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversion to a Pandas dataframe.
@@ -125,7 +125,7 @@ class HDF5DataHandler(IDataHandler):
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = "") -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
@@ -143,7 +143,7 @@ class HDF5DataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: pd.DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> None:
         """
         Append data to existing data structures
@@ -238,7 +238,7 @@ class HDF5DataHandler(IDataHandler):
         datadir: Path,
         pair: str,
         timeframe: str,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
         if candle_type:

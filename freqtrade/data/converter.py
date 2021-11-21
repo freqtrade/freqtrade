@@ -266,7 +266,7 @@ def convert_ohlcv_format(
     convert_from: str,
     convert_to: str,
     erase: bool,
-    candle_type: Optional[str] = ""
+    candle_type: str = ''
 ):
     """
     Convert OHLCV from one format to another

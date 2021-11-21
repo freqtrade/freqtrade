@@ -29,6 +29,7 @@ def load_pair_history(pair: str,
                       startup_candles: int = 0,
                       data_format: str = None,
                       data_handler: IDataHandler = None,
+                      candle_type: str = ''
                       ) -> DataFrame:
     """
     Load cached ohlcv history for the given pair.
@@ -64,6 +65,7 @@ def load_data(datadir: Path,
               startup_candles: int = 0,
               fail_without_data: bool = False,
               data_format: str = 'json',
+              candle_type: str = ''
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -105,6 +107,7 @@ def refresh_data(datadir: Path,
                  exchange: Exchange,
                  data_format: str = None,
                  timerange: Optional[TimeRange] = None,
+                 candle_type: str = ''
                  ) -> None:
     """
     Refresh ohlcv history data for a list of pairs.
@@ -124,8 +127,13 @@ def refresh_data(datadir: Path,
                                timerange=timerange, exchange=exchange, data_handler=data_handler)
 
 
-def _load_cached_data_for_updating(pair: str, timeframe: str, timerange: Optional[TimeRange],
-                                   data_handler: IDataHandler) -> Tuple[DataFrame, Optional[int]]:
+def _load_cached_data_for_updating(
+    pair: str,
+    timeframe: str,
+    timerange: Optional[TimeRange],
+    data_handler: IDataHandler,
+    candle_type: str = ''
+) -> Tuple[DataFrame, Optional[int]]:
     """
     Load cached data to download more data.
     If timerange is passed in, checks whether data from an before the stored data will be
@@ -162,7 +170,7 @@ def _download_pair_history(pair: str, *,
                            new_pairs_days: int = 30,
                            data_handler: IDataHandler = None,
                            timerange: Optional[TimeRange] = None,
-                           candle_type: Optional[str] = "") -> bool:
+                           candle_type: str = '') -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -232,7 +240,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                 datadir: Path, timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
                                 data_format: str = None,
-                                candle_type: Optional[str] = "") -> List[str]:
+                                candle_type: str = '') -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -365,7 +373,7 @@ def convert_trades_to_ohlcv(
     erase: bool = False,
     data_format_ohlcv: str = 'json',
     data_format_trades: str = 'jsongz',
-    candle_type: Optional[str] = ""
+    candle_type: str = ''
 ) -> None:
     """
     Convert stored trades data to ohlcv data

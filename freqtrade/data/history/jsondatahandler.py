@@ -42,7 +42,7 @@ class JsonDataHandler(IDataHandler):
         cls,
         datadir: Path,
         timeframe: str,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
@@ -66,7 +66,7 @@ class JsonDataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> None:
         """
         Store data in json format "values".
@@ -94,7 +94,7 @@ class JsonDataHandler(IDataHandler):
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    candle_type: Optional[str] = ""
+                    candle_type: str = ''
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
@@ -124,7 +124,7 @@ class JsonDataHandler(IDataHandler):
                                        infer_datetime_format=True)
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: Optional[str] = "") -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
@@ -142,7 +142,7 @@ class JsonDataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> None:
         """
         Append data to existing data structures
@@ -222,7 +222,7 @@ class JsonDataHandler(IDataHandler):
         datadir: Path,
         pair: str,
         timeframe: str,
-        candle_type: Optional[str] = ""
+        candle_type: str = ''
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
         if candle_type:

@@ -99,7 +99,12 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {timeframe}).")
         return data
 
-    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
+    def get_analyzed_dataframe(
+        self,
+        pair: str,
+        timeframe: str,
+        candle_type: str = ''
+    ) -> Tuple[DataFrame, datetime]:
         """
         Retrieve the analyzed dataframe. Returns the full dataframe in trade mode (live / dry),
         and the last 1000 candles (up to the time evaluated at this moment) in all other modes.
@@ -177,7 +182,13 @@ class DataProvider:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return list(self._exchange._klines.keys())
 
-    def ohlcv(self, pair: str, timeframe: str = None, copy: bool = True) -> DataFrame:
+    def ohlcv(
+        self,
+        pair: str,
+        timeframe: str = None,
+        copy: bool = True,
+        candle_type: str = ''
+    ) -> DataFrame:
         """
         Get candle (OHLCV) data for the given pair as DataFrame
         Please use the `available_pairs` method to verify which pairs are currently cached.
