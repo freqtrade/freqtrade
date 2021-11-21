@@ -124,7 +124,7 @@ class Backtesting:
         # TODO-lev: This should come from the configuration setting or better a
         # TODO-lev: combination of config/strategy "use_shorts"(?) and "can_short" from the exchange
         self.trading_mode = TradingMode(config.get('trading_mode', 'spot'))
-        self._can_short = self.trading_mode == TradingMode.MARGIN
+        self._can_short = self.trading_mode != TradingMode.SPOT
 
         self.progress = BTProgress()
         self.abort = False
