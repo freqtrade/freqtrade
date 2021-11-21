@@ -698,7 +698,8 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
-         'enter_tag': [None, None]
+         'enter_tag': [None, None],
+         "is_short": [False, False],
          })
     pd.testing.assert_frame_equal(results, expected)
     data_pair = processed[pair]
@@ -1074,6 +1075,8 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'stake_amount': [0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485],
                             'close_rate': [0.104969, 0.103541],
+                            "is_short": [False, False],
+
                             'sell_reason': [SellType.ROI, SellType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
@@ -1091,6 +1094,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'stake_amount': [0.01, 0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
+                            "is_short": [False, False, False],
                             'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
@@ -1180,6 +1184,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                                                           '2018-01-30 05:35:00', ], utc=True),
                             'trade_duration': [235, 40],
                             'is_open': [False, False],
+                            'is_short': [False, False],
                             'stake_amount': [0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485],
                             'close_rate': [0.104969, 0.103541],
@@ -1197,6 +1202,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                                                           '2018-01-30 08:30:00'], utc=True),
                             'trade_duration': [47, 40, 20],
                             'is_open': [False, False, False],
+                            'is_short': [False, False, False],
                             'stake_amount': [0.01, 0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
