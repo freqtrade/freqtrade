@@ -11,8 +11,9 @@ nav:
     - Freqtrade Basics: bot-basics.md
     - Configuration: configuration.md
     - Strategy Customization: strategy-customization.md
-    - Plugins: plugins.md
+    - Strategy Callbacks: strategy-callbacks.md
     - Stoploss: stoploss.md
+    - Plugins: plugins.md
     - Start the bot: bot-usage.md
     - Control the bot:
         - Telegram: telegram-usage.md

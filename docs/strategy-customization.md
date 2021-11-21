@@ -317,19 +317,13 @@ class AwesomeStrategy(IStrategy):
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
 
-Sample:
+Sample of setting a 10% stoploss:
 
 ``` python
 stoploss = -0.10
 ```
 
-This would signify a stoploss of -10%.
-
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
-
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.
-
-For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Timeframe (formerly ticker interval)
 
@@ -346,7 +340,7 @@ The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `p
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
+Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
 
 ## Strategy file loading
 
@@ -1015,6 +1009,10 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `.iloc[-1]` or any other absolute position in the dataframe, this will be different between dry-run and backtesting.
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
+
+### Colliding signals
+
+When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing and ignore the entry (buy) signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
 
 ## Further strategy ideas
 
