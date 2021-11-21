@@ -14,6 +14,7 @@ class InformativeData(NamedTuple):
     timeframe: str
     fmt: Union[str, Callable[[Any], str], None]
     ffill: bool
+    candle_type: str = ''
 
 
 def informative(timeframe: str, asset: str = '',

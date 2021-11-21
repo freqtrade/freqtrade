@@ -204,7 +204,7 @@ class Binance(Exchange):
                                         since_ms: int, is_new_pair: bool = False,
                                         raise_: bool = False,
                                         candle_type: str = ''
-                                        ) -> Tuple[str, str, List]:
+                                        ) -> Tuple[str, str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"

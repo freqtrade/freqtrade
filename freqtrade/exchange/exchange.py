@@ -92,7 +92,7 @@ class Exchange:
         self._config.update(config)
 
         # Holds last candle refreshed time of each pair
-        self._pairs_last_refresh_time: Dict[Tuple[str, str], int] = {}
+        self._pairs_last_refresh_time: Dict[Tuple[str, str, str], int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
 
@@ -105,7 +105,7 @@ class Exchange:
         self._buy_rate_cache: TTLCache = TTLCache(maxsize=100, ttl=1800)
 
         # Holds candles
-        self._klines: Dict[Tuple[str, str], DataFrame] = {}
+        self._klines: Dict[Tuple[str, str, str], DataFrame] = {}
 
         # Holds all open sell orders for dry_run
         self._dry_run_open_orders: Dict[str, Any] = {}
@@ -359,7 +359,7 @@ class Exchange:
             or (self.trading_mode == TradingMode.FUTURES and self.market_is_future(market))
         )
 
-    def klines(self, pair_interval: Tuple[str, str], copy: bool = True) -> DataFrame:
+    def klines(self, pair_interval: Tuple[str, str, str], copy: bool = True) -> DataFrame:
         if pair_interval in self._klines:
             return self._klines[pair_interval].copy() if copy else self._klines[pair_interval]
         else:
@@ -1321,7 +1321,8 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
-        pair, timeframe, data = asyncio.get_event_loop().run_until_complete(
+        data: List
+        pair, timeframe, candle_type, data = asyncio.get_event_loop().run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, is_new_pair=is_new_pair,
                                            candle_type=candle_type))
@@ -1337,15 +1338,15 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: OHLCV DataFrame
         """
-        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms)
+        ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms, candle_type=candle_type)
         return ohlcv_to_dataframe(ticks, timeframe, pair=pair, fill_missing=True,
                                   drop_incomplete=self._ohlcv_partial_candle)
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool,
+                                        since_ms: int, is_new_pair: bool = False,
                                         raise_: bool = False,
                                         candle_type: str = ''
-                                        ) -> Tuple[str, str, List]:
+                                        ) -> Tuple[str, str, str, List]:
         """
         Download historic ohlcv
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
@@ -1374,12 +1375,12 @@ class Exchange:
                     continue
                 else:
                     # Deconstruct tuple if it's not an exception
-                    p, _, new_data = res
-                    if p == pair:
+                    p, _, c, new_data = res
+                    if p == pair and c == candle_type:
                         data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
-        return pair, timeframe, data
+        return pair, timeframe, candle_type, data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
                              since_ms: Optional[int] = None, cache: bool = True,
@@ -1399,8 +1400,8 @@ class Exchange:
         input_coroutines = []
         cached_pairs = []
         # Gather coroutines to run
-        for pair, timeframe in set(pair_list):
-            if ((pair, timeframe) not in self._klines
+        for pair, timeframe, candle_type in set(pair_list):
+            if ((pair, timeframe, candle_type) not in self._klines
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 if not since_ms and self.required_candle_call_count > 1:
                     # Multiple calls for one pair - to get more history
@@ -1411,17 +1412,17 @@ class Exchange:
 
                 if since_ms:
                     input_coroutines.append(self._async_get_historic_ohlcv(
-                        pair, timeframe, since_ms=since_ms, raise_=True))
+                        pair, timeframe, since_ms=since_ms, raise_=True, candle_type=candle_type))
                 else:
                     # One call ... "regular" refresh
                     input_coroutines.append(self._async_get_candle_history(
-                        pair, timeframe, since_ms=since_ms, candle_type=candle_type,))
+                        pair, timeframe, since_ms=since_ms, candle_type=candle_type))
             else:
                 logger.debug(
                     "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
-                    pair, timeframe
+                    pair, timeframe, candle_type
                 )
-                cached_pairs.append((pair, timeframe))
+                cached_pairs.append((pair, timeframe, candle_type))
 
         results = asyncio.get_event_loop().run_until_complete(
             asyncio.gather(*input_coroutines, return_exceptions=True))
@@ -1433,20 +1434,23 @@ class Exchange:
                 logger.warning("Async code raised an exception: %s", res.__class__.__name__)
                 continue
             # Deconstruct tuple (has 3 elements)
-            pair, timeframe, ticks = res
+            pair, timeframe, c_type, ticks = res
             # keeping last candle time as last refreshed time of the pair
             if ticks:
-                self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[-1][0] // 1000
             # keeping parsed dataframe in cache
             ohlcv_df = ohlcv_to_dataframe(
                 ticks, timeframe, pair=pair, fill_missing=True,
                 drop_incomplete=self._ohlcv_partial_candle)
-            results_df[(pair, timeframe)] = ohlcv_df
+            results_df[(pair, timeframe, c_type)] = ohlcv_df
             if cache:
-                self._klines[(pair, timeframe)] = ohlcv_df
+                self._klines[(pair, timeframe, c_type)] = ohlcv_df
         # Return cached klines
-        for pair, timeframe in cached_pairs:
-            results_df[(pair, timeframe)] = self.klines((pair, timeframe), copy=False)
+        for pair, timeframe, c_type in cached_pairs:
+            results_df[(pair, timeframe, c_type)] = self.klines(
+                (pair, timeframe, c_type),
+                copy=False
+            )
 
         return results_df
 
@@ -1459,8 +1463,12 @@ class Exchange:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_seconds(timeframe)
 
-        return not ((self._pairs_last_refresh_time.get((pair, timeframe), 0)
-                     + interval_in_sec) >= arrow.utcnow().int_timestamp)
+        return not (
+            (self._pairs_last_refresh_time.get(
+                (pair, timeframe, candle_type),
+                0
+            ) + interval_in_sec) >= arrow.utcnow().int_timestamp
+        )
 
     @retrier_async
     async def _async_get_candle_history(
@@ -1501,9 +1509,9 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, timeframe, []
+                return pair, timeframe, candle_type, []
             logger.debug("Done fetching pair %s, interval %s ...", pair, timeframe)
-            return pair, timeframe, data
+            return pair, timeframe, candle_type, data
 
         except ccxt.NotSupported as e:
             raise OperationalException(

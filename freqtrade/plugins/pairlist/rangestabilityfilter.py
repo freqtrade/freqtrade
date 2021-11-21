@@ -65,7 +65,7 @@ class RangeStabilityFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new allowlist
         """
-        needed_pairs = [(p, '1d') for p in pairlist if p not in self._pair_cache]
+        needed_pairs = [(p, '1d', '') for p in pairlist if p not in self._pair_cache]
 
         since_ms = (arrow.utcnow()
                          .floor('day')
@@ -79,7 +79,7 @@ class RangeStabilityFilter(IPairList):
 
         if self._enabled:
             for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
+                daily_candles = candles[(p, '1d', '')] if (p, '1d', '') in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
         return pairlist

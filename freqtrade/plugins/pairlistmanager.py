@@ -138,4 +138,4 @@ class PairListManager():
         """
         Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['timeframe']) for pair in pairs]
+        return [(pair, timeframe or self._config['timeframe'], '') for pair in pairs]

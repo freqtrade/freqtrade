@@ -19,7 +19,7 @@ class InformativeDecoratorTest(IStrategy):
     startup_candle_count: int = 20
 
     def informative_pairs(self):
-        return [('BTC/USDT', '5m')]
+        return [('BTC/USDT', '5m', '')]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['buy'] = 0
@@ -67,7 +67,7 @@ class InformativeDecoratorTest(IStrategy):
         dataframe['rsi_less'] = dataframe['rsi'] < dataframe['rsi_1h']
 
         # Mixing manual informative pairs with decorators.
-        informative = self.dp.get_pair_dataframe('BTC/USDT', '5m')
+        informative = self.dp.get_pair_dataframe('BTC/USDT', '5m', '')
         informative['rsi'] = 14
         dataframe = merge_informative_pair(dataframe, informative, self.timeframe, '5m', ffill=True)
 

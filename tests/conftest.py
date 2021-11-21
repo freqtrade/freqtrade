@@ -2388,7 +2388,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
         'amount': 25.0,
         'cost': 50.25,
         'fee': {'cost': 0.00025125, 'currency': 'BNB'}
-        }, {
+    }, {
         'timestamp': None,
         'datetime': None,
         'symbol': 'ETH/USDT',
@@ -2401,7 +2401,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
         'amount': 5,
         'cost': 10,
         'fee': {'cost': 0.0100306, 'currency': 'USDT'}
-        }]
+    }]
     return order
 
 

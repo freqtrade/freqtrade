@@ -343,7 +343,8 @@ def test__set_leverage_binance(mocker, default_conf):
 
 
 @pytest.mark.asyncio
-async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog):
+@pytest.mark.parametrize('candle_type', ['mark', ''])
+async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [
         [
             int((datetime.now(timezone.utc).timestamp() - 1000) * 1000),
@@ -360,16 +361,17 @@ async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog):
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
-    respair, restf, res = await exchange._async_get_historic_ohlcv(
-        pair, "5m", 1500000000000, is_new_pair=False)
+    respair, restf, restype, res = await exchange._async_get_historic_ohlcv(
+        pair, "5m", 1500000000000, is_new_pair=False, candle_type=candle_type)
     assert respair == pair
     assert restf == '5m'
+    assert restype == candle_type
     # Call with very old timestamp - causes tons of requests
     assert exchange._api_async.fetch_ohlcv.call_count > 400
     # assert res == ohlcv
     exchange._api_async.fetch_ohlcv.reset_mock()
-    _, _, res = await exchange._async_get_historic_ohlcv(
-        pair, "5m", 1500000000000, is_new_pair=True)
+    _, _, _, res = await exchange._async_get_historic_ohlcv(
+        pair, "5m", 1500000000000, is_new_pair=True, candle_type=candle_type)
 
     # Called twice - one "init" call - and one to get the actual data.
     assert exchange._api_async.fetch_ohlcv.call_count == 2

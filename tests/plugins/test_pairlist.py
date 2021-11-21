@@ -460,11 +460,11 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
 
     ohlcv_data = {
-        ('ETH/BTC', '1d'): ohlcv_history,
-        ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history.append(ohlcv_history),
-        ('XRP/BTC', '1d'): ohlcv_history,
-        ('HOT/BTC', '1d'): ohlcv_history_high_vola,
+        ('ETH/BTC', '1d', ''): ohlcv_history,
+        ('TKN/BTC', '1d', ''): ohlcv_history,
+        ('LTC/BTC', '1d', ''): ohlcv_history.append(ohlcv_history),
+        ('XRP/BTC', '1d', ''): ohlcv_history,
+        ('HOT/BTC', '1d', ''): ohlcv_history_high_vola,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -578,11 +578,11 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     ohlcv_history_high_volume.loc[:, 'volume'] = 10
 
     ohlcv_data = {
-        ('ETH/BTC', '1d'): ohlcv_history,
-        ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history_medium_volume,
-        ('XRP/BTC', '1d'): ohlcv_history_high_vola,
-        ('HOT/BTC', '1d'): ohlcv_history_high_volume,
+        ('ETH/BTC', '1d', ''): ohlcv_history,
+        ('TKN/BTC', '1d', ''): ohlcv_history,
+        ('LTC/BTC', '1d', ''): ohlcv_history_medium_volume,
+        ('XRP/BTC', '1d', ''): ohlcv_history_high_vola,
+        ('HOT/BTC', '1d', ''): ohlcv_history_high_volume,
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
@@ -838,9 +838,9 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
 def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history):
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
         ohlcv_data = {
-            ('ETH/BTC', '1d'): ohlcv_history,
-            ('TKN/BTC', '1d'): ohlcv_history,
-            ('LTC/BTC', '1d'): ohlcv_history,
+            ('ETH/BTC', '1d', ''): ohlcv_history,
+            ('TKN/BTC', '1d', ''): ohlcv_history,
+            ('LTC/BTC', '1d', ''): ohlcv_history,
         }
         mocker.patch.multiple(
             'freqtrade.exchange.Exchange',
@@ -862,10 +862,10 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 2
 
         ohlcv_data = {
-            ('ETH/BTC', '1d'): ohlcv_history,
-            ('TKN/BTC', '1d'): ohlcv_history,
-            ('LTC/BTC', '1d'): ohlcv_history,
-            ('XRP/BTC', '1d'): ohlcv_history.iloc[[0]],
+            ('ETH/BTC', '1d', ''): ohlcv_history,
+            ('TKN/BTC', '1d', ''): ohlcv_history,
+            ('LTC/BTC', '1d', ''): ohlcv_history,
+            ('XRP/BTC', '1d', ''): ohlcv_history.iloc[[0]],
         }
         mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
@@ -883,10 +883,10 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         t.move_to("2021-09-03 01:00:00 +00:00")
         # Called once for XRP/BTC
         ohlcv_data = {
-            ('ETH/BTC', '1d'): ohlcv_history,
-            ('TKN/BTC', '1d'): ohlcv_history,
-            ('LTC/BTC', '1d'): ohlcv_history,
-            ('XRP/BTC', '1d'): ohlcv_history,
+            ('ETH/BTC', '1d', ''): ohlcv_history,
+            ('TKN/BTC', '1d', ''): ohlcv_history,
+            ('LTC/BTC', '1d', ''): ohlcv_history,
+            ('XRP/BTC', '1d', ''): ohlcv_history,
         }
         mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv', return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
@@ -947,12 +947,12 @@ def test_rangestabilityfilter_caching(mocker, markets, default_conf, tickers, oh
                           get_tickers=tickers
                           )
     ohlcv_data = {
-        ('ETH/BTC', '1d'): ohlcv_history,
-        ('TKN/BTC', '1d'): ohlcv_history,
-        ('LTC/BTC', '1d'): ohlcv_history,
-        ('XRP/BTC', '1d'): ohlcv_history,
-        ('HOT/BTC', '1d'): ohlcv_history,
-        ('BLK/BTC', '1d'): ohlcv_history,
+        ('ETH/BTC', '1d', ''): ohlcv_history,
+        ('TKN/BTC', '1d', ''): ohlcv_history,
+        ('LTC/BTC', '1d', ''): ohlcv_history,
+        ('XRP/BTC', '1d', ''): ohlcv_history,
+        ('HOT/BTC', '1d', ''): ohlcv_history,
+        ('BLK/BTC', '1d', ''): ohlcv_history,
     }
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',

@@ -718,8 +718,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': -0.75, 'profit_closed_ratio_sum': -0.015,
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2}
-     ),
-     (
+    ),
+        (
         False,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
          'profit_all_coin': -44.0631579,
@@ -731,8 +731,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': 0.75, 'profit_closed_ratio_sum': 0.015,
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0}
-     ),
-     (
+    ),
+        (
         None,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
          'profit_all_coin': -14.43790415,
@@ -744,8 +744,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_mean': 0.25, 'profit_closed_ratio_sum': 0.005,
          'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1}
-     )
-     ])
+    )
+    ])
 def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected):
     ftbot, client = botclient
     patch_get_signal(ftbot)
@@ -1331,7 +1331,7 @@ def test_list_available_pairs(botclient):
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 
     assert_response(rc)
-    assert rc.json()['length'] == 13
+    assert rc.json()['length'] == 15
     assert isinstance(rc.json()['pairs'], list)
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")
@@ -1349,6 +1349,13 @@ def test_list_available_pairs(botclient):
     assert rc.json()['length'] == 1
     assert rc.json()['pairs'] == ['XRP/ETH']
     assert len(rc.json()['pair_interval']) == 1
+
+    rc = client_get(
+        client, f"{BASE_URI}/available_pairs?stake_currency=USDT&timeframe=1h&type=mark")
+    assert_response(rc)
+    assert rc.json()['length'] == 2
+    assert rc.json()['pairs'] == ['UNITTEST/USDT', 'XRP/USDT']
+    assert len(rc.json()['pair_interval']) == 3  # TODO-lev: What is pair_interval? Should it be 3?
 
 
 def test_sysinfo(botclient):

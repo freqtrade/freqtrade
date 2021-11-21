@@ -72,7 +72,7 @@ class AgeFilter(IPairList):
         :return: new allowlist
         """
         needed_pairs = [
-            (p, '1d') for p in pairlist
+            (p, '1d', '') for p in pairlist
             if p not in self._symbolsChecked and p not in self._symbolsCheckFailed]
         if not needed_pairs:
             # Remove pairs that have been removed before
@@ -88,7 +88,7 @@ class AgeFilter(IPairList):
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
             for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1d')] if (p, '1d') in candles else None
+                daily_candles = candles[(p, '1d', '')] if (p, '1d', '') in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
         self.log_once(f"Validated {len(pairlist)} pairs.", logger.info)

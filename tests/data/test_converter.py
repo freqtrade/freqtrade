@@ -75,7 +75,8 @@ def test_ohlcv_fill_up_missing_data(testdatadir, caplog):
 
 def test_ohlcv_fill_up_missing_data2(caplog):
     timeframe = '5m'
-    ticks = [[
+    ticks = [
+        [
             1511686200000,  # 8:50:00
             8.794e-05,  # open
             8.948e-05,  # high
@@ -106,7 +107,7 @@ def test_ohlcv_fill_up_missing_data2(caplog):
             8.895e-05,
             8.817e-05,
             123551
-    ]
+        ]
     ]
 
     # Generate test-data without filling missing
@@ -134,13 +135,13 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 def test_ohlcv_drop_incomplete(caplog):
     timeframe = '1d'
     ticks = [[
-            1559750400000,  # 2019-06-04
-            8.794e-05,  # open
-            8.948e-05,  # high
-            8.794e-05,  # low
-            8.88e-05,  # close
-            2255,  # volume (in quote currency)
-        ],
+        1559750400000,  # 2019-06-04
+        8.794e-05,  # open
+        8.948e-05,  # high
+        8.794e-05,  # low
+        8.88e-05,  # close
+        2255,  # volume (in quote currency)
+    ],
         [
             1559836800000,  # 2019-06-05
             8.88e-05,
@@ -148,7 +149,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.88e-05,
             8.893e-05,
             9911,
-        ],
+    ],
         [
             1559923200000,  # 2019-06-06
             8.891e-05,
@@ -156,7 +157,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.875e-05,
             8.877e-05,
             2251
-        ],
+    ],
         [
             1560009600000,  # 2019-06-07
             8.877e-05,
@@ -164,7 +165,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.895e-05,
             8.817e-05,
             123551
-     ]
+    ]
     ]
     caplog.set_level(logging.DEBUG)
     data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
@@ -287,42 +288,45 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
             file['new'].unlink()
 
 
-def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir):
+@pytest.mark.parametrize('file_base', [
+    ('XRP_ETH-5m'),
+    ('XRP_ETH-1m'),
+    # ('XRP_USDT-1h-mark'), #TODO-lev: Create .gz file
+])
+def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
     tmpdir1 = Path(tmpdir)
 
-    file1_orig = testdatadir / "XRP_ETH-5m.json"
-    file1 = tmpdir1 / "XRP_ETH-5m.json"
-    file1_new = tmpdir1 / "XRP_ETH-5m.json.gz"
-    file2_orig = testdatadir / "XRP_ETH-1m.json"
-    file2 = tmpdir1 / "XRP_ETH-1m.json"
-    file2_new = tmpdir1 / "XRP_ETH-1m.json.gz"
+    file_orig = testdatadir / f"{file_base}.json"
+    file_temp = tmpdir1 / f"{file_base}.json"
+    file_new = tmpdir1 / f"{file_base}.json.gz"
 
-    copyfile(file1_orig, file1)
-    copyfile(file2_orig, file2)
+    copyfile(file_orig, file_temp)
 
     default_conf['datadir'] = tmpdir1
-    default_conf['pairs'] = ['XRP_ETH']
-    default_conf['timeframes'] = ['1m', '5m']
+    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT']
+    default_conf['timeframes'] = ['1m', '5m', '1h']
 
-    assert not file1_new.exists()
-    assert not file2_new.exists()
+    assert not file_new.exists()
 
-    convert_ohlcv_format(default_conf, convert_from='json',
-                         convert_to='jsongz', erase=False)
+    convert_ohlcv_format(
+        default_conf,
+        convert_from='json',
+        convert_to='jsongz',
+        erase=False
+    )
 
-    assert file1_new.exists()
-    assert file2_new.exists()
-    assert file1.exists()
-    assert file2.exists()
+    assert file_new.exists()
+    assert file_temp.exists()
 
     # Remove original files
-    file1.unlink()
-    file2.unlink()
+    file_temp.unlink()
     # Convert back
-    convert_ohlcv_format(default_conf, convert_from='jsongz',
-                         convert_to='json', erase=True)
+    convert_ohlcv_format(
+        default_conf,
+        convert_from='jsongz',
+        convert_to='json',
+        erase=True
+    )
 
-    assert file1.exists()
-    assert file2.exists()
-    assert not file1_new.exists()
-    assert not file2_new.exists()
+    assert file_temp.exists()
+    assert not file_new.exists()

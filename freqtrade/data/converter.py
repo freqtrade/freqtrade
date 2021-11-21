@@ -5,7 +5,7 @@ import itertools
 import logging
 from datetime import datetime, timezone
 from operator import itemgetter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime

@@ -95,6 +95,17 @@ def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) ->
     )
 
 
+def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
+    mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history)
+    file = testdatadir / 'UNITTEST_USDT-1h-mark.json'
+    load_data(datadir=testdatadir, timeframe='1h', pairs=['UNITTEST/BTC'], candle_type='mark')
+    assert file.is_file()
+    assert not log_has(
+        'Download history data for pair: "UNITTEST/USDT", interval: 1m '
+        'and store in None.', caplog
+    )
+
+
 def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) -> None:
     ltfmock = mocker.patch(
         'freqtrade.data.history.jsondatahandler.JsonDataHandler._ohlcv_load',
@@ -110,8 +121,9 @@ def test_load_data_startup_candles(mocker, caplog, default_conf, testdatadir) ->
     assert ltfmock.call_args_list[0][1]['timerange'].startts == timerange.startts - 20 * 60
 
 
+@pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
-                                      default_conf, tmpdir) -> None:
+                                      default_conf, tmpdir, candle_type) -> None:
     """
     Test load_pair_history() with 1 min timeframe
     """
@@ -121,7 +133,7 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     file = tmpdir1 / 'MEME_BTC-1m.json'
 
     # do not download a new pair if refresh_pairs isn't set
-    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC')
+    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert not file.is_file()
     assert log_has(
         'No history data for pair: "MEME/BTC", timeframe: 1m. '
@@ -131,7 +143,7 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     # download a new pair if refresh_pairs is set
     refresh_data(datadir=tmpdir1, timeframe='1m', pairs=['MEME/BTC'],
                  exchange=exchange)
-    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC')
+    load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert file.is_file()
     assert log_has_re(
         r'Download history data for pair: "MEME/BTC" \(0/1\), timeframe: 1m '
@@ -166,7 +178,7 @@ def test_json_pair_data_filename(pair, expected_result, candle_type):
         Path('freqtrade/hello/world'),
         pair,
         '5m',
-        candle_type
+        candle_type=candle_type
     )
     assert isinstance(fn, Path)
     assert fn == Path(expected_result + '.gz')
@@ -241,24 +253,37 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     assert start_ts is None
 
 
-def test_download_pair_history(ohlcv_history_list, mocker, default_conf, tmpdir) -> None:
+@pytest.mark.parametrize('candle_type, file_tail', [
+    ('mark', '-mark'),
+    ('', ''),
+])
+def test_download_pair_history(
+    ohlcv_history_list,
+    mocker,
+    default_conf,
+    tmpdir,
+    candle_type,
+    file_tail
+) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     tmpdir1 = Path(tmpdir)
-    file1_1 = tmpdir1 / 'MEME_BTC-1m.json'
-    file1_5 = tmpdir1 / 'MEME_BTC-5m.json'
-    file2_1 = tmpdir1 / 'CFI_BTC-1m.json'
-    file2_5 = tmpdir1 / 'CFI_BTC-5m.json'
+    file1_1 = tmpdir1 / f'MEME_BTC-1m{file_tail}.json'
+    file1_5 = tmpdir1 / f'MEME_BTC-5m{file_tail}.json'
+    file2_1 = tmpdir1 / f'CFI_BTC-1m{file_tail}.json'
+    file2_5 = tmpdir1 / f'CFI_BTC-5m{file_tail}.json'
 
     assert not file1_1.is_file()
     assert not file2_1.is_file()
 
     assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
                                   pair='MEME/BTC',
-                                  timeframe='1m')
+                                  timeframe='1m',
+                                  candle_type=candle_type)
     assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
                                   pair='CFI/BTC',
-                                  timeframe='1m')
+                                  timeframe='1m',
+                                  candle_type=candle_type)
     assert not exchange._pairs_last_refresh_time
     assert file1_1.is_file()
     assert file2_1.is_file()
@@ -272,10 +297,12 @@ def test_download_pair_history(ohlcv_history_list, mocker, default_conf, tmpdir)
 
     assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
                                   pair='MEME/BTC',
-                                  timeframe='5m')
+                                  timeframe='5m',
+                                  candle_type=candle_type)
     assert _download_pair_history(datadir=tmpdir1, exchange=exchange,
                                   pair='CFI/BTC',
-                                  timeframe='5m')
+                                  timeframe='5m',
+                                  candle_type=candle_type)
     assert not exchange._pairs_last_refresh_time
     assert file1_5.is_file()
     assert file2_5.is_file()
@@ -295,7 +322,9 @@ def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
                            timeframe='1m')
     _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/BTC",
                            timeframe='3m')
-    assert json_dump_mock.call_count == 2
+    _download_pair_history(datadir=testdatadir, exchange=exchange, pair="UNITTEST/USDT",
+                           timeframe='1h', candle_type='mark')
+    assert json_dump_mock.call_count == 3
 
 
 def test_download_backtesting_data_exception(mocker, caplog, default_conf, tmpdir) -> None:
@@ -629,7 +658,7 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
     pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', 'mark')
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type='mark')
     assert set(pairs) == {'UNITTEST/USDT', 'XRP/USDT'}
 
     # TODO-lev: The tests below
@@ -643,17 +672,33 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
 def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir)
     # Convert to set to avoid failures due to sorting
-    assert set(paircombs) == {('UNITTEST/BTC', '5m'), ('ETH/BTC', '5m'), ('XLM/BTC', '5m'),
-                              ('TRX/BTC', '5m'), ('LTC/BTC', '5m'), ('XMR/BTC', '5m'),
-                              ('ZEC/BTC', '5m'), ('UNITTEST/BTC', '1m'), ('ADA/BTC', '5m'),
-                              ('ETC/BTC', '5m'), ('NXT/BTC', '5m'), ('DASH/BTC', '5m'),
-                              ('XRP/ETH', '1m'), ('XRP/ETH', '5m'), ('UNITTEST/BTC', '30m'),
-                              ('UNITTEST/BTC', '8m'), ('NOPAIR/XXX', '4m')}
+    assert set(paircombs) == {
+        ('UNITTEST/BTC', '5m', ''),
+        ('ETH/BTC', '5m', ''),
+        ('XLM/BTC', '5m', ''),
+        ('TRX/BTC', '5m', ''),
+        ('LTC/BTC', '5m', ''),
+        ('XMR/BTC', '5m', ''),
+        ('ZEC/BTC', '5m', ''),
+        ('UNITTEST/BTC', '1m', ''),
+        ('ADA/BTC', '5m', ''),
+        ('ETC/BTC', '5m', ''),
+        ('NXT/BTC', '5m', ''),
+        ('DASH/BTC', '5m', ''),
+        ('XRP/ETH', '1m', ''),
+        ('XRP/ETH', '5m', ''),
+        ('UNITTEST/BTC', '30m', ''),
+        ('UNITTEST/BTC', '8m', ''),
+        ('NOPAIR/XXX', '4m', ''),
+        ('UNITTEST/USDT', '1h', 'mark'),
+        ('XRP/USDT', '1h', ''),
+        ('XRP/USDT', '1h', 'mark'),
+    }
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir)
-    assert set(paircombs) == {('UNITTEST/BTC', '8m')}
+    assert set(paircombs) == {('UNITTEST/BTC', '8m', '')}
     paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir)
-    assert set(paircombs) == {('UNITTEST/BTC', '5m')}
+    assert set(paircombs) == {('UNITTEST/BTC', '5m', '')}
 
 
 def test_jsondatahandler_trades_get_pairs(testdatadir):
@@ -666,27 +711,29 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = JsonGzDataHandler(testdatadir)
-    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
     assert unlinkmock.call_count == 0
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
-    assert unlinkmock.call_count == 1
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
+    assert unlinkmock.call_count == 2
 
 
 def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     dh = JsonDataHandler(testdatadir)
-    df = dh.ohlcv_load('XRP/ETH', '5m')
+    df = dh.ohlcv_load('XRP/ETH', '5m', '')
     assert len(df) == 711
 
-    df_mark = dh.ohlcv_load('XRP/USDT', '1h', candle_type="mark")
+    df_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', candle_type="mark")
     assert len(df_mark) == 99
 
-    df_no_mark = dh.ohlcv_load('XRP/USDT', '1h')
+    df_no_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', '')
     assert len(df_no_mark) == 0
 
     # Failure case (empty array)
-    df1 = dh.ohlcv_load('NOPAIR/XXX', '4m')
+    df1 = dh.ohlcv_load('NOPAIR/XXX', '4m', '')
     assert len(df1) == 0
     assert log_has("Could not load data for NOPAIR/XXX.", caplog)
     assert df.columns.equals(df1.columns)
@@ -720,6 +767,8 @@ def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
         dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame())
+    with pytest.raises(NotImplementedError):
+        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame(), candle_type='mark')
 
 
 @pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)
@@ -849,12 +898,14 @@ def test_hdf5datahandler_ohlcv_purge(mocker, testdatadir):
     mocker.patch.object(Path, "exists", MagicMock(return_value=False))
     unlinkmock = mocker.patch.object(Path, "unlink", MagicMock())
     dh = HDF5DataHandler(testdatadir)
-    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
+    assert not dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
     assert unlinkmock.call_count == 0
 
     mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m')
-    assert unlinkmock.call_count == 1
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', '')
+    assert dh.ohlcv_purge('UNITTEST/NONEXIST', '5m', candle_type='mark')
+    assert unlinkmock.call_count == 2
 
 
 def test_gethandlerclass():

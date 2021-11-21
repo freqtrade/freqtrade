@@ -855,7 +855,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     results = result['results']
     assert len(results) == 100
     # Cached data should be 200
-    analyzed_df = backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]
+    analyzed_df = backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m', '')[0]
     assert len(analyzed_df) == 200
     # Expect last candle to be 1 below end date (as the last candle is assumed as "incomplete"
     # during backtesting)
@@ -924,8 +924,9 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     offset = 1 if tres == 0 else 0
     removed_candles = len(data[pair]) - offset - backtesting.strategy.startup_candle_count
     assert len(backtesting.dataprovider.get_analyzed_dataframe(pair, '5m')[0]) == removed_candles
-    assert len(backtesting.dataprovider.get_analyzed_dataframe(
-        'NXT/BTC', '5m')[0]) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
+    assert len(
+        backtesting.dataprovider.get_analyzed_dataframe('NXT/BTC', '5m', '')[0]
+    ) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
 
     backtest_conf = {
         'processed': processed,

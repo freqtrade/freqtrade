@@ -424,14 +424,18 @@ class IStrategy(ABC, HyperStrategyMixin):
         informative_pairs = self.informative_pairs()
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
-                pair_tf = (_format_pair_name(self.config, inf_data.asset), inf_data.timeframe)
+                pair_tf = (
+                    _format_pair_name(self.config, inf_data.asset),
+                    inf_data.timeframe,
+                    inf_data.candle_type
+                )
                 informative_pairs.append(pair_tf)
             else:
                 if not self.dp:
                     raise OperationalException('@informative decorator with unspecified asset '
                                                'requires DataProvider instance.')
                 for pair in self.dp.current_whitelist():
-                    informative_pairs.append((pair, inf_data.timeframe))
+                    informative_pairs.append((pair, inf_data.timeframe, inf_data.candle_type))
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:

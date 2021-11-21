@@ -54,6 +54,7 @@ def load_pair_history(pair: str,
                                    fill_missing=fill_up_missing,
                                    drop_incomplete=drop_incomplete,
                                    startup_candles=startup_candles,
+                                   candle_type=candle_type
                                    )
 
 
@@ -91,7 +92,8 @@ def load_data(datadir: Path,
                                  datadir=datadir, timerange=timerange,
                                  fill_up_missing=fill_up_missing,
                                  startup_candles=startup_candles,
-                                 data_handler=data_handler
+                                 data_handler=data_handler,
+                                 candle_type=candle_type
                                  )
         if not hist.empty:
             result[pair] = hist
@@ -124,7 +126,8 @@ def refresh_data(datadir: Path,
         process = f'{idx}/{len(pairs)}'
         _download_pair_history(pair=pair, process=process,
                                timeframe=timeframe, datadir=datadir,
-                               timerange=timerange, exchange=exchange, data_handler=data_handler)
+                               timerange=timerange, exchange=exchange, data_handler=data_handler,
+                               candle_type=candle_type)
 
 
 def _load_cached_data_for_updating(
@@ -150,7 +153,8 @@ def _load_cached_data_for_updating(
     # Intentionally don't pass timerange in - since we need to load the full dataset.
     data = data_handler.ohlcv_load(pair, timeframe=timeframe,
                                    timerange=None, fill_missing=False,
-                                   drop_incomplete=True, warn_no_data=False)
+                                   drop_incomplete=True, warn_no_data=False,
+                                   candle_type=candle_type)
     if not data.empty:
         if start and start < data.iloc[0]['date']:
             # Earlier data than existing data requested, redownload all
@@ -194,7 +198,8 @@ def _download_pair_history(pair: str, *,
 
         # data, since_ms = _load_cached_data_for_updating_old(datadir, pair, timeframe, timerange)
         data, since_ms = _load_cached_data_for_updating(pair, timeframe, timerange,
-                                                        data_handler=data_handler)
+                                                        data_handler=data_handler,
+                                                        candle_type=candle_type)
 
         logger.debug("Current Start: %s",
                      f"{data.iloc[0]['date']:%Y-%m-%d %H:%M:%S}" if not data.empty else 'None')
