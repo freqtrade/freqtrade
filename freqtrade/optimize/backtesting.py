@@ -368,6 +368,10 @@ class Backtesting:
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
+        # TODO-lev: add interest / funding fees to trade object ->
+        # Must be done either here, or one level higher ->
+        # (if we don't want to do it at "detail" level)
+
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
         exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]
@@ -443,13 +447,13 @@ class Backtesting:
             stake_amount = self.wallets.get_trade_stake_amount(pair, None)
         except DependencyException:
             return None
-
+        current_time = row[DATE_IDX].to_pydatetime()
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, row[OPEN_IDX], -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
 
         stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                              default_retval=stake_amount)(
-            pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            pair=pair, current_time=current_time, current_rate=row[OPEN_IDX],
             proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
             side=direction)
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
@@ -457,12 +461,24 @@ class Backtesting:
         if not stake_amount:
             return None
 
+        max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
+        leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+            pair=pair,
+            current_time=current_time,
+            current_rate=row[OPEN_IDX],
+            proposed_leverage=1.0,
+            max_leverage=max_leverage,
+            side=direction,
+        ) if self._can_short else 1.0
+        # Cap leverage between 1.0 and max_leverage.
+        leverage = min(max(leverage, 1.0), max_leverage)
+
         order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['sell']
         # Confirm trade entry:
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=stake_amount, rate=row[OPEN_IDX],
-                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime(),
+                time_in_force=time_in_force, current_time=current_time,
                 side=direction):
             return None
 
@@ -472,7 +488,7 @@ class Backtesting:
             trade = LocalTrade(
                 pair=pair,
                 open_rate=row[OPEN_IDX],
-                open_date=row[DATE_IDX].to_pydatetime(),
+                open_date=current_time,
                 stake_amount=stake_amount,
                 amount=round(stake_amount / row[OPEN_IDX], 8),
                 fee_open=self.fee,
@@ -481,6 +497,7 @@ class Backtesting:
                 buy_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
+                leverage=leverage,
             )
             return trade
         return None

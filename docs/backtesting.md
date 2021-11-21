@@ -371,42 +371,48 @@ The last element of the backtest report is the summary metrics table.
 It contains some useful key metrics about performance of your strategy on backtesting data.
 
 ```
-=============== SUMMARY METRICS ===============
-| Metric                | Value               |
-|-----------------------+---------------------|
-| Backtesting from      | 2019-01-01 00:00:00 |
-| Backtesting to        | 2019-05-01 00:00:00 |
-| Max open trades       | 3                   |
-|                       |                     |
-| Total/Daily Avg Trades| 429 / 3.575         |
-| Starting balance      | 0.01000000 BTC      |
-| Final balance         | 0.01762792 BTC      |
-| Absolute profit       | 0.00762792 BTC      |
-| Total profit %        | 76.2%               |
-| Avg. stake amount     | 0.001      BTC      |
-| Total trade volume    | 0.429      BTC      |
-|                       |                     |
-| Best Pair             | LSK/BTC 26.26%      |
-| Worst Pair            | ZEC/BTC -10.18%     |
-| Best Trade            | LSK/BTC 4.25%       |
-| Worst Trade           | ZEC/BTC -10.25%     |
-| Best day              | 0.00076 BTC         |
-| Worst day             | -0.00036 BTC        |
-| Days win/draw/lose    | 12 / 82 / 25        |
-| Avg. Duration Winners | 4:23:00             |
-| Avg. Duration Loser   | 6:55:00             |
-| Rejected Buy signals  | 3089                |
-|                       |                     |
-| Min balance           | 0.00945123 BTC      |
-| Max balance           | 0.01846651 BTC      |
-| Drawdown              | 50.63%              |
-| Drawdown              | 0.0015 BTC          |
-| Drawdown high         | 0.0013 BTC          |
-| Drawdown low          | -0.0002 BTC         |
-| Drawdown Start        | 2019-02-15 14:10:00 |
-| Drawdown End          | 2019-04-11 18:15:00 |
-| Market change         | -5.88%              |
-===============================================
+================ SUMMARY METRICS ===============
+| Metric                 | Value               |
+|------------------------+---------------------|
+| Backtesting from       | 2019-01-01 00:00:00 |
+| Backtesting to         | 2019-05-01 00:00:00 |
+| Max open trades        | 3                   |
+|                        |                     |
+| Total/Daily Avg Trades | 429 / 3.575         |
+| Starting balance       | 0.01000000 BTC      |
+| Final balance          | 0.01762792 BTC      |
+| Absolute profit        | 0.00762792 BTC      |
+| Total profit %         | 76.2%               |
+| Avg. stake amount      | 0.001      BTC      |
+| Total trade volume     | 0.429      BTC      |
+|                        |                     |
+| Long / Short           | 352 / 77            |
+| Total profit Long %    | 1250.58%            |
+| Total profit Short %   | -15.02%             |
+| Absolute profit Long   | 0.00838792 BTC      |
+| Absolute profit Short  | -0.00076 BTC        |
+|                        |                     |
+| Best Pair              | LSK/BTC 26.26%      |
+| Worst Pair             | ZEC/BTC -10.18%     |
+| Best Trade             | LSK/BTC 4.25%       |
+| Worst Trade            | ZEC/BTC -10.25%     |
+| Best day               | 0.00076 BTC         |
+| Worst day              | -0.00036 BTC        |
+| Days win/draw/lose     | 12 / 82 / 25        |
+| Avg. Duration Winners  | 4:23:00             |
+| Avg. Duration Loser    | 6:55:00             |
+| Rejected Buy signals   | 3089                |
+|                        |                     |
+| Min balance            | 0.00945123 BTC      |
+| Max balance            | 0.01846651 BTC      |
+| Drawdown               | 50.63%              |
+| Drawdown               | 0.0015 BTC          |
+| Drawdown high          | 0.0013 BTC          |
+| Drawdown low           | -0.0002 BTC         |
+| Drawdown Start         | 2019-02-15 14:10:00 |
+| Drawdown End           | 2019-04-11 18:15:00 |
+| Market change          | -5.88%              |
+================================================
 
 ```
 
@@ -430,6 +436,9 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.
+- `Long / Short`: Split long/short values (Only shown when short trades were made).
+- `Total profit Long %` / `Absolute profit Long`: Profit long trades only (Only shown when short trades were made).
+- `Total profit Short %` / `Absolute profit Short`: Profit short trades only (Only shown when short trades were made).
 
 ### Daily / Weekly / Monthly breakdown
 

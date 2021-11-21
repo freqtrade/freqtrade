@@ -701,17 +701,26 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     assert ("ETH/USDT", default_conf_usdt["timeframe"]) in refresh_mock.call_args[0][0]
 
 
+@pytest.mark.parametrize("trading_mode", [
+    'spot',
+    # TODO-lev: Enable other modes
+    # 'margin', 'futures'
+    ]
+    )
 @pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
-                       limit_order_open, is_short) -> None:
+                       limit_order_open, is_short, trading_mode) -> None:
 
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
-
+    default_conf_usdt['trading_mode'] = trading_mode
+    leverage = 1.0 if trading_mode == 'spot' else 3.0
+    default_conf_usdt['collateral'] = 'cross'
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf_usdt)
     freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=False)
+    freqtrade.strategy.leverage = MagicMock(return_value=leverage)
     stake_amount = 2
     bid = 0.11
     enter_rate_mock = MagicMock(return_value=bid)
@@ -727,6 +736,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         create_order=enter_mm,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
+        get_funding_fees=MagicMock(return_value=0),
     )
     pair = 'ETH/USDT'
 
@@ -744,7 +754,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     call_args = enter_mm.call_args_list[0][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == bid
-    assert call_args['amount'] == round(stake_amount / bid, 8)
+    assert pytest.approx(call_args['amount'], round(stake_amount / bid * leverage, 8))
     enter_rate_mock.reset_mock()
 
     # Should create an open trade with an open order id
@@ -766,7 +776,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     call_args = enter_mm.call_args_list[1][1]
     assert call_args['pair'] == pair
     assert call_args['rate'] == fix_price
-    assert call_args['amount'] == round(stake_amount / fix_price, 8)
+    assert pytest.approx(call_args['amount'], round(stake_amount / fix_price * leverage, 8))
 
     # In case of closed order
     order['status'] = 'closed'
@@ -824,7 +834,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
 
     # In case of the order is rejected and not filled at all
     order['status'] = 'rejected'
-    order['amount'] = 30.0
+    order['amount'] = 30.0 * leverage
     order['filled'] = 0.0
     order['remaining'] = 30.0
     order['price'] = 0.5
@@ -833,6 +843,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     mocker.patch('freqtrade.exchange.Exchange.create_order',
                  MagicMock(return_value=order))
     assert not freqtrade.execute_entry(pair, stake_amount)
+    assert freqtrade.strategy.leverage.call_count == 0 if trading_mode == 'spot' else 2
 
     # Fail to get price...
     mocker.patch('freqtrade.exchange.Exchange.get_rate', MagicMock(return_value=0.0))
