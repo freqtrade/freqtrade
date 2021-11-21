@@ -272,7 +272,7 @@ class Telegram(RPCHandler):
             f"{'Sold' if is_fill else 'Selling'} {msg['pair']} (#{msg['trade_id']})\n"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
-            f"*Buy Tag:* `{msg['buy_tag']}`\n"
+            f"*Enter Tag:* `{msg['enter_tag']}`\n"
             f"*Sell Reason:* `{msg['sell_reason']}`\n"
             f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
             f"*Amount:* `{msg['amount']:.8f}`\n")

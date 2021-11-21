@@ -93,7 +93,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['buys'], ['sells'], ['mix_tags'], "
+                   "['delete'], ['performance'], ['buys', 'entries'], ['sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
@@ -1648,7 +1648,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_CANCEL,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': 'buy_signal_01',
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1736,7 +1736,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
@@ -1744,7 +1744,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
@@ -1768,7 +1768,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
@@ -1776,7 +1776,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Unrealized Profit:* `-57.41%`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
@@ -1839,7 +1839,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
@@ -1847,7 +1847,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Sold KEY/ETH (#1)\n'
             '*Profit:* `-57.41%`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
