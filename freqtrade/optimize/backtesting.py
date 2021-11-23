@@ -70,7 +70,7 @@ class Backtesting:
         self.all_results: Dict[str, Dict] = {}
         self._exchange_name = self.config['exchange']['name']
         self.exchange = ExchangeResolver.load_exchange(self._exchange_name, self.config)
-        self.dataprovider = DataProvider(self.config, None)
+        self.dataprovider = DataProvider(self.config, self.exchange)
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):

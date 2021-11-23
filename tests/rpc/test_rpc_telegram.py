@@ -1847,6 +1847,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
+            '*Open Rate:* `0.00007500`\n'
             '*Close Rate:* `0.00003201`'
             )
 

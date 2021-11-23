@@ -20,7 +20,8 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
-        "mark_ohlcv_price": "index"
+        "mark_ohlcv_price": "index",
+        "ccxt_futures_name": "future"
     }
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [
@@ -159,7 +160,3 @@ class Ftx(Exchange):
         if order['type'] == 'stop':
             return safe_value_fallback2(order, order, 'id_stop', 'id')
         return order['id']
-
-    def market_is_future(self, market: Dict[str, Any]) -> bool:
-        # TODO-lev: This should be unified in ccxt to "swap"...
-        return market.get('future', False) is True
