@@ -538,6 +538,8 @@ def test_api_show_config(botclient):
     assert 'ask_strategy' in rc.json()
     assert 'unfilledtimeout' in rc.json()
     assert 'version' in rc.json()
+    assert 'api_version' in rc.json()
+    assert 1.1 <= rc.json()['api_version'] <= 1.2
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
