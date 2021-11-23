@@ -3309,7 +3309,7 @@ def test_validate_trading_mode_and_collateral(
     ("bibox", "margin", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "margin"}}),
     ("bibox", "futures", {"has": {"fetchCurrencies": False}, "options": {"defaultType": "swap"}}),
     ("bybit", "futures", {"options": {"defaultType": "linear"}}),
-    ("ftx", "futures", {"options": {"defaultType": "swap"}}),
+    ("ftx", "futures", {"options": {"defaultType": "future"}}),
     ("gateio", "futures", {"options": {"defaultType": "swap"}}),
     ("hitbtc", "futures", {"options": {"defaultType": "swap"}}),
     ("kraken", "futures", {"options": {"defaultType": "swap"}}),
