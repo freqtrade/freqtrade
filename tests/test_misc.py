@@ -67,6 +67,9 @@ def test_file_load_json(mocker, testdatadir) -> None:
 
 @pytest.mark.parametrize("pair,expected_result", [
     ("ETH/BTC", 'ETH_BTC'),
+    ("ETH/USDT", 'ETH_USDT'),
+    ("ETH/USDT:USDT", 'ETH_USDT_USDT'),  # swap with USDT as settlement currency
+    ("ETH/USDT:USDT-210625", 'ETH_USDT_USDT-210625'),  # expiring futures
     ("Fabric Token/ETH", 'Fabric_Token_ETH'),
     ("ETHH20", 'ETHH20'),
     (".XBTBON2H", '_XBTBON2H'),
