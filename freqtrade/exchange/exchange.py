@@ -1419,7 +1419,7 @@ class Exchange:
                         pair, timeframe, since_ms=since_ms, candle_type=candle_type))
             else:
                 logger.debug(
-                    "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
+                    "Using cached candle (OHLCV) data for pair %s, timeframe %s, candleType %s ...",
                     pair, timeframe, candle_type
                 )
                 cached_pairs.append((pair, timeframe, candle_type))
