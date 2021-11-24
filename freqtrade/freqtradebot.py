@@ -466,8 +466,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                      forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
+    def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None, *,
+                      order_type: Optional[str] = None, buy_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -510,10 +510,8 @@ class FreqtradeBot(LoggingMixin):
                     f"{stake_amount} ...")
 
         amount = stake_amount / enter_limit_requested
-        order_type = self.strategy.order_types['buy']
-        if forcebuy:
-            # Forcebuy can define a different ordertype
-            order_type = self.strategy.order_types.get('forcebuy', order_type)
+        if not order_type:
+            order_type = self.strategy.order_types['buy']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,

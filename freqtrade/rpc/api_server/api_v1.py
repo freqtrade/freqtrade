@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
 # API version
 # Pre-1.1, no version was provided
 # Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
-API_VERSION = 1.1
+# 1.11: forcebuy accepts new option with ordertype
+API_VERSION = 1.11
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -129,7 +130,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price)
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, payload.ordertype)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
