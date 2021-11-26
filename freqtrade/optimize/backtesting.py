@@ -89,7 +89,8 @@ class Backtesting:
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
+            raise OperationalException("VolumePairList not allowed for backtesting. "
+                                       "Please use StaticPairlist instead.")
         if 'PerformanceFilter' in self.pairlists.name_list:
             raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
