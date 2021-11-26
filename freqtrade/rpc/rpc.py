@@ -782,27 +782,23 @@ class RPC:
 
         return pair_rates
 
-    def _rpc_buy_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_enter_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for buy tag performance.
         Shows a performance statistic from finished trades
         """
-        buy_tags = Trade.get_buy_tag_performance(pair)
-
-        return buy_tags
+        return Trade.get_enter_tag_performance(pair)
 
     def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for sell reason performance.
         Shows a performance statistic from finished trades
         """
-        sell_reasons = Trade.get_sell_reason_performance(pair)
-
-        return sell_reasons
+        return Trade.get_sell_reason_performance(pair)
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for mix tag (buy_tag + sell_reason) performance.
+        Handler for mix tag (enter_tag + sell_reason) performance.
         Shows a performance statistic from finished trades
         """
         mix_tags = Trade.get_mix_tag_performance(pair)

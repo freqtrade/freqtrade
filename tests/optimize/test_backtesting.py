@@ -698,7 +698,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'min_rate': [0.10370188, 0.10300000000000001],
          'max_rate': [0.10501, 0.1038888],
          'is_open': [False, False],
-         'buy_tag': [None, None],
+         'enter_tag': [None, None],
          "is_short": [False, False],
          })
     pd.testing.assert_frame_equal(results, expected)

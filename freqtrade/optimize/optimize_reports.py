@@ -422,8 +422,8 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
                                          starting_balance=start_balance,
                                          results=results, skip_nan=False)
 
-    buy_tag_results = generate_tag_metrics("buy_tag", starting_balance=start_balance,
-                                           results=results, skip_nan=False)
+    enter_tag_results = generate_tag_metrics("enter_tag", starting_balance=start_balance,
+                                             results=results, skip_nan=False)
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
@@ -448,7 +448,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'best_pair': best_pair,
         'worst_pair': worst_pair,
         'results_per_pair': pair_results,
-        'results_per_buy_tag': buy_tag_results,
+        'results_per_enter_tag': enter_tag_results,
         'sell_reason_summary': sell_reason_stats,
         'left_open_trades': left_open_results,
         # 'days_breakdown_stats': days_breakdown_stats,
@@ -634,7 +634,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     :param stake_currency: stake-currency - used to correctly name headers
     :return: pretty printed table with tabulate as string
     """
-    if(tag_type == "buy_tag"):
+    if(tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
         headers = _get_line_header_sell("TAG", stake_currency)
@@ -818,10 +818,12 @@ def show_backtest_result(strategy: str, results: Dict[str, Any], stake_currency:
         print(' BACKTESTING REPORT '.center(len(table.splitlines()[0]), '='))
     print(table)
 
-    if results.get('results_per_buy_tag') is not None:
+    if (results.get('results_per_enter_tag') is not None
+            or results.get('results_per_buy_tag') is not None):
+        # results_per_buy_tag is deprecated and should be removed 2 versions after short golive.
         table = text_table_tags(
-            "buy_tag",
-            results['results_per_buy_tag'],
+            "enter_tag",
+            results.get('results_per_enter_tag', results.get('results_per_buy_tag')),
             stake_currency=stake_currency)
 
         if isinstance(table, str) and len(table) > 0:

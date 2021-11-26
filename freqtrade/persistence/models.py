@@ -264,7 +264,7 @@ class LocalTrade():
     sell_reason: str = ''
     sell_order_status: str = ''
     strategy: str = ''
-    buy_tag: Optional[str] = None
+    enter_tag: Optional[str] = None
     timeframe: Optional[int] = None
 
     trading_mode: TradingMode = TradingMode.SPOT
@@ -279,6 +279,14 @@ class LocalTrade():
 
     # Futures properties
     funding_fees: Optional[float] = None
+
+    @property
+    def buy_tag(self) -> Optional[str]:
+        """
+        Compatibility between buy_tag (old) and enter_tag (new)
+        Consider buy_tag deprecated
+        """
+        return self.enter_tag
 
     @property
     def has_no_leverage(self) -> bool:
@@ -389,7 +397,8 @@ class LocalTrade():
             'amount_requested': round(self.amount_requested, 8) if self.amount_requested else None,
             'stake_amount': round(self.stake_amount, 8),
             'strategy': self.strategy,
-            'buy_tag': self.buy_tag,
+            'buy_tag': self.enter_tag,
+            'enter_tag': self.enter_tag,
             'timeframe': self.timeframe,
 
             'fee_open': self.fee_open,
@@ -928,7 +937,7 @@ class Trade(_DECL_BASE, LocalTrade):
     sell_reason = Column(String(100), nullable=True)
     sell_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
-    buy_tag = Column(String(100), nullable=True)
+    enter_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)
 
     trading_mode = Column(Enum(TradingMode), nullable=True)
@@ -1099,7 +1108,7 @@ class Trade(_DECL_BASE, LocalTrade):
         ]
 
     @staticmethod
-    def get_buy_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
+    def get_enter_tag_performance(pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Returns List of dicts containing all Trades, based on buy tag performance
         Can either be average for all pairs or a specific pair provided
@@ -1110,25 +1119,25 @@ class Trade(_DECL_BASE, LocalTrade):
         if(pair is not None):
             filters.append(Trade.pair == pair)
 
-        buy_tag_perf = Trade.query.with_entities(
-            Trade.buy_tag,
+        enter_tag_perf = Trade.query.with_entities(
+            Trade.enter_tag,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
             func.count(Trade.pair).label('count')
         ).filter(*filters)\
-            .group_by(Trade.buy_tag) \
+            .group_by(Trade.enter_tag) \
             .order_by(desc('profit_sum_abs')) \
             .all()
 
         return [
             {
-                'buy_tag': buy_tag if buy_tag is not None else "Other",
+                'enter_tag': enter_tag if enter_tag is not None else "Other",
                 'profit_ratio': profit,
                 'profit_pct': round(profit * 100, 2),
                 'profit_abs': profit_abs,
                 'count': count
             }
-            for buy_tag, profit, profit_abs, count in buy_tag_perf
+            for enter_tag, profit, profit_abs, count in enter_tag_perf
         ]
 
     @staticmethod
@@ -1178,7 +1187,7 @@ class Trade(_DECL_BASE, LocalTrade):
 
         mix_tag_perf = Trade.query.with_entities(
             Trade.id,
-            Trade.buy_tag,
+            Trade.enter_tag,
             Trade.sell_reason,
             func.sum(Trade.close_profit).label('profit_sum'),
             func.sum(Trade.close_profit_abs).label('profit_sum_abs'),
@@ -1189,12 +1198,12 @@ class Trade(_DECL_BASE, LocalTrade):
             .all()
 
         return_list: List[Dict] = []
-        for id, buy_tag, sell_reason, profit, profit_abs, count in mix_tag_perf:
-            buy_tag = buy_tag if buy_tag is not None else "Other"
+        for id, enter_tag, sell_reason, profit, profit_abs, count in mix_tag_perf:
+            enter_tag = enter_tag if enter_tag is not None else "Other"
             sell_reason = sell_reason if sell_reason is not None else "Other"
 
-            if(sell_reason is not None and buy_tag is not None):
-                mix_tag = buy_tag + " " + sell_reason
+            if(sell_reason is not None and enter_tag is not None):
+                mix_tag = enter_tag + " " + sell_reason
                 i = 0
                 if not any(item["mix_tag"] == mix_tag for item in return_list):
                     return_list.append({'mix_tag': mix_tag,

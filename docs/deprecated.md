@@ -43,3 +43,24 @@ As this does however increase risk and provides no benefit, it's been removed fo
 
 Using separate hyperopt files was deprecated in 2021.4 and was removed in 2021.9.
 Please switch to the new [Parametrized Strategies](hyperopt.md) to benefit from the new hyperopt interface.
+
+## Margin / short changes
+
+// TODO-lev: update version here
+
+## Strategy changes
+
+As strategies now have to support multiple different signal types, some things had to change.
+
+Columns:
+
+* `buy` -> `enter_long`
+* `sell` -> `exit_long`
+* `buy_tag` -> `enter_tag`
+
+New columns are `enter_short` and `exit_short`, which will initiate short trades (requires additional configuration!)
+
+### webhooks - `buy_tag` has been renamed to `enter_tag`
+
+This should apply only to your strategy and potentially to webhooks.
+We will keep a compatibility layer for 1-2 versions (so both `buy_tag` and `enter_tag` will still work), but support for this in webhooks will disappear after that.

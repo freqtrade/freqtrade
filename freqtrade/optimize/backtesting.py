@@ -494,7 +494,7 @@ class Backtesting:
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
+                enter_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
                 leverage=leverage,
