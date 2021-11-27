@@ -704,9 +704,8 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {"error": "Error querying /api/v1/edge: Edge is not enabled."}
 
 
-@pytest.mark.parametrize(
-    'is_short,expected',
-    [(
+@pytest.mark.parametrize('is_short,expected', [
+    (
         True,
         {'best_pair': 'ETC/BTC', 'best_rate': -0.5, 'best_pair_profit_ratio': -0.005,
          'profit_all_coin': 43.61269123,
@@ -719,7 +718,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': -1.5, 'profit_closed_ratio': -6.739057628404269e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 0, 'losing_trades': 2}
     ),
-        (
+    (
         False,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
          'profit_all_coin': -44.0631579,
@@ -732,7 +731,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': 1.5, 'profit_closed_ratio': 7.391275897987988e-07,
          'profit_closed_percent': 0.0, 'winning_trades': 2, 'losing_trades': 0}
     ),
-        (
+    (
         None,
         {'best_pair': 'XRP/BTC', 'best_rate': 1.0, 'best_pair_profit_ratio': 0.01,
          'profit_all_coin': -14.43790415,
@@ -745,7 +744,7 @@ def test_api_edge_disabled(botclient, mocker, ticker, fee, markets):
          'profit_closed_percent_sum': 0.5, 'profit_closed_ratio': -5.429078808526421e-06,
          'profit_closed_percent': -0.0, 'winning_trades': 1, 'losing_trades': 1}
     )
-    ])
+])
 def test_api_profit(botclient, mocker, ticker, fee, markets, is_short, expected):
     ftbot, client = botclient
     patch_get_signal(ftbot)
