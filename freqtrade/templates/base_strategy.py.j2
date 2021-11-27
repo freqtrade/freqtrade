@@ -12,6 +12,7 @@ from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalP
 # --------------------------------
 # Add your lib to import here
 import talib.abstract as ta
+import pandas_ta as pta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
@@ -36,6 +37,9 @@ class {{ strategy }}(IStrategy):
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 2
 
+    # Optimal timeframe for the strategy.
+    timeframe = '5m'
+
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
     minimal_roi = {
@@ -54,9 +58,6 @@ class {{ strategy }}(IStrategy):
     # trailing_stop_positive = 0.01
     # trailing_stop_positive_offset = 0.0  # Disabled / not configured
 
-    # Optimal timeframe for the strategy.
-    timeframe = '5m'
-
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = False
 
@@ -67,6 +68,10 @@ class {{ strategy }}(IStrategy):
 
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30
+
+    # Strategy parameters
+    buy_rsi = IntParameter(10, 40, default=30, space="buy")
+    sell_rsi = IntParameter(60, 90, default=70, space="sell")
 
     # Optional order type mapping.
     order_types = {

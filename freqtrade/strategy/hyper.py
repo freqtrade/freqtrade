@@ -292,7 +292,7 @@ class BooleanParameter(CategoricalParameter):
                          load=load, **kwargs)
 
 
-class HyperStrategyMixin(object):
+class HyperStrategyMixin:
     """
     A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
      strategy logic.

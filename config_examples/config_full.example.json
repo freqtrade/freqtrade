@@ -28,6 +28,7 @@
     "unfilledtimeout": {
         "buy": 10,
         "sell": 30,
+        "exit_timeout_count": 0,
         "unit": "minutes"
     },
     "bid_strategy": {

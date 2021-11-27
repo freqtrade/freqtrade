@@ -182,7 +182,7 @@ For example, simplified math:
 * the bot buys an asset at a price of 100$
 * the stop loss is defined at -10%
 * the stop loss would get triggered once the asset drops below 90$
-* stoploss will remain at 90$ unless asset increases to or above our configured offset
+* stoploss will remain at 90$ unless asset increases to or above the configured offset
 * assuming the asset now increases to 103$ (where we have the offset configured)
 * the stop loss will now be -2% of 103$ = 100.94$
 * now the asset drops in value to 101\$, the stop loss will still be 100.94$ and would trigger at 100.94$

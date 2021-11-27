@@ -60,7 +60,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
     sudo apt-get update
 
     # install packages
-    sudo apt install -y python3-pip python3-venv python3-dev python3-pandas git
+    sudo apt install -y python3-pip python3-venv python3-dev python3-pandas git curl
     ```
 
 === "RaspberryPi/Raspbian"
@@ -71,7 +71,7 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 
 
     ```bash
-    sudo apt-get install python3-venv libatlas-base-dev cmake
+    sudo apt-get install python3-venv libatlas-base-dev cmake curl
     # Use pywheels.org to speed up installation
     sudo echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > tee /etc/pip.conf
 

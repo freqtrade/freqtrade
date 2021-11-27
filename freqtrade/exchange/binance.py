@@ -1,6 +1,6 @@
 """ Binance exchange subclass """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import arrow
 import ccxt
@@ -93,8 +93,9 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool
-                                        ) -> List:
+                                        since_ms: int, is_new_pair: bool = False,
+                                        raise_: bool = False
+                                        ) -> Tuple[str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
@@ -107,4 +108,5 @@ class Binance(Exchange):
                 logger.info(f"Candle-data for {pair} available starting with "
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
         return await super()._async_get_historic_ohlcv(
-            pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair)
+            pair=pair, timeframe=timeframe, since_ms=since_ms, is_new_pair=is_new_pair,
+            raise_=raise_)

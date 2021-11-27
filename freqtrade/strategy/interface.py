@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SellCheckTuple(object):
+class SellCheckTuple:
     """
     NamedTuple for Sell type + reason
     """
@@ -443,6 +443,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         PairLocks.unlock_pair(pair, datetime.now(timezone.utc))
 
+    def unlock_reason(self, reason: str) -> None:
+        """
+        Unlocks all pairs previously locked using lock_pair with specified reason.
+        Not used by freqtrade itself, but intended to be used if users lock pairs
+        manually from within the strategy, to allow an easy way to unlock pairs.
+        :param reason: Unlock pairs to allow trading again
+        """
+        PairLocks.unlock_reason(reason, datetime.now(timezone.utc))
+
     def is_pair_locked(self, pair: str, candle_date: datetime = None) -> bool:
         """
         Checks if a pair is currently locked
@@ -500,6 +509,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe['buy'] = 0
             dataframe['sell'] = 0
             dataframe['buy_tag'] = None
+            dataframe['exit_tag'] = None
 
         # Other Defs in strategy that want to be called every loop here
         # twitter_sell = self.watch_twitter_feed(dataframe, metadata)
@@ -577,7 +587,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         pair: str,
         timeframe: str,
         dataframe: DataFrame
-    ) -> Tuple[bool, bool, Optional[str]]:
+    ) -> Tuple[bool, bool, Optional[str], Optional[str]]:
         """
         Calculates current signal based based on the buy / sell columns of the dataframe.
         Used by Bot to get the signal to buy or sell
@@ -588,7 +598,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning(f'Empty candle (OHLCV) data for pair {pair}')
-            return False, False, None
+            return False, False, None, None
 
         latest_date = dataframe['date'].max()
         latest = dataframe.loc[dataframe['date'] == latest_date].iloc[-1]
@@ -603,7 +613,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 'Outdated history for pair %s. Last tick is %s minutes old',
                 pair, int((arrow.utcnow() - latest_date).total_seconds() // 60)
             )
-            return False, False, None
+            return False, False, None, None
 
         buy = latest[SignalType.BUY.value] == 1
 
@@ -612,6 +622,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             sell = latest[SignalType.SELL.value] == 1
 
         buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
+        exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
 
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
@@ -620,8 +631,8 @@ class IStrategy(ABC, HyperStrategyMixin):
                                       current_time=datetime.now(timezone.utc),
                                       timeframe_seconds=timeframe_seconds,
                                       buy=buy):
-            return False, sell, buy_tag
-        return buy, sell, buy_tag
+            return False, sell, buy_tag, exit_tag
+        return buy, sell, buy_tag, exit_tag
 
     def ignore_expired_candle(self, latest_date: datetime, current_time: datetime,
                               timeframe_seconds: int, buy: bool):
@@ -754,7 +765,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if self.trailing_stop_positive is not None and high_profit > sl_offset:
                     stop_loss_value = self.trailing_stop_positive
                     logger.debug(f"{trade.pair} - Using positive stoploss: {stop_loss_value} "
-                                 f"offset: {sl_offset:.4g} profit: {current_profit:.4f}%")
+                                 f"offset: {sl_offset:.4g} profit: {current_profit:.2%}")
 
                 trade.adjust_stop_loss(high or current_rate, stop_loss_value)
 

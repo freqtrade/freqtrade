@@ -4,32 +4,22 @@ This page explains how to customize your strategies, add new indicators and set 
 
 Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
 
-## Install a custom strategy file
-
-This is very simple. Copy paste your strategy file into the directory `user_data/strategies`.
-
-Let assume you have a class called `AwesomeStrategy` in the file `AwesomeStrategy.py`:
-
-1. Move your file into `user_data/strategies` (you should have `user_data/strategies/AwesomeStrategy.py`
-2. Start the bot with the param `--strategy AwesomeStrategy` (the parameter is the class name)
-
-```bash
-freqtrade trade --strategy AwesomeStrategy
-```
-
 ## Develop your own strategy
 
 The bot includes a default strategy file.
 Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
 You will however most likely have your own idea for a strategy.
-This document intends to help you develop one for yourself.
+This document intends to help you convert your strategy idea into your own strategy.
 
-To get started, use `freqtrade new-strategy --strategy AwesomeStrategy`.
+To get started, use `freqtrade new-strategy --strategy AwesomeStrategy` (you can obviously use your own naming for your strategy).
 This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
 
 !!! Note
     This is just a template file, which will most likely not be profitable out of the box.
+
+??? Hint "Different template levels"
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with most callbacks defined.
 
 ### Anatomy of a strategy
 
@@ -66,6 +56,46 @@ file as reference.**
     Since backtesting passes the full time range to the `populate_*()` methods, the strategy author
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
+
+### Dataframe
+
+Freqtrade uses [pandas](https://pandas.pydata.org/) to store/provide the candlestick (OHLCV) data.
+Pandas is a great library developed for processing large amounts of data.
+
+Each row in a dataframe corresponds to one candle on a chart, with the latest candle always being the last in the dataframe (sorted by date).
+
+``` output
+> dataframe.head()
+                       date      open      high       low     close     volume
+0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253
+1 2021-11-09 23:30:00+00:00  67300.97  67301.34  67183.03  67187.01   61.38076
+2 2021-11-09 23:35:00+00:00  67187.02  67187.02  67031.93  67123.81  113.42728
+3 2021-11-09 23:40:00+00:00  67123.80  67222.40  67080.33  67160.48   78.96008
+4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292
+```
+
+Pandas provides fast ways to calculate metrics. To benefit from this speed, it's advised to not use loops, but use vectorized methods instead.
+
+Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
+
+As a dataframe is a table, simple python comparisons like the following will not work
+
+``` python
+    if dataframe['rsi'] > 30:
+        dataframe['buy'] = 1
+```
+
+The above section will fail with `The truth value of a Series is ambiguous. [...]`.
+
+This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe.
+
+``` python
+    dataframe.loc[
+        (dataframe['rsi'] > 30)
+    , 'buy'] = 1
+```
+
+With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
 
 ### Customize Indicators
 
@@ -134,7 +164,7 @@ Additional technical libraries can be installed as necessary, or custom indicato
 
 ### Strategy startup period
 
-Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+Most indicators have an instable startup period, in which they are either not available (NaN), or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
 To account for this, the strategy can be assigned the `startup_candle_count` attribute.
 This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.
 
@@ -146,8 +176,14 @@ In this example strategy, this should be set to 100 (`startup_candle_count = 100
 
 By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.
 
+!!! Warning "Using x calls to get OHLCV"
+    If you receive a warning like `WARNING - Using 3 calls to get OHLCV. This can result in slower operations for the bot. Please check if you really need 1500 candles for your strategy` - you should consider if you really need this much historic data for your signals.
+    Having this will cause Freqtrade to make multiple calls for the same pair, which will obviously be slower than one network request.
+    As a consequence, Freqtrade will take longer to refresh candles - and should therefore be avoided if possible.
+    This is capped to 5 total calls to avoid overloading the exchange, or make freqtrade too slow.
+
 !!! Warning
-    `startup_candle_count` should be below `ohlcv_candle_limit` (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
+    `startup_candle_count` should be below `ohlcv_candle_limit * 5` (which is 500 * 5 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.
 
 #### Example
 
@@ -281,19 +317,13 @@ class AwesomeStrategy(IStrategy):
 
 Setting a stoploss is highly recommended to protect your capital from strong moves against you.
 
-Sample:
+Sample of setting a 10% stoploss:
 
 ``` python
 stoploss = -0.10
 ```
 
-This would signify a stoploss of -10%.
-
 For the full documentation on stoploss features, look at the dedicated [stoploss page](stoploss.md).
-
-If your exchange supports it, it's recommended to also set `"stoploss_on_exchange"` in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.
-
-For more information on order_types please look [here](configuration.md#understand-order_types).
 
 ### Timeframe (formerly ticker interval)
 
@@ -310,7 +340,20 @@ The metadata-dict (available for `populate_buy_trend`, `populate_sell_trend`, `p
 Currently this is `pair`, which can be accessed using `metadata['pair']` - and will return a pair in the format `XRP/BTC`.
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the section [Storing information](strategy-advanced.md#Storing-information)
+Instead, have a look at the [Storing information](strategy-advanced.md#Storing-information) section.
+
+## Strategy file loading
+
+By default, freqtrade will attempt to load strategies from all `.py` files within `user_data/strategies`.
+
+Assuming your strategy is called `AwesomeStrategy`, stored in the file `user_data/strategies/AwesomeStrategy.py`, then you can start freqtrade with `freqtrade trade --strategy AwesomeStrategy`.
+Note that we're using the class-name, not the file name.
+
+You can use `freqtrade list-strategies` to see a list of all strategies Freqtrade is able to load (all strategies in the correct folder).
+It will also include a "status" field, highlighting potential problems.
+
+??? Hint "Customize strategy directory"
+    You can use a different directory by using `--strategy-path user_data/otherPath`. This parameter is available to all commands that require a strategy.
 
 ## Informative Pairs
 
@@ -511,9 +554,9 @@ The strategy might look something like this:
 
 *Scan through the top 10 pairs by volume using the `VolumePairList` every 5 minutes and use a 14 day RSI to buy and sell.*
 
-Due to the limited available data, it's very difficult to resample our `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
+Due to the limited available data, it's very difficult to resample `5m` candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!
 
-Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.
+Since we can't resample the data we will have to use an informative pair; and since the whitelist will be dynamic we don't know which pair(s) to use.
 
 This is where calling `self.dp.current_whitelist()` comes in handy.
 
@@ -896,7 +939,8 @@ Sometimes it may be desired to lock a pair after certain events happen (e.g. mul
 Freqtrade has an easy method to do this from within the strategy, by calling `self.lock_pair(pair, until, [reason])`.
 `until` must be a datetime object in the future, after which trading will be re-enabled for that pair, while `reason` is an optional string detailing why the pair was locked.
 
-Locks can also be lifted manually, by calling `self.unlock_pair(pair)`.
+Locks can also be lifted manually, by calling `self.unlock_pair(pair)` or `self.unlock_reason(<reason>)` - providing reason the pair was locked with.
+`self.unlock_reason(<reason>)` will unlock all pairs currently locked with the provided reason.
 
 To verify if a pair is currently locked, use `self.is_pair_locked(pair)`.
 
@@ -966,9 +1010,13 @@ The following lists some common patterns which should be avoided to prevent frus
 - don't use `dataframe['volume'].mean()`. This uses the full DataFrame for backtesting, including data from the future. Use `dataframe['volume'].rolling(<window>).mean()` instead
 - don't use `.resample('1h')`. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use `.resample('1h', label='right')` instead.
 
+### Colliding signals
+
+When buy and sell signals collide (both `'buy'` and `'sell'` are 1), freqtrade will do nothing and ignore the entry (buy) signal. This will avoid trades that buy, and sell immediately. Obviously, this can potentially lead to missed entries.
+
 ## Further strategy ideas
 
-To get additional Ideas for strategies, head over to our [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
+To get additional Ideas for strategies, head over to the [strategy repository](https://github.com/freqtrade/freqtrade-strategies). Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
 Feel free to use any of them as inspiration for your own strategies.
 We're happy to accept Pull Requests containing new Strategies to that repo.
 

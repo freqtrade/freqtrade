@@ -36,11 +36,12 @@ Freqtrade is a crypto-currency algorithmic trading software developed in python 
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
-- [X] [Binance](https://www.binance.com/) ([*Note for binance users](docs/exchanges.md#binance-blacklist))
+- [X] [Binance](https://www.binance.com/) ([*Note for binance users](exchanges.md#binance-blacklist))
 - [X] [Bittrex](https://bittrex.com/)
 - [X] [FTX](https://ftx.com)
-- [X] [Kraken](https://kraken.com/)
 - [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Kraken](https://kraken.com/)
+- [X] [OKEX](https://www.okex.com/)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Community tested
@@ -80,4 +81,4 @@ For any questions not covered by the documentation or for further information ab
 
 ## Ready to try?
 
-Begin by reading our installation guide [for docker](docker_quickstart.md) (recommended), or for [installation without docker](installation.md).
+Begin by reading the installation guide [for docker](docker_quickstart.md) (recommended), or for [installation without docker](installation.md).

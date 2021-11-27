@@ -26,6 +26,11 @@ from freqtrade.rpc.rpc import RPCException
 
 logger = logging.getLogger(__name__)
 
+# API version
+# Pre-1.1, no version was provided
+# Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
+API_VERSION = 1.1
+
 # Public API, requires no auth.
 router_public = APIRouter()
 # Private API, protected by authentication
@@ -117,7 +122,9 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     state = ''
     if rpc:
         state = rpc._freqtrade.state
-    return RPC._rpc_show_config(config, state)
+    resp = RPC._rpc_show_config(config, state)
+    resp['api_version'] = API_VERSION
+    return resp
 
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])

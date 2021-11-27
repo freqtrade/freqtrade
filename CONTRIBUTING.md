@@ -56,6 +56,13 @@ To help with that, we encourage you to install the git pre-commit
 hook that will warn you when you try to commit code that fails these checks. 
 Guide for installing them is [here](http://flake8.pycqa.org/en/latest/user/using-hooks.html).
 
+##### Additional styles applied
+
+* Have docstrings on all public methods
+* Use double-quotes for docstrings
+* Multiline docstrings should be indented to the level of the first quote
+* Doc-strings should follow the reST format (`:param xxx: ...`, `:return: ...`, `:raises KeyError: ... `)
+
 ### 3. Test if all type-hints are correct
 
 #### Run mypy

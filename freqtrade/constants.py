@@ -25,6 +25,7 @@ ORDERTIF_POSSIBILITIES = ['gtc', 'fok', 'ioc']
 HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SharpeHyperOptLoss', 'SharpeHyperOptLossDaily',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
+                         'CalmarHyperOptLoss',
                          'MaxDrawDownHyperOptLoss']
 AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
@@ -53,7 +54,6 @@ ENV_VAR_PREFIX = 'FREQTRADE__'
 
 NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
 
-
 # Define decimals per coin for outputs
 # Only used for outputs.
 DECIMAL_PER_COIN_FALLBACK = 3  # Should be low to avoid listing all possible FIAT's
@@ -66,7 +66,6 @@ DUST_PER_COIN = {
     'BTC': 0.0001,
     'ETH': 0.01
 }
-
 
 # Source files with destination directories within user-directory
 USER_DATA_FILES = {
@@ -157,6 +156,7 @@ CONF_SCHEMA = {
             'properties': {
                 'buy': {'type': 'number', 'minimum': 1},
                 'sell': {'type': 'number', 'minimum': 1},
+                'exit_timeout_count': {'type': 'number', 'minimum': 0, 'default': 0},
                 'unit': {'type': 'string', 'enum': TIMEOUT_UNITS, 'default': 'minutes'}
             }
         },
@@ -198,7 +198,7 @@ CONF_SCHEMA = {
             'required': ['price_side']
         },
         'custom_price_max_distance_ratio': {
-           'type': 'number', 'minimum': 0.0
+            'type': 'number', 'minimum': 0.0
         },
         'order_types': {
             'type': 'object',
@@ -207,7 +207,10 @@ CONF_SCHEMA = {
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
+                'emergencysell': {
+                    'type': 'string',
+                    'enum': ORDERTYPE_POSSIBILITIES,
+                    'default': 'market'},
                 'stoploss': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'stoploss_on_exchange': {'type': 'boolean'},
                 'stoploss_on_exchange_interval': {'type': 'number'},
@@ -351,13 +354,13 @@ CONF_SCHEMA = {
         },
         'dataformat_ohlcv': {
             'type': 'string',
-                    'enum': AVAILABLE_DATAHANDLERS,
-                    'default': 'json'
+            'enum': AVAILABLE_DATAHANDLERS,
+            'default': 'json'
         },
         'dataformat_trades': {
             'type': 'string',
-                    'enum': AVAILABLE_DATAHANDLERS,
-                    'default': 'jsongz'
+            'enum': AVAILABLE_DATAHANDLERS,
+            'default': 'jsongz'
         }
     },
     'definitions': {

@@ -9,7 +9,7 @@ assignees: ''
 <!-- 
 Have you searched for similar issues before posting it?
 
-If you have discovered a bug in the bot, please [search our issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue). 
+If you have discovered a bug in the bot, please [search the issue tracker](https://github.com/freqtrade/freqtrade/issues?q=is%3Aissue). 
 If it hasn't been reported, please create a new issue.
 
 Please do not use bug reports to request new features.

@@ -39,7 +39,7 @@ class FtRestClient():
     def _call(self, method, apipath, params: dict = None, data=None, files=None):
 
         if str(method).upper() not in ('GET', 'POST', 'PUT', 'DELETE'):
-            raise ValueError('invalid method <{0}>'.format(method))
+            raise ValueError(f'invalid method <{method}>')
         basepath = f"{self._serverurl}/api/v1/{apipath}"
 
         hd = {"Accept": "application/json",
@@ -124,7 +124,7 @@ class FtRestClient():
         :param lock_id: ID for the lock to delete
         :return: json object
         """
-        return self._delete("locks/{}".format(lock_id))
+        return self._delete(f"locks/{lock_id}")
 
     def daily(self, days=None):
         """Return the profits for each day, and amount of trades.
@@ -220,7 +220,7 @@ class FtRestClient():
         :param trade_id: Specify which trade to get.
         :return: json object
         """
-        return self._get("trade/{}".format(trade_id))
+        return self._get(f"trade/{trade_id}")
 
     def delete_trade(self, trade_id):
         """Delete trade from the database.
@@ -229,7 +229,7 @@ class FtRestClient():
         :param trade_id: Deletes the trade with this ID from the database.
         :return: json object
         """
-        return self._delete("trades/{}".format(trade_id))
+        return self._delete(f"trades/{trade_id}")
 
     def whitelist(self):
         """Show the current whitelist.
