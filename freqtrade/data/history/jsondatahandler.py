@@ -31,7 +31,7 @@ class JsonDataHandler(IDataHandler):
         """
         _tmp = [
             re.search(
-                r'^([a-zA-Z_]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.json)',
+                r'^([a-zA-Z_]+(\:[a-zA-Z]{2,}(\-[0-9]{2,})?)?)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.json)',
                 p.name
             ) for p in datadir.glob(f"*.{cls._get_file_extension()}")]
         return [(match[1].replace('_', '/'), match[2], match[3]) for match in _tmp

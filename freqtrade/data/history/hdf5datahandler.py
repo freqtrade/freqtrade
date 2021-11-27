@@ -30,7 +30,7 @@ class HDF5DataHandler(IDataHandler):
         """
         _tmp = [
             re.search(
-                r'^([a-zA-Z_]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.h5)',
+                r'^([a-zA-Z_]+(\:[a-zA-Z]{2,}(\-[0-9]{2,})?)?)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.h5)',
                 p.name
             ) for p in datadir.glob("*.h5")
         ]
