@@ -18,7 +18,15 @@ class ShuffleFilter(IPairList):
                  pairlist_pos: int) -> None:
         super().__init__(exchange, pairlistmanager, config, pairlistconfig, pairlist_pos)
 
-        self._seed = pairlistconfig.get('seed')
+        # Apply seed in backtesting mode to get comparable results,
+        # but not in live modes to get a non-repeating order of pairs during live modes.
+        if config['runmode'].value in ('live', 'dry_run'):
+            self._seed = None
+            logger.info("live mode detected, not applying seed.")
+        else:
+            self._seed = pairlistconfig.get('seed')
+            logger.info("Backtesting mode detected, applying seed value: " + str(self._seed))
+
         self._random = random.Random(self._seed)
 
     @property
