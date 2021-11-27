@@ -144,6 +144,7 @@ class OrderTypes(BaseModel):
 
 class ShowConfig(BaseModel):
     version: str
+    api_version: float
     dry_run: bool
     trading_mode: str
     short_allowed: bool

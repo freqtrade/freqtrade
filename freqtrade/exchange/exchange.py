@@ -338,7 +338,7 @@ class Exchange:
         return self.markets.get(pair, {}).get('base', '')
 
     def market_is_future(self, market: Dict[str, Any]) -> bool:
-        return market.get('swap', False) is True
+        return market.get(self._ft_has["ccxt_futures_name"], False) is True
 
     def market_is_spot(self, market: Dict[str, Any]) -> bool:
         return market.get('spot', False) is True
@@ -1419,7 +1419,7 @@ class Exchange:
                         pair, timeframe, since_ms=since_ms, candle_type=candle_type))
             else:
                 logger.debug(
-                    "Using cached candle (OHLCV) data for pair %s, timeframe %s ...",
+                    "Using cached candle (OHLCV) data for pair %s, timeframe %s, candleType %s ...",
                     pair, timeframe, candle_type
                 )
                 cached_pairs.append((pair, timeframe, candle_type))

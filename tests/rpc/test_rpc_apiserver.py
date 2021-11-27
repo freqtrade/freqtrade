@@ -541,6 +541,8 @@ def test_api_show_config(botclient):
     assert 'ask_strategy' in response
     assert 'unfilledtimeout' in response
     assert 'version' in response
+    assert 'api_version' in response
+    assert 1.1 <= response['api_version'] <= 1.2
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):

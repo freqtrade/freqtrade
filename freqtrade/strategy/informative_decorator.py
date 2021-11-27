@@ -81,12 +81,11 @@ def _create_and_merge_informative_pair(strategy, dataframe: DataFrame, metadata:
         # Not specifying an asset will define informative dataframe for current pair.
         asset = metadata['pair']
 
-    if '/' in asset:
-        base, quote = asset.split('/')
-    else:
-        # When futures are supported this may need reevaluation.
-        # base, quote = asset, ''
-        raise OperationalException('Not implemented.')
+    market = strategy.dp.market(asset)
+    if market is None:
+        raise OperationalException(f'Market {asset} is not available.')
+    base = market['base']
+    quote = market['quote']
 
     # Default format. This optimizes for the common case: informative pairs using same stake
     # currency. When quote currency matches stake currency, column name will omit base currency.

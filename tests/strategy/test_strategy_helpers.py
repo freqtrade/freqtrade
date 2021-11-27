@@ -7,6 +7,7 @@ import pytest
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
                                 timeframe_to_minutes)
+from tests.conftest import get_patched_exchange
 
 
 def generate_test_data(timeframe: str, size: int, start: str = '2020-07-05'):
@@ -156,9 +157,9 @@ def test_informative_decorator(mocker, default_conf):
         ('LTC/USDT', '5m', ''): test_data_5m,
         ('LTC/USDT', '30m', ''): test_data_30m,
         ('LTC/USDT', '1h', ''): test_data_1h,
-        ('BTC/USDT', '30m', ''): test_data_30m,
-        ('BTC/USDT', '5m', ''): test_data_5m,
-        ('BTC/USDT', '1h', ''): test_data_1h,
+        ('NEO/USDT', '30m', ''): test_data_30m,
+        ('NEO/USDT', '5m', ''): test_data_5m,
+        ('NEO/USDT', '1h', ''): test_data_1h,
         ('ETH/USDT', '1h', ''): test_data_1h,
         ('ETH/USDT', '30m', ''): test_data_30m,
         ('ETH/BTC', '1h', ''): test_data_1h,
@@ -166,15 +167,16 @@ def test_informative_decorator(mocker, default_conf):
     from .strats.informative_decorator_strategy import InformativeDecoratorTest
     default_conf['stake_currency'] = 'USDT'
     strategy = InformativeDecoratorTest(config=default_conf)
-    strategy.dp = DataProvider({}, None, None)
+    exchange = get_patched_exchange(mocker, default_conf)
+    strategy.dp = DataProvider({}, exchange, None)
     mocker.patch.object(strategy.dp, 'current_whitelist', return_value=[
-        'XRP/USDT', 'LTC/USDT', 'BTC/USDT'
+        'XRP/USDT', 'LTC/USDT', 'NEO/USDT'
     ])
 
     assert len(strategy._ft_informative) == 6   # Equal to number of decorators used
     informative_pairs = [('XRP/USDT', '1h', ''), ('LTC/USDT', '1h', ''), ('XRP/USDT', '30m', ''),
-                         ('LTC/USDT', '30m', ''), ('BTC/USDT', '1h', ''), ('BTC/USDT', '30m', ''),
-                         ('BTC/USDT', '5m', ''), ('ETH/BTC', '1h', ''), ('ETH/USDT', '30m', '')]
+                         ('LTC/USDT', '30m', ''), ('NEO/USDT', '1h', ''), ('NEO/USDT', '30m', ''),
+                         ('NEO/USDT', '5m', ''), ('ETH/BTC', '1h', ''), ('ETH/USDT', '30m', '')]
     for inf_pair in informative_pairs:
         assert inf_pair in strategy.gather_informative_pairs()
 
@@ -187,8 +189,8 @@ def test_informative_decorator(mocker, default_conf):
         {p: data[(p, strategy.timeframe, '')] for p in ('XRP/USDT', 'LTC/USDT')})
     expected_columns = [
         'rsi_1h', 'rsi_30m',                    # Stacked informative decorators
-        'btc_usdt_rsi_1h',                      # BTC 1h informative
-        'rsi_BTC_USDT_btc_usdt_BTC/USDT_30m',   # Column formatting
+        'neo_usdt_rsi_1h',                      # NEO 1h informative
+        'rsi_NEO_USDT_neo_usdt_NEO/USDT_30m',   # Column formatting
         'rsi_from_callable',                    # Custom column formatter
         'eth_btc_rsi_1h',                       # Quote currency not matching stake currency
         'rsi', 'rsi_less',                      # Non-informative columns

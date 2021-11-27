@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import arrow
 import ccxt
@@ -119,10 +119,6 @@ class Binance(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def market_is_future(self, market: Dict[str, Any]) -> bool:
-        # TODO-lev: This should be unified in ccxt to "swap"...
-        return market.get('future', False) is True
-
     @retrier
     def fill_leverage_brackets(self):
         """
@@ -212,9 +208,9 @@ class Binance(Exchange):
         """
         if is_new_pair:
             x = await self._async_get_candle_history(pair, timeframe, 0, candle_type)
-            if x and x[2] and x[2][0] and x[2][0][0] > since_ms:
+            if x and x[3] and x[3][0] and x[3][0][0] > since_ms:
                 # Set starting date to first available candle.
-                since_ms = x[2][0][0]
+                since_ms = x[3][0][0]
                 logger.info(f"Candle-data for {pair} available starting with "
                             f"{arrow.get(since_ms // 1000).isoformat()}.")
 
