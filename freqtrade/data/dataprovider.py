@@ -55,6 +55,7 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
         :param dataframe: analyzed dataframe
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
         self.__cached_pairs[(pair, timeframe, candle_type)] = (
             dataframe, datetime.now(timezone.utc))
@@ -75,6 +76,7 @@ class DataProvider:
         Get stored historical candle (OHLCV) data
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
         saved_pair = (pair, str(timeframe), candle_type)
         if saved_pair not in self.__cached_pairs_backtesting:
@@ -106,6 +108,7 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         :return: Dataframe for this pair
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             # Get live OHLCV data.
@@ -128,6 +131,7 @@ class DataProvider:
         and the last 1000 candles (up to the time evaluated at this moment) in all other modes.
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: Tuple of (Analyzed Dataframe, lastrefreshed) for the requested pair / timeframe
             combination.
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
@@ -212,6 +216,7 @@ class DataProvider:
         Please use the `available_pairs` method to verify which pairs are currently cached.
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
         """

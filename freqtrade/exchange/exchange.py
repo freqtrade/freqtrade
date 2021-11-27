@@ -1319,6 +1319,7 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List with candle (OHLCV) data
         """
         data: List
@@ -1336,6 +1337,7 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: OHLCV DataFrame
         """
         ticks = self.get_historic_ohlcv(pair, timeframe, since_ms=since_ms, candle_type=candle_type)
@@ -1350,6 +1352,7 @@ class Exchange:
         """
         Download historic ohlcv
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(timeframe)
@@ -1393,6 +1396,7 @@ class Exchange:
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
@@ -1480,9 +1484,7 @@ class Exchange:
     ) -> Tuple[str, str, str, List]:
         """
         Asynchronously get candle history data using fetch_ohlcv
-        :param candle_type:
-            "mark" if retrieving the mark price cnadles
-            "index" for index price candles
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:

@@ -49,6 +49,7 @@ class HDF5DataHandler(IDataHandler):
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List of Pairs
         """
 
@@ -74,6 +75,7 @@ class HDF5DataHandler(IDataHandler):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: None
         """
         key = self._pair_ohlcv_key(pair, timeframe)
@@ -98,6 +100,7 @@ class HDF5DataHandler(IDataHandler):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         key = self._pair_ohlcv_key(pair, timeframe)
@@ -130,6 +133,7 @@ class HDF5DataHandler(IDataHandler):
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
@@ -150,6 +154,7 @@ class HDF5DataHandler(IDataHandler):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
         raise NotImplementedError()
 

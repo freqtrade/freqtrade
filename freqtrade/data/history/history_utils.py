@@ -44,6 +44,7 @@ def load_pair_history(pair: str,
     :param startup_candles: Additional candles to load at the start of the period
     :param data_handler: Initialized data-handler to use.
                          Will be initialized from data_format if not set
+    :param candle_type: '', mark, index, premiumIndex, or funding_rate
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
     data_handler = get_datahandler(datadir, data_format, data_handler)
@@ -79,6 +80,7 @@ def load_data(datadir: Path,
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
     :param data_format: Data format which should be used. Defaults to json
+    :param candle_type: '', mark, index, premiumIndex, or funding_rate
     :return: dict(<pair>:<Dataframe>)
     """
     result: Dict[str, DataFrame] = {}
@@ -120,6 +122,7 @@ def refresh_data(datadir: Path,
     :param exchange: Exchange object
     :param data_format: dataformat to use
     :param timerange: Limit data to be loaded to this timerange
+    :param candle_type: '', mark, index, premiumIndex, or funding_rate
     """
     data_handler = get_datahandler(datadir, data_format)
     for idx, pair in enumerate(pairs):
@@ -186,6 +189,7 @@ def _download_pair_history(pair: str, *,
     :param pair: pair to download
     :param timeframe: Timeframe (e.g "5m")
     :param timerange: range of time to download
+    :param candle_type: '', mark, index, premiumIndex, or funding_rate
     :return: bool with success state
     """
     data_handler = get_datahandler(datadir, data_handler=data_handler)

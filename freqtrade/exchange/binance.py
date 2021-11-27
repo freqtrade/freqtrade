@@ -204,7 +204,7 @@ class Binance(Exchange):
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
-        :param candle_type: "mark" if retrieving the mark price cnadles
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
         if is_new_pair:
             x = await self._async_get_candle_history(pair, timeframe, 0, candle_type)

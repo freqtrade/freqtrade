@@ -46,6 +46,7 @@ class IDataHandler(ABC):
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: List of Pairs
         """
 
@@ -62,6 +63,7 @@ class IDataHandler(ABC):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: None
         """
 
@@ -79,6 +81,7 @@ class IDataHandler(ABC):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
@@ -88,6 +91,7 @@ class IDataHandler(ABC):
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: True when deleted, false if file did not exist.
         """
 
@@ -104,6 +108,7 @@ class IDataHandler(ABC):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
 
     @abstractclassmethod
@@ -177,6 +182,7 @@ class IDataHandler(ABC):
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
         :param warn_no_data: Log a warning message when no data is found
+        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period
