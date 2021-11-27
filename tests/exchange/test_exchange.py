@@ -1667,12 +1667,21 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 0
+    exchange.required_candle_call_count = 1
     assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
                    f"timeframe {pairs[0][1]} ...",
                    caplog)
     res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
                                         cache=False)
     assert len(res) == 3
+    assert exchange._api_async.fetch_ohlcv.call_count == 3
+
+    # Test the same again, should NOT return from cache!
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
+                                        cache=False)
+    assert len(res) == 3
+    assert exchange._api_async.fetch_ohlcv.call_count == 3
 
 
 @pytest.mark.asyncio
