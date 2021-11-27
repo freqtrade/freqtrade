@@ -814,6 +814,18 @@ def test_download_data_trades(mocker, caplog):
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
+    args = [
+        "download-data",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+        "--trading-mode", "futures",
+        "--dl-trades"
+    ]
+    with pytest.raises(OperationalException,
+                       match="Trade download not supported for futures."):
+
+        start_download_data(get_args(args))
 
 
 def test_start_convert_trades(mocker, caplog):
