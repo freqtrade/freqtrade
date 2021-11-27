@@ -5,6 +5,7 @@ import logging
 import random
 from typing import Any, Dict, List
 
+from freqtrade.enums.runmode import RunMode
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
@@ -20,12 +21,12 @@ class ShuffleFilter(IPairList):
 
         # Apply seed in backtesting mode to get comparable results,
         # but not in live modes to get a non-repeating order of pairs during live modes.
-        if config['runmode'].value in ('live', 'dry_run'):
+        if config.get('runmode') in (RunMode.LIVE, RunMode.DRY_RUN):
             self._seed = None
-            logger.info("live mode detected, not applying seed.")
+            logger.info("Live mode detected, not applying seed.")
         else:
             self._seed = pairlistconfig.get('seed')
-            logger.info("Backtesting mode detected, applying seed value: " + str(self._seed))
+            logger.info(f"Backtesting mode detected, applying seed value: {self._seed}")
 
         # deprecated since 3.9
         #self._random = random.Random(self._seed)
