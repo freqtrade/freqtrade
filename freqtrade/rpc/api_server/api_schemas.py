@@ -288,6 +288,7 @@ class ForceBuyPayload(BaseModel):
 
 class ForceSellPayload(BaseModel):
     tradeid: str
+    ordertype: Optional[OrderTypeValues]
 
 
 class BlacklistPayload(BaseModel):

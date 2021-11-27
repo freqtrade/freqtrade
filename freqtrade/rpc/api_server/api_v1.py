@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # API version
 # Pre-1.1, no version was provided
 # Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
-# 1.11: forcebuy accepts new option with ordertype
+# 1.11: forcebuy and forcesell accept ordertype
 API_VERSION = 1.11
 
 # Public API, requires no auth.
@@ -130,7 +130,7 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price, payload.ordertype)
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, payload.ordertype.value)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
@@ -140,7 +140,7 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_forcesell(payload.tradeid)
+    return rpc._rpc_forcesell(payload.tradeid, payload.ordertype.value)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

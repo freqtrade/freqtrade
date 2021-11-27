@@ -640,7 +640,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forcesell(self, trade_id: str) -> Dict[str, str]:
+    def _rpc_forcesell(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -664,7 +664,11 @@ class RPC:
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side="sell")
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
-                self._freqtrade.execute_trade_exit(trade, current_rate, sell_reason)
+                order_type = ordertype or self._freqtrade.strategy.order_types.get(
+                    "forcesell", self._freqtrade.strategy.order_types["sell"])
+
+                self._freqtrade.execute_trade_exit(
+                    trade, current_rate, sell_reason, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -724,7 +728,7 @@ class RPC:
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
-        if self._freqtrade.execute_entry(pair, stakeamount, price, order_type=order_type):
+        if self._freqtrade.execute_entry(pair, stakeamount, price, ordertype=order_type):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
