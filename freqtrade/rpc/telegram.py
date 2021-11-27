@@ -112,6 +112,7 @@ class Telegram(RPCHandler):
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
                                  r'/forcebuy$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
