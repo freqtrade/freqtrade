@@ -1494,9 +1494,9 @@ class Exchange:
                 "Fetching pair %s, interval %s, since %s %s...",
                 pair, timeframe, since_ms, s
             )
-            params = self._ft_has.get('ohlcv_params', {})
+            params = deepcopy(self._ft_has.get('ohlcv_params', {}))
             if candle_type:
-                params = params.update({'price': candle_type})
+                params.update({'price': candle_type})
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,
                                                      limit=self.ohlcv_candle_limit(timeframe),
