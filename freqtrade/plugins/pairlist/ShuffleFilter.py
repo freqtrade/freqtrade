@@ -27,7 +27,8 @@ class ShuffleFilter(IPairList):
             self._seed = pairlistconfig.get('seed')
             logger.info("Backtesting mode detected, applying seed value: " + str(self._seed))
 
-        self._random = random.Random(self._seed)
+        # deprecated since 3.9
+        #self._random = random.Random(self._seed)
 
     @property
     def needstickers(self) -> bool:
@@ -54,6 +55,7 @@ class ShuffleFilter(IPairList):
         :return: new whitelist
         """
         # Shuffle is done inplace
-        self._random.shuffle(pairlist)
+        random.seed(self._seed)
+        random.shuffle(pairlist)
 
         return pairlist
