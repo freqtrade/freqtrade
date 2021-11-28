@@ -312,6 +312,8 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'enabled': {'type': 'boolean'},
+                'retries': {'type': 'integer', 'minimum': 0},
+                'retry_delay': {'type': 'number', 'minimum': 0},
                 'webhookbuy': {'type': 'object'},
                 'webhookbuycancel': {'type': 'object'},
                 'webhooksell': {'type': 'object'},
