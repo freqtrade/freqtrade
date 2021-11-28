@@ -699,6 +699,7 @@ def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
     ('XRP_USDT_USDT', 'XRP/USDT:USDT'),  # futures
     ('BTC-PERP', 'BTC-PERP'),
     ('BTC-PERP_USDT', 'BTC-PERP:USDT'),  # potential FTX case
+    ('UNITTEST_USDT', 'UNITTEST/USDT'),
 ])
 def test_rebuild_pair_from_filename(input, expected):
 

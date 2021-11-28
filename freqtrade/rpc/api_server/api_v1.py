@@ -247,7 +247,7 @@ def get_strategy(strategy: str, config=Depends(get_config)):
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
 def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Optional[str] = None,
-                         config=Depends(get_config)):
+                         candletype: Optional[str] = None, config=Depends(get_config)):
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
 
@@ -257,6 +257,11 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
         pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
     if stake_currency:
         pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+    if candletype:
+        pair_interval = [pair for pair in pair_interval if pair[2] == candletype]
+    else:
+        pair_interval = [pair for pair in pair_interval if pair[2] == '']
+
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
     pairs = list({x[0] for x in pair_interval})

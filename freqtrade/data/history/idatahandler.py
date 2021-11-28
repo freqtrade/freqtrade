@@ -173,7 +173,7 @@ class IDataHandler(ABC):
         Rebuild pair name from filename
         Assumes a asset name of max. 7 length to also support BTC-PERP and BTC-PERP:USD names.
         """
-        res = re.sub(r'^(.{1,7})(_)', r'\g<1>/', pair, 1)
+        res = re.sub(r'^(([A-Za-z]{1,10})|^([A-Za-z\-]{1,6}))(_)', r'\g<1>/', pair, 1)
         res = re.sub('_', ':', res, 1)
         return res
 

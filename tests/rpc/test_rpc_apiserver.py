@@ -1332,7 +1332,7 @@ def test_list_available_pairs(botclient):
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 
     assert_response(rc)
-    assert rc.json()['length'] == 15
+    assert rc.json()['length'] == 14
     assert isinstance(rc.json()['pairs'], list)
 
     rc = client_get(client, f"{BASE_URI}/available_pairs?timeframe=5m")
@@ -1352,11 +1352,11 @@ def test_list_available_pairs(botclient):
     assert len(rc.json()['pair_interval']) == 1
 
     rc = client_get(
-        client, f"{BASE_URI}/available_pairs?stake_currency=USDT&timeframe=1h&type=mark")
+        client, f"{BASE_URI}/available_pairs?timeframe=1h&candletype=mark")
     assert_response(rc)
     assert rc.json()['length'] == 2
     assert rc.json()['pairs'] == ['UNITTEST/USDT', 'XRP/USDT']
-    assert len(rc.json()['pair_interval']) == 3  # TODO-lev: What is pair_interval? Should it be 3?
+    assert len(rc.json()['pair_interval']) == 2
 
 
 def test_sysinfo(botclient):
