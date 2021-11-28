@@ -670,18 +670,23 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
     # assert set(pairs) == {'UNITTEST/BTC'}
 
 
-@pytest.mark.parametrize('filename,pair,timeframe', [
-    ('XMR_BTC-5m.json', 'XMR_BTC', '5m'),
-    ('XMR_USDT-1h.h5', 'XMR_USDT', '1h'),
-    ('BTC_USDT-2h.jsongz', 'BTC_USDT', '2h'),
+@pytest.mark.parametrize('filename,pair,timeframe,candletype', [
+    ('XMR_BTC-5m.json', 'XMR_BTC', '5m', ''),
+    ('XMR_USDT-1h.h5', 'XMR_USDT', '1h', ''),
+    ('BTC_USDT-2h.jsongz', 'BTC_USDT', '2h', ''),
+    ('BTC_USDT-2h-mark.jsongz', 'BTC_USDT', '2h', 'mark'),
+    ('XMR_USDT-1h-mark.h5', 'XMR_USDT', '1h', 'mark'),
+    ('XMR_USDT-1h-random.h5', 'XMR_USDT', '1h', 'random'),
+    ('XMR_USDT_USDT-1h-mark.h5', 'XMR_USDT_USDT', '1h', 'mark'),
 ])
-def test_datahandler_ohlcv_regex(filename, pair, timeframe):
+def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
     regex = JsonDataHandler._OHLCV_REGEX
 
     match = re.search(regex, filename)
     assert len(match.groups()) > 1
     assert match[1] == pair
     assert match[2] == timeframe
+    assert match[3] == candletype
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
