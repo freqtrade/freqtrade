@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import json
+import re
 import uuid
 from pathlib import Path
 from shutil import copyfile
@@ -667,6 +668,20 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
 
     # pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
     # assert set(pairs) == {'UNITTEST/BTC'}
+
+
+@pytest.mark.parametrize('filename,pair,timeframe', [
+    ('XMR_BTC-5m.json', 'XMR_BTC', '5m'),
+    ('XMR_USDT-1h.h5', 'XMR_USDT', '1h'),
+    ('BTC_USDT-2h.jsongz', 'BTC_USDT', '2h'),
+])
+def test_datahandler_ohlcv_regex(filename, pair, timeframe):
+    regex = JsonDataHandler._OHLCV_REGEX
+
+    match = re.search(regex, filename)
+    assert len(match.groups()) > 1
+    assert match[1] == pair
+    assert match[2] == timeframe
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):

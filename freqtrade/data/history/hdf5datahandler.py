@@ -30,8 +30,7 @@ class HDF5DataHandler(IDataHandler):
         """
         _tmp = [
             re.search(
-                r'^([a-zA-Z_]+(\:[a-zA-Z]{2,}(\-[0-9]{2,})?)?)\-(\d+\S)\-?([a-zA-Z_]*)?(?=.h5)',
-                p.name
+                cls._OHLCV_REGEX, p.name
             ) for p in datadir.glob("*.h5")
         ]
         return [(match[1].replace('_', '/'), match[2], match[3]) for match in _tmp

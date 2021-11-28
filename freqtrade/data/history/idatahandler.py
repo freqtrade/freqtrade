@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 class IDataHandler(ABC):
 
+    _OHLCV_REGEX = r'^([a-zA-Z_]+)\-(\d+\S+)(?=\.)'
+
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
 
