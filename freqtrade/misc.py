@@ -109,7 +109,7 @@ def file_load_json(file):
 
 
 def pair_to_filename(pair: str) -> str:
-    for ch in ['/', '-', ' ', '.', '@', '$', '+', ':']:
+    for ch in ['/', ' ', '.', '@', '$', '+', ':']:
         pair = pair.replace(ch, '_')
     return pair
 
