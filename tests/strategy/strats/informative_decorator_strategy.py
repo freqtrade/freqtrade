@@ -19,7 +19,8 @@ class InformativeDecoratorTest(IStrategy):
     startup_candle_count: int = 20
 
     def informative_pairs(self):
-        return [('NEO/USDT', '5m', '')]
+        # Intentionally return 2 tuples, must be converted to 3 in compatibility code
+        return [('NEO/USDT', '5m')]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['buy'] = 0

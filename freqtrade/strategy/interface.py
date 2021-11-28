@@ -422,6 +422,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         Internal method which gathers all informative pairs (user or automatically defined).
         """
         informative_pairs = self.informative_pairs()
+        # Compatibility code for 2 tuple informative pairs
+        informative_pairs = [(p[0], p[1], p[2] if len(p) > 2 else '') for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
                 pair_tf = (
