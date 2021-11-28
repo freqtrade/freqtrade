@@ -101,7 +101,7 @@ class Webhook(RPCHandler):
                 else:
                     raise NotImplementedError('Unknown format: {}'.format(self._format))
             
-                """throw a RequestException if the post was not successful"""
+                # Throw a RequestException if the post was not successful
                 response.raise_for_status()
                 success = True
 
