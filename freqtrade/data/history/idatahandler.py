@@ -4,6 +4,7 @@ It's subclasses handle and storing data from disk.
 
 """
 import logging
+import re
 from abc import ABC, abstractclassmethod, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class IDataHandler(ABC):
 
-    _OHLCV_REGEX = r'^([a-zA-Z_]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=\.)'
+    _OHLCV_REGEX = r'^([a-zA-Z_-]+)\-(\d+\S)\-?([a-zA-Z_]*)?(?=\.)'
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
@@ -165,6 +166,16 @@ class IDataHandler(ABC):
         :return: List of trades
         """
         return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+
+    @staticmethod
+    def rebuild_pair_from_filename(pair: str) -> str:
+        """
+        Rebuild pair name from filename
+        Assumes a asset name of max. 7 length to also support BTC-PERP and BTC-PERP:USD names.
+        """
+        res = re.sub(r'^(.{1,7})(_)', r'\g<1>/', pair, 1)
+        res = re.sub('_', ':', res, 1)
+        return res
 
     def ohlcv_load(self, pair, timeframe: str,
                    timerange: Optional[TimeRange] = None,

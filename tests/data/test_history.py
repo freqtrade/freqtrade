@@ -673,10 +673,12 @@ def test_datahandler_ohlcv_get_pairs(testdatadir):
 @pytest.mark.parametrize('filename,pair,timeframe,candletype', [
     ('XMR_BTC-5m.json', 'XMR_BTC', '5m', ''),
     ('XMR_USDT-1h.h5', 'XMR_USDT', '1h', ''),
+    ('BTC-PERP-1h.h5', 'BTC-PERP', '1h', ''),
     ('BTC_USDT-2h.jsongz', 'BTC_USDT', '2h', ''),
     ('BTC_USDT-2h-mark.jsongz', 'BTC_USDT', '2h', 'mark'),
     ('XMR_USDT-1h-mark.h5', 'XMR_USDT', '1h', 'mark'),
     ('XMR_USDT-1h-random.h5', 'XMR_USDT', '1h', 'random'),
+    ('BTC-PERP-1h-index.h5', 'BTC-PERP', '1h', 'index'),
     ('XMR_USDT_USDT-1h-mark.h5', 'XMR_USDT_USDT', '1h', 'mark'),
 ])
 def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
@@ -687,6 +689,20 @@ def test_datahandler_ohlcv_regex(filename, pair, timeframe, candletype):
     assert match[1] == pair
     assert match[2] == timeframe
     assert match[3] == candletype
+
+
+@pytest.mark.parametrize('input,expected', [
+    ('XMR_USDT', 'XMR/USDT'),
+    ('BTC_USDT', 'BTC/USDT'),
+    ('USDT_BUSD', 'USDT/BUSD'),
+    ('BTC_USDT_USDT', 'BTC/USDT:USDT'),  # Futures
+    ('XRP_USDT_USDT', 'XRP/USDT:USDT'),  # futures
+    ('BTC-PERP', 'BTC-PERP'),
+    ('BTC-PERP_USDT', 'BTC-PERP:USDT'),  # potential FTX case
+])
+def test_rebuild_pair_from_filename(input, expected):
+
+    assert IDataHandler.rebuild_pair_from_filename(input) == expected
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):

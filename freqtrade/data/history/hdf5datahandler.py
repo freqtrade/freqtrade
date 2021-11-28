@@ -33,7 +33,7 @@ class HDF5DataHandler(IDataHandler):
                 cls._OHLCV_REGEX, p.name
             ) for p in datadir.glob("*.h5")
         ]
-        return [(match[1].replace('_', '/'), match[2], match[3]) for match in _tmp
+        return [(cls.rebuild_pair_from_filename(match[1]), match[2], match[3]) for match in _tmp
                 if match and len(match.groups()) > 1]
 
     @classmethod
