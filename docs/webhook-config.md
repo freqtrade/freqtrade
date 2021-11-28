@@ -50,7 +50,7 @@ Sample configuration (tested using IFTTT).
 
 The url in `webhook.url` should point to the correct url for your webhook. If you're using [IFTTT](https://ifttt.com) (as shown in the sample above) please insert your event and key to the url.
 
-You can set the POST body format to Form-Encoded (default) or JSON-Encoded. Use `"format": "form"` or `"format": "json"` respectively. Example configuration for Mattermost Cloud integration:
+You can set the POST body format to Form-Encoded (default), JSON-Encoded, or raw data. Use `"format": "form"`, `"format": "json"`, or `"format": "raw"` respectively. Example configuration for Mattermost Cloud integration:
 
 ```json
   "webhook": {
@@ -63,7 +63,36 @@ You can set the POST body format to Form-Encoded (default) or JSON-Encoded. Use 
     },
 ```
 
-The result would be POST request with e.g. `{"text":"Status: running"}` body and `Content-Type: application/json` header which results `Status: running` message in the Mattermost channel.
+The result would be a POST request with e.g. `{"text":"Status: running"}` body and `Content-Type: application/json` header which results `Status: running` message in the Mattermost channel.
+
+When using the Form-Encoded or JSON-Encoded configuration you can configure any number of payload values, and both the key and value will be ouput in the POST request. However, when using the raw data format you can only configure one value and it **must** be named `"data"`. In this instance the data key will not be output in the POST request, only the value. For example:
+
+```json
+  "webhook": {
+        "enabled": true,
+        "url": "https://<YOURHOOKURL>",
+        "format": "raw",
+        "webhookstatus": {
+            "data": "Status: {status}"
+        }
+    },
+```
+
+The result would be a POST request with e.g. `Status: running` body and `Content-Type: text/plain` header.
+
+Optional parameters are available to enable automatic retries for webhook messages. The `webhook.retries` parameter can be set for the maximum number of retries the webhook request should attempt if it is unsuccessful (i.e. HTTP response status is not 200). By default this is set to `0` which is disabled. An additional `webhook.retry_delay` parameter can be set to specify the time in seconds between retry attempts. By default this is set to `0.1` (i.e. 100ms). Note that increasing the number of retries or retry delay may slow down the trader if there are connectivity issues with the webhook. Example configuration for retries:
+
+```json
+  "webhook": {
+        "enabled": true,
+        "url": "https://<YOURHOOKURL>",
+        "retries": 3,
+        "retry_delay": 0.2,
+        "webhookstatus": {
+            "status": "Status: {status}"
+        }
+    },
+```
 
 Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.
 
