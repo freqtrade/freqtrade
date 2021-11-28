@@ -38,12 +38,7 @@ class IDataHandler(ABC):
         """
 
     @abstractclassmethod
-    def ohlcv_get_pairs(
-        cls,
-        datadir: Path,
-        timeframe: str,
-        candle_type: str = ''
-    ) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: str = '') -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -217,12 +212,7 @@ class IDataHandler(ABC):
             if timerange_startup:
                 self._validate_pairdata(pair, pairdf, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
-                if self._check_empty_df(
-                    pairdf,
-                    pair,
-                    timeframe,
-                    warn_no_data
-                ):
+                if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
                     return pairdf
 
             # incomplete candles should only be dropped if we didn't trim the end beforehand.
@@ -234,13 +224,7 @@ class IDataHandler(ABC):
             self._check_empty_df(pairdf, pair, timeframe, warn_no_data)
             return pairdf
 
-    def _check_empty_df(
-        self,
-        pairdf: DataFrame,
-        pair: str,
-        timeframe: str,
-        warn_no_data: bool
-    ):
+    def _check_empty_df(self, pairdf: DataFrame, pair: str, timeframe: str, warn_no_data: bool):
         """
         Warn on empty dataframe
         """
@@ -253,12 +237,7 @@ class IDataHandler(ABC):
             return True
         return False
 
-    def _validate_pairdata(
-        self,
-        pair,
-        pairdata: DataFrame,
-        timerange: TimeRange
-    ):
+    def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
         """
         Validates pairdata for missing data at start end end and logs warnings.
         :param pairdata: Dataframe to validate

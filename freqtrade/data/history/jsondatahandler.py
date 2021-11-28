@@ -37,12 +37,7 @@ class JsonDataHandler(IDataHandler):
                 if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(
-        cls,
-        datadir: Path,
-        timeframe: str,
-        candle_type: str = ''
-    ) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: str = '') -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -78,12 +73,7 @@ class JsonDataHandler(IDataHandler):
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: None
         """
-        filename = self._pair_data_filename(
-            self._datadir,
-            pair,
-            timeframe,
-            candle_type
-        )
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         _data = data.copy()
         # Convert date to int
         _data['date'] = _data['date'].view(np.int64) // 1000 // 1000

@@ -105,6 +105,8 @@ class DataProvider:
         """
         Return pair candle (OHLCV) data, either live or cached historical -- depending
         on the runmode.
+        Only combinations in the pairlist or which have been specified as informative pairs
+        will be available.
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
         :return: Dataframe for this pair
@@ -120,23 +122,17 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {timeframe}, {candle_type}).")
         return data
 
-    def get_analyzed_dataframe(
-        self,
-        pair: str,
-        timeframe: str,
-        candle_type: str = ''
-    ) -> Tuple[DataFrame, datetime]:
+    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
         """
         Retrieve the analyzed dataframe. Returns the full dataframe in trade mode (live / dry),
         and the last 1000 candles (up to the time evaluated at this moment) in all other modes.
         :param pair: pair to get the data for
         :param timeframe: timeframe to get data for
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: Tuple of (Analyzed Dataframe, lastrefreshed) for the requested pair / timeframe
             combination.
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
-        pair_key = (pair, timeframe, candle_type)
+        pair_key = (pair, timeframe, '')
         if pair_key in self.__cached_pairs:
             if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
                 df, date = self.__cached_pairs[pair_key]

@@ -37,12 +37,7 @@ class HDF5DataHandler(IDataHandler):
                 if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(
-        cls,
-        datadir: Path,
-        timeframe: str,
-        candle_type: str = ''
-    ) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: str = '') -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -88,8 +83,7 @@ class HDF5DataHandler(IDataHandler):
         ds.close()
 
     def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None,
-                    candle_type: str = '') -> pd.DataFrame:
+                    timerange: Optional[TimeRange] = None, candle_type: str = '') -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversion to a Pandas dataframe.
