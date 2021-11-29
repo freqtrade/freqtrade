@@ -79,7 +79,8 @@ class Webhook(RPCHandler):
         attempts = 0
         while not success and attempts <= self._retries:
             if attempts:
-                if self._retry_delay: time.sleep(self._retry_delay)
+                if self._retry_delay:
+                    time.sleep(self._retry_delay)
                 logger.info("Retrying webhook...")
 
             attempts += 1
@@ -90,10 +91,11 @@ class Webhook(RPCHandler):
                 elif self._format == 'json':
                     response = post(self._url, json=payload)
                 elif self._format == 'raw':
-                    response = post(self._url, data=payload['data'], headers={'Content-Type': 'text/plain'})
+                    response = post(self._url, data=payload['data'],
+                                    headers={'Content-Type': 'text/plain'})
                 else:
                     raise NotImplementedError('Unknown format: {}'.format(self._format))
-            
+
                 # Throw a RequestException if the post was not successful
                 response.raise_for_status()
                 success = True

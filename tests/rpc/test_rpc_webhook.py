@@ -293,6 +293,7 @@ def test__send_msg_with_json_format(default_conf, mocker, caplog):
 
     assert post.call_args[1] == {'json': msg}
 
+
 def test__send_msg_with_raw_format(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
     default_conf["webhook"]["format"] = "raw"
