@@ -2,7 +2,7 @@ numpy==1.21.4
 pandas==1.3.4
 pandas-ta==0.3.14b
 
-ccxt==1.61.92
+ccxt==1.62.42
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==36.0.0
 aiohttp==3.8.1
