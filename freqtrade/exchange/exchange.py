@@ -1294,7 +1294,7 @@ class Exchange:
         cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if ((pair, timeframe) not in self._klines
+            if ((pair, timeframe) not in self._klines or not cache
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 if not since_ms and self.required_candle_call_count > 1:
                     # Multiple calls for one pair - to get more history

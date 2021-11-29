@@ -640,7 +640,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forcesell(self, trade_id: str) -> Dict[str, str]:
+    def _rpc_forcesell(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price
@@ -664,7 +664,11 @@ class RPC:
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side="sell")
                 sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
-                self._freqtrade.execute_trade_exit(trade, current_rate, sell_reason)
+                order_type = ordertype or self._freqtrade.strategy.order_types.get(
+                    "forcesell", self._freqtrade.strategy.order_types["sell"])
+
+                self._freqtrade.execute_trade_exit(
+                    trade, current_rate, sell_reason, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -692,7 +696,8 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float]) -> Optional[Trade]:
+    def _rpc_forcebuy(self, pair: str, price: Optional[float],
+                      order_type: Optional[str] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -720,7 +725,10 @@ class RPC:
         stakeamount = self._freqtrade.wallets.get_trade_stake_amount(pair)
 
         # execute buy
-        if self._freqtrade.execute_entry(pair, stakeamount, price, forcebuy=True):
+        if not order_type:
+            order_type = self._freqtrade.strategy.order_types.get(
+                'forcebuy', self._freqtrade.strategy.order_types['buy'])
+        if self._freqtrade.execute_entry(pair, stakeamount, price, ordertype=order_type):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade

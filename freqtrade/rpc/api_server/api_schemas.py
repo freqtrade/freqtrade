@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -131,13 +132,21 @@ class UnfilledTimeout(BaseModel):
     exit_timeout_count: Optional[int]
 
 
+class OrderTypeValues(Enum):
+    limit = 'limit'
+    market = 'market'
+
+    class Config:
+        use_enum_values = True
+
+
 class OrderTypes(BaseModel):
-    buy: str
-    sell: str
-    emergencysell: Optional[str]
-    forcesell: Optional[str]
-    forcebuy: Optional[str]
-    stoploss: str
+    buy: OrderTypeValues
+    sell: OrderTypeValues
+    emergencysell: Optional[OrderTypeValues]
+    forcesell: Optional[OrderTypeValues]
+    forcebuy: Optional[OrderTypeValues]
+    stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
 
@@ -274,10 +283,12 @@ class Logs(BaseModel):
 class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
+    ordertype: Optional[OrderTypeValues]
 
 
 class ForceSellPayload(BaseModel):
     tradeid: str
+    ordertype: Optional[OrderTypeValues]
 
 
 class BlacklistPayload(BaseModel):

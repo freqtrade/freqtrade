@@ -1093,7 +1093,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     with pytest.raises(RPCException, match=r'position for ETH/BTC already open - id: 1'):
         rpc._rpc_forcebuy(pair, 0.0001)
     pair = 'XRP/BTC'
-    trade = rpc._rpc_forcebuy(pair, 0.0001)
+    trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit')
     assert isinstance(trade, Trade)
     assert trade.pair == pair
     assert trade.open_rate == 0.0001

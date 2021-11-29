@@ -466,8 +466,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Bids to asks delta for {pair} does not satisfy condition.")
             return False
 
-    def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None,
-                      forcebuy: bool = False, buy_tag: Optional[str] = None) -> bool:
+    def execute_entry(self, pair: str, stake_amount: float, price: Optional[float] = None, *,
+                      ordertype: Optional[str] = None, buy_tag: Optional[str] = None) -> bool:
         """
         Executes a limit buy for the given pair
         :param pair: pair for which we want to create a LIMIT_BUY
@@ -510,10 +510,7 @@ class FreqtradeBot(LoggingMixin):
                     f"{stake_amount} ...")
 
         amount = stake_amount / enter_limit_requested
-        order_type = self.strategy.order_types['buy']
-        if forcebuy:
-            # Forcebuy can define a different ordertype
-            order_type = self.strategy.order_types.get('forcebuy', order_type)
+        order_type = ordertype or self.strategy.order_types['buy']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
@@ -868,7 +865,7 @@ class FreqtradeBot(LoggingMixin):
             logger.info(
                 f'Executing Sell for {trade.pair}. Reason: {should_sell.sell_type}. '
                 f'Tag: {exit_tag if exit_tag is not None else "None"}')
-            self.execute_trade_exit(trade, exit_rate, should_sell, exit_tag)
+            self.execute_trade_exit(trade, exit_rate, should_sell, exit_tag=exit_tag)
             return True
         return False
 
@@ -1081,7 +1078,10 @@ class FreqtradeBot(LoggingMixin):
             trade: Trade,
             limit: float,
             sell_reason: SellCheckTuple,
-            exit_tag: Optional[str] = None) -> bool:
+            *,
+            exit_tag: Optional[str] = None,
+            ordertype: Optional[str] = None,
+            ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
@@ -1119,14 +1119,10 @@ class FreqtradeBot(LoggingMixin):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        order_type = self.strategy.order_types[sell_type]
+        order_type = ordertype or self.strategy.order_types[sell_type]
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if sell_reason.sell_type == SellType.FORCE_SELL:
-            # Force sells (default to the sell_type defined in the strategy,
-            # but we allow this value to be changed)
-            order_type = self.strategy.order_types.get("forcesell", order_type)
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']
