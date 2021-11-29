@@ -33,10 +33,6 @@ class Webhook(RPCHandler):
         self._retries = self._config['webhook'].get('retries', 0)
         self._retry_delay = self._config['webhook'].get('retry_delay', 0.1)
 
-        if not (self._format in ['form', 'json', 'raw']):
-            raise NotImplementedError('Unknown webhook format `{}`, possible values are '
-                                      '`form` (default), `json`, and `raw`'.format(self._format))
-
     def cleanup(self) -> None:
         """
         Cleanup pending module resources.
