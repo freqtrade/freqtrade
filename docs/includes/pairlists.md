@@ -220,6 +220,9 @@ As this Filter uses past performance of the bot, it'll have some startup-period 
 
 Filters low-value coins which would not allow setting stoplosses.
 
+!!! Warning "Backtesting"
+    `PrecisionFilter` does not support backtesting mode using multiple strategies.
+
 #### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
