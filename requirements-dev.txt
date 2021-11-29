@@ -14,7 +14,7 @@ pytest-mock==3.6.1
 pytest-random-order==1.0.4
 isort==5.10.1
 # For datetime mocking
-time-machine==2.4.0
+time-machine==2.4.1
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==6.3.0
