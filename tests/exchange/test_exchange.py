@@ -1777,7 +1777,7 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     assert len(res) == 1
     # Test that each is in list at least once as order is not guaranteed
     assert log_has("Error loading ETH/BTC. Result was [[]].", caplog)
-    assert log_has("Async code raised an exception: TypeError", caplog)
+    assert log_has("Async code raised an exception: TypeError()", caplog)
 
 
 def test_get_next_limit_in_list():

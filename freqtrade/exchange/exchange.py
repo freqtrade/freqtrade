@@ -1263,7 +1263,7 @@ class Exchange:
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
                 if isinstance(res, Exception):
-                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
                     continue
@@ -1324,7 +1324,7 @@ class Exchange:
         # handle caching
         for res in results:
             if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                logger.warning(f"Async code raised an exception: {repr(res)}")
                 continue
             # Deconstruct tuple (has 3 elements)
             pair, timeframe, ticks = res
