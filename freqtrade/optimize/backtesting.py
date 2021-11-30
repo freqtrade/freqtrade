@@ -490,7 +490,7 @@ class Backtesting:
                 open_rate=row[OPEN_IDX],
                 open_date=current_time,
                 stake_amount=stake_amount,
-                amount=round(stake_amount / row[OPEN_IDX], 8),
+                amount=round((stake_amount / row[OPEN_IDX]) * leverage, 8),
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
