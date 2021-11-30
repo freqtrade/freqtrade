@@ -2979,7 +2979,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
     assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
