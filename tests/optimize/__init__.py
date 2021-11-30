@@ -36,6 +36,7 @@ class BTContainer(NamedTuple):
     trailing_stop_positive_offset: float = 0.0
     use_sell_signal: bool = False
     use_custom_stoploss: bool = False
+    leverage: float = 1.0
 
 
 def _get_frame_time_from_offset(offset):
