@@ -592,17 +592,19 @@ class FreqtradeBot(LoggingMixin):
 
         return True
 
-    def _notify_enter(self, trade: Trade, order_type: str) -> None:
+    def _notify_enter(self, trade: Trade, order_type: Optional[str] = None,
+                      fill: bool = False) -> None:
         """
         Sends rpc notification when a buy occurred.
         """
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.BUY,
+            'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
             'buy_tag': trade.buy_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
-            'limit': trade.open_rate,
+            'limit': trade.open_rate,  # Deprecated (?)
+            'open_rate': trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
@@ -639,22 +641,6 @@ class FreqtradeBot(LoggingMixin):
         }
 
         # Send the message
-        self.rpc.send_msg(msg)
-
-    def _notify_enter_fill(self, trade: Trade) -> None:
-        msg = {
-            'trade_id': trade.id,
-            'type': RPCMessageType.BUY_FILL,
-            'buy_tag': trade.buy_tag,
-            'exchange': self.exchange.name.capitalize(),
-            'pair': trade.pair,
-            'open_rate': trade.open_rate,
-            'stake_amount': trade.stake_amount,
-            'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': trade.amount,
-            'open_date': trade.open_date,
-        }
         self.rpc.send_msg(msg)
 
 #
@@ -1312,7 +1298,7 @@ class FreqtradeBot(LoggingMixin):
             self.wallets.update()
         elif not trade.open_order_id:
             # Buy fill
-            self._notify_enter_fill(trade)
+            self._notify_enter(trade, fill=True)
 
         return False
 
