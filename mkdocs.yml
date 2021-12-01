@@ -82,8 +82,9 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: docs
       check_paths: true
-  - pymdownx.tabbed
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
   - mdx_truly_sane_lists

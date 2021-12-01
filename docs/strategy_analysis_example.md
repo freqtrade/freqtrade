@@ -50,7 +50,9 @@ candles.head()
 ```python
 # Load strategy using values set above
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.data.dataprovider import DataProvider
 strategy = StrategyResolver.load_strategy(config)
+strategy.dp = DataProvider(config, None, None)
 
 # Generate buy/sell signals using strategy
 df = strategy.analyze_ticker(candles, {'pair': pair})
@@ -228,7 +230,7 @@ graph = generate_candlestick_graph(pair=pair,
 # Show graph inline
 # graph.show()
 
-# Render graph in a separate window
+# Render graph in a seperate window
 graph.show(renderer="browser")
 
 ```

@@ -46,20 +46,11 @@ def _get_line_floatfmt(stake_currency: str) -> List[str]:
             '.2f', 'd', 's', 's']
 
 
-def _get_line_header(first_column: str, stake_currency: str) -> List[str]:
+def _get_line_header(first_column: str, stake_currency: str, direction: str = 'Buys') -> List[str]:
     """
     Generate header lines (goes in line with _generate_result_line())
     """
-    return [first_column, 'Buys', 'Avg Profit %', 'Cum Profit %',
-            f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
-            'Win  Draw  Loss  Win%']
-
-
-def _get_line_header_sell(first_column: str, stake_currency: str) -> List[str]:
-    """
-    Generate header lines (goes in line with _generate_result_line())
-    """
-    return [first_column, 'Sells', 'Avg Profit %', 'Cum Profit %',
+    return [first_column, direction, 'Avg Profit %', 'Cum Profit %',
             f'Tot Profit {stake_currency}', 'Tot Profit %', 'Avg Duration',
             'Win  Draw  Loss  Win%']
 
@@ -156,7 +147,7 @@ def generate_tag_metrics(tag_type: str,
             if skip_nan and result['profit_abs'].isnull().all():
                 continue
 
-            tabular_data.append(_generate_tag_result_line(result, starting_balance, tag))
+            tabular_data.append(_generate_result_line(result, starting_balance, tag))
 
         # Sort by total profit %:
         tabular_data = sorted(tabular_data, key=lambda k: k['profit_total_abs'], reverse=True)
@@ -166,39 +157,6 @@ def generate_tag_metrics(tag_type: str,
         return tabular_data
     else:
         return []
-
-
-def _generate_tag_result_line(result: DataFrame, starting_balance: int, first_column: str) -> Dict:
-    """
-    Generate one result dict, with "first_column" as key.
-    """
-    profit_sum = result['profit_ratio'].sum()
-    # (end-capital - starting capital) / starting capital
-    profit_total = result['profit_abs'].sum() / starting_balance
-
-    return {
-        'key': first_column,
-        'trades': len(result),
-        'profit_mean': result['profit_ratio'].mean() if len(result) > 0 else 0.0,
-        'profit_mean_pct': result['profit_ratio'].mean() * 100.0 if len(result) > 0 else 0.0,
-        'profit_sum': profit_sum,
-        'profit_sum_pct': round(profit_sum * 100.0, 2),
-        'profit_total_abs': result['profit_abs'].sum(),
-        'profit_total': profit_total,
-        'profit_total_pct': round(profit_total * 100.0, 2),
-        'duration_avg': str(timedelta(
-                            minutes=round(result['trade_duration'].mean()))
-                            ) if not result.empty else '0:00',
-        # 'duration_max': str(timedelta(
-        #                     minutes=round(result['trade_duration'].max()))
-        #                     ) if not result.empty else '0:00',
-        # 'duration_min': str(timedelta(
-        #                     minutes=round(result['trade_duration'].min()))
-        #                     ) if not result.empty else '0:00',
-        'wins': len(result[result['profit_abs'] > 0]),
-        'draws': len(result[result['profit_abs'] == 0]),
-        'losses': len(result[result['profit_abs'] < 0]),
-    }
 
 
 def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List[Dict]:
@@ -637,7 +595,7 @@ def text_table_tags(tag_type: str, tag_results: List[Dict[str, Any]], stake_curr
     if(tag_type == "enter_tag"):
         headers = _get_line_header("TAG", stake_currency)
     else:
-        headers = _get_line_header_sell("TAG", stake_currency)
+        headers = _get_line_header("TAG", stake_currency, 'Sells')
     floatfmt = _get_line_floatfmt(stake_currency)
     output = [
         [

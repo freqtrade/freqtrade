@@ -575,8 +575,9 @@ class FreqtradeBot(LoggingMixin):
         pair: str,
         stake_amount: float,
         price: Optional[float] = None,
-        forcebuy: bool = False,
+        *,
         is_short: bool = False,
+        ordertype: Optional[str] = None,
         enter_tag: Optional[str] = None
     ) -> bool:
         """
@@ -649,12 +650,7 @@ class FreqtradeBot(LoggingMixin):
         )
 
         amount = (stake_amount / enter_limit_requested) * leverage
-        order_type = self.strategy.order_types['buy']
-        if forcebuy:
-            # Forcebuy can define a different ordertype
-            # TODO-lev: get a forceshort? What is this
-            order_type = self.strategy.order_types.get('forcebuy', order_type)
-        # TODO-lev: Will this work for shorting?
+        order_type = ordertype or self.strategy.order_types['buy']
 
         if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
@@ -1053,7 +1049,7 @@ class FreqtradeBot(LoggingMixin):
         if should_exit.sell_flag:
             logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.sell_type}'
                         f'Tag: {exit_tag if exit_tag is not None else "None"}')
-            self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag)
+            self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
             return True
         return False
 
@@ -1271,12 +1267,14 @@ class FreqtradeBot(LoggingMixin):
                 f"Not enough amount to exit trade. Trade-amount: {amount}, Wallet: {wallet_amount}")
 
     def execute_trade_exit(
-        self,
-        trade: Trade,
-        limit: float,
-        sell_reason: SellCheckTuple,  # TODO-lev update to exit_reason
-        exit_tag: Optional[str] = None
-    ) -> bool:
+            self,
+            trade: Trade,
+            limit: float,
+            sell_reason: SellCheckTuple,
+            *,
+            exit_tag: Optional[str] = None,
+            ordertype: Optional[str] = None,
+            ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
@@ -1319,14 +1317,10 @@ class FreqtradeBot(LoggingMixin):
             except InvalidOrderException:
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
-        order_type = self.strategy.order_types[exit_type]
+        order_type = ordertype or self.strategy.order_types[exit_type]
         if sell_reason.sell_type == SellType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
-        if sell_reason.sell_type == SellType.FORCE_SELL:
-            # Force sells (default to the sell_type defined in the strategy,
-            # but we allow this value to be changed)
-            order_type = self.strategy.order_types.get("forcesell", order_type)
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']  # TODO-lev update to exit

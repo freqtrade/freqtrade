@@ -7,6 +7,7 @@ import pytest
 import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
+from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -655,6 +656,22 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
+
+
+def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "seed": 42}
+    ]
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    PairListManager(exchange, whitelist_conf)
+    assert log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    caplog.clear()
+    whitelist_conf['runmode'] = RunMode.DRY_RUN
+    PairListManager(exchange, whitelist_conf)
+    assert not log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    assert log_has("Live mode detected, not applying seed.", caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")
