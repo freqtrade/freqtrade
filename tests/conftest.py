@@ -215,8 +215,6 @@ def patch_get_signal(
 ) -> None:
     """
     :param mocker: mocker to patch IStrategy class
-    :param value: which value IStrategy.get_signal() must return
-           (buy, sell, buy_tag)
     :return: None
     """
     # returns (Signal-direction, signaname)

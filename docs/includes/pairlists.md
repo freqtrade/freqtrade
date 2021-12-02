@@ -220,6 +220,9 @@ As this Filter uses past performance of the bot, it'll have some startup-period 
 
 Filters low-value coins which would not allow setting stoplosses.
 
+!!! Warning "Backtesting"
+    `PrecisionFilter` does not support backtesting mode using multiple strategies.
+
 #### PriceFilter
 
 The `PriceFilter` allows filtering of pairs by price. Currently the following price filters are supported:
@@ -257,7 +260,7 @@ Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 -
 Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
 
 !!! Tip
-    You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order.
+    You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the `seed` only for backtesting modes - if a `seed` value is set.
 
 #### SpreadFilter
 

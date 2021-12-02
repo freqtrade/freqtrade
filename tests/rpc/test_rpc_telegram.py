@@ -24,6 +24,7 @@ from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.rpc import RPC
+from freqtrade.rpc.rpc import RPCException
 from freqtrade.rpc.telegram import Telegram, authorized_only
 from tests.conftest import (CURRENT_TEST_STRATEGY, create_mock_trades, get_patched_freqtradebot,
                             log_has, log_has_re, patch_exchange, patch_get_signal, patch_whitelist)
@@ -93,7 +94,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
                    "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['buys'], ['sells'], ['mix_tags'], "
+                   "['delete'], ['performance'], ['buys', 'entries'], ['sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
@@ -189,6 +190,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'amount': 90.99181074,
             'stake_amount': 90.99181074,
             'buy_tag': None,
+            'enter_tag': None,
             'close_profit_ratio': None,
             'profit': -0.0059,
             'profit_ratio': -0.0059,
@@ -937,7 +939,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     telegram._forcesell(update=update, context=context)
 
     assert msg_mock.call_count == 4
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -954,6 +956,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
+        'enter_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -1001,7 +1004,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     assert msg_mock.call_count == 4
 
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1018,6 +1021,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
+        'enter_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -1055,7 +1059,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
-    msg = msg_mock.call_args_list[1][0][0]
+    msg = msg_mock.call_args_list[0][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1072,6 +1076,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'stake_currency': 'BTC',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
+        'enter_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
         'open_date': ANY,
         'close_date': ANY,
@@ -1187,8 +1192,8 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     assert fbuy_mock.call_count == 1
 
 
-def test_performance_handle(default_conf, update, ticker, fee,
-                            limit_buy_order, limit_sell_order, mocker) -> None:
+def test_telegram_performance_handle(default_conf, update, ticker, fee,
+                                     limit_buy_order, limit_sell_order, mocker) -> None:
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -1217,8 +1222,8 @@ def test_performance_handle(default_conf, update, ticker, fee,
     assert '<code>ETH/BTC\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
 
-def test_buy_tag_performance_handle(default_conf, update, ticker, fee,
-                                    limit_buy_order, limit_sell_order, mocker) -> None:
+def test_telegram_buy_tag_performance_handle(default_conf, update, ticker, fee,
+                                             limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -1235,21 +1240,33 @@ def test_buy_tag_performance_handle(default_conf, update, ticker, fee,
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
 
-    trade.buy_tag = "TESTBUY"
+    trade.enter_tag = "TESTBUY"
     # Simulate fulfilled LIMIT_SELL order for trade
     trade.update(limit_sell_order)
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
-
-    telegram._buy_tag_performance(update=update, context=MagicMock())
+    context = MagicMock()
+    telegram._enter_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Buy Tag Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTBUY\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
 
+    context.args = [trade.pair]
+    telegram._enter_tag_performance(update=update, context=context)
+    assert msg_mock.call_count == 2
 
-def test_sell_reason_performance_handle(default_conf, update, ticker, fee,
-                                        limit_buy_order, limit_sell_order, mocker) -> None:
+    msg_mock.reset_mock()
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_enter_tag_performance',
+                 side_effect=RPCException('Error'))
+    telegram._enter_tag_performance(update=update, context=MagicMock())
+
+    assert msg_mock.call_count == 1
+    assert "Error" in msg_mock.call_args_list[0][0][0]
+
+
+def test_telegram_sell_reason_performance_handle(default_conf, update, ticker, fee,
+                                                 limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -1272,15 +1289,27 @@ def test_sell_reason_performance_handle(default_conf, update, ticker, fee,
 
     trade.close_date = datetime.utcnow()
     trade.is_open = False
-
-    telegram._sell_reason_performance(update=update, context=MagicMock())
+    context = MagicMock()
+    telegram._sell_reason_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Sell Reason Performance' in msg_mock.call_args_list[0][0][0]
     assert '<code>TESTSELL\t0.00006217 BTC (6.20%) (1)</code>' in msg_mock.call_args_list[0][0][0]
+    context.args = [trade.pair]
+
+    telegram._sell_reason_performance(update=update, context=context)
+    assert msg_mock.call_count == 2
+
+    msg_mock.reset_mock()
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_sell_reason_performance',
+                 side_effect=RPCException('Error'))
+    telegram._sell_reason_performance(update=update, context=MagicMock())
+
+    assert msg_mock.call_count == 1
+    assert "Error" in msg_mock.call_args_list[0][0][0]
 
 
-def test_mix_tag_performance_handle(default_conf, update, ticker, fee,
-                                    limit_buy_order, limit_sell_order, mocker) -> None:
+def test_telegram_mix_tag_performance_handle(default_conf, update, ticker, fee,
+                                             limit_buy_order, limit_sell_order, mocker) -> None:
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker,
@@ -1297,7 +1326,7 @@ def test_mix_tag_performance_handle(default_conf, update, ticker, fee,
     # Simulate fulfilled LIMIT_BUY order for trade
     trade.update(limit_buy_order)
 
-    trade.buy_tag = "TESTBUY"
+    trade.enter_tag = "TESTBUY"
     trade.sell_reason = "TESTSELL"
 
     # Simulate fulfilled LIMIT_SELL order for trade
@@ -1306,11 +1335,24 @@ def test_mix_tag_performance_handle(default_conf, update, ticker, fee,
     trade.close_date = datetime.utcnow()
     trade.is_open = False
 
-    telegram._mix_tag_performance(update=update, context=MagicMock())
+    context = MagicMock()
+    telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'Mix Tag Performance' in msg_mock.call_args_list[0][0][0]
     assert ('<code>TESTBUY TESTSELL\t0.00006217 BTC (6.20%) (1)</code>'
             in msg_mock.call_args_list[0][0][0])
+
+    context.args = [trade.pair]
+    telegram._mix_tag_performance(update=update, context=context)
+    assert msg_mock.call_count == 2
+
+    msg_mock.reset_mock()
+    mocker.patch('freqtrade.rpc.rpc.RPC._rpc_mix_tag_performance',
+                 side_effect=RPCException('Error'))
+    telegram._mix_tag_performance(update=update, context=MagicMock())
+
+    assert msg_mock.call_count == 1
+    assert "Error" in msg_mock.call_args_list[0][0][0]
 
 
 def test_count_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -1598,7 +1640,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
     msg = {
         'type': RPCMessageType.BUY,
         'trade_id': 1,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': 'buy_signal_01',
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'limit': 1.099e-05,
@@ -1616,7 +1658,7 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog) -> None:
     telegram.send_msg(msg)
     assert msg_mock.call_args[0][0] \
         == '\N{LARGE BLUE CIRCLE} *Binance:* Buying ETH/BTC (#1)\n' \
-           '*Buy Tag:* `buy_signal_01`\n' \
+           '*Enter Tag:* `buy_signal_01`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Current Rate:* `0.00001099`\n' \
@@ -1644,7 +1686,7 @@ def test_send_msg_buy_cancel_notification(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY_CANCEL,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': 'buy_signal_01',
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1691,7 +1733,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
     telegram.send_msg({
         'type': RPCMessageType.BUY_FILL,
         'trade_id': 1,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': 'buy_signal_01',
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
         'stake_amount': 0.001,
@@ -1705,7 +1747,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker) -> None:
 
     assert msg_mock.call_args[0][0] \
         == '\N{CHECK MARK} *Binance:* Bought ETH/BTC (#1)\n' \
-           '*Buy Tag:* `buy_signal_01`\n' \
+           '*Enter Tag:* `buy_signal_01`\n' \
            '*Amount:* `1333.33333333`\n' \
            '*Open Rate:* `0.00001099`\n' \
            '*Total:* `(0.00100000 BTC, 12.345 USD)`'
@@ -1732,7 +1774,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
@@ -1740,7 +1782,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1:00:00 (60.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
@@ -1764,7 +1806,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
@@ -1772,7 +1814,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
             '*Unrealized Profit:* `-57.41%`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
@@ -1835,7 +1877,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
         'profit_amount': -0.05746268,
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
@@ -1843,7 +1885,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker) -> None:
     assert msg_mock.call_args[0][0] \
         == ('\N{WARNING SIGN} *Binance:* Sold KEY/ETH (#1)\n'
             '*Profit:* `-57.41%`\n'
-            '*Buy Tag:* `buy_signal1`\n'
+            '*Enter Tag:* `buy_signal1`\n'
             '*Sell Reason:* `stop_loss`\n'
             '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
             '*Amount:* `1333.33333333`\n'
@@ -1894,7 +1936,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
 
     telegram.send_msg({
         'type': RPCMessageType.BUY,
-        'buy_tag': 'buy_signal_01',
+        'enter_tag': 'buy_signal_01',
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
@@ -1909,7 +1951,7 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-1)
     })
     assert msg_mock.call_args[0][0] == ('\N{LARGE BLUE CIRCLE} *Binance:* Buying ETH/BTC (#1)\n'
-                                        '*Buy Tag:* `buy_signal_01`\n'
+                                        '*Enter Tag:* `buy_signal_01`\n'
                                         '*Amount:* `1333.33333333`\n'
                                         '*Open Rate:* `0.00001099`\n'
                                         '*Current Rate:* `0.00001099`\n'
@@ -1935,14 +1977,14 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker) -> None:
         'profit_ratio': -0.57405275,
         'stake_currency': 'ETH',
         'fiat_currency': 'USD',
-        'buy_tag': 'buy_signal1',
+        'enter_tag': 'buy_signal1',
         'sell_reason': SellType.STOP_LOSS.value,
         'open_date': arrow.utcnow().shift(hours=-2, minutes=-35, seconds=-3),
         'close_date': arrow.utcnow(),
     })
     assert msg_mock.call_args[0][0] == ('\N{WARNING SIGN} *Binance:* Selling KEY/ETH (#1)\n'
                                         '*Unrealized Profit:* `-57.41%`\n'
-                                        '*Buy Tag:* `buy_signal1`\n'
+                                        '*Enter Tag:* `buy_signal1`\n'
                                         '*Sell Reason:* `stop_loss`\n'
                                         '*Duration:* `2:35:03 (155.1 min)`\n'
                                         '*Amount:* `1333.33333333`\n'

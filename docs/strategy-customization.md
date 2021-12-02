@@ -498,7 +498,7 @@ for more information.
                 &
                 (dataframe['volume'] > 0)
             ),
-            ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')
+            ['buy', 'enter_tag']] = (1, 'buy_signal_rsi')
     
         return dataframe
     ```

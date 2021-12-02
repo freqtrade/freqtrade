@@ -2869,6 +2869,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'amount': amt,
         'order_type': 'limit',
         'buy_tag': None,
+        'enter_tag': None,
         'open_rate': open_rate,
         'current_rate': 2.01 if is_short else 2.3,
         'profit_amount': 0.29554455 if is_short else 5.685,
@@ -2925,6 +2926,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
         'buy_tag': None,
+        'enter_tag': None,
         'open_rate': 2.02 if is_short else 2.0,
         'current_rate': 2.2 if is_short else 2.0,
         'profit_amount': -5.65990099 if is_short else -0.00075,
@@ -3002,6 +3004,7 @@ def test_execute_trade_exit_custom_exit_price(
         'amount': amount,
         'order_type': 'limit',
         'buy_tag': None,
+        'enter_tag': None,
         'open_rate': open_rate,
         'current_rate': current_rate,
         'profit_amount': profit_amount,
@@ -3066,6 +3069,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'amount': 29.70297029 if is_short else 30.0,
         'order_type': 'limit',
         'buy_tag': None,
+        'enter_tag': None,
         'open_rate': 2.02 if is_short else 2.0,
         'current_rate': 2.2 if is_short else 2.0,
         'profit_amount': -0.3 if is_short else -0.8985,
@@ -3308,7 +3312,7 @@ def test_execute_trade_exit_market_order(
     assert trade.close_profit == profit_ratio
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3319,6 +3323,7 @@ def test_execute_trade_exit_market_order(
         'amount': round(amount, 9),
         'order_type': 'market',
         'buy_tag': None,
+        'enter_tag': None,
         'open_rate': open_rate,
         'current_rate': current_rate,
         'profit_amount': profit_amount,

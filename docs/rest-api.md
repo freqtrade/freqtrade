@@ -38,6 +38,11 @@ Sample configuration:
 !!! Danger "Security warning"
     By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
+??? Note "API/UI Access on a remote servers"
+    If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+    This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+    Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
 This should return the response:
 

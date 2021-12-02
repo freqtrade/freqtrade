@@ -92,7 +92,8 @@ class Backtesting:
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
+            raise OperationalException("VolumePairList not allowed for backtesting. "
+                                       "Please use StaticPairlist instead.")
         if 'PerformanceFilter' in self.pairlists.name_list:
             raise OperationalException("PerformanceFilter not allowed for backtesting.")
 
@@ -490,11 +491,11 @@ class Backtesting:
                 open_rate=row[OPEN_IDX],
                 open_date=current_time,
                 stake_amount=stake_amount,
-                amount=round(stake_amount / row[OPEN_IDX], 8),
+                amount=round((stake_amount / row[OPEN_IDX]) * leverage, 8),
                 fee_open=self.fee,
                 fee_close=self.fee,
                 is_open=True,
-                buy_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
+                enter_tag=row[ENTER_TAG_IDX] if has_enter_tag else None,
                 exchange=self._exchange_name,
                 is_short=(direction == 'short'),
                 leverage=leverage,

@@ -1372,7 +1372,7 @@ class Exchange:
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
                 if isinstance(res, Exception):
-                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
                     continue
@@ -1405,7 +1405,7 @@ class Exchange:
         cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe, candle_type in set(pair_list):
-            if ((pair, timeframe, candle_type) not in self._klines
+            if ((pair, timeframe, candle_type) not in self._klines or not cache
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 if not since_ms and self.required_candle_call_count > 1:
                     # Multiple calls for one pair - to get more history
@@ -1428,27 +1428,28 @@ class Exchange:
                 )
                 cached_pairs.append((pair, timeframe, candle_type))
 
-        results = asyncio.get_event_loop().run_until_complete(
-            asyncio.gather(*input_coroutines, return_exceptions=True))
-
         results_df = {}
-        # handle caching
-        for res in results:
-            if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
-                continue
-            # Deconstruct tuple (has 3 elements)
-            pair, timeframe, c_type, ticks = res
-            # keeping last candle time as last refreshed time of the pair
-            if ticks:
-                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[-1][0] // 1000
-            # keeping parsed dataframe in cache
-            ohlcv_df = ohlcv_to_dataframe(
-                ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle)
-            results_df[(pair, timeframe, c_type)] = ohlcv_df
-            if cache:
-                self._klines[(pair, timeframe, c_type)] = ohlcv_df
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        for input_coro in chunks(input_coroutines, 100):
+            results = asyncio.get_event_loop().run_until_complete(
+                asyncio.gather(*input_coro, return_exceptions=True))
+
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
+                    continue
+                # Deconstruct tuple (has 4 elements)
+                pair, timeframe, c_type, ticks = res
+                # keeping last candle time as last refreshed time of the pair
+                if ticks:
+                    self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[-1][0] // 1000
+                # keeping parsed dataframe in cache
+                ohlcv_df = ohlcv_to_dataframe(
+                    ticks, timeframe, pair=pair, fill_missing=True,
+                    drop_incomplete=self._ohlcv_partial_candle)
+                results_df[(pair, timeframe, c_type)] = ohlcv_df
+                if cache:
+                    self._klines[(pair, timeframe, c_type)] = ohlcv_df
         # Return cached klines
         for pair, timeframe, c_type in cached_pairs:
             results_df[(pair, timeframe, c_type)] = self.klines(

@@ -87,6 +87,7 @@ class {{ strategy }}(IStrategy):
         'sell': 'gtc'
     }
     {{ plot_config | indent(4) }}
+
     def informative_pairs(self):
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.
