@@ -13,6 +13,7 @@ from typing import List, Optional, Type
 
 from pandas import DataFrame
 
+from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
@@ -28,6 +29,13 @@ class IDataHandler(ABC):
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
+
+    @classmethod
+    def _get_file_extension(cls) -> str:
+        """
+        Get file extension for this particular datahandler
+        """
+        raise NotImplementedError()
 
     @abstractclassmethod
     def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
@@ -83,7 +91,6 @@ class IDataHandler(ABC):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
-    @abstractmethod
     def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
         """
         Remove data for this pair
@@ -92,6 +99,11 @@ class IDataHandler(ABC):
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: True when deleted, false if file did not exist.
         """
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        if filename.exists():
+            filename.unlink()
+            return True
+        return False
 
     @abstractmethod
     def ohlcv_append(
@@ -144,13 +156,17 @@ class IDataHandler(ABC):
         :return: List of trades
         """
 
-    @abstractmethod
     def trades_purge(self, pair: str) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :return: True when deleted, false if file did not exist.
         """
+        filename = self._pair_trades_filename(self._datadir, pair)
+        if filename.exists():
+            filename.unlink()
+            return True
+        return False
 
     def trades_load(self, pair: str, timerange: Optional[TimeRange] = None) -> TradeList:
         """
@@ -161,6 +177,26 @@ class IDataHandler(ABC):
         :return: List of trades
         """
         return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
+
+    @classmethod
+    def _pair_data_filename(
+        cls,
+        datadir: Path,
+        pair: str,
+        timeframe: str,
+        candle_type: str = ''
+    ) -> Path:
+        pair_s = misc.pair_to_filename(pair)
+        if candle_type:
+            candle_type = f"-{candle_type}"
+        filename = datadir.joinpath(f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
+        return filename
+
+    @classmethod
+    def _pair_trades_filename(cls, datadir: Path, pair: str) -> Path:
+        pair_s = misc.pair_to_filename(pair)
+        filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
+        return filename
 
     @staticmethod
     def rebuild_pair_from_filename(pair: str) -> str:

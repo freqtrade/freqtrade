@@ -1064,6 +1064,12 @@ def test_create_dry_run_order_limit_fill(default_conf, mocker, side, startprice,
     assert order_closed['status'] == 'closed'
     assert order['fee']
 
+    # Empty orderbook test
+    mocker.patch('freqtrade.exchange.Exchange.fetch_l2_order_book',
+                 return_value={'asks': [], 'bids': []})
+    exchange._dry_run_open_orders[order['id']]['status'] = 'open'
+    order_closed = exchange.fetch_dry_run_order(order['id'])
+
 
 @pytest.mark.parametrize("side,rate,amount,endprice", [
     # spread is 25.263-25.266

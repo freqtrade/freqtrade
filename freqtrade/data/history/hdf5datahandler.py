@@ -6,7 +6,6 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
-from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
                                  ListPairsWithTimeframes, TradeList)
@@ -121,20 +120,6 @@ class HDF5DataHandler(IDataHandler):
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
-        """
-        Remove data for this pair
-        :param pair: Delete data for this pair.
-        :param timeframe: Timeframe (e.g. "5m")
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        :return: True when deleted, false if file did not exist.
-        """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
-        if filename.exists():
-            filename.unlink()
-            return True
-        return False
-
     def ohlcv_append(
         self,
         pair: str,
@@ -210,17 +195,9 @@ class HDF5DataHandler(IDataHandler):
         trades[['id', 'type']] = trades[['id', 'type']].replace({np.nan: None})
         return trades.values.tolist()
 
-    def trades_purge(self, pair: str) -> bool:
-        """
-        Remove data for this pair
-        :param pair: Delete data for this pair.
-        :return: True when deleted, false if file did not exist.
-        """
-        filename = self._pair_trades_filename(self._datadir, pair)
-        if filename.exists():
-            filename.unlink()
-            return True
-        return False
+    @classmethod
+    def _get_file_extension(cls):
+        return "h5"
 
     @classmethod
     def _pair_ohlcv_key(cls, pair: str, timeframe: str) -> str:
@@ -229,23 +206,3 @@ class HDF5DataHandler(IDataHandler):
     @classmethod
     def _pair_trades_key(cls, pair: str) -> str:
         return f"{pair}/trades"
-
-    @classmethod
-    def _pair_data_filename(
-        cls,
-        datadir: Path,
-        pair: str,
-        timeframe: str,
-        candle_type: str = ''
-    ) -> Path:
-        pair_s = misc.pair_to_filename(pair)
-        if candle_type:
-            candle_type = f"-{candle_type}"
-        filename = datadir.joinpath(f'{pair_s}-{timeframe}{candle_type}.h5')
-        return filename
-
-    @classmethod
-    def _pair_trades_filename(cls, datadir: Path, pair: str) -> Path:
-        pair_s = misc.pair_to_filename(pair)
-        filename = datadir.joinpath(f'{pair_s}-trades.h5')
-        return filename
