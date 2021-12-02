@@ -3312,7 +3312,7 @@ def test_execute_trade_exit_market_order(
     assert trade.close_profit == profit_ratio
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,

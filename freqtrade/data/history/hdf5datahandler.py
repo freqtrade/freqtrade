@@ -61,10 +61,10 @@ class HDF5DataHandler(IDataHandler):
 
         filename = self._pair_data_filename(self._datadir, pair, timeframe)
 
-        ds = pd.HDFStore(filename, mode='a', complevel=9, complib='blosc')
-        ds.put(key, _data.loc[:, self._columns], format='table', data_columns=['date'])
-
-        ds.close()
+        _data.loc[:, self._columns].to_hdf(
+            filename, key, mode='a', complevel=9, complib='blosc',
+            format='table', data_columns=['date']
+        )
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None) -> pd.DataFrame:
@@ -142,11 +142,11 @@ class HDF5DataHandler(IDataHandler):
         """
         key = self._pair_trades_key(pair)
 
-        ds = pd.HDFStore(self._pair_trades_filename(self._datadir, pair),
-                         mode='a', complevel=9, complib='blosc')
-        ds.put(key, pd.DataFrame(data, columns=DEFAULT_TRADES_COLUMNS),
-               format='table', data_columns=['timestamp'])
-        ds.close()
+        pd.DataFrame(data, columns=DEFAULT_TRADES_COLUMNS).to_hdf(
+            self._pair_trades_filename(self._datadir, pair), key,
+            mode='a', complevel=9, complib='blosc',
+            format='table', data_columns=['timestamp']
+        )
 
     def trades_append(self, pair: str, data: TradeList):
         """

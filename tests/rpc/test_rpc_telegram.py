@@ -939,7 +939,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     telegram._forcesell(update=update, context=context)
 
     assert msg_mock.call_count == 4
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1004,7 +1004,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     assert msg_mock.call_count == 4
 
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1059,7 +1059,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
-    msg = msg_mock.call_args_list[1][0][0]
+    msg = msg_mock.call_args_list[0][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,

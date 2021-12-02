@@ -322,7 +322,8 @@ class FreqtradeBot(LoggingMixin):
                         f"for order {order.order_id}."
                     )
                     self.update_trade_state(trade, order.order_id,
-                                            stoploss_order=order.ft_order_side == 'stoploss')
+                                            stoploss_order=order.ft_order_side == 'stoploss',
+                                            send_msg=False)
 
         trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
         for trade in trades:
@@ -333,7 +334,7 @@ class FreqtradeBot(LoggingMixin):
                         f"Updating {trade.enter_side}-fee on trade {trade}"
                         f"for order {order.order_id}."
                     )
-                    self.update_trade_state(trade, order.order_id)
+                    self.update_trade_state(trade, order.order_id, send_msg=False)
 
     def handle_insufficient_funds(self, trade: Trade):
         """
@@ -356,7 +357,7 @@ class FreqtradeBot(LoggingMixin):
         if order:
             logger.info(
                 f"Updating {trade.enter_side}-fee on trade {trade} for order {order.order_id}.")
-            self.update_trade_state(trade, order.order_id)
+            self.update_trade_state(trade, order.order_id, send_msg=False)
 
     def refind_lost_order(self, trade):
         """
@@ -743,10 +744,6 @@ class FreqtradeBot(LoggingMixin):
         )
         trade.orders.append(order_obj)
 
-        # Update fees if order is closed
-        if order_status == 'closed':
-            self.update_trade_state(trade, order_id, order)
-
         Trade.query.session.add(trade)
         Trade.commit()
 
@@ -755,20 +752,31 @@ class FreqtradeBot(LoggingMixin):
 
         self._notify_enter(trade, order_type)
 
+        # Update fees if order is closed
+        if order_status == 'closed':
+            self.update_trade_state(trade, order_id, order)
+
         return True
 
-    def _notify_enter(self, trade: Trade, order_type: str) -> None:
+    def _notify_enter(self, trade: Trade, order_type: Optional[str] = None,
+                      fill: bool = False) -> None:
         """
         Sends rpc notification when a entry order occurred.
         """
+        if fill:
+            msg_type = RPCMessageType.SHORT_FILL if trade.is_short else RPCMessageType.BUY_FILL
+        else:
+            msg_type = RPCMessageType.SHORT if trade.is_short else RPCMessageType.BUY
+
         msg = {
             'trade_id': trade.id,
-            'type': RPCMessageType.SHORT if trade.is_short else RPCMessageType.BUY,
+            'type': msg_type,
             'buy_tag': trade.enter_tag,
             'enter_tag': trade.enter_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
-            'limit': trade.open_rate,
+            'limit': trade.open_rate,  # Deprecated (?)
+            'open_rate': trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
@@ -806,24 +814,6 @@ class FreqtradeBot(LoggingMixin):
         }
 
         # Send the message
-        self.rpc.send_msg(msg)
-
-    def _notify_enter_fill(self, trade: Trade) -> None:
-        msg_type = RPCMessageType.SHORT_FILL if trade.is_short else RPCMessageType.BUY_FILL
-        msg = {
-            'trade_id': trade.id,
-            'type': msg_type,
-            'buy_tag': trade.enter_tag,
-            'enter_tag': trade.enter_tag,
-            'exchange': self.exchange.name.capitalize(),
-            'pair': trade.pair,
-            'open_rate': trade.open_rate,
-            'stake_amount': trade.stake_amount,
-            'stake_currency': self.config['stake_currency'],
-            'fiat_currency': self.config.get('fiat_display_currency', None),
-            'amount': trade.amount,
-            'open_date': trade.open_date,
-        }
         self.rpc.send_msg(msg)
 
 #
@@ -1355,16 +1345,16 @@ class FreqtradeBot(LoggingMixin):
         trade.sell_order_status = ''
         trade.close_rate_requested = limit
         trade.sell_reason = exit_tag or sell_reason.sell_reason
-        # In case of market sell orders the order can be closed immediately
-        if order.get('status', 'unknown') in ('closed', 'expired'):
-            self.update_trade_state(trade, trade.open_order_id, order)
-        Trade.commit()
 
         # Lock pair for one candle to prevent immediate re-trading
         self.strategy.lock_pair(trade.pair, datetime.now(timezone.utc),
                                 reason='Auto lock')
 
         self._notify_exit(trade, order_type)
+        # In case of market sell orders the order can be closed immediately
+        if order.get('status', 'unknown') in ('closed', 'expired'):
+            self.update_trade_state(trade, trade.open_order_id, order)
+        Trade.commit()
 
         return True
 
@@ -1463,13 +1453,14 @@ class FreqtradeBot(LoggingMixin):
 #
 
     def update_trade_state(self, trade: Trade, order_id: str, action_order: Dict[str, Any] = None,
-                           stoploss_order: bool = False) -> bool:
+                           stoploss_order: bool = False, send_msg: bool = True) -> bool:
         """
         Checks trades with open orders and updates the amount if necessary
         Handles closing both buy and sell orders.
         :param trade: Trade object of the trade we're analyzing
         :param order_id: Order-id of the order we're analyzing
         :param action_order: Already acquired order object
+        :param send_msg: Send notification - should always be True except in "recovery" methods
         :return: True if order has been cancelled without being filled partially, False otherwise
         """
         if not order_id:
@@ -1509,13 +1500,13 @@ class FreqtradeBot(LoggingMixin):
 
         # Updating wallets when order is closed
         if not trade.is_open:
-            if not stoploss_order and not trade.open_order_id:
+            if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
             self.handle_protections(trade.pair)
             self.wallets.update()
-        elif not trade.open_order_id:
+        elif send_msg and not trade.open_order_id:
             # Buy fill
-            self._notify_enter_fill(trade)
+            self._notify_enter(trade, fill=True)
 
         return False
 

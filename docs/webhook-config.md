@@ -104,7 +104,8 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
-* `limit`
+* ~~`limit` # Deprecated - should no longer be used.~~
+* `open_rate`
 * `amount`
 * `open_date`
 * `stake_amount`
@@ -146,6 +147,8 @@ Possible parameters are:
 * `stake_amount`
 * `stake_currency`
 * `fiat_currency`
+* `order_type`
+* `current_rate`
 * `enter_tag`
 
 ### Webhooksell
