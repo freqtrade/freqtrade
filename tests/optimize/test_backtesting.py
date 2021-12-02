@@ -857,7 +857,7 @@ def test_backtest_alternate_buy_sell(default_conf, fee, mocker, testdatadir):
     results = result['results']
     assert len(results) == 100
     # Cached data should be 200
-    analyzed_df = backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m', '')[0]
+    analyzed_df = backtesting.dataprovider.get_analyzed_dataframe('UNITTEST/BTC', '1m')[0]
     assert len(analyzed_df) == 200
     # Expect last candle to be 1 below end date (as the last candle is assumed as "incomplete"
     # during backtesting)
