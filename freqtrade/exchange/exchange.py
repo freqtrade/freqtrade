@@ -685,16 +685,20 @@ class Exchange:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
         ob = self.fetch_l2_order_book(pair, 1)
-        if side == 'buy':
-            price = ob['asks'][0][0]
-            logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
-            if limit >= price:
-                return True
-        else:
-            price = ob['bids'][0][0]
-            logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
-            if limit <= price:
-                return True
+        try:
+            if side == 'buy':
+                price = ob['asks'][0][0]
+                logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
+                if limit >= price:
+                    return True
+            else:
+                price = ob['bids'][0][0]
+                logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
+                if limit <= price:
+                    return True
+        except IndexError:
+            # Ignore empty orderbooks when filling - can be filled with the next iteration.
+            pass
         return False
 
     def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
