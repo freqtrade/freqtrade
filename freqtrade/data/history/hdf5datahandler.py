@@ -21,12 +21,15 @@ class HDF5DataHandler(IDataHandler):
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @classmethod
-    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+    def ohlcv_get_available_data(cls, datadir: Path, trading_mode: str) -> ListPairsWithTimeframes:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
+        :param trading_mode: trading-mode to be used
         :return: List of Tuples of (pair, timeframe)
         """
+        if trading_mode != 'spot':
+            datadir = datadir.joinpath('futures')
         _tmp = [
             re.search(
                 cls._OHLCV_REGEX, p.name

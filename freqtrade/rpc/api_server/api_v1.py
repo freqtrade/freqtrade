@@ -254,7 +254,8 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
 
-    pair_interval = dh.ohlcv_get_available_data(config['datadir'])
+    # TODO-lev: xmatt to decide: use candle-type or market mode for this endpoint??
+    pair_interval = dh.ohlcv_get_available_data(config['datadir'], 'spot')
 
     if timeframe:
         pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]

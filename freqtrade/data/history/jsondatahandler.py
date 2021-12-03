@@ -23,12 +23,15 @@ class JsonDataHandler(IDataHandler):
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @classmethod
-    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+    def ohlcv_get_available_data(cls, datadir: Path, trading_mode: str) -> ListPairsWithTimeframes:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
+        :param trading_mode: trading-mode to be used
         :return: List of Tuples of (pair, timeframe)
         """
+        if trading_mode != 'spot':
+            datadir = datadir.joinpath('futures')
         _tmp = [
             re.search(
                 cls._OHLCV_REGEX, p.name
@@ -74,6 +77,7 @@ class JsonDataHandler(IDataHandler):
         :return: None
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
+        self.create_dir_if_needed(filename)
         _data = data.copy()
         # Convert date to int
         _data['date'] = _data['date'].view(np.int64) // 1000 // 1000

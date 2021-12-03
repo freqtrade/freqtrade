@@ -38,10 +38,11 @@ class IDataHandler(ABC):
         raise NotImplementedError()
 
     @abstractclassmethod
-    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+    def ohlcv_get_available_data(cls, datadir: Path, trading_mode: str) -> ListPairsWithTimeframes:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
+        :param trading_mode: trading-mode to be used
         :return: List of Tuples of (pair, timeframe)
         """
 
@@ -179,6 +180,15 @@ class IDataHandler(ABC):
         return trades_remove_duplicates(self._trades_load(pair, timerange=timerange))
 
     @classmethod
+    def create_dir_if_needed(cls, datadir: Path):
+        """
+        Creates datadir if necessary
+        should only create directories for "futures" mode at the moment.
+        """
+        if not datadir.parent.is_dir():
+            datadir.parent.mkdir()
+
+    @classmethod
     def _pair_data_filename(
         cls,
         datadir: Path,
@@ -188,6 +198,7 @@ class IDataHandler(ABC):
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
         if candle_type:
+            datadir = datadir.joinpath('futures')
             candle_type = f"-{candle_type}"
         filename = datadir.joinpath(f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
         return filename
