@@ -520,7 +520,7 @@ def test_api_locks(botclient):
     assert rc.json()['lock_count'] == 0
 
 
-def test_api_show_config(botclient, mocker):
+def test_api_show_config(botclient):
     ftbot, client = botclient
     patch_get_signal(ftbot)
 
@@ -536,6 +536,10 @@ def test_api_show_config(botclient, mocker):
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
+    assert 'unfilledtimeout' in rc.json()
+    assert 'version' in rc.json()
+    assert 'api_version' in rc.json()
+    assert 1.1 <= rc.json()['api_version'] <= 1.2
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -715,6 +719,7 @@ def test_api_profit(botclient, mocker, ticker, fee, markets):
     assert rc.json() == {'avg_duration': ANY,
                          'best_pair': 'XRP/BTC',
                          'best_rate': 1.0,
+                         'best_pair_profit_ratio': 0.01,
                          'first_trade_date': ANY,
                          'first_trade_timestamp': ANY,
                          'latest_trade_date': '5 minutes ago',
@@ -812,8 +817,10 @@ def test_api_performance(botclient, fee):
     rc = client_get(client, f"{BASE_URI}/performance")
     assert_response(rc)
     assert len(rc.json()) == 2
-    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_abs': 0.01872279},
-                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_abs': -0.1150375}]
+    assert rc.json() == [{'count': 1, 'pair': 'LTC/ETH', 'profit': 7.61, 'profit_pct': 7.61,
+                          'profit_ratio': 0.07609203, 'profit_abs': 0.01872279},
+                         {'count': 1, 'pair': 'XRP/ETH', 'profit': -5.57, 'profit_pct': -5.57,
+                          'profit_ratio': -0.05570419, 'profit_abs': -0.1150375}]
 
 
 def test_api_status(botclient, mocker, ticker, fee, markets):
@@ -1124,7 +1131,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     assert isinstance(rc.json()['columns'], list)
     assert rc.json()['columns'] == ['date', 'open', 'high',
                                     'low', 'close', 'volume', 'sma', 'buy', 'sell',
-                                    '__date_ts', '_buy_signal_open', '_sell_signal_open']
+                                    '__date_ts', '_buy_signal_close', '_sell_signal_close']
     assert 'pair' in rc.json()
     assert rc.json()['pair'] == 'XRP/BTC'
 
@@ -1135,7 +1142,8 @@ def test_api_pair_candles(botclient, ohlcv_history):
             [['2017-11-26 08:50:00', 8.794e-05, 8.948e-05, 8.794e-05, 8.88e-05, 0.0877869,
               None, 0, 0, 1511686200000, None, None],
              ['2017-11-26 08:55:00', 8.88e-05, 8.942e-05, 8.88e-05,
-                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.88e-05, None],
+                 8.893e-05, 0.05874751, 8.886500000000001e-05, 1, 0, 1511686500000, 8.893e-05,
+                 None],
              ['2017-11-26 09:00:00', 8.891e-05, 8.893e-05, 8.875e-05, 8.877e-05,
                  0.7039405, 8.885e-05, 0, 0, 1511686800000, None, None]
 

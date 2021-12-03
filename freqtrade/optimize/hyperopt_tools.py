@@ -1,4 +1,3 @@
-
 import io
 import logging
 from copy import deepcopy
@@ -64,10 +63,11 @@ class HyperoptTools():
             'export_time': datetime.now(timezone.utc),
         }
         logger.info(f"Dumping parameters to {filename}")
-        rapidjson.dump(final_params, filename.open('w'), indent=2,
-                       default=hyperopt_serializer,
-                       number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
-                       )
+        with filename.open('w') as f:
+            rapidjson.dump(final_params, f, indent=2,
+                           default=hyperopt_serializer,
+                           number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+                           )
 
     @staticmethod
     def try_export_params(config: Dict[str, Any], strategy_name: str, params: Dict):
@@ -284,10 +284,10 @@ class HyperoptTools():
         return (f"{results_metrics['total_trades']:6d} trades. "
                 f"{results_metrics['wins']}/{results_metrics['draws']}"
                 f"/{results_metrics['losses']} Wins/Draws/Losses. "
-                f"Avg profit {results_metrics['profit_mean'] * 100: 6.2f}%. "
-                f"Median profit {results_metrics['profit_median'] * 100: 6.2f}%. "
-                f"Total profit {results_metrics['profit_total_abs']: 11.8f} {stake_currency} "
-                f"({results_metrics['profit_total'] * 100: 7.2f}%). "
+                f"Avg profit {results_metrics['profit_mean']:7.2%}. "
+                f"Median profit {results_metrics['profit_median']:7.2%}. "
+                f"Total profit {results_metrics['profit_total_abs']:11.8f} {stake_currency} "
+                f"({results_metrics['profit_total']:8.2%}). "
                 f"Avg duration {results_metrics['holding_avg']} min."
                 )
 

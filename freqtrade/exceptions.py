@@ -1,5 +1,3 @@
-
-
 class FreqtradeException(Exception):
     """
     Freqtrade base exception. Handled at the outermost level.

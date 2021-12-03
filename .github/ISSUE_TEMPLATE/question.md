@@ -22,4 +22,4 @@ Please do not use the question template to report bugs or to request new feature
   
 ## Your question
 
-*Ask the question you have not been able to find an answer in our [Documentation](https://www.freqtrade.io/en/latest/)*
+*Ask the question you have not been able to find an answer in the [Documentation](https://www.freqtrade.io/en/latest/)*

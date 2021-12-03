@@ -38,6 +38,11 @@ Sample configuration:
 !!! Danger "Security warning"
     By default, the configuration listens on localhost only (so it's not reachable from other systems). We strongly recommend to not expose this API to the internet and choose a strong, unique password, since others will potentially be able to control your bot.
 
+??? Note "API/UI Access on a remote servers"
+    If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+    This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+    Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+
 You can then access the API by going to `http://127.0.0.1:8080/api/v1/ping` in a browser to check if the API is running correctly.
 This should return the response:
 
@@ -330,12 +335,15 @@ Since the access token has a short timeout (15 min) - the `token/refresh` reques
 
 ### CORS
 
-All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
-Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
-Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
+This whole section is only necessary in cross-origin cases (where you multiple bot API's running on `localhost:8081`, `localhost:8082`, ...), and want to combine them into one FreqUI instance.
 
-Users can configure this themselves via the `CORS_origins` configuration setting.
-It consists of a list of allowed sites that are allowed to consume resources from the bot's API.
+??? info "Technical explanation"
+    All web-based front-ends are subject to [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) - Cross-Origin Resource Sharing.
+    Since most of the requests to the Freqtrade API must be authenticated, a proper CORS policy is key to avoid security problems.
+    Also, the standard disallows `*` CORS policies for requests with credentials, so this setting must be set appropriately.
+
+Users can allow access from different origin URL's to the bot API via the `CORS_origins` configuration setting.
+It consists of a list of allowed URL's that are allowed to consume resources from the bot's API.
 
 Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - this would mean that the following configuration becomes necessary:
 
@@ -344,6 +352,20 @@ Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - t
     //...
     "jwt_secret_key": "somethingrandom",
     "CORS_origins": ["https://frequi.freqtrade.io"],
+    //...
+}
+```
+
+In the following (pretty common) case, FreqUI is accessible on `http://localhost:8080/trade` (this is what you see in your navbar when navigating to freqUI).
+![freqUI url](assets/frequi_url.png)
+
+The correct configuration for this case is `http://localhost:8080` - the main part of the URL including the port.
+
+```jsonc
+{
+    //...
+    "jwt_secret_key": "somethingrandom",
+    "CORS_origins": ["http://localhost:8080"],
     //...
 }
 ```

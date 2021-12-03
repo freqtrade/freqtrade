@@ -26,6 +26,12 @@ from freqtrade.rpc.rpc import RPCException
 
 logger = logging.getLogger(__name__)
 
+# API version
+# Pre-1.1, no version was provided
+# Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
+# 1.11: forcebuy and forcesell accept ordertype
+API_VERSION = 1.11
+
 # Public API, requires no auth.
 router_public = APIRouter()
 # Private API, protected by authentication
@@ -117,12 +123,15 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     state = ''
     if rpc:
         state = rpc._freqtrade.state
-    return RPC._rpc_show_config(config, state)
+    resp = RPC._rpc_show_config(config, state)
+    resp['api_version'] = API_VERSION
+    return resp
 
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
@@ -132,7 +141,8 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_forcesell(payload.tradeid)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    return rpc._rpc_forcesell(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

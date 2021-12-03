@@ -54,6 +54,22 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     backtesting.start()
 
 
+def start_backtesting_show(args: Dict[str, Any]) -> None:
+    """
+    Show previous backtest result
+    """
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    from freqtrade.data.btanalysis import load_backtest_stats
+    from freqtrade.optimize.optimize_reports import show_backtest_results, show_sorted_pairlist
+
+    results = load_backtest_stats(config['exportfilename'])
+
+    show_backtest_results(config, results)
+    show_sorted_pairlist(config, results)
+
+
 def start_hyperopt(args: Dict[str, Any]) -> None:
     """
     Start hyperopt script

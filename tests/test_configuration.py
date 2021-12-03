@@ -1359,6 +1359,7 @@ def test_flat_vars_to_nested_dict(caplog):
         'FREQTRADE__ASK_STRATEGY__PRICE_SIDE': 'bid',
         'FREQTRADE__ASK_STRATEGY__cccc': '500',
         'FREQTRADE__STAKE_AMOUNT': '200.05',
+        'FREQTRADE__TELEGRAM__CHAT_ID': '2151',
         'NOT_RELEVANT': '200.0',  # Will be ignored
     }
     expected = {
@@ -1373,6 +1374,9 @@ def test_flat_vars_to_nested_dict(caplog):
             },
             'some_setting': True,
             'some_false_setting': False,
+        },
+        'telegram': {
+            'chat_id': '2151'
         }
     }
     res = flat_vars_to_nested_dict(test_args, ENV_VAR_PREFIX)

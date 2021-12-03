@@ -7,6 +7,7 @@ import pytest
 import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
+from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -415,10 +416,10 @@ def test_VolumePairList_refresh_empty(mocker, markets_empty, whitelist_conf):
     # SpreadFilter only
     ([{"method": "SpreadFilter", "max_spread_ratio": 0.005}],
      "BTC", 'filter_at_the_beginning'),  # OperationalException expected
-    # Static Pairlist after VolumePairList, on a non-first position
-    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume"},
+    # Static Pairlist after VolumePairList, on a non-first position (appends pairs)
+    ([{"method": "VolumePairList", "number_assets": 2, "sort_key": "quoteVolume"},
       {"method": "StaticPairList"}],
-        "BTC", 'static_in_the_middle'),
+        "BTC", ['ETH/BTC', 'TKN/BTC', 'TRST/BTC', 'SWT/BTC', 'BCC/BTC', 'HOT/BTC']),
     ([{"method": "VolumePairList", "number_assets": 20, "sort_key": "quoteVolume"},
       {"method": "PriceFilter", "low_price_ratio": 0.02}],
         "USDT", ['ETH/USDT', 'NANO/USDT']),
@@ -468,13 +469,6 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
     }
 
     mocker.patch('freqtrade.exchange.Exchange.exchange_has', MagicMock(return_value=True))
-
-    if whitelist_result == 'static_in_the_middle':
-        with pytest.raises(OperationalException,
-                           match=r"StaticPairList can only be used in the first position "
-                                 r"in the list of Pairlist Handlers."):
-            freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
-        return
 
     freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     mocker.patch.multiple('freqtrade.exchange.Exchange',
@@ -662,6 +656,22 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     pm.refresh_pairlist()
 
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
+
+
+def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "seed": 42}
+    ]
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    PairListManager(exchange, whitelist_conf)
+    assert log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    caplog.clear()
+    whitelist_conf['runmode'] = RunMode.DRY_RUN
+    PairListManager(exchange, whitelist_conf)
+    assert not log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    assert log_has("Live mode detected, not applying seed.", caplog)
 
 
 @pytest.mark.usefixtures("init_persistence")

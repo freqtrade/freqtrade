@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, inspect, text
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.persistence import LocalTrade, Order, Trade, clean_dry_run_db, init_db
-from tests.conftest import create_mock_trades, log_has, log_has_re
+from tests.conftest import create_mock_trades, create_mock_trades_usdt, log_has, log_has_re
 
 
 def test_init_create_session(default_conf):
@@ -1191,6 +1191,14 @@ def test_get_best_pair(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+def test_get_exit_order_count(fee):
+
+    create_mock_trades_usdt(fee)
+    trade = Trade.get_trades([Trade.pair == 'ETC/USDT']).first()
+    assert trade.get_exit_order_count() == 1
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_update_order_from_ccxt(caplog):
     # Most basic order return (only has orderid)
     o = Order.parse_from_ccxt_object({'id': '1234'}, 'ETH/BTC', 'buy')
@@ -1317,6 +1325,10 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
+        'get_sell_reason_performance',
+        'get_buy_tag_performance',
+        'get_mix_tag_performance',
+
     )
 
     # Parent (LocalTrade) should have the same attributes

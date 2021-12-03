@@ -170,12 +170,8 @@ def test_edge_called_in_process(mocker, edge_conf) -> None:
     patch_RPCManager(mocker)
     patch_edge(mocker)
 
-    def _refresh_whitelist(list):
-        return ['ETH/USDT', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
-
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(edge_conf)
-    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     patch_get_signal(freqtrade)
     freqtrade.process()
     assert freqtrade.active_pair_whitelist == ['NEO/BTC', 'LTC/BTC']
@@ -236,7 +232,7 @@ def test_edge_overrides_stoploss(limit_buy_order_usdt, fee, caplog, mocker,
     # stoploss shoud be hit
     assert freqtrade.handle_trade(trade) is not ignore_strat_sl
     if not ignore_strat_sl:
-        assert log_has('Executing Sell for NEO/BTC. Reason: stop_loss', caplog)
+        assert log_has_re(r'Executing Sell for NEO/BTC. Reason: stop_loss.*', caplog)
         assert trade.sell_reason == SellType.STOP_LOSS.value
 
 
@@ -321,7 +317,7 @@ def test_create_trade_no_stake_amount(default_conf_usdt, ticker_usdt, fee, mocke
 
 @pytest.mark.parametrize('stake_amount,create,amount_enough,max_open_trades', [
     (5.0, True, True, 99),
-    (0.00005, True, False, 99),
+    (0.04, True, False, 99),  # Amount will be adjusted to min - which is 0.051
     (0, False, True, 99),
     (UNLIMITED_STAKE_AMOUNT, False, True, 0),
 ])
@@ -450,7 +446,7 @@ def test_create_trade_no_signal(default_conf_usdt, fee, mocker) -> None:
     )
     default_conf_usdt['stake_amount'] = 10
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade, value=(False, False, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
 
     Trade.query = MagicMock()
     Trade.query.filter = MagicMock()
@@ -664,9 +660,6 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     patch_RPCManager(mocker)
     patch_exchange(mocker)
 
-    def _refresh_whitelist(list):
-        return ['ETH/USDT', 'LTC/BTC', 'XRP/BTC', 'NEO/BTC']
-
     refresh_mock = MagicMock()
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -677,12 +670,11 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m'), ("ETH/USDT", "1h")])
     mocker.patch(
         'freqtrade.strategy.interface.IStrategy.get_signal',
-        return_value=(False, False, '')
+        return_value=(False, False, '', '')
     )
     mocker.patch('time.sleep', return_value=None)
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    freqtrade.pairlists._validate_whitelist = _refresh_whitelist
     freqtrade.strategy.informative_pairs = inf_pairs
     # patch_get_signal(freqtrade)
 
@@ -1618,7 +1610,6 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_buy_order_usd
 
     trade = MagicMock()
     trade.open_order_id = None
-    trade.open_fee = 0.001
     trade.pair = 'ETH/USDT'
     trades = [trade]
 
@@ -1675,6 +1666,15 @@ def test_update_trade_state(mocker, default_conf_usdt, limit_buy_order_usdt, cap
     freqtrade.update_trade_state(trade, '123')
 
     assert log_has_re('Found open order for.*', caplog)
+    limit_buy_order_usdt_new = deepcopy(limit_buy_order_usdt)
+    limit_buy_order_usdt_new['filled'] = 0.0
+    limit_buy_order_usdt_new['statuss'] = 'canceled'
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.get_real_amount', side_effect=ValueError)
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order', return_value=limit_buy_order_usdt_new)
+    res = freqtrade.update_trade_state(trade, '123')
+    # Cancelled empty
+    assert res is True
 
 
 @pytest.mark.parametrize('initial_amount,has_rounding_fee', [
@@ -1716,7 +1716,6 @@ def test_update_trade_state_exception(mocker, default_conf_usdt,
 
     trade = MagicMock()
     trade.open_order_id = '123'
-    trade.open_fee = 0.001
 
     # Test raise of OperationalException exception
     mocker.patch(
@@ -1734,7 +1733,6 @@ def test_update_trade_state_orderexception(mocker, default_conf_usdt, caplog) ->
 
     trade = MagicMock()
     trade.open_order_id = '123'
-    trade.open_fee = 0.001
 
     # Test raise of OperationalException exception
     grm_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", MagicMock())
@@ -1808,7 +1806,7 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade.is_open is True
     freqtrade.wallets.update()
 
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, 'sell_signal1'))
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == limit_sell_order_usdt['id']
 
@@ -1819,6 +1817,7 @@ def test_handle_trade(default_conf_usdt, limit_buy_order_usdt, limit_sell_order_
     assert trade.close_profit == 0.09451372
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
+    assert trade.sell_reason == 'sell_signal1'
 
 
 def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_order_usdt_open,
@@ -1836,7 +1835,7 @@ def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_or
     )
 
     freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade, value=(True, True, None))
+    patch_get_signal(freqtrade, value=(True, True, None, None))
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
     freqtrade.enter_positions()
@@ -1855,7 +1854,7 @@ def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_or
     assert trades[0].is_open is True
 
     # Buy and Sell are not triggering, so doing nothing ...
-    patch_get_signal(freqtrade, value=(False, False, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1863,7 +1862,7 @@ def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_or
     assert trades[0].is_open is True
 
     # Buy and Sell are triggering, so doing nothing ...
-    patch_get_signal(freqtrade, value=(True, True, None))
+    patch_get_signal(freqtrade, value=(True, True, None, None))
     assert freqtrade.handle_trade(trades[0]) is False
     trades = Trade.query.all()
     nb_trades = len(trades)
@@ -1871,7 +1870,7 @@ def test_handle_overlapping_signals(default_conf_usdt, ticker_usdt, limit_buy_or
     assert trades[0].is_open is True
 
     # Sell is triggering, guess what : we are Selling!
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     trades = Trade.query.all()
     assert freqtrade.handle_trade(trades[0]) is True
 
@@ -1905,7 +1904,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_buy_order_usdt_o
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Required profit reached. sell_type=SellType.ROI",
                    caplog)
@@ -1934,10 +1933,10 @@ def test_handle_trade_use_sell_signal(default_conf_usdt, ticker_usdt, limit_buy_
     trade = Trade.query.first()
     trade.is_open = True
 
-    patch_get_signal(freqtrade, value=(False, False, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert not freqtrade.handle_trade(trade)
 
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Sell signal received. sell_type=SellType.SELL_SIGNAL",
                    caplog)
@@ -2124,11 +2123,12 @@ def test_check_handle_timedout_buy_exception(default_conf_usdt, ticker_usdt,
 
 
 def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, limit_sell_order_old,
-                                               mocker, open_trade) -> None:
-    default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440}
+                                               mocker, open_trade, caplog) -> None:
+    default_conf_usdt["unfilledtimeout"] = {"buy": 1440, "sell": 1440, "exit_timeout_count": 1}
     rpc_mock = patch_RPCManager(mocker)
     cancel_order_mock = MagicMock()
     patch_exchange(mocker)
+    et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         fetch_ticker=ticker_usdt,
@@ -2170,6 +2170,14 @@ def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, l
     assert rpc_mock.call_count == 1
     assert open_trade.is_open is True
     assert freqtrade.strategy.check_sell_timeout.call_count == 1
+
+    # 2nd canceled trade ...
+    caplog.clear()
+    open_trade.open_order_id = 'order_id_2'
+    mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
+    freqtrade.check_handle_timedout()
+    assert log_has_re('Emergencyselling trade.*', caplog)
+    assert et_mock.call_count == 1
 
 
 def test_check_handle_timedout_sell(default_conf_usdt, ticker_usdt, limit_sell_order_old, mocker,
@@ -2560,6 +2568,8 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
                                  sell_reason=SellCheckTuple(sell_type=SellType.ROI))
     assert rpc_mock.call_count == 0
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
+    assert id(freqtrade.strategy.confirm_trade_exit.call_args_list[0][1]['trade']) != id(trade)
+    assert freqtrade.strategy.confirm_trade_exit.call_args_list[0][1]['trade'].id == trade.id
 
     # Repatch with true
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=True)
@@ -2579,6 +2589,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'limit': 2.2,
         'amount': 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.0,
         'current_rate': 2.3,
         'profit_amount': 5.685,
@@ -2632,6 +2643,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'limit': 2.01,
         'amount': 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.0,
         'current_rate': 2.0,
         'profit_amount': -0.00075,
@@ -2699,6 +2711,7 @@ def test_execute_trade_exit_custom_exit_price(default_conf_usdt, ticker_usdt, fe
         'limit': 2.25,
         'amount': 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.0,
         'current_rate': 2.3,
         'profit_amount': 7.18125,
@@ -2758,6 +2771,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'limit': 1.98,
         'amount': 30.0,
         'order_type': 'limit',
+        'buy_tag': None,
         'open_rate': 2.0,
         'current_rate': 2.0,
         'profit_amount': -0.8985,
@@ -2965,7 +2979,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
     assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -2975,6 +2989,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
         'limit': 2.2,
         'amount': 30.0,
         'order_type': 'market',
+        'buy_tag': None,
         'open_rate': 2.0,
         'current_rate': 2.3,
         'profit_amount': 5.685,
@@ -3068,7 +3083,7 @@ def test_sell_profit_only(
     trade = Trade.query.first()
     trade.update(limit_buy_order_usdt)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade) is handle_first
 
     if handle_second:
@@ -3103,7 +3118,7 @@ def test_sell_not_enough_balance(default_conf_usdt, limit_buy_order_usdt, limit_
     trade = Trade.query.first()
     amnt = trade.amount
     trade.update(limit_buy_order_usdt)
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     mocker.patch('freqtrade.wallets.Wallets.get_free', MagicMock(return_value=trade.amount * 0.985))
 
     assert freqtrade.handle_trade(trade) is True
@@ -3212,11 +3227,11 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
     trade = Trade.query.first()
     trade.update(limit_buy_order_usdt)
     freqtrade.wallets.update()
-    patch_get_signal(freqtrade, value=(True, True, None))
+    patch_get_signal(freqtrade, value=(True, True, None, None))
     assert freqtrade.handle_trade(trade) is False
 
     # Test if buy-signal is absent (should sell due to roi = true)
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3329,7 +3344,7 @@ def test_trailing_stop_loss_positive(
     )
     # stop-loss not reached, adjusted stoploss
     assert freqtrade.handle_trade(trade) is False
-    caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0249%"
+    caplog_text = f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 2.49%"
     if trail_if_reached:
         assert not log_has(caplog_text, caplog)
         assert not log_has("ETH/USDT - Adjusting stoploss...", caplog)
@@ -3349,7 +3364,7 @@ def test_trailing_stop_loss_positive(
     )
     assert freqtrade.handle_trade(trade) is False
     assert log_has(
-        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 0.0572%",
+        f"ETH/USDT - Using positive stoploss: 0.01 offset: {offset} profit: 5.72%",
         caplog
     )
     assert log_has("ETH/USDT - Adjusting stoploss...", caplog)
@@ -3402,11 +3417,11 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usd
     trade = Trade.query.first()
     trade.update(limit_buy_order_usdt)
     # Sell due to min_roi_reached
-    patch_get_signal(freqtrade, value=(True, True, None))
+    patch_get_signal(freqtrade, value=(True, True, None, None))
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3609,6 +3624,31 @@ def test_get_real_amount_invalid_order(default_conf_usdt, trades_for_order, buy_
 
     # Amount does not change
     assert freqtrade.get_real_amount(trade, limit_buy_order_usdt) == amount
+
+
+def test_get_real_amount_fees_order(default_conf_usdt, market_buy_order_usdt_doublefee,
+                                    fee, mocker):
+
+    tfo_mock = mocker.patch('freqtrade.exchange.Exchange.get_trades_for_order', return_value=[])
+    mocker.patch('freqtrade.exchange.Exchange.get_valid_pair_combination', return_value='BNB/USDT')
+    mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 200})
+    trade = Trade(
+        pair='LTC/USDT',
+        amount=30.0,
+        exchange='binance',
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_rate=0.245441,
+        open_order_id="123456"
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    # Amount does not change
+    assert trade.fee_open == 0.0025
+    assert freqtrade.get_real_amount(trade, market_buy_order_usdt_doublefee) == 30.0
+    assert tfo_mock.call_count == 0
+    # Fetch fees from trades dict if available to get "proper" values
+    assert round(trade.fee_open, 4) == 0.001
 
 
 def test_get_real_amount_wrong_amount(default_conf_usdt, trades_for_order, buy_order_fee, fee,
@@ -3848,7 +3888,7 @@ def test_order_book_ask_strategy(
     freqtrade.wallets.update()
     assert trade.is_open is True
 
-    patch_get_signal(freqtrade, value=(False, True, None))
+    patch_get_signal(freqtrade, value=(False, True, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.close_rate_requested == order_book_l2.return_value['asks'][0][0]
 

@@ -10,16 +10,19 @@ from arrow import Arrow
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN
 from freqtrade.data import history
-from freqtrade.data.btanalysis import get_latest_backtest_filename, load_backtest_data
+from freqtrade.data.btanalysis import (get_latest_backtest_filename, load_backtest_data,
+                                       load_backtest_stats)
 from freqtrade.edge import PairInfo
 from freqtrade.enums import SellType
-from freqtrade.optimize.optimize_reports import (generate_backtest_stats, generate_daily_stats,
-                                                 generate_edge_table, generate_pair_metrics,
+from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
+                                                 generate_daily_stats, generate_edge_table,
+                                                 generate_pair_metrics,
+                                                 generate_periodic_breakdown_stats,
                                                  generate_sell_reason_stats,
                                                  generate_strategy_comparison,
-                                                 generate_trading_stats, store_backtest_stats,
-                                                 text_table_bt_results, text_table_sell_reason,
-                                                 text_table_strategy)
+                                                 generate_trading_stats, show_sorted_pairlist,
+                                                 store_backtest_stats, text_table_bt_results,
+                                                 text_table_sell_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from tests.data.test_history import _backup_file, _clean_test_file
 
@@ -377,3 +380,44 @@ def test_generate_edge_table():
     assert generate_edge_table(results).count('| ETH/BTC |') == 1
     assert generate_edge_table(results).count(
         '|   Risk Reward Ratio |   Required Risk Reward |   Expectancy |') == 1
+
+
+def test_generate_periodic_breakdown_stats(testdatadir):
+    filename = testdatadir / "backtest-result_new.json"
+    bt_data = load_backtest_data(filename).to_dict(orient='records')
+
+    res = generate_periodic_breakdown_stats(bt_data, 'day')
+    assert isinstance(res, list)
+    assert len(res) == 21
+    day = res[0]
+    assert 'date' in day
+    assert 'draws' in day
+    assert 'loses' in day
+    assert 'wins' in day
+    assert 'profit_abs' in day
+
+    # Select empty dataframe!
+    res = generate_periodic_breakdown_stats([], 'day')
+    assert res == []
+
+
+def test__get_resample_from_period():
+
+    assert _get_resample_from_period('day') == '1d'
+    assert _get_resample_from_period('week') == '1w'
+    assert _get_resample_from_period('month') == '1M'
+    with pytest.raises(ValueError, match=r"Period noooo is not supported."):
+        _get_resample_from_period('noooo')
+
+
+def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
+    filename = testdatadir / "backtest-result_new.json"
+    bt_data = load_backtest_stats(filename)
+    default_conf['backtest_show_pair_list'] = True
+
+    show_sorted_pairlist(default_conf, bt_data)
+
+    out, err = capsys.readouterr()
+    assert 'Pairs for Strategy StrategyTestV2: \n[' in out
+    assert 'TOTAL' not in out
+    assert '"ETH/BTC",  // ' in out

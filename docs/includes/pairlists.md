@@ -52,6 +52,8 @@ To skip pair validation against active markets, set `"allow_inactive": true` wit
 This can be useful for backtesting expired pairs (like quarterly spot-markets).
 This option must be configured along with `exchange.skip_pair_validation` in the exchange configuration.
 
+When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in `'pair_whitelist'` will be added to the end of the pairlist.
+
 #### Volume Pair List
 
 `VolumePairList` employs sorting/filtering of pairs by their trading volume. It selects `number_assets` top pairs with sorting based on the `sort_key` (which can only be `quoteVolume`).
@@ -196,7 +198,7 @@ Not defining this parameter (or setting it to 0) will use all-time performance.
 
 The optional `min_profit` parameter defines the minimum profit a pair must have to be considered.
 Pairs below this level will be filtered out.
-Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without without a way to recover.
+Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without a way to recover.
 
 ```json
 "pairlists": [
@@ -209,12 +211,17 @@ Using this parameter without `minutes` is highly discouraged, as it can lead to 
 ],
 ```
 
+As this Filter uses past performance of the bot, it'll have some startup-period - and should only be used after the bot has a few 100 trades in the database.
+
 !!! Warning "Backtesting"
     `PerformanceFilter` does not support backtesting mode.
 
 #### PrecisionFilter
 
 Filters low-value coins which would not allow setting stoplosses.
+
+!!! Warning "Backtesting"
+    `PrecisionFilter` does not support backtesting mode using multiple strategies.
 
 #### PriceFilter
 
@@ -253,7 +260,7 @@ Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 -
 Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.
 
 !!! Tip
-    You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order.
+    You may set the `seed` value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If `seed` is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the `seed` only for backtesting modes - if a `seed` value is set.
 
 #### SpreadFilter
 
@@ -288,7 +295,7 @@ If the trading range over the last 10 days is <1% or >99%, remove the pair from 
 
 #### VolatilityFilter
 
-Volatility is the degree of historical variation of a pairs over time, is is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of [`volatility`](https://en.wikipedia.org/wiki/Volatility_(finance)).
+Volatility is the degree of historical variation of a pairs over time, it is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of [`volatility`](https://en.wikipedia.org/wiki/Volatility_(finance)).
 
 This filter removes pairs if the average volatility over a `lookback_days` days is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
@@ -342,5 +349,5 @@ The below example blacklists `BNB/BTC`, uses `VolumePairList` with `20` assets, 
         "refresh_period": 86400
     },
     {"method": "ShuffleFilter", "seed": 42}
-    ],
+],
 ```

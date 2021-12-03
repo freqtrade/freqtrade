@@ -209,7 +209,8 @@ def test_export_params(tmpdir):
 
     assert filename.is_file()
 
-    content = rapidjson.load(filename.open('r'))
+    with filename.open('r') as f:
+        content = rapidjson.load(f)
     assert content['strategy_name'] == 'StrategyTestV2'
     assert 'params' in content
     assert "buy" in content["params"]

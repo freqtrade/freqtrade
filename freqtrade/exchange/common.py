@@ -16,8 +16,6 @@ API_FETCH_ORDER_RETRY_COUNT = 5
 
 BAD_EXCHANGES = {
     "bitmex": "Various reasons.",
-    "bitstamp": "Does not provide history. "
-                "Details in https://github.com/freqtrade/freqtrade/issues/1983",
     "phemex": "Does not provide history. ",
     "poloniex": "Does not provide fetch_order endpoint to fetch both open and closed orders.",
 }
@@ -83,9 +81,16 @@ def retrier_async(f):
                 count -= 1
                 kwargs.update({'count': count})
                 if isinstance(ex, DDosProtection):
-                    backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
-                    logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
-                    await asyncio.sleep(backoff_delay)
+                    if "kucoin" in str(ex) and "429000" in str(ex):
+                        # Temporary fix for 429000 error on kucoin
+                        # see https://github.com/freqtrade/freqtrade/issues/5700 for details.
+                        logger.warning(
+                            f"Kucoin 429 error, avoid triggering DDosProtection backoff delay. "
+                            f"{count} tries left before giving up")
+                    else:
+                        backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
+                        logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                        await asyncio.sleep(backoff_delay)
                 return await wrapper(*args, **kwargs)
             else:
                 logger.warning('Giving up retrying: %s()', f.__name__)
