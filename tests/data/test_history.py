@@ -98,7 +98,7 @@ def test_load_data_1min_timeframe(ohlcv_history, mocker, caplog, testdatadir) ->
 
 def test_load_data_mark(ohlcv_history, mocker, caplog, testdatadir) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history)
-    file = testdatadir / 'UNITTEST_USDT-1h-mark.json'
+    file = testdatadir / 'futures/UNITTEST_USDT-1h-mark.json'
     load_data(datadir=testdatadir, timeframe='1h', pairs=['UNITTEST/BTC'], candle_type='mark')
     assert file.is_file()
     assert not log_has(
@@ -163,8 +163,8 @@ def test_testdata_path(testdatadir) -> None:
     (".XBTBON2H", 'freqtrade/hello/world/_XBTBON2H-5m.json', ""),
     ("ETHUSD.d", 'freqtrade/hello/world/ETHUSD_d-5m.json', ""),
     ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m.json', ""),
-    ("ETH/BTC", 'freqtrade/hello/world/ETH_BTC-5m-mark.json', "mark"),
-    ("ACC_OLD/BTC", 'freqtrade/hello/world/ACC_OLD_BTC-5m-index.json', "index"),
+    ("ETH/BTC", 'freqtrade/hello/world/futures/ETH_BTC-5m-mark.json', "mark"),
+    ("ACC_OLD/BTC", 'freqtrade/hello/world/futures/ACC_OLD_BTC-5m-index.json', "index"),
 ])
 def test_json_pair_data_filename(pair, expected_result, candle_type):
     fn = JsonDataHandler._pair_data_filename(
@@ -254,9 +254,9 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     assert start_ts is None
 
 
-@pytest.mark.parametrize('candle_type, file_tail', [
-    ('mark', '-mark'),
-    ('', ''),
+@pytest.mark.parametrize('candle_type,subdir,file_tail', [
+    ('mark', 'futures/', '-mark'),
+    ('', '', ''),
 ])
 def test_download_pair_history(
     ohlcv_history_list,
@@ -264,15 +264,16 @@ def test_download_pair_history(
     default_conf,
     tmpdir,
     candle_type,
+    subdir,
     file_tail
 ) -> None:
     mocker.patch('freqtrade.exchange.Exchange.get_historic_ohlcv', return_value=ohlcv_history_list)
     exchange = get_patched_exchange(mocker, default_conf)
     tmpdir1 = Path(tmpdir)
-    file1_1 = tmpdir1 / f'MEME_BTC-1m{file_tail}.json'
-    file1_5 = tmpdir1 / f'MEME_BTC-5m{file_tail}.json'
-    file2_1 = tmpdir1 / f'CFI_BTC-1m{file_tail}.json'
-    file2_5 = tmpdir1 / f'CFI_BTC-5m{file_tail}.json'
+    file1_1 = tmpdir1 / f'{subdir}MEME_BTC-1m{file_tail}.json'
+    file1_5 = tmpdir1 / f'{subdir}MEME_BTC-5m{file_tail}.json'
+    file2_1 = tmpdir1 / f'{subdir}CFI_BTC-1m{file_tail}.json'
+    file2_5 = tmpdir1 / f'{subdir}CFI_BTC-5m{file_tail}.json'
 
     assert not file1_1.is_file()
     assert not file2_1.is_file()
@@ -707,7 +708,7 @@ def test_rebuild_pair_from_filename(input, expected):
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):
-    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir)
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ('UNITTEST/BTC', '5m', ''),
@@ -727,14 +728,19 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('UNITTEST/BTC', '30m', ''),
         ('UNITTEST/BTC', '8m', ''),
         ('NOPAIR/XXX', '4m', ''),
+    }
+
+    paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'futures')
+    # Convert to set to avoid failures due to sorting
+    assert set(paircombs) == {
         ('UNITTEST/USDT', '1h', 'mark'),
         ('XRP/USDT', '1h', ''),
         ('XRP/USDT', '1h', 'mark'),
     }
 
-    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir)
+    paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
     assert set(paircombs) == {('UNITTEST/BTC', '8m', '')}
-    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir)
+    paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, 'spot')
     assert set(paircombs) == {('UNITTEST/BTC', '5m', '')}
 
 

@@ -200,7 +200,8 @@ class IDataHandler(ABC):
         if candle_type:
             datadir = datadir.joinpath('futures')
             candle_type = f"-{candle_type}"
-        filename = datadir.joinpath(f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
+        filename = datadir.joinpath(
+            f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
         return filename
 
     @classmethod
