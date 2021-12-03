@@ -16,5 +16,5 @@ class CandleType(str, Enum):
     def from_string(cls, value: str) -> 'CandleType':
         if not value:
             # Default to spot
-            return CandleType.SPOT
+            return CandleType.SPOT_
         return CandleType(value)

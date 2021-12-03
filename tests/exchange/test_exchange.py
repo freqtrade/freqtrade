@@ -11,7 +11,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import CandleType, Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
@@ -1685,7 +1685,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
 
     pair = 'ETH/USDT'
     respair, restf, _, res = await exchange._async_get_historic_ohlcv(
-        pair, "5m", 1500000000000, is_new_pair=False)
+        pair, "5m", 1500000000000, candle_type=CandleType.SPOT, is_new_pair=False)
     assert respair == pair
     assert restf == '5m'
     # Call with very old timestamp - causes tons of requests

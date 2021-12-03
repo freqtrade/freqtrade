@@ -11,7 +11,7 @@ import arrow
 import pytest
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import RPCMessageType, RunMode, SellType, SignalDirection, State
+from freqtrade.enums import CandleType, RPCMessageType, RunMode, SellType, SignalDirection, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
@@ -696,9 +696,9 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     freqtrade.process()
     assert inf_pairs.call_count == 1
     assert refresh_mock.call_count == 1
-    assert ("BTC/ETH", "1m", '') in refresh_mock.call_args[0][0]
-    assert ("ETH/USDT", "1h", '') in refresh_mock.call_args[0][0]
-    assert ("ETH/USDT", default_conf_usdt["timeframe"], '') in refresh_mock.call_args[0][0]
+    assert ("BTC/ETH", "1m", CandleType.SPOT_) in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", "1h", CandleType.SPOT_) in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", default_conf_usdt["timeframe"], CandleType.SPOT) in refresh_mock.call_args[0][0]
 
 
 @pytest.mark.parametrize("trading_mode", [
