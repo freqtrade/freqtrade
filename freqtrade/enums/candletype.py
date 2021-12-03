@@ -11,3 +11,10 @@ class CandleType(str, Enum):
     PREMIUMINDEX = "premiumIndex"
     # TODO-lev: not sure this belongs here, as the datatype is really different
     FUNDING_RATE = "funding_rate"
+
+    @classmethod
+    def from_string(cls, value: str) -> 'CandleType':
+        if not value:
+            # Default to spot
+            return CandleType.SPOT
+        return CandleType(value)
