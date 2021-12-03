@@ -9,6 +9,7 @@ import arrow
 from pandas import DataFrame
 
 from freqtrade.configuration import PeriodicCache
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import plural
@@ -72,7 +73,7 @@ class AgeFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers()). May be cached.
         :return: new allowlist
         """
-        needed_pairs = [
+        needed_pairs: ListPairsWithTimeframes = [
             (p, '1d', CandleType.SPOT_) for p in pairlist
             if p not in self._symbolsChecked and p not in self._symbolsCheckFailed]
         if not needed_pairs:

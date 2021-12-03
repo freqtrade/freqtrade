@@ -1388,8 +1388,7 @@ class Exchange:
         return pair, timeframe, candle_type, data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
-                             since_ms: Optional[int] = None, cache: bool = True,
-                             candle_type: CandleType = CandleType.SPOT_
+                             since_ms: Optional[int] = None, cache: bool = True
                              ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
@@ -1398,7 +1397,6 @@ class Exchange:
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))

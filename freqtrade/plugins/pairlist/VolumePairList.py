@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import arrow
 from cachetools.ttl import TTLCache
 
+from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
@@ -160,7 +161,7 @@ class VolumePairList(IPairList):
             self.log_once(f"Using volume range of {self._lookback_period} candles, timeframe: "
                           f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
                           f"till {format_ms_time(to_ms)}", logger.info)
-            needed_pairs = [
+            needed_pairs: ListPairsWithTimeframes = [
                 (p, self._lookback_timeframe, CandleType.SPOT_) for p in
                 [s['symbol'] for s in filtered_tickers]
                 if p not in self._pair_cache
