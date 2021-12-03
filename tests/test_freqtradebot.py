@@ -698,7 +698,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     assert refresh_mock.call_count == 1
     assert ("BTC/ETH", "1m", CandleType.SPOT_) in refresh_mock.call_args[0][0]
     assert ("ETH/USDT", "1h", CandleType.SPOT_) in refresh_mock.call_args[0][0]
-    assert ("ETH/USDT", default_conf_usdt["timeframe"], CandleType.SPOT) in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", default_conf_usdt["timeframe"],
+            CandleType.SPOT) in refresh_mock.call_args[0][0]
 
 
 @pytest.mark.parametrize("trading_mode", [

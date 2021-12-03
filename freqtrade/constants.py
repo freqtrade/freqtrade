@@ -5,6 +5,8 @@ bot constants
 """
 from typing import List, Tuple
 
+from freqtrade.enums import CandleType
+
 
 DEFAULT_CONFIG = 'config.json'
 DEFAULT_EXCHANGE = 'bittrex'
@@ -475,9 +477,7 @@ CANCEL_REASON = {
 }
 
 # List of pairs with their timeframes
-# TODO-lev: This should really be
-# PairWithTimeframe = Tuple[str, str, CandleType]
-PairWithTimeframe = Tuple[str, str, str]
+PairWithTimeframe = Tuple[str, str, CandleType]
 ListPairsWithTimeframes = List[PairWithTimeframe]
 
 # Type for trades list
