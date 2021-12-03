@@ -487,7 +487,13 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
     assert len(caplog.record_tuples) == 0
 
 
-def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, testdatadir):
+@pytest.mark.parametrize('trademode,callcount', [
+    ('spot', 4),
+    ('margin', 4),
+    ('futures', 6),
+])
+def test_refresh_backtest_ohlcv_data(
+        mocker, default_conf, markets, caplog, testdatadir, trademode, callcount):
     dl_mock = mocker.patch('freqtrade.data.history.history_utils._download_pair_history',
                            MagicMock())
     mocker.patch(
@@ -500,10 +506,11 @@ def test_refresh_backtest_ohlcv_data(mocker, default_conf, markets, caplog, test
     timerange = TimeRange.parse_timerange("20190101-20190102")
     refresh_backtest_ohlcv_data(exchange=ex, pairs=["ETH/BTC", "XRP/BTC"],
                                 timeframes=["1m", "5m"], datadir=testdatadir,
-                                timerange=timerange, erase=True
+                                timerange=timerange, erase=True,
+                                trading_mode=trademode
                                 )
 
-    assert dl_mock.call_count == 4
+    assert dl_mock.call_count == callcount
     assert dl_mock.call_args[1]['timerange'].starttype == 'date'
 
     assert log_has("Downloading pair ETH/BTC, interval 1m.", caplog)
@@ -521,7 +528,8 @@ def test_download_data_no_markets(mocker, default_conf, caplog, testdatadir):
     unav_pairs = refresh_backtest_ohlcv_data(exchange=ex, pairs=["BTT/BTC", "LTC/USDT"],
                                              timeframes=["1m", "5m"],
                                              datadir=testdatadir,
-                                             timerange=timerange, erase=False
+                                             timerange=timerange, erase=False,
+                                             trading_mode='spot'
                                              )
 
     assert dl_mock.call_count == 0
