@@ -1353,6 +1353,13 @@ def test_list_available_pairs(botclient):
     assert rc.json()['pairs'] == ['XRP/ETH']
     assert len(rc.json()['pair_interval']) == 1
 
+    ftbot.config['trading_mode'] = 'futures'
+    rc = client_get(
+        client, f"{BASE_URI}/available_pairs?timeframe=1h")
+    assert_response(rc)
+    assert rc.json()['length'] == 1
+    assert rc.json()['pairs'] == ['XRP/USDT']
+
     rc = client_get(
         client, f"{BASE_URI}/available_pairs?timeframe=1h&candletype=mark")
     assert_response(rc)
