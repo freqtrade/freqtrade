@@ -17,6 +17,7 @@ from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange import timeframe_to_seconds
 
 
@@ -47,13 +48,18 @@ class IDataHandler(ABC):
         """
 
     @abstractclassmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: str = '') -> List[str]:
+    def ohlcv_get_pairs(
+        cls,
+        datadir: Path,
+        timeframe: str,
+        candle_type: CandleType = CandleType.SPOT_
+    ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match your trading mode!)
         :return: List of Pairs
         """
 

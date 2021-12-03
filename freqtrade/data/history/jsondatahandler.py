@@ -10,6 +10,7 @@ from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import trades_dict_to_list
+from freqtrade.enums.candletype import CandleType
 
 from .idatahandler import IDataHandler
 
@@ -40,23 +41,27 @@ class JsonDataHandler(IDataHandler):
                 if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: str = '') -> List[str]:
+    def ohlcv_get_pairs(
+        cls,
+        datadir: Path,
+        timeframe: str,
+        candle_type: CandleType = CandleType.SPOT_
+    ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match your trading mode!)
         :return: List of Pairs
         """
-        if candle_type:
+        candle = ""
+        if candle_type not in (CandleType.SPOT, CandleType.SPOT_):
             datadir = datadir.joinpath('futures')
-            candle_type = f"-{candle_type}"
-        else:
-            candle_type = ""
+            candle = f"-{candle_type}"
 
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle_type + '.json)', p.name)
-                for p in datadir.glob(f"*{timeframe}{candle_type}.{cls._get_file_extension()}")]
+        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + '.json)', p.name)
+                for p in datadir.glob(f"*{timeframe}{candle}.{cls._get_file_extension()}")]
         # Check if regex found something and only return these results
         return [match[0].replace('_', '/') for match in _tmp if match]
 
