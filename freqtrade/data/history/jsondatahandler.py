@@ -52,7 +52,7 @@ class JsonDataHandler(IDataHandler):
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
-        :param candle_type: Any of the enum CandleType (must match your trading mode!)
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: List of Pairs
         """
         candle = ""
@@ -70,7 +70,7 @@ class JsonDataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType = CandleType.SPOT_
     ) -> None:
         """
         Store data in json format "values".
@@ -79,7 +79,7 @@ class JsonDataHandler(IDataHandler):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
@@ -95,7 +95,7 @@ class JsonDataHandler(IDataHandler):
 
     def _ohlcv_load(self, pair: str, timeframe: str,
                     timerange: Optional[TimeRange] = None,
-                    candle_type: str = ''
+                    candle_type: CandleType = CandleType.SPOT_
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
@@ -106,7 +106,7 @@ class JsonDataHandler(IDataHandler):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
@@ -126,33 +126,19 @@ class JsonDataHandler(IDataHandler):
                                        infer_datetime_format=True)
         return pairdata
 
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
-        """
-        Remove data for this pair
-        :param pair: Delete data for this pair.
-        :param timeframe: Timeframe (e.g. "5m")
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        :return: True when deleted, false if file did not exist.
-        """
-        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
-        if filename.exists():
-            filename.unlink()
-            return True
-        return False
-
     def ohlcv_append(
         self,
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType
     ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         raise NotImplementedError()
 

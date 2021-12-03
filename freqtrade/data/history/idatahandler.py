@@ -59,7 +59,7 @@ class IDataHandler(ABC):
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
-        :param candle_type: Any of the enum CandleType (must match your trading mode!)
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: List of Pairs
         """
 
@@ -69,21 +69,20 @@ class IDataHandler(ABC):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType = CandleType.SPOT_
     ) -> None:
         """
         Store ohlcv data.
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
 
     @abstractmethod
-    def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None,
-                    candle_type: str = ''
+    def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange] = None,
+                    candle_type: CandleType = CandleType.SPOT_
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
@@ -94,16 +93,17 @@ class IDataHandler(ABC):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
-    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: str = '') -> bool:
+    def ohlcv_purge(
+            self, pair: str, timeframe: str, candle_type: CandleType = CandleType.SPOT_) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
@@ -118,14 +118,14 @@ class IDataHandler(ABC):
         pair: str,
         timeframe: str,
         data: DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType
     ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
 
     @abstractclassmethod
@@ -200,14 +200,15 @@ class IDataHandler(ABC):
         datadir: Path,
         pair: str,
         timeframe: str,
-        candle_type: str = ''
+        candle_type: CandleType
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
-        if candle_type:
+        candle = ""
+        if candle_type not in (CandleType.SPOT, CandleType.SPOT_):
             datadir = datadir.joinpath('futures')
-            candle_type = f"-{candle_type}"
+            candle = f"-{candle_type}"
         filename = datadir.joinpath(
-            f'{pair_s}-{timeframe}{candle_type}.{cls._get_file_extension()}')
+            f'{pair_s}-{timeframe}{candle}.{cls._get_file_extension()}')
         return filename
 
     @classmethod
@@ -232,7 +233,7 @@ class IDataHandler(ABC):
                    drop_incomplete: bool = True,
                    startup_candles: int = 0,
                    warn_no_data: bool = True,
-                   candle_type: str = ''
+                   candle_type: CandleType = CandleType.SPOT_
                    ) -> DataFrame:
         """
         Load cached candle (OHLCV) data for the given pair.
@@ -244,7 +245,7 @@ class IDataHandler(ABC):
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
         :param warn_no_data: Log a warning message when no data is found
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period

@@ -51,7 +51,7 @@ class HDF5DataHandler(IDataHandler):
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
-        :param candle_type: Any of the enum CandleType (must match your trading mode!)
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: List of Pairs
         """
         candle = ""
@@ -69,14 +69,14 @@ class HDF5DataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: pd.DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType = CandleType.SPOT_
     ) -> None:
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
         key = self._pair_ohlcv_key(pair, timeframe)
@@ -90,7 +90,9 @@ class HDF5DataHandler(IDataHandler):
         )
 
     def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None, candle_type: str = '') -> pd.DataFrame:
+                    timerange: Optional[TimeRange] = None,
+                    candle_type: CandleType = CandleType.SPOT_
+                    ) -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversion to a Pandas dataframe.
@@ -100,7 +102,7 @@ class HDF5DataHandler(IDataHandler):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         key = self._pair_ohlcv_key(pair, timeframe)
@@ -133,14 +135,14 @@ class HDF5DataHandler(IDataHandler):
         pair: str,
         timeframe: str,
         data: pd.DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType
     ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         raise NotImplementedError()
 

@@ -12,6 +12,7 @@ from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time
@@ -29,7 +30,7 @@ def load_pair_history(pair: str,
                       startup_candles: int = 0,
                       data_format: str = None,
                       data_handler: IDataHandler = None,
-                      candle_type: str = ''
+                      candle_type: CandleType = CandleType.SPOT
                       ) -> DataFrame:
     """
     Load cached ohlcv history for the given pair.
@@ -44,7 +45,7 @@ def load_pair_history(pair: str,
     :param startup_candles: Additional candles to load at the start of the period
     :param data_handler: Initialized data-handler to use.
                          Will be initialized from data_format if not set
-    :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
     data_handler = get_datahandler(datadir, data_format, data_handler)
@@ -67,7 +68,7 @@ def load_data(datadir: Path,
               startup_candles: int = 0,
               fail_without_data: bool = False,
               data_format: str = 'json',
-              candle_type: str = ''
+              candle_type: CandleType = CandleType.SPOT
               ) -> Dict[str, DataFrame]:
     """
     Load ohlcv history data for a list of pairs.
@@ -80,7 +81,7 @@ def load_data(datadir: Path,
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
     :param data_format: Data format which should be used. Defaults to json
-    :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: dict(<pair>:<Dataframe>)
     """
     result: Dict[str, DataFrame] = {}
@@ -111,7 +112,7 @@ def refresh_data(datadir: Path,
                  exchange: Exchange,
                  data_format: str = None,
                  timerange: Optional[TimeRange] = None,
-                 candle_type: str = ''
+                 candle_type: CandleType = CandleType.SPOT
                  ) -> None:
     """
     Refresh ohlcv history data for a list of pairs.
@@ -122,7 +123,7 @@ def refresh_data(datadir: Path,
     :param exchange: Exchange object
     :param data_format: dataformat to use
     :param timerange: Limit data to be loaded to this timerange
-    :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     """
     data_handler = get_datahandler(datadir, data_format)
     for idx, pair in enumerate(pairs):
@@ -138,7 +139,7 @@ def _load_cached_data_for_updating(
     timeframe: str,
     timerange: Optional[TimeRange],
     data_handler: IDataHandler,
-    candle_type: str = ''
+    candle_type: CandleType = CandleType.SPOT
 ) -> Tuple[DataFrame, Optional[int]]:
     """
     Load cached data to download more data.
@@ -177,7 +178,8 @@ def _download_pair_history(pair: str, *,
                            new_pairs_days: int = 30,
                            data_handler: IDataHandler = None,
                            timerange: Optional[TimeRange] = None,
-                           candle_type: str = '') -> bool:
+                           candle_type: CandleType = CandleType.SPOT
+                           ) -> bool:
     """
     Download latest candles from the exchange for the pair and timeframe passed in parameters
     The data is downloaded starting from the last correct data that
@@ -189,7 +191,7 @@ def _download_pair_history(pair: str, *,
     :param pair: pair to download
     :param timeframe: Timeframe (e.g "5m")
     :param timerange: range of time to download
-    :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: bool with success state
     """
     data_handler = get_datahandler(datadir, data_handler=data_handler)
@@ -249,7 +251,8 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                 datadir: Path, timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
                                 data_format: str = None,
-                                candle_type: str = '') -> List[str]:
+                                candle_type: CandleType = CandleType.SPOT
+                                ) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
     Used by freqtrade download-data subcommand.
@@ -382,7 +385,7 @@ def convert_trades_to_ohlcv(
     erase: bool = False,
     data_format_ohlcv: str = 'json',
     data_format_trades: str = 'jsongz',
-    candle_type: str = ''
+    candle_type: CandleType = CandleType.SPOT
 ) -> None:
     """
     Convert stored trades data to ohlcv data

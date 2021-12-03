@@ -24,6 +24,7 @@ from freqtrade.data.history.history_utils import (_download_pair_history, _downl
                                                   validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver
@@ -809,9 +810,9 @@ def test_jsondatahandler_trades_purge(mocker, testdatadir):
 def test_datahandler_ohlcv_append(datahandler, testdatadir, ):
     dh = get_datahandler(testdatadir, datahandler)
     with pytest.raises(NotImplementedError):
-        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame())
+        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame(), CandleType.SPOT)
     with pytest.raises(NotImplementedError):
-        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame(), candle_type='mark')
+        dh.ohlcv_append('UNITTEST/ETH', '5m', DataFrame(), CandleType.MARK)
 
 
 @pytest.mark.parametrize('datahandler', AVAILABLE_DATAHANDLERS)

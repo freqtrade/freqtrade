@@ -11,6 +11,7 @@ import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS, TradeList
+from freqtrade.enums.candletype import CandleType
 
 
 logger = logging.getLogger(__name__)
@@ -266,7 +267,7 @@ def convert_ohlcv_format(
     convert_from: str,
     convert_to: str,
     erase: bool,
-    candle_type: str = ''
+    candle_type: CandleType = CandleType.SPOT_
 ):
     """
     Convert OHLCV from one format to another
