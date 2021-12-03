@@ -206,7 +206,7 @@ class Binance(Exchange):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         if is_new_pair:
-            x = await self._async_get_candle_history(pair, timeframe, 0, candle_type)
+            x = await self._async_get_candle_history(pair, timeframe, candle_type, 0)
             if x and x[3] and x[3][0] and x[3][0][0] > since_ms:
                 # Set starting date to first available candle.
                 since_ms = x[3][0][0]

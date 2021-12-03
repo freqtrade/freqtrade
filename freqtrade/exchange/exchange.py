@@ -1364,7 +1364,7 @@ class Exchange:
             arrow.utcnow().shift(seconds=one_call // 1000).humanize(only_distance=True)
         )
         input_coroutines = [self._async_get_candle_history(
-            pair, timeframe, since, candle_type=candle_type) for since in
+            pair, timeframe, candle_type, since) for since in
             range(since_ms, arrow.utcnow().int_timestamp * 1000, one_call)]
 
         data: List = []
@@ -1475,8 +1475,8 @@ class Exchange:
         self,
         pair: str,
         timeframe: str,
+        candle_type: CandleType,
         since_ms: Optional[int] = None,
-        candle_type: str = '',
     ) -> Tuple[str, str, str, List]:
         """
         Asynchronously get candle history data using fetch_ohlcv
