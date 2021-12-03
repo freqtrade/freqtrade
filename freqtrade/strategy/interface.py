@@ -14,6 +14,7 @@ from pandas import DataFrame
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import SellType, SignalDirection, SignalTagType, SignalType
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -528,7 +529,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
             if self.dp:
-                self.dp._set_cached_df(pair, self.timeframe, dataframe)
+                self.dp._set_cached_df(pair, self.timeframe, dataframe, CandleType.SPOT)
+                # TODO-lev: CandleType should be set conditionally
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0

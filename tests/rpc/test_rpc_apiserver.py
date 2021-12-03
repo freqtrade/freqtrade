@@ -17,6 +17,7 @@ from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import RunMode, State
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade
@@ -1179,7 +1180,7 @@ def test_api_pair_candles(botclient, ohlcv_history):
     ohlcv_history['enter_short'] = 0
     ohlcv_history['exit_short'] = 0
 
-    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
+    ftbot.dataprovider._set_cached_df("XRP/BTC", timeframe, ohlcv_history, CandleType.SPOT)
 
     rc = client_get(client,
                     f"{BASE_URI}/pair_candles?limit={amount}&pair=XRP%2FBTC&timeframe={timeframe}")

@@ -18,6 +18,7 @@ from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import BacktestState, SellType
+from freqtrade.enums.candletype import CandleType
 from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
@@ -290,7 +291,8 @@ class Backtesting:
                     df_analyzed.loc[:, col] = 0 if col not in ('enter_tag', 'exit_tag') else None
 
             # Update dataprovider cache
-            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed)
+            self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed, CandleType.SPOT)
+            # TODO-lev: Candle-type should be conditional, either "spot" or futures
 
             df_analyzed = df_analyzed.drop(df_analyzed.head(1).index)
 

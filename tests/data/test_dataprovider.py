@@ -6,6 +6,7 @@ from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange
@@ -247,8 +248,8 @@ def test_get_analyzed_dataframe(mocker, default_conf, ohlcv_history):
     exchange = get_patched_exchange(mocker, default_conf)
 
     dp = DataProvider(default_conf, exchange)
-    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history)
-    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history)
+    dp._set_cached_df("XRP/BTC", timeframe, ohlcv_history, CandleType.SPOT)
+    dp._set_cached_df("UNITTEST/BTC", timeframe, ohlcv_history, CandleType.SPOT)
 
     assert dp.runmode == RunMode.DRY_RUN
     dataframe, time = dp.get_analyzed_dataframe("UNITTEST/BTC", timeframe)

@@ -475,6 +475,8 @@ CANCEL_REASON = {
 }
 
 # List of pairs with their timeframes
+# TODO-lev: This should really be
+# PairWithTimeframe = Tuple[str, str, CandleType]
 PairWithTimeframe = Tuple[str, str, str]
 ListPairsWithTimeframes = List[PairWithTimeframe]
 

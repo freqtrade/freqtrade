@@ -14,6 +14,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import RunMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
 
@@ -46,7 +47,7 @@ class DataProvider:
         pair: str,
         timeframe: str,
         dataframe: DataFrame,
-        candle_type: str = ''
+        candle_type: CandleType
     ) -> None:
         """
         Store cached Dataframe.
@@ -55,7 +56,7 @@ class DataProvider:
         :param pair: pair to get the data for
         :param timeframe: Timeframe to get data for
         :param dataframe: analyzed dataframe
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         self.__cached_pairs[(pair, timeframe, candle_type)] = (
             dataframe, datetime.now(timezone.utc))
@@ -78,7 +79,8 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         """
-        saved_pair = (pair, str(timeframe), candle_type)
+        candleType = CandleType.from_string(candle_type)
+        saved_pair = (pair, str(timeframe), candleType)
         if saved_pair not in self.__cached_pairs_backtesting:
             timerange = TimeRange.parse_timerange(None if self._config.get(
                 'timerange') is None else str(self._config.get('timerange')))
@@ -92,7 +94,8 @@ class DataProvider:
                 datadir=self._config['datadir'],
                 timerange=timerange,
                 data_format=self._config.get('dataformat_ohlcv', 'json'),
-                candle_type=candle_type
+                candle_type=candleType,
+
             )
         return self.__cached_pairs_backtesting[saved_pair].copy()
 
@@ -132,7 +135,7 @@ class DataProvider:
             combination.
             Returns empty dataframe and Epoch 0 (1970-01-01) if no dataframe was cached.
         """
-        pair_key = (pair, timeframe, '')
+        pair_key = (pair, timeframe, CandleType.SPOT)
         if pair_key in self.__cached_pairs:
             if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
                 df, date = self.__cached_pairs[pair_key]
