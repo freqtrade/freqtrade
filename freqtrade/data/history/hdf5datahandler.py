@@ -9,7 +9,7 @@ import pandas as pd
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
                                  ListPairsWithTimeframes, TradeList)
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 

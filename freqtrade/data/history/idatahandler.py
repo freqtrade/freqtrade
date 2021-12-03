@@ -17,7 +17,7 @@ from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import clean_ohlcv_dataframe, trades_remove_duplicates, trim_dataframe
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_seconds
 
 

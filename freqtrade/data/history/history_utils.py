@@ -12,7 +12,7 @@ from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import (clean_ohlcv_dataframe, ohlcv_to_dataframe,
                                       trades_remove_duplicates, trades_to_ohlcv)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import format_ms_time

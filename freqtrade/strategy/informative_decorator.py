@@ -2,6 +2,7 @@ from typing import Any, Callable, NamedTuple, Optional, Union
 
 from pandas import DataFrame
 
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.strategy_helper import merge_informative_pair
 
@@ -14,7 +15,7 @@ class InformativeData(NamedTuple):
     timeframe: str
     fmt: Union[str, Callable[[Any], str], None]
     ffill: bool
-    candle_type: str = ''
+    candle_type: CandleType = CandleType.SPOT_
 
 
 def informative(timeframe: str, asset: str = '',

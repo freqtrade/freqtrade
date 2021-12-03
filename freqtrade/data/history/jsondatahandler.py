@@ -10,7 +10,7 @@ from freqtrade import misc
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, ListPairsWithTimeframes, TradeList
 from freqtrade.data.converter import trades_dict_to_list
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 

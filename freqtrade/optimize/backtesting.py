@@ -17,9 +17,7 @@ from freqtrade.data import history
 from freqtrade.data.btanalysis import trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import BacktestState, SellType
-from freqtrade.enums.candletype import CandleType
-from freqtrade.enums.tradingmode import TradingMode
+from freqtrade.enums import BacktestState, CandleType, SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.mixins import LoggingMixin

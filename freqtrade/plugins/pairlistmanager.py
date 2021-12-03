@@ -8,6 +8,7 @@ from typing import Dict, List
 from cachetools import TTLCache, cached
 
 from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -138,4 +139,4 @@ class PairListManager():
         """
         Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['timeframe'], '') for pair in pairs]
+        return [(pair, timeframe or self._config['timeframe'], CandleType.SPOT) for pair in pairs]

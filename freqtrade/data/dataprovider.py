@@ -13,8 +13,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.data.history import load_pair_history
-from freqtrade.enums import RunMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_seconds
 
@@ -223,7 +222,7 @@ class DataProvider:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             return self._exchange.klines(
-                (pair, timeframe or self._config['timeframe'], candle_type),
+                (pair, timeframe or self._config['timeframe'], CandleType.from_string(candle_type)),
                 copy=copy
             )
         else:

@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import arrow
 from cachetools.ttl import TTLCache
 
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import format_ms_time
@@ -160,7 +161,7 @@ class VolumePairList(IPairList):
                           f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
                           f"till {format_ms_time(to_ms)}", logger.info)
             needed_pairs = [
-                (p, self._lookback_timeframe, '') for p in
+                (p, self._lookback_timeframe, CandleType.SPOT_) for p in
                 [s['symbol'] for s in filtered_tickers]
                 if p not in self._pair_cache
             ]
@@ -173,8 +174,8 @@ class VolumePairList(IPairList):
                 )
             for i, p in enumerate(filtered_tickers):
                 pair_candles = candles[
-                    (p['symbol'], self._lookback_timeframe, '')
-                ] if (p['symbol'], self._lookback_timeframe, '') in candles else None
+                    (p['symbol'], self._lookback_timeframe, CandleType.SPOT_)
+                ] if (p['symbol'], self._lookback_timeframe, CandleType.SPOT_) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if pair_candles is not None and not pair_candles.empty:
                     pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']

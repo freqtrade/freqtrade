@@ -13,8 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalDirection, SignalTagType, SignalType
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, SellType, SignalDirection, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -424,7 +423,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         informative_pairs = self.informative_pairs()
         # Compatibility code for 2 tuple informative pairs
-        informative_pairs = [(p[0], p[1], p[2] if len(p) > 2 else '') for p in informative_pairs]
+        informative_pairs = [
+            (p[0], p[1], CandleType.from_string(p[2]) if len(p) > 2 else CandleType.SPOT_)
+            for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
                 pair_tf = (

@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 import arrow
 import ccxt
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import CandleType, Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
                                   OperationalException, TemporaryError)
 from freqtrade.exchange import Exchange
@@ -197,14 +197,13 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     async def _async_get_historic_ohlcv(self, pair: str, timeframe: str,
-                                        since_ms: int, is_new_pair: bool = False,
-                                        raise_: bool = False,
-                                        candle_type: str = ''
+                                        since_ms: int, candle_type: CandleType,
+                                        is_new_pair: bool = False, raise_: bool = False,
                                         ) -> Tuple[str, str, str, List]:
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         if is_new_pair:
             x = await self._async_get_candle_history(pair, timeframe, 0, candle_type)
