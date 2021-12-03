@@ -248,10 +248,10 @@ def _download_pair_history(pair: str, *,
 
 
 def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes: List[str],
-                                datadir: Path, timerange: Optional[TimeRange] = None,
+                                datadir: Path, trading_mode: str,
+                                timerange: Optional[TimeRange] = None,
                                 new_pairs_days: int = 30, erase: bool = False,
                                 data_format: str = None,
-                                candle_type: CandleType = CandleType.SPOT
                                 ) -> List[str]:
     """
     Refresh stored ohlcv data for backtesting and hyperopt operations.
@@ -260,6 +260,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     """
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
+    candle_type = CandleType.FUTURES if trading_mode == 'futures' else CandleType.SPOT_
     for idx, pair in enumerate(pairs, start=1):
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
@@ -279,6 +280,21 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                    timerange=timerange, data_handler=data_handler,
                                    timeframe=str(timeframe), new_pairs_days=new_pairs_days,
                                    candle_type=candle_type)
+        if trading_mode == 'futures':
+            # TODO-lev: Use correct candletype (and timeframe) depending on exchange
+            timeframe = '1h'
+            candle_type = CandleType.MARK
+            # TODO: this could be in most parts to the above.
+            if erase:
+                if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+                    logger.info(
+                        f'Deleting existing data for pair {pair}, interval {timeframe}.')
+            _download_pair_history(pair=pair, process=process,
+                                   datadir=datadir, exchange=exchange,
+                                   timerange=timerange, data_handler=data_handler,
+                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days,
+                                   candle_type=candle_type)
+
     return pairs_not_available
 
 

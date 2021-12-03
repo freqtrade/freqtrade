@@ -83,7 +83,9 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
                 new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'])
+                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
+                trading_mode=config.get('trading_mode', 'spot'),
+                )
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
