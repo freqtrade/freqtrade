@@ -387,8 +387,9 @@ class AwesomeStrategy(IStrategy):
     **Example**:  
     If the new_entryprice is 97, the proposed_rate is 100 and the `custom_price_max_distance_ratio` is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.
 
-!!! Warning "No backtesting support"
-    Custom entry-prices are currently not supported during backtesting.
+!!! Warning "Backtesting"
+    While Custom prices are supported in backtesting (starting with 2021.12), prices will be moved to within the candle's high/low prices.
+    This behavior is currently in testing, and might be changed at a later point.
 
 ## Custom order timeout rules
 

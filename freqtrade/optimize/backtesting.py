@@ -342,10 +342,7 @@ class Backtesting:
                     # use Open rate if open_rate > calculated sell rate
                     return sell_row[OPEN_IDX]
 
-                # Use the maximum between close_rate and low as we
-                # cannot sell outside of a candle.
-                # Applies when a new ROI setting comes in place and the whole candle is above that.
-                return min(max(close_rate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
+                return close_rate
 
             else:
                 # This should not be reached...
@@ -373,6 +370,9 @@ class Backtesting:
                 pair=trade.pair, trade=trade,
                 current_time=sell_row[DATE_IDX],
                 proposed_rate=closerate, current_profit=current_profit)
+            # Use the maximum between close_rate and low as we cannot sell outside of a candle.
+            # Applies when a new ROI setting comes in place and the whole candle is above that.
+            closerate = min(max(closerate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
@@ -436,6 +436,9 @@ class Backtesting:
                                              default_retval=row[OPEN_IDX])(
             pair=pair, current_time=row[DATE_IDX].to_pydatetime(),
             proposed_rate=row[OPEN_IDX])  # default value is the open rate
+
+        # Move rate to within the candle's low/high rate
+        propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
