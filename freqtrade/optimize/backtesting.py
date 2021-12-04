@@ -365,11 +365,13 @@ class Backtesting:
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
-            closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
-                                              default_retval=closerate)(
-                pair=trade.pair, trade=trade,
-                current_time=sell_row[DATE_IDX],
-                proposed_rate=closerate, current_profit=current_profit)
+            if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
+                # Custom exit pricing only for sell-signals
+                closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
+                                                  default_retval=closerate)(
+                    pair=trade.pair, trade=trade,
+                    current_time=sell_row[DATE_IDX],
+                    proposed_rate=closerate, current_profit=current_profit)
             # Use the maximum between close_rate and low as we cannot sell outside of a candle.
             # Applies when a new ROI setting comes in place and the whole candle is above that.
             closerate = min(max(closerate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])

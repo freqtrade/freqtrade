@@ -59,7 +59,7 @@ This loop will be repeated again and again until the bot is stopped.
   * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
-  * Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
+  * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
 
 * Generate backtest report output
 
