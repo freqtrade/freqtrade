@@ -145,6 +145,7 @@ class OrderTypes(BaseModel):
 
 class ShowConfig(BaseModel):
     version: str
+    strategy_version: Optional[str]
     api_version: float
     dry_run: bool
     stake_currency: str

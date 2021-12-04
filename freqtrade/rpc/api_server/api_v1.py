@@ -121,9 +121,11 @@ def edge(rpc: RPC = Depends(get_rpc)):
 @router.get('/show_config', response_model=ShowConfig, tags=['info'])
 def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(get_config)):
     state = ''
+    strategy_version = None
     if rpc:
         state = rpc._freqtrade.state
-    resp = RPC._rpc_show_config(config, state)
+        strategy_version = rpc._freqtrade.strategy.version()
+    resp = RPC._rpc_show_config(config, state, strategy_version)
     resp['api_version'] = API_VERSION
     return resp
 
