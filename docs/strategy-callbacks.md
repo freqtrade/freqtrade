@@ -389,7 +389,7 @@ class AwesomeStrategy(IStrategy):
 
 !!! Warning "Backtesting"
     While Custom prices are supported in backtesting (starting with 2021.12), prices will be moved to within the candle's high/low prices.
-    This behavior is currently in testing, and might be changed at a later point.
+    This behavior is currently being tested, and might be changed at a later point.
 
 ## Custom order timeout rules
 
