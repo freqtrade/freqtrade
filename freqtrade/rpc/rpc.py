@@ -98,7 +98,8 @@ class RPC:
             self._fiat_converter = CryptoToFiatConverter()
 
     @staticmethod
-    def _rpc_show_config(config, botstate: Union[State, str]) -> Dict[str, Any]:
+    def _rpc_show_config(config, botstate: Union[State, str],
+                         strategy_version: Optional[str] = None) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
@@ -106,6 +107,7 @@ class RPC:
         """
         val = {
             'version': __version__,
+            'strategy_version': strategy_version,
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),

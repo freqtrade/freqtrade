@@ -533,6 +533,7 @@ def test_api_show_config(botclient):
     assert rc.json()['timeframe_min'] == 5
     assert rc.json()['state'] == 'running'
     assert rc.json()['bot_name'] == 'freqtrade'
+    assert rc.json()['strategy_version'] is None
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
