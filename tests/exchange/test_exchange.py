@@ -1575,7 +1575,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, timeframe, since_ms, candle_type=None):
+    async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
         return pair, timeframe, candle_type, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
@@ -1641,7 +1641,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_ty
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, timeframe, since_ms, candle_type):
+    async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
         return pair, timeframe, candle_type, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
@@ -1841,7 +1841,7 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
     assert len(res) == 4
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == zCandleType.SPOT
+    assert res[2] == CandleType.SPOT
     assert res[3] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
