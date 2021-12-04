@@ -67,7 +67,7 @@ class Backtesting:
         self.all_results: Dict[str, Dict] = {}
 
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
-        self.dataprovider = DataProvider(self.config, None)
+        self.dataprovider = DataProvider(self.config, self.exchange)
 
         if self.config.get('strategy_list', None):
             for strat in list(self.config['strategy_list']):
@@ -89,7 +89,8 @@ class Backtesting:
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config)
         if 'VolumePairList' in self.pairlists.name_list:
-            raise OperationalException("VolumePairList not allowed for backtesting.")
+            raise OperationalException("VolumePairList not allowed for backtesting. "
+                                       "Please use StaticPairlist instead.")
         if 'PerformanceFilter' in self.pairlists.name_list:
             raise OperationalException("PerformanceFilter not allowed for backtesting.")
 

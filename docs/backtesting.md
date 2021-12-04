@@ -115,7 +115,7 @@ The result of backtesting will confirm if your bot has better odds of making a p
 All profit calculations include fees, and freqtrade will use the exchange's default fees for the calculation.
 
 !!! Warning "Using dynamic pairlists for backtesting"
-    Using dynamic pairlists is possible, however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
+    Using dynamic pairlists is possible (not all of the handlers are allowed to be used in backtest mode), however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
     Also, when using pairlists other than StaticPairlist, reproducibility of backtesting-results cannot be guaranteed.
     Please read the [pairlists documentation](plugins.md#pairlists) for more information.
 

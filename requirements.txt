@@ -2,10 +2,10 @@ numpy==1.21.4
 pandas==1.3.4
 pandas-ta==0.3.14b
 
-ccxt==1.61.24
+ccxt==1.62.42
 # Pin cryptography for now due to rust build errors with piwheels
-cryptography==35.0.0
-aiohttp==3.7.4.post0
+cryptography==36.0.0
+aiohttp==3.8.1
 SQLAlchemy==1.4.27
 python-telegram-bot==13.8.1
 arrow==1.2.1
@@ -34,13 +34,13 @@ sdnotify==0.3.2
 fastapi==0.70.0
 uvicorn==0.15.0
 pyjwt==2.3.0
-aiofiles==0.7.0
+aiofiles==0.8.0
 psutil==5.8.0
 
 # Support for colorized terminal output
 colorama==0.4.4
 # Building config files interactively
 questionary==1.10.0
-prompt-toolkit==3.0.22
+prompt-toolkit==3.0.23
 # Extensions to datetime library
 python-dateutil==2.8.2

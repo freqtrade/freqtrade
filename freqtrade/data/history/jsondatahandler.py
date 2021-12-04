@@ -174,33 +174,9 @@ class JsonDataHandler(IDataHandler):
             pass
         return tradesdata
 
-    def trades_purge(self, pair: str) -> bool:
-        """
-        Remove data for this pair
-        :param pair: Delete data for this pair.
-        :return: True when deleted, false if file did not exist.
-        """
-        filename = self._pair_trades_filename(self._datadir, pair)
-        if filename.exists():
-            filename.unlink()
-            return True
-        return False
-
-    @classmethod
-    def _pair_data_filename(cls, datadir: Path, pair: str, timeframe: str) -> Path:
-        pair_s = misc.pair_to_filename(pair)
-        filename = datadir.joinpath(f'{pair_s}-{timeframe}.{cls._get_file_extension()}')
-        return filename
-
     @classmethod
     def _get_file_extension(cls):
         return "json.gz" if cls._use_zip else "json"
-
-    @classmethod
-    def _pair_trades_filename(cls, datadir: Path, pair: str) -> Path:
-        pair_s = misc.pair_to_filename(pair)
-        filename = datadir.joinpath(f'{pair_s}-trades.{cls._get_file_extension()}')
-        return filename
 
 
 class JsonGzDataHandler(JsonDataHandler):
