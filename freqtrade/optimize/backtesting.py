@@ -373,7 +373,6 @@ class Backtesting:
                     current_time=sell_row[DATE_IDX],
                     proposed_rate=closerate, current_profit=current_profit)
             # Use the maximum between close_rate and low as we cannot sell outside of a candle.
-            # Applies when a new ROI setting comes in place and the whole candle is above that.
             closerate = min(max(closerate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
 
             # Confirm trade exit:
