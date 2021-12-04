@@ -1305,10 +1305,11 @@ class Telegram(RPCHandler):
         :return: None
         """
         strategy_version = self._rpc._freqtrade.strategy.version()
-        if strategy_version is None:
-            self._send_msg('*Version:* `{}`'.format(__version__))
-        else:
-            self._send_msg('*Freqtrade version:* `{}`, *Strategy version:* `{}`'.format(__version__, strategy_version))
+        version_string = f'*Version:* `{__version__}`'
+        if strategy_version is not None:
+            version_string += f', *Strategy version: * `{strategy_version}`'
+
+        self._send_msg(version_string)
 
     @authorized_only
     def _show_config(self, update: Update, context: CallbackContext) -> None:

@@ -393,7 +393,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                             ]
         """
         return []
-                    
+
     def version(self) -> str:
         """
         Returns version of the strategy.
