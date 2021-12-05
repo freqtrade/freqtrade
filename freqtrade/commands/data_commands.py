@@ -8,7 +8,7 @@ from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.enums import RunMode
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import market_is_active
@@ -137,9 +137,11 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     if ohlcv:
-        convert_ohlcv_format(config,
-                             convert_from=args['format_from'], convert_to=args['format_to'],
-                             erase=args['erase'])
+        candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', ['spot'])]
+        for candle_type in candle_types:
+            convert_ohlcv_format(config,
+                                 convert_from=args['format_from'], convert_to=args['format_to'],
+                                 erase=args['erase'], candle_type=candle_type)
     else:
         convert_trades_format(config,
                               convert_from=args['format_from'], convert_to=args['format_to'],

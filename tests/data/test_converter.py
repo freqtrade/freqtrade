@@ -12,6 +12,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
+from freqtrade.enums import CandleType
 from tests.conftest import log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
@@ -312,7 +313,8 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
         default_conf,
         convert_from='json',
         convert_to='jsongz',
-        erase=False
+        erase=False,
+        candle_type=CandleType.SPOT
     )
 
     assert file_new.exists()
@@ -325,7 +327,8 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
         default_conf,
         convert_from='jsongz',
         convert_to='json',
-        erase=True
+        erase=True,
+        candle_type=CandleType.SPOT
     )
 
     assert file_temp.exists()
