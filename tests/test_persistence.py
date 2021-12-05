@@ -1982,6 +1982,7 @@ def test_get_best_pair_lev(fee):
     assert res[1] == 0.1713156134055116
 
 
+@pytest.mark.usefixtures("init_persistence")
 def test_get_exit_order_count(fee):
 
     create_mock_trades_usdt(fee)
