@@ -70,6 +70,7 @@ class Exchange:
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "mark_ohlcv_price": "mark",
+        "mark_ohlcv_timeframe": "8h",
         "ccxt_futures_name": "swap"
     }
     _ft_has: Dict = {}

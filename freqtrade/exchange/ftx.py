@@ -21,6 +21,7 @@ class Ftx(Exchange):
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
         "mark_ohlcv_price": "index",
+        "mark_ohlcv_timeframe": "1h",
         "ccxt_futures_name": "future"
     }
 

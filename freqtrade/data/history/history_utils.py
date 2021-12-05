@@ -281,9 +281,12 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
                                    timeframe=str(timeframe), new_pairs_days=new_pairs_days,
                                    candle_type=candle_type)
         if trading_mode == 'futures':
-            # TODO-lev: Use correct candletype (and timeframe) depending on exchange
-            timeframe = '1h'
-            candle_type = CandleType.MARK
+            # Predefined candletype (and timeframe) depending on exchange
+            # Downloads what is necessary to backtest based on futures data.
+            timeframe = exchange._ft_has['mark_ohlcv_timeframe']
+            candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
+            # candle_type = CandleType.MARK
+
             # TODO: this could be in most parts to the above.
             if erase:
                 if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
