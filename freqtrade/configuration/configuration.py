@@ -437,7 +437,6 @@ class Configuration:
         self._args_to_config(config, argname='candle_types',
                              logstring='Detected --candle-types: {}')
 
-
     def _process_runmode(self, config: Dict[str, Any]) -> None:
 
         self._args_to_config(config, argname='dry_run',
