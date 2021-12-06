@@ -390,6 +390,35 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
 
+def calculate_mdd(data: pd.DataFrame, trades: pd.DataFrame, *, date_col: str = 'close_date',
+                           value_col: str = 'profit_ratio'
+                 )  -> float:
+    """
+    Calculate MDD (Max DrawDown) :
+        Give the max drawdown given each trades and the history candles data.
+    Args:
+        trades (pd.DataFrame): [description]
+        date_col (str, optional): [description]. Defaults to 'close_date'.
+        value_col (str, optional): [description]. Defaults to 'profit_ratio'.
+
+    Returns:
+        float: [description]
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty")
+    
+    mdd_df = pd.DataFrame()
+    
+    for pair, df in data.items():
+        print(pair)
+        print(df)
+        open_close_date = trades.loc[trades['pair']==pair]
+        # print(open_close_date)
+        # mdd_df = df[[df["date"].isin(open_close_date), open_close_date]]
+        # print(mdd_df)
+    return mdd_df
+
+    
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
     """
