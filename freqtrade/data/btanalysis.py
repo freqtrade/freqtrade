@@ -390,7 +390,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
 
-def calculate_mdd(data: pd.DataFrame, trades: pd.DataFrame, *, date_col: str = 'close_date',
+def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_date',
                            value_col: str = 'profit_ratio'
                  )  -> float:
     """
@@ -410,15 +410,13 @@ def calculate_mdd(data: pd.DataFrame, trades: pd.DataFrame, *, date_col: str = '
     mdd_df = pd.DataFrame()
     
     for pair, df in data.items():
-        print(pair)
-        print(df)
-        open_close_date = trades.loc[trades['pair']==pair]
-        # print(open_close_date)
-        # mdd_df = df[[df["date"].isin(open_close_date), open_close_date]]
+        open_close_date = trades.loc[trades['pair']==pair][["open_date","close_date"]]
+        mdd_df = df[df["date"].isin([open_close_date["open_date"],open_close_date["close_date"]])]
+        # list_index_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
+        # list_index_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
+        # a = pd.DataFrame({"open":list_index_open, "close":list_index_close})
         # print(mdd_df)
     return mdd_df
-
-    
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
     """
