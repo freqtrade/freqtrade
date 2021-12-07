@@ -902,10 +902,11 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
     assert unlinkmock.call_count == 1
 
 
-@pytest.mark.parametrize('pair, timeframe, candle_type, candle_append', [
-    ('UNITTEST/BTC', '5m', '',  ''),
-    # TODO-lev: The test below
-    # ('UNITTEST/USDT', '1h', 'mark', '-mark'),
+@pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
+    # Data goes from 2018-01-10 - 2018-01-30
+    ('UNITTEST/BTC', '5m', '',  '', '2018-01-15', '2018-01-19'),
+    # Mark data goes from to 2021-11-15 2021-11-19
+    ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])
 def test_hdf5datahandler_ohlcv_load_and_resave(
     testdatadir,
@@ -913,33 +914,37 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
     pair,
     timeframe,
     candle_type,
-    candle_append
+    candle_append,
+    startdt, enddt
 ):
     tmpdir1 = Path(tmpdir)
+    tmpdir2 = tmpdir1
+    if candle_type not in ('', 'spot'):
+        tmpdir2 = tmpdir1 / 'futures'
+        tmpdir2.mkdir()
     dh = HDF5DataHandler(testdatadir)
-    ohlcv = dh.ohlcv_load(pair, timeframe, candle_type=candle_type)
+    ohlcv = dh._ohlcv_load(pair, timeframe, candle_type=candle_type)
     assert isinstance(ohlcv, DataFrame)
     assert len(ohlcv) > 0
 
-    file = tmpdir1 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
+    file = tmpdir2 / f"UNITTEST_NEW-{timeframe}{candle_append}.h5"
     assert not file.is_file()
 
     dh1 = HDF5DataHandler(tmpdir1)
     dh1.ohlcv_store('UNITTEST/NEW', timeframe, ohlcv, candle_type=candle_type)
     assert file.is_file()
 
-    assert not ohlcv[ohlcv['date'] < '2018-01-15'].empty
+    assert not ohlcv[ohlcv['date'] < startdt].empty
 
-    # Data gores from 2018-01-10 - 2018-01-30
-    timerange = TimeRange.parse_timerange('20180115-20180119')
+    timerange = TimeRange.parse_timerange(f"{startdt.replace('-', '')}-{enddt.replace('-', '')}")
 
     # Call private function to ensure timerange is filtered in hdf5
     ohlcv = dh._ohlcv_load(pair, timeframe, timerange, candle_type=candle_type)
     ohlcv1 = dh1._ohlcv_load('UNITTEST/NEW', timeframe, timerange, candle_type=candle_type)
     assert len(ohlcv) == len(ohlcv1)
     assert ohlcv.equals(ohlcv1)
-    assert ohlcv[ohlcv['date'] < '2018-01-15'].empty
-    assert ohlcv[ohlcv['date'] > '2018-01-19'].empty
+    assert ohlcv[ohlcv['date'] < startdt].empty
+    assert ohlcv[ohlcv['date'] > enddt].empty
 
     # Try loading inexisting file
     ohlcv = dh.ohlcv_load('UNITTEST/NONEXIST', timeframe, candle_type=candle_type)
