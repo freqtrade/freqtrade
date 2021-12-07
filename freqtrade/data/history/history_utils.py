@@ -270,8 +270,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
 
             if erase:
                 if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                    logger.info(
-                        f'Deleting existing data for pair {pair}, interval {timeframe}.')
+                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
 
             logger.info(f'Downloading pair {pair}, interval {timeframe}.')
             process = f'{idx}/{len(pairs)}'
@@ -290,8 +289,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # TODO: this could be in most parts to the above.
             if erase:
                 if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                    logger.info(
-                        f'Deleting existing data for pair {pair}, interval {timeframe}.')
+                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
             _download_pair_history(pair=pair, process=process,
                                    datadir=datadir, exchange=exchange,
                                    timerange=timerange, data_handler=data_handler,

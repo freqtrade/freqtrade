@@ -57,6 +57,7 @@ def informative(timeframe: str, asset: str = '',
 
     def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, '_ft_informative', [])
+        # TODO-lev: Add candle_type to InformativeData
         informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill))
         setattr(fn, '_ft_informative', informative_pairs)
         return fn

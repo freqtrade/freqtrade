@@ -530,7 +530,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
             if self.dp:
-                self.dp._set_cached_df(pair, self.timeframe, dataframe, CandleType.SPOT)
+                self.dp._set_cached_df(pair, self.timeframe, dataframe, CandleType.SPOT_)
                 # TODO-lev: CandleType should be set conditionally
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
