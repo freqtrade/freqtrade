@@ -657,27 +657,26 @@ def test_convert_trades_to_ohlcv(testdatadir, tmpdir, caplog):
 
 
 def test_datahandler_ohlcv_get_pairs(testdatadir):
-    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m')
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
     # Convert to set to avoid failures due to sorting
     assert set(pairs) == {'UNITTEST/BTC', 'XLM/BTC', 'ETH/BTC', 'TRX/BTC', 'LTC/BTC',
                           'XMR/BTC', 'ZEC/BTC', 'ADA/BTC', 'ETC/BTC', 'NXT/BTC',
                           'DASH/BTC', 'XRP/ETH'}
 
-    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m')
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
+    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m', candle_type=CandleType.SPOT)
     assert set(pairs) == {'UNITTEST/BTC'}
 
-    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type='mark')
+    pairs = JsonDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
     assert set(pairs) == {'UNITTEST/USDT', 'XRP/USDT'}
 
-    # TODO-lev: The tests below
-    # pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '8m')
-    # assert set(pairs) == {'UNITTEST/BTC'}
+    pairs = JsonGzDataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.FUTURES)
+    assert set(pairs) == {'XRP/USDT'}
 
-    # pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '5m')
-    # assert set(pairs) == {'UNITTEST/BTC'}
+    pairs = HDF5DataHandler.ohlcv_get_pairs(testdatadir, '1h', candle_type=CandleType.MARK)
+    assert set(pairs) == {'UNITTEST/USDT'}
 
 
 @pytest.mark.parametrize('filename,pair,timeframe,candletype', [

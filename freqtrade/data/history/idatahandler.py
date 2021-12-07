@@ -52,7 +52,7 @@ class IDataHandler(ABC):
         cls,
         datadir: Path,
         timeframe: str,
-        candle_type: CandleType = CandleType.SPOT_
+        candle_type: CandleType
     ) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
