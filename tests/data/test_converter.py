@@ -12,6 +12,7 @@ from freqtrade.data.converter import (convert_ohlcv_format, convert_trades_forma
                                       trades_to_ohlcv, trim_dataframe)
 from freqtrade.data.history import (get_timerange, load_data, load_pair_history,
                                     validate_backtest_data)
+from freqtrade.data.history.idatahandler import IDataHandler
 from freqtrade.enums import CandleType
 from tests.conftest import log_has, log_has_re
 from tests.data.test_history import _clean_test_file
@@ -135,14 +136,15 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 
 def test_ohlcv_drop_incomplete(caplog):
     timeframe = '1d'
-    ticks = [[
-        1559750400000,  # 2019-06-04
-        8.794e-05,  # open
-        8.948e-05,  # high
-        8.794e-05,  # low
-        8.88e-05,  # close
-        2255,  # volume (in quote currency)
-    ],
+    ticks = [
+        [
+            1559750400000,  # 2019-06-04
+            8.794e-05,  # open
+            8.948e-05,  # high
+            8.794e-05,  # low
+            8.88e-05,  # close
+            2255,  # volume (in quote currency)
+        ],
         [
             1559836800000,  # 2019-06-05
             8.88e-05,
@@ -150,7 +152,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.88e-05,
             8.893e-05,
             9911,
-    ],
+        ],
         [
             1559923200000,  # 2019-06-06
             8.891e-05,
@@ -158,7 +160,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.875e-05,
             8.877e-05,
             2251
-    ],
+        ],
         [
             1560009600000,  # 2019-06-07
             8.877e-05,
@@ -166,7 +168,7 @@ def test_ohlcv_drop_incomplete(caplog):
             8.895e-05,
             8.817e-05,
             123551
-    ]
+        ]
     ]
     caplog.set_level(logging.DEBUG)
     data = ohlcv_to_dataframe(ticks, timeframe, pair="UNITTEST/BTC",
@@ -289,17 +291,19 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
             file['new'].unlink()
 
 
-@pytest.mark.parametrize('file_base', [
-    ('XRP_ETH-5m'),
-    ('XRP_ETH-1m'),
-    # ('XRP_USDT-1h-mark'), #TODO-lev: Create .gz file
+@pytest.mark.parametrize('file_base,candletype', [
+    ('XRP_ETH-5m', CandleType.SPOT),
+    ('XRP_ETH-1m', CandleType.SPOT),
+    ('XRP_USDT-1h-mark', CandleType.MARK),
+    ('XRP_USDT-1h-futures', CandleType.FUTURES),
 ])
-def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
+def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
     tmpdir1 = Path(tmpdir)
-
-    file_orig = testdatadir / f"{file_base}.json"
-    file_temp = tmpdir1 / f"{file_base}.json"
-    file_new = tmpdir1 / f"{file_base}.json.gz"
+    prependix = '' if candletype == CandleType.SPOT else 'futures/'
+    file_orig = testdatadir / f"{prependix}{file_base}.json"
+    file_temp = tmpdir1 / f"{prependix}{file_base}.json"
+    file_new = tmpdir1 / f"{prependix}{file_base}.json.gz"
+    IDataHandler.create_dir_if_needed(file_temp)
 
     copyfile(file_orig, file_temp)
 
@@ -314,7 +318,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
         convert_from='json',
         convert_to='jsongz',
         erase=False,
-        candle_type=CandleType.SPOT
+        candle_type=candletype
     )
 
     assert file_new.exists()
@@ -328,7 +332,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base):
         convert_from='jsongz',
         convert_to='json',
         erase=True,
-        candle_type=CandleType.SPOT
+        candle_type=candletype
     )
 
     assert file_temp.exists()
