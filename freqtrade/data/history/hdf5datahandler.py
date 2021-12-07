@@ -66,7 +66,7 @@ class HDF5DataHandler(IDataHandler):
         _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + '.h5)', p.name)
                 for p in datadir.glob(f"*{timeframe}{candle}.h5")]
         # Check if regex found something and only return these results
-        return [match[0].replace('_', '/') for match in _tmp if match]
+        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def ohlcv_store(
         self,
@@ -160,7 +160,7 @@ class HDF5DataHandler(IDataHandler):
         _tmp = [re.search(r'^(\S+)(?=\-trades.h5)', p.name)
                 for p in datadir.glob("*trades.h5")]
         # Check if regex found something and only return these results to avoid exceptions.
-        return [match[0].replace('_', '/') for match in _tmp if match]
+        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def trades_store(self, pair: str, data: TradeList) -> None:
         """
