@@ -408,13 +408,15 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
         raise ValueError("Trade dataframe empty")
     
     mdd_df = pd.DataFrame()
+    mdd = lambda df : 
     
     for pair, df in data.items():
         open_close_date = trades.loc[trades['pair']==pair][["open_date","close_date"]]
         mdd_df = df[df["date"].isin([open_close_date["open_date"],open_close_date["close_date"]])]
-        # list_index_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
-        # list_index_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
-        # a = pd.DataFrame({"open":list_index_open, "close":list_index_close})
+        list_index_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
+        list_index_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
+        a = pd.DataFrame({"open":list_index_open, "close":list_index_close})
+        b = [df.loc[a["open"][i]:a["close"][i]] for i in a.index.values]
         # print(mdd_df)
     return mdd_df
 
