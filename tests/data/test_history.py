@@ -922,7 +922,7 @@ def test_hdf5datahandler_ohlcv_load_and_resave(
         tmpdir2 = tmpdir1 / 'futures'
         tmpdir2.mkdir()
     dh = HDF5DataHandler(testdatadir)
-    ohlcv = dh._ohlcv_load(pair, timeframe, candle_type=candle_type)
+    ohlcv = dh._ohlcv_load(pair, timeframe, None, candle_type=candle_type)
     assert isinstance(ohlcv, DataFrame)
     assert len(ohlcv) > 0
 

@@ -44,12 +44,7 @@ class HDF5DataHandler(IDataHandler):
             ) for match in _tmp if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(
-        cls,
-        datadir: Path,
-        timeframe: str,
-        candle_type: CandleType
-    ) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -69,12 +64,7 @@ class HDF5DataHandler(IDataHandler):
         return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def ohlcv_store(
-        self,
-        pair: str,
-        timeframe: str,
-        data: pd.DataFrame,
-        candle_type: CandleType = CandleType.SPOT_
-    ) -> None:
+            self, pair: str, timeframe: str, data: pd.DataFrame, candle_type: CandleType) -> None:
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
@@ -94,8 +84,7 @@ class HDF5DataHandler(IDataHandler):
         )
 
     def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None,
-                    candle_type: CandleType = CandleType.SPOT_
+                    timerange: Optional[TimeRange], candle_type: CandleType
                     ) -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.

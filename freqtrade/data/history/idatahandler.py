@@ -48,12 +48,7 @@ class IDataHandler(ABC):
         """
 
     @abstractclassmethod
-    def ohlcv_get_pairs(
-        cls,
-        datadir: Path,
-        timeframe: str,
-        candle_type: CandleType
-    ) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -65,12 +60,7 @@ class IDataHandler(ABC):
 
     @abstractmethod
     def ohlcv_store(
-        self,
-        pair: str,
-        timeframe: str,
-        data: DataFrame,
-        candle_type: CandleType = CandleType.SPOT_
-    ) -> None:
+            self, pair: str, timeframe: str, data: DataFrame, candle_type: CandleType) -> None:
         """
         Store ohlcv data.
         :param pair: Pair - used to generate filename
@@ -81,8 +71,8 @@ class IDataHandler(ABC):
         """
 
     @abstractmethod
-    def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange] = None,
-                    candle_type: CandleType = CandleType.SPOT_
+    def _ohlcv_load(self, pair: str, timeframe: str, timerange: Optional[TimeRange],
+                    candle_type: CandleType
                     ) -> DataFrame:
         """
         Internal method used to load data for one pair from disk.
