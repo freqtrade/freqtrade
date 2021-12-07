@@ -408,15 +408,29 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
         raise ValueError("Trade dataframe empty")
     
     mdd_df = pd.DataFrame()
-    mdd = lambda df : 
+
     
     for pair, df in data.items():
+        # Init colonne boolean à 0
+        df_bis = df.copy()
+        df_bis["is_into_trade"] = np.zeros(len(df_bis), dtype=bool)
+        
+        # Récupération des index
         open_close_date = trades.loc[trades['pair']==pair][["open_date","close_date"]]
         mdd_df = df[df["date"].isin([open_close_date["open_date"],open_close_date["close_date"]])]
-        list_index_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
-        list_index_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
-        a = pd.DataFrame({"open":list_index_open, "close":list_index_close})
-        b = [df.loc[a["open"][i]:a["close"][i]] for i in a.index.values]
+        l_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
+        l_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
+        
+        # Set 1 aux bornes open et close dans le df
+        df_bis["is_into_trade"].iloc[l_open] = 1
+        df_bis["is_into_trade"].iloc[l_close] = 1
+        
+        # cumulative sum modulo 2
+        df_bis["is_into_trade"] = df_bis["is_into_trade"].cumsum()&1
+        
+        # close boundaries set to 1 (again)
+        df_bis["is_into_trade"].iloc[l_close] = 1
+        
         # print(mdd_df)
     return mdd_df
 
