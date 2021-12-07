@@ -430,6 +430,12 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
         
         # close boundaries set to 1 (again)
         df_bis["is_into_trade"].iloc[l_close] = 1
+
+        # trades_pair = trades.loc[trades['pair']==pair][["open_date","close_date"]]
+        # trades_pair = trades_pair['is_in_trade'] = np.ones(len(trades_pair))
+        # trades_list = pd.concat([trades_pair.rename(columns={'open_date':'date'})[['date','is_in_trade']],trades_pair.rename(columns={'close_date':'date'})[['date','is_in_trade']]]).sort_values(by='date')
+        # trades_join = df.set_index('date').join(trades_list.set_index('date'))
+        # trades_join = trades_join.fillna(0)
         
         # print(mdd_df)
     return mdd_df
