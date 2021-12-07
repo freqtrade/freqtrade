@@ -381,6 +381,27 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return proposed_stake
 
+
+    def adjust_trade_position(self, pair: str, trade: Trade,
+                          current_time: datetime, adjust_trade_position: float,
+                          current_rate: float, current_profit: float, **kwargs) -> float:
+        """
+        Custom trade adjustment logic, returning the amount that a trade shold be either increased or decreased.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns 0.0
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Amount to adjust your trade (buy more or sell some)
+        """
+        return 0.0
+
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
         Define additional, informative pair/interval combinations to be cached from the exchange.

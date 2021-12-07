@@ -178,6 +178,9 @@ class FreqtradeBot(LoggingMixin):
             # First process current opened trades (positions)
             self.exit_positions(trades)
 
+        # Check if we need to adjust our current positions before attempting to buy new trades.
+        self.process_open_trade_positions()
+
         # Then looking for buy opportunities
         if self.get_free_open_trades():
             self.enter_positions()
@@ -442,6 +445,172 @@ class FreqtradeBot(LoggingMixin):
             return self.execute_entry(pair, stake_amount, buy_tag=buy_tag)
         else:
             return False
+
+
+#
+# BUY / increase / decrease positions / DCA logic and methods
+#
+    def process_open_trade_positions(self) -> int:
+        """
+        Tries to execute additional buy orders for open trades (positions)
+        """
+        orders_created = 0
+
+        # Remove pairs for currently opened trades from the whitelist
+        for trade in Trade.get_open_trades():
+            try:
+                orders_created += self.adjust_trade_position(trade)
+            except DependencyException as exception:
+                logger.warning('Unable to adjust position of trade for %s: %s', trade.pair, exception)
+
+        if not orders_created:
+            logger.debug("Found no trades to modify. Trying again...")
+
+        return orders_created
+
+
+    def adjust_trade_position(self, trade: Trade) -> int:
+        """
+        Check the implemented trading strategy for adjustment command.
+
+        If the pair triggers the adjustment a new buy-order gets issued towards the exchange.
+        Once that completes, the existing trade is modified to match new data.
+        :return: True if a order has been created.
+        """
+        logger.debug(f"adjust_trade_position for pair {trade.pair}")
+        for order in trade.orders:
+            if order.ft_is_open:
+                logger.debug(f"Order {order} is still open.")
+                return 0
+
+        analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair, self.strategy.timeframe)
+
+        sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
+        current_profit = trade.calc_profit_ratio(sell_rate)
+        amount_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=0.0)(
+            pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc),
+            current_rate=sell_rate, current_profit=current_profit)
+
+        if amount_to_adjust > 0.0:
+            # We should increase our position
+            is_order_success = self.execute_trade_position_change(trade.pair, amount_to_adjust, trade)
+            if is_order_success:
+                return 1
+
+        if amount_to_adjust < 0.0:
+            # We should decrease our position
+            # TODO: Selling part of the trade not implemented yet.
+            return 0
+
+        return 0
+
+
+    def execute_trade_position_change(self, pair: str, amount: float, trade: Trade) -> bool:
+        """
+        Executes a limit buy for the given pair
+        :param pair: pair for which we want to create a LIMIT_BUY
+        :param stake_amount: amount of stake-currency for the pair
+        :return: True if a buy order is created, false if it fails.
+        """
+        time_in_force = self.strategy.order_time_in_force['buy']
+
+        # Calculate price
+        proposed_enter_rate = self.exchange.get_rate(pair, refresh=True, side="buy")
+        enter_limit_requested = self.get_valid_price(proposed_enter_rate, proposed_enter_rate)
+        if not enter_limit_requested:
+            raise PricingError('Could not determine buy price.')
+
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, enter_limit_requested,
+                                                                   self.strategy.stoploss)
+
+        stake_amount = amount * enter_limit_requested
+
+        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
+
+        logger.error(f'Executing DCA buy: amount={amount}, stake={stake_amount}')
+
+        if not stake_amount:
+            return False
+
+        amount = self.exchange.amount_to_precision(pair, amount)
+        order = self.exchange.create_order(pair=pair, ordertype='market', side="buy",
+                                           amount=amount, rate=enter_limit_requested,
+                                           time_in_force=time_in_force)
+        order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
+        order_id = order['id']
+        order_status = order.get('status', None)
+        # we assume the order is executed at the price requested
+        enter_limit_filled_price = enter_limit_requested
+        amount_requested = amount
+
+        if order_status == 'expired' or order_status == 'rejected':
+            order_tif = self.strategy.order_time_in_force['buy']
+
+            # return false if the order is not filled
+            if float(order['filled']) == 0:
+                logger.warning('Buy(adjustment) %s order with time in force %s for %s is %s by %s.'
+                               ' zero amount is fulfilled.',
+                               order_tif, order_type, pair, order_status, self.exchange.name)
+                return False
+            else:
+                # the order is partially fulfilled
+                # in case of IOC orders we can check immediately
+                # if the order is fulfilled fully or partially
+                logger.warning('Buy(adjustment) %s order with time in force %s for %s is %s by %s.'
+                               ' %s amount fulfilled out of %s (%s remaining which is canceled).',
+                               order_tif, order_type, pair, order_status, self.exchange.name,
+                               order['filled'], order['amount'], order['remaining']
+                               )
+                stake_amount = order['cost']
+                amount = safe_value_fallback(order, 'filled', 'amount')
+                enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+
+        # in case of FOK the order may be filled immediately and fully
+        elif order_status == 'closed':
+            stake_amount = order['cost']
+            amount = safe_value_fallback(order, 'filled', 'amount')
+            enter_limit_filled_price = safe_value_fallback(order, 'average', 'price')
+
+        # Fee is applied only once because we make a LIMIT_BUY but the final trade will apply the sell fee.
+        fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+
+        logger.info(f"Trade {pair} DCA order status {order_status}")
+
+        total_amount = 0.0
+        total_stake = 0.0
+        for tempOrder in trade.orders:
+            if tempOrder.ft_is_open:
+                continue
+            if tempOrder.ft_order_side != 'buy':
+                # Skip not buy sides
+                continue
+
+            if tempOrder.status == "closed":
+                tempOrderAmount = safe_value_fallback(order, 'filled', 'amount')
+                total_amount += tempOrderAmount
+                total_stake += tempOrder.average * tempOrderAmount
+
+        total_amount += amount
+        total_stake += stake_amount
+
+        trade.open_rate = total_stake / total_amount
+
+        trade.fee_open += fee
+        trade.stake_amount = total_stake
+        trade.amount = total_amount
+
+        trade.orders.append(order_obj)
+        trade.recalc_open_trade_value()
+        Trade.commit()
+
+        # Updating wallets
+        self.wallets.update()
+
+        self._notify_enter(trade, 'market')
+
+        return True
+
+
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
