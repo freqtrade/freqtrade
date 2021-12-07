@@ -265,7 +265,7 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
     if candletype:
         pair_interval = [pair for pair in pair_interval if pair[2] == candletype]
     else:
-        pair_interval = [pair for pair in pair_interval if pair[2] == '']
+        pair_interval = [pair for pair in pair_interval if pair[2] == CandleType.SPOT_]
 
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
