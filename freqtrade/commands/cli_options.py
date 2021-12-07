@@ -356,7 +356,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "candle_types": Arg(
         '--candle-types',
-        help='Select Trading mode',
+        help='Select candle type to use',
         choices=[c.value for c in CandleType],
         nargs='+',
     ),

@@ -219,7 +219,7 @@ optional arguments:
   --trading-mode {spot,margin,futures}
                         Select Trading mode
   --candle-types {spot,,futures,mark,index,premiumIndex,funding_rate} [{spot,,futures,mark,index,premiumIndex,funding_rate} ...]
-                        Select Trading mode
+                        Select candle type to use
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
