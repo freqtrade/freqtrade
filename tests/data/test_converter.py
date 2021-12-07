@@ -292,23 +292,29 @@ def test_convert_trades_format(default_conf, testdatadir, tmpdir):
 
 
 @pytest.mark.parametrize('file_base,candletype', [
-    ('XRP_ETH-5m', CandleType.SPOT),
-    ('XRP_ETH-1m', CandleType.SPOT),
-    ('XRP_USDT-1h-mark', CandleType.MARK),
-    ('XRP_USDT-1h-futures', CandleType.FUTURES),
+    (['XRP_ETH-5m', 'XRP_ETH-1m'], CandleType.SPOT),
+    (['UNITTEST_USDT-1h-mark', 'XRP_USDT-1h-mark'], CandleType.MARK),
+    (['XRP_USDT-1h-futures'], CandleType.FUTURES),
 ])
 def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, candletype):
     tmpdir1 = Path(tmpdir)
     prependix = '' if candletype == CandleType.SPOT else 'futures/'
-    file_orig = testdatadir / f"{prependix}{file_base}.json"
-    file_temp = tmpdir1 / f"{prependix}{file_base}.json"
-    file_new = tmpdir1 / f"{prependix}{file_base}.json.gz"
-    IDataHandler.create_dir_if_needed(file_temp)
+    files_orig = []
+    files_temp = []
+    files_new = []
+    for file in file_base:
+        file_orig = testdatadir / f"{prependix}{file}.json"
+        file_temp = tmpdir1 / f"{prependix}{file}.json"
+        file_new = tmpdir1 / f"{prependix}{file}.json.gz"
+        IDataHandler.create_dir_if_needed(file_temp)
+        copyfile(file_orig, file_temp)
 
-    copyfile(file_orig, file_temp)
+        files_orig.append(file_orig)
+        files_temp.append(file_temp)
+        files_new.append(file_new)
 
     default_conf['datadir'] = tmpdir1
-    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT']
+    default_conf['pairs'] = ['XRP_ETH', 'XRP_USDT', 'UNITTEST_USDT']
     default_conf['timeframes'] = ['1m', '5m', '1h']
 
     assert not file_new.exists()
@@ -320,12 +326,12 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         erase=False,
         candle_type=candletype
     )
-
-    assert file_new.exists()
-    assert file_temp.exists()
+    for file in (files_temp + files_new):
+        assert file.exists()
 
     # Remove original files
-    file_temp.unlink()
+    for file in (files_temp):
+        file.unlink()
     # Convert back
     convert_ohlcv_format(
         default_conf,
@@ -334,6 +340,7 @@ def test_convert_ohlcv_format(default_conf, testdatadir, tmpdir, file_base, cand
         erase=True,
         candle_type=candletype
     )
-
-    assert file_temp.exists()
-    assert not file_new.exists()
+    for file in (files_temp):
+        assert file.exists()
+    for file in (files_new):
+        assert not file.exists()
