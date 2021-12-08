@@ -87,8 +87,7 @@ class IDataHandler(ABC):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
-    def ohlcv_purge(
-            self, pair: str, timeframe: str, candle_type: CandleType = CandleType.SPOT_) -> bool:
+    def ohlcv_purge(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
@@ -218,12 +217,12 @@ class IDataHandler(ABC):
         return res
 
     def ohlcv_load(self, pair, timeframe: str,
+                   candle_type: CandleType,
                    timerange: Optional[TimeRange] = None,
                    fill_missing: bool = True,
                    drop_incomplete: bool = True,
                    startup_candles: int = 0,
                    warn_no_data: bool = True,
-                   candle_type: CandleType = CandleType.SPOT_
                    ) -> DataFrame:
         """
         Load cached candle (OHLCV) data for the given pair.
