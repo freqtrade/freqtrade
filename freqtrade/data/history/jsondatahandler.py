@@ -31,7 +31,7 @@ class JsonDataHandler(IDataHandler):
         :param trading_mode: trading-mode to be used
         :return: List of Tuples of (pair, timeframe)
         """
-        if trading_mode != 'spot':
+        if trading_mode == 'futures':
             datadir = datadir.joinpath('futures')
         _tmp = [
             re.search(
