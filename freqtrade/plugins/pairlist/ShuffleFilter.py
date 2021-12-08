@@ -5,7 +5,7 @@ import logging
 import random
 from typing import Any, Dict, List
 
-from freqtrade.enums.runmode import RunMode
+from freqtrade.enums import RunMode
 from freqtrade.plugins.pairlist.IPairList import IPairList
 
 
