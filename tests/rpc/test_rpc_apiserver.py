@@ -16,8 +16,7 @@ from numpy import isnan
 from requests.auth import _basic_auth_str
 
 from freqtrade.__init__ import __version__
-from freqtrade.enums import RunMode, State
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, RunMode, State
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.persistence import PairLocks, Trade

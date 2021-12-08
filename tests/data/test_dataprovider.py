@@ -5,8 +5,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import RunMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import get_patched_exchange

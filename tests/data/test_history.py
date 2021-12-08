@@ -24,7 +24,7 @@ from freqtrade.data.history.history_utils import (_download_pair_history, _downl
                                                   validate_backtest_data)
 from freqtrade.data.history.idatahandler import IDataHandler, get_datahandler, get_datahandlerclass
 from freqtrade.data.history.jsondatahandler import JsonDataHandler, JsonGzDataHandler
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import file_dump_json
 from freqtrade.resolvers import StrategyResolver

@@ -13,8 +13,7 @@ from freqtrade.configuration.deprecated_settings import process_temporary_deprec
 from freqtrade.configuration.directory_operations import create_datadir, create_userdata_dir
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_config_file, load_file
-from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, RunMode
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import NON_UTIL_MODES, TRADING_MODES, CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging

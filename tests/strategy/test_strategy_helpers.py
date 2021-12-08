@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums.candletype import CandleType
+from freqtrade.enums import CandleType
 from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
                                 timeframe_to_minutes)
 from tests.conftest import get_patched_exchange
