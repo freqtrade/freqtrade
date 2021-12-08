@@ -284,7 +284,6 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # Downloads what is necessary to backtest based on futures data.
             timeframe = exchange._ft_has['mark_ohlcv_timeframe']
             candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
-            # candle_type = CandleType.MARK
 
             # TODO: this could be in most parts to the above.
             if erase:
