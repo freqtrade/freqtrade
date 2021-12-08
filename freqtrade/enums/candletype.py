@@ -4,7 +4,6 @@ from enum import Enum
 class CandleType(str, Enum):
     """Enum to distinguish candle types"""
     SPOT = "spot"
-    SPOT_ = ""
     FUTURES = "futures"
     MARK = "mark"
     INDEX = "index"
@@ -16,12 +15,11 @@ class CandleType(str, Enum):
     def from_string(value: str) -> 'CandleType':
         if not value:
             # Default to spot
-            return CandleType.SPOT_
+            return CandleType.SPOT
         return CandleType(value)
 
     @staticmethod
     def get_default(trading_mode: str) -> 'CandleType':
         if trading_mode == 'futures':
             return CandleType.FUTURES
-        # TODO-lev: The below should be SPOT, not SPOT_
-        return CandleType.SPOT_
+        return CandleType.SPOT

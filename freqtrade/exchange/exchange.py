@@ -1492,7 +1492,7 @@ class Exchange:
                 pair, timeframe, since_ms, s
             )
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
-            if candle_type not in (CandleType.SPOT, CandleType.SPOT_):
+            if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
             data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
                                                      since=since_ms,

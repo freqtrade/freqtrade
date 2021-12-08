@@ -1356,7 +1356,7 @@ def test_list_available_pairs(botclient):
 
     ftbot.config['trading_mode'] = 'futures'
     rc = client_get(
-        client, f"{BASE_URI}/available_pairs?timeframe=1h&candletype=futures")
+        client, f"{BASE_URI}/available_pairs?timeframe=1h")
     assert_response(rc)
     assert rc.json()['length'] == 1
     assert rc.json()['pairs'] == ['XRP/USDT']

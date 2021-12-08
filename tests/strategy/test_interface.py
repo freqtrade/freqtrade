@@ -11,8 +11,7 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType
-from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums import SellType, SignalDirection
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.optimize.space import SKDecimal
 from freqtrade.persistence import PairLocks, Trade

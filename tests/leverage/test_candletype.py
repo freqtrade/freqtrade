@@ -4,7 +4,7 @@ from freqtrade.enums import CandleType
 
 
 @pytest.mark.parametrize('input,expected', [
-    ('', CandleType.SPOT_),
+    ('', CandleType.SPOT),
     ('spot', CandleType.SPOT),
     (CandleType.SPOT, CandleType.SPOT),
     (CandleType.FUTURES, CandleType.FUTURES),

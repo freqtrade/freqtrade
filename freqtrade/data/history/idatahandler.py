@@ -193,7 +193,7 @@ class IDataHandler(ABC):
     ) -> Path:
         pair_s = misc.pair_to_filename(pair)
         candle = ""
-        if candle_type not in (CandleType.SPOT, CandleType.SPOT_):
+        if candle_type != CandleType.SPOT:
             datadir = datadir.joinpath('futures')
             candle = f"-{candle_type}"
         filename = datadir.joinpath(

@@ -254,9 +254,8 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
                          candletype: Optional[CandleType] = None, config=Depends(get_config)):
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
-
-    pair_interval = dh.ohlcv_get_available_data(config['datadir'],
-                                                config.get('trading_mode', 'spot'))
+    trading_mode = config.get('trading_mode', 'spot')
+    pair_interval = dh.ohlcv_get_available_data(config['datadir'], trading_mode)
 
     if timeframe:
         pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
@@ -265,7 +264,8 @@ def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Option
     if candletype:
         pair_interval = [pair for pair in pair_interval if pair[2] == candletype]
     else:
-        pair_interval = [pair for pair in pair_interval if pair[2] == CandleType.SPOT_]
+        candle_type = CandleType.get_default(trading_mode)
+        pair_interval = [pair for pair in pair_interval if pair[2] == candle_type]
 
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 

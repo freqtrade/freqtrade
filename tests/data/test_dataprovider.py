@@ -20,10 +20,10 @@ def test_dp_ohlcv(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", timeframe, candle_type)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", timeframe, candle_type)] = ohlcv_history
-
     candletype = CandleType.from_string(candle_type)
+    exchange._klines[("XRP/BTC", timeframe, candletype)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = ohlcv_history
+
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
     assert ohlcv_history.equals(dp.ohlcv("UNITTEST/BTC", timeframe, candle_type=candletype))
@@ -96,10 +96,10 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
     default_conf["runmode"] = RunMode.DRY_RUN
     timeframe = default_conf["timeframe"]
     exchange = get_patched_exchange(mocker, default_conf)
-    exchange._klines[("XRP/BTC", timeframe, candle_type)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", timeframe, candle_type)] = ohlcv_history
-
     candletype = CandleType.from_string(candle_type)
+    exchange._klines[("XRP/BTC", timeframe, candletype)] = ohlcv_history
+    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = ohlcv_history
+
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
     assert ohlcv_history.equals(dp.get_pair_dataframe(

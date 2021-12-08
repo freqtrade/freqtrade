@@ -425,7 +425,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Compatibility code for 2 tuple informative pairs
         informative_pairs = [
             (p[0], p[1], CandleType.from_string(p[2]) if len(
-                p) > 2 else self.config['candle_type_def'])
+                p) > 2 else self.config.get('candle_type_def', CandleType.SPOT))
             for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
@@ -533,7 +533,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             if self.dp:
                 self.dp._set_cached_df(
                     pair, self.timeframe, dataframe,
-                    candle_type=self.config['candle_type_def'])
+                    candle_type=self.config.get('candle_type_def', CandleType.SPOT))
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0

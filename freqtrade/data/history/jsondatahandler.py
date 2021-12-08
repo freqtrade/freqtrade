@@ -55,7 +55,7 @@ class JsonDataHandler(IDataHandler):
         :return: List of Pairs
         """
         candle = ""
-        if candle_type not in (CandleType.SPOT, CandleType.SPOT_):
+        if candle_type != CandleType.SPOT:
             datadir = datadir.joinpath('futures')
             candle = f"-{candle_type}"
 

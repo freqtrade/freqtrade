@@ -681,7 +681,10 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
         create_order=MagicMock(side_effect=TemporaryError),
         refresh_latest_ohlcv=refresh_mock,
     )
-    inf_pairs = MagicMock(return_value=[("BTC/ETH", '1m', ''), ("ETH/USDT", "1h", '')])
+    inf_pairs = MagicMock(return_value=[
+        ("BTC/ETH", '1m', CandleType.SPOT),
+        ("ETH/USDT", "1h", CandleType.SPOT)
+        ])
     mocker.patch.multiple(
         'freqtrade.strategy.interface.IStrategy',
         get_exit_signal=MagicMock(return_value=(False, False)),
@@ -696,8 +699,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     freqtrade.process()
     assert inf_pairs.call_count == 1
     assert refresh_mock.call_count == 1
-    assert ("BTC/ETH", "1m", CandleType.SPOT_) in refresh_mock.call_args[0][0]
-    assert ("ETH/USDT", "1h", CandleType.SPOT_) in refresh_mock.call_args[0][0]
+    assert ("BTC/ETH", "1m", CandleType.SPOT) in refresh_mock.call_args[0][0]
+    assert ("ETH/USDT", "1h", CandleType.SPOT) in refresh_mock.call_args[0][0]
     assert ("ETH/USDT", default_conf_usdt["timeframe"],
             CandleType.SPOT) in refresh_mock.call_args[0][0]
 

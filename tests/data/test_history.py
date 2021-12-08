@@ -172,7 +172,7 @@ def test_json_pair_data_filename(pair, expected_result, candle_type):
         Path('freqtrade/hello/world'),
         pair,
         '5m',
-        candle_type
+        CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)
     assert fn == Path(expected_result)
@@ -180,7 +180,7 @@ def test_json_pair_data_filename(pair, expected_result, candle_type):
         Path('freqtrade/hello/world'),
         pair,
         '5m',
-        candle_type=candle_type
+        candle_type=CandleType.from_string(candle_type)
     )
     assert isinstance(fn, Path)
     assert fn == Path(expected_result + '.gz')
@@ -257,7 +257,7 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
 
 @pytest.mark.parametrize('candle_type,subdir,file_tail', [
     ('mark', 'futures/', '-mark'),
-    ('', '', ''),
+    ('spot', '', ''),
 ])
 def test_download_pair_history(
     ohlcv_history_list,
@@ -719,23 +719,23 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
-        ('UNITTEST/BTC', '5m', CandleType.SPOT_),
-        ('ETH/BTC', '5m', CandleType.SPOT_),
-        ('XLM/BTC', '5m', CandleType.SPOT_),
-        ('TRX/BTC', '5m', CandleType.SPOT_),
-        ('LTC/BTC', '5m', CandleType.SPOT_),
-        ('XMR/BTC', '5m', CandleType.SPOT_),
-        ('ZEC/BTC', '5m', CandleType.SPOT_),
-        ('UNITTEST/BTC', '1m', CandleType.SPOT_),
-        ('ADA/BTC', '5m', CandleType.SPOT_),
-        ('ETC/BTC', '5m', CandleType.SPOT_),
-        ('NXT/BTC', '5m', CandleType.SPOT_),
-        ('DASH/BTC', '5m', ''),
-        ('XRP/ETH', '1m', ''),
-        ('XRP/ETH', '5m', ''),
-        ('UNITTEST/BTC', '30m', ''),
-        ('UNITTEST/BTC', '8m', ''),
-        ('NOPAIR/XXX', '4m', ''),
+        ('UNITTEST/BTC', '5m', CandleType.SPOT),
+        ('ETH/BTC', '5m', CandleType.SPOT),
+        ('XLM/BTC', '5m', CandleType.SPOT),
+        ('TRX/BTC', '5m', CandleType.SPOT),
+        ('LTC/BTC', '5m', CandleType.SPOT),
+        ('XMR/BTC', '5m', CandleType.SPOT),
+        ('ZEC/BTC', '5m', CandleType.SPOT),
+        ('UNITTEST/BTC', '1m', CandleType.SPOT),
+        ('ADA/BTC', '5m', CandleType.SPOT),
+        ('ETC/BTC', '5m', CandleType.SPOT),
+        ('NXT/BTC', '5m', CandleType.SPOT),
+        ('DASH/BTC', '5m', CandleType.SPOT),
+        ('XRP/ETH', '1m', CandleType.SPOT),
+        ('XRP/ETH', '5m', CandleType.SPOT),
+        ('UNITTEST/BTC', '30m', CandleType.SPOT),
+        ('UNITTEST/BTC', '8m', CandleType.SPOT),
+        ('NOPAIR/XXX', '4m', CandleType.SPOT),
     }
 
     paircombs = JsonDataHandler.ohlcv_get_available_data(testdatadir, 'futures')
@@ -747,9 +747,9 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     }
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
-    assert set(paircombs) == {('UNITTEST/BTC', '8m', '')}
+    assert set(paircombs) == {('UNITTEST/BTC', '8m', CandleType.SPOT)}
     paircombs = HDF5DataHandler.ohlcv_get_available_data(testdatadir, 'spot')
-    assert set(paircombs) == {('UNITTEST/BTC', '5m', '')}
+    assert set(paircombs) == {('UNITTEST/BTC', '5m', CandleType.SPOT)}
 
 
 def test_jsondatahandler_trades_get_pairs(testdatadir):
@@ -774,17 +774,17 @@ def test_jsondatahandler_ohlcv_purge(mocker, testdatadir):
 
 def test_jsondatahandler_ohlcv_load(testdatadir, caplog):
     dh = JsonDataHandler(testdatadir)
-    df = dh.ohlcv_load('XRP/ETH', '5m', '')
+    df = dh.ohlcv_load('XRP/ETH', '5m', 'spot')
     assert len(df) == 711
 
     df_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', candle_type="mark")
     assert len(df_mark) == 99
 
-    df_no_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', '')
+    df_no_mark = dh.ohlcv_load('UNITTEST/USDT', '1h', 'spot')
     assert len(df_no_mark) == 0
 
     # Failure case (empty array)
-    df1 = dh.ohlcv_load('NOPAIR/XXX', '4m', '')
+    df1 = dh.ohlcv_load('NOPAIR/XXX', '4m', 'spot')
     assert len(df1) == 0
     assert log_has("Could not load data for NOPAIR/XXX.", caplog)
     assert df.columns.equals(df1.columns)
@@ -903,7 +903,7 @@ def test_hdf5datahandler_trades_purge(mocker, testdatadir):
 
 @pytest.mark.parametrize('pair,timeframe,candle_type,candle_append,startdt,enddt', [
     # Data goes from 2018-01-10 - 2018-01-30
-    ('UNITTEST/BTC', '5m', '',  '', '2018-01-15', '2018-01-19'),
+    ('UNITTEST/BTC', '5m', 'spot',  '', '2018-01-15', '2018-01-19'),
     # Mark data goes from to 2021-11-15 2021-11-19
     ('UNITTEST/USDT', '1h', 'mark', '-mark', '2021-11-16', '2021-11-18'),
 ])

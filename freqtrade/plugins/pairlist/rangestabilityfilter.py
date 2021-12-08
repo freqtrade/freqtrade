@@ -29,6 +29,7 @@ class RangeStabilityFilter(IPairList):
         self._min_rate_of_change = pairlistconfig.get('min_rate_of_change', 0.01)
         self._max_rate_of_change = pairlistconfig.get('max_rate_of_change', None)
         self._refresh_period = pairlistconfig.get('refresh_period', 1440)
+        self._def_candletype = self._config['candle_type_def']
 
         self._pair_cache: TTLCache = TTLCache(maxsize=1000, ttl=self._refresh_period)
 
@@ -67,7 +68,7 @@ class RangeStabilityFilter(IPairList):
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
-            (p, '1d', self._config['candle_type_def']) for p in pairlist if p not in self._pair_cache]
+            (p, '1d', self._def_candletype) for p in pairlist if p not in self._pair_cache]
 
         since_ms = (arrow.utcnow()
                          .floor('day')
@@ -81,8 +82,8 @@ class RangeStabilityFilter(IPairList):
 
         if self._enabled:
             for p in deepcopy(pairlist):
-                daily_candles = candles[(p, '1d', self._config['candle_type_def'])] if (
-                    p, '1d', self._config['candle_type_def']) in candles else None
+                daily_candles = candles[(p, '1d', self._def_candletype)] if (
+                    p, '1d', self._def_candletype) in candles else None
                 if not self._validate_pair_loc(p, daily_candles):
                     pairlist.remove(p)
         return pairlist

@@ -1340,7 +1340,7 @@ def test_start_list_data(testdatadir, capsys):
     captured = capsys.readouterr()
     assert "Found 17 pair / timeframe combinations." in captured.out
     assert "\n|         Pair |       Timeframe |   Type |\n" in captured.out
-    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |        |\n" in captured.out
+    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |   spot |\n" in captured.out
 
     args = [
         "list-data",
@@ -1357,7 +1357,7 @@ def test_start_list_data(testdatadir, capsys):
     assert "Found 2 pair / timeframe combinations." in captured.out
     assert "\n|    Pair |   Timeframe |   Type |\n" in captured.out
     assert "UNITTEST/BTC" not in captured.out
-    assert "\n| XRP/ETH |      1m, 5m |        |\n" in captured.out
+    assert "\n| XRP/ETH |      1m, 5m |   spot |\n" in captured.out
 
     args = [
         "list-data",
