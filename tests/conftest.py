@@ -19,6 +19,7 @@ from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import PairInfo
 from freqtrade.enums import Collateral, RunMode, TradingMode
+from freqtrade.enums.candletype import CandleType
 from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
@@ -459,6 +460,7 @@ def get_default_conf(testdatadir):
         "disableparamexport": True,
         "internals": {},
         "export": "none",
+        "candle_type_def": CandleType.SPOT,
     }
     return configuration
 

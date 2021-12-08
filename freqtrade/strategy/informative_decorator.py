@@ -15,7 +15,7 @@ class InformativeData(NamedTuple):
     timeframe: str
     fmt: Union[str, Callable[[Any], str], None]
     ffill: bool
-    candle_type: CandleType = CandleType.SPOT_
+    candle_type: CandleType
 
 
 def informative(timeframe: str, asset: str = '',
@@ -58,7 +58,8 @@ def informative(timeframe: str, asset: str = '',
     def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, '_ft_informative', [])
         # TODO-lev: Add candle_type to InformativeData
-        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill))
+        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill,
+                                                 CandleType.SPOT_))
         setattr(fn, '_ft_informative', informative_pairs)
         return fn
     return decorator

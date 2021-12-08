@@ -424,7 +424,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         informative_pairs = self.informative_pairs()
         # Compatibility code for 2 tuple informative pairs
         informative_pairs = [
-            (p[0], p[1], CandleType.from_string(p[2]) if len(p) > 2 else CandleType.SPOT_)
+            (p[0], p[1], CandleType.from_string(p[2]) if len(
+                p) > 2 else self.config['candle_type_def'])
             for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
@@ -530,8 +531,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
             if self.dp:
-                self.dp._set_cached_df(pair, self.timeframe, dataframe, CandleType.SPOT_)
-                # TODO-lev: CandleType should be set conditionally
+                self.dp._set_cached_df(
+                    pair, self.timeframe, dataframe,
+                    candle_type=self.config['candle_type_def'])
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0

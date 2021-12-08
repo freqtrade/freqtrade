@@ -260,7 +260,7 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
     """
     pairs_not_available = []
     data_handler = get_datahandler(datadir, data_format)
-    candle_type = CandleType.FUTURES if trading_mode == 'futures' else CandleType.SPOT_
+    candle_type = CandleType.get_default(trading_mode)
     for idx, pair in enumerate(pairs, start=1):
         if pair not in exchange.markets:
             pairs_not_available.append(pair)
