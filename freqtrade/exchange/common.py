@@ -43,10 +43,14 @@ EXCHANGE_HAS_REQUIRED = [
 EXCHANGE_HAS_OPTIONAL = [
     # Private
     'fetchMyTrades',  # Trades for order - fee detection
+    # 'setLeverage',  # Margin/Futures trading
+    # 'setMarginMode',  # Margin/Futures trading
+    # 'fetchFundingHistory', # Futures trading
     # Public
     'fetchOrderBook', 'fetchL2OrderBook', 'fetchTicker',  # OR for pricing
     'fetchTickers',  # For volumepairlist?
     'fetchTrades',  # Downloading trades data
+    # 'fetchFundingRateHistory',  # Futures trading
 ]
 
 
