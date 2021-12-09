@@ -22,6 +22,7 @@ class Kraken(Exchange):
         "ohlcv_candle_limit": 720,
         "trades_pagination": "id",
         "trades_pagination_arg": "since",
+        "mark_ohlcv_timeframe": "4h",
     }
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [

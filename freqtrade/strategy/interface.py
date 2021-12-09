@@ -13,7 +13,7 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import SellType, SignalDirection, SignalTagType, SignalType
+from freqtrade.enums import CandleType, SellType, SignalDirection, SignalTagType, SignalType
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.exchange.exchange import timeframe_to_next_date
@@ -422,16 +422,25 @@ class IStrategy(ABC, HyperStrategyMixin):
         Internal method which gathers all informative pairs (user or automatically defined).
         """
         informative_pairs = self.informative_pairs()
+        # Compatibility code for 2 tuple informative pairs
+        informative_pairs = [
+            (p[0], p[1], CandleType.from_string(p[2]) if len(
+                p) > 2 else self.config.get('candle_type_def', CandleType.SPOT))
+            for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
             if inf_data.asset:
-                pair_tf = (_format_pair_name(self.config, inf_data.asset), inf_data.timeframe)
+                pair_tf = (
+                    _format_pair_name(self.config, inf_data.asset),
+                    inf_data.timeframe,
+                    inf_data.candle_type
+                )
                 informative_pairs.append(pair_tf)
             else:
                 if not self.dp:
                     raise OperationalException('@informative decorator with unspecified asset '
                                                'requires DataProvider instance.')
                 for pair in self.dp.current_whitelist():
-                    informative_pairs.append((pair, inf_data.timeframe))
+                    informative_pairs.append((pair, inf_data.timeframe, inf_data.candle_type))
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
@@ -522,7 +531,9 @@ class IStrategy(ABC, HyperStrategyMixin):
             dataframe = self.analyze_ticker(dataframe, metadata)
             self._last_candle_seen_per_pair[pair] = dataframe.iloc[-1]['date']
             if self.dp:
-                self.dp._set_cached_df(pair, self.timeframe, dataframe)
+                self.dp._set_cached_df(
+                    pair, self.timeframe, dataframe,
+                    candle_type=self.config.get('candle_type_def', CandleType.SPOT))
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
             dataframe[SignalType.ENTER_LONG.value] = 0

@@ -18,8 +18,7 @@ from freqtrade import constants
 from freqtrade.commands import Arguments
 from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.edge import PairInfo
-from freqtrade.enums import Collateral, RunMode, TradingMode
-from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums import CandleType, Collateral, RunMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import LocalTrade, Trade, init_db
@@ -459,6 +458,7 @@ def get_default_conf(testdatadir):
         "disableparamexport": True,
         "internals": {},
         "export": "none",
+        "candle_type_def": CandleType.SPOT,
     }
     return configuration
 
@@ -2386,7 +2386,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
         'amount': 25.0,
         'cost': 50.25,
         'fee': {'cost': 0.00025125, 'currency': 'BNB'}
-        }, {
+    }, {
         'timestamp': None,
         'datetime': None,
         'symbol': 'ETH/USDT',
@@ -2399,7 +2399,7 @@ def market_buy_order_usdt_doublefee(market_buy_order_usdt):
         'amount': 5,
         'cost': 10,
         'fee': {'cost': 0.0100306, 'currency': 'USDT'}
-        }]
+    }]
     return order
 
 

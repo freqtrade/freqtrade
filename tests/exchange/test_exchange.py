@@ -11,7 +11,7 @@ import ccxt
 import pytest
 from pandas import DataFrame
 
-from freqtrade.enums import Collateral, TradingMode
+from freqtrade.enums import CandleType, Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, DependencyException, InvalidOrderException,
                                   OperationalException, PricingError, TemporaryError)
 from freqtrade.exchange import Binance, Bittrex, Exchange, Kraken
@@ -1560,7 +1560,8 @@ def test_fetch_ticker(default_conf, mocker, exchange_name):
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
+@pytest.mark.parametrize('candle_type', ['mark', ''])
+def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     ohlcv = [
         [
@@ -1574,15 +1575,19 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, timeframe, since_ms):
-        return pair, timeframe, ohlcv
+    async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
+        return pair, timeframe, candle_type, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
     since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
-    ret = exchange.get_historic_ohlcv(pair, "5m", int((
-        arrow.utcnow().int_timestamp - since) * 1000))
+    ret = exchange.get_historic_ohlcv(
+        pair,
+        "5m",
+        int((arrow.utcnow().int_timestamp - since) * 1000),
+        candle_type=candle_type
+    )
 
     assert exchange._async_get_candle_history.call_count == 2
     # Returns twice the above OHLCV data
@@ -1595,13 +1600,18 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
         raise TimeoutError()
 
     exchange._async_get_candle_history = MagicMock(side_effect=mock_get_candle_hist_error)
-    ret = exchange.get_historic_ohlcv(pair, "5m", int(
-        (arrow.utcnow().int_timestamp - since) * 1000))
+    ret = exchange.get_historic_ohlcv(
+        pair,
+        "5m",
+        int((arrow.utcnow().int_timestamp - since) * 1000),
+        candle_type=candle_type
+    )
     assert log_has_re(r"Async code raised an exception: .*", caplog)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
+@pytest.mark.parametrize('candle_type', ['mark', ''])
+def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_type):
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     ohlcv = [
         [
@@ -1631,15 +1641,19 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
     ]
     pair = 'ETH/BTC'
 
-    async def mock_candle_hist(pair, timeframe, since_ms):
-        return pair, timeframe, ohlcv
+    async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
+        return pair, timeframe, candle_type, ohlcv
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
 
     since = 5 * 60 * exchange.ohlcv_candle_limit('5m') * 1.8
-    ret = exchange.get_historic_ohlcv_as_df(pair, "5m", int((
-        arrow.utcnow().int_timestamp - since) * 1000))
+    ret = exchange.get_historic_ohlcv_as_df(
+        pair,
+        "5m",
+        int((arrow.utcnow().int_timestamp - since) * 1000),
+        candle_type=candle_type
+    )
 
     assert exchange._async_get_candle_history.call_count == 2
     # Returns twice the above OHLCV data
@@ -1653,6 +1667,7 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
+# TODO-lev @pytest.mark.parametrize('candle_type', ['mark', ''])
 async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
     ohlcv = [
         [
@@ -1669,8 +1684,8 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/USDT'
-    respair, restf, res = await exchange._async_get_historic_ohlcv(
-        pair, "5m", 1500000000000, is_new_pair=False)
+    respair, restf, _, res = await exchange._async_get_historic_ohlcv(
+        pair, "5m", 1500000000000, candle_type=CandleType.SPOT, is_new_pair=False)
     assert respair == pair
     assert restf == '5m'
     # Call with very old timestamp - causes tons of requests
@@ -1678,6 +1693,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     assert res[0] == ohlcv[0]
 
 
+# TODO-lev: @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     ohlcv = [
         [
@@ -1702,7 +1718,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
-    pairs = [('IOTA/ETH', '5m'), ('XRP/ETH', '5m')]
+    pairs = [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', '')]
     # empty dicts
     assert not exchange._klines
     res = exchange.refresh_latest_ohlcv(pairs, cache=False)
@@ -1733,23 +1749,25 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m')])
+    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', '')])
     assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 0
     exchange.required_candle_call_count = 1
     assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
-                   f"timeframe {pairs[0][1]} ...",
+                   f"timeframe {pairs[0][1]}, candleType  ...",
                    caplog)
-    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
-                                        cache=False)
+    res = exchange.refresh_latest_ohlcv(
+        [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', ''), ('XRP/ETH', '1d', '')],
+        cache=False
+    )
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
 
     # Test the same again, should NOT return from cache!
     exchange._api_async.fetch_ohlcv.reset_mock()
-    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m'), ('XRP/ETH', '5m'), ('XRP/ETH', '1d')],
-                                        cache=False)
+    res = exchange.refresh_latest_ohlcv(
+        [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', ''), ('XRP/ETH', '1d', '')], cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
 
@@ -1774,33 +1792,35 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
     pair = 'ETH/BTC'
-    res = await exchange._async_get_candle_history(pair, "5m")
+    res = await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT)
     assert type(res) is tuple
-    assert len(res) == 3
+    assert len(res) == 4
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == ohlcv
+    assert res[2] == CandleType.SPOT
+    assert res[3] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
     assert not log_has(f"Using cached candle (OHLCV) data for {pair} ...", caplog)
 
     # exchange = Exchange(default_conf)
     await async_ccxt_exception(mocker, default_conf, MagicMock(),
                                "_async_get_candle_history", "fetch_ohlcv",
-                               pair='ABCD/BTC', timeframe=default_conf['timeframe'])
+                               pair='ABCD/BTC', timeframe=default_conf['timeframe'],
+                               candle_type=CandleType.SPOT)
 
     api_mock = MagicMock()
     with pytest.raises(OperationalException,
                        match=r'Could not fetch historical candle \(OHLCV\) data.*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.BaseError("Unknown error"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        await exchange._async_get_candle_history(pair, "5m",
+        await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT,
                                                  (arrow.utcnow().int_timestamp - 2000) * 1000)
 
     with pytest.raises(OperationalException, match=r'Exchange.* does not support fetching '
                                                    r'historical candle \(OHLCV\) data\..*'):
         api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.NotSupported("Not supported"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        await exchange._async_get_candle_history(pair, "5m",
+        await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT,
                                                  (arrow.utcnow().int_timestamp - 2000) * 1000)
 
 
@@ -1816,12 +1836,13 @@ async def test__async_get_candle_history_empty(default_conf, mocker, caplog):
 
     exchange = Exchange(default_conf)
     pair = 'ETH/BTC'
-    res = await exchange._async_get_candle_history(pair, "5m")
+    res = await exchange._async_get_candle_history(pair, "5m", CandleType.SPOT)
     assert type(res) is tuple
-    assert len(res) == 3
+    assert len(res) == 4
     assert res[0] == pair
     assert res[1] == "5m"
-    assert res[2] == ohlcv
+    assert res[2] == CandleType.SPOT
+    assert res[3] == ohlcv
     assert exchange._api_async.fetch_ohlcv.call_count == 1
 
 
@@ -1838,7 +1859,7 @@ def test_refresh_latest_ohlcv_inv_result(default_conf, mocker, caplog):
     # Monkey-patch async function with empty result
     exchange._api_async.fetch_ohlcv = MagicMock(side_effect=mock_get_candle_hist)
 
-    pairs = [("ETH/BTC", "5m"), ("XRP/BTC", "5m")]
+    pairs = [("ETH/BTC", "5m", ''), ("XRP/BTC", "5m", '')]
     res = exchange.refresh_latest_ohlcv(pairs)
     assert exchange._klines
     assert exchange._api_async.fetch_ohlcv.call_count == 2
@@ -2120,9 +2141,10 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
     sort_mock = mocker.patch('freqtrade.exchange.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
+    res = await exchange._async_get_candle_history(
+        'ETH/BTC', default_conf['timeframe'], CandleType.SPOT)
     assert res[0] == 'ETH/BTC'
-    res_ohlcv = res[2]
+    res_ohlcv = res[3]
 
     assert sort_mock.call_count == 1
     assert res_ohlcv[0][0] == 1527830400000
@@ -2157,10 +2179,11 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
     # Reset sort mock
     sort_mock = mocker.patch('freqtrade.exchange.sorted', MagicMock(side_effect=sort_data))
     # Test the OHLCV data sort
-    res = await exchange._async_get_candle_history('ETH/BTC', default_conf['timeframe'])
+    res = await exchange._async_get_candle_history(
+        'ETH/BTC', default_conf['timeframe'], CandleType.SPOT)
     assert res[0] == 'ETH/BTC'
     assert res[1] == default_conf['timeframe']
-    res_ohlcv = res[2]
+    res_ohlcv = res[3]
     # Sorted not called again - data is already in order
     assert sort_mock.call_count == 0
     assert res_ohlcv[0][0] == 1527827700000
@@ -3014,7 +3037,7 @@ def test_timeframe_to_next_date():
 def test_market_is_tradable(
         mocker, default_conf, market_symbol, base,
         quote, spot, margin, futures, trademode, add_dict, exchange, expected_result
-        ) -> None:
+) -> None:
     default_conf['trading_mode'] = trademode
     mocker.patch('freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
     ex = get_patched_exchange(mocker, default_conf, id=exchange)

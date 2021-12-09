@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import get_default_conf_usdt
@@ -51,14 +52,12 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
-        'futures_fundingrate_tf': '8h',
         'futures_pair': 'BTC/USDT:USDT',
     },
     'okex': {
         'pair': 'BTC/USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'futures_fundingrate_tf': '8h',
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
     },
@@ -182,7 +181,9 @@ class TestCCXTExchange():
         exchange, exchangename = exchange
         pair = EXCHANGES[exchangename]['pair']
         timeframe = EXCHANGES[exchangename]['timeframe']
-        pair_tf = (pair, timeframe)
+
+        pair_tf = (pair, timeframe, CandleType.SPOT)
+
         ohlcv = exchange.refresh_latest_ohlcv([pair_tf])
         assert isinstance(ohlcv, dict)
         assert len(ohlcv[pair_tf]) == len(exchange.klines(pair_tf))
@@ -193,7 +194,6 @@ class TestCCXTExchange():
         now = datetime.now(timezone.utc) - timedelta(minutes=(timeframe_to_minutes(timeframe) * 2))
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
-    @pytest.mark.skip("No futures support yet")
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
         # TODO-lev: enable this test once Futures mode is enabled.
         exchange, exchangename = exchange_futures
@@ -206,11 +206,31 @@ class TestCCXTExchange():
 
         rate = exchange.get_funding_rate_history(pair, since)
         assert isinstance(rate, dict)
-        expected_tf = EXCHANGES[exchangename].get('futures_fundingrate_tf', '1h')
+
+        expected_tf = exchange._ft_has['mark_ohlcv_timeframe']
         this_hour = timeframe_to_prev_date(expected_tf)
         prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
         assert rate[int(this_hour.timestamp() * 1000)] != 0.0
         assert rate[int(prev_tick.timestamp() * 1000)] != 0.0
+
+    @pytest.mark.skip("No futures support yet")
+    def test_fetch_mark_price_history(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+
+        mark_candles = exchange._get_mark_price_history(pair, since)
+
+        assert isinstance(mark_candles, dict)
+        expected_tf = '1h'
+
+        this_hour = timeframe_to_prev_date(expected_tf)
+        prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
+        assert mark_candles[int(this_hour.timestamp() * 1000)] != 0.0
+        assert mark_candles[int(prev_tick.timestamp() * 1000)] != 0.0
 
     # TODO: tests fetch_trades (?)
 

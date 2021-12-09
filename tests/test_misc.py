@@ -69,14 +69,15 @@ def test_file_load_json(mocker, testdatadir) -> None:
     ("ETH/BTC", 'ETH_BTC'),
     ("ETH/USDT", 'ETH_USDT'),
     ("ETH/USDT:USDT", 'ETH_USDT_USDT'),  # swap with USDT as settlement currency
-    ("ETH/USDT:USDT-210625", 'ETH_USDT_USDT_210625'),  # expiring futures
+    ("ETH/USDT:USDT-210625", 'ETH_USDT_USDT-210625'),  # expiring futures
     ("Fabric Token/ETH", 'Fabric_Token_ETH'),
     ("ETHH20", 'ETHH20'),
     (".XBTBON2H", '_XBTBON2H'),
     ("ETHUSD.d", 'ETHUSD_d'),
-    ("ADA-0327", 'ADA_0327'),
-    ("BTC-USD-200110", 'BTC_USD_200110'),
-    ("F-AKRO/USDT", 'F_AKRO_USDT'),
+    ("ADA-0327", 'ADA-0327'),
+    ("BTC-USD-200110", 'BTC-USD-200110'),
+    ("BTC-PERP:USDT", 'BTC-PERP_USDT'),
+    ("F-AKRO/USDT", 'F-AKRO_USDT'),
     ("LC+/ETH", 'LC__ETH'),
     ("CMT@18/ETH", 'CMT_18_ETH'),
     ("LBTC:1022/SAI", 'LBTC_1022_SAI'),

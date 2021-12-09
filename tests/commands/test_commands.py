@@ -814,6 +814,18 @@ def test_download_data_trades(mocker, caplog):
     assert dl_mock.call_args[1]['timerange'].starttype == "date"
     assert dl_mock.call_count == 1
     assert convert_mock.call_count == 1
+    args = [
+        "download-data",
+        "--exchange", "kraken",
+        "--pairs", "ETH/BTC", "XRP/BTC",
+        "--days", "20",
+        "--trading-mode", "futures",
+        "--dl-trades"
+    ]
+    with pytest.raises(OperationalException,
+                       match="Trade download not supported for futures."):
+
+        start_download_data(get_args(args))
 
 
 def test_start_convert_trades(mocker, caplog):
@@ -1327,8 +1339,8 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 17 pair / timeframe combinations." in captured.out
-    assert "\n|         Pair |       Timeframe |\n" in captured.out
-    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |\n" in captured.out
+    assert "\n|         Pair |       Timeframe |   Type |\n" in captured.out
+    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |   spot |\n" in captured.out
 
     args = [
         "list-data",
@@ -1343,9 +1355,27 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert "\n|    Pair |   Timeframe |\n" in captured.out
+    assert "\n|    Pair |   Timeframe |   Type |\n" in captured.out
     assert "UNITTEST/BTC" not in captured.out
-    assert "\n| XRP/ETH |      1m, 5m |\n" in captured.out
+    assert "\n| XRP/ETH |      1m, 5m |   spot |\n" in captured.out
+
+    args = [
+        "list-data",
+        "--data-format-ohlcv",
+        "json",
+        "--trading-mode", "futures",
+        "--datadir",
+        str(testdatadir),
+    ]
+    pargs = get_args(args)
+    pargs['config'] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+
+    assert "Found 3 pair / timeframe combinations." in captured.out
+    assert "\n|          Pair |   Timeframe |    Type |\n" in captured.out
+    assert "\n|      XRP/USDT |          1h | futures |\n" in captured.out
+    assert "\n|      XRP/USDT |          1h |    mark |\n" in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")

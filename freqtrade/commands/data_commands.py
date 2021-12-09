@@ -8,7 +8,7 @@ from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.data.converter import convert_ohlcv_format, convert_trades_format
 from freqtrade.data.history import (convert_trades_to_ohlcv, refresh_backtest_ohlcv_data,
                                     refresh_backtest_trades_data)
-from freqtrade.enums import RunMode
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange import market_is_active
@@ -64,6 +64,8 @@ def start_download_data(args: Dict[str, Any]) -> None:
     try:
 
         if config.get('download_trades'):
+            if config.get('trading_mode') == 'futures':
+                raise OperationalException("Trade download not supported for futures.")
             pairs_not_available = refresh_backtest_trades_data(
                 exchange, pairs=expanded_pairs, datadir=config['datadir'],
                 timerange=timerange, new_pairs_days=config['new_pairs_days'],
@@ -81,7 +83,9 @@ def start_download_data(args: Dict[str, Any]) -> None:
                 exchange, pairs=expanded_pairs, timeframes=config['timeframes'],
                 datadir=config['datadir'], timerange=timerange,
                 new_pairs_days=config['new_pairs_days'],
-                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'])
+                erase=bool(config.get('erase')), data_format=config['dataformat_ohlcv'],
+                trading_mode=config.get('trading_mode', 'spot'),
+                )
 
     except KeyboardInterrupt:
         sys.exit("SIGINT received, aborting ...")
@@ -133,9 +137,11 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
     """
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     if ohlcv:
-        convert_ohlcv_format(config,
-                             convert_from=args['format_from'], convert_to=args['format_to'],
-                             erase=args['erase'])
+        candle_types = [CandleType.from_string(ct) for ct in config.get('candle_types', ['spot'])]
+        for candle_type in candle_types:
+            convert_ohlcv_format(config,
+                                 convert_from=args['format_from'], convert_to=args['format_to'],
+                                 erase=args['erase'], candle_type=candle_type)
     else:
         convert_trades_format(config,
                               convert_from=args['format_from'], convert_to=args['format_to'],
@@ -154,17 +160,24 @@ def start_list_data(args: Dict[str, Any]) -> None:
     from freqtrade.data.history.idatahandler import get_datahandler
     dhc = get_datahandler(config['datadir'], config['dataformat_ohlcv'])
 
-    paircombs = dhc.ohlcv_get_available_data(config['datadir'])
+    # TODO-lev: trading-mode should be parsed at config level, and available as Enum in the config.
+    paircombs = dhc.ohlcv_get_available_data(config['datadir'], config.get('trading_mode', 'spot'))
 
     if args['pairs']:
         paircombs = [comb for comb in paircombs if comb[0] in args['pairs']]
 
     print(f"Found {len(paircombs)} pair / timeframe combinations.")
     groupedpair = defaultdict(list)
-    for pair, timeframe in sorted(paircombs, key=lambda x: (x[0], timeframe_to_minutes(x[1]))):
-        groupedpair[pair].append(timeframe)
+    for pair, timeframe, candle_type in sorted(
+        paircombs,
+        key=lambda x: (x[0], timeframe_to_minutes(x[1]), x[2])
+    ):
+        groupedpair[(pair, candle_type)].append(timeframe)
 
     if groupedpair:
-        print(tabulate([(pair, ', '.join(timeframes)) for pair, timeframes in groupedpair.items()],
-                       headers=("Pair", "Timeframe"),
-                       tablefmt='psql', stralign='right'))
+        print(tabulate([
+            (pair, ', '.join(timeframes), candle_type)
+            for (pair, candle_type), timeframes in groupedpair.items()
+        ],
+            headers=("Pair", "Timeframe", "Type"),
+            tablefmt='psql', stralign='right'))

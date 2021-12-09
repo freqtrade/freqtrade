@@ -2,6 +2,7 @@ from typing import Any, Callable, NamedTuple, Optional, Union
 
 from pandas import DataFrame
 
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.strategy.strategy_helper import merge_informative_pair
 
@@ -14,6 +15,7 @@ class InformativeData(NamedTuple):
     timeframe: str
     fmt: Union[str, Callable[[Any], str], None]
     ffill: bool
+    candle_type: CandleType
 
 
 def informative(timeframe: str, asset: str = '',
@@ -46,6 +48,7 @@ def informative(timeframe: str, asset: str = '',
     * {column} - name of dataframe column.
     * {timeframe} - timeframe of informative dataframe.
     :param ffill: ffill dataframe after merging informative pair.
+    :param candle_type: '', mark, index, premiumIndex, or funding_rate
     """
     _asset = asset
     _timeframe = timeframe
@@ -54,7 +57,9 @@ def informative(timeframe: str, asset: str = '',
 
     def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, '_ft_informative', [])
-        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill))
+        # TODO-lev: Add candle_type to InformativeData
+        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill,
+                                                 CandleType.SPOT))
         setattr(fn, '_ft_informative', informative_pairs)
         return fn
     return decorator

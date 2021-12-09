@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import CandleType
 from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
                                 timeframe_to_minutes)
 from tests.conftest import get_patched_exchange
@@ -145,23 +146,24 @@ def test_stoploss_from_absolute():
     assert stoploss_from_absolute(0, 100) == 1
 
 
+# TODO-lev: @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_informative_decorator(mocker, default_conf):
     test_data_5m = generate_test_data('5m', 40)
     test_data_30m = generate_test_data('30m', 40)
     test_data_1h = generate_test_data('1h', 40)
     data = {
-        ('XRP/USDT', '5m'): test_data_5m,
-        ('XRP/USDT', '30m'): test_data_30m,
-        ('XRP/USDT', '1h'): test_data_1h,
-        ('LTC/USDT', '5m'): test_data_5m,
-        ('LTC/USDT', '30m'): test_data_30m,
-        ('LTC/USDT', '1h'): test_data_1h,
-        ('NEO/USDT', '30m'): test_data_30m,
-        ('NEO/USDT', '5m'): test_data_5m,
-        ('NEO/USDT', '1h'): test_data_1h,
-        ('ETH/USDT', '1h'): test_data_1h,
-        ('ETH/USDT', '30m'): test_data_30m,
-        ('ETH/BTC', '1h'): test_data_1h,
+        ('XRP/USDT', '5m', CandleType.SPOT): test_data_5m,
+        ('XRP/USDT', '30m', CandleType.SPOT): test_data_30m,
+        ('XRP/USDT', '1h', CandleType.SPOT): test_data_1h,
+        ('LTC/USDT', '5m', CandleType.SPOT): test_data_5m,
+        ('LTC/USDT', '30m', CandleType.SPOT): test_data_30m,
+        ('LTC/USDT', '1h', CandleType.SPOT): test_data_1h,
+        ('NEO/USDT', '30m', CandleType.SPOT): test_data_30m,
+        ('NEO/USDT', '5m', CandleType.SPOT): test_data_5m,
+        ('NEO/USDT', '1h', CandleType.SPOT): test_data_1h,
+        ('ETH/USDT', '1h', CandleType.SPOT): test_data_1h,
+        ('ETH/USDT', '30m', CandleType.SPOT): test_data_30m,
+        ('ETH/BTC', '1h', CandleType.SPOT): test_data_1h,
     }
     from .strats.informative_decorator_strategy import InformativeDecoratorTest
     default_conf['stake_currency'] = 'USDT'
@@ -173,19 +175,27 @@ def test_informative_decorator(mocker, default_conf):
     ])
 
     assert len(strategy._ft_informative) == 6   # Equal to number of decorators used
-    informative_pairs = [('XRP/USDT', '1h'), ('LTC/USDT', '1h'), ('XRP/USDT', '30m'),
-                         ('LTC/USDT', '30m'), ('NEO/USDT', '1h'), ('NEO/USDT', '30m'),
-                         ('NEO/USDT', '5m'), ('ETH/BTC', '1h'), ('ETH/USDT', '30m')]
+    informative_pairs = [
+        ('XRP/USDT', '1h', CandleType.SPOT),
+        ('LTC/USDT', '1h', CandleType.SPOT),
+        ('XRP/USDT', '30m', CandleType.SPOT),
+        ('LTC/USDT', '30m', CandleType.SPOT),
+        ('NEO/USDT', '1h', CandleType.SPOT),
+        ('NEO/USDT', '30m', CandleType.SPOT),
+        ('NEO/USDT', '5m', CandleType.SPOT),
+        ('ETH/BTC', '1h', CandleType.SPOT),
+        ('ETH/USDT', '30m', CandleType.SPOT)]
     for inf_pair in informative_pairs:
         assert inf_pair in strategy.gather_informative_pairs()
 
-    def test_historic_ohlcv(pair, timeframe):
-        return data[(pair, timeframe or strategy.timeframe)].copy()
+    def test_historic_ohlcv(pair, timeframe, candle_type):
+        return data[
+            (pair, timeframe or strategy.timeframe, CandleType.from_string(candle_type))].copy()
     mocker.patch('freqtrade.data.dataprovider.DataProvider.historic_ohlcv',
                  side_effect=test_historic_ohlcv)
 
     analyzed = strategy.advise_all_indicators(
-        {p: data[(p, strategy.timeframe)] for p in ('XRP/USDT', 'LTC/USDT')})
+        {p: data[(p, strategy.timeframe, CandleType.SPOT)] for p in ('XRP/USDT', 'LTC/USDT')})
     expected_columns = [
         'rsi_1h', 'rsi_30m',                    # Stacked informative decorators
         'neo_usdt_rsi_1h',                      # NEO 1h informative

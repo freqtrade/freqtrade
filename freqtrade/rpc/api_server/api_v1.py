@@ -9,6 +9,7 @@ from fastapi.exceptions import HTTPException
 from freqtrade import __version__
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.data.history import get_datahandler
+from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
@@ -250,16 +251,22 @@ def get_strategy(strategy: str, config=Depends(get_config)):
 
 @router.get('/available_pairs', response_model=AvailablePairs, tags=['candle data'])
 def list_available_pairs(timeframe: Optional[str] = None, stake_currency: Optional[str] = None,
-                         config=Depends(get_config)):
+                         candletype: Optional[CandleType] = None, config=Depends(get_config)):
 
     dh = get_datahandler(config['datadir'], config.get('dataformat_ohlcv', None))
-
-    pair_interval = dh.ohlcv_get_available_data(config['datadir'])
+    trading_mode = config.get('trading_mode', 'spot')
+    pair_interval = dh.ohlcv_get_available_data(config['datadir'], trading_mode)
 
     if timeframe:
         pair_interval = [pair for pair in pair_interval if pair[1] == timeframe]
     if stake_currency:
         pair_interval = [pair for pair in pair_interval if pair[0].endswith(stake_currency)]
+    if candletype:
+        pair_interval = [pair for pair in pair_interval if pair[2] == candletype]
+    else:
+        candle_type = CandleType.get_default(trading_mode)
+        pair_interval = [pair for pair in pair_interval if pair[2] == candle_type]
+
     pair_interval = sorted(pair_interval, key=lambda x: x[0])
 
     pairs = list({x[0] for x in pair_interval})

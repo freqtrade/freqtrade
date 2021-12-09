@@ -9,6 +9,7 @@ import pandas as pd
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS,
                                  ListPairsWithTimeframes, TradeList)
+from freqtrade.enums import CandleType
 
 from .idatahandler import IDataHandler
 
@@ -21,44 +22,61 @@ class HDF5DataHandler(IDataHandler):
     _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @classmethod
-    def ohlcv_get_available_data(cls, datadir: Path) -> ListPairsWithTimeframes:
+    def ohlcv_get_available_data(cls, datadir: Path, trading_mode: str) -> ListPairsWithTimeframes:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
+        :param trading_mode: trading-mode to be used
         :return: List of Tuples of (pair, timeframe)
         """
-        _tmp = [re.search(r'^([a-zA-Z_]+)\-(\d+\S+)(?=.h5)', p.name)
-                for p in datadir.glob("*.h5")]
-        return [(match[1].replace('_', '/'), match[2]) for match in _tmp
-                if match and len(match.groups()) > 1]
+        if trading_mode == 'futures':
+            datadir = datadir.joinpath('futures')
+        _tmp = [
+            re.search(
+                cls._OHLCV_REGEX, p.name
+            ) for p in datadir.glob("*.h5")
+        ]
+        return [
+            (
+                cls.rebuild_pair_from_filename(match[1]),
+                match[2],
+                CandleType.from_string(match[3])
+            ) for match in _tmp if match and len(match.groups()) > 1]
 
     @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
         :param datadir: Directory to search for ohlcv files
         :param timeframe: Timeframe to search pairs for
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: List of Pairs
         """
+        candle = ""
+        if candle_type != CandleType.SPOT:
+            datadir = datadir.joinpath('futures')
+            candle = f"-{candle_type}"
 
-        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + '.h5)', p.name)
-                for p in datadir.glob(f"*{timeframe}.h5")]
+        _tmp = [re.search(r'^(\S+)(?=\-' + timeframe + candle + '.h5)', p.name)
+                for p in datadir.glob(f"*{timeframe}{candle}.h5")]
         # Check if regex found something and only return these results
-        return [match[0].replace('_', '/') for match in _tmp if match]
+        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
-    def ohlcv_store(self, pair: str, timeframe: str, data: pd.DataFrame) -> None:
+    def ohlcv_store(
+            self, pair: str, timeframe: str, data: pd.DataFrame, candle_type: CandleType) -> None:
         """
         Store data in hdf5 file.
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: None
         """
         key = self._pair_ohlcv_key(pair, timeframe)
         _data = data.copy()
 
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
 
         _data.loc[:, self._columns].to_hdf(
             filename, key, mode='a', complevel=9, complib='blosc',
@@ -66,7 +84,8 @@ class HDF5DataHandler(IDataHandler):
         )
 
     def _ohlcv_load(self, pair: str, timeframe: str,
-                    timerange: Optional[TimeRange] = None) -> pd.DataFrame:
+                    timerange: Optional[TimeRange], candle_type: CandleType
+                    ) -> pd.DataFrame:
         """
         Internal method used to load data for one pair from disk.
         Implements the loading and conversion to a Pandas dataframe.
@@ -76,10 +95,16 @@ class HDF5DataHandler(IDataHandler):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         key = self._pair_ohlcv_key(pair, timeframe)
-        filename = self._pair_data_filename(self._datadir, pair, timeframe)
+        filename = self._pair_data_filename(
+            self._datadir,
+            pair,
+            timeframe,
+            candle_type=candle_type
+        )
 
         if not filename.exists():
             return pd.DataFrame(columns=self._columns)
@@ -98,12 +123,19 @@ class HDF5DataHandler(IDataHandler):
                                           'low': 'float', 'close': 'float', 'volume': 'float'})
         return pairdata
 
-    def ohlcv_append(self, pair: str, timeframe: str, data: pd.DataFrame) -> None:
+    def ohlcv_append(
+        self,
+        pair: str,
+        timeframe: str,
+        data: pd.DataFrame,
+        candle_type: CandleType
+    ) -> None:
         """
         Append data to existing data structures
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
         """
         raise NotImplementedError()
 
@@ -117,7 +149,7 @@ class HDF5DataHandler(IDataHandler):
         _tmp = [re.search(r'^(\S+)(?=\-trades.h5)', p.name)
                 for p in datadir.glob("*trades.h5")]
         # Check if regex found something and only return these results to avoid exceptions.
-        return [match[0].replace('_', '/') for match in _tmp if match]
+        return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
     def trades_store(self, pair: str, data: TradeList) -> None:
         """

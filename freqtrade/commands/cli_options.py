@@ -5,6 +5,7 @@ from argparse import SUPPRESS, ArgumentTypeError
 
 from freqtrade import __version__, constants
 from freqtrade.constants import HYPEROPT_LOSS_BUILTIN
+from freqtrade.enums import CandleType
 
 
 def check_int_positive(value: str) -> int:
@@ -352,6 +353,12 @@ AVAILABLE_CLI_OPTIONS = {
         '--trading-mode',
         help='Select Trading mode',
         choices=constants.TRADING_MODES,
+    ),
+    "candle_types": Arg(
+        '--candle-types',
+        help='Select candle type to use',
+        choices=[c.value for c in CandleType],
+        nargs='+',
     ),
     # Script options
     "pairs": Arg(

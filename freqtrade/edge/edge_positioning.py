@@ -119,8 +119,8 @@ class Edge:
             )
             # Download informative pairs too
             res = defaultdict(list)
-            for p, t in self.strategy.gather_informative_pairs():
-                res[t].append(p)
+            for pair, timeframe, _ in self.strategy.gather_informative_pairs():
+                res[timeframe].append(pair)
             for timeframe, inf_pairs in res.items():
                 timerange_startup = deepcopy(self._timerange)
                 timerange_startup.subtract_start(timeframe_to_seconds(
