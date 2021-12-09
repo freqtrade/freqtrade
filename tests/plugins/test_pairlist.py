@@ -7,7 +7,7 @@ import pytest
 import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
-from freqtrade.enums.runmode import RunMode
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
