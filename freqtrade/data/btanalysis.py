@@ -390,7 +390,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
 
-def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_date',
+def calculate_trades_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_date',
                            value_col: str = 'profit_ratio'
                  )  -> float:
     """
@@ -407,9 +407,7 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty")
     
-    mdd_df = pd.DataFrame()
-
-    mdd_pair_list = []
+    trades_mdd_pair_list = []
     
     for pair, df in data.items():
 
@@ -448,12 +446,12 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
                       / data_join['close_cummax']
 
         mdd_pair = data_join['drawdown'].max()
-        mdd_pair_list.append(mdd_pair)
+        trades_mdd_pair_list.append(mdd_pair)
     
-    mdd_pair_list = np.array(mdd_pair_list)
+    trades_mdd_pair_list = np.array(trades_mdd_pair_list)
 
 
-    return mdd_pair_list.max()
+    return trades_mdd_pair_list.max()
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
     """

@@ -9,7 +9,7 @@ from tabulate import tabulate
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, LAST_BT_RESULT_FN, UNLIMITED_STAKE_AMOUNT
 from freqtrade.data.btanalysis import (calculate_csum, calculate_market_change,
-                                       calculate_max_drawdown, calculate_mdd)
+                                       calculate_max_drawdown, calculate_trades_mdd)
 from freqtrade.misc import decimals_per_coin, file_dump_json, round_coin_value
 
 
@@ -462,12 +462,13 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     }
 
     try:
-        mdd = calculate_mdd(btdata, results)
+        trades_mdd = calculate_trades_mdd(btdata, results)
         max_drawdown, _, _, _, _ = calculate_max_drawdown(
             results, value_col='profit_ratio')
         drawdown_abs, drawdown_start, drawdown_end, high_val, low_val = calculate_max_drawdown(
             results, value_col='profit_abs')
         strat_stats.update({
+            'trades_mdd' : trades_mdd,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
@@ -487,6 +488,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
     except ValueError:
         strat_stats.update({
+            'trades_mdd': 0.0,
             'max_drawdown': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
@@ -716,9 +718,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                              strat_results['stake_currency'])),
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
-
-            ('Drawdown', f"{strat_results['max_drawdown']:.2%}"),
-            ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
+            ('', ''), # Empty line to improve readability
+            ('Max Drawdown (in trades)', f"{strat_results['trades_mdd']:.2%}"),
+            ('Max Drawdown Total', f"{strat_results['max_drawdown']:.2%}"),
+            ('Max Drawdown Total', round_coin_value(strat_results['max_drawdown_abs'],
                                           strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
                                                strat_results['stake_currency'])),
