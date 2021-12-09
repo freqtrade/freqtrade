@@ -396,12 +396,12 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame)  -> float :
         Give the max drawdown given each trades and the history candles.
         The intervals dates used to calculate the max drawdown are the trades intervals dates.
     Args:
-        :param data (dict) : dictionnary of candle dataframe per pair used to calculate the mdd.
-        :param trades (pd.DataFrame): trades used to find the intervals dates.
+        :param data: (dict) dictionnary of candle dataframe per pair used to calculate the mdd.
+        :param trades: (pd.DataFrame) trades used to find the intervals dates.
     
     Returns:
-         :return: float: Give the maximum drawdown among each trades.
-         :raise: ValueError if trade-dataframe was found empty.
+         :return: (float) Give the maximum drawdown among each trades.
+         :raise: (ValueError) if trade-dataframe was found empty.
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty")
