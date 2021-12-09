@@ -411,32 +411,15 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
 
     
     for pair, df in data.items():
-        # Init colonne boolean à 0
-        # df_bis = df.copy()
-        # df_bis["is_into_trade"] = np.zeros(len(df_bis), dtype=bool)
-        
-        # Récupération des index
-        # open_close_date = trades.loc[trades['pair']==pair][["open_date","close_date"]]
-        # mdd_df = df[df["date"].isin([open_close_date["open_date"],open_close_date["close_date"]])]
-        # l_open=df[df["date"].isin(open_close_date["open_date"])].index.values.tolist()
-        # l_close=df[df["date"].isin(open_close_date["close_date"])].index.values.tolist()
-        
-        # Set 1 aux bornes open et close dans le df
-        # df_bis["is_into_trade"].iloc[l_open] = 1
-        # df_bis["is_into_trade"].iloc[l_close] = 1
-        
-        # cumulative sum modulo 2
-        # df_bis["is_into_trade"] = df_bis["is_into_trade"].cumsum()&1
-        
-        # close boundaries set to 1 (again)
-        # df_bis["is_into_trade"].iloc[l_close] = 1
 
         trades_aux = trades.loc[trades['pair']==pair][["open_date","close_date"]]
-        trades_aux['open_close_mark'] = np.ones(len(trades_aux))
-        trades_aux = pd.concat([trades_aux.rename(columns={'open_date':'date'})[['date','open_close_mark']],trades_aux.rename(columns={'close_date':'date'})[['date','open_close_mark']]]).sort_values(by='date')
+        trades_aux = pd.concat([trades_aux.rename(columns={'open_date':'date'})[['date']],
+                                trades_aux.rename(columns={'close_date':'date'})[['date']]]
+                               ).sort_values(by='date')
+        trades_aux['open_close_mark'] = np.ones(len(trades_aux), dtype=int)
         data_join = df.set_index('date').join(trades_aux.set_index('date'))
-        data_join = data_join.fillna(0)
-        data_join['is_in_trade'] = data_join.open_close_mark.cumsum()%2
+        data_join["open_close_mark"] = data_join["open_close_mark"].fillna(0).astype(int)
+        data_join['is_in_trade'] = data_join.open_close_mark.cumsum()&1 # &1 <=> %2
         data_join['is_in_trade'].loc[data_join['open_close_mark'] == 1] = 1
         data_join['close_cummax'] = 0
 
