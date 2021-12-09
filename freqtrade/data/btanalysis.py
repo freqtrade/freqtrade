@@ -390,19 +390,18 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
     return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
 
-def calculate_trades_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_date',
-                           value_col: str = 'profit_ratio'
-                 )  -> float:
+def calculate_trades_mdd(data: dict, trades: pd.DataFrame)  -> float :
     """
-    Calculate MDD (Max DrawDown) :
-        Give the max drawdown given each trades and the history candles data.
+    Calculate Trades MDD (Max DrawDown) :
+        Give the max drawdown given each trades and the history candles.
+        The intervals dates used to calculate the max drawdown are the trades intervals dates.
     Args:
-        trades (pd.DataFrame): [description]
-        date_col (str, optional): [description]. Defaults to 'close_date'.
-        value_col (str, optional): [description]. Defaults to 'profit_ratio'.
-
+        :param data (dict) : dictionnary of candle dataframe per pair used to calculate the mdd.
+        :param trades (pd.DataFrame): trades used to find the intervals dates.
+    
     Returns:
-        float: [description]
+         :return: float: Give the maximum drawdown among each trades.
+         :raise: ValueError if trade-dataframe was found empty.
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty")
@@ -411,36 +410,47 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'c
     
     for pair, df in data.items():
 
+        # Gather the opening and closing trade dates into one Dates DataFrame
         open_close_trades = trades.loc[trades['pair']==pair][["open_date","close_date"]]
         open_close_trades = pd.concat(
             [open_close_trades.rename(columns={'open_date':'date'})[['date']],
             open_close_trades.rename(columns={'close_date':'date'})[['date']]]
             ).sort_values(by='date')
-        open_close_trades['open_close_mark'] = np.ones(len(open_close_trades), dtype=int)
+        
+        # Mark the dates and join it to the current candle dataframe.
+        # This allow to determine the open and close trade dates in the current 
+        # candle dataframe.
+        open_close_trades['open_close_mark'] = 1
         data_join = df.set_index('date').join(open_close_trades.set_index('date'))
         del open_close_trades
 
-        close_trades = trades.loc[trades['pair']==pair][["close_date"]]
-        close_trades = close_trades.rename(columns={'close_date':'date'})
-        close_trades['close_mark'] = np.ones(len(close_trades), dtype=int)
-        data_join = data_join.join(close_trades.set_index('date'))
-        del close_trades
+        # Gather, mark and join only the opening trade dates into the current candle
+        # dataframe.
+        # This allow to classify trades using the cumsum and split by classes 
+        # with groupby in order to process a cummax on each trades independantly.
+        open_trades = trades.loc[trades['pair']==pair][["open_date"]]
+        open_trades = open_trades.rename(columns={'open_date':'date'})
+        open_trades['open_mark'] = 1
+        data_join = data_join.join(open_trades.set_index('date'))
+        del open_trades
 
-        data_join[["open_close_mark",'close_mark']] = data_join[
-            ["open_close_mark",'close_mark']].fillna(0).astype(int)
-        
+        # Set all unmarked date to 0
+        data_join[["open_close_mark",'open_mark']] = data_join[
+            ["open_close_mark",'open_mark']].fillna(0).astype(int)
+
+        # Mark with one all dates between an opening date trades and a closing date trades.
         data_join['is_in_trade'] = data_join.open_close_mark.cumsum()&1 # &1 <=> %2
         data_join.loc[data_join['open_close_mark'] == 1, 'is_in_trade'] = 1
-        data_join['close_cummax'] = 0
-
-        data_join["open_close_mark"] = data_join["open_close_mark"] - data_join["close_mark"]
         
+        # Perform a cummax in each trades independtly
+        data_join['close_cummax'] = 0
         data_join['close_cummax'] = data_join.groupby(
-            data_join.open_close_mark.cumsum()
-            ).close.cummax()
+            data_join['open_mark'].cumsum()
+            )['close'].cummax()
         data_join.loc[data_join['is_in_trade'] == 0, 'close_cummax'] = 0
 
-        data_join = data_join.rename(columns={'close_mark':'drawdown'})
+        # Compute the drawdown at each time of each trades
+        data_join = data_join.rename(columns={'open_mark':'drawdown'})
         data_join.loc[data_join['is_in_trade'] == 1, 'drawdown'] =             \
                       (data_join['close_cummax'] - data_join['close'])         \
                       / data_join['close_cummax']
@@ -449,8 +459,6 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'c
         trades_mdd_pair_list.append(mdd_pair)
     
     trades_mdd_pair_list = np.array(trades_mdd_pair_list)
-
-
     return trades_mdd_pair_list.max()
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
