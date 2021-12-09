@@ -420,11 +420,11 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
         data_join = df.set_index('date').join(trades_aux.set_index('date'))
         data_join["open_close_mark"] = data_join["open_close_mark"].fillna(0).astype(int)
         data_join['is_in_trade'] = data_join.open_close_mark.cumsum()&1 # &1 <=> %2
-        data_join['is_in_trade'].loc[data_join['open_close_mark'] == 1] = 1
+        data_join.loc[data_join['open_close_mark'] == 1, 'is_in_trade'] = 1
         data_join['close_cummax'] = 0
 
         data_join['close_cummax'] = data_join.groupby(data_join.open_close_mark.cumsum()).close.cummax()
-        data_join['close_cummax'].loc[data_join['is_in_trade'] == 0] = 0
+        data_join.loc[data_join['is_in_trade'] == 0, 'close_cummax'] = 0
         
         # print(mdd_df)
     return mdd_df
