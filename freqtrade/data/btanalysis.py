@@ -414,9 +414,10 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
     for pair, df in data.items():
 
         open_close_trades = trades.loc[trades['pair']==pair][["open_date","close_date"]]
-        open_close_trades = pd.concat([open_close_trades.rename(columns={'open_date':'date'})[['date']],
-                                       open_close_trades.rename(columns={'close_date':'date'})[['date']]]
-                                     ).sort_values(by='date')
+        open_close_trades = pd.concat(
+            [open_close_trades.rename(columns={'open_date':'date'})[['date']],
+            open_close_trades.rename(columns={'close_date':'date'})[['date']]]
+            ).sort_values(by='date')
         open_close_trades['open_close_mark'] = np.ones(len(open_close_trades), dtype=int)
         data_join = df.set_index('date').join(open_close_trades.set_index('date'))
         del open_close_trades
@@ -427,24 +428,29 @@ def calculate_mdd(data: dict, trades: pd.DataFrame, *, date_col: str = 'close_da
         data_join = data_join.join(close_trades.set_index('date'))
         del close_trades
 
-        data_join[["open_close_mark",'close_mark']] = data_join[["open_close_mark",'close_mark']].fillna(0).astype(int)
+        data_join[["open_close_mark",'close_mark']] = data_join[
+            ["open_close_mark",'close_mark']].fillna(0).astype(int)
+        
         data_join['is_in_trade'] = data_join.open_close_mark.cumsum()&1 # &1 <=> %2
         data_join.loc[data_join['open_close_mark'] == 1, 'is_in_trade'] = 1
         data_join['close_cummax'] = 0
 
         data_join["open_close_mark"] = data_join["open_close_mark"] - data_join["close_mark"]
         
-        data_join['close_cummax'] = data_join.groupby(data_join.open_close_mark.cumsum()).close.cummax()
+        data_join['close_cummax'] = data_join.groupby(
+            data_join.open_close_mark.cumsum()
+            ).close.cummax()
         data_join.loc[data_join['is_in_trade'] == 0, 'close_cummax'] = 0
 
         data_join = data_join.rename(columns={'close_mark':'drawdown'})
-        data_join['drawdown'] = data_join['close_cummax'] - data_join['close']
+        data_join.loc[data_join['is_in_trade'] == 1, 'drawdown'] =             \
+                      (data_join['close_cummax'] - data_join['close'])         \
+                      / data_join['close_cummax']
 
         mdd_pair = data_join['drawdown'].max()
         mdd_pair_list.append(mdd_pair)
-        # print(mdd_df)
     
-    mdd_pair_list = np.ndarray(mdd_pair_list)
+    mdd_pair_list = np.array(mdd_pair_list)
 
 
     return mdd_pair_list.max()
