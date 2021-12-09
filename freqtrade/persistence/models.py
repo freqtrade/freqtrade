@@ -577,8 +577,9 @@ class LocalTrade():
                 tmp_amount = temp_order.amount
                 if temp_order.filled is not None:
                     tmp_amount = temp_order.filled
-                total_amount += tmp_amount
-                total_stake += temp_order.average * tmp_amount
+                if tmp_amount is not None and temp_order.average is not None:
+                    total_amount += tmp_amount
+                    total_stake += temp_order.average * tmp_amount
 
         if total_amount > 0:
             self.open_rate = total_stake / total_amount
@@ -586,7 +587,7 @@ class LocalTrade():
             self.amount = total_amount
             self.fee_open_cost = self.fee_open * self.stake_amount
             self.recalc_open_trade_value()
-    
+
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
         """

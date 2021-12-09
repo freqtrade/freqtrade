@@ -1506,4 +1506,131 @@ def test_recalc_trade_from_orders(fee):
     assert round(trade.fee_open_cost, 8) == round(o1_fee_cost + o2_fee_cost + o3_fee_cost, 8)
     assert round(trade.open_trade_value, 8) == round(o1_trade_val + o2_trade_val + o3_trade_val, 8)
 
+def test_recalc_trade_from_orders_ignores_bad_orders(fee):
+
+    o1_amount = 100
+    o1_rate = 1
+    o1_cost = o1_amount * o1_rate
+    o1_fee_cost = o1_cost * fee.return_value
+    o1_trade_val = o1_cost + o1_fee_cost
+
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=o1_cost,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=o1_amount,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=o1_rate,
+        max_rate=o1_rate,
+    )
+    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, 'buy')
+    # Check with 1 order
+    order1 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order1)
+    trade.recalc_trade_from_orders()
+
+    # Calling recalc with single initial order should not change anything
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+
+    order2 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=1,
+        average=2,
+        filled=3,
+        remaining=4,
+        cost=5,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order2)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the trade values have not been changed
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+
+    # Let's try with some other orders
+    order3 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="cancelled",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=1,
+        average=2,
+        filled=3,
+        remaining=4,
+        cost=5,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order3)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the order values still are ignoring orders 2 and 3
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+
+    # Just to make sure sell orders are ignored, let's calculate one more time.
+    sell1 = Order(
+        ft_order_side='sell',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="sell",
+        price=4,
+        average=3,
+        filled=2,
+        remaining=1,
+        cost=5,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(sell1)
+    trade.recalc_trade_from_orders()
+
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+
+
 
