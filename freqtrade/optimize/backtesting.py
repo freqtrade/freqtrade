@@ -24,7 +24,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import LocalTrade, PairLocks, Trade
+from freqtrade.persistence import LocalTrade, PairLocks, Trade, Order
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -350,8 +350,64 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
+    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
+        current_rate = sell_row[OPEN_IDX]
+        sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
+        current_profit = trade.calc_profit_ratio(current_rate)
+
+        amount_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
+            pair=trade.pair, trade=trade, current_time=sell_candle_time,
+            current_rate=current_rate, current_profit=current_profit)
+
+        # Check if we should increase our position
+        if amount_to_adjust is not None and amount_to_adjust > 0.0:
+            return self._execute_trade_position_change(trade, sell_row, amount_to_adjust)
+
+        return trade
+
+    def _execute_trade_position_change(self, trade: LocalTrade, row: Tuple,
+                                       amount_to_adjust: float) -> Optional[LocalTrade]:
+        current_price = row[OPEN_IDX]
+        stake_amount = current_price * amount_to_adjust
+        propose_rate = min(max(current_price, row[LOW_IDX]), row[HIGH_IDX])
+        available_amount = self.wallets.get_available_stake_amount()
+
+        try:
+            min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair, propose_rate, -0.05) or 0
+            stake_amount = self.wallets.validate_stake_amount(trade.pair, stake_amount, min_stake_amount)
+            stake_amount = self.wallets._check_available_stake_amount(stake_amount, available_amount)
+        except DependencyException:
+            logger.debug(f"{trade.pair} adjustment failed, wallet is smaller than asked stake {stake_amount}")
+            return trade
+
+        amount = stake_amount / current_price
+        if amount <= 0:
+            logger.debug(f"{trade.pair} adjustment failed, amount ended up being zero {amount}")
+            return trade
+
+        order = Order(
+            ft_is_open=False,
+            ft_pair=trade.pair,
+            symbol=trade.pair,
+            ft_order_side="buy",
+            side="buy",
+            order_type="market",
+            status="closed",
+            price=propose_rate,
+            average=propose_rate,
+            amount=amount,
+            cost=stake_amount
+        )
+        trade.orders.append(order)
+        trade.recalc_trade_from_orders()
+        self.wallets.update();
+        return trade
+
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
+
+        trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_candle_time, sell_row[BUY_IDX],
@@ -476,6 +532,21 @@ class Backtesting:
                 buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
                 exchange='backtesting',
             )
+            order = Order(
+                ft_is_open=False,
+                ft_pair=trade.pair,
+                symbol=trade.pair,
+                ft_order_side="buy",
+                side="buy",
+                order_type="market",
+                status="closed",
+                price=trade.open_rate,
+                average=trade.open_rate,
+                amount=trade.amount,
+                cost=trade.stake_amount + trade.fee_open
+            )
+            trade.orders = []
+            trade.orders.append(order)
             return trade
         return None
 

@@ -1475,8 +1475,8 @@ def test_recalc_trade_from_orders(fee):
     assert trade.amount == o1_amount + o2_amount + o3_amount
     assert trade.stake_amount == o1_cost + o2_cost + o3_cost
     assert trade.open_rate == avg_price
-    assert round(trade.fee_open_cost, 8) == round(o1_fee_cost + o2_fee_cost + o3_fee_cost, 8)
-    assert round(trade.open_trade_value, 8) == round(o1_trade_val + o2_trade_val + o3_trade_val, 8)
+    assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
+    assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
     # Just to make sure sell orders are ignored, let's calculate one more time.
     sell1 = Order(
@@ -1503,8 +1503,8 @@ def test_recalc_trade_from_orders(fee):
     assert trade.amount == o1_amount + o2_amount + o3_amount
     assert trade.stake_amount == o1_cost + o2_cost + o3_cost
     assert trade.open_rate == avg_price
-    assert round(trade.fee_open_cost, 8) == round(o1_fee_cost + o2_fee_cost + o3_fee_cost, 8)
-    assert round(trade.open_trade_value, 8) == round(o1_trade_val + o2_trade_val + o3_trade_val, 8)
+    assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
+    assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
 def test_recalc_trade_from_orders_ignores_bad_orders(fee):
 
