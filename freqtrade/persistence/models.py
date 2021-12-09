@@ -568,6 +568,26 @@ class LocalTrade():
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
+
+    def recalc_trade_from_orders(self):
+        total_amount = 0.0
+        total_stake = 0.0
+        for temp_order in self.orders:
+            if temp_order.ft_is_open == False and temp_order.status == "closed" and temp_order.ft_order_side == 'buy':
+                tmp_amount = temp_order.amount
+                if temp_order.filled is not None:
+                    tmp_amount = temp_order.filled
+                total_amount += tmp_amount
+                total_stake += temp_order.average * tmp_amount
+
+        if total_amount > 0:
+            self.open_rate = total_stake / total_amount
+            self.stake_amount = total_stake
+            self.amount = total_amount
+            self.fee_open_cost = self.fee_open * self.stake_amount
+            self.recalc_open_trade_value()
+    
+
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
         """
         Finds latest order for this orderside and status

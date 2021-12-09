@@ -383,8 +383,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
 
     def adjust_trade_position(self, pair: str, trade: Trade,
-                          current_time: datetime, adjust_trade_position: float,
-                          current_rate: float, current_profit: float, **kwargs) -> float:
+                          current_time: datetime, current_rate: float, current_profit: float,
+                              **kwargs) -> Optional[float]:
         """
         Custom trade adjustment logic, returning the amount that a trade shold be either increased or decreased.
 
@@ -400,7 +400,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Amount to adjust your trade (buy more or sell some)
         """
-        return 0.0
+        return None
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
