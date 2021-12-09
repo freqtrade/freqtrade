@@ -1605,11 +1605,19 @@ def test_help_handle(default_conf, update, mocker) -> None:
 
 def test_version_handle(default_conf, update, mocker) -> None:
 
-    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram._version(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    freqtradebot.strategy.version = lambda: '1.1.1'
+
+    telegram._version(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+    assert '*Strategy version: * `1.1.1`' in msg_mock.call_args_list[0][0][0]
 
 
 def test_show_config_handle(default_conf, update, mocker) -> None:

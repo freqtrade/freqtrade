@@ -536,6 +536,7 @@ def test_api_show_config(botclient):
     assert response['state'] == 'running'
     assert response['bot_name'] == 'freqtrade'
     assert response['trading_mode'] == 'spot'
+    assert response['strategy_version'] is None
     assert not response['trailing_stop']
     assert 'bid_strategy' in response
     assert 'ask_strategy' in response

@@ -36,6 +36,10 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 
 These requirements apply to both [Script Installation](#script-installation) and [Manual Installation](#manual-installation).
 
+!!! Note "ARM64 systems"
+    If you are running an ARM64 system (like a MacOS M1 or an Oracle VM), please use [docker](docker_quickstart.md) to run freqtrade.
+    While native installation is possible with some manual effort, this is not supported at the moment.
+
 ### Install guide
 
 * [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
