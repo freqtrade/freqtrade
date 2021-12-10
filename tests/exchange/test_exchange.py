@@ -3408,43 +3408,6 @@ def test__get_funding_fee(
         assert kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == kraken_fee
 
 
-def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
-    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
-
-    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    mark_prices = exchange._get_mark_price_history("ADA/USDT", 1630454400000)
-    assert mark_prices == {
-        1630454400000: 2.77,
-        1630458000000: 2.73,
-        1630461600000: 2.74,
-        1630465200000: 2.76,
-        1630468800000: 2.76,
-        1630472400000: 2.77,
-        1630476000000: 2.78,
-        1630479600000: 2.78,
-        1630483200000: 2.77,
-        1630486800000: 2.77,
-        1630490400000: 2.84,
-        1630494000000: 2.81,
-        1630497600000: 2.81,
-        1630501200000: 2.82,
-    }
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "_get_mark_price_history",
-        "fetch_ohlcv",
-        pair="ADA/USDT",
-        since=1635580800001
-    )
-
-
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
     ('binance', 0, 2, "2021-09-01 00:00:00", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
     ('binance', 0, 2, "2021-09-01 00:00:15", "2021-09-01 08:00:00",  30.0, -0.0009140999999999999),
@@ -3553,7 +3516,8 @@ def test__calculate_funding_fees_datetime_called(
 ):
     api_mock = MagicMock()
     api_mock.fetch_ohlcv = get_mock_coro(return_value=mark_ohlcv)
-    api_mock.fetch_funding_rate_history = get_mock_coro(return_value=funding_rate_history_octohourly)
+    api_mock.fetch_funding_rate_history = get_mock_coro(
+        return_value=funding_rate_history_octohourly)
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 

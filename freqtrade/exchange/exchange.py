@@ -1822,46 +1822,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def _get_mark_price_history(self, pair: str, since: int) -> Dict:
-        """
-        Get's the mark price history for a pair
-        :param pair: The quote/base pair of the trade
-        :param since: The earliest time to start downloading candles, in ms.
-        """
-
-        try:
-            candles = self._api.fetch_ohlcv(
-                pair,
-                timeframe="1h",
-                since=since,
-                params={
-                    'price': self._ft_has["mark_ohlcv_price"]
-                }
-            )
-            history = {}
-            for candle in candles:
-                d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
-                # Round down to the nearest hour, in case of a delayed timestamp
-                # The millisecond timestamps can be delayed ~20ms
-                time = timeframe_to_prev_date('1h', d).timestamp() * 1000
-                opening_mark_price = candle[1]
-                history[time] = opening_mark_price
-            return history
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching historical '
-                f'mark price candle (OHLCV) data. Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not fetch historical mark price candle (OHLCV) data '
-                                 f'for pair {pair} due to {e.__class__.__name__}. '
-                                 f'Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
-                                       f'for pair {pair}. Message: {e}') from e
-
     def _calculate_funding_fees(
         self,
         pair: str,
