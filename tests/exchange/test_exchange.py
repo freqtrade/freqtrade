@@ -3566,14 +3566,14 @@ def test__calculate_funding_fees(
         'gateio': funding_rate_history_octohourly,
     }[exchange][rate_start:rate_end]
     api_mock = MagicMock()
-    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history)
-    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
+    api_mock.fetch_funding_rate_history = get_mock_coro(return_value=funding_rate_history)
+    api_mock.fetch_ohlcv = get_mock_coro(return_value=mark_ohlcv)
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     funding_fees = exchange._calculate_funding_fees('ADA/USDT', amount, d1, d2)
-    assert funding_fees == expected_fees
+    assert pytest.approx(funding_fees, expected_fees)
 
 
 @ pytest.mark.parametrize('exchange,expected_fees', [
@@ -3590,8 +3590,8 @@ def test__calculate_funding_fees_datetime_called(
     expected_fees
 ):
     api_mock = MagicMock()
-    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
-    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history_octohourly)
+    api_mock.fetch_ohlcv = get_mock_coro(return_value=mark_ohlcv)
+    api_mock.fetch_funding_rate_history = get_mock_coro(return_value=funding_rate_history_octohourly)
     type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 

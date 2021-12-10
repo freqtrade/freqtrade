@@ -1498,11 +1498,17 @@ class Exchange:
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
-                                                     since=since_ms,
-                                                     limit=self.ohlcv_candle_limit(timeframe),
-                                                     params=params)
-
+            if candle_type != CandleType.FUNDING_RATE:
+                data = await self._api_async.fetch_ohlcv(
+                    pair, timeframe=timeframe, since=since_ms,
+                    limit=self.ohlcv_candle_limit(timeframe), params=params)
+            else:
+                # Funding rate
+                data = await self._api_async.fetch_funding_rate_history(
+                    pair, since=since_ms,
+                    limit=self.ohlcv_candle_limit(timeframe))
+                # Convert funding rate to candle pattern
+                data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
             # while GDAX returns the list of OHLCV in DESC order (newest first, oldest last)
@@ -1882,28 +1888,23 @@ class Exchange:
             close_date = datetime.now(timezone.utc)
         open_timestamp = int(open_date.timestamp()) * 1000
         # close_timestamp = int(close_date.timestamp()) * 1000
-        funding_rate_history = self.get_funding_rate_history(
-            pair,
-            open_timestamp
+
+        mark_comb: PairWithTimeframe = (
+            pair, '1h', CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
+        # TODO-lev: funding_rate downloading this way is not yet possible.
+        funding_comb: PairWithTimeframe = (pair, '1h', CandleType.FUNDING_RATE)
+        candle_histories = self.refresh_latest_ohlcv(
+            [mark_comb, funding_comb],
+            since_ms=open_timestamp,
+            cache=False,
+            drop_incomplete=False,
         )
-        mark_price_history = self._get_mark_price_history(
-            pair,
-            open_timestamp
-        )
-        for timestamp in funding_rate_history.keys():
-            funding_rate = funding_rate_history[timestamp]
-            if timestamp in mark_price_history:
-                mark_price = mark_price_history[timestamp]
-                fees += self._get_funding_fee(
-                    size=amount,
-                    mark_price=mark_price,
-                    funding_rate=funding_rate
-                )
-            else:
-                logger.warning(
-                    f"Mark price for {pair} at timestamp {timestamp} not found in "
-                    f"funding_rate_history Funding fee calculation may be incorrect"
-                )
+        funding_rates = candle_histories[funding_comb]
+        mark_rates = candle_histories[mark_comb]
+
+        df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+        # TODO-lev: filter for relevant timeperiod?
+        fees = sum(df['open_fund'] * df['open_mark'] * amount)
 
         return fees
 
