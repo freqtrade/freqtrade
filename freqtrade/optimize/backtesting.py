@@ -350,25 +350,24 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
-        current_rate = sell_row[OPEN_IDX]
-        sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
+    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
+        current_rate = row[OPEN_IDX]
+        sell_candle_time = row[DATE_IDX].to_pydatetime()
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        amount_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
+        stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
             pair=trade.pair, trade=trade, current_time=sell_candle_time,
             current_rate=current_rate, current_profit=current_profit)
 
         # Check if we should increase our position
-        if amount_to_adjust is not None and amount_to_adjust > 0.0:
-            return self._execute_trade_position_change(trade, sell_row, amount_to_adjust)
+        if stake_amount is not None and stake_amount > 0.0:
+            return self._execute_trade_position_change(trade, row, stake_amount)
 
         return trade
 
     def _execute_trade_position_change(self, trade: LocalTrade, row: Tuple,
-                                       amount_to_adjust: float) -> Optional[LocalTrade]:
+                                       stake_amount: float) -> Optional[LocalTrade]:
         current_price = row[OPEN_IDX]
-        stake_amount = current_price * amount_to_adjust
         propose_rate = min(max(current_price, row[LOW_IDX]), row[HIGH_IDX])
         available_amount = self.wallets.get_available_stake_amount()
 
@@ -385,7 +384,7 @@ class Backtesting:
             logger.debug(f"{trade.pair} adjustment failed, amount ended up being zero {amount}")
             return trade
 
-        order = Order(
+        buy_order = Order(
             ft_is_open=False,
             ft_pair=trade.pair,
             symbol=trade.pair,
@@ -398,8 +397,9 @@ class Backtesting:
             amount=amount,
             cost=stake_amount
         )
-        trade.orders.append(order)
+        trade.orders.append(buy_order)
         trade.recalc_trade_from_orders()
+
         self.wallets.update();
         return trade
 

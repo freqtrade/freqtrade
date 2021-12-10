@@ -476,15 +476,15 @@ class FreqtradeBot(LoggingMixin):
 
         sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
         current_profit = trade.calc_profit_ratio(sell_rate)
-        amount_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
+        stake_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
             pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc),
             current_rate=sell_rate, current_profit=current_profit)
 
-        if amount_to_adjust != None and amount_to_adjust > 0.0:
+        if stake_to_adjust != None and stake_to_adjust > 0.0:
             # We should increase our position
-            self.execute_trade_position_change(trade.pair, amount_to_adjust, trade)
+            self.execute_trade_position_change(trade.pair, stake_to_adjust, trade)
 
-        if amount_to_adjust != None and amount_to_adjust < 0.0:
+        if stake_to_adjust != None and stake_to_adjust < 0.0:
             # We should decrease our position
             # TODO: Selling part of the trade not implemented yet.
             return
@@ -492,7 +492,7 @@ class FreqtradeBot(LoggingMixin):
         return
 
 
-    def execute_trade_position_change(self, pair: str, amount: float, trade: Trade):
+    def execute_trade_position_change(self, pair: str, stake_amount: float, trade: Trade):
         """
         Executes a buy order for the given pair using specific amount
         :param pair: pair for which we want to create a buy order
@@ -514,16 +514,18 @@ class FreqtradeBot(LoggingMixin):
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, enter_limit_requested,
                                                                    self.strategy.stoploss)
-        stake_amount = self.wallets.validate_stake_amount(pair, (amount * enter_limit_requested), min_stake_amount)
+        stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
+
+        amount = self.exchange.amount_to_precision(pair, stake_amount / enter_limit_requested)
 
         if not stake_amount:
             logger.info(f'Additional order failed to get stake amount for pair {pair}, amount={amount}, price={enter_limit_requested}')
             return False
-
+        
         logger.debug(f'Executing additional order: amount={amount}, stake={stake_amount}, price={enter_limit_requested}')
 
-        amount = self.exchange.amount_to_precision(pair, amount)
-        order = self.exchange.create_order(pair=pair, ordertype="market", side="buy",
+        order_type = 'market'
+        order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
         order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
@@ -567,7 +569,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_enter(trade, 'market')
+        self._notify_enter(trade, order_type)
 
         return True
 

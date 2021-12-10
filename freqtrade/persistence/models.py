@@ -587,6 +587,7 @@ class LocalTrade():
             self.amount = total_amount
             self.fee_open_cost = self.fee_open * self.stake_amount
             self.recalc_open_trade_value()
+            self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
 
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:

@@ -386,7 +386,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                           current_time: datetime, current_rate: float, current_profit: float,
                               **kwargs) -> Optional[float]:
         """
-        Custom trade adjustment logic, returning the amount that a trade shold be either increased or decreased.
+        Custom trade adjustment logic, returning the stake amount that a trade shold be either increased or decreased.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
@@ -398,7 +398,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: Amount to adjust your trade (buy more or sell some)
+        :return float: Stake amount to adjust your trade
         """
         return None
 
