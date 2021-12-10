@@ -402,6 +402,7 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame)  -> float :
     Returns:
          :return: (float) Give the maximum drawdown among each trades.
          :raise: (ValueError) if trade-dataframe was found empty.
+         :raise: (ValueError) if all dataframes in data was found None.
     """
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty")
@@ -409,6 +410,8 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame)  -> float :
     trades_mdd_pair_list = []
     
     for pair, df in data.items():
+        if df is None:
+            break
 
         # Gather the opening and closing trade dates into one Dates DataFrame
         open_close_trades = trades.loc[trades['pair']==pair][["open_date","close_date"]]
@@ -458,6 +461,9 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame)  -> float :
         mdd_pair = data_join['drawdown'].max()
         trades_mdd_pair_list.append(mdd_pair)
     
+    if trades_mdd_pair_list == []:
+        raise ValueError("All dataframe in candle data are None")
+
     trades_mdd_pair_list = np.array(trades_mdd_pair_list)
     return trades_mdd_pair_list.max()
 
