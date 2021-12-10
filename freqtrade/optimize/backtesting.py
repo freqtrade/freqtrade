@@ -351,13 +351,12 @@ class Backtesting:
             return sell_row[OPEN_IDX]
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
-        current_rate = row[OPEN_IDX]
-        sell_candle_time = row[DATE_IDX].to_pydatetime()
-        current_profit = trade.calc_profit_ratio(current_rate)
 
+        current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
+        
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
-            pair=trade.pair, trade=trade, current_time=sell_candle_time,
-            current_rate=current_rate, current_profit=current_profit)
+            pair=trade.pair, trade=trade, current_time=row[DATE_IDX].to_pydatetime(),
+            current_rate=row[OPEN_IDX], current_profit=current_profit)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
@@ -399,7 +398,6 @@ class Backtesting:
         )
         trade.orders.append(buy_order)
         trade.recalc_trade_from_orders()
-
         self.wallets.update();
         return trade
 
