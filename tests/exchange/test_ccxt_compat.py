@@ -91,7 +91,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['collateral'] = 'cross'
-        # TODO-lev This mock should no longer be necessary once futures are enabled.
+        # TODO-lev: This mock should no longer be necessary once futures are enabled.
         class_mocker.patch(
             'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
         class_mocker.patch(

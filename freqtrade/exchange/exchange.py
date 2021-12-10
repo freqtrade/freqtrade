@@ -1389,7 +1389,8 @@ class Exchange:
         return pair, timeframe, candle_type, data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
-                             since_ms: Optional[int] = None, cache: bool = True
+                             since_ms: Optional[int] = None, cache: bool = True,
+                             drop_incomplete: bool = None
                              ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
@@ -1398,10 +1399,13 @@ class Exchange:
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
+        :param drop_incomplete: Control candle dropping.
+            Specifying None defaults to _ohlcv_partial_candle
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-
+        # TODO-lev: maybe depend this on candle type?
+        drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
         input_coroutines = []
         cached_pairs = []
         # Gather coroutines to run
@@ -1447,7 +1451,7 @@ class Exchange:
                 # keeping parsed dataframe in cache
                 ohlcv_df = ohlcv_to_dataframe(
                     ticks, timeframe, pair=pair, fill_missing=True,
-                    drop_incomplete=self._ohlcv_partial_candle)
+                    drop_incomplete=drop_incomplete)
                 results_df[(pair, timeframe, c_type)] = ohlcv_df
                 if cache:
                     self._klines[(pair, timeframe, c_type)] = ohlcv_df
