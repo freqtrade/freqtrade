@@ -179,7 +179,8 @@ class FreqtradeBot(LoggingMixin):
             self.exit_positions(trades)
 
         # Check if we need to adjust our current positions before attempting to buy new trades.
-        self.process_open_trade_positions()
+        if self.config.get('position_adjustment_enable', False):
+            self.process_open_trade_positions()
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():
@@ -521,7 +522,7 @@ class FreqtradeBot(LoggingMixin):
         if not stake_amount:
             logger.info(f'Additional order failed to get stake amount for pair {pair}, amount={amount}, price={enter_limit_requested}')
             return False
-        
+
         logger.debug(f'Executing additional order: amount={amount}, stake={stake_amount}, price={enter_limit_requested}')
 
         order_type = 'market'

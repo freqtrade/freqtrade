@@ -403,8 +403,10 @@ class Backtesting:
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
-
-        trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+        
+        # Check if we need to adjust our current positions
+        if self.config.get('position_adjustment_enable', False):
+            trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore

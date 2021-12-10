@@ -1,0 +1,95 @@
+# pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
+
+import random
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import MagicMock, PropertyMock
+import logging
+
+import numpy as np
+import pandas as pd
+import pytest
+from arrow import Arrow
+
+from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
+from freqtrade.configuration import TimeRange
+from freqtrade.data import history
+from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
+from freqtrade.data.converter import clean_ohlcv_dataframe
+from freqtrade.data.dataprovider import DataProvider
+from freqtrade.data.history import get_timerange
+from freqtrade.enums import RunMode, SellType
+from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.persistence import LocalTrade
+from freqtrade.resolvers import StrategyResolver
+from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
+                            patched_configuration_load_config_file)
+
+def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
+    default_conf['use_sell_signal'] = False
+    mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
+    mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
+    patch_exchange(mocker)
+    default_conf.update({
+        "position_adjustment_enable": True,
+        "stake_amount": 100.0,
+        "dry_run_wallet": 1000.0,
+        "strategy": "StrategyTestPositionAdjust"
+    })
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    pair = 'UNITTEST/BTC'
+    timerange = TimeRange('date', None, 1517227800, 0)
+    data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
+                             timerange=timerange)
+    processed = backtesting.strategy.advise_all_indicators(data)
+    min_date, max_date = get_timerange(processed)
+    result = backtesting.backtest(
+        processed=processed,
+        start_date=min_date,
+        end_date=max_date,
+        max_open_trades=10,
+        position_stacking=False,
+    )
+    results = result['results']
+    assert not results.empty
+    assert len(results) == 2
+
+    expected = pd.DataFrame(
+        {'pair': [pair, pair],
+         'stake_amount': [500.0, 100.0],
+         'amount': [4806.87657523, 970.63960782],
+         'open_date': pd.to_datetime([Arrow(2018, 1, 29, 18, 40, 0).datetime,
+                                      Arrow(2018, 1, 30, 3, 30, 0).datetime], utc=True
+                                     ),
+         'close_date': pd.to_datetime([Arrow(2018, 1, 29, 22, 00, 0).datetime,
+                                       Arrow(2018, 1, 30, 4, 10, 0).datetime], utc=True),
+         'open_rate': [0.10401764894444211, 0.10302485],
+         'close_rate': [0.10453904066847439, 0.103541],
+         'fee_open': [0.0025, 0.0025],
+         'fee_close': [0.0025, 0.0025],
+         'trade_duration': [200, 40],
+         'profit_ratio': [0.0, 0.0],
+         'profit_abs': [0.0, 0.0],
+         'sell_reason': [SellType.ROI.value, SellType.ROI.value],
+         'initial_stop_loss_abs': [0.0940005, 0.09272236],
+         'initial_stop_loss_ratio': [-0.1, -0.1],
+         'stop_loss_abs': [0.0940005, 0.09272236],
+         'stop_loss_ratio': [-0.1, -0.1],
+         'min_rate': [0.10370188, 0.10300000000000001],
+         'max_rate': [0.10481985, 0.1038888],
+         'is_open': [False, False],
+         'buy_tag': [None, None],
+         })
+    pd.testing.assert_frame_equal(results, expected)
+    data_pair = processed[pair]
+    for _, t in results.iterrows():
+        ln = data_pair.loc[data_pair["date"] == t["open_date"]]
+        # Check open trade rate alignes to open rate
+        assert ln is not None
+        # check close trade rate alignes to close rate or is between high and low
+        ln = data_pair.loc[data_pair["date"] == t["close_date"]]
+        assert (round(ln.iloc[0]["open"], 6) == round(t["close_rate"], 6) or
+                round(ln.iloc[0]["low"], 6) < round(
+                t["close_rate"], 6) < round(ln.iloc[0]["high"], 6))
