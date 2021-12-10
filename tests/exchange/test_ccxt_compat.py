@@ -213,24 +213,29 @@ class TestCCXTExchange():
         assert rate[int(this_hour.timestamp() * 1000)] != 0.0
         assert rate[int(prev_tick.timestamp() * 1000)] != 0.0
 
-    @pytest.mark.skip("No futures support yet")
-    def test_fetch_mark_price_history(self, exchange_futures):
+    def test_ccxt_fetch_mark_price_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
         if not exchange:
             # exchange_futures only returns values for supported exchanges
             return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+        pair_tf = (pair, '1h', CandleType.MARK)
 
-        mark_candles = exchange._get_mark_price_history(pair, since)
+        mark_ohlcv = exchange.refresh_latest_ohlcv(
+            [pair_tf],
+            since_ms=since,
+            drop_incomplete=False)
 
-        assert isinstance(mark_candles, dict)
+        assert isinstance(mark_ohlcv, dict)
         expected_tf = '1h'
+        mark_candles = mark_ohlcv[pair_tf]
 
         this_hour = timeframe_to_prev_date(expected_tf)
-        prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
-        assert mark_candles[int(this_hour.timestamp() * 1000)] != 0.0
-        assert mark_candles[int(prev_tick.timestamp() * 1000)] != 0.0
+        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
+
+        assert mark_candles[mark_candles['date'] == prev_hour].iloc[0]['open'] != 0.0
+        assert mark_candles[mark_candles['date'] == this_hour].iloc[0]['open'] != 0.0
 
     # TODO: tests fetch_trades (?)
 
