@@ -26,6 +26,13 @@
     },
     "exchange": {
         "name": "binance",
+        "reduced_fees_strategy": {
+            "enable": true,
+            "process_throttle_secs": 3600,
+            "currency": "BNB",
+            "BNB_maximum": 0.35,
+            "BNB_minimum": 0.012
+        },
         "key": "your_exchange_key",
         "secret": "your_exchange_secret",
         "ccxt_config": {},
@@ -90,4 +97,3 @@
     "internals": {
         "process_throttle_secs": 5
     }
-}
