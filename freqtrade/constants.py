@@ -395,6 +395,7 @@ CONF_SCHEMA = {
                     },
                     'uniqueItems': True
                 },
+                'unknown_fee_rate': {'type': 'number'},
                 'outdated_offset': {'type': 'integer', 'minimum': 1},
                 'markets_refresh_interval': {'type': 'integer'},
                 'ccxt_config': {'type': 'object'},
