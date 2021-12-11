@@ -860,6 +860,20 @@ class RPC:
                }
         return res
 
+    def _rpc_blacklist_delete(self, delete: List[str]) -> Dict:
+        """ Removes pairs from currently active blacklist """
+        errors = {}
+        for pair in delete:
+            if pair in self._freqtrade.pairlists.blacklist:
+                self._freqtrade.pairlists.blacklist.remove(pair)
+            else:
+                errors[pair] = {
+                    'error_msg': f"Pair {pair} is not in the current blacklist."
+                    }
+        resp = self._rpc_blacklist()
+        resp['errors'] = errors
+        return resp
+
     def _rpc_blacklist(self, add: List[str] = None) -> Dict:
         """ Returns the currently active blacklist"""
         errors = {}

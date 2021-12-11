@@ -3,7 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
@@ -155,6 +155,13 @@ def blacklist(rpc: RPC = Depends(get_rpc)):
 @router.post('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
 def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_blacklist(payload.blacklist)
+
+
+@router.delete('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
+def blacklist_delete(pairs_to_delete: List[str] = Query([]), rpc: RPC = Depends(get_rpc)):
+    """Provide a list of pairs to delete from the blacklist"""
+
+    return rpc._rpc_blacklist_delete(pairs_to_delete)
 
 
 @router.get('/whitelist', response_model=WhitelistResponse, tags=['info', 'pairlist'])
