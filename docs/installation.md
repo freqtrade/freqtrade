@@ -56,6 +56,10 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 !!! Note
     Python3.7 or higher and the corresponding pip are assumed to be available.
 
+!!! Warning "Python 3.10 support"
+    Due to issues with dependencies, freqtrade is currently unable to support python 3.10.
+    We're working on supporting python 3.10, are however dependant on support from dependencies.
+
 === "Debian/Ubuntu"
     #### Install necessary dependencies
 
