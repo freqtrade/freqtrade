@@ -36,7 +36,8 @@ function check_installed_python() {
         fi
     done
 
-    echo "No usable python found. Please make sure to have python3.7 or newer installed"
+    echo "No usable python found. Please make sure to have python3.7 or newer installed."
+    echo "python3.10 is currently not supported."
     exit 1
 }
 
@@ -205,7 +206,7 @@ function config() {
 }
 
 function install() {
-    
+
     echo_block "Installing mandatory dependencies"
 
     if [ "$(uname -s)" == "Darwin" ]; then
