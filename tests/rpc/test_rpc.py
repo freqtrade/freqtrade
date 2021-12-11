@@ -1225,6 +1225,16 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert 'errors' in ret
     assert isinstance(ret['errors'], dict)
 
+    ret = rpc._rpc_blacklist_delete(["DOGE/BTC", 'HOT/BTC'])
+
+    assert 'StaticPairList' in ret['method']
+    assert len(ret['blacklist']) == 2
+    assert ret['blacklist'] == default_conf['exchange']['pair_blacklist']
+    assert ret['blacklist'] == ['ETH/BTC', 'XRP/.*']
+    assert ret['blacklist_expanded'] == ['ETH/BTC', 'XRP/BTC', 'XRP/USDT']
+    assert 'errors' in ret
+    assert isinstance(ret['errors'], dict)
+
 
 def test_rpc_edge_disabled(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
