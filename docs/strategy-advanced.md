@@ -229,3 +229,77 @@ for val in self.buy_ema_short.range:
 # Append columns to existing dataframe
 merged_frame = pd.concat(frames, axis=1)
 ```
+
+### Adjust trade position
+
+`adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging) for example.
+
+!!! Tip: The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
+
+!!! Warning: Additional orders also mean additional fees.
+
+!!! Warning: Stoploss is still calculated from the initial opening price, not averaged price.
+
+``` python
+from freqtrade.persistence import Trade
+
+
+class DigDeeperStrategy(IStrategy):
+    
+    # Attempts to handle large drops with DCA. High stoploss is required.
+    stoploss = -0.30
+    
+    # ... populate_* methods
+
+    def adjust_trade_position(self, pair: str, trade: Trade,
+                              current_time: datetime, current_rate: float, current_profit: float,
+                                  **kwargs) -> Optional[float]:
+        """
+        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+        This means extra buy orders with additional fees.
+ 
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Stake amount to adjust your trade
+        """
+
+        if current_profit > -0.05:
+            return None
+
+        # Obtain pair dataframe.
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+            
+        # Only buy when not actively falling price.
+        if dataframe['close'] < dataframe['close'].shift(1):
+            return None
+
+        count_of_buys = 0
+        for order in trade.orders:
+            # Instantly stop when there's an open order
+            if order.ft_is_open:
+                return None
+            if order.ft_order_side == 'buy' and order.status == "closed":
+                count_of_buys += 1
+
+        # Allow up to 3 additional increasingly larger buys (4 in total)
+        # Initial buy is 1x
+        # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
+        # If that falles down to -5% again, we buy 1.5x more
+        # If that falles once again down to -5%, we buy 1.75x more
+        # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
+        # Hope you have a deep wallet!
+        if 0 < count_of_buys <= 3:
+            try:
+                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+                stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
+                return stake_amount
+            except Exception as exception:
+                return None
+
+        return None
+
+```

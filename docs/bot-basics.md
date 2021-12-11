@@ -38,6 +38,8 @@ By default, loop runs every few seconds (`internals.process_throttle_secs`) and 
   * Considers stoploss, ROI and sell-signal, `custom_sell()` and `custom_stoploss()`.
   * Determine sell-price based on `ask_strategy` configuration setting or by using the `custom_exit_price()` callback.
   * Before a sell order is placed, `confirm_trade_exit()` strategy callback is called.
+* Check position adjustments for open trades if enabled.
+  * Call `adjust_trade_position()` strategy callback and place additional order if required.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
 * Verifies buy signal trying to enter new positions.
   * Determine buy-price based on `bid_strategy` configuration setting, or by using the `custom_entry_price()` callback.
@@ -60,7 +62,8 @@ This loop will be repeated again and again until the bot is stopped.
   * Determine stake size by calling the `custom_stake_amount()` callback.
   * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
   * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
-
+  * Check position adjustments for open trades if enabled and call `adjust_trade_position()` determine additional order is required.
+  
 * Generate backtest report output
 
 !!! Note

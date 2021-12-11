@@ -102,6 +102,9 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
+        # Is Position Adjustment enabled?
+        self.position_adjustment = bool(self.config.get('position_adjustment_enable', False))
+
     def notify_status(self, msg: str) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -179,7 +182,7 @@ class FreqtradeBot(LoggingMixin):
             self.exit_positions(trades)
 
         # Check if we need to adjust our current positions before attempting to buy new trades.
-        if self.config.get('position_adjustment_enable', False):
+        if self.position_adjustment:
             self.process_open_trade_positions()
 
         # Then looking for buy opportunities

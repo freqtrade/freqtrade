@@ -15,6 +15,7 @@ Currently available callbacks:
 * [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
+* [`adjust_trade_position()`](#adjust-trade-position)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
@@ -566,5 +567,51 @@ class AwesomeStrategy(IStrategy):
             # (this does not necessarily make sense, assuming you know when you're force-selling)
             return False
         return True
+
+```
+
+### Adjust trade position
+
+`adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging).
+
+!!! Tip: The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
+
+!!! Warning: Additional orders also mean additional fees.
+
+!!! Warning: Stoploss is still calculated from the initial opening price, not averaged price.
+
+``` python
+from freqtrade.persistence import Trade
+
+
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods
+
+    def adjust_trade_position(self, pair: str, trade: Trade,
+                              current_time: datetime, current_rate: float, current_profit: float,
+                                  **kwargs) -> Optional[float]:
+        """
+        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+        This means extra buy orders with additional fees.
+        
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None
+
+        :param pair: Pair that's currently analyzed
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Stake amount to adjust your trade
+        """
+        
+        # Example: If 10% loss / -10% profit then buy more the same amount we had before.
+        if current_profit < -0.10:
+            return trade.stake_amount
+        
+        return None
 
 ```

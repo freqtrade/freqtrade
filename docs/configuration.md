@@ -171,6 +171,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
+| `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). More information below. <br> **Datatype:** Boolean
 
 ### Parameters in the strategy
 
@@ -582,6 +583,15 @@ export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
+
+### Understand position_adjustment_enable
+
+The `position_adjustment_enable` configuration parameter enables the usage of `adjust_trade_position()` callback in strategy.
+For performance reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
+This can be dangerous with some strategies, so use with care.
+
+See [the strategy callbacks](strategy-callbacks.md) for details on usage.
+
 
 ## Next step
 

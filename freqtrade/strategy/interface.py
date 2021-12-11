@@ -386,11 +386,12 @@ class IStrategy(ABC, HyperStrategyMixin):
                           current_time: datetime, current_rate: float, current_profit: float,
                               **kwargs) -> Optional[float]:
         """
-        Custom trade adjustment logic, returning the stake amount that a trade shold be either increased or decreased.
+        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+        This means extra buy orders with additional fees.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
-        When not implemented by a strategy, returns 0.0
+        When not implemented by a strategy, returns None
 
         :param pair: Pair that's currently analyzed
         :param trade: trade object.

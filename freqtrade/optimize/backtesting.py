@@ -118,6 +118,7 @@ class Backtesting:
         # Add maximum startup candle count to configuration for informative pairs support
         self.config['startup_candle_count'] = self.required_startup
         self.exchange.validate_required_startup_candles(self.required_startup, self.timeframe)
+        self.position_adjustment = bool(self.config.get('position_adjustment_enable', False))
         self.init_backtest()
 
     def __del__(self):
@@ -353,7 +354,7 @@ class Backtesting:
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
 
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
-        
+
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
             pair=trade.pair, trade=trade, current_time=row[DATE_IDX].to_pydatetime(),
             current_rate=row[OPEN_IDX], current_profit=current_profit)
@@ -403,9 +404,9 @@ class Backtesting:
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
-        
+
         # Check if we need to adjust our current positions
-        if self.config.get('position_adjustment_enable', False):
+        if self.position_adjustment:
             trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
