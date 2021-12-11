@@ -274,7 +274,9 @@ class DigDeeperStrategy(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             
         # Only buy when not actively falling price.
-        if dataframe['close'] < dataframe['close'].shift(1):
+        last_candle = dataframe.iloc[-1].squeeze()
+        previous_candle = dataframe.iloc[-2].squeeze()
+        if last_candle.close < previous_candle.close:
             return None
 
         count_of_buys = 0
