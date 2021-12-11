@@ -3498,7 +3498,7 @@ def test__calculate_funding_fees(
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
     funding_fees = exchange._calculate_funding_fees('ADA/USDT', amount, d1, d2)
-    assert pytest.approx(funding_fees, expected_fees)
+    assert pytest.approx(funding_fees) == expected_fees
 
 
 @ pytest.mark.parametrize('exchange,expected_fees', [

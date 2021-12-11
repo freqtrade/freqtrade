@@ -1851,7 +1851,9 @@ class Exchange:
 
         mark_comb: PairWithTimeframe = (
             pair, '1h', CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
-        # TODO-lev: funding_rate downloading this way is not yet possible.
+
+        # TODO-lev: 1h seems arbitrary and generates a lot of "empty" lines
+        # TODO-lev: probably a exchange-adjusted parameter would make more sense
         funding_comb: PairWithTimeframe = (pair, '1h', CandleType.FUNDING_RATE)
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
@@ -1863,7 +1865,7 @@ class Exchange:
         mark_rates = candle_histories[mark_comb]
 
         df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
-        # TODO-lev: filter for relevant timeperiod?
+        df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
         fees = sum(df['open_fund'] * df['open_mark'] * amount)
 
         return fees
