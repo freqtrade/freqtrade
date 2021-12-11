@@ -2948,39 +2948,49 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
     assert ex.extract_cost_curr_rate(order) == expected
 
 
-@pytest.mark.parametrize("order,expected", [
+@pytest.mark.parametrize("order,unknown_fee_rate,expected", [
     # Using base-currency
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.1),
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, None, 0.1),
     ({'symbol': 'ETH/BTC', 'amount': 0.05, 'cost': 0.05,
-        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, 0.08),
+        'fee': {'currency': 'ETH', 'cost': 0.004, 'rate': None}}, None, 0.08),
     # Using quote currency
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'BTC', 'cost': 0.005}}, 0.1),
+        'fee': {'currency': 'BTC', 'cost': 0.005}}, None, 0.1),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'BTC', 'cost': 0.002, 'rate': None}}, 0.04),
+        'fee': {'currency': 'BTC', 'cost': 0.002, 'rate': None}}, None, 0.04),
     # Using foreign currency
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'NEO', 'cost': 0.0012}}, 0.001944),
+        'fee': {'currency': 'NEO', 'cost': 0.0012}}, None, 0.001944),
     ({'symbol': 'ETH/BTC', 'amount': 2.21, 'cost': 0.02992561,
-        'fee': {'currency': 'NEO', 'cost': 0.00027452}}, 0.00074305),
+        'fee': {'currency': 'NEO', 'cost': 0.00027452}}, None, 0.00074305),
     # Rate included in return - return as is
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, 0.01),
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.01}}, None, 0.01),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.05,
-        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, 0.005),
+        'fee': {'currency': 'USDT', 'cost': 0.34, 'rate': 0.005}}, None, 0.005),
     # 0.1% filled - no costs (kraken - #3431)
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
-      'fee': {'currency': 'BTC', 'cost': 0.0, 'rate': None}}, None),
+      'fee': {'currency': 'BTC', 'cost': 0.0, 'rate': None}}, None, None),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
-      'fee': {'currency': 'ETH', 'cost': 0.0, 'rate': None}}, 0.0),
+      'fee': {'currency': 'ETH', 'cost': 0.0, 'rate': None}}, None, 0.0),
     ({'symbol': 'ETH/BTC', 'amount': 0.04, 'cost': 0.0,
-      'fee': {'currency': 'NEO', 'cost': 0.0, 'rate': None}}, None),
+      'fee': {'currency': 'NEO', 'cost': 0.0, 'rate': None}}, None, None),
+    # Invalid pair combination - POINT/BTC is not a pair
+    ({'symbol': 'POINT/BTC', 'amount': 0.04, 'cost': 0.5,
+      'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, None, None),
+    ({'symbol': 'POINT/BTC', 'amount': 0.04, 'cost': 0.5,
+      'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 1, 4.0),
+    ({'symbol': 'POINT/BTC', 'amount': 0.04, 'cost': 0.5,
+      'fee': {'currency': 'POINT', 'cost': 2.0, 'rate': None}}, 2, 8.0),
 ])
-def test_calculate_fee_rate(mocker, default_conf, order, expected) -> None:
+def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_rate) -> None:
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', return_value={'last': 0.081})
+    if unknown_fee_rate:
+        default_conf['exchange']['unknown_fee_rate'] = unknown_fee_rate
 
     ex = get_patched_exchange(mocker, default_conf)
+
     assert ex.calculate_fee_rate(order) == expected
 
 

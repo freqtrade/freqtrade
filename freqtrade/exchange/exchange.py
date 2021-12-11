@@ -1194,9 +1194,11 @@ class Exchange:
                 tick = self.fetch_ticker(comb)
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
             except ExchangeError:
-                return None
+                fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
+                if not fee_to_quote_rate:
+                    return None
+            return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
 
     def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
         """
