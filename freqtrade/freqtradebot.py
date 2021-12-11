@@ -469,15 +469,14 @@ class FreqtradeBot(LoggingMixin):
     def adjust_trade_position(self, trade: Trade):
         """
         Check the implemented trading strategy for adjustment command.
-        If the strategy triggers the adjustment a new buy/sell-order gets issued.
+        If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        logger.debug(f"adjust_trade_position for pair {trade.pair}")
         for order in trade.orders:
             if order.ft_is_open:
-                logger.debug(f"Order {order} is still open, skipping pair.")
                 return
 
+        logger.debug(f"adjust_trade_position for pair {trade.pair}")
         sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
         current_profit = trade.calc_profit_ratio(sell_rate)
         stake_to_adjust = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
@@ -491,6 +490,7 @@ class FreqtradeBot(LoggingMixin):
         if stake_to_adjust != None and stake_to_adjust < 0.0:
             # We should decrease our position
             # TODO: Selling part of the trade not implemented yet.
+            logger.error(f"Unable to decrease trade position / sell partially for pair {trade.pair}, feature not implemented.")
             return
 
         return
@@ -528,7 +528,7 @@ class FreqtradeBot(LoggingMixin):
 
         logger.debug(f'Executing additional order: amount={amount}, stake={stake_amount}, price={enter_limit_requested}')
 
-        order_type = 'market'
+        order_type = self.strategy.order_types['buy']
         order = self.exchange.create_order(pair=pair, ordertype=order_type, side="buy",
                                            amount=amount, rate=enter_limit_requested,
                                            time_in_force=time_in_force)
@@ -573,7 +573,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets
         self.wallets.update()
 
-        self._notify_enter(trade, order_type)
+        self._notify_additional_buy(trade, order_obj, order_type)
 
         return True
 
@@ -728,6 +728,31 @@ class FreqtradeBot(LoggingMixin):
             self.update_trade_state(trade, order_id, order)
 
         return True
+
+    def _notify_additional_buy(self, trade: Trade, order: Order, order_type: Optional[str] = None,
+                      fill: bool = False) -> None:
+        """
+        Sends rpc notification when a buy occurred.
+        """
+        msg = {
+            'trade_id': trade.id,
+            'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
+            'buy_tag': "adjust_trade_position",
+            'exchange': self.exchange.name.capitalize(),
+            'pair': trade.pair,
+            'limit': order.price,  # Deprecated (?)
+            'open_rate': order.price,
+            'order_type': order_type,
+            'stake_amount': order.cost,
+            'stake_currency': self.config['stake_currency'],
+            'fiat_currency': self.config.get('fiat_display_currency', None),
+            'amount': order.amount,
+            'open_date': order.order_filled_date or datetime.utcnow(),
+            'current_rate': order.price,
+        }
+
+        # Send the message
+        self.rpc.send_msg(msg)
 
     def _notify_enter(self, trade: Trade, order_type: Optional[str] = None,
                       fill: bool = False) -> None:

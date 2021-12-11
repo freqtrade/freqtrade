@@ -568,8 +568,13 @@ class LocalTrade():
         profit_ratio = (close_trade_value / self.open_trade_value) - 1
         return float(f"{profit_ratio:.8f}")
 
-
     def recalc_trade_from_orders(self):
+        # We need at least 2 orders for averaging amounts and rates.
+        if len(self.orders) < 2:
+            # Just in case, still recalc open trade value
+            self.recalc_open_trade_value()
+            return
+
         total_amount = 0.0
         total_stake = 0.0
         for temp_order in self.orders:
@@ -589,7 +594,6 @@ class LocalTrade():
             self.recalc_open_trade_value()
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
-
 
     def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
         """
