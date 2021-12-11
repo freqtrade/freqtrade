@@ -976,7 +976,9 @@ def test_api_blacklist(botclient, mocker):
                              }
                              },
                          }
-    rc = client_delete(client, f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
+    rc = client_delete(
+        client,
+        f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
     assert_response(rc)
     assert rc.json() == {"blacklist": ["XRP/.*"],
                          "blacklist_expanded": ["XRP/BTC", "XRP/USDT"],

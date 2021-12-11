@@ -30,7 +30,8 @@ logger = logging.getLogger(__name__)
 # Pre-1.1, no version was provided
 # Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
 # 1.11: forcebuy and forcesell accept ordertype
-API_VERSION = 1.11
+# 1.12: add blacklist delete endpoint
+API_VERSION = 1.12
 
 # Public API, requires no auth.
 router_public = APIRouter()
