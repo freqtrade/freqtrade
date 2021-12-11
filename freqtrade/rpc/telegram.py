@@ -1184,7 +1184,7 @@ class Telegram(RPCHandler):
         Handler for /bl_delete
         Deletes pair(s) from current blacklist
         """
-        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args))
+        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []))
 
     @authorized_only
     def _logs(self, update: Update, context: CallbackContext) -> None:
@@ -1265,8 +1265,8 @@ class Telegram(RPCHandler):
             "*/whitelist:* `Show current whitelist` \n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
             "to the blacklist.` \n"
-            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* `Delete pair / pattern from blacklist. "
-            "Will reset on reload_conf.` \n"
+            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
+            "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
             "*/reload_config:* `Reload configuration file` \n"
             "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
 

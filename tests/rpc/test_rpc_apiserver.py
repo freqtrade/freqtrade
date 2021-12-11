@@ -987,6 +987,7 @@ def test_api_blacklist(botclient, mocker):
                          "errors": {},
                          }
 
+
 def test_api_whitelist(botclient):
     ftbot, client = botclient
 
