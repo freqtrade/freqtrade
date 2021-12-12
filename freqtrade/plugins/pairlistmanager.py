@@ -2,7 +2,6 @@
 PairList manager class
 """
 import logging
-from copy import deepcopy
 from typing import Dict, List
 
 from cachetools import TTLCache, cached
