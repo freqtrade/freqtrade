@@ -589,7 +589,7 @@ freqtrade
 
 The `position_adjustment_enable` configuration parameter enables the usage of `adjust_trade_position()` callback in strategy.
 For performance reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
-This can be dangerous with some strategies, so use with care.
+Enabling this does nothing unless the strategy also implements `adjust_trade_position()` callback.
 
 See [the strategy callbacks](strategy-callbacks.md) for details on usage.
 
