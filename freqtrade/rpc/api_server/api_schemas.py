@@ -160,7 +160,7 @@ class ShowConfig(BaseModel):
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
     unfilledtimeout: UnfilledTimeout
-    order_types: OrderTypes
+    order_types: Optional[OrderTypes]
     use_custom_stoploss: Optional[bool]
     timeframe: Optional[str]
     timeframe_ms: int

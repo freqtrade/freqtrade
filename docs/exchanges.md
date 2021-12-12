@@ -199,6 +199,11 @@ OKEX requires a passphrase for each api key, you will therefore need to add this
 !!! Warning
     OKEX only provides 100 candles per api call. Therefore, the strategy will only have a pretty low amount of data available in backtesting mode.
 
+## Gate.io
+
+Gate.io allows the use of `POINT` to pay for fees. As this is not a tradable currency (no regular market available), automatic fee calculations will fail (and default to a fee of 0).
+The configuration parameter `exchange.unknown_fee_rate` can be used to specify the exchange rate between Point and the stake currency. Obviously, changing the stake-currency will also require changes to this value.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
