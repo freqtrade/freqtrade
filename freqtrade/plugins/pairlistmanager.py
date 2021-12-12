@@ -2,7 +2,7 @@
 PairList manager class
 """
 import logging
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from cachetools import TTLCache, cached
 
@@ -23,7 +23,7 @@ class PairListManager():
         self._config = config
         self._whitelist = self._config['exchange'].get('pair_whitelist')
         self._blacklist = self._config['exchange'].get('pair_blacklist', [])
-        self._logged_blacklist_pairs = set()
+        self._logged_blacklist_pairs: Set[str] = set()
         self._pairlist_handlers: List[IPairList] = []
         self._tickers_needed = False
         for pairlist_handler_config in self._config.get('pairlists', None):
