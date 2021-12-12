@@ -396,7 +396,7 @@ class Exchange:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f'Pair {pair} is not available on {self.name}. '
+                    f'Pair {pair} is not available on {self.name}. ' 
                     f'Please remove {pair} from your whitelist.')
 
                 # From ccxt Documentation:
@@ -738,11 +738,9 @@ class Exchange:
             balances = self._api.fetch_balance(self)
             if (balances["free"] > self._BNB_min and self._name == "binance" and
                self._avoid_duplicate_order is False):
-                print("in line 741")
                 self.create_order(pair, ordertype, side, (self._BNB_max - balances["free"]), rate)
                 self._avoid_duplicate_order = True
             else:
-                print("in line 744")
                 self._avoid_duplicate_order = False
             dry_order = self.create_dry_run_order(pair, ordertype, side, amount, rate)
             return dry_order
