@@ -1,7 +1,7 @@
 from math import isclose
 from pathlib import Path
 from unittest.mock import MagicMock
-
+import numpy as np
 import pytest
 from arrow import Arrow
 from pandas import DataFrame, DateOffset, Timestamp, to_datetime
@@ -10,7 +10,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
                                        analyze_trade_parallelism, calculate_csum,
-                                       calculate_market_change, calculate_max_drawdown,
+                                       calculate_market_change, calculate_max_drawdown, calculate_trades_mdd,
                                        combine_dataframes_with_mean, create_cum_profit,
                                        extract_trades_of_period, get_latest_backtest_filename,
                                        get_latest_hyperopt_file, load_backtest_data, load_trades,
@@ -332,3 +332,15 @@ def test_calculate_max_drawdown2():
     df = DataFrame(zip(values[:5], dates[:5]), columns=['profit', 'open_date'])
     with pytest.raises(ValueError, match='No losing trade, therefore no drawdown.'):
         calculate_max_drawdown(df, date_col='open_date', value_col='profit')
+
+def test_calculate_trades_mdd(testdatadir):
+    backtest_file = testdatadir / "backtest-result_test.json"
+    trades = load_backtest_data(backtest_file)  
+    pairlist = set(trades["pair"])
+    
+    with pytest.raises(ValueError, match='All dataframe in candle data are None'):
+        calculate_trades_mdd({"BTC/BUSD" : None}, trades)
+    
+    data = load_data(datadir=testdatadir, pairs=pairlist, timeframe='5m')
+    trades_mdd = calculate_trades_mdd(data, trades)
+    assert np.round(trades_mdd, 6) == 0.138943
