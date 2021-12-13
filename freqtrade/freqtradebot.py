@@ -558,7 +558,6 @@ class FreqtradeBot(LoggingMixin):
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
-            logger.error(f"No stake amount? {pair} {stake_amount} {max_stake_amount}")
             return False
 
         if trade is None:
