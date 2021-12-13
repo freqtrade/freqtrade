@@ -666,7 +666,7 @@ class FreqtradeBot(LoggingMixin):
             'buy_tag': trade.buy_tag,
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
-            'limit': safe_value_fallback(order, 'average', 'price'),  # Deprecated (?)
+            'limit': open_rate,  # Deprecated (?)
             'open_rate': open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
