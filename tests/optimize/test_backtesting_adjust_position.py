@@ -35,7 +35,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
         "position_adjustment_enable": True,
         "stake_amount": 100.0,
         "dry_run_wallet": 1000.0,
-        "strategy": "StrategyTestPositionAdjust"
+        "strategy": "StrategyTestV2"
     })
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])

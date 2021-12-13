@@ -5,7 +5,8 @@ from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy.interface import IStrategy
-
+from freqtrade.persistence import Trade
+from datetime import datetime
 
 class StrategyTestV2(IStrategy):
     """
@@ -154,3 +155,11 @@ class StrategyTestV2(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+
+    def adjust_trade_position(self, pair: str, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, **kwargs):
+
+        if current_profit < -0.0075:
+            return self.wallets.get_trade_stake_amount(pair, None)
+
+        return None
