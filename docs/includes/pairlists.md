@@ -196,7 +196,7 @@ Trade count is used as a tie breaker.
 You can use the `minutes` parameter to only consider performance of the past X minutes (rolling window).
 Not defining this parameter (or setting it to 0) will use all-time performance.
 
-The optional `min_profit` parameter defines the minimum profit a pair must have to be considered.
+The optional `min_profit` (as ratio -> a setting of `0.01` corresponds to 1%) parameter defines the minimum profit a pair must have to be considered.
 Pairs below this level will be filtered out.
 Using this parameter without `minutes` is highly discouraged, as it can lead to an empty pairlist without a way to recover.
 
@@ -206,7 +206,7 @@ Using this parameter without `minutes` is highly discouraged, as it can lead to 
     {
         "method": "PerformanceFilter",
         "minutes": 1440,  // rolling 24h
-        "min_profit": 0.01
+        "min_profit": 0.01  // minimal profit 1%
     }
 ],
 ```
