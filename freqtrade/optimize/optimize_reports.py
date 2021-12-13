@@ -468,7 +468,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         drawdown_abs, drawdown_start, drawdown_end, high_val, low_val = calculate_max_drawdown(
             results, value_col='profit_abs')
         strat_stats.update({
-            'trades_mdd' : trades_mdd,
+            'trades_mdd': trades_mdd,
             'max_drawdown': max_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
@@ -718,11 +718,11 @@ def text_table_add_metrics(strat_results: Dict) -> str:
                                              strat_results['stake_currency'])),
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
-            ('', ''), # Empty line to improve readability
+            ('', ''),  # Empty line to improve readability
             ('Max Drawdown (in trades)', f"{strat_results['trades_mdd']:.2%}"),
             ('Max Drawdown Total', f"{strat_results['max_drawdown']:.2%}"),
             ('Max Drawdown Total', round_coin_value(strat_results['max_drawdown_abs'],
-                                          strat_results['stake_currency'])),
+                                                    strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
                                                strat_results['stake_currency'])),
             ('Drawdown low', round_coin_value(strat_results['max_drawdown_low'],
