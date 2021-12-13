@@ -1034,10 +1034,16 @@ class FreqtradeBot(LoggingMixin):
         filled_amount = safe_value_fallback2(corder, order, 'filled', 'filled')
         if isclose(filled_amount, 0.0, abs_tol=constants.MATH_CLOSE_PREC):
             logger.info('Buy order fully cancelled. Removing %s from database.', trade)
-            # if trade is not partially completed, just delete the trade
-            trade.delete()
-            was_trade_fully_canceled = True
-            reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
+            # if trade is not partially completed and it's the only order, just delete the trade
+            if len(trade.orders) <= 1:
+                trade.delete()
+                was_trade_fully_canceled = True
+                reason += f", {constants.CANCEL_REASON['FULLY_CANCELLED']}"
+            else:
+                # FIXME TODO: This could possibly reworked to not duplicate the code 15 lines below.
+                self.update_trade_state(trade, trade.open_order_id, corder)
+                trade.open_order_id = None
+                logger.info('Partial buy order timeout for %s.', trade)
         else:
             # if trade is partially complete, edit the stake details for the trade
             # and close the order
