@@ -461,8 +461,8 @@ def calculate_trades_mdd(data: dict, trades: pd.DataFrame) -> float:
     if trades_mdd_pair_list == []:
         raise ValueError("All dataframe in candle data are None")
 
-    trades_mdd_pair_list = np.array(trades_mdd_pair_list)
-    return trades_mdd_pair_list.max()
+    trades_mdd_pair_array = np.array(trades_mdd_pair_list)
+    return trades_mdd_pair_array.max()
 
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
