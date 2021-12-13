@@ -656,6 +656,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a buy occurred.
         """
+        open_rate = safe_value_fallback(order, 'average', 'price')
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
@@ -663,7 +664,7 @@ class FreqtradeBot(LoggingMixin):
             'exchange': self.exchange.name.capitalize(),
             'pair': trade.pair,
             'limit': safe_value_fallback(order, 'average', 'price'),  # Deprecated (?)
-            'open_rate': safe_value_fallback(order, 'average', 'price'),
+            'open_rate': open_rate or trade.open_rate,
             'order_type': order_type,
             'stake_amount': trade.stake_amount,
             'stake_currency': self.config['stake_currency'],
