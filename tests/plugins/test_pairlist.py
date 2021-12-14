@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import logging
 import time
 from unittest.mock import MagicMock, PropertyMock
 
@@ -15,6 +16,9 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import (create_mock_trades, get_patched_exchange, get_patched_freqtradebot,
                             log_has, log_has_re)
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="function")
@@ -215,6 +219,36 @@ def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
     assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
     log_has_re(r"Pair blacklist contains an invalid Wildcard.*", caplog)
+
+
+def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_conf, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = ['ETH/BTC', 'TKN/BTC']
+    # Ensure all except those in whitelist are removed.
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    # Ensure that log message wasn't generated.
+    assert not log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...', caplog)
+
+    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
+    # Ensure that the pair is removed from the white list, and properly logged.
+    assert set(whitelist) == set(new_whitelist)
+    matches = sum(1 for message in caplog.messages
+                  if message == 'Pair BLK/BTC in your blacklist. Removing it from whitelist...')
+    assert matches == 1
+
+    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
+    # Ensure that the pair is not logged anymore when being removed from the pair list.
+    assert set(whitelist) == set(new_whitelist)
+    matches = sum(1 for message in caplog.messages
+                  if message == 'Pair BLK/BTC in your blacklist. Removing it from whitelist...')
+    assert matches == 1
 
 
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
