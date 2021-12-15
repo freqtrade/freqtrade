@@ -729,7 +729,7 @@ class FreqtradeBot(LoggingMixin):
                     trades_closed += 1
 
             except DependencyException as exception:
-                logger.warning('Unable to sell trade %s: %s', trade.pair, exception)
+                logger.warning(f'Unable to sell trade {trade.pair}: {exception}')
 
         # Updating wallets if any trade occurred
         if trades_closed:
@@ -973,8 +973,12 @@ class FreqtradeBot(LoggingMixin):
                 if max_timeouts > 0 and canceled_count >= max_timeouts:
                     logger.warning(f'Emergencyselling trade {trade}, as the sell order '
                                    f'timed out {max_timeouts} times.')
-                    self.execute_trade_exit(trade, order.get('price'), sell_reason=SellCheckTuple(
-                        sell_type=SellType.EMERGENCY_SELL))
+                    try:
+                        self.execute_trade_exit(
+                            trade, order.get('price'),
+                            sell_reason=SellCheckTuple(sell_type=SellType.EMERGENCY_SELL))
+                    except DependencyException as exception:
+                        logger.warning(f'Unable to emergency sell trade {trade.pair}: {exception}')
 
     def cancel_all_open_orders(self) -> None:
         """
