@@ -98,7 +98,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
-                   "['stopbuy'], ['whitelist'], ['blacklist'], "
+                   "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
                    "['logs'], ['edge'], ['help'], ['version']"
                    "]")
 
@@ -1469,6 +1469,13 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
     assert ("Blacklist contains 4 pairs\n`DOGE/BTC, HOT/BTC, ETH/BTC, XRP/.*`"
             in msg_mock.call_args_list[0][0][0])
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"]
+
+    msg_mock.reset_mock()
+    context.args = ["DOGE/BTC"]
+    telegram._blacklist_delete(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert ("Blacklist contains 3 pairs\n`HOT/BTC, ETH/BTC, XRP/.*`"
+            in msg_mock.call_args_list[0][0][0])
 
 
 def test_telegram_logs(default_conf, update, mocker) -> None:
