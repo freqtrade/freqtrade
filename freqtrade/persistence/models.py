@@ -428,6 +428,7 @@ class LocalTrade():
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
+            self.recalc_trade_from_orders()
         elif order_type in ('market', 'limit') and order['side'] == 'sell':
             if self.is_open:
                 logger.info(f'{order_type.upper()}_SELL has been fulfilled for {self}.')
@@ -578,13 +579,17 @@ class LocalTrade():
         total_amount = 0.0
         total_stake = 0.0
         for temp_order in self.orders:
-            if temp_order.ft_is_open == False and temp_order.status == "closed" and temp_order.ft_order_side == 'buy':
-                tmp_amount = temp_order.amount
-                if temp_order.filled is not None:
-                    tmp_amount = temp_order.filled
-                if tmp_amount is not None and temp_order.average is not None:
-                    total_amount += tmp_amount
-                    total_stake += temp_order.average * tmp_amount
+            if temp_order.ft_is_open or \
+                    temp_order.ft_order_side != 'buy' or \
+                    temp_order.status not in NON_OPEN_EXCHANGE_STATES:
+                continue
+
+            tmp_amount = temp_order.amount
+            if temp_order.filled is not None:
+                tmp_amount = temp_order.filled
+            if tmp_amount > 0.0 and temp_order.average is not None:
+                total_amount += tmp_amount
+                total_stake += temp_order.average * tmp_amount
 
         if total_amount > 0:
             self.open_rate = total_stake / total_amount

@@ -564,8 +564,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"Buy signal found: about create a new trade for {pair} with stake_amount: "
                         f"{stake_amount} ...")
         else:
-            logger.info(f"Position adjust: about create a new order for {pair} with stake_amount: "
-                        f"{stake_amount} ...")
+            logger.info(f"Position adjust: about to create a new order for {pair} with stake_amount: "
+                        f"{stake_amount} for {trade}")
 
         amount = stake_amount / enter_limit_requested
         order_type = ordertype or self.strategy.order_types['buy']
@@ -582,6 +582,7 @@ class FreqtradeBot(LoggingMixin):
         order_obj = Order.parse_from_ccxt_object(order, pair, 'buy')
         order_id = order['id']
         order_status = order.get('status', None)
+        logger.info(f"Order #{order_id} was created for {pair} and status is {order_status}.")
 
         # we assume the order is executed at the price requested
         enter_limit_filled_price = enter_limit_requested
@@ -640,6 +641,22 @@ class FreqtradeBot(LoggingMixin):
         trade.recalc_trade_from_orders()
         Trade.query.session.add(trade)
         Trade.commit()
+
+        if trade is not None:
+            if order_status == 'closed':
+                logger.info(f"DCA order closed, trade should be up to date: {trade}")
+                # First cancelling stoploss on exchange ...
+                if self.strategy.order_types.get('stoploss_on_exchange') and trade.stoploss_order_id:
+                    try:
+                        logger.info(f"Canceling stoploss on exchange, recreating with new amount for {trade}")
+                        co = self.exchange.cancel_stoploss_order_with_result(trade.stoploss_order_id,
+                                                                             trade.pair, trade.amount)
+                        trade.update_order(co)
+                    except InvalidOrderException:
+                        logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
+
+            else:
+                logger.info(f"DCA order {order_status}, will wait for resolution: {trade}")
 
         # Updating wallets
         self.wallets.update()
@@ -1344,7 +1361,9 @@ class FreqtradeBot(LoggingMixin):
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False
 
+        logger.info(f"Updating order from exchange: {order}")
         trade.update_order(order)
+        trade.recalc_trade_from_orders()
 
         if self.exchange.check_order_canceled_empty(order):
             # Trade has been cancelled on exchange
@@ -1365,6 +1384,7 @@ class FreqtradeBot(LoggingMixin):
         trade.update(order)
         trade.recalc_trade_from_orders()
         Trade.commit()
+        logger.info(f"Trade has been updated: {trade}")
 
         # Updating wallets when order is closed
         if not trade.is_open:
