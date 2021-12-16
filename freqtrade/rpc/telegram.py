@@ -111,9 +111,9 @@ class Telegram(RPCHandler):
                                  r'/daily$', r'/daily \d+$', r'/profit$', r'/profit \d+',
                                  r'/stats$', r'/count$', r'/locks$', r'/balance$',
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
-                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/edge$',
+                                 r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/help$', r'/version$']
+                                 r'/forcebuy$', r'/edge$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -170,6 +170,7 @@ class Telegram(RPCHandler):
             CommandHandler('stopbuy', self._stopbuy),
             CommandHandler('whitelist', self._whitelist),
             CommandHandler('blacklist', self._blacklist),
+            CommandHandler(['blacklist_delete', 'bl_delete'], self._blacklist_delete),
             CommandHandler('logs', self._logs),
             CommandHandler('edge', self._edge),
             CommandHandler('help', self._help),
@@ -1162,22 +1163,28 @@ class Telegram(RPCHandler):
         Handler for /blacklist
         Shows the currently active blacklist
         """
-        try:
+        self.send_blacklist_msg(self._rpc._rpc_blacklist(context.args))
 
-            blacklist = self._rpc._rpc_blacklist(context.args)
-            errmsgs = []
-            for pair, error in blacklist['errors'].items():
-                errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
-            if errmsgs:
-                self._send_msg('\n'.join(errmsgs))
+    def send_blacklist_msg(self, blacklist: Dict):
+        errmsgs = []
+        for pair, error in blacklist['errors'].items():
+            errmsgs.append(f"Error adding `{pair}` to blacklist: `{error['error_msg']}`")
+        if errmsgs:
+            self._send_msg('\n'.join(errmsgs))
 
-            message = f"Blacklist contains {blacklist['length']} pairs\n"
-            message += f"`{', '.join(blacklist['blacklist'])}`"
+        message = f"Blacklist contains {blacklist['length']} pairs\n"
+        message += f"`{', '.join(blacklist['blacklist'])}`"
 
-            logger.debug(message)
-            self._send_msg(message)
-        except RPCException as e:
-            self._send_msg(str(e))
+        logger.debug(message)
+        self._send_msg(message)
+
+    @authorized_only
+    def _blacklist_delete(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /bl_delete
+        Deletes pair(s) from current blacklist
+        """
+        self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []))
 
     @authorized_only
     def _logs(self, update: Update, context: CallbackContext) -> None:
@@ -1258,6 +1265,8 @@ class Telegram(RPCHandler):
             "*/whitelist:* `Show current whitelist` \n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
             "to the blacklist.` \n"
+            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
+            "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
             "*/reload_config:* `Reload configuration file` \n"
             "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
 
