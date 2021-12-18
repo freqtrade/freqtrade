@@ -1840,8 +1840,8 @@ class Exchange:
 
         if self.funding_fee_cutoff(open_date):
             open_date += timedelta(hours=1)
-
-        open_date = timeframe_to_prev_date('1h', open_date)
+        timeframe = self._ft_has['mark_ohlcv_timeframe']
+        open_date = timeframe_to_prev_date(timeframe, open_date)
 
         fees: float = 0
         if not close_date:
@@ -1850,11 +1850,9 @@ class Exchange:
         # close_timestamp = int(close_date.timestamp()) * 1000
 
         mark_comb: PairWithTimeframe = (
-            pair, '1h', CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
+            pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
 
-        # TODO-lev: 1h seems arbitrary and generates a lot of "empty" lines
-        # TODO-lev: probably a exchange-adjusted parameter would make more sense
-        funding_comb: PairWithTimeframe = (pair, '1h', CandleType.FUNDING_RATE)
+        funding_comb: PairWithTimeframe = (pair, timeframe, CandleType.FUNDING_RATE)
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
             since_ms=open_timestamp,
