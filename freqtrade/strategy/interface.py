@@ -381,10 +381,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return proposed_stake
 
-
-    def adjust_trade_position(self, pair: str, trade: Trade,
-                          current_time: datetime, current_rate: float, current_profit: float,
-                              **kwargs) -> Optional[float]:
+    def adjust_trade_position(self, pair: str, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, **kwargs
+                              ) -> Optional[float]:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.

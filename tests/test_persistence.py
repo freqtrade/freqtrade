@@ -1506,6 +1506,7 @@ def test_recalc_trade_from_orders(fee):
     assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
     assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
 
+
 def test_recalc_trade_from_orders_ignores_bad_orders(fee):
 
     o1_amount = 100
@@ -1631,6 +1632,3 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
-
-
-

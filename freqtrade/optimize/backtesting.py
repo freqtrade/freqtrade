@@ -351,11 +351,13 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
-    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple) -> Optional[LocalTrade]:
+    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
+                                           ) -> Optional[LocalTrade]:
 
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
 
-        stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position, default_retval=None)(
+        stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
+                                             default_retval=None)(
             pair=trade.pair, trade=trade, current_time=row[DATE_IDX].to_pydatetime(),
             current_rate=row[OPEN_IDX], current_profit=current_profit)
 
@@ -372,11 +374,15 @@ class Backtesting:
         available_amount = self.wallets.get_available_stake_amount()
 
         try:
-            min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair, propose_rate, -0.05) or 0
-            stake_amount = self.wallets.validate_stake_amount(trade.pair, stake_amount, min_stake_amount)
-            stake_amount = self.wallets._check_available_stake_amount(stake_amount, available_amount)
+            min_stake_amount = self.exchange.get_min_pair_stake_amount(
+                trade.pair, propose_rate, -0.05) or 0
+            stake_amount = self.wallets.validate_stake_amount(trade.pair,
+                                                              stake_amount, min_stake_amount)
+            stake_amount = self.wallets._check_available_stake_amount(stake_amount,
+                                                                      available_amount)
         except DependencyException:
-            logger.debug(f"{trade.pair} adjustment failed, wallet is smaller than asked stake {stake_amount}")
+            logger.debug(f"{trade.pair} adjustment failed, "
+                         f"wallet is smaller than asked stake {stake_amount}")
             return trade
 
         amount = stake_amount / current_price
@@ -399,7 +405,7 @@ class Backtesting:
         )
         trade.orders.append(buy_order)
         trade.recalc_trade_from_orders()
-        self.wallets.update();
+        self.wallets.update()
         return trade
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,

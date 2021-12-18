@@ -1,30 +1,15 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
-import random
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
-import logging
-
-import numpy as np
 import pandas as pd
-import pytest
 from arrow import Arrow
 
-from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
-from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
-from freqtrade.data.converter import clean_ohlcv_dataframe
-from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import RunMode, SellType
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.enums import SellType
 from freqtrade.optimize.backtesting import Backtesting
-from freqtrade.persistence import LocalTrade
-from freqtrade.resolvers import StrategyResolver
-from tests.conftest import (get_args, log_has, log_has_re, patch_exchange,
-                            patched_configuration_load_config_file)
+from tests.conftest import (patch_exchange)
+
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:
     default_conf['use_sell_signal'] = False

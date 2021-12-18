@@ -8,6 +8,7 @@ from freqtrade.strategy.interface import IStrategy
 from freqtrade.persistence import Trade
 from datetime import datetime
 
+
 class StrategyTestV2(IStrategy):
     """
     Strategy used by tests freqtrade bot.
@@ -163,7 +164,7 @@ class StrategyTestV2(IStrategy):
             for order in trade.orders:
                 if order.ft_is_open:
                     return None
-                
+
             return self.wallets.get_trade_stake_amount(pair, None)
 
         return None
