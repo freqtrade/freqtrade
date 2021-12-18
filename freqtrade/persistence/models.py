@@ -579,9 +579,9 @@ class LocalTrade():
         total_amount = 0.0
         total_stake = 0.0
         for temp_order in self.orders:
-            if temp_order.ft_is_open or \
-                    temp_order.ft_order_side != 'buy' or \
-                    temp_order.status not in NON_OPEN_EXCHANGE_STATES:
+            if (temp_order.ft_is_open or
+                    (temp_order.ft_order_side != 'buy') or
+                    (temp_order.status not in NON_OPEN_EXCHANGE_STATES)):
                 continue
 
             tmp_amount = temp_order.amount
