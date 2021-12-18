@@ -230,15 +230,18 @@ for val in self.buy_ema_short.range:
 merged_frame = pd.concat(frames, axis=1)
 ```
 
-### Adjust trade position
+## Adjust trade position
 
 `adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging) for example.
 
-!!! Tip: The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
+!!! Note
+    The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
 
-!!! Warning: Additional orders also mean additional fees.
+!!! Warning
+    Additional orders also mean additional fees.
 
-!!! Warning: Stoploss is still calculated from the initial opening price, not averaged price.
+!!! Warning
+    Stoploss is still calculated from the initial opening price, not averaged price.
 
 ``` python
 from freqtrade.persistence import Trade
@@ -276,7 +279,7 @@ class DigDeeperStrategy(IStrategy):
         # Only buy when not actively falling price.
         last_candle = dataframe.iloc[-1].squeeze()
         previous_candle = dataframe.iloc[-2].squeeze()
-        if last_candle.close < previous_candle.close:
+        if last_candle['close'] < previous_candle['close']:
             return None
 
         count_of_buys = 0

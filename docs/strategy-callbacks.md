@@ -570,19 +570,23 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
-### Adjust trade position
+## Adjust trade position
 
 `adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging).
 The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
 If there is not enough funds in the wallet then nothing will happen.
 
-Note: Current implementation does not support decreasing position size with partial sales!
+!!! Note
+    Current implementation does not support decreasing position size with partial sales!
 
-!!! Tip: The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
+!!! Tip
+    The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
 
-!!! Warning: Additional orders also mean additional fees.
+!!! Warning
+    Additional orders also mean additional fees.
 
-!!! Warning: Stoploss is still calculated from the initial opening price, not averaged price.
+!!! Warning
+    Stoploss is still calculated from the initial opening price, not averaged price.
     So if you do 3 additional buys at -7% and have a stoploss at -10% then you will most likely trigger stoploss while the UI will be showing you an average profit of -3%.
 
 ``` python
