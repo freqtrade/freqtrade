@@ -8,7 +8,7 @@ from freqtrade.data import history
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import SellType
 from freqtrade.optimize.backtesting import Backtesting
-from tests.conftest import (patch_exchange)
+from tests.conftest import patch_exchange
 
 
 def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) -> None:

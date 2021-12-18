@@ -598,7 +598,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
-        if not pos_adjust:
+        if trade is None:
             trade = Trade(
                 pair=pair,
                 stake_amount=stake_amount,
@@ -616,6 +616,7 @@ class FreqtradeBot(LoggingMixin):
                 buy_tag=buy_tag,
                 timeframe=timeframe_to_minutes(self.config['timeframe'])
             )
+
         trade.fee_open_currency = None
         trade.fee_open_currency = order_id
         trade.orders.append(order_obj)

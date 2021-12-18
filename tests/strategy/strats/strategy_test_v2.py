@@ -1,12 +1,13 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+from datetime import datetime
+
 import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.strategy.interface import IStrategy
 from freqtrade.persistence import Trade
-from datetime import datetime
+from freqtrade.strategy.interface import IStrategy
 
 
 class StrategyTestV2(IStrategy):

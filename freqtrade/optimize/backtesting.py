@@ -24,7 +24,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import LocalTrade, PairLocks, Trade, Order
+from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -352,7 +352,7 @@ class Backtesting:
             return sell_row[OPEN_IDX]
 
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
-                                           ) -> Optional[LocalTrade]:
+                                           ) -> LocalTrade:
 
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
 
@@ -368,7 +368,7 @@ class Backtesting:
         return trade
 
     def _execute_trade_position_change(self, trade: LocalTrade, row: Tuple,
-                                       stake_amount: float) -> Optional[LocalTrade]:
+                                       stake_amount: float) -> LocalTrade:
         current_price = row[OPEN_IDX]
         propose_rate = min(max(current_price, row[LOW_IDX]), row[HIGH_IDX])
         available_amount = self.wallets.get_available_stake_amount()
