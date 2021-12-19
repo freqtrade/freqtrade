@@ -617,8 +617,9 @@ class FreqtradeBot(LoggingMixin):
                 timeframe=timeframe_to_minutes(self.config['timeframe'])
             )
 
+        trade.is_open = True
         trade.fee_open_currency = None
-        trade.fee_open_currency = order_id
+        trade.open_order_id = order_id
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
         Trade.query.session.add(trade)
