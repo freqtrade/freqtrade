@@ -116,6 +116,9 @@ Possible parameters are:
 * `order_type`
 * `current_rate`
 * `enter_tag`
+* `gain`
+* `profit_amount`
+* `profit_ratio`
 
 ### Webhookbuycancel
 
@@ -154,9 +157,11 @@ Possible parameters are:
 * `order_type`
 * `current_rate`
 * `enter_tag`
+* `gain`
+* `profit_amount`
+* `profit_ratio`
 
 ### Webhooksell
-# TODO-lev add support for long and short?
 The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
 Possible parameters are:
 
@@ -186,6 +191,8 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
+* `is_short`
+* `leverage`
 * `gain`
 * `close_rate`
 * `amount`
