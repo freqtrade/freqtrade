@@ -26,6 +26,7 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_pa
 from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2, mock_order_2_sell,
                                    mock_order_3, mock_order_3_sell, mock_order_4,
                                    mock_order_5_stoploss, mock_order_6_sell)
+from typing import List
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -4308,3 +4309,155 @@ def test_get_valid_price(mocker, default_conf_usdt) -> None:
 
     assert valid_price_at_min_alwd > custom_price_under_min_alwd
     assert valid_price_at_min_alwd < proposed_price
+
+def test_position_adjust(mocker, default_conf_usdt, fee, limit_buy_order_usdt,
+                       limit_buy_order_usdt_open) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.confirm_trade_entry = MagicMock(return_value=True)
+    bid = 11
+    stake_amount = 10
+    buy_rate_mock = MagicMock(return_value=bid)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        get_rate=buy_rate_mock,
+        fetch_ticker=MagicMock(return_value={
+            'bid': 10,
+            'ask': 12,
+            'last': 11
+        }),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+    )
+    pair = 'ETH/USDT'
+
+    # Initial buy
+    limit_buy_order_usdt['status'] = 'closed'
+    limit_buy_order_usdt['pair'] = pair
+    limit_buy_order_usdt['ft_pair'] = pair
+    limit_buy_order_usdt['ft_order_side'] = 'buy'
+    limit_buy_order_usdt['side'] = 'buy'
+    limit_buy_order_usdt['price'] = bid
+    limit_buy_order_usdt['average'] = bid
+    limit_buy_order_usdt['cost'] = bid * stake_amount
+    limit_buy_order_usdt['amount'] = stake_amount
+    limit_buy_order_usdt['filled'] = stake_amount
+    limit_buy_order_usdt['ft_is_open'] = False
+    limit_buy_order_usdt['id'] = '650'
+    limit_buy_order_usdt['order_id'] = '650'
+    mocker.patch('freqtrade.exchange.Exchange.create_order',
+                 MagicMock(return_value=limit_buy_order_usdt))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 MagicMock(return_value=limit_buy_order_usdt))
+    assert freqtrade.execute_entry(pair, stake_amount)
+    # Should create an closed trade with an no open order id
+    # Order is filled and trade is open
+    orders = Order.query.all()
+    assert orders
+    assert len(orders) == 1
+    trade = Trade.query.first()
+    assert trade
+    assert trade.is_open is True
+    assert trade.open_order_id is None
+    assert trade.open_rate == 11
+    assert trade.stake_amount == 110
+
+    # Assume it does nothing since trade is still open and no new orders
+    freqtrade.update_closed_trades_without_assigned_fees()
+
+    trade = Trade.query.first()
+    assert trade
+    assert trade.is_open is True
+    assert trade.open_order_id is None
+    assert trade.open_rate == 11
+    assert trade.stake_amount == 110
+
+    # First position adjustment buy.
+    limit_buy_order_usdt_open['ft_pair'] = pair
+    limit_buy_order_usdt_open['ft_order_side'] = 'buy'
+    limit_buy_order_usdt_open['side'] = 'buy'
+    limit_buy_order_usdt_open['status'] = None
+    limit_buy_order_usdt_open['price'] = 9
+    limit_buy_order_usdt_open['amount'] = 12
+    limit_buy_order_usdt_open['cost'] = 100
+    limit_buy_order_usdt_open['ft_is_open'] = True
+    limit_buy_order_usdt_open['id'] = 651
+    limit_buy_order_usdt_open['order_id'] = 651
+    mocker.patch('freqtrade.exchange.Exchange.create_order',
+                 MagicMock(return_value=limit_buy_order_usdt_open))
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 MagicMock(return_value=limit_buy_order_usdt_open))
+    assert freqtrade.execute_entry(pair, stake_amount, trade=trade)
+
+    orders = Order.query.all()
+    assert orders
+    assert len(orders) == 2
+    trade = Trade.query.first()
+    assert trade
+    assert trade.open_order_id == '651'
+    assert trade.open_rate == 11
+    assert trade.amount == 10
+    assert trade.stake_amount == 110
+
+    # Assume it does nothing since trade is still open
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order_or_stoploss_order',
+                 MagicMock(return_value=limit_buy_order_usdt_open))
+    freqtrade.update_closed_trades_without_assigned_fees()
+
+    orders = Order.query.all()
+    assert orders
+    assert len(orders) == 2
+    # Assert that the trade is found as open and without fees
+    trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+    assert len(trades) == 1
+    # Assert trade is as expected
+    trade = Trade.query.first()
+    assert trade
+    assert trade.open_order_id == '651'
+    assert trade.open_rate == 11
+    assert trade.amount == 10
+    assert trade.stake_amount == 110
+    assert trade.fee_updated('buy') is False
+
+    # Make sure the closed order is found as the first order.
+    order = trade.select_order('buy', False)
+    assert order.order_id == '650'
+
+    # Now close the order so it should update.
+    limit_buy_order_usdt_open['ft_pair'] = pair
+    limit_buy_order_usdt_open['status'] = 'closed'
+    limit_buy_order_usdt_open['ft_order_side'] = 'buy'
+    limit_buy_order_usdt_open['side'] = 'buy'
+    limit_buy_order_usdt_open['price'] = 9
+    limit_buy_order_usdt_open['average'] = 9
+    limit_buy_order_usdt_open['amount'] = 12
+    limit_buy_order_usdt_open['filled'] = 12
+    limit_buy_order_usdt_open['cost'] = 108
+    limit_buy_order_usdt_open['ft_is_open'] = False
+    limit_buy_order_usdt_open['id'] = '651'
+    limit_buy_order_usdt_open['order_id'] = '651'
+    mocker.patch('freqtrade.exchange.Exchange.fetch_order',
+                 MagicMock(return_value=limit_buy_order_usdt_open))
+    freqtrade.check_handle_timedout()
+
+    # Assert trade is as expected (averaged dca)
+    trade = Trade.query.first()
+    assert trade
+    assert trade.open_order_id is None
+    assert pytest.approx(trade.open_rate) == 9.90909090909
+    assert trade.amount == 22
+    assert trade.stake_amount == 218
+
+    orders = Order.query.all()
+    assert orders
+    assert len(orders) == 2
+
+    # Make sure the closed order is found as the second order.
+    order = trade.select_order('buy', False)
+    assert order.order_id == '651'
+
+    # Assert that the trade is not found as open and without fees
+    trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+    assert len(trades) == 1
+
