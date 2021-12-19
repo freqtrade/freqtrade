@@ -1765,7 +1765,7 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    @ retrier
+    @retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
         Returns the sum of all funding fees that were exchanged for a pair within a timeframe
@@ -1871,7 +1871,7 @@ class Exchange:
         """
         return open_date.minute > 0 or open_date.second > 0
 
-    @ retrier
+    @retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair

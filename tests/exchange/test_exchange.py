@@ -243,6 +243,7 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
     """
     Test rounds down
     """
+    # TODO-lev: Test for contract sizes of 0.01 and 10
 
     markets = PropertyMock(return_value={'ETH/BTC': {'precision': {'amount': precision}}})
 
@@ -324,6 +325,7 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
 
 
 def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
+    # TODO-lev: Test for contract sizes of 0.01 and 10
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
@@ -1004,6 +1006,7 @@ def test_exchange_has(default_conf, mocker):
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_dry_run_order(default_conf, mocker, side, exchange_name):
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     default_conf['dry_run'] = True
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
 
@@ -1120,6 +1123,7 @@ def test_create_dry_run_order_market_fill(default_conf, mocker, side, rate, amou
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, exchange_name):
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     api_mock = MagicMock()
     order_id = 'test_prod_{}_{}'.format(side, randint(0, 10 ** 6))
     api_mock.options = {} if not marketprice else {"createMarketBuyOrderRequiresPrice": True}
@@ -2243,7 +2247,7 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
                                    fetch_trades_result):
-
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function
@@ -2513,6 +2517,7 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 # Ensure that if not dry_run, we should call API
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_cancel_order(default_conf, mocker, exchange_name):
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     default_conf['dry_run'] = False
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value={'id': '123'})
@@ -2591,6 +2596,7 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_order(default_conf, mocker, exchange_name, caplog):
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     default_conf['dry_run'] = True
     default_conf['exchange']['log_responses'] = True
     order = MagicMock()
@@ -2702,7 +2708,7 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name):
-
+    # TODO-lev: Test for contract sizes of 0.01 and 10
     order_id = 'ABCD-ABCD'
     since = datetime(2018, 5, 5, 0, 0, 0)
     default_conf["dry_run"] = False
@@ -3578,25 +3584,25 @@ def test__calculate_funding_fees_datetime_called(
 
 
 def test__get_contract_size():
-    # TODO
+    # TODO-lev
     return
 
 
 def test__trades_contracts_to_amount():
-    # TODO
+    # TODO-lev
     return
 
 
 def test__order_contracts_to_amount():
-    # TODO
+    # TODO-lev
     return
 
 
 def test__amount_to_contract_size():
-    # TODO
+    # TODO-lev
     return
 
 
 def test__contract_size_to_amount():
-    # TODO
+    # TODO-lev
     return
