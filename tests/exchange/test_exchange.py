@@ -3549,7 +3549,7 @@ def test__calculate_funding_fees(
     assert pytest.approx(funding_fees) == expected_fees
 
 
-@ pytest.mark.parametrize('exchange,expected_fees', [
+@pytest.mark.parametrize('exchange,expected_fees', [
     ('binance', -0.0009140999999999999),
     ('gateio', -0.0009140999999999999),
 ])
@@ -3575,3 +3575,28 @@ def test__calculate_funding_fees_datetime_called(
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
     funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
     assert funding_fees == expected_fees
+
+
+def test__get_contract_size():
+    # TODO
+    return
+
+
+def test__trades_contracts_to_amount():
+    # TODO
+    return
+
+
+def test__order_contracts_to_amount():
+    # TODO
+    return
+
+
+def test__amount_to_contract_size():
+    # TODO
+    return
+
+
+def test__contract_size_to_amount():
+    # TODO
+    return

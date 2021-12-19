@@ -370,6 +370,30 @@ class Exchange:
         else:
             return DataFrame()
 
+    def _get_contract_size(self, pair: str) -> int:
+        if self.trading_mode == TradingMode.FUTURES:
+            return self.markets[pair]['contract_size']
+        else:
+            return 1
+
+    def _trades_contracts_to_amount(self, trades: List) -> List:
+        if len(trades) > 0:
+            contract_size = self._get_contract_size(trades[0]['pair'])
+            if contract_size != 1:
+                for trade in trades:
+                    trade['amount'] = trade['amount'] * contract_size
+            return trades
+        else:
+            return trades
+
+    def _order_contracts_to_amount(self, order: Dict) -> Dict:
+        contract_size = self._get_contract_size(order['pair'])
+        if contract_size != 1:
+            for prop in ['amount', 'cost', 'filled', 'remaining']:
+                if prop in order:
+                    order[prop] = order[prop] * contract_size
+        return order
+
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
@@ -872,13 +896,15 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             self._lev_prep(pair, leverage)
-            order = self._api.create_order(
-                pair,
-                ordertype,
-                side,
-                amount,
-                rate_for_order,
-                params
+            order = self._order_contracts_to_amount(
+                self._api.create_order(
+                    pair,
+                    ordertype,
+                    side,
+                    amount,
+                    rate_for_order,
+                    params
+                )
             )
             self._log_exchange_response('create_order', order)
             return order
@@ -927,7 +953,9 @@ class Exchange:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
-            order = self._api.fetch_order(order_id, pair)
+            order = self._order_contracts_to_amount(
+                self._api.fetch_order(order_id, pair)
+            )
             self._log_exchange_response('fetch_order', order)
             return order
         except ccxt.OrderNotFound as e:
@@ -981,7 +1009,9 @@ class Exchange:
                 return {}
 
         try:
-            order = self._api.cancel_order(order_id, pair)
+            order = self._order_contracts_to_amount(
+                self._api.cancel_order(order_id, pair)
+            )
             self._log_exchange_response('cancel_order', order)
             return order
         except ccxt.InvalidOrder as e:
@@ -1245,9 +1275,13 @@ class Exchange:
             # since needs to be int in milliseconds
             _params = params if params else {}
             my_trades = self._api.fetch_my_trades(
-                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
-                params=_params)
-            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
+                pair,
+                int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
+                params=_params
+            )
+            matched_trades = self._trades_contracts_to_amount(
+                trades=[trade for trade in my_trades if trade['order'] == order_id]
+            )
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
             return matched_trades
@@ -1584,14 +1618,18 @@ class Exchange:
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = await self._api_async.fetch_trades(pair, params=params, limit=1000)
+                trades = self._trades_contracts_to_amount(
+                    trades=await self._api_async.fetch_trades(pair, params=params, limit=1000),
+                )
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair,  since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
-                trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
+                trades = self._trades_contracts_to_amount(
+                    trades=await self._api_async.fetch_trades(pair, since=since, limit=1000),
+                )
             return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
@@ -1727,7 +1765,7 @@ class Exchange:
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 
-    @retrier
+    @ retrier
     def _get_funding_fees_from_exchange(self, pair: str, since: Union[datetime, int]) -> float:
         """
         Returns the sum of all funding fees that were exchanged for a pair within a timeframe
@@ -1833,7 +1871,7 @@ class Exchange:
         """
         return open_date.minute > 0 or open_date.second > 0
 
-    @retrier
+    @ retrier
     def set_margin_mode(self, pair: str, collateral: Collateral, params: dict = {}):
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
@@ -1852,6 +1890,46 @@ class Exchange:
                 f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    @retrier
+    def _get_mark_price_history(self, pair: str, since: int) -> Dict:
+        """
+        Get's the mark price history for a pair
+        :param pair: The quote/base pair of the trade
+        :param since: The earliest time to start downloading candles, in ms.
+        """
+
+        try:
+            candles = self._api.fetch_ohlcv(
+                pair,
+                timeframe="1h",
+                since=since,
+                params={
+                    'price': self._ft_has["mark_ohlcv_price"]
+                }
+            )
+            history = {}
+            for candle in candles:
+                d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
+                # The millisecond timestamps can be delayed ~20ms
+                time = timeframe_to_prev_date('1h', d).timestamp() * 1000
+                opening_mark_price = candle[1]
+                history[time] = opening_mark_price
+            return history
+        except ccxt.NotSupported as e:
+            raise OperationalException(
+                f'Exchange {self._api.name} does not support fetching historical '
+                f'mark price candle (OHLCV) data. Message: {e}') from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(f'Could not fetch historical mark price candle (OHLCV) data '
+                                 f'for pair {pair} due to {e.__class__.__name__}. '
+                                 f'Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
+                                       f'for pair {pair}. Message: {e}') from e
 
     def _calculate_funding_fees(
         self,
@@ -1918,6 +1996,42 @@ class Exchange:
             return funding_fees
         else:
             return 0.0
+
+    @retrier
+    def get_funding_rate_history(self, pair: str, since: int) -> Dict:
+        """
+        :param pair: quote/base currency pair
+        :param since: timestamp in ms of the beginning time
+        :param end: timestamp in ms of the end time
+        """
+        if not self.exchange_has("fetchFundingRateHistory"):
+            raise ExchangeError(
+                f"fetch_funding_rate_history is not available using {self.name}"
+            )
+
+        # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
+        try:
+            funding_history: Dict = {}
+            response = self._api.fetch_funding_rate_history(
+                pair,
+                limit=1000,
+                since=since
+            )
+            for fund in response:
+                d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
+                # Round down to the nearest hour, in case of a delayed timestamp
+                # The millisecond timestamps can be delayed ~20ms
+                time = int(timeframe_to_prev_date('1h', d).timestamp() * 1000)
+
+                funding_history[time] = fund['fundingRate']
+            return funding_history
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
