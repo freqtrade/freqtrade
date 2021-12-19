@@ -398,6 +398,8 @@ class Telegram(RPCHandler):
                 lines = [
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
+                    "*Direction:* " + ("`Short`" if r['is_short'] else "`Long`"),
+                    "*Leverage:* `{leverage}`" if r['leverage'] else "",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",

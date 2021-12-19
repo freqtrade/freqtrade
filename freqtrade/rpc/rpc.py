@@ -233,6 +233,7 @@ class RPC:
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                direction_str = 'S' if trade.is_short else 'L'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -247,7 +248,8 @@ class RPC:
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
-                               + ('**' if (trade.close_rate_requested is not None) else ''),
+                               + ('**' if (trade.close_rate_requested is not None) else '')
+                               + f' direction_str',
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ])
