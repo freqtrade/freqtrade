@@ -202,7 +202,9 @@ class TestCCXTExchange():
 
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
-        pair_tf = (pair, '1h', CandleType.FUNDING_RATE)
+        timeframe_ff = exchange._ft_has.get('funding_fee_timeframe',
+                                            exchange._ft_has['mark_ohlcv_timeframe'])
+        pair_tf = (pair, timeframe_ff, CandleType.FUNDING_RATE)
 
         funding_ohlcv = exchange.refresh_latest_ohlcv(
             [pair_tf],
@@ -212,9 +214,8 @@ class TestCCXTExchange():
         assert isinstance(funding_ohlcv, dict)
         rate = funding_ohlcv[pair_tf]
 
-        expected_tf = exchange._ft_has['mark_ohlcv_timeframe']
-        this_hour = timeframe_to_prev_date(expected_tf)
-        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
+        this_hour = timeframe_to_prev_date(timeframe_ff)
+        prev_hour = timeframe_to_prev_date(timeframe_ff, this_hour - timedelta(minutes=1))
         assert rate[rate['date'] == this_hour].iloc[0]['open'] != 0.0
         assert rate[rate['date'] == prev_hour].iloc[0]['open'] != 0.0
 

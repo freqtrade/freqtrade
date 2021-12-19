@@ -1841,6 +1841,8 @@ class Exchange:
         if self.funding_fee_cutoff(open_date):
             open_date += timedelta(hours=1)
         timeframe = self._ft_has['mark_ohlcv_timeframe']
+        timeframe_ff = self._ft_has.get('funding_fee_timeframe',
+                                        self._ft_has['mark_ohlcv_timeframe'])
         open_date = timeframe_to_prev_date(timeframe, open_date)
 
         fees: float = 0
@@ -1852,7 +1854,7 @@ class Exchange:
         mark_comb: PairWithTimeframe = (
             pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
 
-        funding_comb: PairWithTimeframe = (pair, timeframe, CandleType.FUNDING_RATE)
+        funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
         candle_histories = self.refresh_latest_ohlcv(
             [mark_comb, funding_comb],
             since_ms=open_timestamp,
