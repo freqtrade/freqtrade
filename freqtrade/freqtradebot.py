@@ -471,17 +471,18 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
+        # If there is any open orders, wait for them to finish.
         for order in trade.orders:
             if order.ft_is_open:
                 return
 
         logger.debug(f"adjust_trade_position for pair {trade.pair}")
-        sell_rate = self.exchange.get_rate(trade.pair, refresh=True, side="sell")
-        current_profit = trade.calc_profit_ratio(sell_rate)
+        current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
+        current_profit = trade.calc_profit_ratio(current_rate)
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc),
-            current_rate=sell_rate, current_profit=current_profit)
+            current_rate=current_rate, current_profit=current_profit)
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position
