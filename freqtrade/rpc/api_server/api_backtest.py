@@ -33,6 +33,9 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
         if settings[setting] is not None:
             btconfig[setting] = settings[setting]
 
+    # Force dry-run for backtesting
+    btconfig['dry_run'] = True
+
     # Start backtesting
     # Initialize backtesting object
     def run_backtest():
