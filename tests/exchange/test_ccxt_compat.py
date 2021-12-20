@@ -91,7 +91,7 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['collateral'] = 'cross'
-        # TODO-lev This mock should no longer be necessary once futures are enabled.
+        # TODO-lev: This mock should no longer be necessary once futures are enabled.
         class_mocker.patch(
             'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
         class_mocker.patch(
@@ -195,7 +195,6 @@ class TestCCXTExchange():
         assert exchange.klines(pair_tf).iloc[-1]['date'] >= timeframe_to_prev_date(timeframe, now)
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures):
-        # TODO-lev: enable this test once Futures mode is enabled.
         exchange, exchangename = exchange_futures
         if not exchange:
             # exchange_futures only returns values for supported exchanges
@@ -203,34 +202,59 @@ class TestCCXTExchange():
 
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+        timeframe_ff = exchange._ft_has.get('funding_fee_timeframe',
+                                            exchange._ft_has['mark_ohlcv_timeframe'])
+        pair_tf = (pair, timeframe_ff, CandleType.FUNDING_RATE)
 
-        rate = exchange.get_funding_rate_history(pair, since)
-        assert isinstance(rate, dict)
+        funding_ohlcv = exchange.refresh_latest_ohlcv(
+            [pair_tf],
+            since_ms=since,
+            drop_incomplete=False)
 
-        expected_tf = exchange._ft_has['mark_ohlcv_timeframe']
-        this_hour = timeframe_to_prev_date(expected_tf)
-        prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
-        assert rate[int(this_hour.timestamp() * 1000)] != 0.0
-        assert rate[int(prev_tick.timestamp() * 1000)] != 0.0
+        assert isinstance(funding_ohlcv, dict)
+        rate = funding_ohlcv[pair_tf]
 
-    @pytest.mark.skip("No futures support yet")
-    def test_fetch_mark_price_history(self, exchange_futures):
+        this_hour = timeframe_to_prev_date(timeframe_ff)
+        prev_hour = timeframe_to_prev_date(timeframe_ff, this_hour - timedelta(minutes=1))
+        assert rate[rate['date'] == this_hour].iloc[0]['open'] != 0.0
+        assert rate[rate['date'] == prev_hour].iloc[0]['open'] != 0.0
+
+    def test_ccxt_fetch_mark_price_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
         if not exchange:
             # exchange_futures only returns values for supported exchanges
             return
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = int((datetime.now(timezone.utc) - timedelta(days=5)).timestamp() * 1000)
+        pair_tf = (pair, '1h', CandleType.MARK)
 
-        mark_candles = exchange._get_mark_price_history(pair, since)
+        mark_ohlcv = exchange.refresh_latest_ohlcv(
+            [pair_tf],
+            since_ms=since,
+            drop_incomplete=False)
 
-        assert isinstance(mark_candles, dict)
+        assert isinstance(mark_ohlcv, dict)
         expected_tf = '1h'
+        mark_candles = mark_ohlcv[pair_tf]
 
         this_hour = timeframe_to_prev_date(expected_tf)
-        prev_tick = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
-        assert mark_candles[int(this_hour.timestamp() * 1000)] != 0.0
-        assert mark_candles[int(prev_tick.timestamp() * 1000)] != 0.0
+        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
+
+        assert mark_candles[mark_candles['date'] == prev_hour].iloc[0]['open'] != 0.0
+        assert mark_candles[mark_candles['date'] == this_hour].iloc[0]['open'] != 0.0
+
+    def test_ccxt__calculate_funding_fees(self, exchange_futures):
+        exchange, exchangename = exchange_futures
+        if not exchange:
+            # exchange_futures only returns values for supported exchanges
+            return
+        pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
+        since = datetime.now(timezone.utc) - timedelta(days=5)
+
+        funding_fee = exchange._calculate_funding_fees(pair, 20, open_date=since)
+
+        assert isinstance(funding_fee, float)
+        # assert funding_fee > 0
 
     # TODO: tests fetch_trades (?)
 

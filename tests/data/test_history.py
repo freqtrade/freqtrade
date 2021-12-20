@@ -490,7 +490,7 @@ def test_validate_backtest_data(default_conf, mocker, caplog, testdatadir) -> No
 @pytest.mark.parametrize('trademode,callcount', [
     ('spot', 4),
     ('margin', 4),
-    ('futures', 6),
+    ('futures', 8),  # Called 8 times - 4 normal, 2 funding and 2 mark/index calls
 ])
 def test_refresh_backtest_ohlcv_data(
         mocker, default_conf, markets, caplog, testdatadir, trademode, callcount):

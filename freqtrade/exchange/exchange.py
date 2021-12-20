@@ -1389,7 +1389,8 @@ class Exchange:
         return pair, timeframe, candle_type, data
 
     def refresh_latest_ohlcv(self, pair_list: ListPairsWithTimeframes, *,
-                             since_ms: Optional[int] = None, cache: bool = True
+                             since_ms: Optional[int] = None, cache: bool = True,
+                             drop_incomplete: bool = None
                              ) -> Dict[PairWithTimeframe, DataFrame]:
         """
         Refresh in-memory OHLCV asynchronously and set `_klines` with the result
@@ -1398,10 +1399,13 @@ class Exchange:
         :param pair_list: List of 2 element tuples containing pair, interval to refresh
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Usefull for one-off downloads like for pairlists
+        :param drop_incomplete: Control candle dropping.
+            Specifying None defaults to _ohlcv_partial_candle
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
-
+        # TODO-lev: maybe depend this on candle type?
+        drop_incomplete = self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
         input_coroutines = []
         cached_pairs = []
         # Gather coroutines to run
@@ -1447,7 +1451,7 @@ class Exchange:
                 # keeping parsed dataframe in cache
                 ohlcv_df = ohlcv_to_dataframe(
                     ticks, timeframe, pair=pair, fill_missing=True,
-                    drop_incomplete=self._ohlcv_partial_candle)
+                    drop_incomplete=drop_incomplete)
                 results_df[(pair, timeframe, c_type)] = ohlcv_df
                 if cache:
                     self._klines[(pair, timeframe, c_type)] = ohlcv_df
@@ -1494,11 +1498,17 @@ class Exchange:
             params = deepcopy(self._ft_has.get('ohlcv_params', {}))
             if candle_type != CandleType.SPOT:
                 params.update({'price': candle_type})
-            data = await self._api_async.fetch_ohlcv(pair, timeframe=timeframe,
-                                                     since=since_ms,
-                                                     limit=self.ohlcv_candle_limit(timeframe),
-                                                     params=params)
-
+            if candle_type != CandleType.FUNDING_RATE:
+                data = await self._api_async.fetch_ohlcv(
+                    pair, timeframe=timeframe, since=since_ms,
+                    limit=self.ohlcv_candle_limit(timeframe), params=params)
+            else:
+                # Funding rate
+                data = await self._api_async.fetch_funding_rate_history(
+                    pair, since=since_ms,
+                    limit=self.ohlcv_candle_limit(timeframe))
+                # Convert funding rate to candle pattern
+                data = [[x['timestamp'], x['fundingRate'], 0, 0, 0, 0] for x in data]
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Ex: Bittrex returns the list of OHLCV in ASC order (oldest first, newest last)
             # while GDAX returns the list of OHLCV in DESC order (newest first, oldest last)
@@ -1812,46 +1822,6 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def _get_mark_price_history(self, pair: str, since: int) -> Dict:
-        """
-        Get's the mark price history for a pair
-        :param pair: The quote/base pair of the trade
-        :param since: The earliest time to start downloading candles, in ms.
-        """
-
-        try:
-            candles = self._api.fetch_ohlcv(
-                pair,
-                timeframe="1h",
-                since=since,
-                params={
-                    'price': self._ft_has["mark_ohlcv_price"]
-                }
-            )
-            history = {}
-            for candle in candles:
-                d = datetime.fromtimestamp(int(candle[0] / 1000), timezone.utc)
-                # Round down to the nearest hour, in case of a delayed timestamp
-                # The millisecond timestamps can be delayed ~20ms
-                time = timeframe_to_prev_date('1h', d).timestamp() * 1000
-                opening_mark_price = candle[1]
-                history[time] = opening_mark_price
-            return history
-        except ccxt.NotSupported as e:
-            raise OperationalException(
-                f'Exchange {self._api.name} does not support fetching historical '
-                f'mark price candle (OHLCV) data. Message: {e}') from e
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(f'Could not fetch historical mark price candle (OHLCV) data '
-                                 f'for pair {pair} due to {e.__class__.__name__}. '
-                                 f'Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(f'Could not fetch historical mark price candle (OHLCV) data '
-                                       f'for pair {pair}. Message: {e}') from e
-
     def _calculate_funding_fees(
         self,
         pair: str,
@@ -1870,36 +1840,33 @@ class Exchange:
 
         if self.funding_fee_cutoff(open_date):
             open_date += timedelta(hours=1)
-
-        open_date = timeframe_to_prev_date('1h', open_date)
+        timeframe = self._ft_has['mark_ohlcv_timeframe']
+        timeframe_ff = self._ft_has.get('funding_fee_timeframe',
+                                        self._ft_has['mark_ohlcv_timeframe'])
+        open_date = timeframe_to_prev_date(timeframe, open_date)
 
         fees: float = 0
         if not close_date:
             close_date = datetime.now(timezone.utc)
         open_timestamp = int(open_date.timestamp()) * 1000
         # close_timestamp = int(close_date.timestamp()) * 1000
-        funding_rate_history = self.get_funding_rate_history(
-            pair,
-            open_timestamp
+
+        mark_comb: PairWithTimeframe = (
+            pair, timeframe, CandleType.from_string(self._ft_has["mark_ohlcv_price"]))
+
+        funding_comb: PairWithTimeframe = (pair, timeframe_ff, CandleType.FUNDING_RATE)
+        candle_histories = self.refresh_latest_ohlcv(
+            [mark_comb, funding_comb],
+            since_ms=open_timestamp,
+            cache=False,
+            drop_incomplete=False,
         )
-        mark_price_history = self._get_mark_price_history(
-            pair,
-            open_timestamp
-        )
-        for timestamp in funding_rate_history.keys():
-            funding_rate = funding_rate_history[timestamp]
-            if timestamp in mark_price_history:
-                mark_price = mark_price_history[timestamp]
-                fees += self._get_funding_fee(
-                    size=amount,
-                    mark_price=mark_price,
-                    funding_rate=funding_rate
-                )
-            else:
-                logger.warning(
-                    f"Mark price for {pair} at timestamp {timestamp} not found in "
-                    f"funding_rate_history Funding fee calculation may be incorrect"
-                )
+        funding_rates = candle_histories[funding_comb]
+        mark_rates = candle_histories[mark_comb]
+
+        df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+        df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
+        fees = sum(df['open_fund'] * df['open_mark'] * amount)
 
         return fees
 
@@ -1919,42 +1886,6 @@ class Exchange:
             return funding_fees
         else:
             return 0.0
-
-    @retrier
-    def get_funding_rate_history(self, pair: str, since: int) -> Dict:
-        """
-        :param pair: quote/base currency pair
-        :param since: timestamp in ms of the beginning time
-        :param end: timestamp in ms of the end time
-        """
-        if not self.exchange_has("fetchFundingRateHistory"):
-            raise ExchangeError(
-                f"fetch_funding_rate_history is not available using {self.name}"
-            )
-
-        # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
-        try:
-            funding_history: Dict = {}
-            response = self._api.fetch_funding_rate_history(
-                pair,
-                limit=1000,
-                since=since
-            )
-            for fund in response:
-                d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
-                # Round down to the nearest hour, in case of a delayed timestamp
-                # The millisecond timestamps can be delayed ~20ms
-                time = int(timeframe_to_prev_date('1h', d).timestamp() * 1000)
-
-                funding_history[time] = fund['fundingRate']
-            return funding_history
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

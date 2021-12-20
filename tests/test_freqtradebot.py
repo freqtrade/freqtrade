@@ -9,6 +9,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
 import pytest
+from pandas import DataFrame
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import CandleType, RPCMessageType, RunMode, SellType, SignalDirection, State
@@ -4802,60 +4803,67 @@ def test_update_funding_fees(
     patch_exchange(mocker)
     default_conf['trading_mode'] = 'futures'
     default_conf['collateral'] = 'isolated'
-    default_conf['dry_run'] = True
-    timestamp_midnight = 1630454400000
-    timestamp_eight = 1630483200000
-    funding_rates_midnight = {
-        "LTC/BTC": {
-            timestamp_midnight: 0.00032583,
-        },
-        "ETH/BTC": {
-            timestamp_midnight: 0.0001,
-        },
-        "XRP/BTC": {
-            timestamp_midnight: 0.00049426,
-        }
-    }
 
-    funding_rates_eight = {
-        "LTC/BTC": {
-            timestamp_midnight: 0.00032583,
-            timestamp_eight: 0.00024472,
-        },
-        "ETH/BTC": {
-            timestamp_midnight: 0.0001,
-            timestamp_eight: 0.0001,
-        },
-        "XRP/BTC": {
-            timestamp_midnight: 0.00049426,
-            timestamp_eight: 0.00032715,
-        }
+    date_midnight = arrow.get('2021-09-01 00:00:00')
+    date_eight = arrow.get('2021-09-01 08:00:00')
+    date_sixteen = arrow.get('2021-09-01 16:00:00')
+    columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+    # 16:00 entry is actually never used
+    # But should be kept in the test to ensure we're filtering correctly.
+    funding_rates = {
+        "LTC/BTC":
+            DataFrame([
+                [date_midnight, 0.00032583, 0, 0, 0, 0],
+                [date_eight, 0.00024472, 0, 0, 0, 0],
+                [date_sixteen, 0.00024472, 0, 0, 0, 0],
+            ], columns=columns),
+        "ETH/BTC":
+            DataFrame([
+                [date_midnight, 0.0001, 0, 0, 0, 0],
+                [date_eight, 0.0001, 0, 0, 0, 0],
+                [date_sixteen, 0.0001, 0, 0, 0, 0],
+            ], columns=columns),
+        "XRP/BTC":
+            DataFrame([
+                [date_midnight, 0.00049426, 0, 0, 0, 0],
+                [date_eight, 0.00032715, 0, 0, 0, 0],
+                [date_sixteen, 0.00032715, 0, 0, 0, 0],
+            ], columns=columns)
     }
 
     mark_prices = {
-        "LTC/BTC": {
-            timestamp_midnight: 3.3,
-            timestamp_eight: 3.2,
-        },
-        "ETH/BTC": {
-            timestamp_midnight: 2.4,
-            timestamp_eight: 2.5,
-        },
-        "XRP/BTC": {
-            timestamp_midnight: 1.2,
-            timestamp_eight: 1.2,
-        }
+        "LTC/BTC":
+            DataFrame([
+                [date_midnight, 3.3, 0, 0, 0, 0],
+                [date_eight, 3.2, 0, 0, 0, 0],
+                [date_sixteen, 3.2, 0, 0, 0, 0],
+            ], columns=columns),
+        "ETH/BTC":
+            DataFrame([
+                [date_midnight, 2.4, 0, 0, 0, 0],
+                [date_eight, 2.5, 0, 0, 0, 0],
+                [date_sixteen, 2.5, 0, 0, 0, 0],
+            ], columns=columns),
+        "XRP/BTC":
+            DataFrame([
+                [date_midnight, 1.2, 0, 0, 0, 0],
+                [date_eight, 1.2, 0, 0, 0, 0],
+                [date_sixteen, 1.2, 0, 0, 0, 0],
+            ], columns=columns)
     }
 
-    mocker.patch(
-        'freqtrade.exchange.Exchange._get_mark_price_history',
-        side_effect=lambda pair, since: mark_prices[pair]
-    )
+    def refresh_latest_ohlcv_mock(pairlist, **kwargs):
+        ret = {}
+        for p, tf, ct in pairlist:
+            if ct == CandleType.MARK:
+                ret[(p, tf, ct)] = mark_prices[p]
+            else:
+                ret[(p, tf, ct)] = funding_rates[p]
 
-    mocker.patch(
-        'freqtrade.exchange.Exchange.get_funding_rate_history',
-        side_effect=lambda pair, since: funding_rates_midnight[pair]
-    )
+        return ret
+
+    mocker.patch('freqtrade.exchange.Exchange.refresh_latest_ohlcv',
+                 side_effect=refresh_latest_ohlcv_mock)
 
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -4880,38 +4888,33 @@ def test_update_funding_fees(
     trades = Trade.get_open_trades()
     assert len(trades) == 3
     for trade in trades:
-        assert trade.funding_fees == (
+        assert pytest.approx(trade.funding_fees) == (
             trade.amount *
-            mark_prices[trade.pair][timestamp_midnight] *
-            funding_rates_midnight[trade.pair][timestamp_midnight]
+            mark_prices[trade.pair].iloc[0]['open'] *
+            funding_rates[trade.pair].iloc[0]['open']
         )
     mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
-    # create_mock_trades(fee, False)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    mocker.patch(
-        'freqtrade.exchange.Exchange.get_funding_rate_history',
-        side_effect=lambda pair, since: funding_rates_eight[pair]
-    )
     if schedule_off:
         for trade in trades:
-            assert trade.funding_fees == (
-                trade.amount *
-                mark_prices[trade.pair][timestamp_midnight] *
-                funding_rates_eight[trade.pair][timestamp_midnight]
-            )
             freqtrade.execute_trade_exit(
                 trade=trade,
                 # The values of the next 2 params are irrelevant for this test
                 limit=ticker_usdt_sell_up()['bid'],
                 sell_reason=SellCheckTuple(sell_type=SellType.ROI)
             )
+            assert trade.funding_fees == pytest.approx(sum(
+                trade.amount *
+                mark_prices[trade.pair].iloc[0:2]['open'] *
+                funding_rates[trade.pair].iloc[0:2]['open']
+            ))
+
     else:
         freqtrade._schedule.run_pending()
 
     # Funding fees for 00:00 and 08:00
     for trade in trades:
-        assert trade.funding_fees == sum([
+        assert trade.funding_fees == pytest.approx(sum(
             trade.amount *
-            mark_prices[trade.pair][time] *
-            funding_rates_eight[trade.pair][time] for time in mark_prices[trade.pair].keys()
-        ])
+            mark_prices[trade.pair].iloc[0:2]['open'] * funding_rates[trade.pair].iloc[0:2]['open']
+            ))

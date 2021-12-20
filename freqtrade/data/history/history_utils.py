@@ -283,17 +283,20 @@ def refresh_backtest_ohlcv_data(exchange: Exchange, pairs: List[str], timeframes
             # Predefined candletype (and timeframe) depending on exchange
             # Downloads what is necessary to backtest based on futures data.
             timeframe = exchange._ft_has['mark_ohlcv_timeframe']
-            candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
-
-            # TODO: this could be in most parts to the above.
-            if erase:
-                if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                    logger.info(f'Deleting existing data for pair {pair}, interval {timeframe}.')
-            _download_pair_history(pair=pair, process=process,
-                                   datadir=datadir, exchange=exchange,
-                                   timerange=timerange, data_handler=data_handler,
-                                   timeframe=str(timeframe), new_pairs_days=new_pairs_days,
-                                   candle_type=candle_type)
+            fr_candle_type = CandleType.from_string(exchange._ft_has['mark_ohlcv_price'])
+            # All exchanges need FundingRate for futures trading.
+            # The timeframe is aligned to the mark-price timeframe.
+            for candle_type in (CandleType.FUNDING_RATE, fr_candle_type):
+                # TODO: this could be in most parts to the above.
+                if erase:
+                    if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+                        logger.info(
+                            f'Deleting existing data for pair {pair}, interval {timeframe}.')
+                _download_pair_history(pair=pair, process=process,
+                                       datadir=datadir, exchange=exchange,
+                                       timerange=timerange, data_handler=data_handler,
+                                       timeframe=str(timeframe), new_pairs_days=new_pairs_days,
+                                       candle_type=candle_type)
 
     return pairs_not_available
 
