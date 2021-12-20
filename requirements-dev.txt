@@ -6,7 +6,7 @@
 coveralls==3.3.1
 flake8==4.0.1
 flake8-tidy-imports==4.5.0
-mypy==0.910
+mypy==0.920
 pytest==6.2.5
 pytest-asyncio==0.16.0
 pytest-cov==3.0.0
