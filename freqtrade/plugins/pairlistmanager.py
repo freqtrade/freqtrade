@@ -42,7 +42,7 @@ class PairListManager(LoggingMixin):
         if not self._pairlist_handlers:
             raise OperationalException("No Pairlist Handlers defined")
 
-        refresh_period = config.get('refresh_period', 1800)
+        refresh_period = config.get('pairlist_refresh_period', 3600)
         LoggingMixin.__init__(self, logger, refresh_period)
 
     @property

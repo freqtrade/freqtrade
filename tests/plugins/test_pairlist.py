@@ -18,9 +18,6 @@ from tests.conftest import (create_mock_trades, get_patched_exchange, get_patche
                             log_has, log_has_re)
 
 
-logger = logging.getLogger(__name__)
-
-
 @pytest.fixture(scope="function")
 def whitelist_conf(default_conf):
     default_conf['stake_currency'] = 'BTC'
@@ -222,6 +219,7 @@ def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
 
 
 def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_conf, caplog):
+    logger = logging.getLogger(__name__)
     freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
@@ -230,6 +228,9 @@ def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_c
     )
     freqtrade.pairlists.refresh_pairlist()
     whitelist = ['ETH/BTC', 'TKN/BTC']
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+
     # Ensure all except those in whitelist are removed.
     assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
