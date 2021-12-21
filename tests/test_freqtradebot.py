@@ -5,6 +5,7 @@ import logging
 import time
 from copy import deepcopy
 from math import isclose
+from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock
 
 import arrow
@@ -26,7 +27,6 @@ from tests.conftest import (create_mock_trades, get_patched_freqtradebot, get_pa
 from tests.conftest_trades import (MOCK_TRADE_COUNT, mock_order_1, mock_order_2, mock_order_2_sell,
                                    mock_order_3, mock_order_3_sell, mock_order_4,
                                    mock_order_5_stoploss, mock_order_6_sell)
-from typing import List
 
 
 def patch_RPCManager(mocker) -> MagicMock:
