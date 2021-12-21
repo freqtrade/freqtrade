@@ -372,13 +372,17 @@ class Exchange:
 
     def _get_contract_size(self, pair: str) -> int:
         if self.trading_mode == TradingMode.FUTURES:
-            return self.markets[pair]['contract_size']
+            market = self.markets[pair]
+            contract_size = 1
+            if 'contractSize' in market and market['contractSize'] is not None:
+                contract_size = market['contractSize']
+            return contract_size
         else:
             return 1
 
     def _trades_contracts_to_amount(self, trades: List) -> List:
         if len(trades) > 0:
-            contract_size = self._get_contract_size(trades[0]['pair'])
+            contract_size = self._get_contract_size(trades[0]['symbol'])
             if contract_size != 1:
                 for trade in trades:
                     trade['amount'] = trade['amount'] * contract_size
@@ -387,10 +391,10 @@ class Exchange:
             return trades
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
-        contract_size = self._get_contract_size(order['pair'])
+        contract_size = self._get_contract_size(order['symbol'])
         if contract_size != 1:
             for prop in ['amount', 'cost', 'filled', 'remaining']:
-                if prop in order:
+                if prop in order and order[prop] is not None:
                     order[prop] = order[prop] * contract_size
         return order
 
@@ -611,7 +615,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
-        amount = self._amount_to_contract_size(pair, amount)
+        amount = self._amount_to_contracts(pair, amount)
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -670,12 +674,17 @@ class Exchange:
         limits = market['limits']
         if ('cost' in limits and 'min' in limits['cost']
                 and limits['cost']['min'] is not None):
-            min_stake_amounts.append(limits['cost']['min'])
+            min_stake_amounts.append(
+                self._contracts_to_amount(
+                    pair,
+                    limits['cost']['min']
+                )
+            )
 
         if ('amount' in limits and 'min' in limits['amount']
                 and limits['amount']['min'] is not None):
             min_stake_amounts.append(
-                self._contract_size_to_amount(
+                self._contracts_to_amount(
                     pair,
                     limits['amount']['min'] * price
                 )
@@ -715,7 +724,7 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self._contract_size_to_amount(pair, self.amount_to_precision(pair, amount))
+        _amount = self._contracts_to_amount(pair, self.amount_to_precision(pair, amount))
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -865,19 +874,19 @@ class Exchange:
             params.update({param: time_in_force})
         return params
 
-    def _amount_to_contract_size(self, pair: str, amount: float):
+    def _amount_to_contracts(self, pair: str, amount: float):
 
         if ('contractSize' in self.markets[pair]):
             return amount / self.markets[pair]['contractSize']
         else:
             return amount
 
-    def _contract_size_to_amount(self, pair: str, amount: float):
+    def _contracts_to_amount(self, pair: str, num_contracts: float):
 
         if ('contractSize' in self.markets[pair]):
-            return amount * self.markets[pair]['contractSize']
+            return num_contracts * self.markets[pair]['contractSize']
         else:
-            return amount
+            return num_contracts
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, leverage: float = 1.0, time_in_force: str = 'gtc') -> Dict:
