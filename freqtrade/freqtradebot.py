@@ -294,6 +294,7 @@ class FreqtradeBot(LoggingMixin):
                 order = trade.select_order('buy', False)
                 open_order = trade.select_order('buy', True)
                 if order and open_order is None:
+                    logger.info(f"Updating buy-fee on trade {trade} for order {order.order_id}.")
                     self.update_trade_state(trade, order.order_id, send_msg=False)
 
     def handle_insufficient_funds(self, trade: Trade):
