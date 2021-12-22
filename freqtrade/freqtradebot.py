@@ -1396,7 +1396,7 @@ class FreqtradeBot(LoggingMixin):
         # Updating wallets when order is closed
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             self.wallets.update()
-        
+
         if not trade.is_open:
             if send_msg and not stoploss_order and not trade.open_order_id:
                 self._notify_exit(trade, '', True)
