@@ -83,6 +83,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float or `"unlimited"`.
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
 | `available_capital` | Available starting capital for the bot. Useful when running multiple bots on the same exchange account.[More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float.
+| `base_stake_amount_ratio` | When using position adjustment with unlimited stakes, the strategy often requires that some funds are left for additional buy orders. You can define the ratio that the initial buy order can use from the calculated unlimited stake amount. [More information below](#configuring-amount-per-trade). <br>*Defaults to `1.0`.* <br> **Datatype:** Float (as ratio)
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
@@ -302,6 +303,14 @@ To allow the bot to trade all the available `stake_currency` in your account (mi
 !!! Note "When using Dry-Run Mode"
     When using `"stake_amount" : "unlimited",` in combination with Dry-Run, Backtesting or Hyperopt, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve.
     It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise, it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
+
+#### Dynamic stake amount with position adjustment
+When you want to use position adjustment with unlimited stakes, you must also set `base_stake_amount_ratio` to a reasonable value depending on your strategy.
+Typical value would be in the range of 0.1 - 0.5, but depends highly on your strategy and how much you wish to leave into the wallet as position adjustment buffer.
+<br>
+For example if your position adjustment assumes it can do 2 additional buys with the same stake amounts then your `base_stake_amount_ratio` should be 0.333333 (33.3333%) of your calculated unlimited stake amount.
+<br>
+Or another example if your position adjustment assumes it can do 1 additional buy with 3x the original stake amount then your `base_stake_amount_ratio` should be 0.25 (25%) of your calculated unlimited stake amount.
 
 --8<-- "includes/pricing.md"
 
