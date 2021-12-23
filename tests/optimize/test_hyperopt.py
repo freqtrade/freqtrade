@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock
 
+import os
 import pandas as pd
 import pytest
 from arrow import Arrow
@@ -169,6 +170,7 @@ def test_start_no_hyperopt_allowed(mocker, hyperopt_conf, caplog) -> None:
 
 
 def test_start_no_data(mocker, hyperopt_conf) -> None:
+    hyperopt_conf['user_data_dir'] = Path("tests")
     patched_configuration_load_config_file(mocker, hyperopt_conf)
     mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame))
     mocker.patch(
@@ -189,6 +191,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
         start_hyperopt(pargs)
 
+    os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
 
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     hyperopt_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(hyperopt_conf)))
