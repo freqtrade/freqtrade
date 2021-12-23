@@ -191,7 +191,11 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
         start_hyperopt(pargs)
 
-    os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
+    # Cleanup since that failed hyperopt start leaves a lockfile.
+    try:
+        os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
+    except Exception:
+        pass
 
 
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
