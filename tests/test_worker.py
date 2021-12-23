@@ -43,7 +43,7 @@ def test_worker_stopped(mocker, default_conf, caplog) -> None:
     worker.freqtrade.state = State.STOPPED
     state = worker._worker(old_state=State.RUNNING)
     assert state is State.STOPPED
-    assert log_has('Changing state to: STOPPED', caplog)
+    assert log_has('Changing state from RUNNING to: STOPPED', caplog)
     assert mock_throttle.call_count == 1
 
 
