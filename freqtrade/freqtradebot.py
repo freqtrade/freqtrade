@@ -494,9 +494,6 @@ class FreqtradeBot(LoggingMixin):
             # TODO: Selling part of the trade not implemented yet.
             logger.error(f"Unable to decrease trade position / sell partially"
                          f" for pair {trade.pair}, feature not implemented.")
-            return
-
-        return
 
     def _check_depth_of_market_buy(self, pair: str, conf: Dict) -> bool:
         """
