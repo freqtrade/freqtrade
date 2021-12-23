@@ -193,6 +193,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
 
     os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
 
+
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
     hyperopt_mock = MagicMock(side_effect=Timeout(Hyperopt.get_lock_filename(hyperopt_conf)))
     patched_configuration_load_config_file(mocker, hyperopt_conf)
