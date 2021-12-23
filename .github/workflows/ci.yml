@@ -101,16 +101,13 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI ${{ matrix.os }}*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Freqtrade CI failed on ${{ matrix.os }}
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   build_macos:
     runs-on: ${{ matrix.os }}
@@ -194,17 +191,13 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI ${{ matrix.os }}*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
-
+          severity: error
+          details: Test Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   build_windows:
 
@@ -257,16 +250,13 @@ jobs:
       run: |
         mypy freqtrade scripts
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI windows*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Test Failed
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   docs_check:
     runs-on: ubuntu-20.04
@@ -288,14 +278,13 @@ jobs:
         pip install mkdocs
         mkdocs build
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade Docs*'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: error
+          details: Freqtrade doc test failed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup-prior-runs:
     runs-on: ubuntu-20.04
@@ -306,7 +295,7 @@ jobs:
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-  # Notify on slack only once - when CI completes (and after deploy) in case it's successfull
+  # Notify only once - when CI completes (and after deploy) in case it's successfull
   notify-complete:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
     runs-on: ubuntu-20.04
@@ -320,14 +309,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: always() && steps.check.outputs.has-permission && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI*'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: info
+          details: Test Completed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
   deploy:
     needs: [ build_linux, build_macos, build_windows, docs_check ]
@@ -400,17 +388,13 @@ jobs:
       run: |
         build_helpers/publish_docker_multi.sh
 
-
-    - name: Slack Notification
-      uses: lazy-actions/slatify@v3.0.0
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@v1
       if: always() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-        type: ${{ job.status }}
-        job_name: '*Freqtrade CI Deploy*'
-        mention: 'here'
-        mention_if: 'failure'
-        channel: '#notifications'
-        url: ${{ secrets.SLACK_WEBHOOK }}
+          severity: info
+          details: Deploy Succeeded!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
 
 
   deploy_arm:
