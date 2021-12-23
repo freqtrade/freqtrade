@@ -1,9 +1,9 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import os
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock
 
-import os
 import pandas as pd
 import pytest
 from arrow import Arrow
