@@ -253,6 +253,8 @@ class DigDeeperStrategy(IStrategy):
     stoploss = -0.30
     
     max_dca_orders = 3
+    # This number is explained a bit further down
+    max_dca_multiplier = 5.5
     
     # ... populate_* methods
     
@@ -262,7 +264,7 @@ class DigDeeperStrategy(IStrategy):
                             **kwargs) -> float:
                             
         if self.config['stake_amount'] == 'unlimited':
-            return proposed_stake / 5.5
+            return proposed_stake / self.max_dca_multiplier
 
         # Use default stake amount.
         return proposed_stake
@@ -306,10 +308,15 @@ class DigDeeperStrategy(IStrategy):
         # If that falles down to -5% again, we buy 1.5x more
         # If that falles once again down to -5%, we buy 1.75x more
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
+        # That is why max_dca_multiplier is 5.5
         # Hope you have a deep wallet!
         if 0 < count_of_buys <= self.max_dca_orders:
             try:
+                # This returns max stakes for one trade
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+                # This calculates base order size
+                stake_amount = stake_amount / self.max_dca_multiplier
+                # This then calculates current safety order size
                 stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
                 return stake_amount
             except Exception as exception:
