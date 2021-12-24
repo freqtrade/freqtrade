@@ -6,6 +6,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 
@@ -50,6 +51,9 @@ class StrategyTestV2(IStrategy):
         'buy': 'gtc',
         'sell': 'gtc',
     }
+
+    # By default this strategy does not use Position Adjustments
+    position_adjustment_enable = False
 
     def informative_pairs(self):
         """
@@ -162,10 +166,9 @@ class StrategyTestV2(IStrategy):
                               current_rate: float, current_profit: float, **kwargs):
 
         if current_profit < -0.0075:
-            for order in trade.orders:
-                if order.ft_is_open:
-                    return None
-
-            return self.wallets.get_trade_stake_amount(pair, None)
+            try:
+                return self.wallets.get_trade_stake_amount(pair, None)
+            except DependencyException:
+                pass
 
         return None

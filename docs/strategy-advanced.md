@@ -232,14 +232,13 @@ merged_frame = pd.concat(frames, axis=1)
 
 ## Adjust trade position
 
+The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in strategy.
+For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
 `adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging) for example.
 The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
 If there is not enough funds in the wallet then nothing will happen.
 Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
-Unlimited stake amount with trade position increasing is highly not recommended as your DCA orders would compete with your normal trade open orders.
-
-!!! Note
-    The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
+Using unlimited stake amount with DCA orders requires you to also implement `custom_stake_amount` callback to avoid allocating all funcds to initial order.
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.
@@ -253,8 +252,21 @@ class DigDeeperStrategy(IStrategy):
     # Attempts to handle large drops with DCA. High stoploss is required.
     stoploss = -0.30
     
+    max_dca_orders = 3
+    
     # ... populate_* methods
+    
+    # Let unlimited stakes leave funds open for DCA orders
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+                            
+        if self.config['stake_amount'] == 'unlimited':
+            return proposed_stake / 5.5
 
+        # Use default stake amount.
+        return proposed_stake
+        
     def adjust_trade_position(self, pair: str, trade: Trade,
                               current_time: datetime, current_rate: float, current_profit: float,
                                   **kwargs) -> Optional[float]:
@@ -270,7 +282,7 @@ class DigDeeperStrategy(IStrategy):
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
         """
-
+        
         if current_profit > -0.05:
             return None
 
@@ -285,9 +297,6 @@ class DigDeeperStrategy(IStrategy):
 
         count_of_buys = 0
         for order in trade.orders:
-            # Instantly stop when there's an open order
-            if order.ft_is_open:
-                return None
             if order.ft_order_side == 'buy' and order.status == "closed":
                 count_of_buys += 1
 
@@ -298,7 +307,7 @@ class DigDeeperStrategy(IStrategy):
         # If that falles once again down to -5%, we buy 1.75x more
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
         # Hope you have a deep wallet!
-        if 0 < count_of_buys <= 3:
+        if 0 < count_of_buys <= self.max_dca_orders:
             try:
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None)
                 stake_amount = stake_amount * (1 + (count_of_buys * 0.25))

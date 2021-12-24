@@ -83,7 +83,6 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `stake_amount` | **Required.** Amount of crypto-currency your bot will use for each trade. Set it to `"unlimited"` to allow the bot to use all available balance. [More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float or `"unlimited"`.
 | `tradable_balance_ratio` | Ratio of the total account balance the bot is allowed to trade. [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.99` 99%).*<br> **Datatype:** Positive float between `0.1` and `1.0`.
 | `available_capital` | Available starting capital for the bot. Useful when running multiple bots on the same exchange account.[More information below](#configuring-amount-per-trade). <br> **Datatype:** Positive float.
-| `base_stake_amount_ratio` | When using position adjustment with unlimited stakes, the strategy often requires that some funds are left for additional buy orders. You can define the ratio that the initial buy order can use from the calculated unlimited stake amount. [More information below](#configuring-amount-per-trade). <br>*Defaults to `1.0`.* <br> **Datatype:** Float (as ratio)
 | `amend_last_stake_amount` | Use reduced last stake amount if necessary. [More information below](#configuring-amount-per-trade). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `last_stake_amount_min_ratio` | Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if `amend_last_stake_amount` is set to `true`). [More information below](#configuring-amount-per-trade). <br>*Defaults to `0.5`.* <br> **Datatype:** Float (as ratio)
 | `amount_reserve_percent` | Reserve some amount in min pair stake amount. The bot will reserve `amount_reserve_percent` + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br>*Defaults to `0.05` (5%).* <br> **Datatype:** Positive Float as ratio.
@@ -173,7 +172,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
-| `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). More information below. <br> **Datatype:** Boolean
+| `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.*<br> **Datatype:** Boolean
 
 ### Parameters in the strategy
 
@@ -198,6 +197,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `sell_profit_offset`
 * `ignore_roi_if_buy_signal`
 * `ignore_buying_expired_candle_after`
+* `position_adjustment_enable`
 
 ### Configuring amount per trade
 
@@ -593,15 +593,6 @@ export HTTP_PROXY="http://addr:port"
 export HTTPS_PROXY="http://addr:port"
 freqtrade
 ```
-
-### Understand position_adjustment_enable
-
-The `position_adjustment_enable` configuration parameter enables the usage of `adjust_trade_position()` callback in strategy.
-For performance reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
-Enabling this does nothing unless the strategy also implements `adjust_trade_position()` callback.
-
-See [the strategy callbacks](strategy-callbacks.md) for details on usage.
-
 
 ## Next step
 

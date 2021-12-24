@@ -185,16 +185,6 @@ class Wallets:
 
         possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
 
-        # Position Adjustment dynamic base order size
-        try:
-            if self._config.get('position_adjustment_enable', False):
-                base_stake_amount_ratio = self._config.get('base_stake_amount_ratio', 1.0)
-                if base_stake_amount_ratio > 0.0:
-                    possible_stake = possible_stake * base_stake_amount_ratio
-        except Exception as e:
-            logger.warning("Invalid base_stake_amount_ratio", e)
-            return 0
-
         # Theoretical amount can be above available amount - therefore limit to available amount!
         return min(possible_stake, available_amount)
 

@@ -102,9 +102,6 @@ class FreqtradeBot(LoggingMixin):
         self._exit_lock = Lock()
         LoggingMixin.__init__(self, logger, timeframe_to_seconds(self.strategy.timeframe))
 
-        # Is Position Adjustment enabled?
-        self.position_adjustment = bool(self.config.get('position_adjustment_enable', False))
-
     def notify_status(self, msg: str) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -182,7 +179,7 @@ class FreqtradeBot(LoggingMixin):
             self.exit_positions(trades)
 
         # Check if we need to adjust our current positions before attempting to buy new trades.
-        if self.position_adjustment:
+        if self.strategy.position_adjustment_enable:
             self.process_open_trade_positions()
 
         # Then looking for buy opportunities
@@ -460,26 +457,25 @@ class FreqtradeBot(LoggingMixin):
         """
         # Walk through each pair and check if it needs changes
         for trade in Trade.get_open_trades():
+            # If there is any open orders, wait for them to finish.
+            for order in trade.orders:
+                if order.ft_is_open:
+                    break
             try:
-                self.adjust_trade_position(trade)
+                self.check_and_call_adjust_trade_position(trade)
             except DependencyException as exception:
                 logger.warning('Unable to adjust position of trade for %s: %s',
                                trade.pair, exception)
 
-    def adjust_trade_position(self, trade: Trade):
+    def check_and_call_adjust_trade_position(self, trade: Trade):
         """
         Check the implemented trading strategy for adjustment command.
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        # If there is any open orders, wait for them to finish.
-        for order in trade.orders:
-            if order.ft_is_open:
-                return
-
-        logger.debug(f"adjust_trade_position for pair {trade.pair}")
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
+        logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
             pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc),

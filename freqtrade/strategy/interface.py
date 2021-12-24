@@ -106,6 +106,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     sell_profit_offset: float
     ignore_roi_if_buy_signal: bool
 
+    # Position adjustment is disabled by default
+    position_adjustment_enable: bool = False
+
     # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
 

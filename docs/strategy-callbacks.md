@@ -572,54 +572,10 @@ class AwesomeStrategy(IStrategy):
 
 ## Adjust trade position
 
-`adjust_trade_position()` can be used to perform additional orders to manage risk with DCA (Dollar Cost Averaging).
+The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in strategy.
+For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
+Enabling this does nothing unless the strategy also implements `adjust_trade_position()` callback.
+`adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging).
 The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
-If there is not enough funds in the wallet then nothing will happen.
-Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
-Unlimited stake amount with trade position increasing is highly not recommended as your DCA orders would compete with your normal trade open orders.
 
-!!! Note
-    Current implementation does not support decreasing position size with partial sales!
-
-!!! Tip
-    The `position_adjustment_enable` configuration parameter must be enabled to use adjust_trade_position callback in strategy.
-
-!!! Warning
-    Stoploss is still calculated from the initial opening price, not averaged price.
-    So if you do 3 additional buys at -7% and have a stoploss at -10% then you will most likely trigger stoploss while the UI will be showing you an average profit of -3%.
-
-``` python
-from freqtrade.persistence import Trade
-
-
-class AwesomeStrategy(IStrategy):
-
-    # ... populate_* methods
-
-    def adjust_trade_position(self, pair: str, trade: Trade,
-                              current_time: datetime, current_rate: float, current_profit: float,
-                                  **kwargs) -> Optional[float]:
-        """
-        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
-        This means extra buy orders with additional fees.
-        
-        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
-
-        When not implemented by a strategy, returns None
-
-        :param pair: Pair that's currently analyzed
-        :param trade: trade object.
-        :param current_time: datetime object, containing the current datetime
-        :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
-        :param current_profit: Current profit (as ratio), calculated based on current_rate.
-        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        :return float: Stake amount to adjust your trade
-        """
-        
-        # Example: If 10% loss / -10% profit then buy more the same amount we had before.
-        if current_profit < -0.10:
-            return trade.stake_amount
-        
-        return None
-
-```
+[See Advanced Strategies for an example](strategy-advanced.md#adjust-trade-position)

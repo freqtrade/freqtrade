@@ -17,7 +17,6 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
     default_conf.update({
-        "position_adjustment_enable": True,
         "stake_amount": 100.0,
         "dry_run_wallet": 1000.0,
         "strategy": "StrategyTestV2"
@@ -28,6 +27,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
     timerange = TimeRange('date', None, 1517227800, 0)
     data = history.load_data(datadir=testdatadir, timeframe='5m', pairs=['UNITTEST/BTC'],
                              timerange=timerange)
+    backtesting.strategy.position_adjustment_enable = True
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     result = backtesting.backtest(
