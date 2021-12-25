@@ -1,4 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
+import os
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock
@@ -169,6 +170,7 @@ def test_start_no_hyperopt_allowed(mocker, hyperopt_conf, caplog) -> None:
 
 
 def test_start_no_data(mocker, hyperopt_conf) -> None:
+    hyperopt_conf['user_data_dir'] = Path("tests")
     patched_configuration_load_config_file(mocker, hyperopt_conf)
     mocker.patch('freqtrade.data.history.load_pair_history', MagicMock(return_value=pd.DataFrame))
     mocker.patch(
@@ -188,6 +190,12 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
     pargs = get_args(args)
     with pytest.raises(OperationalException, match='No data found. Terminating.'):
         start_hyperopt(pargs)
+
+    # Cleanup since that failed hyperopt start leaves a lockfile.
+    try:
+        os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
+    except Exception:
+        pass
 
 
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
