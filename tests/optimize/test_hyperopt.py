@@ -192,7 +192,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
 
     # Cleanup since that failed hyperopt start leaves a lockfile.
     try:
-        Path(Hyperopt.get_lock_filename(hyperopt_conf)).unlink(missing_ok=True)
+        Path(Hyperopt.get_lock_filename(hyperopt_conf)).unlink()
     except Exception:
         pass
 
