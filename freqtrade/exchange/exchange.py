@@ -904,17 +904,16 @@ class Exchange:
             rate_for_order = self.price_to_precision(pair, rate) if needs_price else None
 
             self._lev_prep(pair, leverage)
-            order = self._order_contracts_to_amount(
-                self._api.create_order(
-                    pair,
-                    ordertype,
-                    side,
-                    amount,
-                    rate_for_order,
-                    params
-                )
+            order = self._api.create_order(
+                pair,
+                ordertype,
+                side,
+                amount,
+                rate_for_order,
+                params
             )
             self._log_exchange_response('create_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
 
         except ccxt.InsufficientFunds as e:
@@ -961,10 +960,9 @@ class Exchange:
         if self._config['dry_run']:
             return self.fetch_dry_run_order(order_id)
         try:
-            order = self._order_contracts_to_amount(
-                self._api.fetch_order(order_id, pair)
-            )
+            order = self._api.fetch_order(order_id, pair)
             self._log_exchange_response('fetch_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
         except ccxt.OrderNotFound as e:
             raise RetryableOrderError(
@@ -1017,10 +1015,9 @@ class Exchange:
                 return {}
 
         try:
-            order = self._order_contracts_to_amount(
-                self._api.cancel_order(order_id, pair)
-            )
+            order = self._api.cancel_order(order_id, pair)
             self._log_exchange_response('cancel_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
@@ -1292,6 +1289,9 @@ class Exchange:
             )
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
+
+            matched_trades = self._trades_contracts_to_amount(matched_trades)
+
             return matched_trades
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -1313,7 +1313,7 @@ class Exchange:
             # validate that markets are loaded before trying to get fee
             if self._api.markets is None or len(self._api.markets) == 0:
                 self._api.load_markets()
-            # TODO-lev: Convert this amount to contract size?
+
             return self._api.calculate_fee(symbol=symbol, type=type, side=side, amount=amount,
                                            price=price, takerOrMaker=taker_or_maker)['rate']
         except ccxt.DDoSProtection as e:
@@ -1626,18 +1626,15 @@ class Exchange:
             # fetch trades asynchronously
             if params:
                 logger.debug("Fetching trades for pair %s, params: %s ", pair, params)
-                trades = self._trades_contracts_to_amount(
-                    trades=await self._api_async.fetch_trades(pair, params=params, limit=1000),
-                )
+                trades = await self._api_async.fetch_trades(pair, params=params, limit=1000)
             else:
                 logger.debug(
                     "Fetching trades for pair %s, since %s %s...",
                     pair,  since,
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
-                trades = self._trades_contracts_to_amount(
-                    trades=await self._api_async.fetch_trades(pair, since=since, limit=1000),
-                )
+                trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
+            trades = self._trades_contracts_to_amount(trades)
             return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(

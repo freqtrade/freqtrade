@@ -331,11 +331,11 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
     assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
 
 
-def test_get_min_pair_stake_amount(mocker, default_conf, markets) -> None:
+def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     stoploss = -0.05
-    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}, }
+    markets = {'ETH/BTC': {'symbol': 'ETH/BTC'}}
 
     # no pair found
     mocker.patch(
@@ -1223,6 +1223,7 @@ def test_buy_prod(default_conf, mocker, exchange_name):
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }
@@ -1298,6 +1299,7 @@ def test_buy_considers_time_in_force(default_conf, mocker, exchange_name):
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }
@@ -1360,6 +1362,7 @@ def test_sell_prod(default_conf, mocker, exchange_name):
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }
@@ -1426,6 +1429,7 @@ def test_sell_considers_time_in_force(default_conf, mocker, exchange_name):
     order_id = 'test_prod_sell_{}'.format(randint(0, 10 ** 6))
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }
@@ -2582,31 +2586,23 @@ def test_cancel_order_with_result_error(default_conf, mocker, exchange_name, cap
 
 
 # Ensure that if not dry_run, we should call API
-@pytest.mark.parametrize("trading_mode,amount", [
-    ('spot', 2),
-    ('futures', 20),
-])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_cancel_order(default_conf, mocker, exchange_name, trading_mode, amount):
+def test_cancel_order(default_conf, mocker, exchange_name):
     default_conf['dry_run'] = False
-    default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
     api_mock = MagicMock()
-    api_mock.cancel_order = MagicMock(
-        return_value={'id': '123', 'amount': 2, 'symbol': 'ETH/USDT:USDT'})
+    api_mock.cancel_order = MagicMock(return_value={'id': '123'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.cancel_order(
-        order_id='_', pair='ETH/USDT:USDT') == {'id': '123', 'amount': amount, 'symbol': 'ETH/USDT:USDT'}
+    assert exchange.cancel_order(order_id='_', pair='TKN/BTC') == {'id': '123'}
 
     with pytest.raises(InvalidOrderException):
         api_mock.cancel_order = MagicMock(side_effect=ccxt.InvalidOrder("Did not find order"))
         exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-        exchange.cancel_order(order_id='_', pair='ETH/USDT:USDT')
+        exchange.cancel_order(order_id='_', pair='TKN/BTC')
     assert api_mock.cancel_order.call_count == 1
 
     ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
                            "cancel_order", "cancel_order",
-                           order_id='_', pair='ETH/USDT:USDT')
+                           order_id='_', pair='TKN/BTC')
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -2668,16 +2664,13 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
         exchange.cancel_stoploss_order_with_result(order_id='_', pair='TKN/BTC', amount=123)
 
 
-@pytest.mark.parametrize("trading_mode,amount", [
-    ('spot', 2),
-    ('futures', 20),
-])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-def test_fetch_order(default_conf, mocker, exchange_name, caplog, trading_mode, amount):
+def test_fetch_order(default_conf, mocker, exchange_name, caplog):
     default_conf['dry_run'] = True
     default_conf['exchange']['log_responses'] = True
     order = MagicMock()
     order.myid = 123
+    order.symbol = 'TKN/BTC'
 
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     exchange._dry_run_open_orders['X'] = order
@@ -2687,17 +2680,13 @@ def test_fetch_order(default_conf, mocker, exchange_name, caplog, trading_mode, 
         exchange.fetch_order('Y', 'TKN/BTC')
 
     default_conf['dry_run'] = False
-    default_conf['trading_mode'] = trading_mode
-    default_conf['collateral'] = 'isolated'
     api_mock = MagicMock()
-    api_mock.fetch_order = MagicMock(
-        return_value={'id': '123', 'amount': 2, 'symbol': 'ETH/USDT:USDT'})
+    api_mock.fetch_order = MagicMock(return_value={'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
     assert exchange.fetch_order(
-        'X', 'TKN/BTC') == {'id': '123', 'amount': amount, 'symbol': 'ETH/USDT:USDT'}
+        'X', 'TKN/BTC') == {'id': '123', 'amount': 2, 'symbol': 'TKN/BTC'}
     assert log_has(
-        ("API fetch_order: {\'id\': \'123\', \'amount\': "
-         + str(amount) + ", \'symbol\': \'ETH/USDT:USDT\'}"
+        ("API fetch_order: {\'id\': \'123\', \'amount\': 2, \'symbol\': \'TKN/BTC\'}"
          ),
         caplog
     )
@@ -2744,9 +2733,9 @@ def test_fetch_stoploss_order(default_conf, mocker, exchange_name):
 
     default_conf['dry_run'] = False
     api_mock = MagicMock()
-    api_mock.fetch_order = MagicMock(return_value=456)
+    api_mock.fetch_order = MagicMock(return_value={'id': '123', 'symbol': 'TKN/BTC'})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange_name)
-    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == 456
+    assert exchange.fetch_stoploss_order('X', 'TKN/BTC') == {'id': '123', 'symbol': 'TKN/BTC'}
 
     with pytest.raises(InvalidOrderException):
         api_mock.fetch_order = MagicMock(side_effect=ccxt.InvalidOrder("Order not found"))
