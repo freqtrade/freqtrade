@@ -1,5 +1,4 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-import os
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import ANY, MagicMock
@@ -192,10 +191,7 @@ def test_start_no_data(mocker, hyperopt_conf) -> None:
         start_hyperopt(pargs)
 
     # Cleanup since that failed hyperopt start leaves a lockfile.
-    try:
-        os.unlink(Hyperopt.get_lock_filename(hyperopt_conf))
-    except Exception:
-        pass
+    Path(Hyperopt.get_lock_filename(hyperopt_conf)).unlink(missing_ok=True)
 
 
 def test_start_filelock(mocker, hyperopt_conf, caplog) -> None:
