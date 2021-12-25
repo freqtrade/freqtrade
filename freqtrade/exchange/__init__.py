@@ -5,6 +5,7 @@ from freqtrade.exchange.exchange import Exchange
 # isort: on
 from freqtrade.exchange.bibox import Bibox
 from freqtrade.exchange.binance import Binance
+from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bittrex import Bittrex
 from freqtrade.exchange.bybit import Bybit
 from freqtrade.exchange.coinbasepro import Coinbasepro
