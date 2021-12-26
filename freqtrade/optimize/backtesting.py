@@ -353,11 +353,6 @@ class Backtesting:
     def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
                                            ) -> LocalTrade:
 
-        # If there is any open orders, wait for them to finish.
-        for order in trade.orders:
-            if order.ft_is_open:
-                return trade
-
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
