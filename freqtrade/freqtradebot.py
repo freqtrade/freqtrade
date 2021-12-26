@@ -593,6 +593,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
+        # This is a new trade
         if trade is None:
             trade = Trade(
                 pair=pair,
@@ -607,14 +608,17 @@ class FreqtradeBot(LoggingMixin):
                 open_date=datetime.utcnow(),
                 exchange=self.exchange.id,
                 open_order_id=order_id,
+                fee_open_currency=None,
                 strategy=self.strategy.get_strategy_name(),
                 buy_tag=buy_tag,
                 timeframe=timeframe_to_minutes(self.config['timeframe'])
             )
+        else:
+            # This is additional buy, we reset fee_open_currency so timeout checking can work
+            trade.is_open = True
+            trade.fee_open_currency = None
+            trade.open_order_id = order_id
 
-        trade.is_open = True
-        trade.fee_open_currency = None
-        trade.open_order_id = order_id
         trade.orders.append(order_obj)
         trade.recalc_trade_from_orders()
         Trade.query.session.add(trade)
@@ -1389,8 +1393,11 @@ class FreqtradeBot(LoggingMixin):
         Trade.commit()
         logger.info(f"Trade has been updated: {trade}")
 
-        # Updating wallets when order is closed
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
+            # If a buy order was closed, force update on stoploss on exchange
+            if order['side'] == 'buy':
+                trade = self.cancel_stoploss_on_exchange(trade)
+            # Updating wallets when order is closed
             self.wallets.update()
 
         if not trade.is_open:
