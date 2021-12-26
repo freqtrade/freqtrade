@@ -4432,11 +4432,11 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert order
     assert order.order_id == '650'
 
-    def make_sure_its_651(*apos, **kwargs):
+    def make_sure_its_651(*args, **kwargs):
 
-        if apos[0] == '650':
+        if args[0] == '650':
             return closed_successful_buy_order
-        if apos[0] == '651':
+        if args[0] == '651':
             return open_dca_order_1
         return None
 

@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime, timezone
 from math import isclose
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import arrow
 
@@ -650,7 +650,9 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
         return trade
 
-    def get_valid_enter_price_and_stake(self, pair, price, stake_amount, trade):
+    def get_valid_enter_price_and_stake(
+            self, pair: str, price: Optional[float], stake_amount: float,
+            trade: Optional[Trade]) -> Tuple[float, float]:
         if price:
             enter_limit_requested = price
         else:

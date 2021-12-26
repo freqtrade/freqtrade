@@ -238,7 +238,7 @@ For performance reasons, it's disabled by default and freqtrade will show a warn
 The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
 If there is not enough funds in the wallet then nothing will happen.
 Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
-Using unlimited stake amount with DCA orders requires you to also implement `custom_stake_amount` callback to avoid allocating all funcds to initial order.
+Using unlimited stake amount with DCA orders requires you to also implement `custom_stake_amount` callback to avoid allocating all funds to initial order.
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.
@@ -305,8 +305,8 @@ class DigDeeperStrategy(IStrategy):
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
         # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
-        # If that falles down to -5% again, we buy 1.5x more
-        # If that falles once again down to -5%, we buy 1.75x more
+        # If that falls down to -5% again, we buy 1.5x more
+        # If that falls once again down to -5%, we buy 1.75x more
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
         # That is why max_dca_multiplier is 5.5
         # Hope you have a deep wallet!
