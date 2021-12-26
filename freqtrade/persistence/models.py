@@ -424,7 +424,6 @@ class LocalTrade():
             # Update open rate and actual amount
             self.open_rate = float(safe_value_fallback(order, 'average', 'price'))
             self.amount = float(safe_value_fallback(order, 'filled', 'amount'))
-            self.recalc_open_trade_value()
             if self.is_open:
                 logger.info(f'{order_type.upper()}_BUY has been fulfilled for {self}.')
             self.open_order_id = None
