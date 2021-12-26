@@ -1370,7 +1370,6 @@ class FreqtradeBot(LoggingMixin):
 
         logger.info(f"Updating order from exchange: {order}")
         trade.update_order(order)
-        trade.recalc_trade_from_orders()
 
         if self.exchange.check_order_canceled_empty(order):
             # Trade has been cancelled on exchange
@@ -1384,7 +1383,6 @@ class FreqtradeBot(LoggingMixin):
                            abs_tol=constants.MATH_CLOSE_PREC):
                 order['amount'] = new_amount
                 order.pop('filled', None)
-                trade.recalc_open_trade_value()
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
