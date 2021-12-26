@@ -4,7 +4,6 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime, timedelta
-from functools import reduce
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, PropertyMock
 
@@ -49,44 +48,35 @@ def pytest_configure(config):
         setattr(config.option, 'markexpr', 'not longrun')
 
 
-def log_contains(line, logs, count=False):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'spamfoobar')
-    # and we want to check if line ('foo', for example) is contained in the tuple.
-    return any(line in logger_name or line in message
-               for logger_name, level, message in logs.record_tuples)
+def log_contains(line, logs):
+    """Check if line is contained in some caplog's message."""
+    return any(line in message for message in logs.messages)
 
 
 def log_has(line, logs):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
-    # and we want to match line against foobar in the tuple
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs.record_tuples),
-                  False)
+    """Check if line is found on some caplog's message."""
+    return any(line == message for message in logs.messages)
 
 
 def log_has_re(line, logs):
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: re.match(line, x[2]), logs.record_tuples),
-                  False)
+    """Check if line matches some caplog's message."""
+    return any(re.match(line, message) for message in logs.messages)
 
 
-def num_log_contains(line, logs, count=False):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'spamfoobar')
-    # and we want to check how many times line ('foo', for example) is contained in the tuples.
-    return sum(line in logger_name or line in message
-               for logger_name, level, message in logs.record_tuples)
+def num_log_contains(line, logs):
+    """Check how many times line is contained in caplog's messages."""
+    # We want to check how many times line ('foo', for example) is contained in caplog's messages.
+    return sum(line in message for message in logs.messages)
 
 
-def num_log_has(line, logs, count=False):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
-    # and we want to check how many times line is presente in the tuples.
+def num_log_has(line, logs):
+    """Check how many times line is found in caplog's messages."""
     return sum(line == logger_name or line == message
                for logger_name, level, message in logs.record_tuples)
 
 
-def num_log_has_re(line, logs, count=False):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
-    # and we want to check how many times line matches in the tuples.
+def num_log_has_re(line, logs):
+    """Check how many times line matches caplog's messages."""
     return sum(re.match(line, logger_name) or re.match(line, message)
                for logger_name, level, message in logs.record_tuples)
 

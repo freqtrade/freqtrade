@@ -237,15 +237,11 @@ def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_c
     # Ensure that log message wasn't generated.
     assert not log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...', caplog)
 
-    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
-    # Ensure that the pair is removed from the white list, and properly logged.
-    assert set(whitelist) == set(new_whitelist)
-    assert num_log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...',
-                       caplog) == 1
-
-    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
-    # Ensure that the pair is not logged anymore when being removed from the pair list.
-    assert set(whitelist) == set(new_whitelist)
+    for _ in range(3):
+        new_whitelist = freqtrade.pairlists.verify_blacklist(
+            whitelist + ['BLK/BTC'], logger.warning)
+        # Ensure that the pair is removed from the white list, and properly logged.
+        assert set(whitelist) == set(new_whitelist)
     assert num_log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...',
                        caplog) == 1
 

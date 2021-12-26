@@ -76,16 +76,13 @@ def calculate_backoff(retrycount, max_retries):
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
-        self = args[0]  # Extract the exchange instance.
-        kucoin = self.name == "Kucoin"
+        kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:
-            message = f'{f.__name__}() returned exception: "{ex}"'
-            (log_once_warning if kucoin else logger.warning)(message)
+            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
             if count > 0:
-                message = f'retrying {f.__name__}() still for {count} times'
-                (log_once_warning if kucoin else logger.warning)(message)
+                logger.warning('retrying %s() still for %s times', f.__name__, count)
                 count -= 1
                 kwargs['count'] = count
                 if isinstance(ex, DDosProtection):
@@ -97,13 +94,11 @@ def retrier_async(f):
                             f"{count} tries left before giving up")
                     else:
                         backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
-                        message = f"Applying DDosProtection backoff delay: {backoff_delay}"
-                        (log_once_info if kucoin else logger.info)(message)
+                        logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
                         await asyncio.sleep(backoff_delay)
                 return await wrapper(*args, **kwargs)
             else:
-                message = f'Giving up retrying: {f.__name__}()'
-                (log_once_warning if kucoin else logger.warning)(message)
+                logger.warning('Giving up retrying: %s()', f.__name__)
                 raise ex
     return wrapper
 
