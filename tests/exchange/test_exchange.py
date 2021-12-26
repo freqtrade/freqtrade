@@ -20,7 +20,8 @@ from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes,
                                          timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re
+from tests.conftest import (get_mock_coro, get_patched_exchange, log_contains, log_has, log_has_re,
+                            num_log_contains)
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
@@ -1745,8 +1746,8 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
 
-    assert not log_has_re('Kucoin 429 error, avoid triggering DDosProtection backoff delay.*',
-                          caplog)
+    assert not log_contains('Kucoin 429 error, avoid triggering DDosProtection backoff delay',
+                            caplog)
 
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
@@ -1757,18 +1758,12 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
             exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
             await exchange._async_get_candle_history(
                 'ETH/BTC', "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=1)
-    logs_found = sum('_async_get_candle_history() returned exception: "kucoin GET ' in message
-                     for message in caplog.messages)
-    assert logs_found == 1
-    logs_found = sum('retrying _async_get_candle_history() still for ' in message
-                     for message in caplog.messages)
-    assert logs_found == 1
-    logs_found = sum("Kucoin 429 error, avoid triggering DDosProtection backoff delay" in message
-                     for message in caplog.messages)
-    assert logs_found == 1
-    logs_found = sum(message == 'Giving up retrying: _async_get_candle_history()'
-                     for message in caplog.messages)
-    assert logs_found == 1
+    assert num_log_contains('_async_get_candle_history() returned exception: "kucoin GET ',
+                            caplog) == 1
+    assert num_log_contains('retrying _async_get_candle_history() still for ', caplog) == 1
+    assert num_log_contains("Kucoin 429 error, avoid triggering DDosProtection backoff delay",
+                            caplog) == 1
+    assert num_log_contains('Giving up retrying: _async_get_candle_history()', caplog) == 1
 
     mocker.patch('freqtrade.exchange.common.calculate_backoff', MagicMock(return_value=0.01))
     for _ in range(3):
@@ -1780,9 +1775,7 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
             exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
             await exchange._async_get_candle_history(
                 'ETH/BTC', "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=1)
-    logs_found = sum('Applying DDosProtection backoff delay: ' in message
-                     for message in caplog.messages)
-    assert logs_found == 1
+    assert num_log_contains('Applying DDosProtection backoff delay: ', caplog) == 1
 
 
 @pytest.mark.asyncio
