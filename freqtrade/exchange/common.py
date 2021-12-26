@@ -9,6 +9,7 @@ from freqtrade.mixins import LoggingMixin
 
 logger = logging.getLogger(__name__)
 logging_mixin = LoggingMixin(logger)
+log_once_info = partial(logging_mixin.log_once, logmethod=logger.info)
 log_once_warning = partial(logging_mixin.log_once, logmethod=logger.warning)
 
 
@@ -75,16 +76,20 @@ def calculate_backoff(retrycount, max_retries):
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
+        self = args[0]  # Extract the exchange instance.
+        kucoin = self.name == "Kucoin"
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
+            message = f'{f.__name__}() returned exception: "{ex}"'
+            (log_once_warning if kucoin else logger.warning)(message)
             if count > 0:
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
+                message = f'retrying {f.__name__}() still for {count} times'
+                (log_once_warning if kucoin else logger.warning)(message)
                 count -= 1
-                kwargs.update({'count': count})
+                kwargs['count'] = count
                 if isinstance(ex, DDosProtection):
-                    if "kucoin" in str(ex) and "429000" in str(ex):
+                    if kucoin and "429000" in str(ex):
                         # Temporary fix for 429000 error on kucoin
                         # see https://github.com/freqtrade/freqtrade/issues/5700 for details.
                         log_once_warning(
@@ -92,11 +97,13 @@ def retrier_async(f):
                             f"{count} tries left before giving up")
                     else:
                         backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
-                        logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
+                        message = f"Applying DDosProtection backoff delay: {backoff_delay}"
+                        (log_once_info if kucoin else logger.info)(message)
                         await asyncio.sleep(backoff_delay)
                 return await wrapper(*args, **kwargs)
             else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
+                message = f'Giving up retrying: {f.__name__}()'
+                (log_once_warning if kucoin else logger.warning)(message)
                 raise ex
     return wrapper
 
