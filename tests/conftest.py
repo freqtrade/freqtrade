@@ -71,14 +71,12 @@ def num_log_contains(line, logs):
 
 def num_log_has(line, logs):
     """Check how many times line is found in caplog's messages."""
-    return sum(line == logger_name or line == message
-               for logger_name, level, message in logs.record_tuples)
+    return sum(line == message for logger_name, level, message in logs.record_tuples)
 
 
 def num_log_has_re(line, logs):
     """Check how many times line matches caplog's messages."""
-    return sum(re.match(line, logger_name) or re.match(line, message)
-               for logger_name, level, message in logs.record_tuples)
+    return sum(re.match(line, message) for logger_name, level, message in logs.record_tuples)
 
 
 def get_args(args):
