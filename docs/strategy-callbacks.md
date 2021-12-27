@@ -579,8 +579,9 @@ The strategy is expected to return a stake_amount if and when an additional buy 
 If there is not enough funds in the wallet then nothing will happen.
 Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
 
-!!! Note About stake size
+!!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order just like without position adjustment.
+    If you wish to buy additional orders with DCA then make sure to leave enough funds in the wallet for that.
     Using 'unlimited' stake amount with DCA orders requires you to also implement custom_stake_amount callback to avoid allocating all funds to initial order.
 
 !!! Warning
