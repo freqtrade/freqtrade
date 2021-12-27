@@ -1865,8 +1865,9 @@ class Exchange:
         mark_rates = candle_histories[mark_comb]
 
         df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
-        df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
-        fees = sum(df['open_fund'] * df['open_mark'] * amount)
+        if not df.empty:
+            df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
+            fees = sum(df['open_fund'] * df['open_mark'] * amount)
 
         return fees
 
