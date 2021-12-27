@@ -82,7 +82,7 @@ def retrier_async(f):
         except TemporaryError as ex:
             msg = f'{f.__name__}() returned exception: "{ex}". '
             if count > 0:
-                logger.warning(msg + f'Retrying still for {count} times.')
+                msg += f'Retrying still for {count} times.'
                 count -= 1
                 kwargs['count'] = count
                 if isinstance(ex, DDosProtection):
@@ -92,10 +92,14 @@ def retrier_async(f):
                         log_once_warning(
                             f"Kucoin 429 error, avoid triggering DDosProtection backoff delay. "
                             f"{count} tries left before giving up")
+                        # Reset msg to avoid logging too many times.
+                        msg = ''
                     else:
                         backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
                         logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
                         await asyncio.sleep(backoff_delay)
+                if msg:
+                    logger.warning(msg)
                 return await wrapper(*args, **kwargs)
             else:
                 logger.warning(msg + 'Giving up.')
