@@ -1745,21 +1745,20 @@ async def test__async_get_candle_history(default_conf, mocker, caplog, exchange_
 async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     api_mock = MagicMock()
+    api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.DDoSProtection(
+        "kucoin GET https://openapi-v2.kucoin.com/api/v1/market/candles?"
+        "symbol=ETH-BTC&type=5min&startAt=1640268735&endAt=1640418735"
+        "429 Too Many Requests" '{"code":"429000","msg":"Too Many Requests"}'))
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
 
-    assert not log_contains('Kucoin 429 error, avoid triggering DDosProtection backoff delay',
-                            caplog)
+    msg = "Kucoin 429 error, avoid triggering DDosProtection backoff delay"
+    assert not log_contains(msg, caplog)
 
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
-            api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.DDoSProtection(
-                "kucoin GET https://openapi-v2.kucoin.com/api/v1/market/candles?"
-                "symbol=ETH-BTC&type=5min&startAt=1640268735&endAt=1640418735"
-                "429 Too Many Requests" '{"code":"429000","msg":"Too Many Requests"}'))
-            exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
             await exchange._async_get_candle_history(
-                'ETH/BTC', "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=1)
-    assert num_log_contains("Kucoin 429 error, avoid triggering DDosProtection backoff delay",
-                            caplog) == 1
+                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=1)
+    assert num_log_contains(msg, caplog) == 1
 
 
 @pytest.mark.asyncio
