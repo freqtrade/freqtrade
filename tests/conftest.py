@@ -48,11 +48,6 @@ def pytest_configure(config):
         setattr(config.option, 'markexpr', 'not longrun')
 
 
-def log_contains(line, logs):
-    """Check if line is contained in some caplog's message."""
-    return any(line in message for message in logs.messages)
-
-
 def log_has(line, logs):
     """Check if line is found on some caplog's message."""
     return any(line == message for message in logs.messages)
@@ -63,20 +58,14 @@ def log_has_re(line, logs):
     return any(re.match(line, message) for message in logs.messages)
 
 
-def num_log_contains(line, logs):
-    """Check how many times line is contained in caplog's messages."""
-    # We want to check how many times line ('foo', for example) is contained in caplog's messages.
-    return sum(line in message for message in logs.messages)
-
-
 def num_log_has(line, logs):
     """Check how many times line is found in caplog's messages."""
-    return sum(line == message for logger_name, level, message in logs.record_tuples)
+    return sum(line == message for message in logs.messages)
 
 
 def num_log_has_re(line, logs):
     """Check how many times line matches caplog's messages."""
-    return sum(re.match(line, message) for logger_name, level, message in logs.record_tuples)
+    return sum(bool(re.match(line, message)) for message in logs.messages)
 
 
 def get_args(args):

@@ -20,8 +20,7 @@ from freqtrade.exchange.exchange import (market_is_active, timeframe_to_minutes,
                                          timeframe_to_next_date, timeframe_to_prev_date,
                                          timeframe_to_seconds)
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from tests.conftest import (get_mock_coro, get_patched_exchange, log_contains, log_has, log_has_re,
-                            num_log_contains)
+from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has_re, num_log_has_re
 
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
@@ -1752,13 +1751,31 @@ async def test__async_kucoin_get_candle_history(default_conf, mocker, caplog):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id="kucoin")
 
     msg = "Kucoin 429 error, avoid triggering DDosProtection backoff delay"
-    assert not log_contains(msg, caplog)
+    assert not num_log_has_re(msg, caplog)
 
     for _ in range(3):
         with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
             await exchange._async_get_candle_history(
-                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=1)
-    assert num_log_contains(msg, caplog) == 1
+                "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+    assert num_log_has_re(msg, caplog) == 3
+
+    caplog.clear()
+    # Test regular non-kucoin message
+    api_mock.fetch_ohlcv = MagicMock(side_effect=ccxt.DDoSProtection(
+        "kucoin GET https://openapi-v2.kucoin.com/api/v1/market/candles?"
+        "symbol=ETH-BTC&type=5min&startAt=1640268735&endAt=1640418735"
+        "429 Too Many Requests" '{"code":"2222222","msg":"Too Many Requests"}'))
+
+    msg = r'_async_get_candle_history\(\) returned exception: .*'
+    msg2 = r'Applying DDosProtection backoff delay: .*'
+    with patch('freqtrade.exchange.common.asyncio.sleep', get_mock_coro(None)):
+        for _ in range(3):
+            with pytest.raises(DDosProtection, match=r'429 Too Many Requests'):
+                await exchange._async_get_candle_history(
+                    "ETH/BTC", "5m", (arrow.utcnow().int_timestamp - 2000) * 1000, count=3)
+        # Expect the "returned exception" message 12 times (4 retries * 3 (loop))
+        assert num_log_has_re(msg, caplog) == 12
+        assert num_log_has_re(msg2, caplog) == 9
 
 
 @pytest.mark.asyncio
