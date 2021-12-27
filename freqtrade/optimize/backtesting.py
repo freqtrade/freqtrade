@@ -196,6 +196,7 @@ class Backtesting:
             startup_candles=self.required_startup,
             fail_without_data=True,
             data_format=self.config.get('dataformat_ohlcv', 'json'),
+            candle_type=self.config.get('candle_type_def', CandleType.SPOT)
         )
 
         min_date, max_date = history.get_timerange(data)
@@ -224,6 +225,7 @@ class Backtesting:
                 startup_candles=0,
                 fail_without_data=True,
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
+                candle_type=self.config.get('candle_type_def', CandleType.SPOT)
             )
         else:
             self.detail_data = {}
