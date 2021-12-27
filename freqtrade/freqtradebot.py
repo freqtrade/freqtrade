@@ -1366,7 +1366,6 @@ class FreqtradeBot(LoggingMixin):
             logger.warning('Unable to fetch order %s: %s', order_id, exception)
             return False
 
-        logger.info(f"Updating order from exchange: {order}")
         trade.update_order(order)
 
         if self.exchange.check_order_canceled_empty(order):
@@ -1379,7 +1378,6 @@ class FreqtradeBot(LoggingMixin):
         trade.update(order)
         trade.recalc_trade_from_orders()
         Trade.commit()
-        logger.info(f"Trade has been updated: {trade}")
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             # If a buy order was closed, force update on stoploss on exchange
