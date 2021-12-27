@@ -1359,7 +1359,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # Update trade with order values
-        logger.info('Found open order for %s', trade)
+        logger.info(f'Found open order for {trade}')
         try:
             order = action_order or self.exchange.fetch_order_or_stoploss_order(order_id,
                                                                                 trade.pair,
@@ -1376,15 +1376,7 @@ class FreqtradeBot(LoggingMixin):
             # Handling of this will happen in check_handle_timedout.
             return True
 
-        # Try update amount (binance-fix)
-        try:
-            new_amount = self.get_real_amount(trade, order)
-            if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
-                           abs_tol=constants.MATH_CLOSE_PREC):
-                order['amount'] = new_amount
-                order.pop('filled', None)
-        except DependencyException as exception:
-            logger.warning("Could not update trade amount: %s", exception)
+        order = self.handle_order_fee(trade, order)
 
         trade.update(order)
         trade.recalc_trade_from_orders()
@@ -1438,6 +1430,18 @@ class FreqtradeBot(LoggingMixin):
                         f"(from {amount} to {real_amount}).")
             return real_amount
         return amount
+
+    def handle_order_fee(self, trade: Trade, order: Dict[str, Any]) -> Dict[str, Any]:
+        # Try update amount (binance-fix)
+        try:
+            new_amount = self.get_real_amount(trade, order)
+            if not isclose(safe_value_fallback(order, 'filled', 'amount'), new_amount,
+                           abs_tol=constants.MATH_CLOSE_PREC):
+                order['amount'] = new_amount
+                order.pop('filled', None)
+        except DependencyException as exception:
+            logger.warning("Could not update trade amount: %s", exception)
+        return order
 
     def get_real_amount(self, trade: Trade, order: Dict) -> float:
         """
