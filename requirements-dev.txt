@@ -26,4 +26,4 @@ types-requests==2.26.2
 types-tabulate==0.8.3
 
 # Extensions to datetime library
-types-python-dateutil==2.8.3
+types-python-dateutil==2.8.4
