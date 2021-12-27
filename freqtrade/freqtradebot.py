@@ -458,14 +458,12 @@ class FreqtradeBot(LoggingMixin):
         # Walk through each pair and check if it needs changes
         for trade in Trade.get_open_trades():
             # If there is any open orders, wait for them to finish.
-            for order in trade.orders:
-                if order.ft_is_open:
-                    break
-            try:
-                self.check_and_call_adjust_trade_position(trade)
-            except DependencyException as exception:
-                logger.warning('Unable to adjust position of trade for %s: %s',
-                               trade.pair, exception)
+            if len([o for o in trade.orders if o.ft_is_open]) == 0:
+                try:
+                    self.check_and_call_adjust_trade_position(trade)
+                except DependencyException as exception:
+                    logger.warning('Unable to adjust position of trade for %s: %s',
+                                   trade.pair, exception)
 
     def check_and_call_adjust_trade_position(self, trade: Trade):
         """
@@ -1385,7 +1383,7 @@ class FreqtradeBot(LoggingMixin):
 
         if order['status'] in constants.NON_OPEN_EXCHANGE_STATES:
             # If a buy order was closed, force update on stoploss on exchange
-            if order['side'] == 'buy':
+            if order.get('side', None) == 'buy':
                 trade = self.cancel_stoploss_on_exchange(trade)
             # Updating wallets when order is closed
             self.wallets.update()
