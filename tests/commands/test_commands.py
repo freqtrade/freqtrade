@@ -822,10 +822,8 @@ def test_download_data_trades(mocker, caplog):
         "--trading-mode", "futures",
         "--dl-trades"
     ]
-    with pytest.raises(OperationalException,
-                       match="Trade download not supported for futures."):
 
-        start_download_data(get_args(args))
+    start_download_data(get_args(args))
 
 
 def test_start_convert_trades(mocker, caplog):
