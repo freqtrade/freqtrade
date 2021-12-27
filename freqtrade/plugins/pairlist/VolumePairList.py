@@ -8,7 +8,7 @@ from functools import partial
 from typing import Any, Dict, List
 
 import arrow
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes
