@@ -808,6 +808,7 @@ def test_download_data_trades(mocker, caplog):
         "--exchange", "kraken",
         "--pairs", "ETH/BTC", "XRP/BTC",
         "--days", "20",
+        "--trading-mode", "spot",
         "--dl-trades"
     ]
     start_download_data(get_args(args))
