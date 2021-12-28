@@ -139,4 +139,10 @@ class PairListManager():
         """
         Create list of pair tuples with (pair, timeframe)
         """
-        return [(pair, timeframe or self._config['timeframe'], CandleType.SPOT) for pair in pairs]
+        return [
+            (
+                pair,
+                timeframe or self._config['timeframe'],
+                self._config.get('candle_type_def', CandleType.SPOT)
+            ) for pair in pairs
+        ]

@@ -564,7 +564,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         if not self.dp:
             raise OperationalException("DataProvider not found.")
-        dataframe = self.dp.ohlcv(pair, self.timeframe)
+        dataframe = self.dp.ohlcv(
+            pair, self.timeframe, candle_type=self.config.get('candle_type_def', CandleType.SPOT)
+        )
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning('Empty candle (OHLCV) data for pair %s', pair)
             return
