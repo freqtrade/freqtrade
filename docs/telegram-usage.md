@@ -234,10 +234,10 @@ Enter Tag is configurable via Strategy.
 Return the status of all open trades in a table format.
 
 ```
-   ID  Pair      Since    Profit
-----  --------  -------  --------
-  67  SC/BTC L    1 d      13.33%
- 123  CVC/BTC S   1 h      12.95%
+ID L/S    Pair     Since   Profit
+----    --------  -------  --------
+  67 L   SC/BTC    1 d      13.33%
+ 123 S   CVC/BTC   1 h      12.95%
 ```
 
 ### /count
