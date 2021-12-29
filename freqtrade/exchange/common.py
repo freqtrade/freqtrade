@@ -1,16 +1,23 @@
 import asyncio
 import logging
 import time
-from functools import partial, wraps
+from functools import wraps
 
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
 from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
-logging_mixin = LoggingMixin(logger)
-log_once_info = partial(logging_mixin.log_once, logmethod=logger.info)
-log_once_warning = partial(logging_mixin.log_once, logmethod=logger.warning)
+__logging_mixin = None
+
+
+def _get_logging_mixin():
+    # Logging-mixin to cache kucoin responses
+    # Only to be used in retrier
+    global __logging_mixin
+    if not __logging_mixin:
+        __logging_mixin = LoggingMixin(logger)
+    return __logging_mixin
 
 
 # Maximum default retry count.
@@ -89,9 +96,9 @@ def retrier_async(f):
                     if kucoin and "429000" in str(ex):
                         # Temporary fix for 429000 error on kucoin
                         # see https://github.com/freqtrade/freqtrade/issues/5700 for details.
-                        log_once_warning(
+                        _get_logging_mixin().log_once(
                             f"Kucoin 429 error, avoid triggering DDosProtection backoff delay. "
-                            f"{count} tries left before giving up")
+                            f"{count} tries left before giving up", logmethod=logger.warning)
                         # Reset msg to avoid logging too many times.
                         msg = ''
                     else:
