@@ -98,13 +98,13 @@ Different payloads can be configured for different events. Not all fields are ne
 
 ### Webhookbuy
 
-The fields in `webhook.webhookbuy` are filled when the bot executes a buy. Parameters are filled using string.format.
+The fields in `webhook.webhookbuy` are filled when the bot executes a long/short. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
-* `is_short`
+* `direction`
 * `leverage`
 * ~~`limit` # Deprecated - should no longer be used.~~
 * `open_rate`
@@ -116,18 +116,17 @@ Possible parameters are:
 * `order_type`
 * `current_rate`
 * `enter_tag`
-* `gain`
-* `profit_amount`
-* `profit_ratio`
 
 ### Webhookbuycancel
 
-The fields in `webhook.webhookbuycancel` are filled when the bot cancels a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookbuycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `limit`
 * `amount`
 * `open_date`
@@ -140,13 +139,13 @@ Possible parameters are:
 
 ### Webhookbuyfill
 
-The fields in `webhook.webhookbuyfill` are filled when the bot filled a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookbuyfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
-* `is_short`
+* `direction`
 * `leverage`
 * `open_rate`
 * `amount`
@@ -157,9 +156,6 @@ Possible parameters are:
 * `order_type`
 * `current_rate`
 * `enter_tag`
-* `gain`
-* `profit_amount`
-* `profit_ratio`
 
 ### Webhooksell
 The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
@@ -168,7 +164,7 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
-* `is_short`
+* `direction`
 * `leverage`
 * `gain`
 * `limit`
@@ -191,7 +187,7 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
-* `is_short`
+* `direction`
 * `leverage`
 * `gain`
 * `close_rate`
@@ -215,6 +211,8 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `limit`
 * `amount`

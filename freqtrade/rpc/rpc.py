@@ -257,7 +257,7 @@ class RPC:
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair', 'Since', profitcol]
+            columns = ['ID', 'Pair (L/S)', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(

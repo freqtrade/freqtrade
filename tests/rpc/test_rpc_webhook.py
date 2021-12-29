@@ -18,17 +18,23 @@ def get_webhook_dict() -> dict:
         "webhookbuy": {
             "value1": "Buying {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
+            "value3": "{stake_amount:8f} {stake_currency}",
+            "value4": "leverage {leverage:.1f}",
+            "value5": "direction {direction}"
         },
         "webhookbuycancel": {
             "value1": "Cancelling Open Buy Order for {pair}",
             "value2": "limit {limit:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
+            "value3": "{stake_amount:8f} {stake_currency}",
+            "value4": "leverage {leverage:.1f}",
+            "value5": "direction {direction}"
         },
         "webhookbuyfill": {
             "value1": "Buy Order for {pair} filled",
             "value2": "at {open_rate:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
+            "value3": "{stake_amount:8f} {stake_currency}",
+            "value4": "leverage {leverage:.1f}",
+            "value5": "direction {direction}"
         },
         "webhooksell": {
             "value1": "Selling {pair}",
@@ -71,6 +77,8 @@ def test_send_msg_webhook(default_conf, mocker):
         'type': RPCMessageType.BUY,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
+        'leverage': 1.0,
+        'direction': 'Long',
         'limit': 0.005,
         'stake_amount': 0.8,
         'stake_amount_fiat': 500,
@@ -85,6 +93,37 @@ def test_send_msg_webhook(default_conf, mocker):
             default_conf["webhook"]["webhookbuy"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value4"] ==
+            default_conf["webhook"]["webhookbuy"]["value4"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value5"] ==
+            default_conf["webhook"]["webhookbuy"]["value5"].format(**msg))
+    # Test short
+    msg_mock.reset_mock()
+
+    msg = {
+        'type': RPCMessageType.SHORT,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'leverage': 2.0,
+        'direction': 'Short',
+        'limit': 0.005,
+        'stake_amount': 0.8,
+        'stake_amount_fiat': 500,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'EUR'
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhookbuy"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhookbuy"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhookbuy"]["value3"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value4"] ==
+            default_conf["webhook"]["webhookbuy"]["value4"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value5"] ==
+            default_conf["webhook"]["webhookbuy"]["value5"].format(**msg))
     # Test buy cancel
     msg_mock.reset_mock()
 
@@ -92,6 +131,8 @@ def test_send_msg_webhook(default_conf, mocker):
         'type': RPCMessageType.BUY_CANCEL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
+        'leverage': 1.0,
+        'direction': 'Long',
         'limit': 0.005,
         'stake_amount': 0.8,
         'stake_amount_fiat': 500,
@@ -106,6 +147,33 @@ def test_send_msg_webhook(default_conf, mocker):
             default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
+    # Test short cancel
+    msg_mock.reset_mock()
+
+    msg = {
+        'type': RPCMessageType.SHORT_CANCEL,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'leverage': 2.0,
+        'direction': 'Short',
+        'limit': 0.005,
+        'stake_amount': 0.8,
+        'stake_amount_fiat': 500,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'EUR'
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value3"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value4"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value5"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
     # Test buy fill
     msg_mock.reset_mock()
 
@@ -113,6 +181,8 @@ def test_send_msg_webhook(default_conf, mocker):
         'type': RPCMessageType.BUY_FILL,
         'exchange': 'Binance',
         'pair': 'ETH/BTC',
+        'leverage': 1.0,
+        'direction': 'Long',
         'open_rate': 0.005,
         'stake_amount': 0.8,
         'stake_amount_fiat': 500,
@@ -127,8 +197,40 @@ def test_send_msg_webhook(default_conf, mocker):
             default_conf["webhook"]["webhookbuyfill"]["value2"].format(**msg))
     assert (msg_mock.call_args[0][0]["value3"] ==
             default_conf["webhook"]["webhookbuyfill"]["value3"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value4"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value5"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
+    # Test short fill
+    msg_mock.reset_mock()
+
+    msg = {
+        'type': RPCMessageType.SHORT_FILL,
+        'exchange': 'Binance',
+        'pair': 'ETH/BTC',
+        'leverage': 2.0,
+        'direction': 'Short',
+        'open_rate': 0.005,
+        'stake_amount': 0.8,
+        'stake_amount_fiat': 500,
+        'stake_currency': 'BTC',
+        'fiat_currency': 'EUR'
+    }
+    webhook.send_msg(msg=msg)
+    assert msg_mock.call_count == 1
+    assert (msg_mock.call_args[0][0]["value1"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value1"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value2"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value2"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value3"] ==
+            default_conf["webhook"]["webhookbuyfill"]["value3"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value4"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value4"].format(**msg))
+    assert (msg_mock.call_args[0][0]["value5"] ==
+            default_conf["webhook"]["webhookbuycancel"]["value5"].format(**msg))
     # Test sell
     msg_mock.reset_mock()
+
     msg = {
         'type': RPCMessageType.SELL,
         'exchange': 'Binance',
