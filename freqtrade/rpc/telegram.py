@@ -272,7 +272,7 @@ class Telegram(RPCHandler):
         else:
             msg['profit_extra'] = ''
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
-        message = [
+        message = "".join([
             f"{msg['emoji']} *{msg['exchange']}:* ",
             f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n",
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* ",
@@ -285,8 +285,7 @@ class Telegram(RPCHandler):
             msg.get('leverage', None) is not None else "",
             f"*Amount:* `{msg['amount']:.8f}`\n",
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-        ]
-        message = "".join(message)
+        ])
         if msg['type'] == RPCMessageType.SELL:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")

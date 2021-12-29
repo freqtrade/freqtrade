@@ -317,7 +317,8 @@ def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
     fields = re.sub('[ ]+', ' ', line[2].strip()).split(' ')
 
     assert int(fields[0]) == 1
-    assert 'ETH/BTC' in fields[1]
+    assert 'L' in fields[1]
+    assert 'ETH/BTC' in fields[2]
     assert msg_mock.call_count == 1
 
 
