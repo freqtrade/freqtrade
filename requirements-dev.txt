@@ -6,7 +6,7 @@
 coveralls==3.3.1
 flake8==4.0.1
 flake8-tidy-imports==4.5.0
-mypy==0.910
+mypy==0.930
 pytest==6.2.5
 pytest-asyncio==0.16.0
 pytest-cov==3.0.0
@@ -14,16 +14,16 @@ pytest-mock==3.6.1
 pytest-random-order==1.0.4
 isort==5.10.1
 # For datetime mocking
-time-machine==2.4.0
+time-machine==2.5.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==6.3.0
 
 # mypy types
-types-cachetools==4.2.5
+types-cachetools==4.2.6
 types-filelock==3.2.1
-types-requests==2.26.0
+types-requests==2.26.2
 types-tabulate==0.8.3
 
 # Extensions to datetime library
-types-python-dateutil==2.8.2
+types-python-dateutil==2.8.4

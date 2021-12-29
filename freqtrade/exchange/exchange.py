@@ -685,16 +685,20 @@ class Exchange:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
         ob = self.fetch_l2_order_book(pair, 1)
-        if side == 'buy':
-            price = ob['asks'][0][0]
-            logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
-            if limit >= price:
-                return True
-        else:
-            price = ob['bids'][0][0]
-            logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
-            if limit <= price:
-                return True
+        try:
+            if side == 'buy':
+                price = ob['asks'][0][0]
+                logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
+                if limit >= price:
+                    return True
+            else:
+                price = ob['bids'][0][0]
+                logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
+                if limit <= price:
+                    return True
+        except IndexError:
+            # Ignore empty orderbooks when filling - can be filled with the next iteration.
+            pass
         return False
 
     def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
@@ -1087,7 +1091,8 @@ class Exchange:
     # Fee handling
 
     @retrier
-    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+    def get_trades_for_order(self, order_id: str, pair: str, since: datetime,
+                             params: Optional[Dict] = None) -> List:
         """
         Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
         The "since" argument passed in is coming from the database and is in UTC,
@@ -1111,8 +1116,10 @@ class Exchange:
         try:
             # Allow 5s offset to catch slight time offsets (discovered in #1185)
             # since needs to be int in milliseconds
+            _params = params if params else {}
             my_trades = self._api.fetch_my_trades(
-                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
+                params=_params)
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
@@ -1190,9 +1197,11 @@ class Exchange:
                 tick = self.fetch_ticker(comb)
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
             except ExchangeError:
-                return None
+                fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
+                if not fee_to_quote_rate:
+                    return None
+            return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
 
     def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
         """
@@ -1263,7 +1272,7 @@ class Exchange:
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
                 if isinstance(res, Exception):
-                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
                     continue
@@ -1294,7 +1303,7 @@ class Exchange:
         cached_pairs = []
         # Gather coroutines to run
         for pair, timeframe in set(pair_list):
-            if ((pair, timeframe) not in self._klines
+            if ((pair, timeframe) not in self._klines or not cache
                     or self._now_is_time_to_refresh(pair, timeframe)):
                 if not since_ms and self.required_candle_call_count > 1:
                     # Multiple calls for one pair - to get more history
@@ -1317,27 +1326,30 @@ class Exchange:
                 )
                 cached_pairs.append((pair, timeframe))
 
-        results = asyncio.get_event_loop().run_until_complete(
-            asyncio.gather(*input_coroutines, return_exceptions=True))
-
         results_df = {}
-        # handle caching
-        for res in results:
-            if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
-                continue
-            # Deconstruct tuple (has 3 elements)
-            pair, timeframe, ticks = res
-            # keeping last candle time as last refreshed time of the pair
-            if ticks:
-                self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
-            # keeping parsed dataframe in cache
-            ohlcv_df = ohlcv_to_dataframe(
-                ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle)
-            results_df[(pair, timeframe)] = ohlcv_df
-            if cache:
-                self._klines[(pair, timeframe)] = ohlcv_df
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        for input_coro in chunks(input_coroutines, 100):
+            results = asyncio.get_event_loop().run_until_complete(
+                asyncio.gather(*input_coro, return_exceptions=True))
+
+            # handle caching
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
+                    continue
+                # Deconstruct tuple (has 3 elements)
+                pair, timeframe, ticks = res
+                # keeping last candle time as last refreshed time of the pair
+                if ticks:
+                    self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
+                # keeping parsed dataframe in cache
+                ohlcv_df = ohlcv_to_dataframe(
+                    ticks, timeframe, pair=pair, fill_missing=True,
+                    drop_incomplete=self._ohlcv_partial_candle)
+                results_df[(pair, timeframe)] = ohlcv_df
+                if cache:
+                    self._klines[(pair, timeframe)] = ohlcv_df
+
         # Return cached klines
         for pair, timeframe in cached_pairs:
             results_df[(pair, timeframe)] = self.klines((pair, timeframe), copy=False)

@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import logging
 import time
 from unittest.mock import MagicMock, PropertyMock
 
@@ -7,6 +8,7 @@ import pytest
 import time_machine
 
 from freqtrade.constants import AVAILABLE_PAIRLISTS
+from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
@@ -214,6 +216,40 @@ def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
     assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
     log_has_re(r"Pair blacklist contains an invalid Wildcard.*", caplog)
+
+
+def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_conf, caplog):
+    logger = logging.getLogger(__name__)
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = ['ETH/BTC', 'TKN/BTC']
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+
+    # Ensure all except those in whitelist are removed.
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    # Ensure that log message wasn't generated.
+    assert not log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...', caplog)
+
+    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
+    # Ensure that the pair is removed from the white list, and properly logged.
+    assert set(whitelist) == set(new_whitelist)
+    matches = sum(1 for message in caplog.messages
+                  if message == 'Pair BLK/BTC in your blacklist. Removing it from whitelist...')
+    assert matches == 1
+
+    new_whitelist = freqtrade.pairlists.verify_blacklist(whitelist + ['BLK/BTC'], logger.warning)
+    # Ensure that the pair is not logged anymore when being removed from the pair list.
+    assert set(whitelist) == set(new_whitelist)
+    matches = sum(1 for message in caplog.messages
+                  if message == 'Pair BLK/BTC in your blacklist. Removing it from whitelist...')
+    assert matches == 1
 
 
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
@@ -657,6 +693,22 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
+def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
+    whitelist_conf['pairlists'] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "seed": 42}
+    ]
+
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    PairListManager(exchange, whitelist_conf)
+    assert log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    caplog.clear()
+    whitelist_conf['runmode'] = RunMode.DRY_RUN
+    PairListManager(exchange, whitelist_conf)
+    assert not log_has("Backtesting mode detected, applying seed value: 42", caplog)
+    assert log_has("Live mode detected, not applying seed.", caplog)
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_PerformanceFilter_lookback(mocker, whitelist_conf, fee, caplog) -> None:
     whitelist_conf['exchange']['pair_whitelist'].append('XRP/BTC')
@@ -1089,33 +1141,34 @@ def test_pairlistmanager_no_pairlist(mocker, whitelist_conf):
     # Happy path: Descending order, all values filled
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC'],
-     [{'pair': 'TKN/BTC', 'profit': 5, 'count': 3}, {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
+     [{'pair': 'TKN/BTC', 'profit_ratio': 0.05, 'count': 3},
+      {'pair': 'ETH/BTC', 'profit_ratio': 0.04, 'count': 2}],
      ['TKN/BTC', 'ETH/BTC']),
     # Performance data outside allow list ignored
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC'],
-     [{'pair': 'OTHER/BTC', 'profit': 5, 'count': 3},
-      {'pair': 'ETH/BTC', 'profit': 4, 'count': 2}],
+     [{'pair': 'OTHER/BTC', 'profit_ratio': 0.05, 'count': 3},
+      {'pair': 'ETH/BTC', 'profit_ratio': 0.04, 'count': 2}],
      ['ETH/BTC', 'TKN/BTC']),
     # Partial performance data missing and sorted between positive and negative profit
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
-     [{'pair': 'ETH/BTC', 'profit': -5, 'count': 100},
-      {'pair': 'TKN/BTC', 'profit': 4, 'count': 2}],
+     [{'pair': 'ETH/BTC', 'profit_ratio': -0.05, 'count': 100},
+      {'pair': 'TKN/BTC', 'profit_ratio': 0.04, 'count': 2}],
      ['TKN/BTC', 'LTC/BTC', 'ETH/BTC']),
     # Tie in performance data broken by count (ascending)
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
-     [{'pair': 'LTC/BTC', 'profit': -5.01, 'count': 101},
-      {'pair': 'TKN/BTC', 'profit': -5.01, 'count': 2},
-      {'pair': 'ETH/BTC', 'profit': -5.01, 'count': 100}],
+     [{'pair': 'LTC/BTC', 'profit_ratio': -0.0501, 'count': 101},
+      {'pair': 'TKN/BTC', 'profit_ratio': -0.0501, 'count': 2},
+      {'pair': 'ETH/BTC', 'profit_ratio': -0.0501, 'count': 100}],
      ['TKN/BTC', 'ETH/BTC', 'LTC/BTC']),
     # Tie in performance and count, broken by alphabetical sort
     ([{"method": "StaticPairList"}, {"method": "PerformanceFilter"}],
      ['ETH/BTC', 'TKN/BTC', 'LTC/BTC'],
-     [{'pair': 'LTC/BTC', 'profit': -5.01, 'count': 1},
-      {'pair': 'TKN/BTC', 'profit': -5.01, 'count': 1},
-      {'pair': 'ETH/BTC', 'profit': -5.01, 'count': 1}],
+     [{'pair': 'LTC/BTC', 'profit_ratio': -0.0501, 'count': 1},
+      {'pair': 'TKN/BTC', 'profit_ratio': -0.0501, 'count': 1},
+      {'pair': 'ETH/BTC', 'profit_ratio': -0.0501, 'count': 1}],
      ['ETH/BTC', 'LTC/BTC', 'TKN/BTC']),
 ])
 def test_performance_filter(mocker, whitelist_conf, pairlists, pair_allowlist, overall_performance,

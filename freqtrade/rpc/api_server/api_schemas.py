@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
+from freqtrade.enums import OrderTypeValues
 
 
 class Ping(BaseModel):
@@ -125,25 +126,26 @@ class Daily(BaseModel):
 
 
 class UnfilledTimeout(BaseModel):
-    buy: int
-    sell: int
-    unit: str
+    buy: Optional[int]
+    sell: Optional[int]
+    unit: Optional[str]
     exit_timeout_count: Optional[int]
 
 
 class OrderTypes(BaseModel):
-    buy: str
-    sell: str
-    emergencysell: Optional[str]
-    forcesell: Optional[str]
-    forcebuy: Optional[str]
-    stoploss: str
+    buy: OrderTypeValues
+    sell: OrderTypeValues
+    emergencysell: Optional[OrderTypeValues]
+    forcesell: Optional[OrderTypeValues]
+    forcebuy: Optional[OrderTypeValues]
+    stoploss: OrderTypeValues
     stoploss_on_exchange: bool
     stoploss_on_exchange_interval: Optional[int]
 
 
 class ShowConfig(BaseModel):
     version: str
+    strategy_version: Optional[str]
     api_version: float
     dry_run: bool
     stake_currency: str
@@ -158,7 +160,7 @@ class ShowConfig(BaseModel):
     trailing_stop_positive_offset: Optional[float]
     trailing_only_offset_is_reached: Optional[bool]
     unfilledtimeout: UnfilledTimeout
-    order_types: OrderTypes
+    order_types: Optional[OrderTypes]
     use_custom_stoploss: Optional[bool]
     timeframe: Optional[str]
     timeframe_ms: int
@@ -274,10 +276,12 @@ class Logs(BaseModel):
 class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
+    ordertype: Optional[OrderTypeValues]
 
 
 class ForceSellPayload(BaseModel):
     tradeid: str
+    ordertype: Optional[OrderTypeValues]
 
 
 class BlacklistPayload(BaseModel):

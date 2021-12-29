@@ -98,7 +98,7 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
-                   "['stopbuy'], ['whitelist'], ['blacklist'], "
+                   "['stopbuy'], ['whitelist'], ['blacklist'], ['blacklist_delete', 'bl_delete'], "
                    "['logs'], ['edge'], ['help'], ['version']"
                    "]")
 
@@ -937,7 +937,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     telegram._forcesell(update=update, context=context)
 
     assert msg_mock.call_count == 4
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -952,6 +952,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
         'profit_amount': 6.314e-05,
         'profit_ratio': 0.0629778,
         'stake_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
@@ -1001,7 +1002,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
 
     assert msg_mock.call_count == 4
 
-    last_msg = msg_mock.call_args_list[-1][0][0]
+    last_msg = msg_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1016,6 +1017,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
         'profit_amount': -5.497e-05,
         'profit_ratio': -0.05482878,
         'stake_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
@@ -1055,7 +1057,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
-    msg = msg_mock.call_args_list[1][0][0]
+    msg = msg_mock.call_args_list[0][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -1070,6 +1072,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
         'profit_amount': -4.09e-06,
         'profit_ratio': -0.00408133,
         'stake_currency': 'BTC',
+        'base_currency': 'ETH',
         'fiat_currency': 'USD',
         'buy_tag': ANY,
         'sell_reason': SellType.FORCE_SELL.value,
@@ -1470,6 +1473,13 @@ def test_blacklist_static(default_conf, update, mocker) -> None:
             in msg_mock.call_args_list[0][0][0])
     assert freqtradebot.pairlists.blacklist == ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"]
 
+    msg_mock.reset_mock()
+    context.args = ["DOGE/BTC"]
+    telegram._blacklist_delete(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert ("Blacklist contains 3 pairs\n`HOT/BTC, ETH/BTC, XRP/.*`"
+            in msg_mock.call_args_list[0][0][0])
+
 
 def test_telegram_logs(default_conf, update, mocker) -> None:
     mocker.patch.multiple(
@@ -1597,11 +1607,19 @@ def test_help_handle(default_conf, update, mocker) -> None:
 
 def test_version_handle(default_conf, update, mocker) -> None:
 
-    telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram._version(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
     assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+
+    msg_mock.reset_mock()
+    freqtradebot.strategy.version = lambda: '1.1.1'
+
+    telegram._version(update=update, context=MagicMock())
+    assert msg_mock.call_count == 1
+    assert '*Version:* `{}`'.format(__version__) in msg_mock.call_args_list[0][0][0]
+    assert '*Strategy version: * `1.1.1`' in msg_mock.call_args_list[0][0][0]
 
 
 def test_show_config_handle(default_conf, update, mocker) -> None:

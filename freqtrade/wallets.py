@@ -260,8 +260,8 @@ class Wallets:
                 if self._log:
                     logger.info(
                         f"Adjusted stake amount for pair {pair} is more than 30% bigger than "
-                        f"the desired stake ({stake_amount} * 1.3 > {max_stake_amount}), "
-                        f"ignoring trade."
+                        f"the desired stake amount of ({stake_amount:.8f} * 1.3 = "
+                        f"{stake_amount * 1.3:.8f}) < {min_stake_amount}), ignoring trade."
                     )
                 return 0
             stake_amount = min_stake_amount

@@ -3,7 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 # API version
 # Pre-1.1, no version was provided
 # Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
-API_VERSION = 1.1
+# 1.11: forcebuy and forcesell accept ordertype
+# 1.12: add blacklist delete endpoint
+API_VERSION = 1.12
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -120,16 +122,19 @@ def edge(rpc: RPC = Depends(get_rpc)):
 @router.get('/show_config', response_model=ShowConfig, tags=['info'])
 def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(get_config)):
     state = ''
+    strategy_version = None
     if rpc:
         state = rpc._freqtrade.state
-    resp = RPC._rpc_show_config(config, state)
+        strategy_version = rpc._freqtrade.strategy.version()
+    resp = RPC._rpc_show_config(config, state, strategy_version)
     resp['api_version'] = API_VERSION
     return resp
 
 
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
@@ -139,7 +144,8 @@ def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
 def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
-    return rpc._rpc_forcesell(payload.tradeid)
+    ordertype = payload.ordertype.value if payload.ordertype else None
+    return rpc._rpc_forcesell(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
@@ -150,6 +156,13 @@ def blacklist(rpc: RPC = Depends(get_rpc)):
 @router.post('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
 def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_blacklist(payload.blacklist)
+
+
+@router.delete('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])
+def blacklist_delete(pairs_to_delete: List[str] = Query([]), rpc: RPC = Depends(get_rpc)):
+    """Provide a list of pairs to delete from the blacklist"""
+
+    return rpc._rpc_blacklist_delete(pairs_to_delete)
 
 
 @router.get('/whitelist', response_model=WhitelistResponse, tags=['info', 'pairlist'])

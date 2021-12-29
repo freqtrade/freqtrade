@@ -127,6 +127,21 @@ The provided exit-tag is then used as sell-reason - and shown as such in backtes
 !!! Note
     `sell_reason` is limited to 100 characters, remaining data will be truncated.
 
+## Strategy version
+
+You can implement custom strategy versioning by using the "version" method, and returning the version you would like this strategy to have.
+
+``` python
+def version(self) -> str:
+    """
+    Returns version of the strategy.
+    """
+    return "1.1"
+```
+
+!!! Note
+    You should make sure to implement proper version control (like a git repository) alongside this, as freqtrade will not keep historic versions of your strategy, so it's up to the user to be able to eventually roll back to a prior version of the strategy.
+
 ## Derived strategies
 
 The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:

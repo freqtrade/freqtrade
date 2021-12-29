@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 import arrow
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 from pandas import DataFrame
 
 from freqtrade.exceptions import OperationalException

@@ -2171,10 +2171,20 @@ def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, l
     assert open_trade.is_open is True
     assert freqtrade.strategy.check_sell_timeout.call_count == 1
 
-    # 2nd canceled trade ...
+    # 2nd canceled trade - Fail execute sell
     caplog.clear()
     open_trade.open_order_id = 'order_id_2'
     mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit',
+                 side_effect=DependencyException)
+    freqtrade.check_handle_timedout()
+    assert log_has_re('Unable to emergency sell .*', caplog)
+
+    et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
+    caplog.clear()
+
+    # 2nd canceled trade ...
+    open_trade.open_order_id = 'order_id_2'
     freqtrade.check_handle_timedout()
     assert log_has_re('Emergencyselling trade.*', caplog)
     assert et_mock.call_count == 1
@@ -2979,7 +2989,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
     assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
