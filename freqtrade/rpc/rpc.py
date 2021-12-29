@@ -245,11 +245,10 @@ class RPC:
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
                 trades_list.append([
-                    trade.id,
+                    trade.id + f' {direction_str}',
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
-                               + ('**' if (trade.close_rate_requested is not None) else '')
-                               + f' direction_str',
+                               + ('**' if (trade.close_rate_requested is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ])
@@ -257,7 +256,7 @@ class RPC:
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair (L/S)', 'Since', profitcol]
+            columns = ['ID L/S', 'Pair', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
