@@ -233,8 +233,9 @@ class Telegram(RPCHandler):
             f" (#{msg['trade_id']})\n"
             )
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
-        message += f"*Leverage:* `{msg['leverage']}`\n" if msg.get('leverage', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
+        if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
+            message += f"*Leverage:* `{msg['leverage']}`\n"
 
         if msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
@@ -260,7 +261,7 @@ class Telegram(RPCHandler):
         msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
         msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
-                                if msg.get('leverage', None) is not None else "")
+                                if msg.get('leverage', None) and msg.get('leverage', 1.0) != 1.0 else "")
 
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell

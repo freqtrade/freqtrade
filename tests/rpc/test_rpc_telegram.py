@@ -1653,6 +1653,8 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
     (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.BUY, 'Long', 'long_signal_01', 1.0),
+    (RPCMessageType.BUY, 'Long', 'long_signal_01', 5.0),
     (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
                                    enter, enter_signal, leverage) -> None:
@@ -1677,15 +1679,17 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
 
     telegram.send_msg(msg)
-    message = [f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n',
-               f'*Enter Tag:* `{enter_signal}`\n',
-               f'*Leverage:* `{leverage}`\n' if leverage else '',
-               '*Amount:* `1333.33333333`\n',
-               '*Open Rate:* `0.00001099`\n',
-               '*Current Rate:* `0.00001099`\n',
-               '*Total:* `(0.00100000 BTC, 12.345 USD)`']
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
 
-    assert msg_mock.call_args[0][0] == "".join(message)
+    assert msg_mock.call_args[0][0] == (
+        f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        '*Amount:* `1333.33333333`\n'
+        f'{leverage_text}'
+        '*Open Rate:* `0.00001099`\n'
+        '*Current Rate:* `0.00001099`\n'
+        '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+    )
 
     freqtradebot.config['telegram']['notification_settings'] = {'buy': 'off'}
     caplog.clear()
@@ -1753,8 +1757,10 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
 
 
 @pytest.mark.parametrize('message_type,entered,enter_signal,leverage', [
-    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', None),
-    (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0)])
+    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', 1.0),
+    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_02', 2.0),
+    (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0),
+    ])
 def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, entered,
                                         enter_signal, leverage) -> None:
 
@@ -1776,12 +1782,12 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
-        f"{leverage_text}"
         '*Amount:* `1333.33333333`\n'
+        f"{leverage_text}"
         '*Open Rate:* `0.00001099`\n'
         '*Total:* `(0.00100000 BTC, 12.345 USD)`'
         )
@@ -1822,7 +1828,6 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Exit Reason:* `stop_loss`\n'
         '*Duration:* `1:00:00 (60.0 min)`\n'
         '*Direction:* `Long`\n'
-        '*Leverage:* `1.0`\n'
         '*Amount:* `1333.33333333`\n'
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
@@ -1899,6 +1904,8 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
 
 @pytest.mark.parametrize('direction,enter_signal,leverage', [
     ('Long', 'long_signal_01', None),
+    ('Long', 'long_signal_01', 1.0),
+    ('Long', 'long_signal_01', 5.0),
     ('Short', 'short_signal_01', 2.0)])
 def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
                                          enter_signal, leverage) -> None:
@@ -1928,7 +1935,7 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         'close_date': arrow.utcnow(),
     })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance:* Exited KEY/ETH (#1)\n'
         '*Profit:* `-57.41%`\n'
@@ -1981,6 +1988,7 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
 
 @pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
     (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.BUY, 'Long', 'long_signal_01', 2.0),
     (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification_no_fiat(
         default_conf, mocker, message_type, enter, enter_signal, leverage) -> None:
@@ -2005,12 +2013,12 @@ def test_send_msg_buy_notification_no_fiat(
         'open_date': arrow.utcnow().shift(hours=-1)
     })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
         f'*Enter Tag:* `{enter_signal}`\n'
-        f'{leverage_text}'
         '*Amount:* `1333.33333333`\n'
+        f'{leverage_text}'
         '*Open Rate:* `0.00001099`\n'
         '*Current Rate:* `0.00001099`\n'
         '*Total:* `(0.00100000 BTC)`'
@@ -2019,7 +2027,10 @@ def test_send_msg_buy_notification_no_fiat(
 
 @pytest.mark.parametrize('direction,enter_signal,leverage', [
     ('Long', 'long_signal_01', None),
-    ('Short', 'short_signal_01', 2.0)])
+    ('Long', 'long_signal_01', 1.0),
+    ('Long', 'long_signal_01', 5.0),
+    ('Short', 'short_signal_01', 2.0),
+    ])
 def test_send_msg_sell_notification_no_fiat(
         default_conf, mocker, direction, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
@@ -2048,7 +2059,7 @@ def test_send_msg_sell_notification_no_fiat(
         'close_date': arrow.utcnow(),
     })
 
-    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage and leverage != 1.0 else ''
     assert msg_mock.call_args[0][0] == (
         '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
         '*Unrealized Profit:* `-57.41%`\n'
