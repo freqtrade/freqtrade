@@ -12,10 +12,10 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 
-# PROJECT_DIR = "/root/workspace/execution/"
-# import sys
-# sys.path.append(PROJECT_DIR)
-# from executor import *
+PROJECT_DIR = "/root/workspace/execution/"
+import sys
+sys.path.append(PROJECT_DIR)
+from executor import *
 
 class Strategy002(IStrategy):
     """
