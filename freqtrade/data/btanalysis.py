@@ -325,6 +325,7 @@ def combine_dataframes_with_mean(data: Dict[str, pd.DataFrame],
     :param column: Column in the original dataframes to use
     :return: DataFrame with the column renamed to the dict key, and a column
         named mean, containing the mean of all pairs.
+    :raise: ValueError if no data is provided.
     """
     df_comb = pd.concat([data[pair].set_index('date').rename(
         {column: pair}, axis=1)[pair] for pair in data], axis=1)

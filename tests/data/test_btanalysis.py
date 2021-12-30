@@ -234,6 +234,13 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "mean" in df.columns
 
 
+def test_combine_dataframes_with_mean_no_data(testdatadir):
+    pairs = ["ETH/BTC", "ADA/BTC"]
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='6m')
+    with pytest.raises(ValueError, match=r"No objects to concatenate"):
+        combine_dataframes_with_mean(data)
+
+
 def test_create_cum_profit(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
