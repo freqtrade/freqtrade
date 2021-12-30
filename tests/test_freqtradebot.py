@@ -2949,15 +2949,13 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
 
 
 @pytest.mark.parametrize(
-    "is_short,amount,open_rate,current_rate,limit,profit_amount,"
-    "profit_ratio,profit_or_loss", [
+    "is_short,amount,open_rate,current_rate,limit,profit_amount,profit_ratio,profit_or_loss", [
         (False, 30, 2.0, 2.3, 2.25, 7.18125, 0.11938903, 'profit'),
         (True, 29.70297029, 2.02, 2.2, 2.25, -7.14876237, -0.11944465, 'loss'),  # TODO-lev
     ])
 def test_execute_trade_exit_custom_exit_price(
         default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, is_short, amount, open_rate,
-        current_rate, limit, profit_amount, profit_ratio, profit_or_loss, mocker
-        ) -> None:
+        current_rate, limit, profit_amount, profit_ratio, profit_or_loss, mocker) -> None:
     rpc_mock = patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(

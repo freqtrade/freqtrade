@@ -1651,10 +1651,9 @@ def test_show_config_handle(default_conf, update, mocker) -> None:
     assert '*Initial Stoploss:* `-0.1`' in msg_mock.call_args_list[0][0][0]
 
 
-@pytest.mark.parametrize(
-    'message_type,enter,enter_signal,leverage',
-    [(RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-     (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+@pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
+    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
 def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
                                    enter, enter_signal, leverage) -> None:
 
@@ -1704,10 +1703,9 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
     msg_mock.call_args_list[0][1]['disable_notification'] is True
 
 
-@pytest.mark.parametrize(
-    'message_type,enter,enter_signal',
-    [(RPCMessageType.BUY_CANCEL, 'Long', 'long_signal_01'),
-     (RPCMessageType.SHORT_CANCEL, 'Short', 'short_signal_01')])
+@pytest.mark.parametrize('message_type,enter,enter_signal', [
+    (RPCMessageType.BUY_CANCEL, 'Long', 'long_signal_01'),
+    (RPCMessageType.SHORT_CANCEL, 'Short', 'short_signal_01')])
 def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type,
                                           enter, enter_signal) -> None:
 
@@ -1754,10 +1752,9 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
             "*All pairs* will be locked until `2021-09-01 06:45:00`.")
 
 
-@pytest.mark.parametrize(
-    'message_type,entered,enter_signal,leverage',
-    [(RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', None),
-     (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0)])
+@pytest.mark.parametrize('message_type,entered,enter_signal,leverage', [
+    (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', None),
+    (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0)])
 def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, entered,
                                         enter_signal, leverage) -> None:
 
@@ -1779,15 +1776,15 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
         'amount': 1333.3333333333335,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
-    message = [f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n',
-               f'*Enter Tag:* `{enter_signal}`\n',
-               f'*Leverage:* `{leverage}`\n' if leverage else '',
-               '*Amount:* `1333.33333333`\n',
-               '*Open Rate:* `0.00001099`\n',
-               '*Total:* `(0.00100000 BTC, 12.345 USD)`']
-    # raise ValueError(msg_mock.call_args[0][0])
-    assert msg_mock.call_args[0][0] \
-        == "".join(message)
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    assert msg_mock.call_args[0][0] == (
+        f'\N{CHECK MARK} *Binance:* {entered} ETH/BTC (#1)\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        f"{leverage_text}"
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00001099`\n'
+        '*Total:* `(0.00100000 BTC, 12.345 USD)`'
+        )
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1818,19 +1815,19 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(hours=-1),
         'close_date': arrow.utcnow(),
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
-            '*Enter Tag:* `buy_signal1`\n'
-            '*Exit Reason:* `stop_loss`\n'
-            '*Duration:* `1:00:00 (60.0 min)`\n'
-            '*Direction:* `Long`\n'
-            '*Leverage:* `1.0`\n'
-            '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`'
-            )
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Profit:* `-57.41% (loss: -0.05746268 ETH / -24.812 USD)`\n'
+        '*Enter Tag:* `buy_signal1`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Duration:* `1:00:00 (60.0 min)`\n'
+        '*Direction:* `Long`\n'
+        '*Leverage:* `1.0`\n'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Close Rate:* `0.00003201`'
+        )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1853,18 +1850,18 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
-            '*Unrealized Profit:* `-57.41%`\n'
-            '*Enter Tag:* `buy_signal1`\n'
-            '*Exit Reason:* `stop_loss`\n'
-            '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
-            '*Direction:* `Long`\n'
-            '*Amount:* `1333.33333333`\n'
-            '*Open Rate:* `0.00007500`\n'
-            '*Current Rate:* `0.00003201`\n'
-            '*Close Rate:* `0.00003201`'
-            )
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Profit:* `-57.41%`\n'
+        '*Enter Tag:* `buy_signal1`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
+        '*Direction:* `Long`\n'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Close Rate:* `0.00003201`'
+        )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -1882,9 +1879,9 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'pair': 'KEY/ETH',
         'reason': 'Cancelled on exchange'
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling exit Order for KEY/ETH (#1).'
-            ' Reason: Cancelled on exchange.')
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Cancelling exit Order for KEY/ETH (#1).'
+        ' Reason: Cancelled on exchange.')
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1894,17 +1891,15 @@ def test_send_msg_sell_cancel_notification(default_conf, mocker) -> None:
         'pair': 'KEY/ETH',
         'reason': 'timeout'
     })
-    assert msg_mock.call_args[0][0] \
-        == ('\N{WARNING SIGN} *Binance:* Cancelling exit Order for KEY/ETH (#1).'
-            ' Reason: timeout.')
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Cancelling exit Order for KEY/ETH (#1). Reason: timeout.')
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
 
-@pytest.mark.parametrize(
-    'direction,enter_signal,leverage',
-    [('Long', 'long_signal_01', None),
-     ('Short', 'short_signal_01', 2.0)])
+@pytest.mark.parametrize('direction,enter_signal,leverage', [
+    ('Long', 'long_signal_01', None),
+    ('Short', 'short_signal_01', 2.0)])
 def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
                                          enter_signal, leverage) -> None:
 
@@ -1932,18 +1927,20 @@ def test_send_msg_sell_fill_notification(default_conf, mocker, direction,
         'open_date': arrow.utcnow().shift(days=-1, hours=-2, minutes=-30),
         'close_date': arrow.utcnow(),
     })
-    message = ['\N{WARNING SIGN} *Binance:* Exited KEY/ETH (#1)\n',
-               '*Profit:* `-57.41%`\n',
-               f'*Enter Tag:* `{enter_signal}`\n',
-               '*Exit Reason:* `stop_loss`\n',
-               '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n',
-               f"*Direction:* `{direction}`\n",
-               f"*Leverage:* `{leverage:.1f}`\n" if leverage is not None else "",
-               '*Amount:* `1333.33333333`\n',
-               '*Open Rate:* `0.00007500`\n',
-               '*Close Rate:* `0.00003201`']
-    assert msg_mock.call_args[0][0] \
-        == "".join(message)
+
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exited KEY/ETH (#1)\n'
+        '*Profit:* `-57.41%`\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Duration:* `1 day, 2:30:00 (1590.0 min)`\n'
+        f"*Direction:* `{direction}`\n"
+        f"{leverage_text}"
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Close Rate:* `0.00003201`'
+    )
 
 
 def test_send_msg_status_notification(default_conf, mocker) -> None:
@@ -1982,12 +1979,11 @@ def test_send_msg_unknown_type(default_conf, mocker) -> None:
         })
 
 
-@pytest.mark.parametrize(
-    'message_type,enter,enter_signal,leverage',
-    [(RPCMessageType.BUY, 'Long', 'long_signal_01', None),
-     (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
-def test_send_msg_buy_notification_no_fiat(default_conf, mocker, message_type,
-                                           enter, enter_signal, leverage) -> None:
+@pytest.mark.parametrize('message_type,enter,enter_signal,leverage', [
+    (RPCMessageType.BUY, 'Long', 'long_signal_01', None),
+    (RPCMessageType.SHORT, 'Short', 'short_signal_01', 2.0)])
+def test_send_msg_buy_notification_no_fiat(
+        default_conf, mocker, message_type, enter, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -2009,22 +2005,23 @@ def test_send_msg_buy_notification_no_fiat(default_conf, mocker, message_type,
         'open_date': arrow.utcnow().shift(hours=-1)
     })
 
-    message = [f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n',
-               f'*Enter Tag:* `{enter_signal}`\n',
-               f'*Leverage:* `{leverage}`\n' if leverage else '',
-               '*Amount:* `1333.33333333`\n',
-               '*Open Rate:* `0.00001099`\n',
-               '*Current Rate:* `0.00001099`\n',
-               '*Total:* `(0.00100000 BTC)`']
-    assert msg_mock.call_args[0][0] == "".join(message)
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    assert msg_mock.call_args[0][0] == (
+        f'\N{LARGE BLUE CIRCLE} *Binance:* {enter} ETH/BTC (#1)\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        f'{leverage_text}'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00001099`\n'
+        '*Current Rate:* `0.00001099`\n'
+        '*Total:* `(0.00100000 BTC)`'
+    )
 
 
-@pytest.mark.parametrize(
-    'direction,enter_signal,leverage',
-    [('Long', 'long_signal_01', None),
-     ('Short', 'short_signal_01', 2.0)])
-def test_send_msg_sell_notification_no_fiat(default_conf, mocker, direction,
-                                            enter_signal, leverage) -> None:
+@pytest.mark.parametrize('direction,enter_signal,leverage', [
+    ('Long', 'long_signal_01', None),
+    ('Short', 'short_signal_01', 2.0)])
+def test_send_msg_sell_notification_no_fiat(
+        default_conf, mocker, direction, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
@@ -2051,19 +2048,20 @@ def test_send_msg_sell_notification_no_fiat(default_conf, mocker, direction,
         'close_date': arrow.utcnow(),
     })
 
-    message = ['\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n',
-               '*Unrealized Profit:* `-57.41%`\n',
-               f'*Enter Tag:* `{enter_signal}`\n',
-               '*Exit Reason:* `stop_loss`\n',
-               '*Duration:* `2:35:03 (155.1 min)`\n',
-               f'*Direction:* `{direction}`\n',
-               f'*Leverage:* `{leverage}`\n' if leverage else '',
-               '*Amount:* `1333.33333333`\n',
-               '*Open Rate:* `0.00007500`\n',
-               '*Current Rate:* `0.00003201`\n',
-               '*Close Rate:* `0.00003201`',
-               ]
-    assert msg_mock.call_args[0][0] == "".join(message)
+    leverage_text = f'*Leverage:* `{leverage}`\n' if leverage else ''
+    assert msg_mock.call_args[0][0] == (
+        '\N{WARNING SIGN} *Binance:* Exiting KEY/ETH (#1)\n'
+        '*Unrealized Profit:* `-57.41%`\n'
+        f'*Enter Tag:* `{enter_signal}`\n'
+        '*Exit Reason:* `stop_loss`\n'
+        '*Duration:* `2:35:03 (155.1 min)`\n'
+        f'*Direction:* `{direction}`\n'
+        f'{leverage_text}'
+        '*Amount:* `1333.33333333`\n'
+        '*Open Rate:* `0.00007500`\n'
+        '*Current Rate:* `0.00003201`\n'
+        '*Close Rate:* `0.00003201`'
+        )
 
 
 @pytest.mark.parametrize('msg,expected', [

@@ -224,9 +224,9 @@ class Telegram(RPCHandler):
         is_fill = msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
-        enter_side = {'enter': 'Long', 'entered': 'Longed'} if msg['type'] \
-            in [RPCMessageType.BUY_FILL, RPCMessageType.BUY] \
-            else {'enter': 'Short', 'entered': 'Shorted'}
+        enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['type']
+                      in [RPCMessageType.BUY_FILL, RPCMessageType.BUY]
+                      else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
             f"{emoji} *{msg['exchange']}:*"
             f" {enter_side['entered'] if is_fill else enter_side['enter']} {msg['pair']}"
@@ -259,6 +259,8 @@ class Telegram(RPCHandler):
 
         msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
+        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
+                                if msg.get('leverage', None) is not None else "")
 
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
@@ -272,20 +274,19 @@ class Telegram(RPCHandler):
         else:
             msg['profit_extra'] = ''
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
-        message = "".join([
-            f"{msg['emoji']} *{msg['exchange']}:* ",
-            f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n",
-            f"*{'Profit' if is_fill else 'Unrealized Profit'}:* ",
-            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n",
-            f"*Enter Tag:* `{msg['enter_tag']}`\n",
-            f"*Exit Reason:* `{msg['sell_reason']}`\n",
-            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n",
-            f"*Direction:* `{msg['direction']}`\n",
-            f"*Leverage:* `{msg['leverage']:.1f}`\n" if
-            msg.get('leverage', None) is not None else "",
-            f"*Amount:* `{msg['amount']:.8f}`\n",
+        message = (
+            f"{msg['emoji']} *{msg['exchange']}:* "
+            f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
+            f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
+            f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
+            f"*Enter Tag:* `{msg['enter_tag']}`\n"
+            f"*Exit Reason:* `{msg['sell_reason']}`\n"
+            f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
+            f"*Direction:* `{msg['direction']}`\n"
+            f"{msg['leverage_text']}"
+            f"*Amount:* `{msg['amount']:.8f}`\n"
             f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-        ])
+        )
         if msg['type'] == RPCMessageType.SELL:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")
