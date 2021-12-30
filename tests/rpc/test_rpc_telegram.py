@@ -1707,11 +1707,10 @@ def test_send_msg_buy_notification(default_conf, mocker, caplog, message_type,
     msg_mock.call_args_list[0][1]['disable_notification'] is True
 
 
-@pytest.mark.parametrize('message_type,enter,enter_signal', [
-    (RPCMessageType.BUY_CANCEL, 'Long', 'long_signal_01'),
-    (RPCMessageType.SHORT_CANCEL, 'Short', 'short_signal_01')])
-def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type,
-                                          enter, enter_signal) -> None:
+@pytest.mark.parametrize('message_type,enter_signal', [
+    (RPCMessageType.BUY_CANCEL, 'long_signal_01'),
+    (RPCMessageType.SHORT_CANCEL, 'short_signal_01')])
+def test_send_msg_buy_cancel_notification(default_conf, mocker, message_type, enter_signal) -> None:
 
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
 
