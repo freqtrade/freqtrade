@@ -2874,6 +2874,8 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
         'amount': amt,
         'order_type': 'limit',
         'buy_tag': None,
+        'direction': 'Short' if trade.is_short else 'Long',
+        'leverage': 1.0,
         'enter_tag': None,
         'open_rate': open_rate,
         'current_rate': 2.01 if is_short else 2.3,
@@ -2926,6 +2928,8 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
+        'direction': 'Short' if trade.is_short else 'Long',
+        'leverage': 1.0,
         'gain': 'loss',
         'limit': 2.2 if is_short else 2.01,
         'amount': 29.70297029 if is_short else 30.0,
@@ -3004,6 +3008,8 @@ def test_execute_trade_exit_custom_exit_price(
         'type': RPCMessageType.SELL,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
+        'direction': 'Short' if trade.is_short else 'Long',
+        'leverage': 1.0,
         'gain': profit_or_loss,
         'limit': limit,
         'amount': amount,
@@ -3069,6 +3075,8 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
+        'direction': 'Short' if trade.is_short else 'Long',
+        'leverage': 1.0,
         'gain': 'loss',
         'limit': 2.02 if is_short else 1.98,
         'amount': 29.70297029 if is_short else 30.0,
@@ -3182,6 +3190,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     assert rpc_mock.call_count == 3
 
 
+# TODO-lev: add short, RPC short, short fill
 def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(default_conf_usdt, ticker_usdt, fee,
                                                                mocker) -> None:
     default_conf_usdt['exchange']['name'] = 'binance'
@@ -3323,6 +3332,8 @@ def test_execute_trade_exit_market_order(
         'trade_id': 1,
         'exchange': 'Binance',
         'pair': 'ETH/USDT',
+        'direction': 'Short' if trade.is_short else 'Long',
+        'leverage': 1.0,
         'gain': profit_or_loss,
         'limit': limit,
         'amount': round(amount, 9),

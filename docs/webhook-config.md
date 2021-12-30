@@ -98,12 +98,14 @@ Different payloads can be configured for different events. Not all fields are ne
 
 ### Webhookbuy
 
-The fields in `webhook.webhookbuy` are filled when the bot executes a buy. Parameters are filled using string.format.
+The fields in `webhook.webhookbuy` are filled when the bot executes a long/short. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * ~~`limit` # Deprecated - should no longer be used.~~
 * `open_rate`
 * `amount`
@@ -117,12 +119,14 @@ Possible parameters are:
 
 ### Webhookbuycancel
 
-The fields in `webhook.webhookbuycancel` are filled when the bot cancels a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookbuycancel` are filled when the bot cancels a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `limit`
 * `amount`
 * `open_date`
@@ -135,12 +139,14 @@ Possible parameters are:
 
 ### Webhookbuyfill
 
-The fields in `webhook.webhookbuyfill` are filled when the bot filled a buy order. Parameters are filled using string.format.
+The fields in `webhook.webhookbuyfill` are filled when the bot filled a long/short order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `open_rate`
 * `amount`
 * `open_date`
@@ -152,13 +158,14 @@ Possible parameters are:
 * `enter_tag`
 
 ### Webhooksell
-
 The fields in `webhook.webhooksell` are filled when the bot sells a trade. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `limit`
 * `amount`
@@ -180,6 +187,8 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `close_rate`
 * `amount`
@@ -202,6 +211,8 @@ Possible parameters are:
 * `trade_id`
 * `exchange`
 * `pair`
+* `direction`
+* `leverage`
 * `gain`
 * `limit`
 * `amount`

@@ -221,20 +221,25 @@ class Telegram(RPCHandler):
                 msg['stake_amount'], msg['stake_currency'], msg['fiat_currency'])
         else:
             msg['stake_amount_fiat'] = 0
-        is_fill = msg['type'] == RPCMessageType.BUY_FILL
+        is_fill = msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]
         emoji = '\N{CHECK MARK}' if is_fill else '\N{LARGE BLUE CIRCLE}'
 
+        enter_side = ({'enter': 'Long', 'entered': 'Longed'} if msg['type']
+                      in [RPCMessageType.BUY_FILL, RPCMessageType.BUY]
+                      else {'enter': 'Short', 'entered': 'Shorted'})
         message = (
-            f"{emoji} *{msg['exchange']}:* {'Bought' if is_fill else 'Buying'} {msg['pair']}"
+            f"{emoji} *{msg['exchange']}:*"
+            f" {enter_side['entered'] if is_fill else enter_side['enter']} {msg['pair']}"
             f" (#{msg['trade_id']})\n"
             )
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get('enter_tag', None) else ""
         message += f"*Amount:* `{msg['amount']:.8f}`\n"
+        if msg.get('leverage') and msg.get('leverage', 1.0) != 1.0:
+            message += f"*Leverage:* `{msg['leverage']}`\n"
 
-        if msg['type'] == RPCMessageType.BUY_FILL:
+        if msg['type'] in [RPCMessageType.BUY_FILL, RPCMessageType.SHORT_FILL]:
             message += f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
-
-        elif msg['type'] == RPCMessageType.BUY:
+        elif msg['type'] in [RPCMessageType.BUY, RPCMessageType.SHORT]:
             message += f"*Open Rate:* `{msg['limit']:.8f}`\n"\
                        f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
 
@@ -255,6 +260,9 @@ class Telegram(RPCHandler):
 
         msg['enter_tag'] = msg['enter_tag'] if "enter_tag" in msg.keys() else None
         msg['emoji'] = self._get_sell_emoji(msg)
+        msg['leverage_text'] = (f"*Leverage:* `{msg['leverage']:.1f}`\n"
+                                if msg.get('leverage', None) and msg.get('leverage', 1.0) != 1.0
+                                else "")
 
         # Check if all sell properties are available.
         # This might not be the case if the message origin is triggered by /forcesell
@@ -270,15 +278,17 @@ class Telegram(RPCHandler):
         is_fill = msg['type'] == RPCMessageType.SELL_FILL
         message = (
             f"{msg['emoji']} *{msg['exchange']}:* "
-            f"{'Sold' if is_fill else 'Selling'} {msg['pair']} (#{msg['trade_id']})\n"
+            f"{'Exited' if is_fill else 'Exiting'} {msg['pair']} (#{msg['trade_id']})\n"
             f"*{'Profit' if is_fill else 'Unrealized Profit'}:* "
             f"`{msg['profit_ratio']:.2%}{msg['profit_extra']}`\n"
             f"*Enter Tag:* `{msg['enter_tag']}`\n"
-            f"*Sell Reason:* `{msg['sell_reason']}`\n"
+            f"*Exit Reason:* `{msg['sell_reason']}`\n"
             f"*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`\n"
+            f"*Direction:* `{msg['direction']}`\n"
+            f"{msg['leverage_text']}"
             f"*Amount:* `{msg['amount']:.8f}`\n"
-            f"*Open Rate:* `{msg['open_rate']:.8f}`\n")
-
+            f"*Open Rate:* `{msg['open_rate']:.8f}`\n"
+        )
         if msg['type'] == RPCMessageType.SELL:
             message += (f"*Current Rate:* `{msg['current_rate']:.8f}`\n"
                         f"*Close Rate:* `{msg['limit']:.8f}`")
@@ -289,16 +299,19 @@ class Telegram(RPCHandler):
         return message
 
     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> str:
-        if msg_type in [RPCMessageType.BUY, RPCMessageType.BUY_FILL]:
+        if msg_type in [RPCMessageType.BUY, RPCMessageType.BUY_FILL, RPCMessageType.SHORT,
+                        RPCMessageType.SHORT_FILL]:
             message = self._format_buy_msg(msg)
 
         elif msg_type in [RPCMessageType.SELL, RPCMessageType.SELL_FILL]:
             message = self._format_sell_msg(msg)
 
-        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SELL_CANCEL):
-            msg['message_side'] = 'buy' if msg_type == RPCMessageType.BUY_CANCEL else 'sell'
+        elif msg_type in (RPCMessageType.BUY_CANCEL, RPCMessageType.SHORT_CANCEL,
+                          RPCMessageType.SELL_CANCEL):
+            msg['message_side'] = 'enter' if msg_type in [RPCMessageType.BUY_CANCEL,
+                                                          RPCMessageType.SHORT_CANCEL] else 'exit'
             message = ("\N{WARNING SIGN} *{exchange}:* "
-                       "Cancelling open {message_side} Order for {pair} (#{trade_id}). "
+                       "Cancelling {message_side} Order for {pair} (#{trade_id}). "
                        "Reason: {reason}.".format(**msg))
 
         elif msg_type == RPCMessageType.PROTECTION_TRIGGER:
@@ -398,6 +411,8 @@ class Telegram(RPCHandler):
                 lines = [
                     "*Trade ID:* `{trade_id}` `(since {open_date_hum})`",
                     "*Current Pair:* {pair}",
+                    "*Direction:* " + ("`Short`" if r.get('is_short') else "`Long`"),
+                    "*Leverage:* `{leverage}`" if r.get('leverage') else "",
                     "*Amount:* `{amount} ({stake_amount} {base_currency})`",
                     "*Enter Tag:* `{enter_tag}`" if r['enter_tag'] else "",
                     "*Open Rate:* `{open_rate:.8f}`",

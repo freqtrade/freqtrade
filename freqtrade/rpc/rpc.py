@@ -233,6 +233,7 @@ class RPC:
                     current_rate = NAN
                 trade_profit = trade.calc_profit(current_rate)
                 profit_str = f'{trade.calc_profit_ratio(current_rate):.2%}'
+                direction_str = 'S' if trade.is_short else 'L'
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit,
@@ -244,7 +245,7 @@ class RPC:
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
                 trades_list.append([
-                    trade.id,
+                    f'{trade.id} {direction_str}',
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
                                + ('**' if (trade.close_rate_requested is not None) else ''),
@@ -255,7 +256,7 @@ class RPC:
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair', 'Since', profitcol]
+            columns = ['ID L/S', 'Pair', 'Since', profitcol]
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
