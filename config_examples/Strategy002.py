@@ -11,11 +11,8 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
+import subprocess
 
-PROJECT_DIR = "/root/workspace/execution/"
-import sys
-sys.path.append(PROJECT_DIR)
-from executor import *
 
 class Strategy002(IStrategy):
     """
@@ -64,7 +61,6 @@ class Strategy002(IStrategy):
         'stoploss_on_exchange': False
     }
 
-    # executor = Executor()
 
     def informative_pairs(self):
         """
@@ -164,5 +160,6 @@ class Strategy002(IStrategy):
             False aborts the process
         """
         print("confirm_trade_entry --------------> current_time = " + str(current_time))
+        subprocess.call("python /root/workspace/execution/launcher.py", shell=True)
         return True
 
