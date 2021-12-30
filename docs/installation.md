@@ -56,10 +56,6 @@ OS Specific steps are listed first, the [Common](#common) section below is neces
 !!! Note
     Python3.7 or higher and the corresponding pip are assumed to be available.
 
-!!! Warning "Python 3.10 support"
-    Due to issues with dependencies, freqtrade is currently unable to support python 3.10.
-    We're working on supporting python 3.10, are however dependant on support from dependencies.
-
 === "Debian/Ubuntu"
     #### Install necessary dependencies
 
@@ -424,16 +420,3 @@ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10
 ```
 
 If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
-
-### MacOS installation error with python 3.9
-
-When using python 3.9 on macOS, it's currently necessary to install some os-level modules to allow dependencies to compile.
-The errors you'll see happen during installation and are related to the installation of `tables` or `blosc`.
-
-You can install the necessary libraries with the following command:
-
-```bash
-brew install hdf5 c-blosc
-```
-
-After this, please run the installation (script) again.
