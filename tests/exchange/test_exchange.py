@@ -486,6 +486,9 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     assert isclose(result, expected_result/12)
 
     markets["ETH/BTC"]["contractSize"] = 0.01
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
+    exchange = get_patched_exchange(mocker, default_conf, id="binance")
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
