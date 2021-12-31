@@ -237,8 +237,8 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     (2.34559, 4, 0.001, 1, 2.345),
     (2.9999, 4, 0.001, 1, 2.999),
     (2.9909, 4, 0.001, 1, 2.990),
-    (2.9909, 4, 0.005, 0.01, 0.025),
-    (2.9999, 4, 0.005, 10, 29.995),
+    (2.9909, 4, 0.005, 0.01, 299.09),
+    (2.9999, 4, 0.005, 10, 0.295),
 ])
 def test_amount_to_precision(default_conf, mocker, amount, precision_mode, precision, contract_size, expected):
     """
