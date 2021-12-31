@@ -3747,11 +3747,27 @@ def test__calculate_funding_fees_datetime_called(
     ('LTC/ETH', 1, 'futures'),
     ('ETH/USDT:USDT', 10, 'futures')
 ])
-def test__get_contract_size(mocker, default_conf, markets, pair, expected_size, trading_mode):
+def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_mode):
     api_mock = MagicMock()
     default_conf['trading_mode'] = trading_mode
     default_conf['collateral'] = 'isolated'
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', {
+        'LTC/USD': {
+            'symbol': 'LTC/USD',
+            'contractSize': None,
+        },
+        'XLTCUSDT': {
+            'symbol': 'XLTCUSDT',
+            'contractSize': 0.01,
+        },
+        'LTC/ETH': {
+            'symbol': 'LTC/ETH',
+        },
+        'ETH/USDT:USDT': {
+            'symbol': 'ETH/USDT:USDT',
+            'contractSize': 10,
+        }
+    })
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     size = exchange._get_contract_size(pair)
     assert expected_size == size
