@@ -128,7 +128,6 @@ class PairListManager():
         :return: pairlist - whitelisted pairs
         """
         try:
-            # TODO-lev: filter for pairlists that are able to trade at the desired leverage
             whitelist = expand_pairlist(pairlist, self._exchange.get_markets().keys(), keep_invalid)
         except ValueError as err:
             logger.error(f"Pair whitelist contains an invalid Wildcard: {err}")
