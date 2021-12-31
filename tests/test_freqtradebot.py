@@ -685,7 +685,7 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     inf_pairs = MagicMock(return_value=[
         ("BTC/ETH", '1m', CandleType.SPOT),
         ("ETH/USDT", "1h", CandleType.SPOT)
-        ])
+    ])
     mocker.patch.multiple(
         'freqtrade.strategy.interface.IStrategy',
         get_exit_signal=MagicMock(return_value=(False, False)),
@@ -710,8 +710,8 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     'spot',
     # TODO-lev: Enable other modes
     # 'margin', 'futures'
-    ]
-    )
+]
+)
 @pytest.mark.parametrize("is_short", [False, True])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode) -> None:
@@ -2090,9 +2090,8 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
-    # TODO-lev: Change the next line for shorts
     caplog.clear()
-    patch_get_signal(freqtrade, enter_long=False, exit_long=True)
+    patch_get_signal(freqtrade, enter_long=False, exit_long=not is_short, exit_short=is_short)
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Required profit reached. sell_type=SellType.ROI",
                    caplog)
@@ -4928,4 +4927,4 @@ def test_update_funding_fees(
         assert trade.funding_fees == pytest.approx(sum(
             trade.amount *
             mark_prices[trade.pair].iloc[0:2]['open'] * funding_rates[trade.pair].iloc[0:2]['open']
-            ))
+        ))

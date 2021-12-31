@@ -36,8 +36,7 @@ class MaxDrawdown(IProtection):
         """
         LockReason to use
         """
-        # TODO-lev: < for shorts?
-        return (f'{drawdown} > {self._max_allowed_drawdown} in {self.lookback_period_str}, '
+        return (f'{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, '
                 f'locking for {self.stop_duration_str}.')
 
     def _max_drawdown(self, date_now: datetime) -> ProtectionReturn:
