@@ -875,15 +875,23 @@ class Exchange:
 
     def _amount_to_contracts(self, pair: str, amount: float):
 
+        contract_size = None
         if ('contractSize' in self.markets[pair]):
-            return amount / self.markets[pair]['contractSize']
+            contract_size = self.markets[pair]['contractSize']
+
+        if (contract_size and self.trading_mode == TradingMode.FUTURES):
+            return amount / contract_size
         else:
             return amount
 
     def _contracts_to_amount(self, pair: str, num_contracts: float):
 
+        contract_size = None
         if ('contractSize' in self.markets[pair]):
-            return num_contracts * self.markets[pair]['contractSize']
+            contract_size = self.markets[pair]['contractSize']
+
+        if (contract_size and self.trading_mode == TradingMode.FUTURES):
+            return num_contracts * contract_size
         else:
             return num_contracts
 

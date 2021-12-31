@@ -3897,6 +3897,7 @@ def test__trades_contracts_to_amount(
 @pytest.mark.parametrize('pair,param_amount,param_size', [
     ('XLTCUSDT', 40, 4000),
     ('LTC/ETH', 30, 30),
+    ('LTC/USD', 30, 30),
     ('ETH/USDT:USDT', 10, 1),
 ])
 def test__amount_to_contracts(
@@ -3908,9 +3909,32 @@ def test__amount_to_contracts(
     param_size
 ):
     api_mock = MagicMock()
-    default_conf['trading_mode'] = 'futures'
+    default_conf['trading_mode'] = 'spot'
     default_conf['collateral'] = 'isolated'
-    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    mocker.patch('freqtrade.exchange.Exchange.markets', {
+        'LTC/USD': {
+            'symbol': 'LTC/USD',
+            'contractSize': None,
+        },
+        'XLTCUSDT': {
+            'symbol': 'XLTCUSDT',
+            'contractSize': 0.01,
+        },
+        'LTC/ETH': {
+            'symbol': 'LTC/ETH',
+        },
+        'ETH/USDT:USDT': {
+            'symbol': 'ETH/USDT:USDT',
+            'contractSize': 10,
+        }
+    })
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    result_size = exchange._amount_to_contracts(pair, param_amount)
+    assert result_size == param_amount
+    result_amount = exchange._contracts_to_amount(pair, param_size)
+    assert result_amount == param_size
+
+    default_conf['trading_mode'] = 'futures'
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     result_size = exchange._amount_to_contracts(pair, param_amount)
     assert result_size == param_size
