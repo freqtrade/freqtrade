@@ -80,7 +80,6 @@ class FreqtradeBot(LoggingMixin):
         # so anything in the Freqtradebot instance should be ready (initialized), including
         # the initial state of the bot.
         # Keep this at the end of this initialization method.
-        # TODO-lev: Do I need to consider the rpc, pairlists or dataprovider?
         self.rpc: RPCManager = RPCManager(self)
 
         self.pairlists = PairListManager(self.exchange, self.config)

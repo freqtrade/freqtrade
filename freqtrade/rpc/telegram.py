@@ -1294,7 +1294,6 @@ class Telegram(RPCHandler):
             "         *table :* `will display trades in a table`\n"
             "                `pending buy orders are marked with an asterisk (*)`\n"
             "                `pending sell orders are marked with a double asterisk (**)`\n"
-            # TODO-lev: Update commands and help (?)
             "*/buys <pair|none>:* `Shows the enter_tag performance`\n"
             "*/sells <pair|none>:* `Shows the sell reason performance`\n"
             "*/mix_tags <pair|none>:* `Shows combined buy tag + sell reason performance`\n"
