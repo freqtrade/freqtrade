@@ -381,21 +381,20 @@ class Exchange:
             return 1
 
     def _trades_contracts_to_amount(self, trades: List) -> List:
-        if len(trades) > 0:
+        if len(trades) > 0 and 'symbol' in trades[0]:
             contract_size = self._get_contract_size(trades[0]['symbol'])
             if contract_size != 1:
                 for trade in trades:
                     trade['amount'] = trade['amount'] * contract_size
-            return trades
-        else:
-            return trades
+        return trades
 
     def _order_contracts_to_amount(self, order: Dict) -> Dict:
-        contract_size = self._get_contract_size(order['symbol'])
-        if contract_size != 1:
-            for prop in ['amount', 'cost', 'filled', 'remaining']:
-                if prop in order and order[prop] is not None:
-                    order[prop] = order[prop] * contract_size
+        if 'symbol' in order:
+            contract_size = self._get_contract_size(order['symbol'])
+            if contract_size != 1:
+                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                    if prop in order and order[prop] is not None:
+                        order[prop] = order[prop] * contract_size
         return order
 
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
