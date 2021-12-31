@@ -3,7 +3,6 @@ name: Freqtrade CI
 on:
   push:
     branches:
-      - master
       - stable
       - develop
     tags:
@@ -20,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-18.04, ubuntu-20.04 ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -114,7 +113,7 @@ jobs:
     strategy:
       matrix:
         os: [ macos-latest ]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -205,7 +204,7 @@ jobs:
     strategy:
       matrix:
         os: [ windows-latest ]
-        python-version: [3.7, 3.8]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
