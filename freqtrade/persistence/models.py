@@ -335,7 +335,9 @@ class LocalTrade():
         if self.isolated_liq:
             self.set_isolated_liq(self.isolated_liq)
         self.recalc_open_trade_value()
-        # TODO-lev: Throw exception if on margin and interest_rate is none
+        if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
+            raise OperationalException(
+                f"{self.trading_mode.value} trading requires param interest_rate on trades")
 
     def _set_stop_loss(self, stop_loss: float, percent: float):
         """
