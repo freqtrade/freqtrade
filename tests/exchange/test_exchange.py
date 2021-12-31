@@ -225,22 +225,31 @@ def test_validate_order_time_in_force(default_conf, mocker, caplog):
     ex.validate_order_time_in_force(tif2)
 
 
-@pytest.mark.parametrize("amount,precision_mode,precision,contract_size,expected", [
-    (2.34559, 2, 4, 1, 2.3455),
-    (2.34559, 2, 5, 1, 2.34559),
-    (2.34559, 2, 3, 1, 2.345),
-    (2.9999, 2, 3, 1, 2.999),
-    (2.9909, 2, 3, 1, 2.990),
+@pytest.mark.parametrize("amount,precision_mode,precision,contract_size,expected,trading_mode", [
+    (2.34559, 2, 4, 1, 2.3455, 'spot'),
+    (2.34559, 2, 5, 1, 2.34559, 'spot'),
+    (2.34559, 2, 3, 1, 2.345, 'spot'),
+    (2.9999, 2, 3, 1, 2.999, 'spot'),
+    (2.9909, 2, 3, 1, 2.990, 'spot'),
     # Tests for Tick-size
-    (2.34559, 4, 0.0001, 1, 2.3455),
-    (2.34559, 4, 0.00001, 1, 2.34559),
-    (2.34559, 4, 0.001, 1, 2.345),
-    (2.9999, 4, 0.001, 1, 2.999),
-    (2.9909, 4, 0.001, 1, 2.990),
-    (2.9909, 4, 0.005, 0.01, 299.09),
-    (2.9999, 4, 0.005, 10, 0.295),
+    (2.34559, 4, 0.0001, 1, 2.3455, 'spot'),
+    (2.34559, 4, 0.00001, 1, 2.34559, 'spot'),
+    (2.34559, 4, 0.001, 1, 2.345, 'spot'),
+    (2.9999, 4, 0.001, 1, 2.999, 'spot'),
+    (2.9909, 4, 0.001, 1, 2.990, 'spot'),
+    (2.9909, 4, 0.005, 0.01, 299.09, 'futures'),
+    (2.9999, 4, 0.005, 10, 0.295, 'futures'),
 ])
-def test_amount_to_precision(default_conf, mocker, amount, precision_mode, precision, contract_size, expected):
+def test_amount_to_precision(
+    default_conf,
+    mocker,
+    amount,
+    precision_mode,
+    precision,
+    contract_size,
+    expected,
+    trading_mode
+):
     """
     Test rounds down
     """
@@ -253,6 +262,9 @@ def test_amount_to_precision(default_conf, mocker, amount, precision_mode, preci
             }
         }
     })
+
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = 'isolated'
 
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     # digits counting mode
