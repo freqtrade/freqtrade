@@ -224,7 +224,6 @@ class Binance(Exchange):
 
     def funding_fee_cutoff(self, open_date: datetime):
         """
-        # TODO-lev: Double check that gateio, ftx, and kraken don't also have this
         :param open_date: The open date for a trade
         :return: The cutoff open time for when a funding fee is charged
         """
