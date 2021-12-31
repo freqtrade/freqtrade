@@ -1667,8 +1667,8 @@ def test_get_historic_ohlcv_as_df(default_conf, mocker, exchange_name, candle_ty
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-# TODO-lev @pytest.mark.parametrize('candle_type', ['mark', ''])
-async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name):
+@pytest.mark.parametrize('candle_type', [CandleType.MARK, CandleType.SPOT])
+async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
     ohlcv = [
         [
             int((datetime.now(timezone.utc).timestamp() - 1000) * 1000),
@@ -1685,7 +1685,7 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
 
     pair = 'ETH/USDT'
     respair, restf, _, res = await exchange._async_get_historic_ohlcv(
-        pair, "5m", 1500000000000, candle_type=CandleType.SPOT, is_new_pair=False)
+        pair, "5m", 1500000000000, candle_type=candle_type, is_new_pair=False)
     assert respair == pair
     assert restf == '5m'
     # Call with very old timestamp - causes tons of requests
