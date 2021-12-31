@@ -1200,7 +1200,6 @@ def test_create_order(default_conf, mocker, side, ordertype, rate, marketprice, 
 
     assert exchange._set_leverage.call_count == 1
     assert exchange.set_margin_mode.call_count == 1
-    # assert api_mock.create_order.call_args[0][3] == 100
     assert order['amount'] == 0.01
 
 
