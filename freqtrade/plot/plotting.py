@@ -6,8 +6,8 @@ import pandas as pd
 
 from freqtrade.configuration import TimeRange
 from freqtrade.data.btanalysis import (analyze_trade_parallelism, calculate_max_drawdown,
-                                       combine_dataframes_with_mean, create_cum_profit,
-                                       extract_trades_of_period, load_trades)
+                                       calculate_underwater, combine_dataframes_with_mean,
+                                       create_cum_profit, extract_trades_of_period, load_trades)
 from freqtrade.data.converter import trim_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange, load_data
@@ -183,6 +183,24 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
         fig.add_trace(drawdown, row, 1)
     except ValueError:
         logger.warning("No trades found - not plotting max drawdown.")
+    return fig
+
+
+def add_underwater(fig, row, trades: pd.DataFrame) -> make_subplots:
+    """
+    Add underwater plot
+    """
+    try:
+        underwater = calculate_underwater(trades, value_col="profit_abs")
+
+        underwater = go.Scatter(
+            x=underwater['date'],
+            y=underwater['drawdown'],
+            name="Underwater Plot",
+        )
+        fig.add_trace(underwater, row, 1)
+    except ValueError:
+        logger.warning("No trades found - not plotting underwater plot")
     return fig
 
 
@@ -501,20 +519,23 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
         name='Avg close price',
     )
 
-    fig = make_subplots(rows=4, cols=1, shared_xaxes=True,
-                        row_width=[1, 1, 1, 1],
+    fig = make_subplots(rows=5, cols=1, shared_xaxes=True,
+                        row_width=[1, 1, 1, 1, 1],
+                        row_heights=[1, 1, 1, 0.5, 1],
                         vertical_spacing=0.05,
                         subplot_titles=[
                             "AVG Close Price",
                             "Combined Profit",
                             "Profit per pair",
-                            "Parallelism"
+                            "Parallelism",
+                            "Underwater",
                             ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')
     fig['layout']['yaxis3'].update(title=f'Profit {stake_currency}')
     fig['layout']['yaxis4'].update(title='Trade count')
+    fig['layout']['yaxis5'].update(title='Underwater Plot')
     fig['layout']['xaxis']['rangeslider'].update(visible=False)
     fig.update_layout(modebar_add=["v1hovermode", "toggleSpikeLines"])
 
@@ -522,6 +543,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     fig = add_profit(fig, 2, df_comb, 'cum_profit', 'Profit')
     fig = add_max_drawdown(fig, 2, trades, df_comb, timeframe)
     fig = add_parallelism(fig, 4, trades, timeframe)
+    fig = add_underwater(fig, 5, trades)
 
     for pair in pairs:
         profit_col = f'cum_profit_{pair}'

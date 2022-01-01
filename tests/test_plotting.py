@@ -336,7 +336,7 @@ def test_generate_profit_graph(testdatadir):
     assert fig.layout.yaxis3.title.text == "Profit BTC"
 
     figure = fig.layout.figure
-    assert len(figure.data) == 6
+    assert len(figure.data) == 7
 
     avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
     assert isinstance(avgclose, go.Scatter)
@@ -347,6 +347,9 @@ def test_generate_profit_graph(testdatadir):
     assert isinstance(drawdown, go.Scatter)
     parallel = find_trace_in_fig_data(figure.data, "Parallel trades")
     assert isinstance(parallel, go.Bar)
+
+    underwater = find_trace_in_fig_data(figure.data, "Underwater Plot")
+    assert isinstance(underwater, go.Scatter)
 
     for pair in pairs:
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
