@@ -397,6 +397,28 @@ class Exchange:
                         order[prop] = order[prop] * contract_size
         return order
 
+    def _amount_to_contracts(self, pair: str, amount: float):
+
+        contract_size = None
+        if ('contractSize' in self.markets[pair]):
+            contract_size = self.markets[pair]['contractSize']
+
+        if (contract_size and self.trading_mode == TradingMode.FUTURES):
+            return amount / contract_size
+        else:
+            return amount
+
+    def _contracts_to_amount(self, pair: str, num_contracts: float):
+
+        contract_size = None
+        if ('contractSize' in self.markets[pair]):
+            contract_size = self.markets[pair]['contractSize']
+
+        if (contract_size and self.trading_mode == TradingMode.FUTURES):
+            return num_contracts * contract_size
+        else:
+            return num_contracts
+
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
@@ -872,28 +894,6 @@ class Exchange:
             param = self._ft_has.get('time_in_force_parameter', '')
             params.update({param: time_in_force})
         return params
-
-    def _amount_to_contracts(self, pair: str, amount: float):
-
-        contract_size = None
-        if ('contractSize' in self.markets[pair]):
-            contract_size = self.markets[pair]['contractSize']
-
-        if (contract_size and self.trading_mode == TradingMode.FUTURES):
-            return amount / contract_size
-        else:
-            return amount
-
-    def _contracts_to_amount(self, pair: str, num_contracts: float):
-
-        contract_size = None
-        if ('contractSize' in self.markets[pair]):
-            contract_size = self.markets[pair]['contractSize']
-
-        if (contract_size and self.trading_mode == TradingMode.FUTURES):
-            return num_contracts * contract_size
-        else:
-            return num_contracts
 
     def create_order(self, pair: str, ordertype: str, side: str, amount: float,
                      rate: float, leverage: float = 1.0, time_in_force: str = 'gtc') -> Dict:
