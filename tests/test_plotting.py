@@ -336,15 +336,17 @@ def test_generate_profit_graph(testdatadir):
     assert fig.layout.yaxis3.title.text == "Profit BTC"
 
     figure = fig.layout.figure
-    assert len(figure.data) == 5
+    assert len(figure.data) == 6
 
     avgclose = find_trace_in_fig_data(figure.data, "Avg close price")
     assert isinstance(avgclose, go.Scatter)
 
     profit = find_trace_in_fig_data(figure.data, "Profit")
     assert isinstance(profit, go.Scatter)
-    profit = find_trace_in_fig_data(figure.data, "Max drawdown 10.45%")
-    assert isinstance(profit, go.Scatter)
+    drawdown = find_trace_in_fig_data(figure.data, "Max drawdown 10.45%")
+    assert isinstance(drawdown, go.Scatter)
+    parallel = find_trace_in_fig_data(figure.data, "Parallel trades")
+    assert isinstance(parallel, go.Bar)
 
     for pair in pairs:
         profit_pair = find_trace_in_fig_data(figure.data, f"Profit {pair}")
