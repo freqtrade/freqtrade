@@ -22,9 +22,6 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re
                             patched_configuration_load_config_file)
 
 
-# TODO-lev: This file
-
-
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
     patched_configuration_load_config_file(mocker, default_conf)
 

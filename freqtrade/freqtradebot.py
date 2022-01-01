@@ -68,7 +68,6 @@ class FreqtradeBot(LoggingMixin):
 
         init_db(self.config.get('db_url', None), clean_open_orders=self.config['dry_run'])
 
-        # TODO-lev: Do anything with this?
         self.wallets = Wallets(self.config, self.exchange)
 
         PairLocks.timeframe = self.config['timeframe']
@@ -1133,7 +1132,6 @@ class FreqtradeBot(LoggingMixin):
         Buy cancel - cancel order
         :return: True if order was fully cancelled
         """
-        # TODO-lev: Pay back borrowed/interest and transfer back on leveraged trades
         was_trade_fully_canceled = False
 
         # Cancelled orders may have the status of 'canceled' or 'closed'
@@ -1272,7 +1270,7 @@ class FreqtradeBot(LoggingMixin):
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,
-            ) -> bool:
+    ) -> bool:
         """
         Executes a trade exit for the given trade and limit
         :param trade: Trade instance
