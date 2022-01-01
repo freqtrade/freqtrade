@@ -2797,7 +2797,7 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("trading_mode,amount", [
     ('spot', 0.2340606),
-    ('futures', 2.340606),
+    ('futures', 23.40606),
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode, amount):
@@ -2835,7 +2835,7 @@ def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode,
     orders = exchange.get_trades_for_order(order_id, 'ETH/USDT:USDT', since)
     assert len(orders) == 1
     assert orders[0]['price'] == 165
-    assert orders[0]['amount'] == amount
+    assert isclose(orders[0]['amount'], amount)
     assert api_mock.fetch_my_trades.call_count == 1
     # since argument should be
     assert isinstance(api_mock.fetch_my_trades.call_args[0][1], int)
@@ -3556,81 +3556,6 @@ def test__get_funding_fee(
             kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio)
     else:
         assert kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == kraken_fee
-
-
-def test__get_mark_price_history(mocker, default_conf, mark_ohlcv):
-    api_mock = MagicMock()
-    api_mock.fetch_ohlcv = MagicMock(return_value=mark_ohlcv)
-    type(api_mock).has = PropertyMock(return_value={'fetchOHLCV': True})
-
-    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    mark_prices = exchange._get_mark_price_history("ADA/USDT", 1630454400000)
-    assert mark_prices == {
-        1630454400000: 2.77,
-        1630458000000: 2.73,
-        1630461600000: 2.74,
-        1630465200000: 2.76,
-        1630468800000: 2.76,
-        1630472400000: 2.77,
-        1630476000000: 2.78,
-        1630479600000: 2.78,
-        1630483200000: 2.77,
-        1630486800000: 2.77,
-        1630490400000: 2.84,
-        1630494000000: 2.81,
-        1630497600000: 2.81,
-        1630501200000: 2.82,
-    }
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "_get_mark_price_history",
-        "fetch_ohlcv",
-        pair="ADA/USDT",
-        since=1635580800001
-    )
-
-
-def test_get_funding_rate_history(mocker, default_conf, funding_rate_history_hourly):
-    api_mock = MagicMock()
-    api_mock.fetch_funding_rate_history = MagicMock(return_value=funding_rate_history_hourly)
-    type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
-
-    # mocker.patch('freqtrade.exchange.Exchange.get_funding_fees', lambda pair, since: y)
-    exchange = get_patched_exchange(mocker, default_conf, api_mock)
-    funding_rates = exchange.get_funding_rate_history('ADA/USDT', 1635580800001)
-
-    assert funding_rates == {
-        1630454400000: -0.000008,
-        1630458000000: -0.000004,
-        1630461600000: 0.000012,
-        1630465200000: -0.000003,
-        1630468800000: -0.000007,
-        1630472400000: 0.000003,
-        1630476000000: 0.000019,
-        1630479600000: 0.000003,
-        1630483200000: -0.000003,
-        1630486800000: 0,
-        1630490400000: 0.000013,
-        1630494000000: 0.000077,
-        1630497600000: 0.000072,
-        1630501200000: 0.000097,
-    }
-
-    ccxt_exceptionhandlers(
-        mocker,
-        default_conf,
-        api_mock,
-        "binance",
-        "get_funding_rate_history",
-        "fetch_funding_rate_history",
-        pair="ADA/USDT",
-        since=1630454400000
-    )
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
