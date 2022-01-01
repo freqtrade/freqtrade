@@ -1970,42 +1970,6 @@ class Exchange:
         else:
             return 0.0
 
-    @retrier
-    def get_funding_rate_history(self, pair: str, since: int) -> Dict:
-        """
-        :param pair: quote/base currency pair
-        :param since: timestamp in ms of the beginning time
-        :param end: timestamp in ms of the end time
-        """
-        if not self.exchange_has("fetchFundingRateHistory"):
-            raise ExchangeError(
-                f"fetch_funding_rate_history is not available using {self.name}"
-            )
-
-        # TODO-lev: Gateio has a max limit into the past of 333 days, okex has a limit of 3 months
-        try:
-            funding_history: Dict = {}
-            response = self._api.fetch_funding_rate_history(
-                pair,
-                limit=1000,
-                since=since
-            )
-            for fund in response:
-                d = datetime.fromtimestamp(int(fund['timestamp'] / 1000), timezone.utc)
-                # Round down to the nearest hour, in case of a delayed timestamp
-                # The millisecond timestamps can be delayed ~20ms
-                time = int(timeframe_to_prev_date('1h', d).timestamp() * 1000)
-
-                funding_history[time] = fund['fundingRate']
-            return funding_history
-        except ccxt.DDoSProtection as e:
-            raise DDosProtection(e) from e
-        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
-            raise TemporaryError(
-                f'Could not set margin mode due to {e.__class__.__name__}. Message: {e}') from e
-        except ccxt.BaseError as e:
-            raise OperationalException(e) from e
-
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)
