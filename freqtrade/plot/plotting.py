@@ -461,7 +461,12 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
 def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                           trades: pd.DataFrame, timeframe: str, stake_currency: str) -> go.Figure:
     # Combine close-values for all pairs, rename columns to "pair"
-    df_comb = combine_dataframes_with_mean(data, "close")
+    try:
+        df_comb = combine_dataframes_with_mean(data, "close")
+    except ValueError:
+        raise OperationalException(
+            "No data found. Please make sure that data is available for "
+            "the timerange and pairs selected.")
 
     # Trim trades to available OHLCV data
     trades = extract_trades_of_period(df_comb, trades, date_index=True)

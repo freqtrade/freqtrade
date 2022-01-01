@@ -493,8 +493,8 @@ Since backtesting lacks some detailed information about what happens within a ca
   - ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies
 - Sell-reason does not explain if a trade was positive or negative, just what triggered the sell (this can look odd if negative ROI values are used)
 - Evaluation sequence (if multiple signals happen on the same candle)
-  - ROI (if not stoploss)
   - Sell-signal
+  - ROI (if not stoploss)
   - Stoploss
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.

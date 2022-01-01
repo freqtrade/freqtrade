@@ -25,7 +25,7 @@ function check_installed_python() {
         exit 2
     fi
 
-    for v in 9 8 7
+    for v in 9 10 8 7
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -36,7 +36,7 @@ function check_installed_python() {
         fi
     done
 
-    echo "No usable python found. Please make sure to have python3.7 or newer installed"
+    echo "No usable python found. Please make sure to have python3.7 or newer installed."
     exit 1
 }
 
@@ -205,7 +205,7 @@ function config() {
 }
 
 function install() {
-    
+
     echo_block "Installing mandatory dependencies"
 
     if [ "$(uname -s)" == "Darwin" ]; then
@@ -219,7 +219,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.7 - 3.9, pip, virtualenv, ta-lib you can continue."
+        echo "If you have Python version 3.7 - 3.10, pip, virtualenv, ta-lib you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi

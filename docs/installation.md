@@ -420,16 +420,3 @@ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10
 ```
 
 If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
-
-### MacOS installation error with python 3.9
-
-When using python 3.9 on macOS, it's currently necessary to install some os-level modules to allow dependencies to compile.
-The errors you'll see happen during installation and are related to the installation of `tables` or `blosc`.
-
-You can install the necessary libraries with the following command:
-
-```bash
-brew install hdf5 c-blosc
-```
-
-After this, please run the installation (script) again.

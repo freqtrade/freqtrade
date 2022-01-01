@@ -23,6 +23,7 @@ exclude = '''
 line_length = 100
 multi_line_output=0
 lines_after_imports=2
+skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*"]
 
 [build-system]
 requires = ["setuptools >= 46.4.0", "wheel"]

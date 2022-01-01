@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
 import random
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock
@@ -666,7 +667,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     result = backtesting.backtest(
-        processed=processed,
+        processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
@@ -908,7 +909,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     backtest_conf = {
-        'processed': processed,
+        'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 3,
@@ -931,7 +932,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
     ) == len(data['NXT/BTC']) - 1 - backtesting.strategy.startup_candle_count
 
     backtest_conf = {
-        'processed': processed,
+        'processed': deepcopy(processed),
         'start_date': min_date,
         'end_date': max_date,
         'max_open_trades': 1,

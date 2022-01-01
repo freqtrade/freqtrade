@@ -258,6 +258,9 @@ class Backtesting:
         Helper function to convert a processed dataframes into lists for performance reasons.
 
         Used by backtest() - so keep this optimized for performance.
+
+        :param processed: a processed dictionary with format {pair, data}, which gets cleared to
+        optimize memory usage!
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
@@ -267,7 +270,8 @@ class Backtesting:
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
         # Create dict with data
-        for pair, pair_data in processed.items():
+        for pair in processed.keys():
+            pair_data = processed[pair]
             self.check_abort()
             self.progress.increment()
 
@@ -299,6 +303,9 @@ class Backtesting:
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
             data[pair] = df_analyzed[headers].values.tolist()
+
+            # Do not hold on to old data to reduce memory usage
+            processed[pair] = pair_data = None
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
@@ -577,7 +584,8 @@ class Backtesting:
         Of course try to not have ugly code. By some accessor are sometime slower than functions.
         Avoid extensive logging in this method and functions it calls.
 
-        :param processed: a processed dictionary with format {pair, data}
+        :param processed: a processed dictionary with format {pair, data}, which gets cleared to
+        optimize memory usage!
         :param start_date: backtesting timerange start datetime
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited

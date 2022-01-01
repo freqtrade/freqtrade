@@ -426,8 +426,6 @@ tc26 = BTContainer(data=[
 
 # Test 27: Sell with signal sell in candle 3 (ROI at signal candle)
 # Stoploss at 10% (irrelevant), ROI at 5% (will trigger) - Wins over Sell-signal
-# TODO: figure out if sell-signal should win over ROI
-# Sell-signal wins over stoploss
 tc27 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
@@ -436,8 +434,8 @@ tc27 = BTContainer(data=[
     [3, 5010, 5012, 4986, 5010, 6172, 0, 1],  # sell-signal
     [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
-    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.05, use_sell_signal=True,
-    trades=[BTrade(sell_reason=SellType.ROI, open_tick=1, close_tick=4)]
+    stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_sell_signal=True,
+    trades=[BTrade(sell_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 28: trailing_stop should raise so candle 3 causes a stoploss

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 import arrow
 import numpy as np
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes

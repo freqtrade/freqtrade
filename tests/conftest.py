@@ -4,7 +4,6 @@ import logging
 import re
 from copy import deepcopy
 from datetime import datetime, timedelta
-from functools import reduce
 from pathlib import Path
 from typing import Optional, Tuple
 from unittest.mock import MagicMock, Mock, PropertyMock
@@ -54,17 +53,23 @@ def pytest_configure(config):
 
 
 def log_has(line, logs):
-    # caplog mocker returns log as a tuple: ('freqtrade.something', logging.WARNING, 'foobar')
-    # and we want to match line against foobar in the tuple
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: x[2] == line, logs.record_tuples),
-                  False)
+    """Check if line is found on some caplog's message."""
+    return any(line == message for message in logs.messages)
 
 
 def log_has_re(line, logs):
-    return reduce(lambda a, b: a or b,
-                  filter(lambda x: re.match(line, x[2]), logs.record_tuples),
-                  False)
+    """Check if line matches some caplog's message."""
+    return any(re.match(line, message) for message in logs.messages)
+
+
+def num_log_has(line, logs):
+    """Check how many times line is found in caplog's messages."""
+    return sum(line == message for message in logs.messages)
+
+
+def num_log_has_re(line, logs):
+    """Check how many times line matches caplog's messages."""
+    return sum(bool(re.match(line, message)) for message in logs.messages)
 
 
 def get_args(args):

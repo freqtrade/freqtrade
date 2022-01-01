@@ -254,7 +254,7 @@ class IDataHandler(ABC):
             enddate = pairdf.iloc[-1]['date']
 
             if timerange_startup:
-                self._validate_pairdata(pair, pairdf, timerange_startup)
+                self._validate_pairdata(pair, pairdf, timeframe, timerange_startup)
                 pairdf = trim_dataframe(pairdf, timerange_startup)
                 if self._check_empty_df(pairdf, pair, timeframe, warn_no_data):
                     return pairdf
@@ -281,7 +281,7 @@ class IDataHandler(ABC):
             return True
         return False
 
-    def _validate_pairdata(self, pair, pairdata: DataFrame, timerange: TimeRange):
+    def _validate_pairdata(self, pair, pairdata: DataFrame, timeframe: str, timerange: TimeRange):
         """
         Validates pairdata for missing data at start end end and logs warnings.
         :param pairdata: Dataframe to validate
@@ -291,12 +291,12 @@ class IDataHandler(ABC):
         if timerange.starttype == 'date':
             start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
             if pairdata.iloc[0]['date'] > start:
-                logger.warning(f"Missing data at start for pair {pair}, "
+                logger.warning(f"Missing data at start for pair {pair} at {timeframe}, "
                                f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}")
         if timerange.stoptype == 'date':
             stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
             if pairdata.iloc[-1]['date'] < stop:
-                logger.warning(f"Missing data at end for pair {pair}, "
+                logger.warning(f"Missing data at end for pair {pair} at {timeframe}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
 
 
