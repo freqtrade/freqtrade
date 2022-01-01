@@ -346,7 +346,7 @@ def test_generate_profit_graph(testdatadir):
     drawdown = find_trace_in_fig_data(figure.data, "Max drawdown 10.45%")
     assert isinstance(drawdown, go.Scatter)
     parallel = find_trace_in_fig_data(figure.data, "Parallel trades")
-    assert isinstance(parallel, go.Bar)
+    assert isinstance(parallel, go.Scatter)
 
     underwater = find_trace_in_fig_data(figure.data, "Underwater Plot")
     assert isinstance(underwater, go.Scatter)

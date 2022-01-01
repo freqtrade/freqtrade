@@ -197,6 +197,9 @@ def add_underwater(fig, row, trades: pd.DataFrame) -> make_subplots:
             x=underwater['date'],
             y=underwater['drawdown'],
             name="Underwater Plot",
+            fill='tozeroy',
+            fillcolor='#cc362b',
+            line={'color': '#cc362b'},
         )
         fig.add_trace(underwater, row, 1)
     except ValueError:
@@ -211,10 +214,13 @@ def add_parallelism(fig, row, trades: pd.DataFrame, timeframe: str) -> make_subp
     try:
         result = analyze_trade_parallelism(trades, timeframe)
 
-        drawdown = go.Bar(
+        drawdown = go.Scatter(
             x=result.index,
             y=result['open_trades'],
             name="Parallel trades",
+            fill='tozeroy',
+            fillcolor='#242222',
+            line={'color': '#242222'},
         )
         fig.add_trace(drawdown, row, 1)
     except ValueError:
@@ -520,7 +526,6 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
     )
 
     fig = make_subplots(rows=5, cols=1, shared_xaxes=True,
-                        row_width=[1, 1, 1, 1, 1],
                         row_heights=[1, 1, 1, 0.5, 1],
                         vertical_spacing=0.05,
                         subplot_titles=[

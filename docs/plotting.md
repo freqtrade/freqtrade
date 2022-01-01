@@ -284,6 +284,7 @@ The `plot-profit` subcommand shows an interactive graph with three plots:
 Note that this is not the real-world profit, but more of an estimate.
 * Profit for each individual pair.
 * Parallelism of trades.
+* Underwater (Periods of drawdown).
 
 The first graph is good to get a grip of how the overall market progresses.
 
