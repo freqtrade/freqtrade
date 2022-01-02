@@ -1,5 +1,7 @@
 # pragma pylint: disable=missing-docstring, W0212, line-too-long, C0103, unused-argument
 
+from copy import deepcopy
+
 import pandas as pd
 from arrow import Arrow
 
@@ -31,7 +33,7 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
     processed = backtesting.strategy.advise_all_indicators(data)
     min_date, max_date = get_timerange(processed)
     result = backtesting.backtest(
-        processed=processed,
+        processed=deepcopy(processed),
         start_date=min_date,
         end_date=max_date,
         max_open_trades=10,
