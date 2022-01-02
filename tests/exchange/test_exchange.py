@@ -2797,7 +2797,7 @@ def test_name(default_conf, mocker, exchange_name):
 
 @pytest.mark.parametrize("trading_mode,amount", [
     ('spot', 0.2340606),
-    ('futures', 23.40606),
+    ('futures', 2.340606),
 ])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_trades_for_order(default_conf, mocker, exchange_name, trading_mode, amount):

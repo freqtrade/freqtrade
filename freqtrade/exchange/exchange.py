@@ -1288,13 +1288,9 @@ class Exchange:
             # since needs to be int in milliseconds
             _params = params if params else {}
             my_trades = self._api.fetch_my_trades(
-                pair,
-                int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
-                params=_params
-            )
-            matched_trades = self._trades_contracts_to_amount(
-                trades=[trade for trade in my_trades if trade['order'] == order_id]
-            )
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
+                params=_params)
+            matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
 
