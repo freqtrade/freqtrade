@@ -126,6 +126,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.rpc.cleanup()
         cleanup_db()
+        self.exchange.close()
 
     def startup(self) -> None:
         """

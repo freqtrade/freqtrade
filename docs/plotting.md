@@ -286,6 +286,8 @@ The `plot-profit` subcommand shows an interactive graph with three plots:
 * The summarized profit made by backtesting.
 Note that this is not the real-world profit, but more of an estimate.
 * Profit for each individual pair.
+* Parallelism of trades.
+* Underwater (Periods of drawdown).
 
 The first graph is good to get a grip of how the overall market progresses.
 
@@ -294,6 +296,8 @@ Perhaps you want an algorithm that steadily makes small profits, or one that act
 This graph will also highlight the start (and end) of the Max drawdown period.
 
 The third graph can be useful to spot outliers, events in pairs that cause profit spikes.
+
+The forth graph can help you analyze trade parallelism, showing how often max_open_trades have been maxed out.
 
 Possible options for the `freqtrade plot-profit` subcommand:
 

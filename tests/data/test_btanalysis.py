@@ -11,10 +11,10 @@ from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
                                        analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
-                                       combine_dataframes_with_mean, create_cum_profit,
-                                       extract_trades_of_period, get_latest_backtest_filename,
-                                       get_latest_hyperopt_file, load_backtest_data, load_trades,
-                                       load_trades_from_db)
+                                       calculate_underwater, combine_dataframes_with_mean,
+                                       create_cum_profit, extract_trades_of_period,
+                                       get_latest_backtest_filename, get_latest_hyperopt_file,
+                                       load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
@@ -234,6 +234,13 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "mean" in df.columns
 
 
+def test_combine_dataframes_with_mean_no_data(testdatadir):
+    pairs = ["ETH/BTC", "ADA/BTC"]
+    data = load_data(datadir=testdatadir, pairs=pairs, timeframe='6m')
+    with pytest.raises(ValueError, match=r"No objects to concatenate"):
+        combine_dataframes_with_mean(data)
+
+
 def test_create_cum_profit(testdatadir):
     filename = testdatadir / "backtest-result_test.json"
     bt_data = load_backtest_data(filename)
@@ -284,8 +291,15 @@ def test_calculate_max_drawdown(testdatadir):
     assert isinstance(lval, float)
     assert hdate == Timestamp('2018-01-24 14:25:00', tz='UTC')
     assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
+
+    underwater = calculate_underwater(bt_data)
+    assert isinstance(underwater, DataFrame)
+
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(DataFrame())
+
+    with pytest.raises(ValueError, match='Trade dataframe empty.'):
+        calculate_underwater(DataFrame())
 
 
 def test_calculate_csum(testdatadir):

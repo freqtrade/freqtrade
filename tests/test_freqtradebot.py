@@ -1905,7 +1905,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_buy_order_usdt_o
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Required profit reached. sell_type=SellType.ROI",
                    caplog)
@@ -3242,7 +3242,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
     assert freqtrade.handle_trade(trade) is False
 
     # Test if buy-signal is absent (should sell due to roi = true)
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3428,11 +3428,11 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usd
     trade = Trade.query.first()
     trade.update(limit_buy_order_usdt)
     # Sell due to min_roi_reached
-    patch_get_signal(freqtrade, value=(True, True, None, None))
+    patch_get_signal(freqtrade, value=(True, False, None, None))
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
