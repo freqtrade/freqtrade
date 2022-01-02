@@ -1893,17 +1893,21 @@ def test_total_open_trades_stakes(fee, is_short, use_db):
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
+@pytest.mark.parametrize('is_short,result', [
+    (True, -0.006739127),
+    (False, 0.000739127),
+    (None, -0.005429127),
+])
 @pytest.mark.parametrize('use_db', [True, False])
-def test_get_total_closed_profit(fee, use_db):
+def test_get_total_closed_profit(fee, use_db, is_short, result):
 
     Trade.use_db = use_db
     Trade.reset_trades()
     res = Trade.get_total_closed_profit()
     assert res == 0
-    create_mock_trades(fee, False, use_db)
+    create_mock_trades(fee, is_short, use_db)
     res = Trade.get_total_closed_profit()
-    assert res == 0.000739127
+    assert pytest.approx(res) == result
 
     Trade.use_db = True
 
@@ -1956,17 +1960,21 @@ def test_get_overall_performance(fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: @pytest.mark.parametrize('is_short', [True, False])
-def test_get_best_pair(fee):
+@pytest.mark.parametrize('is_short,pair,profit', [
+    (True, 'ETC/BTC', -0.005),
+    (False, 'XRP/BTC', 0.01),
+    (None, 'XRP/BTC', 0.01),
+])
+def test_get_best_pair(fee, is_short, pair, profit):
 
     res = Trade.get_best_pair()
     assert res is None
 
-    create_mock_trades(fee, False)
+    create_mock_trades(fee, is_short)
     res = Trade.get_best_pair()
     assert len(res) == 2
-    assert res[0] == 'XRP/BTC'
-    assert res[1] == 0.01
+    assert res[0] == pair
+    assert res[1] == profit
 
 
 @pytest.mark.usefixtures("init_persistence")
