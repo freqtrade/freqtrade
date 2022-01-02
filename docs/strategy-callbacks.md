@@ -639,7 +639,6 @@ class DigDeeperStrategy(IStrategy):
             return None
 
         count_of_buys = 0
-        initial_order_stake = 
         for order in trade.orders:
             if order.ft_order_side == 'buy' and order.status == "closed":
                 count_of_buys += 1

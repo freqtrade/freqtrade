@@ -184,7 +184,6 @@ class Wallets:
             return 0
 
         possible_stake = (available_amount + val_tied_up) / self._config['max_open_trades']
-
         # Theoretical amount can be above available amount - therefore limit to available amount!
         return min(possible_stake, available_amount)
 
