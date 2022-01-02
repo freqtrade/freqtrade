@@ -1896,6 +1896,7 @@ def test_total_open_trades_stakes(fee, is_short, use_db):
 @pytest.mark.parametrize('is_short,result', [
     (True, -0.006739127),
     (False, 0.000739127),
+    (None, -0.005429127),
 ])
 @pytest.mark.parametrize('use_db', [True, False])
 def test_get_total_closed_profit(fee, use_db, is_short, result):
@@ -1906,7 +1907,7 @@ def test_get_total_closed_profit(fee, use_db, is_short, result):
     assert res == 0
     create_mock_trades(fee, is_short, use_db)
     res = Trade.get_total_closed_profit()
-    assert res == result
+    assert pytest.approx(res) == result
 
     Trade.use_db = True
 
@@ -1962,6 +1963,7 @@ def test_get_overall_performance(fee):
 @pytest.mark.parametrize('is_short,pair,profit', [
     (True, 'ETC/BTC', -0.005),
     (False, 'XRP/BTC', 0.01),
+    (None, 'XRP/BTC', 0.01),
 ])
 def test_get_best_pair(fee, is_short, pair, profit):
 
