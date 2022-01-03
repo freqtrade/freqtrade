@@ -215,9 +215,19 @@ class TestCCXTExchange():
         rate = funding_ohlcv[pair_tf]
 
         this_hour = timeframe_to_prev_date(timeframe_ff)
-        prev_hour = timeframe_to_prev_date(timeframe_ff, this_hour - timedelta(minutes=1))
-        assert rate[rate['date'] == this_hour].iloc[0]['open'] != 0.0
-        assert rate[rate['date'] == prev_hour].iloc[0]['open'] != 0.0
+        hour1 = timeframe_to_prev_date(timeframe_ff, this_hour - timedelta(minutes=1))
+        hour2 = timeframe_to_prev_date(timeframe_ff, hour1 - timedelta(minutes=1))
+        hour3 = timeframe_to_prev_date(timeframe_ff, hour2 - timedelta(minutes=1))
+        val0 = rate[rate['date'] == this_hour].iloc[0]['open']
+        val1 = rate[rate['date'] == hour1].iloc[0]['open']
+        val2 = rate[rate['date'] == hour2].iloc[0]['open']
+        val3 = rate[rate['date'] == hour3].iloc[0]['open']
+
+        # Test For last 4 hours
+        # Avoids random test-failure when funding-fees are 0 for a few hours.
+        assert val0 != 0.0 or val1 != 0.0 or val2 != 0.0 or val3 != 0.0
+        assert rate['open'].max() != 0.0
+        assert rate['open'].min() != rate['open'].max()
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
