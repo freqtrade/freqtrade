@@ -370,6 +370,49 @@ class Exchange:
         else:
             return DataFrame()
 
+    def _get_contract_size(self, pair: str) -> int:
+        if self.trading_mode == TradingMode.FUTURES:
+            market = self.markets[pair]
+            contract_size = 1
+            if 'contractSize' in market and market['contractSize'] is not None:
+                contract_size = market['contractSize']
+            return contract_size
+        else:
+            return 1
+
+    def _trades_contracts_to_amount(self, trades: List) -> List:
+        if len(trades) > 0 and 'symbol' in trades[0]:
+            contract_size = self._get_contract_size(trades[0]['symbol'])
+            if contract_size != 1:
+                for trade in trades:
+                    trade['amount'] = trade['amount'] * contract_size
+        return trades
+
+    def _order_contracts_to_amount(self, order: Dict) -> Dict:
+        if 'symbol' in order:
+            contract_size = self._get_contract_size(order['symbol'])
+            if contract_size != 1:
+                for prop in ['amount', 'cost', 'filled', 'remaining']:
+                    if prop in order and order[prop] is not None:
+                        order[prop] = order[prop] * contract_size
+        return order
+
+    def _amount_to_contracts(self, pair: str, amount: float):
+
+        contract_size = self._get_contract_size(pair)
+        if contract_size and contract_size != 1:
+            return amount / contract_size
+        else:
+            return amount
+
+    def _contracts_to_amount(self, pair: str, num_contracts: float):
+
+        contract_size = self._get_contract_size(pair)
+        if contract_size and contract_size != 1:
+            return num_contracts * contract_size
+        else:
+            return num_contracts
+
     def set_sandbox(self, api: ccxt.Exchange, exchange_config: dict, name: str) -> None:
         if exchange_config.get('sandbox'):
             if api.urls.get('test'):
@@ -587,6 +630,7 @@ class Exchange:
         Re-implementation of ccxt internal methods - ensuring we can test the result is correct
         based on our definitions.
         """
+        amount = self._amount_to_contracts(pair, amount)
         if self.markets[pair]['precision']['amount']:
             amount = float(decimal_to_precision(amount, rounding_mode=TRUNCATE,
                                                 precision=self.markets[pair]['precision']['amount'],
@@ -645,11 +689,21 @@ class Exchange:
         limits = market['limits']
         if ('cost' in limits and 'min' in limits['cost']
                 and limits['cost']['min'] is not None):
-            min_stake_amounts.append(limits['cost']['min'])
+            min_stake_amounts.append(
+                self._contracts_to_amount(
+                    pair,
+                    limits['cost']['min']
+                )
+            )
 
         if ('amount' in limits and 'min' in limits['amount']
                 and limits['amount']['min'] is not None):
-            min_stake_amounts.append(limits['amount']['min'] * price)
+            min_stake_amounts.append(
+                self._contracts_to_amount(
+                    pair,
+                    limits['amount']['min'] * price
+                )
+            )
 
         if not min_stake_amounts:
             return None
@@ -685,7 +739,7 @@ class Exchange:
     def create_dry_run_order(self, pair: str, ordertype: str, side: str, amount: float,
                              rate: float, leverage: float, params: Dict = {}) -> Dict[str, Any]:
         order_id = f'dry_run_{side}_{datetime.now().timestamp()}'
-        _amount = self.amount_to_precision(pair, amount)
+        _amount = self._contracts_to_amount(pair, self.amount_to_precision(pair, amount))
         dry_order: Dict[str, Any] = {
             'id': order_id,
             'symbol': pair,
@@ -861,6 +915,7 @@ class Exchange:
                 params
             )
             self._log_exchange_response('create_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
 
         except ccxt.InsufficientFunds as e:
@@ -909,6 +964,7 @@ class Exchange:
         try:
             order = self._api.fetch_order(order_id, pair)
             self._log_exchange_response('fetch_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
         except ccxt.OrderNotFound as e:
             raise RetryableOrderError(
@@ -963,6 +1019,7 @@ class Exchange:
         try:
             order = self._api.cancel_order(order_id, pair)
             self._log_exchange_response('cancel_order', order)
+            order = self._order_contracts_to_amount(order)
             return order
         except ccxt.InvalidOrder as e:
             raise InvalidOrderException(
@@ -1230,6 +1287,9 @@ class Exchange:
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
+
+            matched_trades = self._trades_contracts_to_amount(matched_trades)
+
             return matched_trades
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -1572,6 +1632,7 @@ class Exchange:
                     '(' + arrow.get(since // 1000).isoformat() + ') ' if since is not None else ''
                 )
                 trades = await self._api_async.fetch_trades(pair, since=since, limit=1000)
+            trades = self._trades_contracts_to_amount(trades)
             return trades_dict_to_list(trades)
         except ccxt.NotSupported as e:
             raise OperationalException(
