@@ -21,6 +21,7 @@ def test_buy_kraken_trading_agreement(default_conf, mocker):
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }
@@ -53,6 +54,7 @@ def test_sell_kraken_trading_agreement(default_conf, mocker):
     api_mock.options = {}
     api_mock.create_order = MagicMock(return_value={
         'id': order_id,
+        'symbol': 'ETH/BTC',
         'info': {
             'foo': 'bar'
         }

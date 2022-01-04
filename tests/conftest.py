@@ -914,6 +914,7 @@ def get_markets():
             'active': True,
             'spot': True,
             'type': 'spot',
+            'contractSize': None,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -937,7 +938,8 @@ def get_markets():
             'quote': 'USDT',
             'active': True,
             'spot': False,
-            'type': 'SomethingElse',
+            'type': 'swap',
+            'contractSize': 0.01,
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -985,6 +987,59 @@ def get_markets():
             'info': {
             }
         },
+        'ETH/USDT:USDT': {
+            'id': 'ETH_USDT',
+            'symbol': 'ETH/USDT:USDT',
+            'base': 'ETH',
+            'quote': 'USDT',
+            'settle': 'USDT',
+            'baseId': 'ETH',
+            'quoteId': 'USDT',
+            'settleId': 'USDT',
+            'type': 'swap',
+            'spot': False,
+            'margin': False,
+            'swap': True,
+            'futures': False,
+            'option': False,
+            'derivative': True,
+            'contract': True,
+            'linear': True,
+            'inverse': False,
+            'tierBased': False,
+            'percentage': True,
+            'taker': 0.0006,
+            'maker': 0.0002,
+            'contractSize': 10,
+            'active': True,
+            'expiry': None,
+            'expiryDatetime': None,
+            'strike': None,
+            'optionType': None,
+            'limits': {
+                'leverage': {
+                    'min': 1,
+                    'max': 100
+                },
+                'amount': {
+                    'min': 1,
+                    'max': 300000
+                },
+                'price': {
+                    'min': None,
+                    'max': None,
+                },
+                'cost': {
+                    'min': None,
+                    'max': None,
+                }
+            },
+            'precision': {
+                'price': 0.05,
+                'amount': 1
+            },
+            'info': {}
+        }
     }
 
 
