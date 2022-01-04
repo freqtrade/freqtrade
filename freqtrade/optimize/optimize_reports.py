@@ -462,10 +462,13 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     }
 
     try:
+        max_drawdown_legacy, _, _, _, _, _ = calculate_max_drawdown(
+            results, value_col='profit_ratio')
         (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
          max_drawdown) = calculate_max_drawdown(
              results, value_col='profit_abs', starting_balance=starting_balance)
         strat_stats.update({
+            'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
             'max_drawdown_account': max_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
@@ -485,6 +488,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
     except ValueError:
         strat_stats.update({
+            'max_drawdown': 0.0,
             'max_drawdown_account': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
