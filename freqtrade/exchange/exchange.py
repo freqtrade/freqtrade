@@ -83,6 +83,8 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         self._config.update(config)
 
@@ -170,8 +172,10 @@ class Exchange:
 
     def close(self):
         logger.debug("Exchange object destroyed, closing async loop")
-        if self._api_async and inspect.iscoroutinefunction(self._api_async.close):
-            asyncio.get_event_loop().run_until_complete(self._api_async.close())
+        if (self._api_async and inspect.iscoroutinefunction(self._api_async.close)
+                and self._api_async.session):
+            logger.info("Closing async ccxt session.")
+            self.loop.run_until_complete(self._api_async.close())
 
     def _init_ccxt(self, exchange_config: Dict[str, Any], ccxt_module: CcxtModuleType = ccxt,
                    ccxt_kwargs: Dict = {}) -> ccxt.Exchange:
@@ -326,7 +330,7 @@ class Exchange:
     def _load_async_markets(self, reload: bool = False) -> None:
         try:
             if self._api_async:
-                asyncio.get_event_loop().run_until_complete(
+                self.loop.run_until_complete(
                     self._api_async.load_markets(reload=reload))
 
         except (asyncio.TimeoutError, ccxt.BaseError) as e:
@@ -685,16 +689,20 @@ class Exchange:
         if not self.exchange_has('fetchL2OrderBook'):
             return True
         ob = self.fetch_l2_order_book(pair, 1)
-        if side == 'buy':
-            price = ob['asks'][0][0]
-            logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
-            if limit >= price:
-                return True
-        else:
-            price = ob['bids'][0][0]
-            logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
-            if limit <= price:
-                return True
+        try:
+            if side == 'buy':
+                price = ob['asks'][0][0]
+                logger.debug(f"{pair} checking dry buy-order: price={price}, limit={limit}")
+                if limit >= price:
+                    return True
+            else:
+                price = ob['bids'][0][0]
+                logger.debug(f"{pair} checking dry sell-order: price={price}, limit={limit}")
+                if limit <= price:
+                    return True
+        except IndexError:
+            # Ignore empty orderbooks when filling - can be filled with the next iteration.
+            pass
         return False
 
     def check_dry_limit_order_filled(self, order: Dict[str, Any]) -> Dict[str, Any]:
@@ -1087,7 +1095,8 @@ class Exchange:
     # Fee handling
 
     @retrier
-    def get_trades_for_order(self, order_id: str, pair: str, since: datetime) -> List:
+    def get_trades_for_order(self, order_id: str, pair: str, since: datetime,
+                             params: Optional[Dict] = None) -> List:
         """
         Fetch Orders using the "fetch_my_trades" endpoint and filter them by order-id.
         The "since" argument passed in is coming from the database and is in UTC,
@@ -1111,8 +1120,10 @@ class Exchange:
         try:
             # Allow 5s offset to catch slight time offsets (discovered in #1185)
             # since needs to be int in milliseconds
+            _params = params if params else {}
             my_trades = self._api.fetch_my_trades(
-                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000))
+                pair, int((since.replace(tzinfo=timezone.utc).timestamp() - 5) * 1000),
+                params=_params)
             matched_trades = [trade for trade in my_trades if trade['order'] == order_id]
 
             self._log_exchange_response('get_trades_for_order', matched_trades)
@@ -1190,9 +1201,11 @@ class Exchange:
                 tick = self.fetch_ticker(comb)
 
                 fee_to_quote_rate = safe_value_fallback2(tick, tick, 'last', 'ask')
-                return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
             except ExchangeError:
-                return None
+                fee_to_quote_rate = self._config['exchange'].get('unknown_fee_rate', None)
+                if not fee_to_quote_rate:
+                    return None
+            return round((order['fee']['cost'] * fee_to_quote_rate) / order['cost'], 8)
 
     def extract_cost_curr_rate(self, order: Dict) -> Tuple[float, str, Optional[float]]:
         """
@@ -1218,7 +1231,7 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :return: List with candle (OHLCV) data
         """
-        pair, timeframe, data = asyncio.get_event_loop().run_until_complete(
+        pair, timeframe, data = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(pair=pair, timeframe=timeframe,
                                            since_ms=since_ms, is_new_pair=is_new_pair))
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
@@ -1263,7 +1276,7 @@ class Exchange:
             results = await asyncio.gather(*input_coro, return_exceptions=True)
             for res in results:
                 if isinstance(res, Exception):
-                    logger.warning("Async code raised an exception: %s", res.__class__.__name__)
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
                     if raise_:
                         raise
                     continue
@@ -1317,27 +1330,32 @@ class Exchange:
                 )
                 cached_pairs.append((pair, timeframe))
 
-        results = asyncio.get_event_loop().run_until_complete(
-            asyncio.gather(*input_coroutines, return_exceptions=True))
-
         results_df = {}
-        # handle caching
-        for res in results:
-            if isinstance(res, Exception):
-                logger.warning("Async code raised an exception: %s", res.__class__.__name__)
-                continue
-            # Deconstruct tuple (has 3 elements)
-            pair, timeframe, ticks = res
-            # keeping last candle time as last refreshed time of the pair
-            if ticks:
-                self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
-            # keeping parsed dataframe in cache
-            ohlcv_df = ohlcv_to_dataframe(
-                ticks, timeframe, pair=pair, fill_missing=True,
-                drop_incomplete=self._ohlcv_partial_candle)
-            results_df[(pair, timeframe)] = ohlcv_df
-            if cache:
-                self._klines[(pair, timeframe)] = ohlcv_df
+        # Chunk requests into batches of 100 to avoid overwelming ccxt Throttling
+        for input_coro in chunks(input_coroutines, 100):
+            async def gather_stuff():
+                return await asyncio.gather(*input_coro, return_exceptions=True)
+
+            results = self.loop.run_until_complete(gather_stuff())
+
+            # handle caching
+            for res in results:
+                if isinstance(res, Exception):
+                    logger.warning(f"Async code raised an exception: {repr(res)}")
+                    continue
+                # Deconstruct tuple (has 3 elements)
+                pair, timeframe, ticks = res
+                # keeping last candle time as last refreshed time of the pair
+                if ticks:
+                    self._pairs_last_refresh_time[(pair, timeframe)] = ticks[-1][0] // 1000
+                # keeping parsed dataframe in cache
+                ohlcv_df = ohlcv_to_dataframe(
+                    ticks, timeframe, pair=pair, fill_missing=True,
+                    drop_incomplete=self._ohlcv_partial_candle)
+                results_df[(pair, timeframe)] = ohlcv_df
+                if cache:
+                    self._klines[(pair, timeframe)] = ohlcv_df
+
         # Return cached klines
         for pair, timeframe in cached_pairs:
             results_df[(pair, timeframe)] = self.klines((pair, timeframe), copy=False)
@@ -1554,7 +1572,7 @@ class Exchange:
         if not self.exchange_has("fetchTrades"):
             raise OperationalException("This exchange does not support downloading Trades.")
 
-        return asyncio.get_event_loop().run_until_complete(
+        return self.loop.run_until_complete(
             self._async_get_trade_history(pair=pair, since=since,
                                           until=until, from_id=from_id))
 

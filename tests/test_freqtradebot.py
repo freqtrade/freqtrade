@@ -1904,7 +1904,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_buy_order_usdt_o
     #      we might just want to check if we are in a sell condition without
     #      executing
     # if ROI is reached we must sell
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade)
     assert log_has("ETH/USDT - Required profit reached. sell_type=SellType.ROI",
                    caplog)
@@ -2171,10 +2171,20 @@ def test_check_handle_timedout_sell_usercustom(default_conf_usdt, ticker_usdt, l
     assert open_trade.is_open is True
     assert freqtrade.strategy.check_sell_timeout.call_count == 1
 
-    # 2nd canceled trade ...
+    # 2nd canceled trade - Fail execute sell
     caplog.clear()
     open_trade.open_order_id = 'order_id_2'
     mocker.patch('freqtrade.persistence.Trade.get_exit_order_count', return_value=1)
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit',
+                 side_effect=DependencyException)
+    freqtrade.check_handle_timedout()
+    assert log_has_re('Unable to emergency sell .*', caplog)
+
+    et_mock = mocker.patch('freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit')
+    caplog.clear()
+
+    # 2nd canceled trade ...
+    open_trade.open_order_id = 'order_id_2'
     freqtrade.check_handle_timedout()
     assert log_has_re('Emergencyselling trade.*', caplog)
     assert et_mock.call_count == 1
@@ -2979,7 +2989,7 @@ def test_execute_trade_exit_market_order(default_conf_usdt, ticker_usdt, fee,
     assert trade.close_profit == 0.09451372
 
     assert rpc_mock.call_count == 3
-    last_msg = rpc_mock.call_args_list[-1][0][0]
+    last_msg = rpc_mock.call_args_list[-2][0][0]
     assert {
         'type': RPCMessageType.SELL,
         'trade_id': 1,
@@ -3231,7 +3241,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usdt,
     assert freqtrade.handle_trade(trade) is False
 
     # Test if buy-signal is absent (should sell due to roi = true)
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 
@@ -3417,11 +3427,11 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_buy_order_usd
     trade = Trade.query.first()
     trade.update(limit_buy_order_usdt)
     # Sell due to min_roi_reached
-    patch_get_signal(freqtrade, value=(True, True, None, None))
+    patch_get_signal(freqtrade, value=(True, False, None, None))
     assert freqtrade.handle_trade(trade) is True
 
     # Test if buy-signal is absent
-    patch_get_signal(freqtrade, value=(False, True, None, None))
+    patch_get_signal(freqtrade, value=(False, False, None, None))
     assert freqtrade.handle_trade(trade) is True
     assert trade.sell_reason == SellType.ROI.value
 

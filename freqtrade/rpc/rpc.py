@@ -98,7 +98,8 @@ class RPC:
             self._fiat_converter = CryptoToFiatConverter()
 
     @staticmethod
-    def _rpc_show_config(config, botstate: Union[State, str]) -> Dict[str, Any]:
+    def _rpc_show_config(config, botstate: Union[State, str],
+                         strategy_version: Optional[str] = None) -> Dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
@@ -106,6 +107,7 @@ class RPC:
         """
         val = {
             'version': __version__,
+            'strategy_version': strategy_version,
             'dry_run': config['dry_run'],
             'stake_currency': config['stake_currency'],
             'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
@@ -857,6 +859,20 @@ class RPC:
                'whitelist': self._freqtrade.active_pair_whitelist
                }
         return res
+
+    def _rpc_blacklist_delete(self, delete: List[str]) -> Dict:
+        """ Removes pairs from currently active blacklist """
+        errors = {}
+        for pair in delete:
+            if pair in self._freqtrade.pairlists.blacklist:
+                self._freqtrade.pairlists.blacklist.remove(pair)
+            else:
+                errors[pair] = {
+                    'error_msg': f"Pair {pair} is not in the current blacklist."
+                    }
+        resp = self._rpc_blacklist()
+        resp['errors'] = errors
+        return resp
 
     def _rpc_blacklist(self, add: List[str] = None) -> Dict:
         """ Returns the currently active blacklist"""

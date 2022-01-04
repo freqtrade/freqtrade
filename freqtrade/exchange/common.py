@@ -4,9 +4,20 @@ import time
 from functools import wraps
 
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
+from freqtrade.mixins import LoggingMixin
 
 
 logger = logging.getLogger(__name__)
+__logging_mixin = None
+
+
+def _get_logging_mixin():
+    # Logging-mixin to cache kucoin responses
+    # Only to be used in retrier
+    global __logging_mixin
+    if not __logging_mixin:
+        __logging_mixin = LoggingMixin(logger)
+    return __logging_mixin
 
 
 # Maximum default retry count.
@@ -72,28 +83,33 @@ def calculate_backoff(retrycount, max_retries):
 def retrier_async(f):
     async def wrapper(*args, **kwargs):
         count = kwargs.pop('count', API_RETRY_COUNT)
+        kucoin = args[0].name == "Kucoin"  # Check if the exchange is KuCoin.
         try:
             return await f(*args, **kwargs)
         except TemporaryError as ex:
-            logger.warning('%s() returned exception: "%s"', f.__name__, ex)
+            msg = f'{f.__name__}() returned exception: "{ex}". '
             if count > 0:
-                logger.warning('retrying %s() still for %s times', f.__name__, count)
+                msg += f'Retrying still for {count} times.'
                 count -= 1
-                kwargs.update({'count': count})
+                kwargs['count'] = count
                 if isinstance(ex, DDosProtection):
-                    if "kucoin" in str(ex) and "429000" in str(ex):
+                    if kucoin and "429000" in str(ex):
                         # Temporary fix for 429000 error on kucoin
                         # see https://github.com/freqtrade/freqtrade/issues/5700 for details.
-                        logger.warning(
+                        _get_logging_mixin().log_once(
                             f"Kucoin 429 error, avoid triggering DDosProtection backoff delay. "
-                            f"{count} tries left before giving up")
+                            f"{count} tries left before giving up", logmethod=logger.warning)
+                        # Reset msg to avoid logging too many times.
+                        msg = ''
                     else:
                         backoff_delay = calculate_backoff(count + 1, API_RETRY_COUNT)
                         logger.info(f"Applying DDosProtection backoff delay: {backoff_delay}")
                         await asyncio.sleep(backoff_delay)
+                if msg:
+                    logger.warning(msg)
                 return await wrapper(*args, **kwargs)
             else:
-                logger.warning('Giving up retrying: %s()', f.__name__)
+                logger.warning(msg + 'Giving up.')
                 raise ex
     return wrapper
 
@@ -106,9 +122,9 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
             try:
                 return f(*args, **kwargs)
             except (TemporaryError, RetryableOrderError) as ex:
-                logger.warning('%s() returned exception: "%s"', f.__name__, ex)
+                msg = f'{f.__name__}() returned exception: "{ex}". '
                 if count > 0:
-                    logger.warning('retrying %s() still for %s times', f.__name__, count)
+                    logger.warning(msg + f'Retrying still for {count} times.')
                     count -= 1
                     kwargs.update({'count': count})
                     if isinstance(ex, (DDosProtection, RetryableOrderError)):
@@ -118,7 +134,7 @@ def retrier(_func=None, retries=API_RETRY_COUNT):
                         time.sleep(backoff_delay)
                     return wrapper(*args, **kwargs)
                 else:
-                    logger.warning('Giving up retrying: %s()', f.__name__)
+                    logger.warning(msg + 'Giving up.')
                     raise ex
         return wrapper
     # Support both @retrier and @retrier(retries=2) syntax

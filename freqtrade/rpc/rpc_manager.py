@@ -60,6 +60,10 @@ class RPCManager:
         }
         """
         logger.info('Sending rpc message: %s', msg)
+        if 'pair' in msg:
+            msg.update({
+                'base_currency': self._rpc._freqtrade.exchange.get_pair_base_currency(msg['pair'])
+                })
         for mod in self.registered_modules:
             logger.debug('Forwarding message to rpc.%s', mod.name)
             try:

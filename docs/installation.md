@@ -36,6 +36,10 @@ The easiest way to install and run Freqtrade is to clone the bot Github reposito
 
 These requirements apply to both [Script Installation](#script-installation) and [Manual Installation](#manual-installation).
 
+!!! Note "ARM64 systems"
+    If you are running an ARM64 system (like a MacOS M1 or an Oracle VM), please use [docker](docker_quickstart.md) to run freqtrade.
+    While native installation is possible with some manual effort, this is not supported at the moment.
+
 ### Install guide
 
 * [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
@@ -416,16 +420,3 @@ open /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10
 ```
 
 If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.
-
-### MacOS installation error with python 3.9
-
-When using python 3.9 on macOS, it's currently necessary to install some os-level modules to allow dependencies to compile.
-The errors you'll see happen during installation and are related to the installation of `tables` or `blosc`.
-
-You can install the necessary libraries with the following command:
-
-```bash
-brew install hdf5 c-blosc
-```
-
-After this, please run the installation (script) again.

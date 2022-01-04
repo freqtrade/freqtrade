@@ -533,6 +533,7 @@ def test_api_show_config(botclient):
     assert rc.json()['timeframe_min'] == 5
     assert rc.json()['state'] == 'running'
     assert rc.json()['bot_name'] == 'freqtrade'
+    assert rc.json()['strategy_version'] is None
     assert not rc.json()['trailing_stop']
     assert 'bid_strategy' in rc.json()
     assert 'ask_strategy' in rc.json()
@@ -950,6 +951,38 @@ def test_api_blacklist(botclient, mocker):
     assert rc.json() == {"blacklist": ["DOGE/BTC", "HOT/BTC", "ETH/BTC", "XRP/.*"],
                          "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
                          "length": 4,
+                         "method": ["StaticPairList"],
+                         "errors": {},
+                         }
+
+    rc = client_delete(client, f"{BASE_URI}/blacklist?pairs_to_delete=DOGE/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["HOT/BTC", "ETH/BTC", "XRP/.*"],
+                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
+                         "length": 3,
+                         "method": ["StaticPairList"],
+                         "errors": {},
+                         }
+
+    rc = client_delete(client, f"{BASE_URI}/blacklist?pairs_to_delete=NOTHING/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["HOT/BTC", "ETH/BTC", "XRP/.*"],
+                         "blacklist_expanded": ["ETH/BTC", "XRP/BTC", "XRP/USDT"],
+                         "length": 3,
+                         "method": ["StaticPairList"],
+                         "errors": {
+                             "NOTHING/BTC": {
+                                 "error_msg": "Pair NOTHING/BTC is not in the current blacklist."
+                             }
+                             },
+                         }
+    rc = client_delete(
+        client,
+        f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
+    assert_response(rc)
+    assert rc.json() == {"blacklist": ["XRP/.*"],
+                         "blacklist_expanded": ["XRP/BTC", "XRP/USDT"],
+                         "length": 1,
                          "method": ["StaticPairList"],
                          "errors": {},
                          }

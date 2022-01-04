@@ -394,6 +394,12 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return []
 
+    def version(self) -> Optional[str]:
+        """
+        Returns version of the strategy.
+        """
+        return None
+
 ###
 # END - Intended to be overridden by strategy
 ###
@@ -697,22 +703,20 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
                     else:
                         custom_reason = None
-            # TODO: return here if sell-signal should be favored over ROI
+            if sell_signal in (SellType.CUSTOM_SELL, SellType.SELL_SIGNAL):
+                logger.debug(f"{trade.pair} - Sell signal received. "
+                             f"sell_type=SellType.{sell_signal.name}" +
+                             (f", custom_reason={custom_reason}" if custom_reason else ""))
+                return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         # Start evaluations
         # Sequence:
-        # ROI (if not stoploss)
         # Sell-signal
+        # ROI (if not stoploss)
         # Stoploss
         if roi_reached and stoplossflag.sell_type != SellType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. sell_type=SellType.ROI")
             return SellCheckTuple(sell_type=SellType.ROI)
-
-        if sell_signal != SellType.NONE:
-            logger.debug(f"{trade.pair} - Sell signal received. "
-                         f"sell_type=SellType.{sell_signal.name}" +
-                         (f", custom_reason={custom_reason}" if custom_reason else ""))
-            return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
 
         if stoplossflag.sell_flag:
 

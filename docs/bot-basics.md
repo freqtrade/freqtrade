@@ -56,7 +56,11 @@ This loop will be repeated again and again until the bot is stopped.
 * Calculate buy / sell signals (calls `populate_buy_trend()` and `populate_sell_trend()` once per pair).
 * Loops per candle simulating entry and exit points.
   * Confirm trade buy / sell (calls `confirm_trade_entry()` and `confirm_trade_exit()` if implemented in the strategy).
+  * Call `custom_entry_price()` (if implemented in the strategy) to determine entry price (Prices are moved to be within the opening candle).
+  * Determine stake size by calling the `custom_stake_amount()` callback.
   * Call `custom_stoploss()` and `custom_sell()` to find custom exit points.
+  * For sells based on sell-signal and custom-sell: Call `custom_exit_price()` to determine exit price (Prices are moved to be within the closing candle).
+
 * Generate backtest report output
 
 !!! Note

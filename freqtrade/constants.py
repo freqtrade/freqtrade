@@ -50,6 +50,8 @@ USERPATH_STRATEGIES = 'strategies'
 USERPATH_NOTEBOOKS = 'notebooks'
 
 TELEGRAM_SETTING_OPTIONS = ['on', 'off', 'silent']
+WEBHOOK_FORMAT_OPTIONS = ['form', 'json', 'raw']
+
 ENV_VAR_PREFIX = 'FREQTRADE__'
 
 NON_OPEN_EXCHANGE_STATES = ('cancelled', 'canceled', 'closed', 'expired')
@@ -312,10 +314,16 @@ CONF_SCHEMA = {
             'type': 'object',
             'properties': {
                 'enabled': {'type': 'boolean'},
+                'url': {'type': 'string'},
+                'format': {'type': 'string', 'enum': WEBHOOK_FORMAT_OPTIONS, 'default': 'form'},
+                'retries': {'type': 'integer', 'minimum': 0},
+                'retry_delay': {'type': 'number', 'minimum': 0},
                 'webhookbuy': {'type': 'object'},
                 'webhookbuycancel': {'type': 'object'},
+                'webhookbuyfill': {'type': 'object'},
                 'webhooksell': {'type': 'object'},
                 'webhooksellcancel': {'type': 'object'},
+                'webhooksellfill': {'type': 'object'},
                 'webhookstatus': {'type': 'object'},
             },
         },
@@ -387,6 +395,7 @@ CONF_SCHEMA = {
                     },
                     'uniqueItems': True
                 },
+                'unknown_fee_rate': {'type': 'number'},
                 'outdated_offset': {'type': 'integer', 'minimum': 1},
                 'markets_refresh_interval': {'type': 'integer'},
                 'ccxt_config': {'type': 'object'},
