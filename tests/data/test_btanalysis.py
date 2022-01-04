@@ -282,7 +282,7 @@ def test_create_cum_profit1(testdatadir):
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
-    drawdown_abs, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
+    _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
         bt_data, value_col="profit_abs")
     assert isinstance(drawdown, float)
     assert pytest.approx(drawdown) == 0.59495234

@@ -207,10 +207,10 @@ def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
             results['results'], results['config']['dry_run_wallet'], strategy)
         )
         try:
-            max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
-                                                                  value_col='profit_ratio')
-            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results['results'],
-                                                                  value_col='profit_abs')
+            max_drawdown_per, _, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                     value_col='profit_ratio')
+            max_drawdown_abs, _, _, _, _, _ = calculate_max_drawdown(results['results'],
+                                                                     value_col='profit_abs')
         except ValueError:
             max_drawdown_per = 0
             max_drawdown_abs = 0
@@ -719,7 +719,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
-            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}"),
+            # Compatibility to show old hyperopt results
+            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
+            if 'max_drawdown_account' in strat_results else (
+                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
             ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
                                           strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
