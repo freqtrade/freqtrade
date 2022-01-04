@@ -280,23 +280,23 @@ def test_create_cum_profit1(testdatadir):
 
 
 def test_calculate_max_drawdown(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
-    drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(bt_data)
+    drawdown_abs, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(bt_data, value_col="profit_abs")
     assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.21142322
+    assert pytest.approx(drawdown) == 0.59495234
     assert isinstance(hdate, Timestamp)
     assert isinstance(lowdate, Timestamp)
     assert isinstance(hval, float)
     assert isinstance(lval, float)
-    assert hdate == Timestamp('2018-01-24 14:25:00', tz='UTC')
-    assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    assert hdate == Timestamp('2018-01-25 01:30:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-30 094:45:00', tz='UTC')
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
-        drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(DataFrame())
+        calculate_max_drawdown(DataFrame())
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         calculate_underwater(DataFrame())
@@ -331,12 +331,13 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
     df1 = df.copy()
-    drawdown, hdate, ldate, hval, lval = calculate_max_drawdown(
+    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
         df, date_col='open_date', value_col='profit')
     # Ensure df has not been altered.
     assert df.equals(df1)
 
     assert isinstance(drawdown, float)
+    assert isinstance(drawdown_rel, float)
     # High must be before low
     assert hdate < ldate
     # High value must be higher than low value

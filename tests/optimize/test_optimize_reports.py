@@ -103,7 +103,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     assert strat_stats['backtest_end'] == max_date.strftime(DATETIME_PRINT_FORMAT)
     assert strat_stats['total_trades'] == len(results['DefStrat']['results'])
     # Above sample had no loosing trade
-    assert strat_stats['max_drawdown'] == 0.0
+    assert strat_stats['max_drawdown_account'] == 0.0
 
     # Retry with losing trade
     results = {'DefStrat': {
@@ -143,7 +143,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     assert 'strategy_comparison' in stats
     strat_stats = stats['strategy']['DefStrat']
 
-    assert strat_stats['max_drawdown'] == 0.013803
+    assert pytest.approx(strat_stats['max_drawdown_account']) == 1.399999e-08
     assert strat_stats['drawdown_start'] == '2017-11-14 22:10:00'
     assert strat_stats['drawdown_end'] == '2017-11-14 22:43:00'
     assert strat_stats['drawdown_end_ts'] == 1510699380000
@@ -165,7 +165,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
     filename1 = Path(tmpdir / last_fn)
     assert filename1.is_file()
     content = filename1.read_text()
-    assert 'max_drawdown' in content
+    assert 'max_drawdown_account' in content
     assert 'strategy' in content
     assert 'pairlist' in content
 
