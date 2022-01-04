@@ -312,7 +312,7 @@ A backtesting result will look like that:
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
-| Drawdown              | 50.63%              |
+| Drawdown (Account)    | 13.33%              |
 | Drawdown              | 0.0015 BTC          |
 | Drawdown high         | 0.0013 BTC          |
 | Drawdown low          | -0.0002 BTC         |
@@ -399,7 +399,7 @@ It contains some useful key metrics about performance of your strategy on backte
 |                       |                     |
 | Min balance           | 0.00945123 BTC      |
 | Max balance           | 0.01846651 BTC      |
-| Drawdown              | 50.63%              |
+| Drawdown (Account)    | 13.33%              |
 | Drawdown              | 0.0015 BTC          |
 | Drawdown high         | 0.0013 BTC          |
 | Drawdown low          | -0.0002 BTC         |
@@ -426,7 +426,8 @@ It contains some useful key metrics about performance of your strategy on backte
 - `Avg. Duration Winners` / `Avg. Duration Loser`: Average durations for winning and losing trades.
 - `Rejected Buy signals`: Buy signals that could not be acted upon due to max_open_trades being reached.
 - `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
-- `Drawdown`: Maximum drawdown experienced. For example, the value of 50% means that from highest to subsequent lowest point, a 50% drop was experienced).
+- `Drawdown (Account)`: Maximum Account Drawdown experienced. Calculated as $(Absolute Drawdown) / (DrawdownHigh + startingBalance)$.
+- `Drawdown`: Maximum, absolute drawdown experienced. Difference between Drawdown High and Low.
 - `Drawdown high` / `Drawdown low`: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.
 - `Drawdown Start` / `Drawdown End`: Start and end datetime for this largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.

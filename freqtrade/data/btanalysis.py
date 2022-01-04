@@ -392,15 +392,17 @@ def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
 
 
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
-                           value_col: str = 'profit_ratio'
-                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float]:
+                           value_col: str = 'profit_abs', starting_balance: float = 0
+                           ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float, float]:
     """
     Calculate max drawdown and the corresponding close dates
     :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
     :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
-    :param value_col: Column in DataFrame to use for values (defaults to 'profit_ratio')
-    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue) with absolute max drawdown,
-             high and low time and high and low value.
+    :param value_col: Column in DataFrame to use for values (defaults to 'profit_abs')
+    :param starting_balance: Portfolio starting balance - properly calculate relative drawdown.
+    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue, relative_drawdown)
+             with absolute max drawdown, high and low time and high and low value,
+             and the relative account drawdown
     :raise: ValueError if trade-dataframe was found empty.
     """
     if len(trades) == 0:
@@ -416,7 +418,17 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     high_val = max_drawdown_df.loc[max_drawdown_df.iloc[:idxmin]
                                    ['high_value'].idxmax(), 'cumulative']
     low_val = max_drawdown_df.loc[idxmin, 'cumulative']
-    return abs(min(max_drawdown_df['drawdown'])), high_date, low_date, high_val, low_val
+
+    max_drawdown_rel = (high_val - low_val) / (high_val + starting_balance)
+
+    return (
+        abs(min(max_drawdown_df['drawdown'])),
+        high_date,
+        low_date,
+        high_val,
+        low_val,
+        max_drawdown_rel
+    )
 
 
 def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:

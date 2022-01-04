@@ -462,12 +462,11 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     }
 
     try:
-        max_drawdown, _, _, _, _ = calculate_max_drawdown(
-            results, value_col='profit_ratio')
-        drawdown_abs, drawdown_start, drawdown_end, high_val, low_val = calculate_max_drawdown(
-            results, value_col='profit_abs')
+        (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
+         max_drawdown) = calculate_max_drawdown(
+             results, value_col='profit_abs', starting_balance=starting_balance)
         strat_stats.update({
-            'max_drawdown': max_drawdown,
+            'max_drawdown_account': max_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
             'drawdown_start_ts': drawdown_start.timestamp() * 1000,
@@ -486,7 +485,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
     except ValueError:
         strat_stats.update({
-            'max_drawdown': 0.0,
+            'max_drawdown_account': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
             'max_drawdown_high': 0.0,
@@ -716,7 +715,7 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
-            ('Drawdown', f"{strat_results['max_drawdown']:.2%}"),
+            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}"),
             ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
                                           strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
