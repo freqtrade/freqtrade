@@ -5,6 +5,7 @@ from typing import Dict, List
 from functools import reduce
 from pandas import DataFrame
 # --------------------------------
+from datetime import datetime
 
 import talib.abstract as ta
 import subprocess
