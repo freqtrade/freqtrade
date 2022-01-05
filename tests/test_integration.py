@@ -53,7 +53,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     # Sell 3rd trade (not called for the first trade)
     should_sell_mock = MagicMock(side_effect=[
         SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.SELL_SIGNAL)]
+        SellCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]
     )
     cancel_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
@@ -119,7 +119,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     assert trade.is_open
 
     trade = trades[2]
-    assert trade.exit_reason == ExitType.SELL_SIGNAL.value
+    assert trade.exit_reason == ExitType.EXIT_SIGNAL.value
     assert not trade.is_open
 
 
@@ -158,7 +158,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
     )
     should_sell_mock = MagicMock(side_effect=[
         SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.SELL_SIGNAL),
+        SellCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
         SellCheckTuple(exit_type=ExitType.NONE),
         SellCheckTuple(exit_type=ExitType.NONE),
         SellCheckTuple(exit_type=ExitType.NONE)]

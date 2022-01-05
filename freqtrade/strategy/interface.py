@@ -795,7 +795,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             pass
         elif self.use_exit_signal and not enter:
             if exit_:
-                sell_signal = ExitType.SELL_SIGNAL
+                sell_signal = ExitType.EXIT_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
                 custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
@@ -811,7 +811,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                             custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if sell_signal in (ExitType.CUSTOM_SELL, ExitType.SELL_SIGNAL):
+            if sell_signal in (ExitType.CUSTOM_SELL, ExitType.EXIT_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{sell_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))

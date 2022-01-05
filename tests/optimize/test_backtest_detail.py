@@ -22,7 +22,7 @@ tc0 = BTContainer(data=[
     [4, 5010, 5011, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 1: Stop-Loss Triggered 1% loss
@@ -406,7 +406,7 @@ tc25 = BTContainer(data=[
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 26: Sell with signal sell in candle 3 (ROI at signal candle)
@@ -435,7 +435,7 @@ tc27 = BTContainer(data=[
     [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 28: trailing_stop should raise so candle 3 causes a stoploss
@@ -548,7 +548,7 @@ tc34 = BTContainer(data=[
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
-    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 TESTS = [
