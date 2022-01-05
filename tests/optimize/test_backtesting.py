@@ -18,7 +18,7 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import RunMode, SellType
+from freqtrade.enums import RunMode, ExitType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
@@ -628,7 +628,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
     # No data available.
     res = backtesting._get_sell_trade_entry(trade, row_sell)
     assert res is not None
-    assert res.exit_reason == SellType.ROI.value
+    assert res.exit_reason == ExitType.ROI.value
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 0, tzinfo=timezone.utc)
 
     # Enter new trade
@@ -647,7 +647,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
     res = backtesting._get_sell_trade_entry(trade, row_sell)
     assert res is not None
-    assert res.exit_reason == SellType.ROI.value
+    assert res.exit_reason == ExitType.ROI.value
     # Sell at minute 3 (not available above!)
     assert res.close_date_utc == datetime(2020, 1, 1, 5, 3, tzinfo=timezone.utc)
     assert round(res.close_rate, 3) == round(209.0225, 3)
@@ -693,7 +693,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
          'trade_duration': [235, 40],
          'profit_ratio': [0.0, 0.0],
          'profit_abs': [0.0, 0.0],
-         'exit_reason': [SellType.ROI.value, SellType.ROI.value],
+         'exit_reason': [ExitType.ROI.value, ExitType.ROI.value],
          'initial_stop_loss_abs': [0.0940005, 0.09272236],
          'initial_stop_loss_ratio': [-0.1, -0.1],
          'stop_loss_abs': [0.0940005, 0.09272236],
@@ -1081,7 +1081,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'close_rate': [0.104969, 0.103541],
                             "is_short": [False, False],
 
-                            'exit_reason': [SellType.ROI, SellType.ROI]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                             'profit_ratio': [0.03, 0.01, 0.1],
@@ -1099,7 +1099,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
                             "is_short": [False, False, False],
-                            'exit_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
         {
@@ -1192,7 +1192,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                             'stake_amount': [0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485],
                             'close_rate': [0.104969, 0.103541],
-                            'exit_reason': [SellType.ROI, SellType.ROI]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI]
                             })
     result2 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC', 'ETH/BTC'],
                             'profit_ratio': [0.03, 0.01, 0.1],
@@ -1210,7 +1210,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                             'stake_amount': [0.01, 0.01, 0.01],
                             'open_rate': [0.104445, 0.10302485, 0.122541],
                             'close_rate': [0.104969, 0.103541, 0.123541],
-                            'exit_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+                            'exit_reason': [ExitType.ROI, ExitType.ROI, ExitType.STOP_LOSS]
                             })
     backtestmock = MagicMock(side_effect=[
         {

@@ -17,7 +17,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.edge import Edge
-from freqtrade.enums import (Collateral, RPCMessageType, SellType, SignalDirection, State,
+from freqtrade.enums import (Collateral, RPCMessageType, ExitType, SignalDirection, State,
                              TradingMode)
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, PricingError)
@@ -915,7 +915,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.execute_trade_exit(trade, trade.stop_loss, exit_reason=SellCheckTuple(
-                sell_type=SellType.EMERGENCY_SELL))
+                sell_type=ExitType.EMERGENCY_SELL))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -947,7 +947,7 @@ class FreqtradeBot(LoggingMixin):
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
             # TODO-lev: Update to exit reason
-            trade.exit_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
             # Lock pair for one candle to prevent immediate rebuys
@@ -1102,7 +1102,7 @@ class FreqtradeBot(LoggingMixin):
                         try:
                             self.execute_trade_exit(
                                 trade, order.get('price'),
-                                exit_reason=SellCheckTuple(sell_type=SellType.EMERGENCY_SELL))
+                                exit_reason=SellCheckTuple(sell_type=ExitType.EMERGENCY_SELL))
                         except DependencyException as exception:
                             logger.warning(
                                 f'Unable to emergency sell trade {trade.pair}: {exception}')
@@ -1284,7 +1284,7 @@ class FreqtradeBot(LoggingMixin):
             trade.open_date
         )
         exit_type = 'sell'  # TODO-lev: Update to exit
-        if exit_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):
+        if exit_reason.sell_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
             exit_type = 'stoploss'
 
         # if stoploss is on exchange and we are on dry_run mode,
@@ -1314,7 +1314,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = ordertype or self.strategy.order_types[exit_type]
-        if exit_reason.sell_type == SellType.EMERGENCY_SELL:
+        if exit_reason.sell_type == ExitType.EMERGENCY_SELL:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 

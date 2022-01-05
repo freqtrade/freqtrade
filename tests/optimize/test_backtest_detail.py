@@ -4,7 +4,7 @@ import logging
 import pytest
 
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import SellType
+from freqtrade.enums import ExitType
 from freqtrade.optimize.backtesting import Backtesting
 from tests.conftest import patch_exchange
 from tests.optimize import (BTContainer, BTrade, _build_backtest_dataframe,
@@ -22,7 +22,7 @@ tc0 = BTContainer(data=[
     [4, 5010, 5011, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 1: Stop-Loss Triggered 1% loss
@@ -36,7 +36,7 @@ tc1 = BTContainer(data=[
     [4, 4977, 4995, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=-0.01,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 
@@ -51,7 +51,7 @@ tc2 = BTContainer(data=[
     [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.03, roi={"0": 1}, profit_perc=-0.03,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 
@@ -71,8 +71,8 @@ tc3 = BTContainer(data=[
     [5, 4962, 4987, 4000, 4000, 6172, 0, 0],  # exit with stoploss hit
     [6, 4950, 4975, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi={"0": 1}, profit_perc=-0.04,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2),
-            BTrade(exit_reason=SellType.STOP_LOSS, open_tick=4, close_tick=5)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2),
+            BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=4, close_tick=5)]
 )
 
 # Test 4: Minus 3% / recovery +15%
@@ -88,7 +88,7 @@ tc4 = BTContainer(data=[
     [4, 4962, 4987, 4937, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi={"0": 0.06}, profit_perc=-0.02,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 5: Drops 0.5% Closes +20%, ROI triggers 3% Gain
@@ -102,7 +102,7 @@ tc5 = BTContainer(data=[
     [4, 4962, 4987, 4962, 4972, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 0.03}, profit_perc=0.03,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 6: Drops 3% / Recovers 6% Positive / Closes 1% positve, Stop-Loss triggers 2% Loss
@@ -116,7 +116,7 @@ tc6 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi={"0": 0.05}, profit_perc=-0.02,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 7: 6% Positive / 1% Negative / Close 1% Positve, ROI Triggers 3% Gain
@@ -130,7 +130,7 @@ tc7 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.02, roi={"0": 0.03}, profit_perc=0.03,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=2)]
 )
 
 
@@ -144,7 +144,7 @@ tc8 = BTContainer(data=[
     [3, 4850, 5050, 4650, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.055, trailing_stop=True,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 
@@ -158,7 +158,7 @@ tc9 = BTContainer(data=[
     [3, 5000, 5200, 4550, 4850, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.064, trailing_stop=True,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 # Test 10: trailing_stop should raise so candle 3 causes a stoploss
@@ -174,7 +174,7 @@ tc10 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.1, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.10,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=4)]
 )
 
 # Test 11: trailing_stop should raise so candle 3 causes a stoploss
@@ -190,7 +190,7 @@ tc11 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 # Test 12: trailing_stop should raise in candle 2 and cause a stoploss in the same candle
@@ -206,7 +206,7 @@ tc12 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.019, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 13: Buy and sell ROI on same candle
@@ -219,7 +219,7 @@ tc13 = BTContainer(data=[
     [3, 4850, 5050, 4750, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4750, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.01}, profit_perc=0.01,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=1)]
 )
 
 # Test 14 - Buy and Stoploss on same candle
@@ -232,7 +232,7 @@ tc14 = BTContainer(data=[
     [3, 4850, 5050, 4750, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.05, roi={"0": 0.10}, profit_perc=-0.05,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 
@@ -246,8 +246,8 @@ tc15 = BTContainer(data=[
     [3, 4850, 5050, 4750, 4750, 6172, 0, 0],
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.05, roi={"0": 0.01}, profit_perc=-0.04,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=1),
-            BTrade(exit_reason=SellType.STOP_LOSS, open_tick=2, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=1),
+            BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=2, close_tick=2)]
 )
 
 # Test 16: Buy, hold for 65 min, then forcesell using roi=-1
@@ -262,7 +262,7 @@ tc16 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "65": -1}, profit_perc=-0.012,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 17: Buy, hold for 120 mins, then forcesell using roi=-1
@@ -278,7 +278,7 @@ tc17 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "120": -1}, profit_perc=-0.004,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 
@@ -294,7 +294,7 @@ tc18 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4950, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "120": 0.01}, profit_perc=0.04,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 19: Buy, hold for 119 mins, then drop ROI to 1%, causing a sell in candle 3.
@@ -309,7 +309,7 @@ tc19 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4550, 4975, 4550, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "120": 0.01}, profit_perc=0.01,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 20: Buy, hold for 119 mins, then drop ROI to 1%, causing a sell in candle 3.
@@ -324,7 +324,7 @@ tc20 = BTContainer(data=[
     [4, 4962, 4987, 4950, 4950, 6172, 0, 0],
     [5, 4925, 4975, 4925, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10, "119": 0.01}, profit_perc=0.01,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 21: trailing_stop ROI collision.
@@ -341,7 +341,7 @@ tc21 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.04}, profit_perc=0.04, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=2)]
 )
 
 # Test 22: trailing_stop Raises in candle 2 - but ROI applies at the same time.
@@ -357,7 +357,7 @@ tc22 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.04}, profit_perc=0.04, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=2)]
 )
 
 # Test 23: trailing_stop Raises in candle 2 (does not trigger)
@@ -376,7 +376,7 @@ tc23 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.1, "119": 0.03}, profit_perc=0.03, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 24: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
@@ -391,7 +391,7 @@ tc24 = BTContainer(data=[
     [4, 5010, 5010, 4977, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=-0.01, use_exit_signal=True,
-    trades=[BTrade(exit_reason=SellType.STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 # Test 25: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
@@ -406,7 +406,7 @@ tc25 = BTContainer(data=[
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],  # Triggers stoploss + sellsignal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 26: Sell with signal sell in candle 3 (ROI at signal candle)
@@ -421,7 +421,7 @@ tc26 = BTContainer(data=[
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.05, use_exit_signal=True,
-    trades=[BTrade(exit_reason=SellType.ROI, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.ROI, open_tick=1, close_tick=3)]
 )
 
 # Test 27: Sell with signal sell in candle 3 (ROI at signal candle)
@@ -435,7 +435,7 @@ tc27 = BTContainer(data=[
     [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_exit_signal=True,
-    trades=[BTrade(exit_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 # Test 28: trailing_stop should raise so candle 3 causes a stoploss
@@ -452,7 +452,7 @@ tc28 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.03, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.05,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=3)]
 )
 
 # Test 29: trailing_stop should be triggered by low of next candle, without adjusting stoploss using
@@ -467,7 +467,7 @@ tc29 = BTContainer(data=[
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.02, trailing_stop=True,
     trailing_stop_positive=0.03,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=2)]
 )
 
 # Test 30: trailing_stop should be triggered immediately on trade open candle.
@@ -481,7 +481,7 @@ tc30 = BTContainer(data=[
     [4, 4750, 4950, 4350, 4750, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
     trailing_stop_positive=0.01,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # Test 31: trailing_stop should be triggered immediately on trade open candle.
@@ -496,7 +496,7 @@ tc31 = BTContainer(data=[
     stop_loss=-0.10, roi={"0": 0.10}, profit_perc=0.01, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
     trailing_stop_positive=0.01,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # Test 32: trailing_stop should be triggered immediately on trade open candle.
@@ -511,7 +511,7 @@ tc32 = BTContainer(data=[
     stop_loss=-0.01, roi={"0": 0.10}, profit_perc=-0.01, trailing_stop=True,
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
     trailing_stop_positive=0.01, use_custom_stoploss=True,
-    trades=[BTrade(exit_reason=SellType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)]
 )
 
 # Test 33: trailing_stop should be triggered immediately on trade open candle.
@@ -527,7 +527,7 @@ tc33 = BTContainer(data=[
     trailing_only_offset_is_reached=True, trailing_stop_positive_offset=0.02,
     trailing_stop_positive=0.01, use_custom_stoploss=True,
     trades=[BTrade(
-        exit_reason=SellType.TRAILING_STOP_LOSS,
+        exit_reason=ExitType.TRAILING_STOP_LOSS,
         open_tick=1,
         close_tick=1,
         enter_tag='buy_signal_01'
@@ -548,7 +548,7 @@ tc34 = BTContainer(data=[
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.01, roi={"0": 1}, profit_perc=0.002 * 5.0, use_exit_signal=True,
     leverage=5.0,
-    trades=[BTrade(exit_reason=SellType.SELL_SIGNAL, open_tick=1, close_tick=4)]
+    trades=[BTrade(exit_reason=ExitType.SELL_SIGNAL, open_tick=1, close_tick=4)]
 )
 
 TESTS = [

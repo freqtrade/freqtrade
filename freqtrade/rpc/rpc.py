@@ -17,7 +17,7 @@ from freqtrade import __version__
 from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
-from freqtrade.enums import SellType, State
+from freqtrade.enums import ExitType, State
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -672,7 +672,7 @@ class RPC:
                 closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=closing_side)
-                exit_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                exit_reason = SellCheckTuple(sell_type=ExitType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])
 

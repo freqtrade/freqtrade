@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
-from freqtrade.enums import SellType, TradingMode
+from freqtrade.enums import ExitType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
@@ -575,7 +575,7 @@ class LocalTrade():
         elif order_type in ('stop_loss_limit', 'stop-loss', 'stop-loss-limit', 'stop'):
             self.stoploss_order_id = None
             self.close_rate_requested = self.stop_loss
-            self.exit_reason = SellType.STOPLOSS_ON_EXCHANGE.value
+            self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             if self.is_open:
                 logger.info(f'{order_type.upper()} is hit for {self}.')
             self.close(safe_value_fallback(order, 'average', 'price'))
