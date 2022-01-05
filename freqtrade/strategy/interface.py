@@ -103,7 +103,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     use_exit_signal: bool
     exit_profit_only: bool
-    sell_profit_offset: float
+    exit_profit_offset: float
     ignore_roi_if_enter_signal: bool
 
     # Number of seconds after which the candle will no longer result in a buy on expired candles
@@ -790,7 +790,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.exit_profit_only and current_profit <= self.sell_profit_offset):
+        if (self.exit_profit_only and current_profit <= self.exit_profit_offset):
             # exit_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
         elif self.use_exit_signal and not enter:

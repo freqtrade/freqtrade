@@ -987,7 +987,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
     default_conf.update({
         "use_exit_signal": True,
         "exit_profit_only": False,
-        "sell_profit_offset": 0.0,
+        "exit_profit_offset": 0.0,
         "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)
@@ -1062,7 +1062,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
     default_conf.update({
         "use_exit_signal": True,
         "exit_profit_only": False,
-        "sell_profit_offset": 0.0,
+        "exit_profit_offset": 0.0,
         "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)
@@ -1174,7 +1174,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
     default_conf.update({
         "use_exit_signal": True,
         "exit_profit_only": False,
-        "sell_profit_offset": 0.0,
+        "exit_profit_offset": 0.0,
         "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)

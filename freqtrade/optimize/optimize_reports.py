@@ -461,7 +461,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
         'minimal_roi': config['minimal_roi'],
         'use_exit_signal': config['use_exit_signal'],
         'exit_profit_only': config['exit_profit_only'],
-        'sell_profit_offset': config['sell_profit_offset'],
+        'exit_profit_offset': config['exit_profit_offset'],
         'ignore_roi_if_enter_signal': config['ignore_roi_if_enter_signal'],
         **daily_stats,
         **trade_stats

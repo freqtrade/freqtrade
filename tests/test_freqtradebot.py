@@ -3437,7 +3437,7 @@ def test_exit_profit_only(
     default_conf_usdt.update({
         'use_exit_signal': True,
         'exit_profit_only': profit_only,
-        'sell_profit_offset': 0.1,
+        'exit_profit_offset': 0.1,
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
@@ -3456,7 +3456,7 @@ def test_exit_profit_only(
     assert freqtrade.handle_trade(trade) is handle_first
 
     if handle_second:
-        freqtrade.strategy.sell_profit_offset = 0.0
+        freqtrade.strategy.exit_profit_offset = 0.0
         assert freqtrade.handle_trade(trade) is True
 
 

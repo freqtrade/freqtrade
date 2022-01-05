@@ -94,7 +94,7 @@ class StrategyResolver(IResolver):
                       ("use_exit_signal",                 True),
                       ("exit_profit_only",                False),
                       ("ignore_roi_if_enter_signal",        False),
-                      ("sell_profit_offset",              0.0),
+                      ("exit_profit_offset",              0.0),
                       ("disable_dataframe_checks",        False),
                       ("ignore_buying_expired_candle_after",  0)
                       ]

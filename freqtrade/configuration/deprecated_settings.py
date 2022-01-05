@@ -75,8 +75,8 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                None, 'use_exit_signal')
     process_deprecated_setting(config, 'ask_strategy', 'exit_profit_only',
                                None, 'exit_profit_only')
-    process_deprecated_setting(config, 'ask_strategy', 'sell_profit_offset',
-                               None, 'sell_profit_offset')
+    process_deprecated_setting(config, 'ask_strategy', 'exit_profit_offset',
+                               None, 'exit_profit_offset')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_roi_if_enter_signal',
                                None, 'ignore_roi_if_enter_signal')
     process_deprecated_setting(config, 'ask_strategy', 'ignore_buying_expired_candle_after',
