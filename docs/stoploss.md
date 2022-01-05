@@ -16,7 +16,7 @@ Those stoploss modes can be *on exchange* or *off exchange*.
 These modes can be configured with these values:
 
 ``` python
-    'emergencysell': 'market',
+    'emergencyexit': 'market',
     'stoploss_on_exchange': False
     'stoploss_on_exchange_interval': 60,
     'stoploss_on_exchange_limit_ratio': 0.99
@@ -59,9 +59,9 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 
 `forcebuy` is an optional value, which defaults to the same value as `buy` and is used when sending a `/forcebuy` command from Telegram or from the Rest API.
 
-### emergencysell
+### emergencyexit
 
-`emergencysell` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
+`emergencyexit` is an optional value, which defaults to `market` and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if not changed in strategy or configuration file.
 
 Example from strategy file:
@@ -70,7 +70,7 @@ Example from strategy file:
 order_types = {
     'buy': 'limit',
     'sell': 'limit',
-    'emergencysell': 'market',
+    'emergencyexit': 'market',
     'stoploss': 'market',
     'stoploss_on_exchange': True,
     'stoploss_on_exchange_interval': 60,

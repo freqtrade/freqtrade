@@ -215,7 +215,7 @@ CONF_SCHEMA = {
                 'sell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcesell': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
                 'forcebuy': {'type': 'string', 'enum': ORDERTYPE_POSSIBILITIES},
-                'emergencysell': {
+                'emergencyexit': {
                     'type': 'string',
                     'enum': ORDERTYPE_POSSIBILITIES,
                     'default': 'market'},

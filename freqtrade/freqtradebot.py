@@ -1316,7 +1316,7 @@ class FreqtradeBot(LoggingMixin):
         order_type = ordertype or self.strategy.order_types[exit_type]
         if exit_reason.exit_type == ExitType.EMERGENCY_EXIT:
             # Emergency sells (default to market!)
-            order_type = self.strategy.order_types.get("emergencysell", "market")
+            order_type = self.strategy.order_types.get("emergencyexit", "market")
 
         amount = self._safe_exit_amount(trade.pair, trade.amount)
         time_in_force = self.strategy.order_time_in_force['sell']  # TODO-lev update to exit
