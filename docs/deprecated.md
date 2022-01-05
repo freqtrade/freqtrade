@@ -15,8 +15,8 @@ This command line option was deprecated in 2019.7-dev (develop branch) and remov
 
 ### The **--dynamic-whitelist** command line option
 
-This command line option was deprecated in 2018 and removed freqtrade 2019.6-dev (develop branch)
-and in freqtrade 2019.7.
+This command line option was deprecated in 2018 and removed freqtrade 2019.6-dev (develop branch) and in freqtrade 2019.7.
+Please refer to [pairlists](plugins.md#pairlists-and-pairlist-handlers) instead.
 
 ### the `--live` command line option
 

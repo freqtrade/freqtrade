@@ -364,6 +364,36 @@ def create_cum_profit(df: pd.DataFrame, trades: pd.DataFrame, col_name: str,
     return df
 
 
+def _calc_drawdown_series(profit_results: pd.DataFrame, *, date_col: str, value_col: str
+                          ) -> pd.DataFrame:
+    max_drawdown_df = pd.DataFrame()
+    max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
+    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
+    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
+    max_drawdown_df['date'] = profit_results.loc[:, date_col]
+    return max_drawdown_df
+
+
+def calculate_underwater(trades: pd.DataFrame, *, date_col: str = 'close_date',
+                         value_col: str = 'profit_ratio'
+                         ):
+    """
+    Calculate max drawdown and the corresponding close dates
+    :param trades: DataFrame containing trades (requires columns close_date and profit_ratio)
+    :param date_col: Column in DataFrame to use for dates (defaults to 'close_date')
+    :param value_col: Column in DataFrame to use for values (defaults to 'profit_ratio')
+    :return: Tuple (float, highdate, lowdate, highvalue, lowvalue) with absolute max drawdown,
+             high and low time and high and low value.
+    :raise: ValueError if trade-dataframe was found empty.
+    """
+    if len(trades) == 0:
+        raise ValueError("Trade dataframe empty.")
+    profit_results = trades.sort_values(date_col).reset_index(drop=True)
+    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
+
+    return max_drawdown_df
+
+
 def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date',
                            value_col: str = 'profit_ratio'
                            ) -> Tuple[float, pd.Timestamp, pd.Timestamp, float, float]:
@@ -379,10 +409,7 @@ def calculate_max_drawdown(trades: pd.DataFrame, *, date_col: str = 'close_date'
     if len(trades) == 0:
         raise ValueError("Trade dataframe empty.")
     profit_results = trades.sort_values(date_col).reset_index(drop=True)
-    max_drawdown_df = pd.DataFrame()
-    max_drawdown_df['cumulative'] = profit_results[value_col].cumsum()
-    max_drawdown_df['high_value'] = max_drawdown_df['cumulative'].cummax()
-    max_drawdown_df['drawdown'] = max_drawdown_df['cumulative'] - max_drawdown_df['high_value']
+    max_drawdown_df = _calc_drawdown_series(profit_results, date_col=date_col, value_col=value_col)
 
     idxmin = max_drawdown_df['drawdown'].idxmin()
     if idxmin == 0:

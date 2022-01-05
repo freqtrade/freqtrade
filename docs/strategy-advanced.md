@@ -222,9 +222,9 @@ should be rewritten to
 ```python
 frames = [dataframe]
 for val in self.buy_ema_short.range:
-    frames.append({
+    frames.append(DataFrame({
         f'ema_short_{val}': ta.EMA(dataframe, timeperiod=val)
-    })
+    }))
 
 # Append columns to existing dataframe
 merged_frame = pd.concat(frames, axis=1)

@@ -1,5 +1,5 @@
 # pragma pylint: disable=missing-docstring,W0212,C0103
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import ANY, MagicMock
 
@@ -20,6 +20,29 @@ from freqtrade.optimize.space import SKDecimal
 from freqtrade.strategy.hyper import IntParameter
 from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re, patch_exchange,
                             patched_configuration_load_config_file)
+
+
+def generate_result_metrics():
+    return {
+            'trade_count': 1,
+            'total_trades': 1,
+            'avg_profit': 0.1,
+            'total_profit': 0.001,
+            'profit': 0.01,
+            'duration': 20.0,
+            'wins': 1,
+            'draws': 0,
+            'losses': 0,
+            'profit_mean': 0.01,
+            'profit_total_abs': 0.001,
+            'profit_total': 0.01,
+            'holding_avg': timedelta(minutes=20),
+            'max_drawdown': 0.001,
+            'max_drawdown_abs': 0.001,
+            'loss': 0.001,
+            'is_initial_point': 0.001,
+            'is_best': 1,
+        }
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -222,14 +245,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     hyperopt.print_results(
         {
             'loss': 1,
-            'results_metrics':
-                {
-                    'trade_count': 1,
-                    'avg_profit': 0.1,
-                    'total_profit': 0.001,
-                    'profit': 1.0,
-                    'duration': 20.0
-                },
+            'results_metrics': generate_result_metrics(),
             'total_profit': 0,
             'current_epoch': 2,  # This starts from 1 (in a human-friendly manner)
             'is_initial_point': False,
@@ -238,7 +254,7 @@ def test_log_results_if_loss_improves(hyperopt, capsys) -> None:
     )
     out, err = capsys.readouterr()
     assert all(x in out
-               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "20.0 m"])
+               for x in ["Best", "2/2", " 1", "0.10%", "0.00100000 BTC    (1.00%)", "00:20:00"])
 
 
 def test_no_log_if_loss_does_not_improve(hyperopt, caplog) -> None:
@@ -295,14 +311,7 @@ def test_start_calls_optimizer(mocker, hyperopt_conf, capsys) -> None:
         MagicMock(return_value=[{
             'loss': 1, 'results_explanation': 'foo result',
             'params': {'buy': {}, 'sell': {}, 'roi': {}, 'stoploss': 0.0},
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            },
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -530,14 +539,7 @@ def test_print_json_spaces_all(mocker, hyperopt_conf, capsys) -> None:
                 'roi': {}, 'stoploss': {'stoploss': None},
                 'trailing': {'trailing_stop': None}
             },
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -586,14 +588,7 @@ def test_print_json_spaces_default(mocker, hyperopt_conf, capsys) -> None:
                 'sell': {'sell-mfi-value': None},
                 'roi': {}, 'stoploss': {'stoploss': None}
             },
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -631,14 +626,7 @@ def test_print_json_spaces_roi_stoploss(mocker, hyperopt_conf, capsys) -> None:
         MagicMock(return_value=[{
             'loss': 1, 'results_explanation': 'foo result', 'params': {},
             'params_details': {'roi': {}, 'stoploss': {'stoploss': None}},
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -678,14 +666,7 @@ def test_simplified_interface_roi_stoploss(mocker, hyperopt_conf, capsys) -> Non
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{
             'loss': 1, 'results_explanation': 'foo result', 'params': {'stoploss': 0.0},
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -758,14 +739,7 @@ def test_simplified_interface_buy(mocker, hyperopt_conf, capsys) -> None:
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{
             'loss': 1, 'results_explanation': 'foo result', 'params': {},
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
@@ -807,14 +781,7 @@ def test_simplified_interface_sell(mocker, hyperopt_conf, capsys) -> None:
         'freqtrade.optimize.hyperopt.Hyperopt.run_optimizer_parallel',
         MagicMock(return_value=[{
             'loss': 1, 'results_explanation': 'foo result', 'params': {},
-            'results_metrics':
-            {
-                'trade_count': 1,
-                'avg_profit': 0.1,
-                'total_profit': 0.001,
-                'profit': 1.0,
-                'duration': 20.0
-            }
+            'results_metrics': generate_result_metrics(),
         }])
     )
     patch_exchange(mocker)
