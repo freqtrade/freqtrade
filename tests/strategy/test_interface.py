@@ -18,7 +18,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import (BaseParameter, BooleanParameter, CategoricalParameter,
                                       DecimalParameter, IntParameter, RealParameter)
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
@@ -439,7 +439,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit), trade=trade,
                                          current_time=now, current_profit=profit,
                                          force_stoploss=0, high=None)
-    assert isinstance(sl_flag, SellCheckTuple)
+    assert isinstance(sl_flag, ExitCheckTuple)
     assert sl_flag.exit_type == expected
     if expected == ExitType.NONE:
         assert sl_flag.sell_flag is False

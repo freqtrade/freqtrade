@@ -5,7 +5,7 @@ import pytest
 from freqtrade.enums import ExitType
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc import RPC
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple
 from tests.conftest import get_patched_freqtradebot, patch_get_signal
 
 
@@ -52,8 +52,8 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
         side_effect=[stoploss_order_closed, stoploss_order_open, stoploss_order_open])
     # Sell 3rd trade (not called for the first trade)
     should_sell_mock = MagicMock(side_effect=[
-        SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL)]
     )
     cancel_order_mock = MagicMock()
     mocker.patch('freqtrade.exchange.Binance.stoploss', stoploss)
@@ -157,11 +157,11 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, limit_buy_order, moc
         _notify_exit=MagicMock(),
     )
     should_sell_mock = MagicMock(side_effect=[
-        SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
-        SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.NONE),
-        SellCheckTuple(exit_type=ExitType.NONE)]
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.EXIT_SIGNAL),
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.NONE),
+        ExitCheckTuple(exit_type=ExitType.NONE)]
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_exit", should_sell_mock)
 

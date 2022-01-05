@@ -26,7 +26,7 @@ from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.strategy.interface import SellCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple
 
 
 logger = logging.getLogger(__name__)
@@ -672,7 +672,7 @@ class RPC:
                 closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=closing_side)
-                exit_reason = SellCheckTuple(exit_type=ExitType.FORCE_SELL)
+                exit_reason = ExitCheckTuple(exit_type=ExitType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])
 

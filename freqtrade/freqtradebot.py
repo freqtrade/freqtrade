@@ -29,7 +29,7 @@ from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.rpc import RPCManager
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple
+from freqtrade.strategy.interface import IStrategy, ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -914,7 +914,7 @@ class FreqtradeBot(LoggingMixin):
             trade.stoploss_order_id = None
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
-            self.execute_trade_exit(trade, trade.stop_loss, exit_reason=SellCheckTuple(
+            self.execute_trade_exit(trade, trade.stop_loss, exit_reason=ExitCheckTuple(
                 exit_type=ExitType.EMERGENCY_SELL))
 
         except ExchangeError:
@@ -1030,7 +1030,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Check and execute trade exit
         """
-        should_exit: SellCheckTuple = self.strategy.should_exit(
+        should_exit: ExitCheckTuple = self.strategy.should_exit(
             trade,
             exit_rate,
             datetime.now(timezone.utc),
@@ -1102,7 +1102,7 @@ class FreqtradeBot(LoggingMixin):
                         try:
                             self.execute_trade_exit(
                                 trade, order.get('price'),
-                                exit_reason=SellCheckTuple(exit_type=ExitType.EMERGENCY_SELL))
+                                exit_reason=ExitCheckTuple(exit_type=ExitType.EMERGENCY_SELL))
                         except DependencyException as exception:
                             logger.warning(
                                 f'Unable to emergency sell trade {trade.pair}: {exception}')
@@ -1266,7 +1266,7 @@ class FreqtradeBot(LoggingMixin):
             self,
             trade: Trade,
             limit: float,
-            exit_reason: SellCheckTuple,
+            exit_reason: ExitCheckTuple,
             *,
             exit_tag: Optional[str] = None,
             ordertype: Optional[str] = None,

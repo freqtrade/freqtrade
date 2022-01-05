@@ -28,7 +28,7 @@ from freqtrade.persistence import LocalTrade, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.strategy.interface import IStrategy, SellCheckTuple
+from freqtrade.strategy.interface import IStrategy, ExitCheckTuple
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 
@@ -308,7 +308,7 @@ class Backtesting:
             processed[pair] = pair_data = None
         return data
 
-    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
+    def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: ExitCheckTuple,
                         trade_dur: int) -> float:
         """
         Get close rate for backtesting result

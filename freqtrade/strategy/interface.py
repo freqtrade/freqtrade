@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 CUSTOM_SELL_MAX_LENGTH = 64
 
 
-class SellCheckTuple:
+class ExitCheckTuple:
     """
     NamedTuple for Sell type + reason
     """
@@ -756,7 +756,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     def should_exit(self, trade: Trade, rate: float, date: datetime, *,
                     enter: bool, exit_: bool,
                     low: float = None, high: float = None,
-                    force_stoploss: float = 0) -> SellCheckTuple:
+                    force_stoploss: float = 0) -> ExitCheckTuple:
         """
         This function evaluates if one of the conditions required to trigger an exit order
         has been reached, which can either be a stop-loss, ROI or exit-signal.
@@ -815,7 +815,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
-                return SellCheckTuple(exit_type=exit_signal, exit_reason=custom_reason)
+                return ExitCheckTuple(exit_type=exit_signal, exit_reason=custom_reason)
 
         # Sequence:
         # Exit-signal
@@ -823,7 +823,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Stoploss
         if roi_reached and stoplossflag.exit_type != ExitType.STOP_LOSS:
             logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
-            return SellCheckTuple(exit_type=ExitType.ROI)
+            return ExitCheckTuple(exit_type=ExitType.ROI)
 
         if stoplossflag.sell_flag:
 
@@ -832,12 +832,12 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         # This one is noisy, commented out...
         # logger.debug(f"{trade.pair} - No exit signal.")
-        return SellCheckTuple(exit_type=ExitType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def stop_loss_reached(self, current_rate: float, trade: Trade,
                           current_time: datetime, current_profit: float,
                           force_stoploss: float, low: float = None,
-                          high: float = None) -> SellCheckTuple:
+                          high: float = None) -> ExitCheckTuple:
         """
         Based on current profit of the trade and configured (trailing) stoploss,
         decides to exit or not
@@ -915,9 +915,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Trailing stop saved "
                              f"{new_stoploss:.6f}")
 
-            return SellCheckTuple(exit_type=exit_type)
+            return ExitCheckTuple(exit_type=exit_type)
 
-        return SellCheckTuple(exit_type=ExitType.NONE)
+        return ExitCheckTuple(exit_type=ExitType.NONE)
 
     def min_roi_reached_entry(self, trade_dur: int) -> Tuple[Optional[int], Optional[float]]:
         """
