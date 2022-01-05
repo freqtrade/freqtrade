@@ -388,7 +388,7 @@ class Backtesting:
             low=sell_row[LOW_IDX], high=sell_row[HIGH_IDX]
         )
 
-        if sell.sell_flag:
+        if sell.exit_flag:
             trade.close_date = sell_candle_time
 
             trade_dur = int((trade.close_date_utc - trade.open_date_utc).total_seconds() // 60)

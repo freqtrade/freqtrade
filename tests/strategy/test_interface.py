@@ -442,9 +442,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     assert isinstance(sl_flag, ExitCheckTuple)
     assert sl_flag.exit_type == expected
     if expected == ExitType.NONE:
-        assert sl_flag.sell_flag is False
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted
 
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
@@ -452,9 +452,9 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
                                          force_stoploss=0, high=None)
     assert sl_flag.exit_type == expected2
     if expected2 == ExitType.NONE:
-        assert sl_flag.sell_flag is False
+        assert sl_flag.exit_flag is False
     else:
-        assert sl_flag.sell_flag is True
+        assert sl_flag.exit_flag is True
     assert round(trade.stop_loss, 2) == adjusted2
 
     strategy.custom_stoploss = original_stopvalue
@@ -479,14 +479,14 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
 
-    assert res.sell_flag is False
+    assert res.exit_flag is False
     assert res.exit_type == ExitType.NONE
 
     strategy.custom_exit = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_flag is True
+    assert res.exit_flag is True
     assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.exit_reason == 'custom_exit'
 
@@ -496,7 +496,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.sell_flag is True
+    assert res.exit_flag is True
     assert res.exit_reason == 'hello world'
 
     caplog.clear()
@@ -505,7 +505,7 @@ def test_custom_exit(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.exit_type == ExitType.CUSTOM_EXIT
-    assert res.sell_flag is True
+    assert res.exit_flag is True
     assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_exit is too long.*', caplog)
 

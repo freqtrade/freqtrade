@@ -42,7 +42,7 @@ class ExitCheckTuple:
         self.exit_reason = exit_reason or exit_type.value
 
     @property
-    def sell_flag(self):
+    def exit_flag(self):
         return self.exit_type != ExitType.NONE
 
 
@@ -825,7 +825,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             logger.debug(f"{trade.pair} - Required profit reached. exit_type=ExitType.ROI")
             return ExitCheckTuple(exit_type=ExitType.ROI)
 
-        if stoplossflag.sell_flag:
+        if stoplossflag.exit_flag:
 
             logger.debug(f"{trade.pair} - Stoploss hit. exit_type={stoplossflag.exit_type}")
             return stoplossflag

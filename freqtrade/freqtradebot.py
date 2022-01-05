@@ -1039,7 +1039,7 @@ class FreqtradeBot(LoggingMixin):
             force_stoploss=self.edge.stoploss(trade.pair) if self.edge else 0
         )
 
-        if should_exit.sell_flag:
+        if should_exit.exit_flag:
             logger.info(f'Exit for {trade.pair} detected. Reason: {should_exit.exit_type}'
                         f'Tag: {exit_tag if exit_tag is not None else "None"}')
             self.execute_trade_exit(trade, exit_rate, should_exit, exit_tag=exit_tag)
