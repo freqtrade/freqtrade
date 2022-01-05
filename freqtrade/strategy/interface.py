@@ -35,11 +35,11 @@ class SellCheckTuple:
     NamedTuple for Sell type + reason
     """
     sell_type: SellType
-    sell_reason: str = ''
+    exit_reason: str = ''
 
-    def __init__(self, sell_type: SellType, sell_reason: str = ''):
+    def __init__(self, sell_type: SellType, exit_reason: str = ''):
         self.sell_type = sell_type
-        self.sell_reason = sell_reason or sell_type.value
+        self.exit_reason = exit_reason or sell_type.value
 
     @property
     def sell_flag(self):
@@ -256,7 +256,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return True
 
     def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
-                           rate: float, time_in_force: str, sell_reason: str,
+                           rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         """
         Called right before placing a regular exit order.
@@ -273,7 +273,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param amount: Amount in quote currency.
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
-        :param sell_reason: Exit reason.
+        :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
                            'sell_signal', 'force_sell', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
@@ -815,7 +815,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"sell_type=SellType.{sell_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))
-                return SellCheckTuple(sell_type=sell_signal, sell_reason=custom_reason)
+                return SellCheckTuple(sell_type=sell_signal, exit_reason=custom_reason)
 
         # Sequence:
         # Exit-signal

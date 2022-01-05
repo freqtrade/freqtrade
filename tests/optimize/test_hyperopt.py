@@ -24,25 +24,25 @@ from tests.conftest import (CURRENT_TEST_STRATEGY, get_args, log_has, log_has_re
 
 def generate_result_metrics():
     return {
-            'trade_count': 1,
-            'total_trades': 1,
-            'avg_profit': 0.1,
-            'total_profit': 0.001,
-            'profit': 0.01,
-            'duration': 20.0,
-            'wins': 1,
-            'draws': 0,
-            'losses': 0,
-            'profit_mean': 0.01,
-            'profit_total_abs': 0.001,
-            'profit_total': 0.01,
-            'holding_avg': timedelta(minutes=20),
-            'max_drawdown': 0.001,
-            'max_drawdown_abs': 0.001,
-            'loss': 0.001,
-            'is_initial_point': 0.001,
-            'is_best': 1,
-        }
+        'trade_count': 1,
+        'total_trades': 1,
+        'avg_profit': 0.1,
+        'total_profit': 0.001,
+        'profit': 0.01,
+        'duration': 20.0,
+        'wins': 1,
+        'draws': 0,
+        'losses': 0,
+        'profit_mean': 0.01,
+        'profit_total_abs': 0.001,
+        'profit_total': 0.01,
+        'holding_avg': timedelta(minutes=20),
+        'max_drawdown': 0.001,
+        'max_drawdown_abs': 0.001,
+        'loss': 0.001,
+        'is_initial_point': 0.001,
+        'is_best': 1,
+    }
 
 
 def test_setup_hyperopt_configuration_without_arguments(mocker, default_conf, caplog) -> None:
@@ -359,7 +359,7 @@ def test_hyperopt_format_results(hyperopt):
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                 "exit_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),
         'config': hyperopt.config,
@@ -428,7 +428,7 @@ def test_generate_optimizer(mocker, hyperopt_conf) -> None:
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                 "exit_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),
         'config': hyperopt_conf,

@@ -236,7 +236,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
     if trades is not None and len(trades) > 0:
         # Create description for sell summarizing the trade
         trades['desc'] = trades.apply(lambda row: f"{row['profit_ratio']:.2%}, "
-                                                  f"{row['sell_reason']}, "
+                                                  f"{row['exit_reason']}, "
                                                   f"{row['trade_duration']} min",
                                       axis=1)
         trade_buys = go.Scatter(
@@ -535,7 +535,7 @@ def generate_profit_graph(pairs: str, data: Dict[str, pd.DataFrame],
                             "Profit per pair",
                             "Parallelism",
                             "Underwater",
-                            ])
+                        ])
     fig['layout'].update(title="Freqtrade Profit plot")
     fig['layout']['yaxis1'].update(title='Price')
     fig['layout']['yaxis2'].update(title=f'Profit {stake_currency}')

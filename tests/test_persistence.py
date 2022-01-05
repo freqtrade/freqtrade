@@ -1175,7 +1175,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
                                 stop_loss FLOAT,
                                 initial_stop_loss FLOAT,
                                 max_rate FLOAT,
-                                sell_reason VARCHAR,
+                                exit_reason VARCHAR,
                                 strategy VARCHAR,
                                 ticker_interval INTEGER,
                                 stoploss_order_id VARCHAR,
@@ -1228,7 +1228,7 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert trade.min_rate is None
     assert trade.stop_loss == 0.0
     assert trade.initial_stop_loss == 0.0
-    assert trade.sell_reason is None
+    assert trade.exit_reason is None
     assert trade.strategy is None
     assert trade.timeframe == '5m'
     assert trade.stoploss_order_id == 'stop_order_id222'
@@ -1587,7 +1587,7 @@ def test_to_json(default_conf, fee):
                       'profit_ratio': None,
                       'profit_pct': None,
                       'profit_abs': None,
-                      'sell_reason': None,
+                      'exit_reason': None,
                       'exit_order_status': None,
                       'stop_loss_abs': None,
                       'stop_loss_ratio': None,
@@ -1672,7 +1672,7 @@ def test_to_json(default_conf, fee):
                       'open_order_id': None,
                       'open_rate_requested': None,
                       'open_trade_value': 12.33075,
-                      'sell_reason': None,
+                      'exit_reason': None,
                       'exit_order_status': None,
                       'strategy': None,
                       'buy_tag': 'buys_signal_001',
@@ -2126,7 +2126,7 @@ def test_Trade_object_idem():
         'get_open_trades_without_assigned_fees',
         'get_open_order_trades',
         'get_trades',
-        'get_sell_reason_performance',
+        'get_exit_reason_performance',
         'get_enter_tag_performance',
         'get_mix_tag_performance',
 

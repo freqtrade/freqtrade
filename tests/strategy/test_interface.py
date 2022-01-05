@@ -488,7 +488,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
                                low=None, high=None)
     assert res.sell_flag is True
     assert res.sell_type == SellType.CUSTOM_SELL
-    assert res.sell_reason == 'custom_sell'
+    assert res.exit_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
 
@@ -497,7 +497,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
                                low=None, high=None)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
-    assert res.sell_reason == 'hello world'
+    assert res.exit_reason == 'hello world'
 
     caplog.clear()
     strategy.custom_sell = MagicMock(return_value='h' * 100)
@@ -506,7 +506,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
                                low=None, high=None)
     assert res.sell_type == SellType.CUSTOM_SELL
     assert res.sell_flag is True
-    assert res.sell_reason == 'h' * 64
+    assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
 
 
@@ -522,7 +522,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
-        ) == 1
+    ) == 1
 
     default_conf['strategy'] = CURRENT_TEST_STRATEGY
     strategy = StrategyResolver.load_strategy(default_conf)
@@ -533,7 +533,7 @@ def test_leverage_callback(default_conf, side) -> None:
         proposed_leverage=1.0,
         max_leverage=5.0,
         side=side,
-        ) == 3
+    ) == 3
 
 
 def test_analyze_ticker_default(ohlcv_history, mocker, caplog) -> None:

@@ -103,7 +103,7 @@ def mock_trade_2(fee, is_short: bool):
         strategy='StrategyTestV3',
         timeframe=5,
         enter_tag='TEST1',
-        sell_reason='sell_signal',
+        exit_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
         is_short=is_short
@@ -163,7 +163,7 @@ def mock_trade_3(fee, is_short: bool):
         is_open=False,
         strategy='StrategyTestV3',
         timeframe=5,
-        sell_reason='roi',
+        exit_reason='roi',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         close_date=datetime.now(tz=timezone.utc),
         is_short=is_short
@@ -400,7 +400,7 @@ def short_trade(fee):
         open_order_id='dry_run_exit_short_12345',
         strategy='DefaultStrategy',
         timeframe=5,
-        sell_reason='sell_signal',  # TODO-lev: Update to exit/close reason
+        exit_reason='sell_signal',  # TODO-lev: Update to exit/close reason
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         # close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
         is_short=True
@@ -489,7 +489,7 @@ def leverage_trade(fee):
         open_order_id='dry_run_leverage_buy_12368',
         strategy='DefaultStrategy',
         timeframe=5,
-        sell_reason='sell_signal',
+        exit_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=300),
         close_date=datetime.now(tz=timezone.utc),
         interest_rate=0.0005

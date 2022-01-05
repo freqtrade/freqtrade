@@ -416,11 +416,11 @@ class RPC:
                 return 'draws'
         trades = trades = Trade.get_trades([Trade.is_open.is_(False)])
         # Sell reason
-        sell_reasons = {}
+        exit_reasons = {}
         for trade in trades:
-            if trade.sell_reason not in sell_reasons:
-                sell_reasons[trade.sell_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
-            sell_reasons[trade.sell_reason][trade_win_loss(trade)] += 1
+            if trade.exit_reason not in exit_reasons:
+                exit_reasons[trade.exit_reason] = {'wins': 0, 'losses': 0, 'draws': 0}
+            exit_reasons[trade.exit_reason][trade_win_loss(trade)] += 1
 
         # Duration
         dur: Dict[str, List[int]] = {'wins': [], 'draws': [], 'losses': []}
@@ -434,7 +434,7 @@ class RPC:
         losses_dur = sum(dur['losses']) / len(dur['losses']) if len(dur['losses']) > 0 else 'N/A'
 
         durations = {'wins': wins_dur, 'draws': draws_dur, 'losses': losses_dur}
-        return {'sell_reasons': sell_reasons, 'durations': durations}
+        return {'exit_reasons': exit_reasons, 'durations': durations}
 
     def _rpc_trade_statistics(
             self, stake_currency: str, fiat_display_currency: str,
@@ -672,12 +672,12 @@ class RPC:
                 closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=closing_side)
-                sell_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
+                exit_reason = SellCheckTuple(sell_type=SellType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])
 
                 self._freqtrade.execute_trade_exit(
-                    trade, current_rate, sell_reason, ordertype=order_type)
+                    trade, current_rate, exit_reason, ordertype=order_type)
         # ---- EOF def _exec_forcesell ----
 
         if self._freqtrade.state != State.RUNNING:
@@ -799,16 +799,16 @@ class RPC:
         """
         return Trade.get_enter_tag_performance(pair)
 
-    def _rpc_sell_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
         Handler for sell reason performance.
         Shows a performance statistic from finished trades
         """
-        return Trade.get_sell_reason_performance(pair)
+        return Trade.get_exit_reason_performance(pair)
 
     def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
         """
-        Handler for mix tag (enter_tag + sell_reason) performance.
+        Handler for mix tag (enter_tag + exit_reason) performance.
         Shows a performance statistic from finished trades
         """
         mix_tags = Trade.get_mix_tag_performance(pair)
@@ -872,7 +872,7 @@ class RPC:
             else:
                 errors[pair] = {
                     'error_msg': f"Pair {pair} is not in the current blacklist."
-                    }
+                }
         resp = self._rpc_blacklist()
         resp['errors'] = errors
         return resp

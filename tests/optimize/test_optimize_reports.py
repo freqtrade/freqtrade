@@ -18,11 +18,11 @@ from freqtrade.optimize.optimize_reports import (_get_resample_from_period, gene
                                                  generate_daily_stats, generate_edge_table,
                                                  generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
-                                                 generate_sell_reason_stats,
+                                                 generate_exit_reason_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_stats, text_table_bt_results,
-                                                 text_table_sell_reason, text_table_strategy)
+                                                 text_table_exit_reason, text_table_strategy)
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from tests.conftest import CURRENT_TEST_STRATEGY
 from tests.data.test_history import _backup_file, _clean_test_file
@@ -78,7 +78,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
                                  "is_open": [False, False, False, True],
                                  "is_short": [False, False, False, False],
                                  "stake_amount": [0.01, 0.01, 0.01, 0.01],
-                                 "sell_reason": [SellType.ROI, SellType.STOP_LOSS,
+                                 "exit_reason": [SellType.ROI, SellType.STOP_LOSS,
                                                  SellType.ROI, SellType.FORCE_SELL]
                                  }),
         'config': default_conf,
@@ -87,8 +87,8 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
-        }
-        }
+    }
+    }
     timerange = TimeRange.parse_timerange('1510688220-1510700340')
     min_date = Arrow.fromtimestamp(1510688220)
     max_date = Arrow.fromtimestamp(1510700340)
@@ -127,7 +127,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
              "is_open": [False, False, False, True],
              "is_short": [False, False, False, False],
              "stake_amount": [0.01, 0.01, 0.01, 0.01],
-             "sell_reason": [SellType.ROI, SellType.ROI,
+             "exit_reason": [SellType.ROI, SellType.ROI,
                              SellType.STOP_LOSS, SellType.FORCE_SELL]
              }),
         'config': default_conf,
@@ -136,7 +136,7 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmpdir):
         'rejected_signals': 20,
         'backtest_start_time': Arrow.utcnow().int_timestamp,
         'backtest_end_time': Arrow.utcnow().int_timestamp,
-        }
+    }
     }
 
     stats = generate_backtest_stats(btdata, results, min_date, max_date)
@@ -260,7 +260,7 @@ def test_generate_trading_stats(testdatadir):
     assert res['losses'] == 0
 
 
-def test_text_table_sell_reason():
+def test_text_table_exit_reason():
 
     results = pd.DataFrame(
         {
@@ -271,7 +271,7 @@ def test_text_table_sell_reason():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'exit_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
         }
     )
 
@@ -286,13 +286,13 @@ def test_text_table_sell_reason():
         '             -0.2 |             -5 |'
     )
 
-    sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
+    exit_reason_stats = generate_exit_reason_stats(max_open_trades=2,
                                                    results=results)
-    assert text_table_sell_reason(sell_reason_stats=sell_reason_stats,
+    assert text_table_exit_reason(exit_reason_stats=exit_reason_stats,
                                   stake_currency='BTC') == result_str
 
 
-def test_generate_sell_reason_stats():
+def test_generate_exit_reason_stats():
 
     results = pd.DataFrame(
         {
@@ -303,23 +303,23 @@ def test_generate_sell_reason_stats():
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI.value, SellType.ROI.value, SellType.STOP_LOSS.value]
+            'exit_reason': [SellType.ROI.value, SellType.ROI.value, SellType.STOP_LOSS.value]
         }
     )
 
-    sell_reason_stats = generate_sell_reason_stats(max_open_trades=2,
+    exit_reason_stats = generate_exit_reason_stats(max_open_trades=2,
                                                    results=results)
-    roi_result = sell_reason_stats[0]
-    assert roi_result['sell_reason'] == 'roi'
+    roi_result = exit_reason_stats[0]
+    assert roi_result['exit_reason'] == 'roi'
     assert roi_result['trades'] == 2
     assert pytest.approx(roi_result['profit_mean']) == 0.15
     assert roi_result['profit_mean_pct'] == round(roi_result['profit_mean'] * 100, 2)
     assert pytest.approx(roi_result['profit_mean']) == 0.15
     assert roi_result['profit_mean_pct'] == round(roi_result['profit_mean'] * 100, 2)
 
-    stop_result = sell_reason_stats[1]
+    stop_result = exit_reason_stats[1]
 
-    assert stop_result['sell_reason'] == 'stop_loss'
+    assert stop_result['exit_reason'] == 'stop_loss'
     assert stop_result['trades'] == 1
     assert pytest.approx(stop_result['profit_mean']) == -0.1
     assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
@@ -343,7 +343,7 @@ def test_text_table_strategy(default_conf):
             'wins': [2, 0, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'exit_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
         }
     ), 'config': default_conf}
     results['TestStrategy2'] = {'results': pd.DataFrame(
@@ -356,7 +356,7 @@ def test_text_table_strategy(default_conf):
             'wins': [4, 1, 0],
             'draws': [0, 0, 0],
             'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+            'exit_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
         }
     ), 'config': default_conf}
 

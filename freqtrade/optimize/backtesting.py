@@ -411,11 +411,11 @@ class Backtesting:
                     pair=trade.pair, trade=trade, order_type='limit', amount=trade.amount,
                     rate=closerate,
                     time_in_force=time_in_force,
-                    sell_reason=sell.sell_reason,
+                    exit_reason=sell.exit_reason,
                     current_time=sell_candle_time):
                 return None
 
-            trade.sell_reason = sell.sell_reason
+            trade.exit_reason = sell.exit_reason
 
             # Checks and adds an exit tag, after checking that the length of the
             # sell_row has the length for an exit tag column
@@ -424,7 +424,7 @@ class Backtesting:
                 and sell_row[EXIT_TAG_IDX] is not None
                 and len(sell_row[EXIT_TAG_IDX]) > 0
             ):
-                trade.sell_reason = sell_row[EXIT_TAG_IDX]
+                trade.exit_reason = sell_row[EXIT_TAG_IDX]
 
             trade.close(closerate, show_msg=False)
             return trade
@@ -542,7 +542,7 @@ class Backtesting:
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX].to_pydatetime()
-                    trade.sell_reason = SellType.FORCE_SELL.value
+                    trade.exit_reason = SellType.FORCE_SELL.value
                     trade.close(sell_row[OPEN_IDX], show_msg=False)
                     LocalTrade.close_bt_trade(trade)
                     # Deepcopy object to have wallets update correctly
