@@ -495,7 +495,7 @@ def test_backtesting_pairlist_list(default_conf, mocker, caplog, testdatadir, ti
 
 
 def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -561,7 +561,7 @@ def test_backtest__enter_trade(default_conf, fee, mocker) -> None:
 
 
 def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -654,7 +654,7 @@ def test_backtest__get_sell_trade_entry(default_conf, fee, mocker) -> None:
 
 
 def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -719,7 +719,7 @@ def test_backtest_one(default_conf, fee, mocker, testdatadir) -> None:
 
 
 def test_backtest_1min_timeframe(default_conf, fee, mocker, testdatadir) -> None:
-    default_conf['use_sell_signal'] = False
+    default_conf['use_exit_signal'] = False
     mocker.patch('freqtrade.exchange.Exchange.get_fee', fee)
     mocker.patch("freqtrade.exchange.Exchange.get_min_pair_stake_amount", return_value=0.00001)
     patch_exchange(mocker)
@@ -985,7 +985,7 @@ def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
 def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 
     default_conf.update({
-        "use_sell_signal": True,
+        "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
@@ -1060,7 +1060,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdatadir, capsys):
     default_conf.update({
-        "use_sell_signal": True,
+        "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,
@@ -1172,7 +1172,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                                                   caplog, testdatadir, capsys):
     # Tests detail-data loading
     default_conf.update({
-        "use_sell_signal": True,
+        "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
         "ignore_roi_if_buy_signal": False,

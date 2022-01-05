@@ -91,7 +91,7 @@ class StrategyResolver(IResolver):
                       ("protections",                     None),
                       ("startup_candle_count",            None),
                       ("unfilledtimeout",                 None),
-                      ("use_sell_signal",                 True),
+                      ("use_exit_signal",                 True),
                       ("sell_profit_only",                False),
                       ("ignore_roi_if_buy_signal",        False),
                       ("sell_profit_offset",              0.0),

@@ -235,7 +235,7 @@ def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 ### Sell signal rules
 
 Edit the method `populate_sell_trend()` into your strategy file to update your sell strategy.
-Please note that the sell-signal is only used if `use_sell_signal` is set to true in the configuration.
+Please note that the sell-signal is only used if `use_exit_signal` is set to true in the configuration.
 
 It's important to always return the dataframe without removing/modifying the columns `"open", "high", "low", "close", "volume"`, otherwise these fields would contain something unexpected.
 

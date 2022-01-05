@@ -69,10 +69,10 @@ def process_deprecated_setting(config: Dict[str, Any],
 def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
 
     # Kept for future deprecated / moved settings
-    # check_conflicting_settings(config, 'ask_strategy', 'use_sell_signal',
-    #                            'experimental', 'use_sell_signal')
-    process_deprecated_setting(config, 'ask_strategy', 'use_sell_signal',
-                               None, 'use_sell_signal')
+    # check_conflicting_settings(config, 'ask_strategy', 'use_exit_signal',
+    #                            'experimental', 'use_exit_signal')
+    process_deprecated_setting(config, 'ask_strategy', 'use_exit_signal',
+                               None, 'use_exit_signal')
     process_deprecated_setting(config, 'ask_strategy', 'sell_profit_only',
                                None, 'sell_profit_only')
     process_deprecated_setting(config, 'ask_strategy', 'sell_profit_offset',
@@ -83,8 +83,8 @@ def process_temporary_deprecated_settings(config: Dict[str, Any]) -> None:
                                None, 'ignore_buying_expired_candle_after')
 
     # Legacy way - having them in experimental ...
-    process_removed_setting(config, 'experimental', 'use_sell_signal',
-                            None, 'use_sell_signal')
+    process_removed_setting(config, 'experimental', 'use_exit_signal',
+                            None, 'use_exit_signal')
     process_removed_setting(config, 'experimental', 'sell_profit_only',
                             None, 'sell_profit_only')
     process_removed_setting(config, 'experimental', 'ignore_roi_if_buy_signal',
