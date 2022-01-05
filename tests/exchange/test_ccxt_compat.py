@@ -52,6 +52,11 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
+    'bitvavo': {
+        'pair': 'BTC/EUR',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
