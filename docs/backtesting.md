@@ -356,7 +356,7 @@ Hence, keep in mind that your performance is an integral mix of all different el
 
 ### Sell reasons table
 
-The 2nd table contains a recap of sell reasons.
+The 2nd table contains a recap of exit reasons.
 This table can tell you which area needs some additional work (e.g. all or many of the `exit_signal` trades are losses, so you should work on improving the sell signal, or consider disabling it).
 
 ### Left open trades table
@@ -483,7 +483,7 @@ Since backtesting lacks some detailed information about what happens within a ca
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit
   - Forcesells caused by `<N>=-1` ROI entries use low as sell value, unless N falls on the candle open (e.g. `120: -1` for 1h candles)
 - Stoploss sells happen exactly at stoploss price, even if low was lower, but the loss will be `2 * fees` higher than the stoploss price
-- Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` sell reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
+- Stoploss is evaluated before ROI within one candle. So you can often see more trades with the `stoploss` exit reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes
 - Low happens before high for stoploss, protecting capital first
 - Trailing stoploss
   - Trailing Stoploss is only adjusted if it's below the candle's low (otherwise it would be triggered)
