@@ -342,7 +342,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return proposed_rate
 
-    def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
         """
         Custom exit signal logic indicating that specified position should be sold. Returning a
@@ -798,7 +798,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 exit_signal = ExitType.EXIT_SIGNAL
             else:
                 trade_type = "exit_short" if trade.is_short else "sell"
-                custom_reason = strategy_safe_wrapper(self.custom_sell, default_retval=False)(
+                custom_reason = strategy_safe_wrapper(self.custom_exit, default_retval=False)(
                     pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
                     current_profit=current_profit)
                 if custom_reason:
