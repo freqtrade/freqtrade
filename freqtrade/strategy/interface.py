@@ -27,7 +27,7 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
-CUSTOM_SELL_MAX_LENGTH = 64
+CUSTOM_EXIT_MAX_LENGTH = 64
 
 
 class ExitCheckTuple:
@@ -802,16 +802,16 @@ class IStrategy(ABC, HyperStrategyMixin):
                     pair=trade.pair, trade=trade, current_time=date, current_rate=current_rate,
                     current_profit=current_profit)
                 if custom_reason:
-                    exit_signal = ExitType.CUSTOM_SELL
+                    exit_signal = ExitType.CUSTOM_EXIT
                     if isinstance(custom_reason, str):
-                        if len(custom_reason) > CUSTOM_SELL_MAX_LENGTH:
+                        if len(custom_reason) > CUSTOM_EXIT_MAX_LENGTH:
                             logger.warning(f'Custom {trade_type} reason returned from '
                                            f'custom_{trade_type} is too long and was trimmed'
-                                           f'to {CUSTOM_SELL_MAX_LENGTH} characters.')
-                            custom_reason = custom_reason[:CUSTOM_SELL_MAX_LENGTH]
+                                           f'to {CUSTOM_EXIT_MAX_LENGTH} characters.')
+                            custom_reason = custom_reason[:CUSTOM_EXIT_MAX_LENGTH]
                     else:
                         custom_reason = None
-            if exit_signal in (ExitType.CUSTOM_SELL, ExitType.EXIT_SIGNAL):
+            if exit_signal in (ExitType.CUSTOM_EXIT, ExitType.EXIT_SIGNAL):
                 logger.debug(f"{trade.pair} - Sell signal received. "
                              f"exit_type=ExitType.{exit_signal.name}" +
                              (f", custom_reason={custom_reason}" if custom_reason else ""))

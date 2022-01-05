@@ -12,7 +12,7 @@ class ExitType(Enum):
     EXIT_SIGNAL = "exit_signal"
     FORCE_EXIT = "force_exit"
     EMERGENCY_EXIT = "emergency_sell"
-    CUSTOM_SELL = "custom_sell"
+    CUSTOM_EXIT = "custom_sell"
     NONE = ""
 
     def __str__(self):

@@ -487,7 +487,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_flag is True
-    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.exit_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
@@ -495,7 +495,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.sell_flag is True
     assert res.exit_reason == 'hello world'
 
@@ -504,7 +504,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.exit_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_EXIT
     assert res.sell_flag is True
     assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)
