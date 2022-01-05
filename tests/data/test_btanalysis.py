@@ -8,7 +8,7 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_OLD,
                                        analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
                                        calculate_underwater, combine_dataframes_with_mean,

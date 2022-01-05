@@ -19,11 +19,6 @@ logger = logging.getLogger(__name__)
 BT_DATA_COLUMNS_OLD = ["pair", "profit_percent", "open_date", "close_date", "index",
                        "trade_duration", "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
-# Mid-term format, created by BacktestResult Named Tuple
-BT_DATA_COLUMNS_MID = ['pair', 'profit_percent', 'open_date', 'close_date', 'trade_duration',
-                       'open_rate', 'close_rate', 'open_at_end', 'sell_reason', 'fee_open',
-                       'fee_close', 'amount', 'profit_abs', 'profit_ratio']
-
 # Newest format
 BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
                    'open_rate', 'close_rate',
