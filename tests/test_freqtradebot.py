@@ -2093,7 +2093,7 @@ def test_handle_trade_roi(default_conf_usdt, ticker_usdt, limit_order_open, fee,
     caplog.clear()
     patch_get_signal(freqtrade)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Required profit reached. sell_type=ExitType.ROI",
+    assert log_has("ETH/USDT - Required profit reached. exit_type=ExitType.ROI",
                    caplog)
 
 
@@ -2135,7 +2135,7 @@ def test_handle_trade_use_exit_signal(
     else:
         patch_get_signal(freqtrade, enter_long=False, exit_long=True)
     assert freqtrade.handle_trade(trade)
-    assert log_has("ETH/USDT - Sell signal received. sell_type=ExitType.SELL_SIGNAL",
+    assert log_has("ETH/USDT - Sell signal received. exit_type=ExitType.SELL_SIGNAL",
                    caplog)
 
 
@@ -2855,7 +2855,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=(ticker_usdt_sell_down()['ask'] if is_short else ticker_usdt_sell_up()['bid']),
-        exit_reason=SellCheckTuple(sell_type=ExitType.ROI)
+        exit_reason=SellCheckTuple(exit_type=ExitType.ROI)
     )
     assert rpc_mock.call_count == 0
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
@@ -2867,7 +2867,7 @@ def test_execute_trade_exit_up(default_conf_usdt, ticker_usdt, fee, ticker_usdt_
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=(ticker_usdt_sell_down()['ask'] if is_short else ticker_usdt_sell_up()['bid']),
-        exit_reason=SellCheckTuple(sell_type=ExitType.ROI)
+        exit_reason=SellCheckTuple(exit_type=ExitType.ROI)
     )
     assert freqtrade.strategy.confirm_trade_exit.call_count == 1
 
@@ -2928,7 +2928,7 @@ def test_execute_trade_exit_down(default_conf_usdt, ticker_usdt, fee, ticker_usd
     )
     freqtrade.execute_trade_exit(
         trade=trade, limit=(ticker_usdt_sell_up if is_short else ticker_usdt_sell_down)()['bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.STOP_LOSS))
+        exit_reason=SellCheckTuple(exit_type=ExitType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -3003,7 +3003,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.SELL_SIGNAL)
+        exit_reason=SellCheckTuple(exit_type=ExitType.SELL_SIGNAL)
     )
 
     # Sell price must be different to default bid price
@@ -3074,7 +3074,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     trade.stop_loss = 2.0 * 1.01 if is_short else 2.0 * 0.99
     freqtrade.execute_trade_exit(
         trade=trade, limit=(ticker_usdt_sell_up if is_short else ticker_usdt_sell_down())['bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.STOP_LOSS))
+        exit_reason=SellCheckTuple(exit_type=ExitType.STOP_LOSS))
 
     assert rpc_mock.call_count == 2
     last_msg = rpc_mock.call_args_list[-1][0][0]
@@ -3134,7 +3134,7 @@ def test_execute_trade_exit_sloe_cancel_exception(
     trade.stoploss_order_id = "abcd"
 
     freqtrade.execute_trade_exit(trade=trade, limit=1234,
-                                 exit_reason=SellCheckTuple(sell_type=ExitType.STOP_LOSS))
+                                 exit_reason=SellCheckTuple(exit_type=ExitType.STOP_LOSS))
     assert create_order_mock.call_count == 2
     assert log_has('Could not cancel stoploss order abcd', caplog)
 
@@ -3189,7 +3189,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.STOP_LOSS)
+        exit_reason=SellCheckTuple(exit_type=ExitType.STOP_LOSS)
     )
 
     trade = Trade.query.first()
@@ -3328,7 +3328,7 @@ def test_execute_trade_exit_market_order(
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.ROI)
+        exit_reason=SellCheckTuple(exit_type=ExitType.ROI)
     )
 
     assert not trade.is_open
@@ -3392,7 +3392,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
         fetch_ticker=ticker_usdt_sell_up
     )
 
-    exit_reason = SellCheckTuple(sell_type=ExitType.ROI)
+    exit_reason = SellCheckTuple(exit_type=ExitType.ROI)
     assert not freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_up()['ask' if is_short else 'bid'],
@@ -3401,7 +3401,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
     assert mock_insuf.call_count == 1
 
 
-@pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,sell_type,is_short', [
+@pytest.mark.parametrize('profit_only,bid,ask,handle_first,handle_second,exit_type,is_short', [
     # Enable profit
     (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, False),
     (True, 2.18, 2.2, False, True, ExitType.SELL_SIGNAL.value, True),
@@ -3418,7 +3418,7 @@ def test_execute_trade_exit_insufficient_funds_error(default_conf_usdt, ticker_u
 ])
 def test_sell_profit_only(
         default_conf_usdt, limit_order, limit_order_open, is_short,
-        fee, mocker, profit_only, bid, ask, handle_first, handle_second, sell_type) -> None:
+        fee, mocker, profit_only, bid, ask, handle_first, handle_second, exit_type) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3441,11 +3441,11 @@ def test_sell_profit_only(
     })
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    if sell_type == ExitType.SELL_SIGNAL.value:
+    if exit_type == ExitType.SELL_SIGNAL.value:
         freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
     else:
         freqtrade.strategy.stop_loss_reached = MagicMock(return_value=SellCheckTuple(
-            sell_type=ExitType.NONE))
+            exit_type=ExitType.NONE))
     freqtrade.enter_positions()
 
     trade = Trade.query.first()
@@ -3561,7 +3561,7 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
     freqtrade.execute_trade_exit(
         trade=trade,
         limit=ticker_usdt_sell_down()['ask' if is_short else 'bid'],
-        exit_reason=SellCheckTuple(sell_type=ExitType.STOP_LOSS)
+        exit_reason=SellCheckTuple(exit_type=ExitType.STOP_LOSS)
     )
     trade.close(ticker_usdt_sell_down()['bid'])
     assert freqtrade.strategy.is_pair_locked(trade.pair)
@@ -4920,7 +4920,7 @@ def test_update_funding_fees(
                 trade=trade,
                 # The values of the next 2 params are irrelevant for this test
                 limit=ticker_usdt_sell_up()['bid'],
-                exit_reason=SellCheckTuple(sell_type=ExitType.ROI)
+                exit_reason=SellCheckTuple(exit_type=ExitType.ROI)
             )
             assert trade.funding_fees == pytest.approx(sum(
                 trade.amount *

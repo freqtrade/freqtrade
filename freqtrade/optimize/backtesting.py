@@ -314,7 +314,7 @@ class Backtesting:
         Get close rate for backtesting result
         """
         # Special handling if high or low hit STOP_LOSS or ROI
-        if sell.sell_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
+        if sell.exit_type in (ExitType.STOP_LOSS, ExitType.TRAILING_STOP_LOSS):
             if trade.stop_loss > sell_row[HIGH_IDX]:
                 # our stoploss was already higher than candle high,
                 # possibly due to a cancelled trade exit.
@@ -324,7 +324,7 @@ class Backtesting:
             # Special case: trailing triggers within same candle as trade opened. Assume most
             # pessimistic price movement, which is moving just enough to arm stoploss and
             # immediately going down to stop price.
-            if sell.sell_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
+            if sell.exit_type == ExitType.TRAILING_STOP_LOSS and trade_dur == 0:
                 if (
                     not self.strategy.use_custom_stoploss and self.strategy.trailing_stop
                     and self.strategy.trailing_only_offset_is_reached
@@ -345,7 +345,7 @@ class Backtesting:
 
             # Set close_rate to stoploss
             return trade.stop_loss
-        elif sell.sell_type == (ExitType.ROI):
+        elif sell.exit_type == (ExitType.ROI):
             roi_entry, roi = self.strategy.min_roi_reached_entry(trade_dur)
             if roi is not None and roi_entry is not None:
                 if roi == -1 and roi_entry % self.timeframe_min == 0:
@@ -395,7 +395,7 @@ class Backtesting:
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
-            if sell.sell_type in (ExitType.SELL_SIGNAL, ExitType.CUSTOM_SELL):
+            if sell.exit_type in (ExitType.SELL_SIGNAL, ExitType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                   default_retval=closerate)(

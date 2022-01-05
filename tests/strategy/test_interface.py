@@ -440,7 +440,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
                                          current_time=now, current_profit=profit,
                                          force_stoploss=0, high=None)
     assert isinstance(sl_flag, SellCheckTuple)
-    assert sl_flag.sell_type == expected
+    assert sl_flag.exit_type == expected
     if expected == ExitType.NONE:
         assert sl_flag.sell_flag is False
     else:
@@ -450,7 +450,7 @@ def test_stop_loss_reached(default_conf, fee, profit, adjusted, expected, traili
     sl_flag = strategy.stop_loss_reached(current_rate=trade.open_rate * (1 + profit2), trade=trade,
                                          current_time=now, current_profit=profit2,
                                          force_stoploss=0, high=None)
-    assert sl_flag.sell_type == expected2
+    assert sl_flag.exit_type == expected2
     if expected2 == ExitType.NONE:
         assert sl_flag.sell_flag is False
     else:
@@ -480,14 +480,14 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
                                low=None, high=None)
 
     assert res.sell_flag is False
-    assert res.sell_type == ExitType.NONE
+    assert res.exit_type == ExitType.NONE
 
     strategy.custom_sell = MagicMock(return_value=True)
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
     assert res.sell_flag is True
-    assert res.sell_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_SELL
     assert res.exit_reason == 'custom_sell'
 
     strategy.custom_sell = MagicMock(return_value='hello world')
@@ -495,7 +495,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.exit_reason == 'hello world'
 
@@ -504,7 +504,7 @@ def test_custom_sell(default_conf, fee, caplog) -> None:
     res = strategy.should_exit(trade, 1, now,
                                enter=False, exit_=False,
                                low=None, high=None)
-    assert res.sell_type == ExitType.CUSTOM_SELL
+    assert res.exit_type == ExitType.CUSTOM_SELL
     assert res.sell_flag is True
     assert res.exit_reason == 'h' * 64
     assert log_has_re('Custom sell reason returned from custom_sell is too long.*', caplog)

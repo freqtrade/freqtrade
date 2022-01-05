@@ -672,7 +672,7 @@ class RPC:
                 closing_side = "buy" if trade.is_short else "sell"
                 current_rate = self._freqtrade.exchange.get_rate(
                     trade.pair, refresh=False, side=closing_side)
-                exit_reason = SellCheckTuple(sell_type=ExitType.FORCE_SELL)
+                exit_reason = SellCheckTuple(exit_type=ExitType.FORCE_SELL)
                 order_type = ordertype or self._freqtrade.strategy.order_types.get(
                     "forcesell", self._freqtrade.strategy.order_types["sell"])
 
