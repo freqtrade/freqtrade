@@ -1164,7 +1164,7 @@ def test_create_stoploss_order_invalid_order(
     caplog.clear()
     freqtrade.create_stoploss_order(trade, 200)
     assert trade.stoploss_order_id is None
-    assert trade.exit_reason == ExitType.EMERGENCY_SELL.value
+    assert trade.exit_reason == ExitType.EMERGENCY_EXIT.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
     assert log_has("Exiting the trade forcefully", caplog)
 
@@ -1176,7 +1176,7 @@ def test_create_stoploss_order_invalid_order(
 
     # Rpc is sending first buy, then sell
     assert rpc_mock.call_count == 2
-    assert rpc_mock.call_args_list[1][0][0]['exit_reason'] == ExitType.EMERGENCY_SELL.value
+    assert rpc_mock.call_args_list[1][0][0]['exit_reason'] == ExitType.EMERGENCY_EXIT.value
     assert rpc_mock.call_args_list[1][0][0]['order_type'] == 'market'
 
 

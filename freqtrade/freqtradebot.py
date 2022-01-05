@@ -915,7 +915,7 @@ class FreqtradeBot(LoggingMixin):
             logger.error(f'Unable to place a stoploss order on exchange. {e}')
             logger.warning('Exiting the trade forcefully')
             self.execute_trade_exit(trade, trade.stop_loss, exit_reason=ExitCheckTuple(
-                exit_type=ExitType.EMERGENCY_SELL))
+                exit_type=ExitType.EMERGENCY_EXIT))
 
         except ExchangeError:
             trade.stoploss_order_id = None
@@ -1102,7 +1102,7 @@ class FreqtradeBot(LoggingMixin):
                         try:
                             self.execute_trade_exit(
                                 trade, order.get('price'),
-                                exit_reason=ExitCheckTuple(exit_type=ExitType.EMERGENCY_SELL))
+                                exit_reason=ExitCheckTuple(exit_type=ExitType.EMERGENCY_EXIT))
                         except DependencyException as exception:
                             logger.warning(
                                 f'Unable to emergency sell trade {trade.pair}: {exception}')
@@ -1314,7 +1314,7 @@ class FreqtradeBot(LoggingMixin):
                 logger.exception(f"Could not cancel stoploss order {trade.stoploss_order_id}")
 
         order_type = ordertype or self.strategy.order_types[exit_type]
-        if exit_reason.exit_type == ExitType.EMERGENCY_SELL:
+        if exit_reason.exit_type == ExitType.EMERGENCY_EXIT:
             # Emergency sells (default to market!)
             order_type = self.strategy.order_types.get("emergencysell", "market")
 
