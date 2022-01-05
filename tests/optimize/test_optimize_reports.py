@@ -324,51 +324,25 @@ def test_generate_sell_reason_stats():
     assert stop_result['profit_mean_pct'] == round(stop_result['profit_mean'] * 100, 2)
 
 
-def test_text_table_strategy(default_conf):
-    default_conf['max_open_trades'] = 2
-    default_conf['dry_run_wallet'] = 3
-    results = {}
-    date = datetime.datetime(year=2020, month=1, day=1, hour=12, minute=30)
-    delta = datetime.timedelta(days=1)
-    results['TestStrategy1'] = {'results': pd.DataFrame(
-        {
-            'pair': ['ETH/BTC', 'ETH/BTC', 'ETH/BTC'],
-            'close_date': [date, date + delta, date + delta * 2],
-            'profit_ratio': [0.1, 0.2, 0.3],
-            'profit_abs': [0.2, 0.4, 0.5],
-            'trade_duration': [10, 30, 10],
-            'wins': [2, 0, 0],
-            'draws': [0, 0, 0],
-            'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
-        }
-    ), 'config': default_conf}
-    results['TestStrategy2'] = {'results': pd.DataFrame(
-        {
-            'pair': ['LTC/BTC', 'LTC/BTC', 'LTC/BTC'],
-            'close_date': [date, date + delta, date + delta * 2],
-            'profit_ratio': [0.4, 0.2, 0.3],
-            'profit_abs': [0.4, 0.4, 0.5],
-            'trade_duration': [15, 30, 15],
-            'wins': [4, 1, 0],
-            'draws': [0, 0, 0],
-            'losses': [0, 0, 1],
-            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
-        }
-    ), 'config': default_conf}
+def test_text_table_strategy(testdatadir):
+    filename = testdatadir / "backtest-result_multistrat.json"
+    bt_res_data = load_backtest_stats(filename)
+
+    bt_res_data_comparison = bt_res_data.pop('strategy_comparison')
 
     result_str = (
-        '|      Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
+        '|       Strategy |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |'
         '   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n'
-        '|---------------+--------+----------------+----------------+------------------+'
+        '|----------------+--------+----------------+----------------+------------------+'
         '----------------+----------------+-------------------------+-----------------------|\n'
-        '| TestStrategy1 |      3 |          20.00 |          60.00 |       1.10000000 |'
-        '          36.67 |        0:17:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |\n'
-        '| TestStrategy2 |      3 |          30.00 |          90.00 |       1.30000000 |'
-        '          43.33 |        0:20:00 |     3     0     0   100 | 0.00000000 BTC  0.00% |'
+        '| StrategyTestV2 |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n'
+        '|   TestStrategy |    179 |           0.08 |          14.39 |       0.02608550 |'
+        '         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |'
     )
 
-    strategy_results = generate_strategy_comparison(all_results=results)
+    strategy_results = generate_strategy_comparison(bt_stats=bt_res_data['strategy'])
+    assert strategy_results == bt_res_data_comparison
     assert text_table_strategy(strategy_results, 'BTC') == result_str
 
 
