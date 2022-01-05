@@ -102,7 +102,7 @@ class IStrategy(ABC, HyperStrategyMixin):
     process_only_new_candles: bool = False
 
     use_exit_signal: bool
-    sell_profit_only: bool
+    exit_profit_only: bool
     sell_profit_offset: float
     ignore_roi_if_enter_signal: bool
 
@@ -790,8 +790,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_rate = rate
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        if (self.sell_profit_only and current_profit <= self.sell_profit_offset):
-            # sell_profit_only and profit doesn't reach the offset - ignore sell signal
+        if (self.exit_profit_only and current_profit <= self.sell_profit_offset):
+            # exit_profit_only and profit doesn't reach the offset - ignore sell signal
             pass
         elif self.use_exit_signal and not enter:
             if exit_:

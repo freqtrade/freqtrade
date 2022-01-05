@@ -1120,8 +1120,8 @@ def test_pairlist_resolving_fallback(mocker):
 @pytest.mark.parametrize("setting", [
     ("ask_strategy", "use_exit_signal", True,
      None, "use_exit_signal", False),
-    ("ask_strategy", "sell_profit_only", True,
-     None, "sell_profit_only", False),
+    ("ask_strategy", "exit_profit_only", True,
+     None, "exit_profit_only", False),
     ("ask_strategy", "sell_profit_offset", 0.1,
      None, "sell_profit_offset", 0.01),
     ("ask_strategy", "ignore_roi_if_enter_signal", True,
@@ -1169,7 +1169,7 @@ def test_process_temporary_deprecated_settings(mocker, default_conf, setting, ca
 
 @pytest.mark.parametrize("setting", [
     ("experimental", "use_exit_signal", False),
-    ("experimental", "sell_profit_only", True),
+    ("experimental", "exit_profit_only", True),
     ("experimental", "ignore_roi_if_enter_signal", True),
 ])
 def test_process_removed_settings(mocker, default_conf, setting):
