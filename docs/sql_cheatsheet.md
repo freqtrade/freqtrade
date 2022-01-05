@@ -78,7 +78,7 @@ SET is_open=0,
   close_rate=0.19638016,
   close_profit=0.0496,
   close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
-  exit_reason='force_sell'  
+  exit_reason='force_exit'  
 WHERE id=31;
 ```
 

@@ -694,7 +694,7 @@ class Telegram(RPCHandler):
             'trailing_stop_loss': 'Trail. Stop',
             'stoploss_on_exchange': 'Stoploss',
             'exit_signal': 'Sell Signal',
-            'force_sell': 'Forcesell',
+            'force_exit': 'Forcesell',
             'emergency_sell': 'Emergency Sell',
         }
         exit_reasons_tabulate = [

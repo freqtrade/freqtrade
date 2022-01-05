@@ -275,7 +275,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param exit_reason: Exit reason.
             Can be any of ['roi', 'stop_loss', 'stoploss_on_exchange', 'trailing_stop_loss',
-                           'exit_signal', 'force_sell', 'emergency_sell']
+                           'exit_signal', 'force_exit', 'emergency_sell']
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True, then the sell-order/exit_short-order is placed on the exchange.
