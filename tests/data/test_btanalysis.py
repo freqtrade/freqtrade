@@ -72,7 +72,7 @@ def test_load_backtest_data_new_format(testdatadir):
     filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
+    assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -96,7 +96,7 @@ def test_load_backtest_data_multi(testdatadir):
     for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
-        assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
+        assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
@@ -285,13 +285,13 @@ def test_calculate_max_drawdown(testdatadir):
     _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
         bt_data, value_col="profit_abs")
     assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.59495234
+    assert pytest.approx(drawdown) == 0.12071099
     assert isinstance(hdate, Timestamp)
     assert isinstance(lowdate, Timestamp)
     assert isinstance(hval, float)
     assert isinstance(lval, float)
     assert hdate == Timestamp('2018-01-25 01:30:00', tz='UTC')
-    assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-25 03:50:00', tz='UTC')
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)

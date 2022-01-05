@@ -227,9 +227,9 @@ def test_generate_daily_stats(testdatadir):
     assert isinstance(res, dict)
     assert round(res['backtest_best_day'], 4) == 0.1796
     assert round(res['backtest_worst_day'], 4) == -0.1468
-    assert res['winning_days'] == 14
-    assert res['draw_days'] == 4
-    assert res['losing_days'] == 3
+    assert res['winning_days'] == 19
+    assert res['draw_days'] == 0
+    assert res['losing_days'] == 2
 
     # Select empty dataframe!
     res = generate_daily_stats(bt_data.loc[bt_data['open_date'] == '2000-01-01', :])
