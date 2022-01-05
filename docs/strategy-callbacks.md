@@ -9,7 +9,7 @@ Currently available callbacks:
 
 * [`bot_loop_start()`](#bot-loop-start)
 * [`custom_stake_amount()`](#custom-stake-size)
-* [`custom_exit()`](#custom-sell-signal)
+* [`custom_exit()`](#custom-exit-signal)
 * [`custom_stoploss()`](#custom-stoploss)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
 * [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)

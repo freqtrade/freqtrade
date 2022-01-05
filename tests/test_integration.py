@@ -16,7 +16,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee,
     Sells
     * first trade as stoploss
     * 2nd trade is kept
-    * 3rd trade is sold via sell-signal
+    * 3rd trade is sold via exit-signal
     """
     default_conf['max_open_trades'] = 3
     default_conf['exchange']['name'] = 'binance'

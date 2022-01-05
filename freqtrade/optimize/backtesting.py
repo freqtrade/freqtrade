@@ -396,7 +396,7 @@ class Backtesting:
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
             if sell.exit_type in (ExitType.EXIT_SIGNAL, ExitType.CUSTOM_EXIT):
-                # Custom exit pricing only for sell-signals
+                # Custom exit pricing only for exit-signals
                 closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                   default_retval=closerate)(
                     pair=trade.pair, trade=trade,

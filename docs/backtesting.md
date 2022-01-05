@@ -477,7 +477,7 @@ Since backtesting lacks some detailed information about what happens within a ca
 - Buys happen at open-price
 - All orders are filled at the requested price (no slippage, no unfilled orders)
 - Sell-signal sells happen at open-price of the consecutive candle
-- Sell-signal is favored over Stoploss, because sell-signals are assumed to trigger on candle's open
+- Sell-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
   - sells are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the sell will be at 2%)
   - sells are never "below the candle", so a ROI of 2% may result in a sell at 2.4% if low was at 2.4% profit

@@ -381,7 +381,7 @@ tc23 = BTContainer(data=[
 
 # Test 24: Sell with signal sell in candle 3 (stoploss also triggers on this candle)
 # Stoploss at 1%.
-# Stoploss wins over Sell-signal (because sell-signal is acted on in the next candle)
+# Stoploss wins over Sell-signal (because exit-signal is acted on in the next candle)
 tc24 = BTContainer(data=[
     # D  O     H     L     C     V    B  S
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
@@ -417,7 +417,7 @@ tc26 = BTContainer(data=[
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
-    [3, 5010, 5251, 4986, 5010, 6172, 0, 1],  # Triggers ROI, sell-signal
+    [3, 5010, 5251, 4986, 5010, 6172, 0, 1],  # Triggers ROI, exit-signal
     [4, 5010, 5010, 4855, 4995, 6172, 0, 0],
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.05, use_exit_signal=True,
@@ -431,8 +431,8 @@ tc27 = BTContainer(data=[
     [0, 5000, 5025, 4975, 4987, 6172, 1, 0],
     [1, 5000, 5025, 4975, 4987, 6172, 0, 0],  # enter trade (signal on last candle)
     [2, 4987, 5012, 4986, 4986, 6172, 0, 0],
-    [3, 5010, 5012, 4986, 5010, 6172, 0, 1],  # sell-signal
-    [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, sell-signal acted on
+    [3, 5010, 5012, 4986, 5010, 6172, 0, 1],  # exit-signal
+    [4, 5010, 5251, 4855, 4995, 6172, 0, 0],  # Triggers ROI, exit-signal acted on
     [5, 4995, 4995, 4950, 4950, 6172, 0, 0]],
     stop_loss=-0.10, roi={"0": 0.05}, profit_perc=0.002, use_exit_signal=True,
     trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4)]

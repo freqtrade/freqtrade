@@ -466,7 +466,7 @@ def generate_candlestick_graph(pair: str, data: pd.DataFrame, trades: pd.DataFra
             )
             fig.add_trace(sells, 1, 1)
         else:
-            logger.warning("No sell-signals found.")
+            logger.warning("No exit-signals found.")
     # Add Bollinger Bands
     fig = plot_area(fig, 1, data, 'bb_lowerband', 'bb_upperband',
                     label="Bollinger Band")

@@ -223,7 +223,7 @@ def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, t
     assert trades_mock.call_count == 1
 
     assert log_has("No buy-signals found.", caplog)
-    assert log_has("No sell-signals found.", caplog)
+    assert log_has("No exit-signals found.", caplog)
 
 
 def test_generate_candlestick_graph_no_trades(default_conf, mocker, testdatadir):

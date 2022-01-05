@@ -333,7 +333,7 @@ If it is not set in either Strategy or Configuration, a default of 1000% `{"0": 
 
 The `forcebuy_enable` configuration parameter enables the usage of forcebuy commands via Telegram and REST API.
 For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
-For example, you can send `/forcebuy ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular sell-signal (ROI, stoploss, /forcesell) appears.
+For example, you can send `/forcebuy ETH/BTC` to the bot, which will result in freqtrade buying the pair and holds it until a regular exit-signal (ROI, stoploss, /forcesell) appears.
 
 This can be dangerous with some strategies, so use with care.
 
