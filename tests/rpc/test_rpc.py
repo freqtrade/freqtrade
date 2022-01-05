@@ -973,7 +973,7 @@ def test_exit_reason_performance_handle_2(mocker, default_conf, markets, fee):
     res = rpc._rpc_exit_reason_performance(None)
 
     assert len(res) == 2
-    assert res[0]['exit_reason'] == 'sell_signal'
+    assert res[0]['exit_reason'] == 'exit_signal'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
     assert res[1]['exit_reason'] == 'roi'
@@ -984,7 +984,7 @@ def test_exit_reason_performance_handle_2(mocker, default_conf, markets, fee):
     res = rpc._rpc_exit_reason_performance('ETC/BTC')
     assert len(res) == 1
     assert res[0]['count'] == 1
-    assert res[0]['exit_reason'] == 'sell_signal'
+    assert res[0]['exit_reason'] == 'exit_signal'
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 
@@ -1046,7 +1046,7 @@ def test_mix_tag_performance_handle_2(mocker, default_conf, markets, fee):
     res = rpc._rpc_mix_tag_performance(None)
 
     assert len(res) == 2
-    assert res[0]['mix_tag'] == 'TEST1 sell_signal'
+    assert res[0]['mix_tag'] == 'TEST1 exit_signal'
     assert res[0]['count'] == 1
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
     assert res[1]['mix_tag'] == 'Other roi'
@@ -1058,7 +1058,7 @@ def test_mix_tag_performance_handle_2(mocker, default_conf, markets, fee):
 
     assert len(res) == 1
     assert res[0]['count'] == 1
-    assert res[0]['mix_tag'] == 'TEST1 sell_signal'
+    assert res[0]['mix_tag'] == 'TEST1 exit_signal'
     assert prec_satoshi(res[0]['profit_pct'], 0.5)
 
 

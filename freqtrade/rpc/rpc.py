@@ -958,7 +958,7 @@ class RPC:
             'data': dataframe.values.tolist(),
             'length': len(dataframe),
             'buy_signals': signals['enter_long'],  # Deprecated
-            'sell_signals': signals['exit_long'],  # Deprecated
+            'exit_signals': signals['exit_long'],  # Deprecated
             'enter_long_signals': signals['enter_long'],
             'exit_long_signals': signals['exit_long'],
             'enter_short_signals': signals['enter_short'],

@@ -69,22 +69,22 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history.loc[1, 'enter_long'] = 0
     mocked_history.loc[1, 'enter_short'] = 1
     mocked_history.loc[1, 'exit_short'] = 0
-    mocked_history.loc[1, 'enter_tag'] = 'sell_signal_01'
+    mocked_history.loc[1, 'enter_tag'] = 'exit_signal_01'
 
     assert _STRATEGY.get_entry_signal(
-        'ETH/BTC', '5m', mocked_history) == (SignalDirection.SHORT, 'sell_signal_01')
+        'ETH/BTC', '5m', mocked_history) == (SignalDirection.SHORT, 'exit_signal_01')
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history) == (False, False, None)
     assert _STRATEGY.get_exit_signal('ETH/BTC', '5m', mocked_history, True) == (True, False, None)
 
     mocked_history.loc[1, 'enter_short'] = 0
     mocked_history.loc[1, 'exit_short'] = 1
-    mocked_history.loc[1, 'exit_tag'] = 'sell_signal_02'
+    mocked_history.loc[1, 'exit_tag'] = 'exit_signal_02'
     assert _STRATEGY.get_entry_signal(
         'ETH/BTC', '5m', mocked_history) == (None, None)
     assert _STRATEGY.get_exit_signal(
-        'ETH/BTC', '5m', mocked_history) == (False, False, 'sell_signal_02')
+        'ETH/BTC', '5m', mocked_history) == (False, False, 'exit_signal_02')
     assert _STRATEGY.get_exit_signal(
-        'ETH/BTC', '5m', mocked_history, True) == (False, True, 'sell_signal_02')
+        'ETH/BTC', '5m', mocked_history, True) == (False, True, 'exit_signal_02')
 
 
 def test_analyze_pair_empty(default_conf, mocker, caplog, ohlcv_history):

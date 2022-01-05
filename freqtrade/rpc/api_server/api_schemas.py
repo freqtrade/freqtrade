@@ -346,7 +346,7 @@ class PairHistory(BaseModel):
     data: List[Any]
     length: int
     buy_signals: int
-    sell_signals: int
+    exit_signals: int
     enter_long_signals: int
     exit_long_signals: int
     enter_short_signals: int

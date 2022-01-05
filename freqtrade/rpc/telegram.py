@@ -693,7 +693,7 @@ class Telegram(RPCHandler):
             'stop_loss': 'Stoploss',
             'trailing_stop_loss': 'Trail. Stop',
             'stoploss_on_exchange': 'Stoploss',
-            'sell_signal': 'Sell Signal',
+            'exit_signal': 'Sell Signal',
             'force_sell': 'Forcesell',
             'emergency_sell': 'Emergency Sell',
         }

@@ -391,7 +391,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 17,
          'close_rate': 17,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -402,7 +402,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 20,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -413,7 +413,7 @@ def test_process_expectancy(mocker, edge_conf, fee, risk_reward_ratio, expectanc
          'trade_duration': '',
          'open_rate': 26,
          'close_rate': 34,
-         'exit_type': 'sell_signal'}
+         'exit_type': 'exit_signal'}
     ]
 
     trades_df = DataFrame(trades)
@@ -457,7 +457,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 17,
          'close_rate': 15,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -470,7 +470,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 10,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
          'profit_percent': '',
@@ -482,7 +482,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 10,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
          'profit_percent': '',
@@ -494,7 +494,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 10,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
          'profit_percent': '',
@@ -506,7 +506,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 20,
          'close_rate': 10,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
 
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
@@ -519,7 +519,7 @@ def test_process_expectancy_remove_pumps(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 26,
          'close_rate': 134,
-         'exit_type': 'sell_signal'}
+         'exit_type': 'exit_signal'}
     ]
 
     trades_df = DataFrame(trades)
@@ -551,7 +551,7 @@ def test_process_expectancy_only_wins(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 15,
          'close_rate': 17,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
          'profit_percent': '',
@@ -563,7 +563,7 @@ def test_process_expectancy_only_wins(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 10,
          'close_rate': 20,
-         'exit_type': 'sell_signal'},
+         'exit_type': 'exit_signal'},
         {'pair': 'TEST/BTC',
          'stoploss': -0.9,
          'profit_percent': '',
@@ -575,7 +575,7 @@ def test_process_expectancy_only_wins(mocker, edge_conf, fee,):
          'trade_duration': '',
          'open_rate': 26,
          'close_rate': 134,
-         'exit_type': 'sell_signal'}
+         'exit_type': 'exit_signal'}
     ]
 
     trades_df = DataFrame(trades)

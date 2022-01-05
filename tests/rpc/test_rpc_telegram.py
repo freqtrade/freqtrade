@@ -2091,7 +2091,7 @@ def test_send_msg_sell_notification_no_fiat(
     ({'profit_percent': 1.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
     ({'profit_percent': 0.0, 'exit_reason': 'roi'}, "\N{EIGHT SPOKED ASTERISK}"),
     ({'profit_percent': -5.0, 'exit_reason': 'stop_loss'}, "\N{WARNING SIGN}"),
-    ({'profit_percent': -2.0, 'exit_reason': 'sell_signal'}, "\N{CROSS MARK}"),
+    ({'profit_percent': -2.0, 'exit_reason': 'exit_signal'}, "\N{CROSS MARK}"),
 ])
 def test__sell_emoji(default_conf, mocker, msg, expected):
     del default_conf['fiat_display_currency']

@@ -1966,7 +1966,7 @@ def test_handle_trade(
     freqtrade.wallets.update()
 
     patch_get_signal(freqtrade, enter_long=False, exit_short=is_short,
-                     exit_long=not is_short, exit_tag='sell_signal1')
+                     exit_long=not is_short, exit_tag='exit_signal1')
     assert freqtrade.handle_trade(trade) is True
     assert trade.open_order_id == exit_order['id']
 
@@ -1977,7 +1977,7 @@ def test_handle_trade(
     assert trade.close_profit == close_profit
     assert trade.calc_profit() == 5.685
     assert trade.close_date is not None
-    assert trade.exit_reason == 'sell_signal1'
+    assert trade.exit_reason == 'exit_signal1'
 
 
 @pytest.mark.parametrize("is_short", [False, True])

@@ -89,7 +89,7 @@ def mock_trade_usdt_2(fee):
         open_order_id='dry_run_sell_12345',
         strategy='StrategyTestV2',
         timeframe=5,
-        exit_reason='sell_signal',
+        exit_reason='exit_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
     )
