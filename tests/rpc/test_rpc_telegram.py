@@ -196,7 +196,7 @@ def test_telegram_status(default_conf, update, mocker) -> None:
             'profit_ratio': -0.0059,
             'initial_stop_loss_abs': 1.098e-05,
             'stop_loss_abs': 1.099e-05,
-            'sell_order_status': None,
+            'exit_order_status': None,
             'initial_stop_loss_ratio': -0.0005,
             'stoploss_current_dist': 1e-08,
             'stoploss_current_dist_ratio': -0.0002,
@@ -544,7 +544,7 @@ def test_weekly_wrong_input(default_conf, update, ticker, mocker) -> None:
     context.args = ["this week"]
     telegram._weekly(update=update, context=context)
     assert str('Weekly Profit over the last 8 weeks (starting from Monday)</b>:') \
-           in msg_mock.call_args_list[0][0][0]
+        in msg_mock.call_args_list[0][0][0]
 
 
 def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
@@ -1769,7 +1769,7 @@ def test_send_msg_protection_notification(default_conf, mocker, time_machine) ->
     (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_01', 1.0),
     (RPCMessageType.BUY_FILL, 'Longed', 'long_signal_02', 2.0),
     (RPCMessageType.SHORT_FILL, 'Shorted', 'short_signal_01', 2.0),
-    ])
+])
 def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, entered,
                                         enter_signal, leverage) -> None:
 
@@ -1799,7 +1799,7 @@ def test_send_msg_buy_fill_notification(default_conf, mocker, message_type, ente
         f"{leverage_text}"
         '*Open Rate:* `0.00001099`\n'
         '*Total:* `(0.00100000 BTC, 12.345 USD)`'
-        )
+    )
 
 
 def test_send_msg_sell_notification(default_conf, mocker) -> None:
@@ -1841,7 +1841,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
         '*Close Rate:* `0.00003201`'
-        )
+    )
 
     msg_mock.reset_mock()
     telegram.send_msg({
@@ -1875,7 +1875,7 @@ def test_send_msg_sell_notification(default_conf, mocker) -> None:
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
         '*Close Rate:* `0.00003201`'
-        )
+    )
     # Reset singleton function to avoid random breaks
     telegram._rpc._fiat_converter.convert_amount = old_convamount
 
@@ -2039,7 +2039,7 @@ def test_send_msg_buy_notification_no_fiat(
     ('Long', 'long_signal_01', 1.0),
     ('Long', 'long_signal_01', 5.0),
     ('Short', 'short_signal_01', 2.0),
-    ])
+])
 def test_send_msg_sell_notification_no_fiat(
         default_conf, mocker, direction, enter_signal, leverage) -> None:
     del default_conf['fiat_display_currency']
@@ -2081,7 +2081,7 @@ def test_send_msg_sell_notification_no_fiat(
         '*Open Rate:* `0.00007500`\n'
         '*Current Rate:* `0.00003201`\n'
         '*Close Rate:* `0.00003201`'
-        )
+    )
 
 
 @pytest.mark.parametrize('msg,expected', [

@@ -1348,7 +1348,7 @@ class FreqtradeBot(LoggingMixin):
         trade.orders.append(order_obj)
 
         trade.open_order_id = order['id']
-        trade.sell_order_status = ''
+        trade.exit_order_status = ''
         trade.close_rate_requested = limit
         trade.sell_reason = exit_tag or sell_reason.sell_reason
 
@@ -1414,10 +1414,10 @@ class FreqtradeBot(LoggingMixin):
         """
         Sends rpc notification when a sell cancel occurred.
         """
-        if trade.sell_order_status == reason:
+        if trade.exit_order_status == reason:
             return
         else:
-            trade.sell_order_status = reason
+            trade.exit_order_status = reason
 
         profit_rate = trade.close_rate if trade.close_rate else trade.close_rate_requested
         profit_trade = trade.calc_profit(rate=profit_rate)

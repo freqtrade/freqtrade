@@ -262,7 +262,7 @@ class LocalTrade():
     # Lowest price reached
     min_rate: float = 0.0
     sell_reason: str = ''
-    sell_order_status: str = ''
+    exit_order_status: str = ''
     strategy: str = ''
     enter_tag: Optional[str] = None
     timeframe: Optional[int] = None
@@ -436,7 +436,7 @@ class LocalTrade():
             'profit_abs': self.close_profit_abs,
 
             'sell_reason': self.sell_reason,
-            'sell_order_status': self.sell_order_status,
+            'exit_order_status': self.exit_order_status,
             'stop_loss_abs': self.stop_loss,
             'stop_loss_ratio': self.stop_loss_pct if self.stop_loss_pct else None,
             'stop_loss_pct': (self.stop_loss_pct * 100) if self.stop_loss_pct else None,
@@ -593,7 +593,7 @@ class LocalTrade():
         self.close_profit = self.calc_profit_ratio()
         self.close_profit_abs = self.calc_profit()
         self.is_open = False
-        self.sell_order_status = 'closed'
+        self.exit_order_status = 'closed'
         self.open_order_id = None
         if show_msg:
             logger.info(
@@ -937,7 +937,7 @@ class Trade(_DECL_BASE, LocalTrade):
     # Lowest price reached
     min_rate = Column(Float, nullable=True)
     sell_reason = Column(String(100), nullable=True)
-    sell_order_status = Column(String(100), nullable=True)
+    exit_order_status = Column(String(100), nullable=True)
     strategy = Column(String(100), nullable=True)
     enter_tag = Column(String(100), nullable=True)
     timeframe = Column(Integer, nullable=True)

@@ -956,7 +956,7 @@ def test_api_status(botclient, mocker, ticker, fee, markets, is_short,
         'open_rate_requested': ANY,
         'open_trade_value': open_trade_value,
         'sell_reason': None,
-        'sell_order_status': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,
@@ -1035,8 +1035,8 @@ def test_api_blacklist(botclient, mocker):
                              "NOTHING/BTC": {
                                  "error_msg": "Pair NOTHING/BTC is not in the current blacklist."
                              }
-                             },
-                         }
+    },
+    }
     rc = client_delete(
         client,
         f"{BASE_URI}/blacklist?pairs_to_delete=HOT/BTC&pairs_to_delete=ETH/BTC")
@@ -1147,7 +1147,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         'open_rate_requested': None,
         'open_trade_value': 0.24605460,
         'sell_reason': None,
-        'sell_order_status': None,
+        'exit_order_status': None,
         'strategy': CURRENT_TEST_STRATEGY,
         'buy_tag': None,
         'enter_tag': None,

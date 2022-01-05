@@ -213,7 +213,7 @@ class TradeSchema(BaseModel):
     profit_abs: Optional[float]
     profit_fiat: Optional[float]
     sell_reason: Optional[str]
-    sell_order_status: Optional[str]
+    exit_order_status: Optional[str]
     stop_loss_abs: Optional[float]
     stop_loss_ratio: Optional[float]
     stop_loss_pct: Optional[float]

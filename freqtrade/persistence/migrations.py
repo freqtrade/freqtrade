@@ -75,7 +75,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
         cols, 'close_profit_abs',
         f"(amount * close_rate * (1 - {fee_close})) - {open_trade_value}")
     # TODO-lev: update to exit order status
-    sell_order_status = get_column_def(cols, 'sell_order_status', 'null')
+    exit_order_status = get_column_def(cols, 'exit_order_status', 'null')
     amount_requested = get_column_def(cols, 'amount_requested', 'amount')
 
     # Schema migration necessary
@@ -98,7 +98,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             stake_amount, amount, amount_requested, open_date, close_date, open_order_id,
             stop_loss, stop_loss_pct, initial_stop_loss, initial_stop_loss_pct,
             stoploss_order_id, stoploss_last_update,
-            max_rate, min_rate, sell_reason, sell_order_status, strategy, enter_tag,
+            max_rate, min_rate, sell_reason, exit_order_status, strategy, enter_tag,
             timeframe, open_trade_value, close_profit_abs,
             trading_mode, leverage, isolated_liq, is_short,
             interest_rate, funding_fees
@@ -115,7 +115,7 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             {initial_stop_loss_pct} initial_stop_loss_pct,
             {stoploss_order_id} stoploss_order_id, {stoploss_last_update} stoploss_last_update,
             {max_rate} max_rate, {min_rate} min_rate, {sell_reason} sell_reason,
-            {sell_order_status} sell_order_status,
+            {exit_order_status} exit_order_status,
             {strategy} strategy, {enter_tag} enter_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs,
             {trading_mode} trading_mode, {leverage} leverage, {isolated_liq} isolated_liq,
