@@ -16,9 +16,8 @@ from freqtrade.edge import PairInfo
 from freqtrade.enums import ExitType
 from freqtrade.optimize.optimize_reports import (_get_resample_from_period, generate_backtest_stats,
                                                  generate_daily_stats, generate_edge_table,
-                                                 generate_pair_metrics,
+                                                 generate_exit_reason_stats, generate_pair_metrics,
                                                  generate_periodic_breakdown_stats,
-                                                 generate_exit_reason_stats,
                                                  generate_strategy_comparison,
                                                  generate_trading_stats, show_sorted_pairlist,
                                                  store_backtest_stats, text_table_bt_results,

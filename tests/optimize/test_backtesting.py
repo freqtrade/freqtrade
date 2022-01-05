@@ -18,7 +18,7 @@ from freqtrade.data.btanalysis import BT_DATA_COLUMNS, evaluate_result_multi
 from freqtrade.data.converter import clean_ohlcv_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
-from freqtrade.enums import RunMode, ExitType
+from freqtrade.enums import ExitType, RunMode
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade

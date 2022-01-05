@@ -28,7 +28,7 @@ from freqtrade.persistence import LocalTrade, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.strategy.interface import IStrategy, ExitCheckTuple
+from freqtrade.strategy.interface import ExitCheckTuple, IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
 from freqtrade.wallets import Wallets
 

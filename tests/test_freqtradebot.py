@@ -12,7 +12,7 @@ import pytest
 from pandas import DataFrame
 
 from freqtrade.constants import CANCEL_REASON, MATH_CLOSE_PREC, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import CandleType, RPCMessageType, RunMode, ExitType, SignalDirection, State
+from freqtrade.enums import CandleType, ExitType, RPCMessageType, RunMode, SignalDirection, State
 from freqtrade.exceptions import (DependencyException, ExchangeError, InsufficientFundsError,
                                   InvalidOrderException, OperationalException, PricingError,
                                   TemporaryError)
