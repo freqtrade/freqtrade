@@ -988,7 +988,7 @@ def test_backtest_start_multi_strat(default_conf, mocker, caplog, testdatadir):
         "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": False,
+        "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)
     backtestmock = MagicMock(return_value={
@@ -1063,7 +1063,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
         "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": False,
+        "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)
     result1 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],
@@ -1175,7 +1175,7 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
         "use_exit_signal": True,
         "sell_profit_only": False,
         "sell_profit_offset": 0.0,
-        "ignore_roi_if_buy_signal": False,
+        "ignore_roi_if_enter_signal": False,
     })
     patch_exchange(mocker)
     result1 = pd.DataFrame({'pair': ['XRP/BTC', 'LTC/BTC'],

@@ -865,7 +865,7 @@ class FreqtradeBot(LoggingMixin):
 
         # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
         if (self.config.get('use_exit_signal', True) or
-                self.config.get('ignore_roi_if_buy_signal', False)):
+                self.config.get('ignore_roi_if_enter_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
                                                                       self.strategy.timeframe)
 

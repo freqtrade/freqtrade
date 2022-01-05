@@ -118,7 +118,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `use_exit_signal` | Use sell signals produced by the strategy in addition to the `minimal_roi`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `true`.* <br> **Datatype:** Boolean
 | `sell_profit_only` | Wait until the bot reaches `sell_profit_offset` before taking a sell decision. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `sell_profit_offset` | Sell-signal is only active above this value. Only active in combination with `sell_profit_only=True`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `0.0`.* <br> **Datatype:** Float (as ratio)
-| `ignore_roi_if_buy_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_exit_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
+| `ignore_roi_if_enter_signal` | Do not sell if the buy signal is still active. This setting takes preference over `minimal_roi` and `use_exit_signal`. [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.* <br> **Datatype:** Boolean
 | `ignore_buying_expired_candle_after` | Specifies the number of seconds until a buy signal is no longer used. <br> **Datatype:** Integer
 | `order_types` | Configure order-types depending on the action (`"buy"`, `"sell"`, `"stoploss"`, `"stoploss_on_exchange"`). [More information below](#understand-order_types). [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Dict
 | `order_time_in_force` | Configure time in force for buy and sell orders. [More information below](#understand-order_time_in_force). [Strategy Override](#parameters-in-the-strategy). <br> **Datatype:** Dict
@@ -196,7 +196,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `use_exit_signal`
 * `sell_profit_only`
 * `sell_profit_offset`
-* `ignore_roi_if_buy_signal`
+* `ignore_roi_if_enter_signal`
 * `ignore_buying_expired_candle_after`
 
 ### Configuring amount per trade

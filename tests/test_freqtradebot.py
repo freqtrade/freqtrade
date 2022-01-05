@@ -3574,8 +3574,8 @@ def test_locked_pairs(default_conf_usdt, ticker_usdt, fee,
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_open, is_short,
-                                  fee, mocker) -> None:
+def test_ignore_roi_if_enter_signal(default_conf_usdt, limit_order, limit_order_open, is_short,
+                                    fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3591,7 +3591,7 @@ def test_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_op
         ]),
         get_fee=fee,
     )
-    default_conf_usdt['ignore_roi_if_buy_signal'] = True
+    default_conf_usdt['ignore_roi_if_enter_signal'] = True
 
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
@@ -3786,8 +3786,8 @@ def test_trailing_stop_loss_positive(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_order_open,
-                                          is_short, fee, mocker) -> None:
+def test_disable_ignore_roi_if_enter_signal(default_conf_usdt, limit_order, limit_order_open,
+                                            is_short, fee, mocker) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -3806,7 +3806,7 @@ def test_disable_ignore_roi_if_buy_signal(default_conf_usdt, limit_order, limit_
         _is_dry_limit_order_filled=MagicMock(return_value=False),
     )
     default_conf_usdt['ask_strategy'] = {
-        'ignore_roi_if_buy_signal': False
+        'ignore_roi_if_enter_signal': False
     }
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
