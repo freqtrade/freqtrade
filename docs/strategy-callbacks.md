@@ -78,7 +78,7 @@ Freqtrade will fall back to the `proposed_stake` value should your code raise an
 !!! Tip
     Returning `0` or `None` will prevent trades from being placed.
 
-## Custom sell signal
+## Custom exit signal
 
 Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.
 
@@ -391,7 +391,7 @@ class AwesomeStrategy(IStrategy):
 !!! Warning "Backtesting"
     While Custom prices are supported in backtesting (starting with 2021.12), prices will be moved to within the candle's high/low prices.
     This behavior is currently being tested, and might be changed at a later point.
-    `custom_exit_price()` is only called for sells of type Sell_signal and Custom sell. All other sell-types will use regular backtesting prices.
+    `custom_exit_price()` is only called for sells of type Sell_signal and Custom exit. All other sell-types will use regular backtesting prices.
 
 ## Custom order timeout rules
 
