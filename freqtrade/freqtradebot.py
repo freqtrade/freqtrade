@@ -863,7 +863,6 @@ class FreqtradeBot(LoggingMixin):
         exit_tag = None
         exit_signal_type = "exit_short" if trade.is_short else "exit_long"
 
-        # TODO-lev: change to use_exit_signal, ignore_roi_if_enter_signal
         if (self.config.get('use_exit_signal', True) or
                 self.config.get('ignore_roi_if_enter_signal', False)):
             analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(trade.pair,
@@ -946,7 +945,6 @@ class FreqtradeBot(LoggingMixin):
 
         # We check if stoploss order is fulfilled
         if stoploss_order and stoploss_order['status'] in ('closed', 'triggered'):
-            # TODO-lev: Update to exit reason
             trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
             self.update_trade_state(trade, trade.stoploss_order_id, stoploss_order,
                                     stoploss_order=True)
@@ -1324,7 +1322,7 @@ class FreqtradeBot(LoggingMixin):
         if not strategy_safe_wrapper(self.strategy.confirm_trade_exit, default_retval=True)(
                 pair=trade.pair, trade=trade, order_type=order_type, amount=amount, rate=limit,
                 time_in_force=time_in_force, exit_reason=exit_reason.exit_reason,
-                current_time=datetime.now(timezone.utc)):  # TODO-lev: Update to exit
+                current_time=datetime.now(timezone.utc)):
             logger.info(f"User requested abortion of exiting {trade.pair}")
             return False
 
