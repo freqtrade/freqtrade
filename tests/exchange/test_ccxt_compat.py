@@ -226,8 +226,12 @@ class TestCCXTExchange():
         # Test For last 4 hours
         # Avoids random test-failure when funding-fees are 0 for a few hours.
         assert val0 != 0.0 or val1 != 0.0 or val2 != 0.0 or val3 != 0.0
-        assert rate['open'].max() != 0.0
-        assert rate['open'].min() != rate['open'].max()
+        # We expect funding rates to be different from 0.0 - or moving around.
+        assert (
+            rate['open'].max() != 0.0 or rate['open'].min() != 0.0 or
+            (rate['open'].min() != rate['open'].max())
+        )
+
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
