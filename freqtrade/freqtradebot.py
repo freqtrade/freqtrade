@@ -1538,17 +1538,11 @@ class FreqtradeBot(LoggingMixin):
         """
         Applies the fee to amount (either from Order or from Trades).
         Can eat into dust if more than the required asset is available.
+        Can't happen in Futures mode - where Fees are always in settlement currency,
+        never in base currency.
         """
         self.wallets.update()
-        free_base = self.wallets.get_free(trade_base_currency)
-        if fee_abs != 0 and free_base >= amount:
-            if self.trading_mode == TradingMode.FUTURES:
-                logger.warning(
-                    f'freqtradebot.wallets.get_free({trade_base_currency}) >= amount'
-                    '               {free_base}                            >= {amount}'
-                    'while trading_mode == FUTURES. This should not happen because there'
-                    'is no dust in futures trading and indicates a problem'
-                )
+        if fee_abs != 0 and self.wallets.get_free(trade_base_currency) >= amount:
             # Eat into dust if we own more than base currency
             logger.info(f"Fee amount for {trade} was in base currency - "
                         f"Eating Fee {fee_abs} into dust.")
