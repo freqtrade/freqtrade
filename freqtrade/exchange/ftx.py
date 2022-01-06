@@ -19,6 +19,7 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
+        "ohlcv_volume_currency": "quote",
     }
 
     def market_is_tradable(self, market: Dict[str, Any]) -> bool:
