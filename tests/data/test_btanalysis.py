@@ -8,14 +8,14 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_OLD,
-                                       analyze_trade_parallelism, calculate_csum,
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
                                        calculate_underwater, combine_dataframes_with_mean,
                                        create_cum_profit, extract_trades_of_period,
                                        get_latest_backtest_filename, get_latest_hyperopt_file,
                                        load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
+from freqtrade.exceptions import OperationalException
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -51,20 +51,14 @@ def test_get_latest_hyperopt_file(testdatadir, mocker):
     assert res == testdatadir.parent / "hyperopt_results.pickle"
 
 
-def test_load_backtest_data_old_format(testdatadir):
+def test_load_backtest_data_old_format(testdatadir, mocker):
 
-    filename = testdatadir / "backtest-result_test.json"
-    bt_data = load_backtest_data(filename)
-    assert isinstance(bt_data, DataFrame)
-    assert list(bt_data.columns) == BT_DATA_COLUMNS_OLD + ['profit_abs', 'profit_ratio']
-    assert len(bt_data) == 179
+    filename = testdatadir / "backtest-result_test222.json"
+    mocker.patch('freqtrade.data.btanalysis.load_backtest_stats', return_value=[])
 
-    # Test loading from string (must yield same result)
-    bt_data2 = load_backtest_data(str(filename))
-    assert bt_data.equals(bt_data2)
-
-    with pytest.raises(ValueError, match=r"File .* does not exist\."):
-        load_backtest_data(str("filename") + "nofile")
+    with pytest.raises(OperationalException,
+                       match=r"Backtest-results with only trades data are no longer supported."):
+        load_backtest_data(filename)
 
 
 def test_load_backtest_data_new_format(testdatadir):
