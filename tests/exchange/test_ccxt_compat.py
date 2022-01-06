@@ -232,7 +232,6 @@ class TestCCXTExchange():
             (rate['open'].min() != rate['open'].max())
         )
 
-
     def test_ccxt_fetch_mark_price_history(self, exchange_futures):
         exchange, exchangename = exchange_futures
         if not exchange:
