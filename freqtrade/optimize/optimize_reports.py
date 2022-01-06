@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Union
@@ -194,29 +195,21 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
     return tabular_data
 
 
-def generate_strategy_comparison(all_results: Dict) -> List[Dict]:
+def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
     """
     Generate summary per strategy
-    :param all_results: Dict of <Strategyname: DataFrame> containing results for all strategies
+    :param bt_stats: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: List of Dicts containing the metrics per Strategy
     """
 
     tabular_data = []
-    for strategy, results in all_results.items():
-        tabular_data.append(_generate_result_line(
-            results['results'], results['config']['dry_run_wallet'], strategy)
-        )
-        try:
-            max_drawdown_per, _, _, _, _ = calculate_max_drawdown(results['results'],
-                                                                  value_col='profit_ratio')
-            max_drawdown_abs, _, _, _, _ = calculate_max_drawdown(results['results'],
-                                                                  value_col='profit_abs')
-        except ValueError:
-            max_drawdown_per = 0
-            max_drawdown_abs = 0
-        tabular_data[-1]['max_drawdown_per'] = round(max_drawdown_per * 100, 2)
-        tabular_data[-1]['max_drawdown_abs'] = \
-            round_coin_value(max_drawdown_abs, results['config']['stake_currency'], False)
+    for strategy, result in bt_stats.items():
+        tabular_data.append(deepcopy(result['results_per_pair'][-1]))
+        # Update "key" to strategy (results_per_pair has it as "Total").
+        tabular_data[-1]['key'] = strategy
+        tabular_data[-1]['max_drawdown_account'] = result['max_drawdown_account']
+        tabular_data[-1]['max_drawdown_abs'] = round_coin_value(
+            result['max_drawdown_abs'], result['stake_currency'], False)
     return tabular_data
 
 
@@ -462,12 +455,14 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     }
 
     try:
-        max_drawdown, _, _, _, _ = calculate_max_drawdown(
+        max_drawdown_legacy, _, _, _, _, _ = calculate_max_drawdown(
             results, value_col='profit_ratio')
-        drawdown_abs, drawdown_start, drawdown_end, high_val, low_val = calculate_max_drawdown(
-            results, value_col='profit_abs')
+        (drawdown_abs, drawdown_start, drawdown_end, high_val, low_val,
+         max_drawdown) = calculate_max_drawdown(
+             results, value_col='profit_abs', starting_balance=starting_balance)
         strat_stats.update({
-            'max_drawdown': max_drawdown,
+            'max_drawdown': max_drawdown_legacy,  # Deprecated - do not use
+            'max_drawdown_account': max_drawdown,
             'max_drawdown_abs': drawdown_abs,
             'drawdown_start': drawdown_start.strftime(DATETIME_PRINT_FORMAT),
             'drawdown_start_ts': drawdown_start.timestamp() * 1000,
@@ -487,6 +482,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     except ValueError:
         strat_stats.update({
             'max_drawdown': 0.0,
+            'max_drawdown_account': 0.0,
             'max_drawdown_abs': 0.0,
             'max_drawdown_low': 0.0,
             'max_drawdown_high': 0.0,
@@ -521,7 +517,7 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
                                               min_date, max_date, market_change=market_change)
         result['strategy'][strategy] = strat_stats
 
-    strategy_results = generate_strategy_comparison(all_results=all_results)
+    strategy_results = generate_strategy_comparison(bt_stats=result['strategy'])
 
     result['strategy_comparison'] = strategy_results
 
@@ -646,7 +642,7 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     headers.append('Drawdown')
 
     # Align drawdown string on the center two space separator.
-    drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]
+    drawdown = [f'{t["max_drawdown_account"] * 100:.2f}' for t in strategy_results]
     dd_pad_abs = max([len(t['max_drawdown_abs']) for t in strategy_results])
     dd_pad_per = max([len(dd) for dd in drawdown])
     drawdown = [f'{t["max_drawdown_abs"]:>{dd_pad_abs}} {stake_currency}  {dd:>{dd_pad_per}}%'
@@ -716,7 +712,10 @@ def text_table_add_metrics(strat_results: Dict) -> str:
             ('Max balance', round_coin_value(strat_results['csum_max'],
                                              strat_results['stake_currency'])),
 
-            ('Drawdown', f"{strat_results['max_drawdown']:.2%}"),
+            # Compatibility to show old hyperopt results
+            ('Drawdown (Account)', f"{strat_results['max_drawdown_account']:.2%}")
+            if 'max_drawdown_account' in strat_results else (
+                'Drawdown', f"{strat_results['max_drawdown']:.2%}"),
             ('Drawdown', round_coin_value(strat_results['max_drawdown_abs'],
                                           strat_results['stake_currency'])),
             ('Drawdown high', round_coin_value(strat_results['max_drawdown_high'],
