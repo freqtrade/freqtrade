@@ -423,7 +423,9 @@ class Backtesting:
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
             detail_data.loc[:, 'buy'] = sell_row[BUY_IDX]
             detail_data.loc[:, 'sell'] = sell_row[SELL_IDX]
-            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+            detail_data.loc[:, 'buy_tag'] = sell_row[BUY_TAG_IDX]
+            detail_data.loc[:, 'exit_tag'] = sell_row[EXIT_TAG_IDX]
+            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag', 'exit_tag']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)
                 if res:
