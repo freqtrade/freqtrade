@@ -484,7 +484,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1, 12.0)
     assert isclose(result, expected_result/12)
 
-    markets["ETH/BTC"]["contractSize"] = 0.01
+    markets["ETH/BTC"]["contractSize"] = '0.01'
     default_conf['trading_mode'] = 'futures'
     default_conf['collateral'] = 'isolated'
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
@@ -497,7 +497,7 @@ def test_get_min_pair_stake_amount(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount('ETH/BTC', 2, -1)
     assert isclose(result, expected_result * 0.01)
 
-    markets["ETH/BTC"]["contractSize"] = 10
+    markets["ETH/BTC"]["contractSize"] = '10'
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(return_value=markets)
@@ -3697,14 +3697,14 @@ def test__get_contract_size(mocker, default_conf, pair, expected_size, trading_m
         },
         'XLTCUSDT': {
             'symbol': 'XLTCUSDT',
-            'contractSize': 0.01,
+            'contractSize': '0.01',
         },
         'LTC/ETH': {
             'symbol': 'LTC/ETH',
         },
         'ETH/USDT:USDT': {
             'symbol': 'ETH/USDT:USDT',
-            'contractSize': 10,
+            'contractSize': '10',
         }
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
@@ -3857,14 +3857,14 @@ def test__amount_to_contracts(
         },
         'XLTCUSDT': {
             'symbol': 'XLTCUSDT',
-            'contractSize': 0.01,
+            'contractSize': '0.01',
         },
         'LTC/ETH': {
             'symbol': 'LTC/ETH',
         },
         'ETH/USDT:USDT': {
             'symbol': 'ETH/USDT:USDT',
-            'contractSize': 10,
+            'contractSize': '10',
         }
     })
     exchange = get_patched_exchange(mocker, default_conf, api_mock)

@@ -939,7 +939,7 @@ def get_markets():
             'active': True,
             'spot': False,
             'type': 'swap',
-            'contractSize': 0.01,
+            'contractSize': '0.01',
             'precision': {
                 'amount': 8,
                 'price': 8
@@ -1010,7 +1010,8 @@ def get_markets():
             'percentage': True,
             'taker': 0.0006,
             'maker': 0.0002,
-            'contractSize': 10,
+            # TODO-lev: `contractSize` should be numeric - this is an open bug in ccxt.
+            'contractSize': '10',
             'active': True,
             'expiry': None,
             'expiryDatetime': None,

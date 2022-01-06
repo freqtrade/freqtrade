@@ -370,12 +370,13 @@ class Exchange:
         else:
             return DataFrame()
 
-    def _get_contract_size(self, pair: str) -> int:
+    def _get_contract_size(self, pair: str) -> float:
         if self.trading_mode == TradingMode.FUTURES:
             market = self.markets[pair]
-            contract_size = 1
+            contract_size: float = 1.0
             if 'contractSize' in market and market['contractSize'] is not None:
-                contract_size = market['contractSize']
+                # ccxt has contractSize in markets as string
+                contract_size = float(market['contractSize'])
             return contract_size
         else:
             return 1
