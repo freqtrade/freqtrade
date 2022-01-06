@@ -22,7 +22,6 @@ class Ftx(Exchange):
         "ohlcv_candle_limit": 1500,
         "mark_ohlcv_price": "index",
         "mark_ohlcv_timeframe": "1h",
-        "ccxt_futures_name": "future"
     }
 
     _supported_trading_mode_collateral_pairs: List[Tuple[TradingMode, Collateral]] = [

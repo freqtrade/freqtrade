@@ -39,7 +39,7 @@ EXCHANGES = {
         'pair': 'BTC/USD',
         'hasQuoteVolume': True,
         'timeframe': '5m',
-        'futures_pair': 'BTC-PERP',
+        'futures_pair': 'BTC/USD:USD',
         'futures': True,
     },
     'kucoin': {
