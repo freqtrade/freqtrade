@@ -14,12 +14,13 @@ from pandas import DataFrame
 from freqtrade.configuration import TimeRange, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
-from freqtrade.data.btanalysis import trade_list_to_dataframe
+from freqtrade.data.btanalysis import find_existing_backtest_stats, trade_list_to_dataframe
 from freqtrade.data.converter import trim_dataframe, trim_dataframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import BacktestState, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.misc import get_strategy_run_id
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
@@ -60,7 +61,7 @@ class Backtesting:
 
         LoggingMixin.show_output = False
         self.config = config
-        self.results: Optional[Dict[str, Any]] = None
+        self.results: Dict[str, Any] = {}
 
         config['dry_run'] = True
         self.strategylist: List[IStrategy] = []
@@ -727,6 +728,7 @@ class Backtesting:
         )
         backtest_end_time = datetime.now(timezone.utc)
         results.update({
+            'run_id': get_strategy_run_id(strat),
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
         })
@@ -745,15 +747,50 @@ class Backtesting:
         self.load_bt_data_detail()
         logger.info("Dataload complete. Calculating indicators")
 
-        for strat in self.strategylist:
-            min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
-        if len(self.strategylist) > 0:
+        run_ids = {
+            strategy.get_strategy_name(): get_strategy_run_id(strategy)
+            for strategy in self.strategylist
+        }
 
-            self.results = generate_backtest_stats(data, self.all_results,
-                                                   min_date=min_date, max_date=max_date)
+        # Load previous result that will be updated incrementally.
+        if self.config.get('timerange', '-').endswith('-'):
+            self.config['no_backtest_cache'] = True
+            logger.warning('Backtest result caching disabled due to use of open-ended timerange.')
+
+        if not self.config.get('no_backtest_cache', False):
+            self.results = find_existing_backtest_stats(
+                self.config['user_data_dir'] / 'backtest_results', run_ids)
+
+        for strat in self.strategylist:
+            if self.results and strat.get_strategy_name() in self.results['strategy']:
+                # When previous result hash matches - reuse that result and skip backtesting.
+                logger.info(f'Reusing result of previous backtest for {strat.get_strategy_name()}')
+                continue
+            min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+
+        # Update old results with new ones.
+        if len(self.all_results) > 0:
+            results = generate_backtest_stats(
+                data, self.all_results, min_date=min_date, max_date=max_date)
+            if self.results:
+                self.results['metadata'].update(results['metadata'])
+                self.results['strategy'].update(results['strategy'])
+                self.results['strategy_comparison'].extend(results['strategy_comparison'])
+            else:
+                self.results = results
 
             if self.config.get('export', 'none') == 'trades':
                 store_backtest_stats(self.config['exportfilename'], self.results)
 
+        # Results may be mixed up now. Sort them so they follow --strategy-list order.
+        if 'strategy_list' in self.config and len(self.results) > 0:
+            self.results['strategy_comparison'] = sorted(
+                self.results['strategy_comparison'],
+                key=lambda c: self.config['strategy_list'].index(c['key']))
+            self.results['strategy'] = dict(
+                sorted(self.results['strategy'].items(),
+                       key=lambda kv: self.config['strategy_list'].index(kv[0])))
+
+        if len(self.strategylist) > 0:
             # Show backtest results
             show_backtest_results(self.config, self.results)

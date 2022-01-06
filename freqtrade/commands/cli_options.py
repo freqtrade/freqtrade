@@ -205,6 +205,11 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         choices=constants.BACKTEST_BREAKDOWNS
     ),
+    "no_backtest_cache": Arg(
+        '--no-cache',
+        help='Do not reuse cached backtest results.',
+        action='store_true'
+    ),
     # Edge
     "stoploss_range": Arg(
         '--stoplosses',
