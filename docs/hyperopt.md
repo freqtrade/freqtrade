@@ -204,7 +204,7 @@ There you have two different types of indicators: 1. `guards` and 2. `triggers`.
 
 Hyper-optimization will, for each epoch round, pick one trigger and possibly multiple guards.
 
-#### Sell optimization
+#### Exit signal optimization
 
 Similar to the entry-signal above, exit-signals can also be optimized.
 Place the corresponding settings into the following methods
