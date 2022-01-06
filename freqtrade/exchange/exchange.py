@@ -656,7 +656,8 @@ class Exchange:
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
-            filled_amount = 0
+            filled_amount = 0.0
+            book_entry_price = 0.0
             for book_entry in ob[ob_type]:
                 book_entry_price = book_entry[0]
                 book_entry_coin_volume = book_entry[1]
