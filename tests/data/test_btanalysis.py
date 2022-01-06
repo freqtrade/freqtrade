@@ -167,8 +167,8 @@ def test_extract_trades_of_period(testdatadir):
     assert trades1.iloc[-1].close_date == Arrow(2017, 11, 14, 15, 25, 0).datetime
 
 
-def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+def test_analyze_trade_parallelism(testdatadir):
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
 
     res = analyze_trade_parallelism(bt_data, "5m")
@@ -242,7 +242,7 @@ def test_combine_dataframes_with_mean_no_data(testdatadir):
 
 
 def test_create_cum_profit(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
@@ -258,7 +258,7 @@ def test_create_cum_profit(testdatadir):
 
 
 def test_create_cum_profit1(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
     bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
@@ -304,7 +304,7 @@ def test_calculate_max_drawdown(testdatadir):
 
 
 def test_calculate_csum(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     csum_min, csum_max = calculate_csum(bt_data)
 
