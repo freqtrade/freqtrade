@@ -198,7 +198,7 @@ def generate_sell_reason_stats(max_open_trades: int, results: DataFrame) -> List
 def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
     """
     Generate summary per strategy
-    :param result: Dict of <Strategyname: DataFrame> containing results for all strategies
+    :param bt_stats: Dict of <Strategyname: DataFrame> containing results for all strategies
     :return: List of Dicts containing the metrics per Strategy
     """
 
