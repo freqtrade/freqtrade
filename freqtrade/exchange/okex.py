@@ -14,5 +14,5 @@ class Okex(Exchange):
     """
 
     _ft_has: Dict = {
-        "ohlcv_candle_limit": 100,
+        "ohlcv_candle_limit": 300,
     }
