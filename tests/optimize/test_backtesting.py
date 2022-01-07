@@ -1239,3 +1239,88 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
+
+
+@pytest.mark.filterwarnings("ignore:deprecated")
+def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testdatadir):
+
+    default_conf.update({
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+    })
+    patch_exchange(mocker)
+    backtestmock = MagicMock(return_value={
+        'results': pd.DataFrame(columns=BT_DATA_COLUMNS),
+        'config': default_conf,
+        'locks': [],
+        'rejected_signals': 20,
+        'final_balance': 1000,
+    })
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['UNITTEST/BTC']))
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+    mocker.patch('freqtrade.optimize.backtesting', show_backtest_result=MagicMock())
+
+    path_glob = MagicMock(return_value=['not important'])
+    load_backtest_metadata = MagicMock(return_value={
+        'StrategyTestV2': {'run_id': '1'},
+        'TestStrategyLegacyV1': {'run_id': 'changed'}
+    })
+    load_backtest_stats = MagicMock(side_effect=[
+        {
+            'metadata': {'StrategyTestV2': {'run_id': '1'}},
+            'strategy': {'StrategyTestV2': {}},
+            'strategy_comparison': [{'key': 'StrategyTestV2'}]
+        },
+        {
+            'metadata': {'TestStrategyLegacyV1': {'run_id': '2'}},
+            'strategy': {'TestStrategyLegacyV1': {}},
+            'strategy_comparison': [{'key': 'TestStrategyLegacyV1'}]
+        }
+    ])
+    get_strategy_run_id = MagicMock(side_effect=['1', '2', '2'])
+    mocker.patch('pathlib.Path.glob', path_glob)
+    mocker.patch.multiple('freqtrade.data.btanalysis',
+                          load_backtest_metadata=load_backtest_metadata,
+                          load_backtest_stats=load_backtest_stats)
+    mocker.patch('freqtrade.misc.get_strategy_run_id', get_strategy_run_id)
+
+    patched_configuration_load_config_file(mocker, default_conf)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '1m',
+        '--timerange', '1510694220-1510700340',
+        '--enable-position-stacking',
+        '--disable-max-market-positions',
+        '--strategy-list',
+        'StrategyTestV2',
+        'TestStrategyLegacyV1',
+    ]
+    args = get_args(args)
+    start_backtesting(args)
+    # 1 backtest, 1 loaded from cache
+    assert backtestmock.call_count == 1
+
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
+        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+        'Parameter --timerange detected: 1510694220-1510700340 ...',
+        f'Using data directory: {testdatadir} ...',
+        'Loading data from 2017-11-14 20:57:00 '
+        'up to 2017-11-14 22:58:00 (0 days).',
+        'Backtesting with data from 2017-11-14 21:17:00 '
+        'up to 2017-11-14 22:58:00 (0 days).',
+        'Parameter --enable-position-stacking detected ...',
+        'Reusing result of previous backtest for StrategyTestV2',
+        'Running backtesting for Strategy TestStrategyLegacyV1',
+    ]
+
+    for line in exists:
+        assert log_has(line, caplog)
