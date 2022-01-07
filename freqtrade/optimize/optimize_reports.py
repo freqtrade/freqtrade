@@ -99,11 +99,11 @@ def _generate_result_line(result: DataFrame, starting_balance: int, first_column
     }
 
 
-def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_balance: int,
+def generate_pair_metrics(pairlist: List[str], stake_currency: str, starting_balance: int,
                           results: DataFrame, skip_nan: bool = False) -> List[Dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
-    :param data: Dict of <pair: dataframe> containing data that was used during backtesting.
+    :param pairlist: Pairlist used
     :param stake_currency: stake-currency - used to correctly name headers
     :param starting_balance: Starting balance
     :param results: Dataframe containing the backtest results
@@ -113,7 +113,7 @@ def generate_pair_metrics(data: Dict[str, Dict], stake_currency: str, starting_b
 
     tabular_data = []
 
-    for pair in data:
+    for pair in pairlist:
         result = results[results['pair'] == pair]
         if skip_nan and result['profit_abs'].isnull().all():
             continue
@@ -345,14 +345,14 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     }
 
 
-def generate_strategy_stats(btdata: Dict[str, DataFrame],
+def generate_strategy_stats(pairlist: List[str],
                             strategy: str,
                             content: Dict[str, Any],
                             min_date: datetime, max_date: datetime,
                             market_change: float
                             ) -> Dict[str, Any]:
     """
-    :param btdata: Backtest data
+    :param pairlist: List of pairs to backtest
     :param strategy: Strategy name
     :param content: Backtest result data in the format:
                     {'results: results, 'config: config}}.
@@ -365,11 +365,11 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     if not isinstance(results, DataFrame):
         return {}
     config = content['config']
-    max_open_trades = min(config['max_open_trades'], len(btdata.keys()))
+    max_open_trades = min(config['max_open_trades'], len(pairlist))
     starting_balance = config['dry_run_wallet']
     stake_currency = config['stake_currency']
 
-    pair_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
+    pair_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
                                          starting_balance=starting_balance,
                                          results=results, skip_nan=False)
 
@@ -378,7 +378,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
     sell_reason_stats = generate_sell_reason_stats(max_open_trades=max_open_trades,
                                                    results=results)
-    left_open_results = generate_pair_metrics(btdata, stake_currency=stake_currency,
+    left_open_results = generate_pair_metrics(pairlist, stake_currency=stake_currency,
                                               starting_balance=starting_balance,
                                               results=results.loc[results['is_open']],
                                               skip_nan=True)
@@ -422,7 +422,7 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
 
         'trades_per_day': round(len(results) / backtest_days, 2),
         'market_change': market_change,
-        'pairlist': list(btdata.keys()),
+        'pairlist': pairlist,
         'stake_amount': config['stake_amount'],
         'stake_currency': config['stake_currency'],
         'stake_currency_decimals': decimals_per_coin(config['stake_currency']),
@@ -511,9 +511,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
     """
     result: Dict[str, Any] = {'strategy': {}}
     market_change = calculate_market_change(btdata, 'close')
-
+    pairlist = list(btdata.keys())
     for strategy, content in all_results.items():
-        strat_stats = generate_strategy_stats(btdata, strategy, content,
+        strat_stats = generate_strategy_stats(pairlist, strategy, content,
                                               min_date, max_date, market_change=market_change)
         result['strategy'][strategy] = strat_stats
 

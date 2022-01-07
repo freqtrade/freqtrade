@@ -48,7 +48,7 @@ def test_text_table_bt_results():
         '        0:20:00 |     2     0     1  66.7 |'
     )
 
-    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(['ETH/BTC'], stake_currency='BTC',
                                          starting_balance=4, results=results)
     assert text_table_bt_results(pair_results, stake_currency='BTC') == result_str
 
@@ -207,7 +207,7 @@ def test_generate_pair_metrics():
         }
     )
 
-    pair_results = generate_pair_metrics(data={'ETH/BTC': {}}, stake_currency='BTC',
+    pair_results = generate_pair_metrics(['ETH/BTC'], stake_currency='BTC',
                                          starting_balance=2, results=results)
     assert isinstance(pair_results, list)
     assert len(pair_results) == 2
