@@ -9,15 +9,12 @@ import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.exceptions import OperationalException
 from freqtrade.misc import json_load
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
 
 logger = logging.getLogger(__name__)
-
-# Old format - maybe remove?
-BT_DATA_COLUMNS_OLD = ["pair", "profit_percent", "open_date", "close_date", "index",
-                       "trade_duration", "open_rate", "close_rate", "open_at_end", "sell_reason"]
 
 # Newest format
 BT_DATA_COLUMNS = ['pair', 'stake_amount', 'amount', 'open_date', 'close_date',
@@ -162,23 +159,9 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
                                               )
     else:
         # old format - only with lists.
-        df = pd.DataFrame(data, columns=BT_DATA_COLUMNS_OLD)
-        if not df.empty:
-            df['open_date'] = pd.to_datetime(df['open_date'],
-                                             unit='s',
-                                             utc=True,
-                                             infer_datetime_format=True
-                                             )
-            df['close_date'] = pd.to_datetime(df['close_date'],
-                                              unit='s',
-                                              utc=True,
-                                              infer_datetime_format=True
-                                              )
-            # Create compatibility with new format
-            df['profit_abs'] = df['close_rate'] - df['open_rate']
+        raise OperationalException(
+            "Backtest-results with only trades data are no longer supported.")
     if not df.empty:
-        if 'profit_ratio' not in df.columns:
-            df['profit_ratio'] = df['profit_percent']
         df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
