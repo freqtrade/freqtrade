@@ -345,14 +345,14 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
     }
 
 
-def generate_strategy_stats(btdata: Dict[str, DataFrame],
+def generate_strategy_stats(pairlist: List[str],
                             strategy: str,
                             content: Dict[str, Any],
                             min_date: datetime, max_date: datetime,
                             market_change: float
                             ) -> Dict[str, Any]:
     """
-    :param btdata: Backtest data
+    :param pairlist: List of pairs to backtest
     :param strategy: Strategy name
     :param content: Backtest result data in the format:
                     {'results: results, 'config: config}}.
@@ -365,7 +365,6 @@ def generate_strategy_stats(btdata: Dict[str, DataFrame],
     if not isinstance(results, DataFrame):
         return {}
     config = content['config']
-    pairlist = list(btdata.keys())
     max_open_trades = min(config['max_open_trades'], len(pairlist))
     starting_balance = config['dry_run_wallet']
     stake_currency = config['stake_currency']
@@ -512,9 +511,9 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
     """
     result: Dict[str, Any] = {'strategy': {}}
     market_change = calculate_market_change(btdata, 'close')
-
+    pairlist = list(btdata.keys())
     for strategy, content in all_results.items():
-        strat_stats = generate_strategy_stats(btdata, strategy, content,
+        strat_stats = generate_strategy_stats(pairlist, strategy, content,
                                               min_date, max_date, market_change=market_change)
         result['strategy'][strategy] = strat_stats
 
