@@ -161,7 +161,7 @@ def add_max_drawdown(fig, row, trades: pd.DataFrame, df_comb: pd.DataFrame,
     Add scatter points indicating max drawdown
     """
     try:
-        max_drawdown, highdate, lowdate, _, _ = calculate_max_drawdown(trades)
+        _, highdate, lowdate, _, _, max_drawdown = calculate_max_drawdown(trades)
 
         drawdown = go.Scatter(
             x=[highdate, lowdate],

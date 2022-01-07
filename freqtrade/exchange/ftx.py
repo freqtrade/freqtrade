@@ -20,6 +20,7 @@ class Ftx(Exchange):
     _ft_has: Dict = {
         "stoploss_on_exchange": True,
         "ohlcv_candle_limit": 1500,
+        "ohlcv_volume_currency": "quote",
         "mark_ohlcv_price": "index",
         "mark_ohlcv_timeframe": "1h",
     }

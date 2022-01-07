@@ -61,6 +61,11 @@ EXCHANGES = {
         'futures_pair': 'BTC/USDT:USDT',
         'futures': True,
     },
+    'bitvavo': {
+        'pair': 'BTC/EUR',
+        'hasQuoteVolume': True,
+        'timeframe': '5m',
+    },
 }
 
 
