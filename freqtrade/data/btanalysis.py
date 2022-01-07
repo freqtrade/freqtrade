@@ -162,8 +162,6 @@ def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = Non
         raise OperationalException(
             "Backtest-results with only trades data are no longer supported.")
     if not df.empty:
-        if 'profit_ratio' not in df.columns:
-            df['profit_ratio'] = df['profit_percent']
         df = df.sort_values("open_date").reset_index(drop=True)
     return df
 
