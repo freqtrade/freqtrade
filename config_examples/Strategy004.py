@@ -177,6 +177,6 @@ class Strategy004(IStrategy):
             False aborts the process
         """
         print("confirm_trade_entry --------------> current_time = " + str(current_time))
-        subprocess.call("python /root/workspace/execution/launcher.py "+ pair, shell=True)
+        subprocess.call("python3 /root/workspace/execution/launcher.py "+ pair, shell=True)
         return True
 
