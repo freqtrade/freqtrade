@@ -184,12 +184,16 @@ class VolumePairList(IPairList):
                 ] if (p['symbol'], self._lookback_timeframe) in candles else None
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if pair_candles is not None and not pair_candles.empty:
-                    pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']
-                                                     + pair_candles['close']) / 3
-                    pair_candles['quoteVolume'] = (
-                        pair_candles['volume'] * pair_candles['typical_price']
-                    )
+                    if self._exchange._ft_has["ohlcv_volume_currency"] == "base":
+                        pair_candles['typical_price'] = (pair_candles['high'] + pair_candles['low']
+                                                         + pair_candles['close']) / 3
 
+                        pair_candles['quoteVolume'] = (
+                            pair_candles['volume'] * pair_candles['typical_price']
+                        )
+                    else:
+                        # Exchange ohlcv data is in quote volume already.
+                        pair_candles['quoteVolume'] = pair_candles['volume']
                     # ensure that a rolling sum over the lookback_period is built
                     # if pair_candles contains more candles than lookback_period
                     quoteVolume = (pair_candles['quoteVolume']
