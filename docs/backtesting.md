@@ -4,7 +4,7 @@ This page explains how to validate your strategy performance by using Backtestin
 
 Backtesting requires historic data to be available.
 To learn how to get data for the pairs and exchange you're interested in, head over to the [Data Downloading](data-download.md) section of the documentation.
-
+ 
 ## Backtesting command reference
 
 ```
