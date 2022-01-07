@@ -90,7 +90,8 @@ def test_load_backtest_data_multi(testdatadir):
     for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
-        assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
+        assert set(bt_data.columns) == set(
+            BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
