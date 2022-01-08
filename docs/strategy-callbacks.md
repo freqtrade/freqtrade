@@ -589,7 +589,7 @@ This callback is called very frequently, so you must keep your implementation as
     Stoploss is still calculated from the initial opening price, not averaged price.
 
 !!! Warning "Backtesting"
-    During backtesting this callback is called for each timeframe or `timeframe-detail`, so performance will be affected.
+    During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so performance will be affected.
 
 ``` python
 from freqtrade.persistence import Trade

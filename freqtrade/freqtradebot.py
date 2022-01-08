@@ -695,6 +695,8 @@ class FreqtradeBot(LoggingMixin):
         if open_rate is None:
             open_rate = trade.open_rate
 
+        current_rate = self.exchange.get_rate(trade.pair, refresh=False, side="buy")
+
         msg = {
             'trade_id': trade.id,
             'type': RPCMessageType.BUY_FILL if fill else RPCMessageType.BUY,
@@ -709,7 +711,7 @@ class FreqtradeBot(LoggingMixin):
             'fiat_currency': self.config.get('fiat_display_currency', None),
             'amount': safe_value_fallback(order, 'filled', 'amount') or trade.amount,
             'open_date': trade.open_date or datetime.utcnow(),
-            'current_rate': trade.open_rate_requested,
+            'current_rate': current_rate,
         }
 
         # Send the message
