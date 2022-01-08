@@ -39,7 +39,8 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     # Start backtesting
     # Initialize backtesting object
     def run_backtest():
-        from freqtrade.optimize.optimize_reports import generate_backtest_stats
+        from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                         store_backtest_stats)
         from freqtrade.resolvers import StrategyResolver
         asyncio.set_event_loop(asyncio.new_event_loop())
         try:
@@ -83,6 +84,10 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             ApiServer._bt.results = generate_backtest_stats(
                 ApiServer._bt_data, ApiServer._bt.all_results,
                 min_date=min_date, max_date=max_date)
+
+            if btconfig.get('export', 'none') == 'trades':
+                store_backtest_stats(btconfig['exportfilename'], ApiServer._bt.results)
+
             logger.info("Backtest finished.")
 
         except DependencyException as e:
