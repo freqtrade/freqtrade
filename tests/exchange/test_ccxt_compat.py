@@ -21,22 +21,26 @@ from tests.conftest import get_default_conf_usdt
 EXCHANGES = {
     'bittrex': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': False,
         'timeframe': '1h',
     },
     'binance': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
     },
     'kraken': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
     'ftx': {
         'pair': 'BTC/USD',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',
@@ -44,11 +48,13 @@ EXCHANGES = {
     },
     'kucoin': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
     'gateio': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures': True,
@@ -56,6 +62,7 @@ EXCHANGES = {
     },
     'okex': {
         'pair': 'BTC/USDT',
+        'stake_currency': 'USDT',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures_pair': 'BTC/USDT:USDT',
@@ -83,8 +90,7 @@ def exchange_conf():
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf):
     exchange_conf['exchange']['name'] = request.param
-    exchange_conf['stake_currency'] = EXCHANGES[request.param].get(
-        'stake_currency', exchange_conf['stake_currency'])
+    exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
     exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 
     yield exchange, request.param
@@ -99,6 +105,8 @@ def exchange_futures(request, exchange_conf, class_mocker):
         exchange_conf['exchange']['name'] = request.param
         exchange_conf['trading_mode'] = 'futures'
         exchange_conf['collateral'] = 'cross'
+        exchange_conf['stake_currency'] = EXCHANGES[request.param]['stake_currency']
+
         # TODO-lev: This mock should no longer be necessary once futures are enabled.
         class_mocker.patch(
             'freqtrade.exchange.exchange.Exchange.validate_trading_mode_and_collateral')
