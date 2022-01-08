@@ -620,6 +620,7 @@ class FreqtradeBot(LoggingMixin):
             # This is additional buy, we reset fee_open_currency so timeout checking can work
             trade.is_open = True
             trade.fee_open_currency = None
+            trade.open_rate_requested = enter_limit_requested
             trade.open_order_id = order_id
 
         trade.orders.append(order_obj)
