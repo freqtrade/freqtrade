@@ -284,8 +284,8 @@ class Backtesting:
                 {'pair': pair}
             ).copy()
             # Trim startup period from analyzed dataframe
-            df_analyzed = trim_dataframe(df_analyzed, self.timerange,
-                                         startup_candles=self.required_startup)
+            df_analyzed = processed[pair] = pair_data = trim_dataframe(
+                df_analyzed, self.timerange, startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             for col in headers[5:]:
@@ -303,9 +303,6 @@ class Backtesting:
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
             data[pair] = df_analyzed[headers].values.tolist()
-
-            # Do not hold on to old data to reduce memory usage
-            processed[pair] = pair_data = None
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,

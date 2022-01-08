@@ -648,7 +648,12 @@ def text_table_strategy(strategy_results, stake_currency: str) -> str:
     headers.append('Drawdown')
 
     # Align drawdown string on the center two space separator.
-    drawdown = [f'{t["max_drawdown_account"] * 100:.2f}' for t in strategy_results]
+    if 'max_drawdown_account' in strategy_results[0]:
+        drawdown = [f'{t["max_drawdown_account"] * 100:.2f}' for t in strategy_results]
+    else:
+        # Support for prior backtest results
+        drawdown = [f'{t["max_drawdown_per"]:.2f}' for t in strategy_results]
+
     dd_pad_abs = max([len(t['max_drawdown_abs']) for t in strategy_results])
     dd_pad_per = max([len(dd) for dd in drawdown])
     drawdown = [f'{t["max_drawdown_abs"]:>{dd_pad_abs}} {stake_currency}  {dd:>{dd_pad_per}}%'
