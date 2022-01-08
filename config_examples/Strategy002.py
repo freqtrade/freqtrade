@@ -1,6 +1,6 @@
 
 # --- Do not remove these libs ---
-from datetime import datetime
+
 
 from freqtrade.strategy import IStrategy
 from typing import Dict, List
@@ -11,6 +11,7 @@ from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
+from datetime import datetime
 import subprocess
 
 
@@ -159,7 +160,8 @@ class Strategy002(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        print("confirm_trade_entry --------------> current_time = " + str(current_time))
-        subprocess.call("python /root/workspace/execution/launcher.py", shell=True)
+        mode = "test"
+        coin = pair.split("/")[0]
+        subprocess.call("python3 /root/workspace/execution/launcher.py " + mode + " " + coin, shell=True)
         return True
 

@@ -1,4 +1,3 @@
-
 # --- Do not remove these libs ---
 from freqtrade.strategy import IStrategy
 from typing import Dict, List
@@ -6,12 +5,12 @@ from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 from datetime import datetime
-
-import talib.abstract as ta
 import subprocess
 
-class Strategy004(IStrategy):
+import talib.abstract as ta
 
+
+class Strategy004(IStrategy):
     """
     Strategy 004
     author@: Gerald Lonlas
@@ -24,10 +23,10 @@ class Strategy004(IStrategy):
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
-        "60":  0.01,
-        "30":  0.03,
-        "20":  0.04,
-        "0":  0.05
+        "60": 0.01,
+        "30": 0.03,
+        "20": 0.04,
+        "0": 0.05
     }
 
     # Optimal stoploss designed for the strategy
@@ -116,23 +115,23 @@ class Strategy004(IStrategy):
         """
         dataframe.loc[
             (
-                (
-                    (dataframe['adx'] > 50) |
-                    (dataframe['slowadx'] > 26)
-                ) &
-                (dataframe['cci'] < -100) &
-                (
-                    (dataframe['fastk-previous'] < 20) &
-                    (dataframe['fastd-previous'] < 20)
-                ) &
-                (
-                    (dataframe['slowfastk-previous'] < 30) &
-                    (dataframe['slowfastd-previous'] < 30)
-                ) &
-                (dataframe['fastk-previous'] < dataframe['fastd-previous']) &
-                (dataframe['fastk'] > dataframe['fastd']) &
-                (dataframe['mean-volume'] > 0.75) &
-                (dataframe['close'] > 0.00000100)
+                    (
+                            (dataframe['adx'] > 50) |
+                            (dataframe['slowadx'] > 26)
+                    ) &
+                    (dataframe['cci'] < -100) &
+                    (
+                            (dataframe['fastk-previous'] < 20) &
+                            (dataframe['fastd-previous'] < 20)
+                    ) &
+                    (
+                            (dataframe['slowfastk-previous'] < 30) &
+                            (dataframe['slowfastd-previous'] < 30)
+                    ) &
+                    (dataframe['fastk-previous'] < dataframe['fastd-previous']) &
+                    (dataframe['fastk'] > dataframe['fastd']) &
+                    (dataframe['mean-volume'] > 0.75) &
+                    (dataframe['close'] > 0.00000100)
             ),
             'buy'] = 1
 
@@ -146,14 +145,13 @@ class Strategy004(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['slowadx'] < 25) &
-                ((dataframe['fastk'] > 70) | (dataframe['fastd'] > 70)) &
-                (dataframe['fastk-previous'] < dataframe['fastd-previous']) &
-                (dataframe['close'] > dataframe['ema5'])
+                    (dataframe['slowadx'] < 25) &
+                    ((dataframe['fastk'] > 70) | (dataframe['fastd'] > 70)) &
+                    (dataframe['fastk-previous'] < dataframe['fastd-previous']) &
+                    (dataframe['close'] > dataframe['ema5'])
             ),
             'sell'] = 1
         return dataframe
-
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
@@ -176,7 +174,7 @@ class Strategy004(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
-        print("confirm_trade_entry --------------> current_time = " + str(current_time))
-        subprocess.call("python3 /root/workspace/execution/launcher.py "+ pair, shell=True)
+        mode = "test"
+        coin = pair.split("/")[0]
+        subprocess.call("python3 /root/workspace/execution/launcher.py " + mode + " " + coin, shell=True)
         return True
-
