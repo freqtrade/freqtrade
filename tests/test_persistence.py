@@ -1663,4 +1663,3 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.fee_open_cost == 2 * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_buys() == 2
-
