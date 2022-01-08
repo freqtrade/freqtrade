@@ -1900,7 +1900,7 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _calculate_funding_fees(
+    def _fetch_and_calculate_funding_fees(
         self,
         pair: str,
         amount: float,
@@ -1908,7 +1908,8 @@ class Exchange:
         close_date: Optional[datetime] = None
     ) -> float:
         """
-        calculates the sum of all funding fees that occurred for a pair during a futures trade
+        Fetches and calculates the sum of all funding fees that occurred for a pair
+        during a futures trade.
         Only used during dry-run or if the exchange does not provide a funding_rates endpoint.
         :param pair: The quote/base pair of the trade
         :param amount: The quantity of the trade
@@ -1923,7 +1924,6 @@ class Exchange:
                                         self._ft_has['mark_ohlcv_timeframe'])
         open_date = timeframe_to_prev_date(timeframe, open_date)
 
-        fees: float = 0
         if not close_date:
             close_date = datetime.now(timezone.utc)
         open_timestamp = int(open_date.timestamp()) * 1000
@@ -1942,6 +1942,32 @@ class Exchange:
         funding_rates = candle_histories[funding_comb]
         mark_rates = candle_histories[mark_comb]
 
+        return self._calculate_funding_fees(
+            funding_rates=funding_rates,
+            mark_rates=mark_rates,
+            amount=amount,
+            open_date=open_date,
+            close_date=close_date
+        )
+
+    def _calculate_funding_fees(
+        self,
+        funding_rates: DataFrame,
+        mark_rates: DataFrame,
+        amount: float,
+        open_date: datetime,
+        close_date: Optional[datetime] = None
+    ) -> float:
+        """
+        calculates the sum of all funding fees that occurred for a pair during a futures trade
+        :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
+        :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param amount: The quantity of the trade
+        :param open_date: The date and time that the trade started
+        :param close_date: The date and time that the trade ended
+        """
+        fees: float = 0
+
         df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
         if not df.empty:
             df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
@@ -1959,7 +1985,7 @@ class Exchange:
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:
-                funding_fees = self._calculate_funding_fees(pair, amount, open_date)
+                funding_fees = self._fetch_and_calculate_funding_fees(pair, amount, open_date)
             else:
                 funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
             return funding_fees

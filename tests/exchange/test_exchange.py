@@ -3588,7 +3588,7 @@ def test__get_funding_fee(
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
     ('ftx', 0, 9, "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.0016680000000000002),
 ])
-def test__calculate_funding_fees(
+def test__fetch_and_calculate_funding_fees(
     mocker,
     default_conf,
     funding_rate_history_hourly,
@@ -3651,7 +3651,7 @@ def test__calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    funding_fees = exchange._calculate_funding_fees('ADA/USDT', amount, d1, d2)
+    funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', amount, d1, d2)
     assert pytest.approx(funding_fees) == expected_fees
 
 
@@ -3659,7 +3659,7 @@ def test__calculate_funding_fees(
     ('binance', -0.0009140999999999999),
     ('gateio', -0.0009140999999999999),
 ])
-def test__calculate_funding_fees_datetime_called(
+def test__fetch_and_calculate_funding_fees_datetime_called(
     mocker,
     default_conf,
     funding_rate_history_octohourly,
@@ -3679,7 +3679,7 @@ def test__calculate_funding_fees_datetime_called(
     d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
+    funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, d1)
     assert funding_fees == expected_fees
 
 
