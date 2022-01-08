@@ -578,6 +578,7 @@ For performance reasons, it's disabled by default and freqtrade will show a warn
 The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
 If there is not enough funds in the wallet then nothing will happen.
 Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
+This callback is called very frequently, so you must keep your implementation as fast as possible.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order just like without position adjustment.
@@ -586,6 +587,9 @@ Additional orders also mean additional fees and those orders don't count towards
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.
+
+!!! Warning "Backtesting"
+    During backtesting this callback is called for each timeframe or `timeframe-detail`, so performance will be affected.
 
 ``` python
 from freqtrade.persistence import Trade
