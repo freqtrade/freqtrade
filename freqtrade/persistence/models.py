@@ -614,6 +614,24 @@ class LocalTrade():
         else:
             return None
 
+    def nr_of_successful_buys(self) -> int:
+        """
+        Helper function to count the number of buy orders that have been filled.
+        :return: int count of buy orders that have been filled for this trade.
+        """
+        return len([o for o in self.orders if o.ft_order_side == 'buy' and
+                    o.status in NON_OPEN_EXCHANGE_STATES and
+                    o.filled > 0])
+
+    def nr_of_successful_sells(self) -> int:
+        """
+        Helper function to count the number of sell orders that have been filled.
+        :return: int count of sell orders that have been filled for this trade.
+        """
+        return len([o for o in self.orders if o.ft_order_side == 'sell' and
+                    o.status in NON_OPEN_EXCHANGE_STATES and
+                    o.filled > 0])
+
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
                          open_date: datetime = None, close_date: datetime = None,
