@@ -355,8 +355,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
     td = ((end - start).total_seconds() // 60 // 5) + 1
     assert td != len(data['UNITTEST/BTC'])
     start_real = data['UNITTEST/BTC'].iloc[0, 0]
-    assert log_has(f'Missing data at start for pair '
-                   f'UNITTEST/BTC at 5m, data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
+    assert log_has(f'UNITTEST/BTC, spot, 5m, '
+                   f'data starts at {start_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog)
     # Make sure we start fresh - test missing data at end
     caplog.clear()
@@ -370,8 +370,8 @@ def test_load_partial_missing(testdatadir, caplog) -> None:
 
     # Shift endtime with +5 - as last candle is dropped (partial candle)
     end_real = arrow.get(data['UNITTEST/BTC'].iloc[-1, 0]).shift(minutes=5)
-    assert log_has(f'Missing data at end for pair '
-                   f'UNITTEST/BTC at 5m, data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
+    assert log_has(f'UNITTEST/BTC, spot, 5m, '
+                   f'data ends at {end_real.strftime("%Y-%m-%d %H:%M:%S")}',
                    caplog)
 
 
