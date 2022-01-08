@@ -270,8 +270,8 @@ class Backtesting:
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair}).copy()
             # Trim startup period from analyzed dataframe
-            df_analyzed = trim_dataframe(df_analyzed, self.timerange,
-                                         startup_candles=self.required_startup)
+            df_analyzed = processed[pair] = pair_data = trim_dataframe(
+                df_analyzed, self.timerange, startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
@@ -287,9 +287,6 @@ class Backtesting:
             # Convert from Pandas to list for performance reasons
             # (Looping Pandas is slow.)
             data[pair] = df_analyzed[headers].values.tolist()
-
-            # Do not hold on to old data to reduce memory usage
-            processed[pair] = pair_data = None
         return data
 
     def _get_close_rate(self, sell_row: Tuple, trade: LocalTrade, sell: SellCheckTuple,
@@ -445,7 +442,9 @@ class Backtesting:
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
             detail_data.loc[:, 'buy'] = sell_row[BUY_IDX]
             detail_data.loc[:, 'sell'] = sell_row[SELL_IDX]
-            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+            detail_data.loc[:, 'buy_tag'] = sell_row[BUY_TAG_IDX]
+            detail_data.loc[:, 'exit_tag'] = sell_row[EXIT_TAG_IDX]
+            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag', 'exit_tag']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)
                 if res:

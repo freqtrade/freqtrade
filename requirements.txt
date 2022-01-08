@@ -3,7 +3,7 @@ numpy==1.22.0; python_version > '3.7'
 pandas==1.3.5
 pandas-ta==0.3.14b
 
-ccxt==1.66.20
+ccxt==1.66.32
 # Pin cryptography for now due to rust build errors with piwheels
 cryptography==36.0.1
 aiohttp==3.8.1
@@ -14,7 +14,7 @@ cachetools==4.2.2
 requests==2.26.0
 urllib3==1.26.7
 jsonschema==4.3.3
-TA-Lib==0.4.22
+TA-Lib==0.4.23
 technical==1.3.0
 tabulate==0.8.9
 pycoingecko==2.2.0
@@ -36,7 +36,7 @@ fastapi==0.70.1
 uvicorn==0.16.0
 pyjwt==2.3.0
 aiofiles==0.8.0
-psutil==5.8.0
+psutil==5.9.0
 
 # Support for colorized terminal output
 colorama==0.4.4

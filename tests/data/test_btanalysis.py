@@ -8,14 +8,14 @@ from pandas import DataFrame, DateOffset, Timestamp, to_datetime
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
-from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, BT_DATA_COLUMNS_MID, BT_DATA_COLUMNS_OLD,
-                                       analyze_trade_parallelism, calculate_csum,
+from freqtrade.data.btanalysis import (BT_DATA_COLUMNS, analyze_trade_parallelism, calculate_csum,
                                        calculate_market_change, calculate_max_drawdown,
                                        calculate_underwater, combine_dataframes_with_mean,
                                        create_cum_profit, extract_trades_of_period,
                                        get_latest_backtest_filename, get_latest_hyperopt_file,
                                        load_backtest_data, load_trades, load_trades_from_db)
 from freqtrade.data.history import load_data, load_pair_history
+from freqtrade.exceptions import OperationalException
 from tests.conftest import create_mock_trades
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
@@ -51,20 +51,14 @@ def test_get_latest_hyperopt_file(testdatadir, mocker):
     assert res == testdatadir.parent / "hyperopt_results.pickle"
 
 
-def test_load_backtest_data_old_format(testdatadir):
+def test_load_backtest_data_old_format(testdatadir, mocker):
 
-    filename = testdatadir / "backtest-result_test.json"
-    bt_data = load_backtest_data(filename)
-    assert isinstance(bt_data, DataFrame)
-    assert list(bt_data.columns) == BT_DATA_COLUMNS_OLD + ['profit_abs', 'profit_ratio']
-    assert len(bt_data) == 179
+    filename = testdatadir / "backtest-result_test222.json"
+    mocker.patch('freqtrade.data.btanalysis.load_backtest_stats', return_value=[])
 
-    # Test loading from string (must yield same result)
-    bt_data2 = load_backtest_data(str(filename))
-    assert bt_data.equals(bt_data2)
-
-    with pytest.raises(ValueError, match=r"File .* does not exist\."):
-        load_backtest_data(str("filename") + "nofile")
+    with pytest.raises(OperationalException,
+                       match=r"Backtest-results with only trades data are no longer supported."):
+        load_backtest_data(filename)
 
 
 def test_load_backtest_data_new_format(testdatadir):
@@ -72,7 +66,7 @@ def test_load_backtest_data_new_format(testdatadir):
     filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     assert isinstance(bt_data, DataFrame)
-    assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
+    assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
     assert len(bt_data) == 179
 
     # Test loading from string (must yield same result)
@@ -96,7 +90,7 @@ def test_load_backtest_data_multi(testdatadir):
     for strategy in ('StrategyTestV2', 'TestStrategy'):
         bt_data = load_backtest_data(filename, strategy=strategy)
         assert isinstance(bt_data, DataFrame)
-        assert set(bt_data.columns) == set(BT_DATA_COLUMNS_MID)
+        assert set(bt_data.columns) == set(BT_DATA_COLUMNS + ['close_timestamp', 'open_timestamp'])
         assert len(bt_data) == 179
 
         # Test loading from string (must yield same result)
@@ -167,8 +161,8 @@ def test_extract_trades_of_period(testdatadir):
     assert trades1.iloc[-1].close_date == Arrow(2017, 11, 14, 15, 25, 0).datetime
 
 
-def test_analyze_trade_parallelism(default_conf, mocker, testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+def test_analyze_trade_parallelism(testdatadir):
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
 
     res = analyze_trade_parallelism(bt_data, "5m")
@@ -242,7 +236,7 @@ def test_combine_dataframes_with_mean_no_data(testdatadir):
 
 
 def test_create_cum_profit(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     timerange = TimeRange.parse_timerange("20180110-20180112")
 
@@ -258,7 +252,7 @@ def test_create_cum_profit(testdatadir):
 
 
 def test_create_cum_profit1(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     # Move close-time to "off" the candle, to make sure the logic still works
     bt_data.loc[:, 'close_date'] = bt_data.loc[:, 'close_date'] + DateOffset(seconds=20)
@@ -280,30 +274,31 @@ def test_create_cum_profit1(testdatadir):
 
 
 def test_calculate_max_drawdown(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
-    drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(bt_data)
+    _, hdate, lowdate, hval, lval, drawdown = calculate_max_drawdown(
+        bt_data, value_col="profit_abs")
     assert isinstance(drawdown, float)
-    assert pytest.approx(drawdown) == 0.21142322
+    assert pytest.approx(drawdown) == 0.12071099
     assert isinstance(hdate, Timestamp)
     assert isinstance(lowdate, Timestamp)
     assert isinstance(hval, float)
     assert isinstance(lval, float)
-    assert hdate == Timestamp('2018-01-24 14:25:00', tz='UTC')
-    assert lowdate == Timestamp('2018-01-30 04:45:00', tz='UTC')
+    assert hdate == Timestamp('2018-01-25 01:30:00', tz='UTC')
+    assert lowdate == Timestamp('2018-01-25 03:50:00', tz='UTC')
 
     underwater = calculate_underwater(bt_data)
     assert isinstance(underwater, DataFrame)
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
-        drawdown, hdate, lowdate, hval, lval = calculate_max_drawdown(DataFrame())
+        calculate_max_drawdown(DataFrame())
 
     with pytest.raises(ValueError, match='Trade dataframe empty.'):
         calculate_underwater(DataFrame())
 
 
 def test_calculate_csum(testdatadir):
-    filename = testdatadir / "backtest-result_test.json"
+    filename = testdatadir / "backtest-result_new.json"
     bt_data = load_backtest_data(filename)
     csum_min, csum_max = calculate_csum(bt_data)
 
@@ -331,12 +326,13 @@ def test_calculate_max_drawdown2():
     # sort by profit and reset index
     df = df.sort_values('profit').reset_index(drop=True)
     df1 = df.copy()
-    drawdown, hdate, ldate, hval, lval = calculate_max_drawdown(
+    drawdown, hdate, ldate, hval, lval, drawdown_rel = calculate_max_drawdown(
         df, date_col='open_date', value_col='profit')
     # Ensure df has not been altered.
     assert df.equals(df1)
 
     assert isinstance(drawdown, float)
+    assert isinstance(drawdown_rel, float)
     # High must be before low
     assert hdate < ldate
     # High value must be higher than low value

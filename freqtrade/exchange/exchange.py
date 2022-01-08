@@ -67,6 +67,8 @@ class Exchange:
         "ohlcv_params": {},
         "ohlcv_candle_limit": 500,
         "ohlcv_partial_candle": True,
+        # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
+        "ohlcv_volume_currency": "base",  # "base" or "quote"
         "trades_pagination": "time",  # Possible are "time" or "id"
         "trades_pagination_arg": "since",
         "l2_limit_range": None,
@@ -656,7 +658,8 @@ class Exchange:
             max_slippage_val = rate * ((1 + slippage) if side == 'buy' else (1 - slippage))
 
             remaining_amount = amount
-            filled_amount = 0
+            filled_amount = 0.0
+            book_entry_price = 0.0
             for book_entry in ob[ob_type]:
                 book_entry_price = book_entry[0]
                 book_entry_coin_volume = book_entry[1]
