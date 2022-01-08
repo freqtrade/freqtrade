@@ -1829,25 +1829,6 @@ class Exchange:
         else:
             return 1.0
 
-    def _get_funding_fee(
-        self,
-        size: float,
-        funding_rate: float,
-        mark_price: float,
-        time_in_ratio: Optional[float] = None
-    ) -> float:
-        """
-        Calculates a single funding fee
-        :param size: contract size * number of contracts
-        :param mark_price: The price of the asset that the contract is based off of
-        :param funding_rate: the interest rate and the premium
-            - interest rate:
-            - premium: varies by price difference between the perpetual contract and mark price
-        :param time_in_ratio: Not used by most exchange classes
-        """
-        nominal_value = mark_price * size
-        return nominal_value * funding_rate
-
     @retrier
     def _set_leverage(
         self,
@@ -1956,7 +1937,8 @@ class Exchange:
         mark_rates: DataFrame,
         amount: float,
         open_date: datetime,
-        close_date: Optional[datetime] = None
+        close_date: Optional[datetime] = None,
+        time_in_ratio: Optional[float] = None
     ) -> float:
         """
         calculates the sum of all funding fees that occurred for a pair during a futures trade
@@ -1965,6 +1947,7 @@ class Exchange:
         :param amount: The quantity of the trade
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
+        :param time_in_ratio: Not used by most exchange classes
         """
         fees: float = 0
 

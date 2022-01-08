@@ -1,8 +1,10 @@
 """ Kraken exchange subclass """
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import ccxt
+from pandas import DataFrame
 
 from freqtrade.enums import Collateral, TradingMode
 from freqtrade.exceptions import (DDosProtection, InsufficientFundsError, InvalidOrderException,
@@ -157,11 +159,13 @@ class Kraken(Exchange):
             params['leverage'] = leverage
         return params
 
-    def _get_funding_fee(
+    def _calculate_funding_fees(
         self,
-        size: float,
-        funding_rate: float,
-        mark_price: float,
+        funding_rates: DataFrame,
+        mark_rates: DataFrame,
+        amount: float,
+        open_date: datetime,
+        close_date: Optional[datetime] = None,
         time_in_ratio: Optional[float] = None
     ) -> float:
         """
@@ -169,16 +173,22 @@ class Kraken(Exchange):
         # ! passed to _get_funding_fee. For kraken futures to work in dry run and backtesting
         # ! functionality must be added that passes the parameter time_in_ratio to
         # ! _get_funding_fee when using Kraken
-        Calculates a single funding fee
-        :param size: contract size * number of contracts
-        :param mark_price: The price of the asset that the contract is based off of
-        :param funding_rate: the interest rate and the premium
-            - interest rate:
-            - premium: varies by price difference between the perpetual contract and mark price
-        :param time_in_ratio: time elapsed within funding period without position alteration
+        calculates the sum of all funding fees that occurred for a pair during a futures trade
+        :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
+        :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param amount: The quantity of the trade
+        :param open_date: The date and time that the trade started
+        :param close_date: The date and time that the trade ended
+        :param time_in_ratio: Not used by most exchange classes
         """
         if not time_in_ratio:
             raise OperationalException(
                 f"time_in_ratio is required for {self.name}._get_funding_fee")
-        nominal_value = mark_price * size
-        return nominal_value * funding_rate * time_in_ratio
+        fees: float = 0
+
+        df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+        if not df.empty:
+            df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
+            fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)
+
+        return fees
