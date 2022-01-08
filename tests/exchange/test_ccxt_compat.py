@@ -54,6 +54,7 @@ EXCHANGES = {
     },
     'bitvavo': {
         'pair': 'BTC/EUR',
+        'stake_currency': 'EUR',
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
@@ -73,6 +74,8 @@ def exchange_conf():
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf):
     exchange_conf['exchange']['name'] = request.param
+    exchange_conf['stake_currency'] = EXCHANGES[request.param].get(
+        'stake_currency', exchange_conf['stake_currency'])
     exchange = ExchangeResolver.load_exchange(request.param, exchange_conf, validate=True)
 
     yield exchange, request.param
