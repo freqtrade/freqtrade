@@ -1553,20 +1553,21 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys() == 1
 
     order2 = Order(
         ft_order_side='buy',
         ft_pair=trade.pair,
         ft_is_open=True,
-        status="closed",
+        status="open",
         symbol=trade.pair,
         order_type="market",
         side="buy",
-        price=1,
-        average=2,
-        filled=0,
-        remaining=4,
-        cost=5,
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
         order_date=arrow.utcnow().shift(hours=-1).datetime,
         order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
     )
@@ -1579,8 +1580,9 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys() == 1
 
-    # Let's try with some other orders
+# Let's try with some other orders
     order3 = Order(
         ft_order_side='buy',
         ft_pair=trade.pair,
@@ -1606,6 +1608,34 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_rate == o1_rate
     assert trade.fee_open_cost == o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys() == 1
+
+    order4 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order4)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the trade values have been changed
+    assert trade.amount == 2 * o1_amount
+    assert trade.stake_amount == 2 * o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.open_trade_value == 2 * o1_trade_val
+    assert trade.nr_of_successful_buys() == 2
 
     # Just to make sure sell orders are ignored, let's calculate one more time.
     sell1 = Order(
@@ -1627,8 +1657,10 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     trade.orders.append(sell1)
     trade.recalc_trade_from_orders()
 
-    assert trade.amount == o1_amount
-    assert trade.stake_amount == o1_amount
+    assert trade.amount == 2 * o1_amount
+    assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == o1_fee_cost
-    assert trade.open_trade_value == o1_trade_val
+    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.open_trade_value == 2 * o1_trade_val
+    assert trade.nr_of_successful_buys() == 2
+

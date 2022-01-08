@@ -459,7 +459,7 @@ class FreqtradeBot(LoggingMixin):
         # Walk through each pair and check if it needs changes
         for trade in Trade.get_open_trades():
             # If there is any open orders, wait for them to finish.
-            if len([o for o in trade.orders if o.ft_is_open]) == 0:
+            if trade.open_order_id is None:
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
@@ -474,11 +474,15 @@ class FreqtradeBot(LoggingMixin):
         """
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
+        min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
+                                                                   current_rate,
+                                                                   self.strategy.stoploss)
+        max_stake_amount = self.wallets.get_available_stake_amount()
         logger.debug(f"Calling adjust_trade_position for pair {trade.pair}")
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            pair=trade.pair, trade=trade, current_time=datetime.now(timezone.utc),
-            current_rate=current_rate, current_profit=current_profit)
+            trade=trade, current_time=datetime.now(timezone.utc), current_rate=current_rate,
+            current_profit=current_profit, min_stake=min_stake_amount, max_stake=max_stake_amount)
 
         if stake_amount is not None and stake_amount > 0.0:
             # We should increase our position

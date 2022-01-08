@@ -259,6 +259,8 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
 
     assert trade.amount == trade.orders[0].amount + trade.orders[1].amount
 
+    assert trade.nr_of_successful_buys() == 2
+
     # Sell
     patch_get_signal(freqtrade, value=(False, True, None, None))
     freqtrade.process()
@@ -270,3 +272,5 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     # Sold everything
     assert trade.orders[-1].side == 'sell'
     assert trade.orders[2].amount == trade.amount
+
+    assert trade.nr_of_successful_buys() == 2

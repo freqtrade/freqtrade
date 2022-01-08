@@ -625,7 +625,7 @@ class DigDeeperStrategy(IStrategy):
         :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
-        :param current_rate: Current buy rate. Use `exchange.get_rate` if you need sell rate.
+        :param current_rate: Current buy rate.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
@@ -642,10 +642,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        count_of_buys = 0
-        for order in trade.orders:
-            if order.ft_order_side == 'buy' and order.status == "closed":
-                count_of_buys += 1
+        count_of_buys = trade.nr_of_successful_buys()
 
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x

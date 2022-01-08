@@ -358,10 +358,12 @@ class Backtesting:
                                            ) -> LocalTrade:
 
         current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
+        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
+        max_stake = self.wallets.get_available_stake_amount()
         stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
                                              default_retval=None)(
-            pair=trade.pair, trade=trade, current_time=row[DATE_IDX].to_pydatetime(),
-            current_rate=row[OPEN_IDX], current_profit=current_profit)
+            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            current_profit=current_profit, min_stake=min_stake, max_stake=max_stake)
 
         # Check if we should increase our position
         if stake_amount is not None and stake_amount > 0.0:
