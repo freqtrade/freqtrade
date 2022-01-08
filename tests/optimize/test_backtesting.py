@@ -1261,9 +1261,8 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
     mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
                  PropertyMock(return_value=['UNITTEST/BTC']))
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
-    mocker.patch('freqtrade.optimize.backtesting', show_backtest_result=MagicMock())
+    mocker.patch('freqtrade.optimize.backtesting.show_backtest_results', MagicMock())
 
-    path_glob = MagicMock(return_value=['not important'])
     load_backtest_metadata = MagicMock(return_value={
         'StrategyTestV2': {'run_id': '1'},
         'TestStrategyLegacyV1': {'run_id': 'changed'}
@@ -1280,12 +1279,11 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
             'strategy_comparison': [{'key': 'TestStrategyLegacyV1'}]
         }
     ])
-    get_strategy_run_id = MagicMock(side_effect=['1', '2', '2'])
-    mocker.patch('pathlib.Path.glob', path_glob)
+    mocker.patch('pathlib.Path.glob', return_value=['not important'])
     mocker.patch.multiple('freqtrade.data.btanalysis',
                           load_backtest_metadata=load_backtest_metadata,
                           load_backtest_stats=load_backtest_stats)
-    mocker.patch('freqtrade.misc.get_strategy_run_id', get_strategy_run_id)
+    mocker.patch('freqtrade.optimize.backtesting.get_strategy_run_id', side_effect=['1', '2', '2'])
 
     patched_configuration_load_config_file(mocker, default_conf)
 
