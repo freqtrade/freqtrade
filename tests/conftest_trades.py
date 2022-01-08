@@ -400,7 +400,7 @@ def short_trade(fee):
         open_order_id='dry_run_exit_short_12345',
         strategy='DefaultStrategy',
         timeframe=5,
-        sell_reason='sell_signal',  # TODO-lev: Update to exit/close reason
+        sell_reason='sell_signal',
         open_date=datetime.now(tz=timezone.utc) - timedelta(minutes=20),
         # close_date=datetime.now(tz=timezone.utc) - timedelta(minutes=2),
         is_short=True
