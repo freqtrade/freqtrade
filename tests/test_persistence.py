@@ -538,20 +538,22 @@ def test_update_market_order(market_buy_order_usdt, market_sell_order_usdt, fee,
 
 @pytest.mark.parametrize(
     'exchange,is_short,lev,open_value,close_value,profit,profit_ratio,trading_mode,funding_fees', [
-        ("binance", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot, 0.0),
-        ("binance", True, 1, 59.850, 66.1663784375, -6.3163784375, -0.105536815998329, margin, 0.0),
-        ("binance", False, 3, 60.15, 65.83416667, 5.68416667, 0.2834995845386534, margin, 0.0),
-        ("binance", True, 3, 59.85, 66.1663784375, -6.3163784375, -0.3166104479949876, margin, 0.0),
+        ("binance", False, 1, 60.15, 65.835, 5.685, 0.09451371, spot, 0.0),
+        ("binance", True, 1, 59.850, 66.1663784375, -6.3163784375, -0.1055368, margin, 0.0),
+        ("binance", False, 3, 60.15, 65.83416667, 5.68416667, 0.28349958, margin, 0.0),
+        ("binance", True, 3, 59.85, 66.1663784375, -6.3163784375, -0.31661044, margin, 0.0),
 
-        ("kraken", False, 1, 60.15, 65.835, 5.685, 0.0945137157107232, spot, 0.0),
-        ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.106619298245614, margin, 0.0),
-        ("kraken", False, 3, 60.15, 65.795, 5.645, 0.2815461346633419, margin, 0.0),
-        ("kraken", True, 3, 59.850, 66.231165, -6.381165000000003, -0.319857894736842, margin, 0.0),
+        ("kraken", False, 1, 60.15, 65.835, 5.685, 0.09451371, spot, 0.0),
+        ("kraken", True, 1, 59.850, 66.231165, -6.381165, -0.1066192, margin, 0.0),
+        ("kraken", False, 3, 60.15, 65.795, 5.645, 0.28154613, margin, 0.0),
+        ("kraken", True, 3, 59.850, 66.231165, -6.381165, -0.3198578, margin, 0.0),
 
-        ("binance", False, 1, 60.15, 66.835,  6.685, 0.11113881961762262, futures, 1.0),
-        ("binance", True, 1, 59.85,  67.165, -7.315, -0.12222222222222223, futures, -1.0),
-        ("binance", False, 3, 60.15, 64.835,  4.685, 0.23366583541147135, futures, -1.0),
-        ("binance", True, 3, 59.85,  65.165, -5.315, -0.26641604010025066, futures, 1.0),
+        ("binance", False, 1, 60.15, 65.835,  5.685, 0.09451371, futures, 0.0),
+        ("binance", False, 1, 60.15, 64.835,  4.685, 0.07788861, futures, 1.0),
+        ("binance", True, 1, 59.85,  66.165, -6.315, -0.10551378, futures, 0.0),
+        ("binance", True, 1, 59.85,  65.165, -5.315, -0.08880535, futures, -1.0),
+        ("binance", False, 3, 60.15, 66.835,  6.685, 0.33341646, futures, -1.0),
+        ("binance", True, 3, 59.85,  67.165, -7.315, -0.36666667, futures, 1.0),
     ])
 @pytest.mark.usefixtures("init_persistence")
 def test_calc_open_close_trade_price(
@@ -584,7 +586,7 @@ def test_calc_open_close_trade_price(
     assert isclose(trade._calc_open_trade_value(), open_value)
     assert isclose(trade.calc_close_trade_value(), close_value)
     assert isclose(trade.calc_profit(), round(profit, 8))
-    assert isclose(trade.calc_profit_ratio(), round(profit_ratio, 8))
+    assert pytest.approx(trade.calc_profit_ratio()) == profit_ratio
 
 
 @pytest.mark.usefixtures("init_persistence")
