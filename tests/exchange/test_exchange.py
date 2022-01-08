@@ -3540,7 +3540,7 @@ def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
         (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
         (10, 0.0002, 2.5, None, 0.005, None),
     ])
-def test__get_funding_fee(
+def test__calculate_funding_fees(
     default_conf,
     mocker,
     size,
@@ -3552,14 +3552,46 @@ def test__get_funding_fee(
 ):
     exchange = get_patched_exchange(mocker, default_conf)
     kraken = get_patched_exchange(mocker, default_conf, id="kraken")
+    prior_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc) - timedelta(hours=1))
+    trade_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc))
+    funding_rates = DataFrame([
+        {'date': prior_date, 'open': funding_rate},  # Line not used.
+        {'date': trade_date, 'open': funding_rate},
+        ])
+    mark_rates = DataFrame([
+        {'date': prior_date, 'open': mark_price},
+        {'date': trade_date, 'open': mark_price},
+        ])
 
-    assert exchange._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == funding_fee
+    assert exchange._calculate_funding_fees(
+        funding_rates=funding_rates,
+        mark_rates=mark_rates,
+        amount=size,
+        open_date=trade_date,
+        close_date=trade_date,
+        time_in_ratio=time_in_ratio,
+    ) == funding_fee
 
     if (kraken_fee is None):
         with pytest.raises(OperationalException):
-            kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio)
+            kraken._calculate_funding_fees(
+                funding_rates=funding_rates,
+                mark_rates=mark_rates,
+                amount=size,
+                open_date=trade_date,
+                close_date=trade_date,
+                time_in_ratio=time_in_ratio,
+            )
+
     else:
-        assert kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == kraken_fee
+        assert kraken._calculate_funding_fees(
+            funding_rates=funding_rates,
+            mark_rates=mark_rates,
+            amount=size,
+            open_date=trade_date,
+            close_date=trade_date,
+            time_in_ratio=time_in_ratio,
+        ) == kraken_fee
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
