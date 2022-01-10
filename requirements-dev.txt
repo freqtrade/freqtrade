@@ -20,7 +20,7 @@ time-machine==2.5.0
 nbconvert==6.4.0
 
 # mypy types
-types-cachetools==4.2.7
+types-cachetools==4.2.8
 types-filelock==3.2.1
 types-requests==2.26.3
 types-tabulate==0.8.4
