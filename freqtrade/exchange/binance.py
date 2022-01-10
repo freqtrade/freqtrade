@@ -165,9 +165,9 @@ class Binance(Exchange):
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
-        for [min_amount, margin_req] in pair_brackets:
-            if nominal_value >= min_amount:
-                max_lev = 1/margin_req
+        for [notional_floor, maint_margin_ratio] in pair_brackets:
+            if nominal_value >= notional_floor:
+                max_lev = 1/maint_margin_ratio
         return max_lev
 
     @retrier
