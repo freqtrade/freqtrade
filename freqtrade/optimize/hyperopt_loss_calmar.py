@@ -47,10 +47,9 @@ class CalmarHyperOptLoss(IHyperOptLoss):
 
         # calculate max drawdown
         try:
-            _, _, _, high_val, low_val = calculate_max_drawdown(
+            _, _, _, _, _, max_drawdown = calculate_max_drawdown(
                 results, value_col="profit_abs"
             )
-            max_drawdown = (high_val - low_val) / high_val
         except ValueError:
             max_drawdown = 0
 

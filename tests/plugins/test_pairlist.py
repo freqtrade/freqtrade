@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring,C0103,protected-access
 
+import logging
 import time
 from unittest.mock import MagicMock, PropertyMock
 
@@ -14,7 +15,7 @@ from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
 from tests.conftest import (create_mock_trades, get_patched_exchange, get_patched_freqtradebot,
-                            log_has, log_has_re)
+                            log_has, log_has_re, num_log_has)
 
 
 @pytest.fixture(scope="function")
@@ -215,6 +216,34 @@ def test_invalid_blacklist(mocker, markets, static_pl_conf, caplog):
     assert set(whitelist) == set(freqtrade.pairlists.whitelist)
     assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
     log_has_re(r"Pair blacklist contains an invalid Wildcard.*", caplog)
+
+
+def test_remove_logs_for_pairs_already_in_blacklist(mocker, markets, static_pl_conf, caplog):
+    logger = logging.getLogger(__name__)
+    freqtrade = get_patched_freqtradebot(mocker, static_pl_conf)
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        exchange_has=MagicMock(return_value=True),
+        markets=PropertyMock(return_value=markets),
+    )
+    freqtrade.pairlists.refresh_pairlist()
+    whitelist = ['ETH/BTC', 'TKN/BTC']
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+
+    # Ensure all except those in whitelist are removed.
+    assert set(whitelist) == set(freqtrade.pairlists.whitelist)
+    assert static_pl_conf['exchange']['pair_blacklist'] == freqtrade.pairlists.blacklist
+    # Ensure that log message wasn't generated.
+    assert not log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...', caplog)
+
+    for _ in range(3):
+        new_whitelist = freqtrade.pairlists.verify_blacklist(
+            whitelist + ['BLK/BTC'], logger.warning)
+        # Ensure that the pair is removed from the white list, and properly logged.
+        assert set(whitelist) == set(new_whitelist)
+    assert num_log_has('Pair BLK/BTC in your blacklist. Removing it from whitelist...',
+                       caplog) == 1
 
 
 def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_conf):
@@ -536,36 +565,41 @@ def test_VolumePairList_whitelist_gen(mocker, whitelist_conf, shitcoinmarkets, t
                 assert log_has_re(r'^Removed .* from whitelist, because volatility.*$', caplog)
 
 
-@pytest.mark.parametrize("pairlists,base_currency,volumefilter_result", [
+@pytest.mark.parametrize("pairlists,base_currency,exchange,volumefilter_result", [
     # default refresh of 1800 to small for daily candle lookback
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_days": 1}],
-     "BTC", "default_refresh_too_short"),  # OperationalException expected
+     "BTC", "binance", "default_refresh_too_short"),  # OperationalException expected
     # ambigous configuration with lookback days and period
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_days": 1, "lookback_period": 1}],
-     "BTC", "lookback_days_and_period"),  # OperationalException expected
+     "BTC", "binance", "lookback_days_and_period"),  # OperationalException expected
     # negative lookback period
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": -1}],
-     "BTC", "lookback_period_negative"),  # OperationalException expected
+     "BTC", "binance", "lookback_period_negative"),  # OperationalException expected
     # lookback range exceedes exchange limit
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1m", "lookback_period": 2000, "refresh_period": 3600}],
-     "BTC", 'lookback_exceeds_exchange_request_size'),  # OperationalException expected
+     "BTC", "binance", "lookback_exceeds_exchange_request_size"),  # OperationalException expected
     # expecing pairs as given
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
-     "BTC", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
+     "BTC", "binance", ['LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC', 'HOT/BTC']),
     # expecting pairs from default tickers, because 1h candles are not available
     ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
        "lookback_timeframe": "1h", "lookback_period": 2, "refresh_period": 3600}],
-     "BTC", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+     "BTC", "binance", ['ETH/BTC', 'TKN/BTC', 'LTC/BTC', 'HOT/BTC', 'FUEL/BTC']),
+    # ftx data is already in Quote currency, therefore won't require conversion
+    ([{"method": "VolumePairList", "number_assets": 5, "sort_key": "quoteVolume",
+       "lookback_timeframe": "1d", "lookback_period": 1, "refresh_period": 86400}],
+     "BTC", "ftx", ['HOT/BTC', 'LTC/BTC', 'ETH/BTC', 'TKN/BTC', 'XRP/BTC']),
 ])
 def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, ohlcv_history,
-                              pairlists, base_currency, volumefilter_result, caplog) -> None:
+                              pairlists, base_currency, exchange, volumefilter_result) -> None:
     whitelist_conf['pairlists'] = pairlists
     whitelist_conf['stake_currency'] = base_currency
+    whitelist_conf['exchange']['name'] = exchange
 
     ohlcv_history_high_vola = ohlcv_history.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, 'close'] = 0.00090
@@ -574,9 +608,14 @@ def test_VolumePairList_range(mocker, whitelist_conf, shitcoinmarkets, tickers, 
     ohlcv_history_medium_volume = ohlcv_history.copy()
     ohlcv_history_medium_volume.loc[ohlcv_history_medium_volume.index == 2, 'volume'] = 5
 
-    # create candles for high volume with all candles high volume
+    # create candles for high volume with all candles high volume, but very low price.
     ohlcv_history_high_volume = ohlcv_history.copy()
     ohlcv_history_high_volume.loc[:, 'volume'] = 10
+    ohlcv_history_high_volume.loc[:, 'low'] = ohlcv_history_high_volume.loc[:, 'low'] * 0.01
+    ohlcv_history_high_volume.loc[:, 'high'] = ohlcv_history_high_volume.loc[:, 'high'] * 0.01
+    ohlcv_history_high_volume.loc[:, 'close'] = ohlcv_history_high_volume.loc[:, 'close'] * 0.01
+
+    mocker.patch('freqtrade.exchange.ftx.Ftx.market_is_tradable', return_value=True)
 
     ohlcv_data = {
         ('ETH/BTC', '1d'): ohlcv_history,

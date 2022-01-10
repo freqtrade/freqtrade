@@ -584,7 +584,7 @@ def test_monthly_handle(default_conf, update, ticker, limit_buy_order, fee,
     assert 'Monthly Profit over the last 2 months</b>:' in msg_mock.call_args_list[0][0][0]
     assert 'Month ' in msg_mock.call_args_list[0][0][0]
     today = datetime.utcnow().date()
-    current_month = f"{today.year}-{today.month} "
+    current_month = f"{today.year}-{today.month:02} "
     assert current_month in msg_mock.call_args_list[0][0][0]
     assert str('  0.00006217 BTC') in msg_mock.call_args_list[0][0][0]
     assert str('  0.933 USD') in msg_mock.call_args_list[0][0][0]
