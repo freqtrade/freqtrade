@@ -3442,26 +3442,24 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     # TODO-lev: Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
     ("kraken", TradingMode.FUTURES, Collateral.CROSS, True),
     ("ftx", TradingMode.MARGIN, Collateral.CROSS, True),
     ("ftx", TradingMode.FUTURES, Collateral.CROSS, True),
     ("gateio", TradingMode.MARGIN, Collateral.CROSS, True),
     ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
-    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, True),
 
     # TODO-lev: Uncomment once implemented
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("gateio", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("gateio", TradingMode.FUTURES, Collateral.CROSS, False),
-    # ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
 ])
 def test_validate_trading_mode_and_collateral(
     default_conf,
