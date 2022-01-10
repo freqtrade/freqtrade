@@ -175,5 +175,5 @@ class Strategy003(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        subprocess.call("python3 /root/workspace/execution/launcher.py " + mode + " " + coin, shell=True)
+        subprocess.call("python3 /root/workspace3/execution/launcher.py " + mode + " " + coin, shell=True)
         return True
