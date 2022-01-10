@@ -135,17 +135,19 @@ class Binance(Exchange):
                 else:
                     leverage_brackets = self._api.load_leverage_brackets()
 
-                for pair, brackets in leverage_brackets.items():
-                    self._leverage_brackets[pair] = [
-                        [
-                            min_amount,
-                            float(margin_req)
-                        ] for [
-                            min_amount,
-                            margin_req
-                        ] in brackets
-                    ]
-
+                for pair, brkts in leverage_brackets.items():
+                    [amt, old_ratio] = [None, None]
+                    brackets = []
+                    for [notional_floor, mm_ratio] in brkts:
+                        amt = ((float(notional_floor) * (mm_ratio - old_ratio)) +
+                               amt) if old_ratio else 0
+                        old_ratio = mm_ratio
+                        brackets.append([
+                            float(notional_floor),
+                            mm_ratio,
+                            amt,
+                        ])
+                    self._leverage_brackets[pair] = brackets
             except ccxt.DDoSProtection as e:
                 raise DDosProtection(e) from e
             except (ccxt.NetworkError, ccxt.ExchangeError) as e:
