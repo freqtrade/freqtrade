@@ -163,11 +163,10 @@ class Binance(Exchange):
         if pair not in self._leverage_brackets:
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
-        max_lev = 1.0
-        for [notional_floor, maint_margin_ratio] in pair_brackets:
+        for [notional_floor, mm_ratio, _] in reversed(pair_brackets):
             if nominal_value >= notional_floor:
-                max_lev = 1/maint_margin_ratio
-        return max_lev
+                return 1/mm_ratio
+        return 1.0
 
     @retrier
     def _set_leverage(
@@ -227,3 +226,114 @@ class Binance(Exchange):
         :return: The cutoff open time for when a funding fee is charged
         """
         return open_date.minute > 0 or (open_date.minute == 0 and open_date.second > 15)
+
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: Optional[str],
+        nominal_value: Optional[float]
+    ):
+        '''
+        Maintenance amt = Floor of Position Bracket on Level n *
+          difference between
+              Maintenance Margin Rate on Level n and
+              Maintenance Margin Rate on Level n-1)
+          + Maintenance Amount on Level n-1
+          https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+        '''
+        if pair not in self._leverage_brackets:
+            raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
+        pair_brackets = self._leverage_brackets[pair]
+        for [notional_floor, mm_ratio, amt] in reversed(pair_brackets):
+            if nominal_value >= notional_floor:
+                return (mm_ratio, amt)
+        raise OperationalException("nominal value can not be lower than 0")
+        # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
+        # describes the min amount for a bracket, and the lowest bracket will always go down to 0
+
+    def liquidation_price_helper(
+        self,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        leverage: float,
+        trading_mode: TradingMode,
+        mm_ratio: float,
+        collateral: Collateral,
+        maintenance_amt: Optional[float] = None,  # (Binance)
+        position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
+        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+        liability: Optional[float] = None,  # (Okex)
+        interest: Optional[float] = None,  # (Okex)
+        position_assets: Optional[float] = None,  # * (Okex) Might be same as position
+        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
+        PERPETUAL: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+
+        :param exchange_name:
+        :param open_rate: (EP1) Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param leverage: The amount of leverage on the trade
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param position: Absolute value of position size (in base currency)
+        :param mm_ratio: (MMR)
+            # Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        :param collateral: Either ISOLATED or CROSS
+        :param maintenance_amt: (CUM) Maintenance Amount of position
+        :param wallet_balance: (WB)
+            Cross-Margin Mode: crossWalletBalance
+            Isolated-Margin Mode: isolatedWalletBalance
+        :param position: Absolute value of position size (in base currency)
+
+        # * Not required by Binance
+        :param taker_fee_rate:
+        :param liability:
+        :param interest:
+        :param position_assets:
+
+        # * Only required for Cross
+        :param mm_ex_1: (TMM)
+            Cross-Margin Mode: Maintenance Margin of all other contracts, excluding Contract 1
+            Isolated-Margin Mode: 0
+        :param upnl_ex_1: (UPNL)
+            Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
+            Isolated-Margin Mode: 0
+        """
+        if trading_mode == TradingMode.SPOT:
+            return None
+
+        if not collateral:
+            raise OperationalException(
+                "Parameter collateral is required by liquidation_price when trading_mode is "
+                f"{trading_mode}"
+            )
+        if (
+            (wallet_balance is None or maintenance_amt is None or position is None) or
+            (collateral == Collateral.CROSS and (mm_ex_1 is None or upnl_ex_1 is None))
+        ):
+            required_params = "wallet_balance, maintenance_amt, position"
+            if collateral == Collateral.CROSS:
+                required_params += ", mm_ex_1, upnl_ex_1"
+            raise OperationalException(
+                f"Parameters {required_params} are required by Binance.liquidation_price"
+                f"for {collateral.name} {trading_mode.name}"
+            )
+
+        side_1 = -1 if is_short else 1
+        position = abs(position)
+        cross_vars = upnl_ex_1 - mm_ex_1 if collateral == Collateral.CROSS else 0.0  # type: ignore
+
+        if trading_mode == TradingMode.FUTURES:
+            return (
+                (
+                    (wallet_balance + cross_vars + maintenance_amt) -
+                    (side_1 * position * open_rate)
+                ) / (
+                    (position * mm_ratio) - (side_1 * position)
+                )
+            )
+
+        raise OperationalException(
+            f"Binance does not support {collateral.value} Mode {trading_mode.value} trading ")

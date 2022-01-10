@@ -2003,8 +2003,11 @@ class Exchange:
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    @retrier
-    def get_mm_amt_rate(self, pair: str, amount: float):
+    def get_maintenance_ratio_and_amt(
+        self,
+        pair: Optional[str],
+        nominal_value: Optional[float]
+    ):
         '''
             :return: The maintenance amount, and maintenance margin rate
         '''

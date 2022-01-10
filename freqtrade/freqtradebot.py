@@ -616,7 +616,7 @@ class FreqtradeBot(LoggingMixin):
         #         open_rate=open_rate,
         #         is_short=is_short
         #     )
-        maintenance_amt, mm_rate = self.exchange.get_mm_amt_rate(pair, amount)
+        mm_ratio, maintenance_amt = self.exchange.get_maintenance_ratio_and_amt(pair, amount)
 
         if self.collateral_type == Collateral.ISOLATED:
             if self.config['dry_run']:
@@ -630,9 +630,9 @@ class FreqtradeBot(LoggingMixin):
                     mm_ex_1=0.0,
                     upnl_ex_1=0.0,
                     position=amount * open_rate,
-                    wallet_balance=amount/leverage,  # TODO-lev: Is this correct?
+                    wallet_balance=amount/leverage,  # TODO: Update for cross
                     maintenance_amt=maintenance_amt,
-                    mm_rate=mm_rate,
+                    mm_ratio=mm_ratio,
                 )
             else:
                 isolated_liq = self.exchange.get_liquidation_price(pair)

@@ -368,7 +368,7 @@ class LocalTrade():
         wallet_balance: Optional[float] = None,
         current_price: Optional[float] = None,
         maintenance_amt: Optional[float] = None,
-        mm_rate: Optional[float] = None,
+        mm_ratio: Optional[float] = None,
     ):
         """
         Method you should use to set self.liquidation price.
@@ -380,6 +380,16 @@ class LocalTrade():
                     "wallet balance must be passed to LocalTrade.set_isolated_liq when param"
                     "isolated_liq is None"
                 )
+            if (
+                mm_ratio is None or
+                wallet_balance is None or
+                current_price is None or
+                maintenance_amt is None
+            ):
+                raise OperationalException(
+                    'mm_ratio, wallet_balance, current_price and maintenance_amt '
+                    'required in set_isolated_liq when isolated_liq is None'
+                )
             isolated_liq = liquidation_price(
                 exchange_name=self.exchange,
                 open_rate=self.open_rate,
@@ -390,9 +400,9 @@ class LocalTrade():
                 mm_ex_1=0.0,
                 upnl_ex_1=0.0,
                 position=self.amount * current_price,
-                wallet_balance=self.amount / self.leverage,     # TODO-lev: Is this correct?
+                wallet_balance=self.amount / self.leverage,  # TODO: Update for cross
                 maintenance_amt=maintenance_amt,
-                mm_rate=mm_rate,
+                mm_ratio=mm_ratio,
 
             )
         if isolated_liq is None:

@@ -90,7 +90,7 @@ def test_liquidation_price_exception_thrown(
 @pytest.mark.parametrize(
     'exchange_name, is_short, leverage, trading_mode, collateral, wallet_balance, '
     'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
-    'mm_rate, expected',
+    'mm_ratio, expected',
     [
         ("binance", False, 1, TradingMode.FUTURES, Collateral.ISOLATED, 1535443.01, 0.0,
          0.0, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
@@ -103,7 +103,7 @@ def test_liquidation_price_exception_thrown(
     ])
 def test_liquidation_price(
     exchange_name, open_rate, is_short, leverage, trading_mode, collateral, wallet_balance,
-    mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_rate, expected
+    mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
 ):
     assert isclose(round(liquidation_price(
         exchange_name=exchange_name,
@@ -117,5 +117,5 @@ def test_liquidation_price(
         upnl_ex_1=upnl_ex_1,
         maintenance_amt=maintenance_amt,
         position=position,
-        mm_rate=mm_rate
+        mm_ratio=mm_ratio
     ), 2), expected)

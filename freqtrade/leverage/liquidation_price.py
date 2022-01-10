@@ -35,12 +35,12 @@ def liquidation_price(
     '''
     wallet_balance
         In Cross margin mode, WB is crossWalletBalance
-        In Isolated margin mode, WB is isolatedWalletBalance of the isolated position, 
+        In Isolated margin mode, WB is isolatedWalletBalance of the isolated position,
         TMM=0, UPNL=0, substitute the position quantity, MMR, cum into the formula to calculate.
         Under the cross margin mode, the same ticker/symbol,
-        both long and short position share the same liquidation price except in the isolated mode. 
-        Under the isolated mode, each isolated position will have different liquidation prices depending
-        on the margin allocated to the positions.
+        both long and short position share the same liquidation price except in the isolated mode.
+        Under the isolated mode, each isolated position will have different liquidation prices
+        depending on the margin allocated to the positions.
     position
         Absolute value of position size (in base currency)
 
