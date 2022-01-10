@@ -621,7 +621,7 @@ class LocalTrade():
         """
         return len([o for o in self.orders if o.ft_order_side == 'buy' and
                     o.status in NON_OPEN_EXCHANGE_STATES and
-                    o.filled > 0])
+                    (o.filled or 0) > 0])
 
     def nr_of_successful_sells(self) -> int:
         """
@@ -630,7 +630,7 @@ class LocalTrade():
         """
         return len([o for o in self.orders if o.ft_order_side == 'sell' and
                     o.status in NON_OPEN_EXCHANGE_STATES and
-                    o.filled > 0])
+                    (o.filled or 0) > 0])
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,
