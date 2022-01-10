@@ -7,7 +7,7 @@ import datetime
 import logging
 from typing import Dict, List
 
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 

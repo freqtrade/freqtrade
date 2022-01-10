@@ -13,7 +13,7 @@ A sample of this can be found below, which is identical to the Default Hyperopt 
 
 ``` python
 from datetime import datetime
-from typing import Dict
+from typing import Any, Dict
 
 from pandas import DataFrame
 

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from cachetools.ttl import TTLCache
+from cachetools import TTLCache
 
 
 class PeriodicCache(TTLCache):

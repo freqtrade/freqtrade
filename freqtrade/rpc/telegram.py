@@ -199,8 +199,8 @@ class Telegram(RPCHandler):
 
         self._updater.start_polling(
             bootstrap_retries=-1,
-            timeout=30,
-            read_latency=60,
+            timeout=20,
+            read_latency=60,  # Assumed transmission latency
             drop_pending_updates=True,
         )
         logger.info(
@@ -213,6 +213,7 @@ class Telegram(RPCHandler):
         Stops all running telegram threads.
         :return: None
         """
+        # This can take up to `timeout` from the call to `start_polling`.
         self._updater.stop()
 
     def _format_buy_msg(self, msg: Dict[str, Any]) -> str:

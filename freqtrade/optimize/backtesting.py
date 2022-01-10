@@ -246,6 +246,9 @@ class Backtesting:
         Helper function to convert a processed dataframes into lists for performance reasons.
 
         Used by backtest() - so keep this optimized for performance.
+
+        :param processed: a processed dictionary with format {pair, data}, which gets cleared to
+        optimize memory usage!
         """
         # Every change to this headers list must evaluate further usages of the resulting tuple
         # and eventually change the constants for indexes at the top
@@ -254,7 +257,8 @@ class Backtesting:
         self.progress.init_step(BacktestState.CONVERT, len(processed))
 
         # Create dict with data
-        for pair, pair_data in processed.items():
+        for pair in processed.keys():
+            pair_data = processed[pair]
             self.check_abort()
             self.progress.increment()
             if not pair_data.empty:
@@ -266,8 +270,8 @@ class Backtesting:
             df_analyzed = self.strategy.advise_sell(
                 self.strategy.advise_buy(pair_data, {'pair': pair}), {'pair': pair}).copy()
             # Trim startup period from analyzed dataframe
-            df_analyzed = trim_dataframe(df_analyzed, self.timerange,
-                                         startup_candles=self.required_startup)
+            df_analyzed = processed[pair] = pair_data = trim_dataframe(
+                df_analyzed, self.timerange, startup_candles=self.required_startup)
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             df_analyzed.loc[:, 'buy'] = df_analyzed.loc[:, 'buy'].shift(1)
@@ -416,7 +420,9 @@ class Backtesting:
                 return self._get_sell_trade_entry_for_candle(trade, sell_row)
             detail_data.loc[:, 'buy'] = sell_row[BUY_IDX]
             detail_data.loc[:, 'sell'] = sell_row[SELL_IDX]
-            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high']
+            detail_data.loc[:, 'buy_tag'] = sell_row[BUY_TAG_IDX]
+            detail_data.loc[:, 'exit_tag'] = sell_row[EXIT_TAG_IDX]
+            headers = ['date', 'buy', 'open', 'close', 'sell', 'low', 'high', 'buy_tag', 'exit_tag']
             for det_row in detail_data[headers].values.tolist():
                 res = self._get_sell_trade_entry_for_candle(trade, det_row)
                 if res:
@@ -519,7 +525,8 @@ class Backtesting:
         Of course try to not have ugly code. By some accessor are sometime slower than functions.
         Avoid extensive logging in this method and functions it calls.
 
-        :param processed: a processed dictionary with format {pair, data}
+        :param processed: a processed dictionary with format {pair, data}, which gets cleared to
+        optimize memory usage!
         :param start_date: backtesting timerange start datetime
         :param end_date: backtesting timerange end datetime
         :param max_open_trades: maximum number of concurrent trades, <= 0 means unlimited
