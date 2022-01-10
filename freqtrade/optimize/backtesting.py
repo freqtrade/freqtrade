@@ -531,6 +531,7 @@ class Backtesting:
                 price=propose_rate,
                 average=propose_rate,
                 amount=amount,
+                filled=amount,
                 cost=stake_amount + trade.fee_open
             )
             trade.orders.append(order)
