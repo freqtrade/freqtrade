@@ -32,7 +32,7 @@ python-rapidjson==1.5
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.70.1
+fastapi==0.71.0
 uvicorn==0.16.0
 pyjwt==2.3.0
 aiofiles==0.8.0
