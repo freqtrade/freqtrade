@@ -11,7 +11,7 @@ SQLAlchemy==1.4.29
 python-telegram-bot==13.10
 arrow==1.2.1
 cachetools==4.2.2
-requests==2.26.0
+requests==2.27.1
 urllib3==1.26.7
 jsonschema==4.3.3
 TA-Lib==0.4.23
