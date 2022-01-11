@@ -27,7 +27,7 @@ HYPEROPT_LOSS_BUILTIN = ['ShortTradeDurHyperOptLoss', 'OnlyProfitHyperOptLoss',
                          'SortinoHyperOptLoss', 'SortinoHyperOptLossDaily',
                          'CalmarHyperOptLoss',
                          'MaxDrawDownHyperOptLoss']
-AVAILABLE_PAIRLISTS = ['StaticPairList', 'VolumePairList',
+AVAILABLE_PAIRLISTS = [ 'PercentegeRangeFilter', 'StaticPairList', 'VolumePairList',
                        'AgeFilter', 'OffsetFilter', 'PerformanceFilter',
                        'PrecisionFilter', 'PriceFilter', 'RangeStabilityFilter',
                        'ShuffleFilter', 'SpreadFilter', 'VolatilityFilter']
