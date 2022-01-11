@@ -474,6 +474,7 @@ class FreqtradeBot(LoggingMixin):
         """
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
+        nr_of_buys = trade.nr_of_successful_buys() # FIXME This is only here to lazyload orders.
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                    current_rate,
                                                                    self.strategy.stoploss)
