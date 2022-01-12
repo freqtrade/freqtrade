@@ -235,15 +235,15 @@ class IDataHandler(ABC):
         :param timerange: Timerange specified for start and end dates
         """
 
-        if timerange.starttype == 'date':
-            start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc)
-            if pairdata.iloc[0]['date'] > start:
-                logger.warning(f"Missing data at start for pair {pair} at {timeframe}, "
+        start = datetime.fromtimestamp(timerange.startts, tz=timezone.utc) if timerange.starttype == 'date' else None
+        stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc) if timerange.stoptype == 'date' else None
+        if start is not None:
+            if pairdata.iloc[0]['date'] > start and (stop is None or pairdata.iloc[0]['date'] <= stop):
+                logger.warning(f"Missing data at start for pair {pair} for {timeframe}, "
                                f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}")
-        if timerange.stoptype == 'date':
-            stop = datetime.fromtimestamp(timerange.stopts, tz=timezone.utc)
-            if pairdata.iloc[-1]['date'] < stop:
-                logger.warning(f"Missing data at end for pair {pair} at {timeframe}, "
+        if stop is not None:
+            if pairdata.iloc[-1]['date'] < stop and (start is None or pairdata.iloc[-1]['date'] >= start):
+                logger.warning(f"Missing data at end for pair {pair} for {timeframe}, "
                                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}")
 
 
