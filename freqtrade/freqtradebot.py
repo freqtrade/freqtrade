@@ -616,10 +616,12 @@ class FreqtradeBot(LoggingMixin):
         #         open_rate=open_rate,
         #         is_short=is_short
         #     )
-        mm_ratio, maintenance_amt = self.exchange.get_maintenance_ratio_and_amt(pair, amount)
 
         if self.collateral_type == Collateral.ISOLATED:
             if self.config['dry_run']:
+                mm_ratio, maintenance_amt = self.exchange.get_maintenance_ratio_and_amt(
+                    pair, amount)
+                taker_fee_rate = self.exchange.markets[pair]['taker']
                 isolated_liq = liquidation_price(
                     exchange_name=self.exchange.name,
                     open_rate=open_rate,
@@ -633,6 +635,13 @@ class FreqtradeBot(LoggingMixin):
                     wallet_balance=amount/leverage,  # TODO: Update for cross
                     maintenance_amt=maintenance_amt,
                     mm_ratio=mm_ratio,
+                    taker_fee_rate=taker_fee_rate
+
+                    # Okex
+                    # liability: Optional[float]=None,
+                    # interest: Optional[float]=None,
+                    # position_assets: Optional[float]=None,  # * Might be same as position
+
                 )
             else:
                 isolated_liq = self.exchange.get_liquidation_price(pair)
