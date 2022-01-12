@@ -642,7 +642,7 @@ class DigDeeperStrategy(IStrategy):
             return None
 
         # Obtain pair dataframe (just to show how to access it)
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
         # Only buy when not actively falling price.
         last_candle = dataframe.iloc[-1].squeeze()
         previous_candle = dataframe.iloc[-2].squeeze()
@@ -662,7 +662,7 @@ class DigDeeperStrategy(IStrategy):
         if 0 < count_of_buys <= self.max_dca_orders:
             try:
                 # This returns max stakes for one trade
-                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+                stake_amount = self.wallets.get_trade_stake_amount(trade.pair, None)
                 # This calculates base order size
                 stake_amount = stake_amount / self.max_dca_multiplier
                 # This then calculates current safety order size
