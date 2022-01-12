@@ -618,18 +618,19 @@ class DigDeeperStrategy(IStrategy):
         # This also applies to fixed stakes
         return proposed_stake / self.max_dca_multiplier
         
-    def adjust_trade_position(self, pair: str, trade: Trade,
-                              current_time: datetime, current_rate: float, current_profit: float,
-                                  **kwargs) -> Optional[float]:
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                            current_rate: float, current_profit: float, min_stake: float,
+                            max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
  
-        :param pair: Pair that's currently analyzed
         :param trade: trade object.
         :param current_time: datetime object, containing the current datetime
         :param current_rate: Current buy rate.
         :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param min_stake: Minimal stake size allowed by exchange.
+        :param max_stake: Balance available for trading.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: Stake amount to adjust your trade
         """
