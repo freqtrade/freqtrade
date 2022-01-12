@@ -579,6 +579,7 @@ The strategy is expected to return a stake_amount if and when an additional buy 
 If there is not enough funds in the wallet then nothing will happen.
 Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
 This callback is called very frequently, so you must keep your implementation as fast as possible.
+This callback is NOT called when there is an open order (either buy or sell) waiting for execution.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
