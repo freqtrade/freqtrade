@@ -597,14 +597,17 @@ from freqtrade.persistence import Trade
 
 class DigDeeperStrategy(IStrategy):
     
+    position_adjustment_enable = True
+    
     # Attempts to handle large drops with DCA. High stoploss is required.
     stoploss = -0.30
     
+    # ... populate_* methods
+    
+    # Example specific variables
     max_dca_orders = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
-    
-    # ... populate_* methods
     
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
