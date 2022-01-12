@@ -581,12 +581,15 @@ Additional orders also mean additional fees and those orders don't count towards
 This callback is called very frequently, so you must keep your implementation as fast as possible.
 
 !!! Note "About stake size"
-    Using fixed stake size means it will be the amount used for the first order just like without position adjustment.
-    If you wish to buy additional orders with DCA then make sure to leave enough funds in the wallet for that.
-    Using 'unlimited' stake amount with DCA orders requires you to also implement custom_stake_amount callback to avoid allocating all funds to initial order.
+    Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
+    If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
+    Using 'unlimited' stake amount with DCA orders requires you to also implement custom_stake_amount callback to avoid allocating all funds to the initial order.
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.
+
+!!! Warning "/stopbuy"
+    While `/stopbuy` command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.
 
 !!! Warning "Backtesting"
     During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so performance will be affected.
