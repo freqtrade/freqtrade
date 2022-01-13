@@ -106,8 +106,8 @@ def liquidation_price(
             trading_mode=trading_mode,
             collateral=collateral,  # type: ignore
             wallet_balance=wallet_balance,
-            # mm_ex_1=mm_ex_1,
-            # upnl_ex_1=upnl_ex_1,
+            mm_ex_1=mm_ex_1,  # type: ignore
+            upnl_ex_1=upnl_ex_1,  # type: ignore
             maintenance_amt=maintenance_amt,  # type: ignore
             position=position,
             mm_ratio=mm_ratio,
@@ -212,7 +212,6 @@ def binance(
     :param open_rate: Entry Price of position (one-way mode)
     :param mm_ratio: Maintenance margin rate of position (one-way mode)
     """
-    # TODO-lev: Additional arguments, fill in formulas
     wb = wallet_balance
     tmm_1 = 0.0 if collateral == Collateral.ISOLATED else mm_ex_1
     upnl_1 = 0.0 if collateral == Collateral.ISOLATED else upnl_ex_1
@@ -223,7 +222,6 @@ def binance(
     mmr_b = mm_ratio
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
-        # TODO-lev: perform a calculation based on this formula
         # https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
         exception("binance", trading_mode, collateral)
     elif trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
@@ -235,11 +233,11 @@ def binance(
             position * mmr_b - side_1 * position)
 
     elif trading_mode == TradingMode.FUTURES and collateral == Collateral.CROSS:
-        # TODO-lev: perform a calculation based on this formula
         # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
         # Liquidation Price of USDⓈ-M Futures Contracts Cross
 
         # Isolated margin mode, then TMM=0，UPNL=0
+        # * Untested
         return (wb - tmm_1 + upnl_1 + cum_b - side_1 * position * ep1) / (
             position * mmr_b - side_1 * position)
 
@@ -253,18 +251,17 @@ def kraken(
     leverage: float,
     trading_mode: TradingMode,
     collateral: Collateral
+    # ...
 ):
     """
     Calculates the liquidation price on Kraken
     :param trading_mode: spot, margin, futures
     :param collateral: cross, isolated
     """
-    # TODO-lev: Additional arguments, fill in formulas
 
     if collateral == Collateral.CROSS:
         if trading_mode == TradingMode.MARGIN:
             exception("kraken", trading_mode, collateral)
-            # TODO-lev: perform a calculation based on this formula
             # https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
         elif trading_mode == TradingMode.FUTURES:
             exception("kraken", trading_mode, collateral)
@@ -279,6 +276,7 @@ def ftx(
     leverage: float,
     trading_mode: TradingMode,
     collateral: Collateral
+    # ...
 ):
     """
     Calculates the liquidation price on FTX
@@ -286,7 +284,6 @@ def ftx(
     :param collateral: cross, isolated
     """
     if collateral == Collateral.CROSS:
-        # TODO-lev: Additional arguments, fill in formulas
         exception("ftx", trading_mode, collateral)
 
     # If nothing was returned

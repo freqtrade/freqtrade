@@ -37,6 +37,8 @@ def test_validate_order_types_gateio(default_conf, mocker):
     ("DOGE/USDT:USDT", None),
 ])
 def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_ratio):
+    api_mock = MagicMock()
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
     mocker.patch(
         'freqtrade.exchange.Exchange.markets',
         PropertyMock(
@@ -71,6 +73,4 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
             }
         )
     )
-    api_mock = MagicMock()
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
     assert exchange.get_maintenance_ratio_and_amt(pair) == [mm_ratio, None]

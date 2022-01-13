@@ -707,21 +707,45 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
             CandleType.SPOT) in refresh_mock.call_args[0][0]
 
 
-@pytest.mark.parametrize("trading_mode", [
-    'spot',
-    # TODO-lev: Enable other modes
-    # 'margin', 'futures'
-]
-)
-@pytest.mark.parametrize("is_short", [False, True])
+@pytest.mark.parametrize("is_short,trading_mode,exchange_name,margin_mode,liq_price", [
+    (False, 'spot', 'binance', '', None),
+    (True, 'spot', 'binance', '', None),
+    (False, 'spot', 'gateio', '', None),
+    (True, 'spot', 'gateio', '', None),
+    (True, 'futures', 'binance', 'isolated', 13.217821782178218),
+    (False, 'futures', 'binance', 'isolated', 6.717171717171718),
+    (True, 'futures', 'gateio', 'isolated', 13.198706526760379),
+    (False, 'futures', 'gateio', 'isolated', 6.735367414292449),
+    # TODO-lev: Okex
+    # (False, 'spot', 'okex', 'isolated', ...),
+    # (True, 'futures', 'okex', 'isolated', ...),
+])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
-                       limit_order_open, is_short, trading_mode) -> None:
+                       limit_order_open, is_short, trading_mode,
+                       exchange_name, margin_mode, liq_price) -> None:
+    '''
+    exchange_name = binance, is_short = true
+        (wb + cum_b - side_1 * position * ep1) / (position * mmr_b - side_1 * position)
+        ((2 + 0.01) - ((-1) * 0.6 * 10)) / ((0.6 * 0.01) - ((-1) * 0.6)) = 13.217821782178218
 
+    exchange_name = binance, is_short = false
+        (wb + cum_b - side_1 * position * ep1) / (position * mmr_b - side_1 * position)
+        (2 + 0.01 - 1 * 0.6 * 10) / (0.6 * 0.01 - 1 * 0.6) = 6.717171717171718
+
+    exchange_name = gateio, is_short = true
+        (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
+        (10 + (6 / 0.6)) / (1 + (0.01 + 0.0002))
+        13.198706526760379
+
+    exchange_name = gateio, is_short = false
+        (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
+        (10 - (2 / 0.6)) / (1 - (0.01 + 0.0002)) = 6.735367414292449
+    '''
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
-    leverage = 1.0 if trading_mode == 'spot' else 3.0
-    default_conf_usdt['collateral'] = 'cross'
+    leverage = 1.0 if trading_mode == 'spot' else 5.0
+    default_conf_usdt['collateral'] = margin_mode
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -886,14 +910,24 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
+    mocker.patch.multiple(
+        'freqtrade.exchange.Exchange',
+        name=exchange_name,
+        get_maintenance_ratio_and_amt=MagicMock(return_value=[0.01, 0.01])
+    )
     order['status'] = 'open'
     order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"
     assert freqtrade.execute_entry(pair, stake_amount, is_short=is_short)
     trade = Trade.query.all()[8]
+    # Trade(id=9, pair=ETH/USDT, amount=0.20000000, is_short=False,
+    #   leverage=1.0, open_rate=10.00000000, open_since=...)
+    # Trade(id=9, pair=ETH/USDT, amount=0.60000000, is_short=True,
+    #   leverage=3.0, open_rate=10.00000000, open_since=...)
     trade.is_short = is_short
     assert trade
     assert trade.open_rate_requested == 10
+    assert trade.isolated_liq == liq_price
 
 
 @pytest.mark.parametrize("is_short", [False, True])

@@ -107,8 +107,8 @@ class FreqtradeBot(LoggingMixin):
         self.trading_mode = TradingMode(self.config.get('trading_mode', 'spot'))
 
         self.collateral_type: Optional[Collateral] = None
-        if 'collateral_type' in self.config:
-            self.collateral_type = Collateral(self.config['collateral_type'])
+        if 'collateral' in self.config:
+            self.collateral_type = Collateral(self.config['collateral'])
 
         self._schedule = Scheduler()
 
