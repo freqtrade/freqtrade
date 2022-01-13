@@ -12,69 +12,59 @@ def liquidation_price(
     trading_mode: TradingMode,
     mm_ratio: float,
     collateral: Optional[Collateral] = Collateral.ISOLATED,
-
-    # Binance
-    maintenance_amt: Optional[float] = None,
-
-    # Binance and Gateio
-    wallet_balance: Optional[float] = None,
-    position: Optional[float] = None,   # Absolute value of position size
-
-    # Gateio & Okex
-    taker_fee_rate: Optional[float] = None,
-
-    # Okex
-    liability: Optional[float] = None,
-    interest: Optional[float] = None,
-    position_assets: Optional[float] = None,  # * Might be same as position
-
-    # * Cross only
-    mm_ex_1: Optional[float] = 0.0,  # Cross only
-    upnl_ex_1: Optional[float] = 0.0,  # Cross only
+    maintenance_amt: Optional[float] = None,  # (Binance)
+    position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
+    wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+    taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+    liability: Optional[float] = None,  # (Okex)
+    interest: Optional[float] = None,  # (Okex)
+    position_assets: Optional[float] = None,  # * (Okex) Might be same as position
+    mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+    upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
 ) -> Optional[float]:
-    '''
-    wallet_balance
-        In Cross margin mode, WB is crossWalletBalance
-        In Isolated margin mode, WB is isolatedWalletBalance of the isolated position,
-        TMM=0, UPNL=0, substitute the position quantity, MMR, cum into the formula to calculate.
-        Under the cross margin mode, the same ticker/symbol,
-        both long and short position share the same liquidation price except in the isolated mode.
-        Under the isolated mode, each isolated position will have different liquidation prices
-        depending on the margin allocated to the positions.
-    position
-        Absolute value of position size (in base currency)
-
-    # Binance
-    maintenance_amt (cumb)
-        Maintenance Amount of position
-
-    # Gateio & okex & binance
-    mm_ratio
-        [assets in the position - (liability +interest) * mark price] /
-            (maintenance margin + liquidation fee) (okex)
+    """
+    :param exchange_name:
+    :param open_rate: (EP1) Entry price of position
+    :param is_short: True if the trade is a short, false otherwise
+    :param leverage: The amount of leverage on the trade
+    :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+    :param position: Absolute value of position size (in base currency)
+    :param mm_ratio: (MMR)
+        Okex: [assets in the position - (liability +interest) * mark price] /
+            (maintenance margin + liquidation fee)
         # * Note: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+    :param collateral: Either ISOLATED or CROSS
 
-    # Gateio & okex
-    taker_fee_rate
+    # * Binance
+    :param maintenance_amt: (CUM) Maintenance Amount of position
 
-    # Okex
-    liability
+    # * Binance and Gateio
+    :param wallet_balance: (WB)
+        Cross-Margin Mode: crossWalletBalance
+        Isolated-Margin Mode: isolatedWalletBalance
+    :param position: Absolute value of position size (in base currency)
+
+    # * Gateio & Okex
+    :param taker_fee_rate:
+
+    # * Okex
+    :param liability:
         Initial liabilities + deducted interest
             • Long positions: Liability is calculated in quote currency.
             • Short positions: Liability is calculated in trading currency.
-    interest
+    :param interest:
         Interest that has not been deducted yet.
-    position_assets
+    :param position_assets:
         Total position assets – on-hold by pending order
 
-    # * Cross only
-    mm_ex_1
-        Maintenance Margin of all other contracts, excluding Contract 1
-        If it is an isolated margin mode, then TMM=0，UPNL=0
-    upnl_ex_1
-        Unrealized PNL of all other contracts, excluding Contract 1
-        If it is an isolated margin mode, then UPNL=0
-    '''
+    # * Cross only (Binance)
+    :param mm_ex_1: (TMM)
+        Cross-Margin Mode: Maintenance Margin of all other contracts, excluding Contract 1
+        Isolated-Margin Mode: 0
+    :param upnl_ex_1: (UPNL)
+        Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
+        Isolated-Margin Mode: 0
+    """
     if trading_mode == TradingMode.SPOT:
         return None
 
@@ -85,20 +75,14 @@ def liquidation_price(
         )
 
     if exchange_name.lower() == "binance":
-        if (
-            wallet_balance is None or
+        if (wallet_balance is None or maintenance_amt is None or position is None):
             # mm_ex_1 is None or # * Cross only
             # upnl_ex_1 is None or # * Cross only
-            maintenance_amt is None or
-            position is None or
-            mm_ratio is None
-        ):
             raise OperationalException(
-                f"Parameters wallet_balance, mm_ex_1, upnl_ex_1, "
-                f"maintenance_amt, position, mm_ratio "
-                f"is required by liquidation_price when exchange is {exchange_name.lower()}")
-
-        # Suppress incompatible type "Optional[float]"; expected "float" as the check exists above.
+                f"Parameters wallet_balance, maintenance_amt, position"
+                f"are required by liquidation_price when exchange is {exchange_name.lower()}"
+            )
+        # Suppress incompatible type "Optional[...]"; expected "..." as the check exists above.
         return binance(
             open_rate=open_rate,
             is_short=is_short,
@@ -111,21 +95,12 @@ def liquidation_price(
             maintenance_amt=maintenance_amt,  # type: ignore
             position=position,
             mm_ratio=mm_ratio,
-        )  # type: ignore
-    elif exchange_name.lower() == "kraken":
-        return kraken(open_rate, is_short, leverage, trading_mode, collateral)
-    elif exchange_name.lower() == "ftx":
-        return ftx(open_rate, is_short, leverage, trading_mode, collateral)
+        )
     elif exchange_name.lower() == "gateio":
-        if (
-            not wallet_balance or
-            not position or
-            not mm_ratio or
-            not taker_fee_rate
-        ):
+        if (not wallet_balance or not position or not taker_fee_rate):
             raise OperationalException(
-                f"{exchange_name} {collateral} {trading_mode} requires parameters "
-                f"wallet_balance, contract_size, num_contracts, mm_ratio and taker_fee"
+                f"Parameters wallet_balance, position, taker_fee_rate"
+                f"are required by liquidation_price when exchange is {exchange_name.lower()}"
             )
         else:
             return gateio(
@@ -139,16 +114,10 @@ def liquidation_price(
                 taker_fee_rate=taker_fee_rate
             )
     elif exchange_name.lower() == "okex":
-        if (
-            not mm_ratio or
-            not liability or
-            not interest or
-            not taker_fee_rate or
-            not position_assets
-        ):
+        if (not liability or not interest or not taker_fee_rate or not position_assets):
             raise OperationalException(
-                f"{exchange_name} {collateral} {trading_mode} requires parameters "
-                f"mm_ratio, liability, interest, taker_fee_rate, position_assets"
+                f"Parameters liability, interest, taker_fee_rate, position_assets"
+                f"are required by liquidation_price when exchange is {exchange_name.lower()}"
             )
         else:
             return okex(
@@ -161,9 +130,11 @@ def liquidation_price(
                 taker_fee_rate=taker_fee_rate,
                 position_assets=position_assets,
             )
-    raise OperationalException(
-        f"liquidation_price is not implemented for {exchange_name}"
-    )
+    elif exchange_name.lower() == "ftx":
+        return ftx(open_rate, is_short, leverage, trading_mode, collateral)
+    elif exchange_name.lower() == "kraken":
+        return kraken(open_rate, is_short, leverage, trading_mode, collateral)
+    raise OperationalException(f"liquidation_price is not implemented for {exchange_name}")
 
 
 def exception(
@@ -172,10 +143,10 @@ def exception(
     collateral: Collateral,
 ):
     """
-        Raises an exception if exchange used doesn't support desired leverage mode
-        :param exchange: Name of the exchange
-        :param trading_mode: spot, margin, futures
-        :param collateral: cross, isolated
+    Raises an exception if exchange used doesn't support desired leverage mode
+    :param exchange: Name of the exchange
+    :param trading_mode: spot, margin, futures
+    :param collateral: cross, isolated
     """
 
     raise OperationalException(
@@ -187,132 +158,79 @@ def binance(
     is_short: bool,
     leverage: float,
     trading_mode: TradingMode,
+    mm_ratio: float,
     collateral: Collateral,
+    maintenance_amt: float,
     wallet_balance: float,
+    position: float,
     mm_ex_1: float,
     upnl_ex_1: float,
-    maintenance_amt: float,
-    position: float,
-    mm_ratio: float,
 ):
     """
-    Calculates the liquidation price on Binance
+    MARGIN: https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
+    PERPETUAL: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+
+    :param open_rate: (EP1) Entry Price of position (one-way mode)
     :param is_short: true or false
     :param leverage: leverage in float
-    :param trading_mode: spot, margin, futures
-    :param collateral: cross, isolated
-    :param wallet_balance: Wallet Balance is crossWalletBalance in Cross-Margin Mode.
-        Wallet Balance is isolatedWalletBalance in Isolated Margin Mode
-    :param mm_ex_1: Maintenance Margin of all other contracts,
-        excluding Contract 1. If it is an isolated margin mode, then TMM=0
-    :param upnl_ex_1: Unrealized PNL of all other contracts, excluding Contract 1.
-        If it is an isolated margin mode, then UPNL=0
-    :param maintenance_amt: Maintenance Amount of position (one-way mode)
+    :param trading_mode: SPOT, MARGIN, FUTURES
+    :param mm_ratio: (MMR) Maintenance margin rate of position (one-way mode)
+    :param collateral: CROSS, ISOLATED
+    :param maintenance_amt: (CUM) Maintenance Amount of position (one-way mode)
     :param position: Absolute value of position size (one-way mode)
-    :param open_rate: Entry Price of position (one-way mode)
-    :param mm_ratio: Maintenance margin rate of position (one-way mode)
+    :param wallet_balance: (WB)
+        Cross-Margin Mode: crossWalletBalance
+        Isolated-Margin Mode: isolatedWalletBalance
+            TMM=0, UPNL=0, substitute the position quantity, MMR, cum into the formula to calculate.
+            Under the cross margin mode, the same ticker/symbol,
+            both long and short position share the same liquidation price except in isolated mode.
+            Under the isolated mode, each isolated position will have different liquidation prices
+            depending on the margin allocated to the positions.
+    :param mm_ex_1: (TMM)
+        Cross-Margin Mode: Maintenance Margin of all other contracts, excluding Contract 1
+        Isolated-Margin Mode: 0
+    :param upnl_ex_1: (UPNL)
+        Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
+        Isolated-Margin Mode: 0
     """
-    wb = wallet_balance
-    tmm_1 = 0.0 if collateral == Collateral.ISOLATED else mm_ex_1
-    upnl_1 = 0.0 if collateral == Collateral.ISOLATED else upnl_ex_1
-    cum_b = maintenance_amt
     side_1 = -1 if is_short else 1
     position = abs(position)
-    ep1 = open_rate
-    mmr_b = mm_ratio
+    cross_vars = upnl_ex_1 - mm_ex_1 if collateral == Collateral.CROSS else 0.0
 
     if trading_mode == TradingMode.MARGIN and collateral == Collateral.CROSS:
-        # https://www.binance.com/en/support/faq/f6b010588e55413aa58b7d63ee0125ed
+        # ! Not Implemented
         exception("binance", trading_mode, collateral)
-    elif trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
-        # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-        # Liquidation Price of USDⓈ-M Futures Contracts Isolated
+    if trading_mode == TradingMode.FUTURES:
+        return (wallet_balance + cross_vars + maintenance_amt - (side_1 * position * open_rate)) / (
+            (position * mm_ratio) - (side_1 * position))
 
-        # Isolated margin mode, then TMM=0，UPNL=0
-        return (wb + cum_b - side_1 * position * ep1) / (
-            position * mmr_b - side_1 * position)
-
-    elif trading_mode == TradingMode.FUTURES and collateral == Collateral.CROSS:
-        # https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-        # Liquidation Price of USDⓈ-M Futures Contracts Cross
-
-        # Isolated margin mode, then TMM=0，UPNL=0
-        # * Untested
-        return (wb - tmm_1 + upnl_1 + cum_b - side_1 * position * ep1) / (
-            position * mmr_b - side_1 * position)
-
-    # If nothing was returned
     exception("binance", trading_mode, collateral)
-
-
-def kraken(
-    open_rate: float,
-    is_short: bool,
-    leverage: float,
-    trading_mode: TradingMode,
-    collateral: Collateral
-    # ...
-):
-    """
-    Calculates the liquidation price on Kraken
-    :param trading_mode: spot, margin, futures
-    :param collateral: cross, isolated
-    """
-
-    if collateral == Collateral.CROSS:
-        if trading_mode == TradingMode.MARGIN:
-            exception("kraken", trading_mode, collateral)
-            # https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
-        elif trading_mode == TradingMode.FUTURES:
-            exception("kraken", trading_mode, collateral)
-
-    # If nothing was returned
-    exception("kraken", trading_mode, collateral)
-
-
-def ftx(
-    open_rate: float,
-    is_short: bool,
-    leverage: float,
-    trading_mode: TradingMode,
-    collateral: Collateral
-    # ...
-):
-    """
-    Calculates the liquidation price on FTX
-    :param trading_mode: spot, margin, futures
-    :param collateral: cross, isolated
-    """
-    if collateral == Collateral.CROSS:
-        exception("ftx", trading_mode, collateral)
-
-    # If nothing was returned
-    exception("ftx", trading_mode, collateral)
 
 
 def gateio(
     open_rate: float,
     is_short: bool,
     trading_mode: TradingMode,
-    collateral: Collateral,
-    wallet_balance: float,
-    position: float,
     mm_ratio: float,
+    collateral: Collateral,
+    position: float,
+    wallet_balance: float,
     taker_fee_rate: float,
     is_inverse: bool = False
 ):
     """
-    Calculates the liquidation price on Gate.io
+    PERPETUAL: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
+
     :param open_rate: Entry Price of position
     :param is_short: True for short trades
-    :param trading_mode: spot, margin, futures
-    :param collateral: cross, isolated
-    :param wallet_balance: Also called margin
+    :param trading_mode: SPOT, MARGIN, FUTURES
+    :param mm_ratio: Viewed in contract details
+    :param collateral: CROSS, ISOLATED
     :param position: size of position in base currency
         contract_size / num_contracts
         contract_size: How much one contract is worth
         num_contracts: Also called position
-    :param mm_ratio: Viewed in contract details
+    :param wallet_balance: Also called margin
     :param taker_fee_rate:
     :param is_inverse: True if settle currency matches base currency
 
@@ -320,16 +238,13 @@ def gateio(
     '±' in the formula refers to the direction of the contract,
         go long refers to '-'
         go short refers to '+'
-    Position refers to the number of contracts.
-    Maintenance Margin Ratio and Contract Multiplier can be viewed in the Contract Details.
 
-    https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
     """
 
     if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
         if is_inverse:
-            raise OperationalException(
-                "Freqtrade does not support inverse contracts at the moment")
+            # ! Not implemented
+            raise OperationalException("Freqtrade does not support inverse contracts at the moment")
         value = wallet_balance / position
 
         mm_ratio_taker = (mm_ratio + taker_fee_rate)
@@ -344,24 +259,40 @@ def gateio(
 def okex(
     is_short: bool,
     trading_mode: TradingMode,
+    mm_ratio: float,
     collateral: Collateral,
+    taker_fee_rate: float,
     liability: float,
     interest: float,
-    mm_ratio: float,
-    taker_fee_rate: float,
     position_assets: float
 ):
     '''
-    https://www.okex.com/support/hc/en-us/articles/
+    PERPETUAL: https://www.okex.com/support/hc/en-us/articles/
     360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
 
-    Initial liabilities + deducted interest
-        Long positions: Liability is calculated in quote currency.
-        Short positions: Liability is calculated in trading currency.
-    interest: Interest that has not been deducted yet.
-    Margin ratio
-        Long: [position_assets - (liability + interest) / mark_price] / (maintenance_margin + fees)
-        Short: [position_assets - (liability + interest) * mark_price] / (maintenance_margin + fees)
+    :param is_short: True if the position is short, false otherwise
+    :param trading_mode: SPOT, MARGIN, FUTURES
+    :param mm_ratio:
+        long: [position_assets - (liability + interest) / mark_price] / (maintenance_margin + fees)
+        short: [position_assets - (liability + interest) * mark_price] / (maintenance_margin + fees)
+    :param collateral: CROSS, ISOLATED
+    :param taker_fee_rate:
+    :param liability: Initial liabilities + deducted interest
+        long: Liability is calculated in quote currency
+        short: Liability is calculated in trading currency
+    :param interest: Interest that has not been deducted yet
+    :param position_assets: Total position assets - on-hold by pending order
+
+    Total: The number of positive assets on the position (including margin).
+        long: with trading currency as position asset.
+        short: with quote currency as position asset.
+
+    Est. liquidation price
+        long: (liability + interest）* (1 + maintenance margin ratio) *
+            (1 + taker fee rate) / position assets
+        short: (liability + interest）* (1 + maintenance margin ratio) *
+            (1 + taker fee rate)
+
     '''
     if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
         if is_short:
@@ -371,18 +302,55 @@ def okex(
     else:
         exception("okex", trading_mode, collateral)
 
-# if __name__ == '__main__':
-#     print(liquidation_price(
-#         "binance",
-#         32481.980,
-#         False,
-#         1,
-#         TradingMode.FUTURES,
-#         Collateral.ISOLATED,
-#         1535443.01,
-#         356512.508,
-#         0.0,
-#         16300.000,
-#         109.488,
-#         0.025
-#     ))
+
+def ftx(
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
+    trading_mode: TradingMode,
+    collateral: Collateral
+    # ...
+):
+    """
+    # ! Not Implemented
+    Calculates the liquidation price on FTX
+    :param open_rate: Entry price of position
+    :param is_short: True if the trade is a short, false otherwise
+    :param leverage: The amount of leverage on the trade
+    :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+    :param collateral: Either ISOLATED or CROSS
+    """
+    if collateral == Collateral.CROSS:
+        exception("ftx", trading_mode, collateral)
+
+    # If nothing was returned
+    exception("ftx", trading_mode, collateral)
+
+
+def kraken(
+    open_rate: float,
+    is_short: bool,
+    leverage: float,
+    trading_mode: TradingMode,
+    collateral: Collateral
+    # ...
+):
+    """
+    # ! Not Implemented
+    MARGIN: https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
+
+    :param open_rate: Entry price of position
+    :param is_short: True if the trade is a short, false otherwise
+    :param leverage: The amount of leverage on the trade
+    :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+    :param collateral: Either ISOLATED or CROSS
+    """
+
+    if collateral == Collateral.CROSS:
+        if trading_mode == TradingMode.MARGIN:
+            exception("kraken", trading_mode, collateral)
+        elif trading_mode == TradingMode.FUTURES:
+            exception("kraken", trading_mode, collateral)
+
+    # If nothing was returned
+    exception("kraken", trading_mode, collateral)
