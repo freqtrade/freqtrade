@@ -478,7 +478,6 @@ class FreqtradeBot(LoggingMixin):
 
         # TODO: Is there a better way to force lazy-load?
         len(trade.orders)
-        
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                    current_rate,
                                                                    self.strategy.stoploss)
