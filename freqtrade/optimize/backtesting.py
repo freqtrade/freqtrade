@@ -473,13 +473,12 @@ class Backtesting:
         max_stake_amount = self.wallets.get_available_stake_amount()
 
         pos_adjust = trade is not None
-        if stake_amount is None:
+        if not pos_adjust:
             try:
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None)
             except DependencyException:
                 return trade
 
-        if not pos_adjust:
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=propose_rate,
