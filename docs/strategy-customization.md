@@ -838,7 +838,7 @@ In some situations it may be confusing to deal with stops relative to current ra
 
     from datetime import datetime
     from freqtrade.persistence import Trade
-    from freqtrade.strategy import IStrategy, stoploss_from_open
+    from freqtrade.strategy import IStrategy, stoploss_from_absolute
 
     class AwesomeStrategy(IStrategy):
 
