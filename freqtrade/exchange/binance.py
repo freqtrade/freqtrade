@@ -139,12 +139,12 @@ class Binance(Exchange):
                     [amt, old_ratio] = [None, None]
                     brackets = []
                     for [notional_floor, mm_ratio] in brkts:
-                        amt = ((float(notional_floor) * (mm_ratio - old_ratio)) +
+                        amt = ((float(notional_floor) * (float(mm_ratio) - float(old_ratio))) +
                                amt) if old_ratio else 0
                         old_ratio = mm_ratio
                         brackets.append([
                             float(notional_floor),
-                            mm_ratio,
+                            float(mm_ratio),
                             amt,
                         ])
                     self._leverage_brackets[pair] = brackets
@@ -231,8 +231,8 @@ class Binance(Exchange):
 
     def get_maintenance_ratio_and_amt(
         self,
-        pair: Optional[str],
-        nominal_value: Optional[float]
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
     ):
         '''
         Maintenance amt = Floor of Position Bracket on Level n *

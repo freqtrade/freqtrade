@@ -43,8 +43,8 @@ class Gateio(Exchange):
 
     def get_maintenance_ratio_and_amt(
         self,
-        pair: Optional[str],
-        nominal_value: Optional[float]
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
     ):
         info = self.markets[pair]['info']
         if 'maintenance_rate' in info:

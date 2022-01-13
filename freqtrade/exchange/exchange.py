@@ -2005,8 +2005,8 @@ class Exchange:
 
     def get_maintenance_ratio_and_amt(
         self,
-        pair: Optional[str],
-        nominal_value: Optional[float]
+        pair: str,
+        nominal_value: Optional[float] = 0.0,
     ):
         '''
             :return: The maintenance amount, and maintenance margin rate

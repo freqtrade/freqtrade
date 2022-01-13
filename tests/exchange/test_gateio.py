@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, PropertyMock
+
 import pytest
 
 from freqtrade.exceptions import OperationalException
@@ -35,34 +37,40 @@ def test_validate_order_types_gateio(default_conf, mocker):
     ("DOGE/USDT:USDT", None),
 ])
 def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_ratio):
-    exchange = get_patched_exchange(mocker, default_conf, id="gateio")
-    exchange.markets = {
-        'ETH/USDT:USDT': {
-            'taker': 0.0000075,
-            'maker': -0.0000025,
-            'info': {
-                'maintenance_rate': '0.005',
-            },
-            'id': 'ETH_USDT',
-            'symbol': 'ETH/USDT:USDT',
-        },
-        'ADA/USDT:USDT': {
-            'taker': 0.0000075,
-            'maker': -0.0000025,
-            'info': {
-                'maintenance_rate': '0.003',
-            },
-            'id': 'ADA_USDT',
-            'symbol': 'ADA/USDT:USDT',
-        },
-        'DOGE/USDT:USDT': {
-            'taker': 0.0000075,
-            'maker': -0.0000025,
-            'info': {
-                'nonmaintenance_rate': '0.003',
-            },
-            'id': 'DOGE_USDT',
-            'symbol': 'DOGE/USDT:USDT',
-        }
-    }
-    assert exchange.get_maintenance_ratio_and_amt_gateio(pair) == [mm_ratio, None]
+    mocker.patch(
+        'freqtrade.exchange.Exchange.markets',
+        PropertyMock(
+            return_value={
+                'ETH/USDT:USDT': {
+                    'taker': 0.0000075,
+                    'maker': -0.0000025,
+                    'info': {
+                        'maintenance_rate': '0.005',
+                    },
+                    'id': 'ETH_USDT',
+                    'symbol': 'ETH/USDT:USDT',
+                },
+                'ADA/USDT:USDT': {
+                    'taker': 0.0000075,
+                    'maker': -0.0000025,
+                    'info': {
+                        'maintenance_rate': '0.003',
+                    },
+                    'id': 'ADA_USDT',
+                    'symbol': 'ADA/USDT:USDT',
+                },
+                'DOGE/USDT:USDT': {
+                    'taker': 0.0000075,
+                    'maker': -0.0000025,
+                    'info': {
+                        'nonmaintenance_rate': '0.003',
+                    },
+                    'id': 'DOGE_USDT',
+                    'symbol': 'DOGE/USDT:USDT',
+                }
+            }
+        )
+    )
+    api_mock = MagicMock()
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="gateio")
+    assert exchange.get_maintenance_ratio_and_amt(pair) == [mm_ratio, None]
