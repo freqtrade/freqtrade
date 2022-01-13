@@ -181,7 +181,8 @@ class FreqtradeBot(LoggingMixin):
 
         # Check if we need to adjust our current positions before attempting to buy new trades.
         if self.strategy.position_adjustment_enable:
-            self.process_open_trade_positions()
+            with self._exit_lock:
+                self.process_open_trade_positions()
 
         # Then looking for buy opportunities
         if self.get_free_open_trades():

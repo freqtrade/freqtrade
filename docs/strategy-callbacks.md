@@ -623,8 +623,8 @@ class DigDeeperStrategy(IStrategy):
         return proposed_stake / self.max_dca_multiplier
         
     def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                            current_rate: float, current_profit: float, min_stake: float,
-                            max_stake: float, **kwargs):
+                              current_rate: float, current_profit: float, min_stake: float,
+                              max_stake: float, **kwargs):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
