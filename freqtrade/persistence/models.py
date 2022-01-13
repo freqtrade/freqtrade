@@ -614,6 +614,7 @@ class LocalTrade():
         else:
             return None
 
+    @property
     def nr_of_successful_buys(self) -> int:
         """
         Helper function to count the number of buy orders that have been filled.
@@ -623,6 +624,7 @@ class LocalTrade():
                     o.status in NON_OPEN_EXCHANGE_STATES and
                     (o.filled or 0) > 0])
 
+    @property
     def nr_of_successful_sells(self) -> int:
         """
         Helper function to count the number of sell orders that have been filled.
