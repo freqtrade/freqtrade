@@ -650,7 +650,7 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        count_of_buys = trade.nr_of_successful_buys()
+        count_of_buys = trade.nr_of_successful_buys
 
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
