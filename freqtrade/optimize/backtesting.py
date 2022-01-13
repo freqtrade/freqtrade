@@ -460,13 +460,6 @@ class Backtesting:
     def _enter_trade(self, pair: str, row: Tuple, stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
 
-        pos_adjust = trade is not None
-        if stake_amount is None:
-            try:
-                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
-            except DependencyException:
-                return trade
-
         # let's call the custom entry price, using the open price as default price
         propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=row[OPEN_IDX])(
@@ -478,6 +471,13 @@ class Backtesting:
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
+
+        pos_adjust = trade is not None
+        if stake_amount is None:
+            try:
+                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+            except DependencyException:
+                return trade
 
         if not pos_adjust:
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
