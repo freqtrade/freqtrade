@@ -913,7 +913,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         name=exchange_name,
-        get_maintenance_ratio_and_amt=MagicMock(return_value=[0.01, 0.01])
+        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01))
     )
     order['status'] = 'open'
     order['id'] = '5568'

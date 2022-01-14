@@ -337,7 +337,8 @@ def kraken(
 ):
     """
     # ! Not Implemented
-    MARGIN: https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
+    MARGIN:
+    https://support.kraken.com/hc/en-us/articles/203325763-Margin-Call-Level-and-Margin-Liquidation-Level
 
     :param open_rate: Entry price of position
     :param is_short: True if the trade is a short, false otherwise

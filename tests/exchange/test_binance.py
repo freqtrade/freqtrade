@@ -407,7 +407,7 @@ def test_get_maintenance_ratio_and_amt_binance(
     pair,
     nominal_value,
     mm_ratio,
-    amt
+    amt,
 ):
     exchange = get_patched_exchange(mocker, default_conf, id="binance")
     exchange._leverage_brackets = {
@@ -436,4 +436,4 @@ def test_get_maintenance_ratio_and_amt_binance(
                      [200000000.0, 0.25],
                      [300000000.0, 0.5]],
     }
-    assert exchange.get_max_leverage(pair, nominal_value) == max_lev
+    assert exchange.get_maintenance_ratio_and_amt(pair, nominal_value) == (mm_ratio, amt)

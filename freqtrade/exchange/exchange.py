@@ -90,7 +90,7 @@ class Exchange:
         self._api: ccxt.Exchange = None
         self._api_async: ccxt_async.Exchange = None
         self._markets: Dict = {}
-        self._leverage_brackets: Dict = {}
+        self._leverage_brackets: Dict[str, List[List[float]]] = {}
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
@@ -2006,12 +2006,12 @@ class Exchange:
         self,
         pair: str,
         nominal_value: Optional[float] = 0.0,
-    ):
+    ) -> Tuple[float, Optional[float]]:
         """
-        :return: The maintenance amount, and maintenance margin rate
+        :return: The maintenance margin ratio and maintenance amount
         """
         # TODO-lev: return the real amounts
-        return 0, 0.4
+        return (0, 0.4)
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:

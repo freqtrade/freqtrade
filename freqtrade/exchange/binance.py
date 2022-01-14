@@ -119,10 +119,25 @@ class Binance(Exchange):
             raise OperationalException(e) from e
 
     @retrier
-    def fill_leverage_brackets(self):
+    def fill_leverage_brackets(self) -> None:
         """
         Assigns property _leverage_brackets to a dictionary of information about the leverage
         allowed on each pair
+        After exectution, self._leverage_brackets = {
+            "pair_name": [
+                [notional_floor, maintenenace_margin_ratio, maintenance_amt],
+                ...
+            ],
+            ...
+        }
+        e.g. {
+            "ETH/USDT:USDT": [
+                [0.0, 0.01, 0.0],
+                [10000, 0.02, 0.01],
+                ...
+            ],
+            ...
+        }
         """
         if self.trading_mode == TradingMode.FUTURES:
             try:
@@ -136,14 +151,14 @@ class Binance(Exchange):
                     leverage_brackets = self._api.load_leverage_brackets()
 
                 for pair, brkts in leverage_brackets.items():
-                    [amt, old_ratio] = [None, None]
+                    [amt, old_ratio] = [0.0, 0.0]
                     brackets = []
                     for [notional_floor, mm_ratio] in brkts:
                         amt = (
                             (
                                 (float(notional_floor) * (float(mm_ratio)) - float(old_ratio))
                             ) + amt
-                        ) if old_ratio else 0
+                        ) if old_ratio else 0.0
                         old_ratio = mm_ratio
                         brackets.append([
                             float(notional_floor),
@@ -167,6 +182,9 @@ class Binance(Exchange):
         """
         if pair not in self._leverage_brackets:
             return 1.0
+        if (pair is None or nominal_value is None):
+            raise OperationalException(
+                "binance.get_max_leverage requires parameters pair and nominal_value")
         pair_brackets = self._leverage_brackets[pair]
         for [notional_floor, mm_ratio, _] in reversed(pair_brackets):
             if nominal_value >= notional_floor:
@@ -236,15 +254,20 @@ class Binance(Exchange):
         self,
         pair: str,
         nominal_value: Optional[float] = 0.0,
-    ):
+    ) -> Tuple[float, Optional[float]]:
         """
+        Formula: https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+
         Maintenance amt = Floor of Position Bracket on Level n *
           difference between
               Maintenance Margin Rate on Level n and
               Maintenance Margin Rate on Level n-1)
           + Maintenance Amount on Level n-1
-          https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
+        :return: The maintenance margin ratio and maintenance amount
         """
+        if nominal_value is None:
+            raise OperationalException(
+                "nominal value is required for binance.get_maintenance_ratio_and_amt")
         if pair not in self._leverage_brackets:
             raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
         pair_brackets = self._leverage_brackets[pair]

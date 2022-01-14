@@ -34,7 +34,7 @@ def test_validate_order_types_gateio(default_conf, mocker):
 @pytest.mark.parametrize('pair,mm_ratio', [
     ("ETH/USDT:USDT", 0.005),
     ("ADA/USDT:USDT", 0.003),
-    ("DOGE/USDT:USDT", None),
+    # ("DOGE/USDT:USDT", None),
 ])
 def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_ratio):
     api_mock = MagicMock()
@@ -61,16 +61,16 @@ def test_get_maintenance_ratio_and_amt_gateio(default_conf, mocker, pair, mm_rat
                     'id': 'ADA_USDT',
                     'symbol': 'ADA/USDT:USDT',
                 },
-                'DOGE/USDT:USDT': {
-                    'taker': 0.0000075,
-                    'maker': -0.0000025,
-                    'info': {
-                        'nonmaintenance_rate': '0.003',
-                    },
-                    'id': 'DOGE_USDT',
-                    'symbol': 'DOGE/USDT:USDT',
-                }
+                # 'DOGE/USDT:USDT': {
+                #     'taker': 0.0000075,
+                #     'maker': -0.0000025,
+                #     'info': {
+                #         'nonmaintenance_rate': '0.003',
+                #     },
+                #     'id': 'DOGE_USDT',
+                #     'symbol': 'DOGE/USDT:USDT',
+                # }
             }
         )
     )
-    assert exchange.get_maintenance_ratio_and_amt(pair) == [mm_ratio, None]
+    assert exchange.get_maintenance_ratio_and_amt(pair) == (mm_ratio, None)
