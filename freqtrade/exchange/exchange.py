@@ -1990,7 +1990,6 @@ class Exchange:
         :param pair: base/quote currency pair (e.g. "ADA/USDT")
         """
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
-            # Some exchanges only support one collateral type
             return
 
         try:
