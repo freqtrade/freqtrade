@@ -266,7 +266,7 @@ def okex(
     interest: float,
     position_assets: float
 ):
-    '''
+    """
     PERPETUAL: https://www.okex.com/support/hc/en-us/articles/
     360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
 
@@ -293,7 +293,7 @@ def okex(
         short: (liability + interest）* (1 + maintenance margin ratio) *
             (1 + taker fee rate)
 
-    '''
+    """
     if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
         if is_short:
             return (liability + interest) * (1 + mm_ratio) * (1 + taker_fee_rate)

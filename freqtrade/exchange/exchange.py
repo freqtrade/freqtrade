@@ -1985,10 +1985,10 @@ class Exchange:
 
     @retrier
     def get_liquidation_price(self, pair: str):
-        '''
-            Set's the margin mode on the exchange to cross or isolated for a specific pair
-            :param pair: base/quote currency pair (e.g. "ADA/USDT")
-        '''
+        """
+        Set's the margin mode on the exchange to cross or isolated for a specific pair
+        :param pair: base/quote currency pair (e.g. "ADA/USDT")
+        """
         if self._config['dry_run'] or not self.exchange_has("fetchPositions"):
             # Some exchanges only support one collateral type
             return
@@ -2008,9 +2008,9 @@ class Exchange:
         pair: str,
         nominal_value: Optional[float] = 0.0,
     ):
-        '''
-            :return: The maintenance amount, and maintenance margin rate
-        '''
+        """
+        :return: The maintenance amount, and maintenance margin rate
+        """
         # TODO-lev: return the real amounts
         return 0, 0.4
 

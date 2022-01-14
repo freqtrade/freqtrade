@@ -723,7 +723,7 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
                        exchange_name, margin_mode, liq_price) -> None:
-    '''
+    """
     exchange_name = binance, is_short = true
         (wb + cum_b - side_1 * position * ep1) / (position * mmr_b - side_1 * position)
         ((2 + 0.01) - ((-1) * 0.6 * 10)) / ((0.6 * 0.01) - ((-1) * 0.6)) = 13.217821782178218
@@ -740,7 +740,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     exchange_name = gateio, is_short = false
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
         (10 - (2 / 0.6)) / (1 - (0.01 + 0.0002)) = 6.735367414292449
-    '''
+    """
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
     default_conf_usdt['trading_mode'] = trading_mode
@@ -4828,7 +4828,7 @@ def test_update_funding_fees(
     limit_order_open,
     schedule_off
 ):
-    '''
+    """
     nominal_value = mark_price * size
     funding_fee = nominal_value * funding_rate
     size = 123
@@ -4844,7 +4844,7 @@ def test_update_funding_fees(
     "XRP/BTC"
         time: 0, mark: 1.2, fundRate: 0.00049426, nominal_value: 147.6, fundFee: 0.072952776
         time: 8, mark: 1.2, fundRate: 0.00032715, nominal_value: 147.6, fundFee: 0.04828734
-    '''
+    """
     # SETUP
     time_machine.move_to("2021-09-01 00:00:00 +00:00")
 

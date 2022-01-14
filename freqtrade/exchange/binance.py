@@ -139,8 +139,11 @@ class Binance(Exchange):
                     [amt, old_ratio] = [None, None]
                     brackets = []
                     for [notional_floor, mm_ratio] in brkts:
-                        amt = ((float(notional_floor) * (float(mm_ratio) - float(old_ratio))) +
-                               amt) if old_ratio else 0
+                        amt = (
+                            (
+                                (float(notional_floor) * (float(mm_ratio)) - float(old_ratio))
+                            ) + amt
+                        ) if old_ratio else 0
                         old_ratio = mm_ratio
                         brackets.append([
                             float(notional_floor),
@@ -234,14 +237,14 @@ class Binance(Exchange):
         pair: str,
         nominal_value: Optional[float] = 0.0,
     ):
-        '''
+        """
         Maintenance amt = Floor of Position Bracket on Level n *
           difference between
               Maintenance Margin Rate on Level n and
               Maintenance Margin Rate on Level n-1)
           + Maintenance Amount on Level n-1
           https://www.binance.com/en/support/faq/b3c689c1f50a44cabb3a84e663b81d93
-        '''
+        """
         if pair not in self._leverage_brackets:
             raise InvalidOrderException(f"Cannot calculate liquidation price for {pair}")
         pair_brackets = self._leverage_brackets[pair]
