@@ -650,8 +650,9 @@ class DigDeeperStrategy(IStrategy):
         if last_candle['close'] < previous_candle['close']:
             return None
 
-        count_of_buys = trade.nr_of_successful_buys
-
+        filled_buys = trade.select_filled_orders('buy')
+        count_of_buys = len(filled_buys)
+        
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
         # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
@@ -662,10 +663,8 @@ class DigDeeperStrategy(IStrategy):
         # Hope you have a deep wallet!
         if 0 < count_of_buys <= self.max_dca_orders:
             try:
-                # This returns max stakes for one trade
-                stake_amount = self.wallets.get_trade_stake_amount(trade.pair, None)
-                # This calculates base order size
-                stake_amount = stake_amount / self.max_dca_multiplier
+                # This returns first order stake size
+                stake_amount = filled_buys[0].stake_amount
                 # This then calculates current safety order size
                 stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
                 return stake_amount
