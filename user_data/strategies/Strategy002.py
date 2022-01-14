@@ -13,6 +13,8 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 import subprocess
+import threading
+
 
 
 class Strategy002(IStrategy):
@@ -138,6 +140,10 @@ class Strategy002(IStrategy):
             ),
             'sell'] = 1
         return dataframe
+        
+    def call_launcher(self, mode, coin):
+    	print("strategy002: call_launcher: mode = " + mode + " coin = " +coin)
+        subprocess.call("python3 /root/workspace2/execution/launcher.py " + mode + " " + coin, shell=True)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
@@ -162,6 +168,7 @@ class Strategy002(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        subprocess.call("python3 /root/workspace/execution/launcher.py " + mode + " " + coin, shell=True)
+        thread = threading.Thread(target=self.call_launcher, args=(mode,coin))
+        thread.start()
         return True
 
