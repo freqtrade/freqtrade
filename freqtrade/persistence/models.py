@@ -614,15 +614,25 @@ class LocalTrade():
         else:
             return None
 
+    def select_filled_orders(self, order_side: str) -> List['Order']:
+        """
+        Finds filled orders for this orderside.
+        :param order_side: Side of the order (either 'buy' or 'sell')
+        :return: array of Order objects
+        """
+        return [o for o in self.orders if o.ft_order_side == order_side and
+                  o.ft_is_open is False and
+                  (o.filled or 0) > 0 and
+                  o.status in NON_OPEN_EXCHANGE_STATES]
+
     @property
     def nr_of_successful_buys(self) -> int:
         """
         Helper function to count the number of buy orders that have been filled.
         :return: int count of buy orders that have been filled for this trade.
         """
-        return len([o for o in self.orders if o.ft_order_side == 'buy' and
-                    o.status in NON_OPEN_EXCHANGE_STATES and
-                    (o.filled or 0) > 0])
+
+        return len(self.select_filled_orders('buy'))
 
     @property
     def nr_of_successful_sells(self) -> int:
@@ -630,9 +640,7 @@ class LocalTrade():
         Helper function to count the number of sell orders that have been filled.
         :return: int count of sell orders that have been filled for this trade.
         """
-        return len([o for o in self.orders if o.ft_order_side == 'sell' and
-                    o.status in NON_OPEN_EXCHANGE_STATES and
-                    (o.filled or 0) > 0])
+        return len(self.select_filled_orders('sell'))
 
     @staticmethod
     def get_trades_proxy(*, pair: str = None, is_open: bool = None,

@@ -1663,3 +1663,49 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.fee_open_cost == 2 * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_buys == 2
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_filled_orders(fee):
+    create_mock_trades(fee)
+
+    trades = Trade.get_trades().all()
+
+    # Closed buy order, no sell order
+    orders = trades[0].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+    order = orders[0]
+    assert order.amount > 0
+    assert order.filled > 0
+    assert order.side == 'buy'
+    assert order.ft_order_side == 'buy'
+    assert order.status == 'closed'
+    orders = trades[0].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0
+
+    # closed buy order, and closed sell order
+    orders = trades[1].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+
+    orders = trades[1].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 1
+
+    # Has open buy order
+    orders = trades[3].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 0
+    orders = trades[3].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0
+
+    # Open sell order
+    orders = trades[4].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+    orders = trades[4].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0
