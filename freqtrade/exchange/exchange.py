@@ -1993,7 +1993,9 @@ class Exchange:
             return
 
         try:
-            return self._api.fetch_positions(pair).liquidationPrice
+            positions = self._api.fetch_positions([pair])
+            position = positions[0]
+            return position['liquidationPrice']
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.NetworkError, ccxt.ExchangeError) as e:
