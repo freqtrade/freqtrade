@@ -2,10 +2,10 @@
 
 *.sqlite
 logfile.txt
-user_data/*
-!user_data/strategy/*
-!user_data/notebooks
+user_data/backtest_results/*
+user_data/logs/*
 user_data/notebooks/*
+user_data/data/*
 freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
