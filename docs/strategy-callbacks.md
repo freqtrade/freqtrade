@@ -664,7 +664,7 @@ class DigDeeperStrategy(IStrategy):
         if 0 < count_of_buys <= self.max_dca_orders:
             try:
                 # This returns first order stake size
-                stake_amount = filled_buys[0].stake_amount
+                stake_amount = filled_buys[0].cost
                 # This then calculates current safety order size
                 stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
                 return stake_amount
