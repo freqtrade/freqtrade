@@ -3438,8 +3438,18 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("bittrex", TradingMode.FUTURES, Collateral.CROSS, True),
     ("bittrex", TradingMode.FUTURES, Collateral.ISOLATED, True),
     ("gateio", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("okex", TradingMode.SPOT, None, False),
+    ("okex", TradingMode.MARGIN, Collateral.CROSS, True),
+    ("okex", TradingMode.MARGIN, Collateral.ISOLATED, True),
+    ("okex", TradingMode.FUTURES, Collateral.CROSS, True),
 
-    # TODO-lev: Remove once implemented
+    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
+    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
+
+    # ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False), # TODO-lev: uncomment once impleme
+    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, True),  # TODO-lev: remove once implemented
+
+    # * Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),
     ("binance", TradingMode.FUTURES, Collateral.CROSS, True),
     ("kraken", TradingMode.MARGIN, Collateral.CROSS, True),
@@ -3449,17 +3459,15 @@ def test_set_margin_mode(mocker, default_conf, collateral):
     ("gateio", TradingMode.MARGIN, Collateral.CROSS, True),
     ("gateio", TradingMode.FUTURES, Collateral.CROSS, True),
 
-    # TODO-lev: Uncomment once implemented
+    # * Uncomment once implemented
     # ("binance", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("binance", TradingMode.FUTURES, Collateral.CROSS, False),
-    ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     # ("kraken", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("kraken", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("ftx", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("ftx", TradingMode.FUTURES, Collateral.CROSS, False),
     # ("gateio", TradingMode.MARGIN, Collateral.CROSS, False),
     # ("gateio", TradingMode.FUTURES, Collateral.CROSS, False),
-    ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
 ])
 def test_validate_trading_mode_and_collateral(
     default_conf,
@@ -3583,36 +3591,39 @@ def test_calculate_funding_fees(
 def test_get_liquidation_price(mocker, default_conf):
 
     api_mock = MagicMock()
-    api_mock.fetch_positions = MagicMock(return_value=[{
-        'info': {},
-        'symbol': 'NEAR/USDT:USDT',
-        'timestamp': 1642164737148,
-        'datetime': '2022-01-14T12:52:17.148Z',
-        'initialMargin': 1.51072,
-        'initialMarginPercentage': 0.1,
-        'maintenanceMargin': 0.38916147,
-        'maintenanceMarginPercentage': 0.025,
-        'entryPrice': 18.884,
-        'notional': 15.1072,
-        'leverage': 9.97,
-        'unrealizedPnl': 0.0048,
-        'contracts': 8,
-        'contractSize': 0.1,
-        'marginRatio': None,
-        'liquidationPrice': 17.47,
-        'markPrice': 18.89,
-        'collateral': 1.52549075,
-        'marginType': 'isolated',
-        'side': 'buy',
-        'percentage': 0.003177292946409658
-    }])
+    positions = [
+        {
+            'info': {},
+            'symbol': 'NEAR/USDT:USDT',
+            'timestamp': 1642164737148,
+            'datetime': '2022-01-14T12:52:17.148Z',
+            'initialMargin': 1.51072,
+            'initialMarginPercentage': 0.1,
+            'maintenanceMargin': 0.38916147,
+            'maintenanceMarginPercentage': 0.025,
+            'entryPrice': 18.884,
+            'notional': 15.1072,
+            'leverage': 9.97,
+            'unrealizedPnl': 0.0048,
+            'contracts': 8,
+            'contractSize': 0.1,
+            'marginRatio': None,
+            'liquidationPrice': 17.47,
+            'markPrice': 18.89,
+            'collateral': 1.52549075,
+            'marginType': 'isolated',
+            'side': 'buy',
+            'percentage': 0.003177292946409658
+        }
+    ]
+    api_mock.fetch_positions = MagicMock(return_value=positions)
     mocker.patch.multiple(
         'freqtrade.exchange.Exchange',
         exchange_has=MagicMock(return_value=True),
     )
     default_conf['dry_run'] = False
 
-    exchange = get_patched_exchange(mocker, default_conf)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price('NEAR/USDT:USDT')
     assert liq_price == 17.47
 

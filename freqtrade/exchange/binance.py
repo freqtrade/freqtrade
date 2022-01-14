@@ -156,7 +156,7 @@ class Binance(Exchange):
                     for [notional_floor, mm_ratio] in brkts:
                         amt = (
                             (
-                                (float(notional_floor) * (float(mm_ratio)) - float(old_ratio))
+                                (float(notional_floor) * (float(mm_ratio) - float(old_ratio)))
                             ) + amt
                         ) if old_ratio else 0.0
                         old_ratio = mm_ratio
