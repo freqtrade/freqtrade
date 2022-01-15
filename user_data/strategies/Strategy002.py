@@ -15,7 +15,7 @@ from datetime import datetime
 import subprocess
 import threading
 
-from user_data.strategies.util import thread_executor, IS_BACKTEST, launcher, back_tester
+from user_data.strategies.util import IS_BACKTEST, launcher, back_tester
 
 
 class Strategy002(IStrategy):
