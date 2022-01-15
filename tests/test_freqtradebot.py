@@ -712,10 +712,10 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (True, 'spot', 'binance', None, None),
     (False, 'spot', 'gateio', None, None),
     (True, 'spot', 'gateio', None, None),
-    (True, 'futures', 'binance', 'isolated', 13.217821782178218),
-    (False, 'futures', 'binance', 'isolated', 6.717171717171718),
-    (True, 'futures', 'gateio', 'isolated', 13.198706526760379),
-    (False, 'futures', 'gateio', 'isolated', 6.735367414292449),
+    (True, 'futures', 'binance', 'isolated', 11.89108910891089),
+    (False, 'futures', 'binance', 'isolated', 8.070707070707071),
+    (True, 'futures', 'gateio', 'isolated', 11.87413417771621),
+    (False, 'futures', 'gateio', 'isolated', 8.085708510208207),
     # TODO-lev: Okex
     # (False, 'spot', 'okex', 'isolated', ...),
     # (True, 'futures', 'okex', 'isolated', ...),
@@ -725,21 +725,23 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        exchange_name, margin_mode, liq_price) -> None:
     """
     exchange_name = binance, is_short = true
-        (wb + cum_b - side_1 * position * ep1) / (position * mmr_b - side_1 * position)
-        ((2 + 0.01) - ((-1) * 0.6 * 10)) / ((0.6 * 0.01) - ((-1) * 0.6)) = 13.217821782178218
+        leverage = 5
+        position = 0.2 * 5
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - ((-1) * 1 * 10)) / ((1 * 0.01) - ((-1) * 1)) = 11.89108910891089
 
     exchange_name = binance, is_short = false
-        (wb + cum_b - side_1 * position * ep1) / (position * mmr_b - side_1 * position)
-        (2 + 0.01 - 1 * 0.6 * 10) / (0.6 * 0.01 - 1 * 0.6) = 6.717171717171718
+        ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
+        ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
+
 
     exchange_name = gateio, is_short = true
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
-        (10 + (6 / 0.6)) / (1 + (0.01 + 0.0002))
-        13.198706526760379
+        (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621
 
     exchange_name = gateio, is_short = false
         (open_rate - (wallet_balance / position)) / (1 - (mm_ratio + taker_fee_rate))
-        (10 - (2 / 0.6)) / (1 - (0.01 + 0.0002)) = 6.735367414292449
+        (10 - (2 / 1)) / (1 - (0.01 + 0.0006)) = 8.085708510208207
     """
     open_order = limit_order_open[enter_side(is_short)]
     order = limit_order[enter_side(is_short)]
@@ -768,6 +770,7 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         get_min_pair_stake_amount=MagicMock(return_value=1),
         get_fee=fee,
         get_funding_fees=MagicMock(return_value=0),
+        name=exchange_name
     )
     pair = 'ETH/USDT'
 
@@ -911,11 +914,8 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
     assert trade.open_rate_requested == 10
 
     # In case of custom entry price not float type
-    mocker.patch.multiple(
-        'freqtrade.exchange.Exchange',
-        name=exchange_name,
-        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01))
-    )
+    freqtrade.exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(0.01, 0.01))
+    freqtrade.exchange.name = exchange_name
     order['status'] = 'open'
     order['id'] = '5568'
     freqtrade.strategy.custom_entry_price = lambda **kwargs: "string price"

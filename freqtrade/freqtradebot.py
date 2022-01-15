@@ -633,8 +633,8 @@ class FreqtradeBot(LoggingMixin):
                     collateral=Collateral.ISOLATED,
                     mm_ex_1=0.0,
                     upnl_ex_1=0.0,
-                    position=amount * open_rate,
-                    wallet_balance=amount/leverage,  # TODO: Update for cross
+                    position=amount,
+                    wallet_balance=(amount * open_rate)/leverage,  # TODO: Update for cross
                     maintenance_amt=maintenance_amt,
                     mm_ratio=mm_ratio,
                     taker_fee_rate=taker_fee_rate
