@@ -572,19 +572,21 @@ class AwesomeStrategy(IStrategy):
 
 ## Adjust trade position
 
-The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in strategy.
+The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in the strategy.
 For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
 `adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging).
-The strategy is expected to return a stake_amount if and when an additional buy order should be made (position is increased).
-If there is not enough funds in the wallet then nothing will happen.
-Additional orders also mean additional fees and those orders don't count towards `max_open_trades`.
-This callback is called very frequently, so you must keep your implementation as fast as possible.
-This callback is NOT called when there is an open order (either buy or sell) waiting for execution.
+
+The strategy is expected to return a stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional buy order should be made (position is increased).
+If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
+Additional orders also result in additional fees and those orders don't count towards `max_open_trades`.
+
+This callback is **not** called when there is an open order (either buy or sell) waiting for execution.
+`adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 !!! Note "About stake size"
     Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
     If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
-    Using 'unlimited' stake amount with DCA orders requires you to also implement custom_stake_amount callback to avoid allocating all funds to the initial order.
+    Using 'unlimited' stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
 
 !!! Warning
     Stoploss is still calculated from the initial opening price, not averaged price.

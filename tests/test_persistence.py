@@ -1498,8 +1498,6 @@ def test_recalc_trade_from_orders(fee):
     trade.orders.append(sell1)
     trade.recalc_trade_from_orders()
 
-    avg_price = (o1_cost + o2_cost + o3_cost) / (o1_amount + o2_amount + o3_amount)
-
     assert trade.amount == o1_amount + o2_amount + o3_amount
     assert trade.stake_amount == o1_cost + o2_cost + o3_cost
     assert trade.open_rate == avg_price
@@ -1582,7 +1580,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee):
     assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_buys == 1
 
-# Let's try with some other orders
+    # Let's try with some other orders
     order3 = Order(
         ft_order_side='buy',
         ft_pair=trade.pair,
