@@ -612,6 +612,7 @@ class Exchange:
             'cost': _amount * rate,
             'type': ordertype,
             'side': side,
+            'filled': 0,
             'remaining': _amount,
             'datetime': arrow.utcnow().isoformat(),
             'timestamp': arrow.utcnow().int_timestamp * 1000,
@@ -627,6 +628,7 @@ class Exchange:
             average = self.get_dry_market_fill_price(pair, side, amount, rate)
             dry_order.update({
                 'average': average,
+                'filled': _amount,
                 'cost': dry_order['amount'] * average,
             })
             dry_order = self.add_dry_order_fee(pair, dry_order)
