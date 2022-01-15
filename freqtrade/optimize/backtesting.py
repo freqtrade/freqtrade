@@ -24,7 +24,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (generate_backtest_stats, show_backtest_results,
                                                  store_backtest_stats)
-from freqtrade.persistence import LocalTrade, PairLocks, Trade
+from freqtrade.persistence import LocalTrade, Order, PairLocks, Trade
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
@@ -354,8 +354,32 @@ class Backtesting:
         else:
             return sell_row[OPEN_IDX]
 
+    def _get_adjust_trade_entry_for_candle(self, trade: LocalTrade, row: Tuple
+                                           ) -> LocalTrade:
+
+        current_profit = trade.calc_profit_ratio(row[OPEN_IDX])
+        min_stake = self.exchange.get_min_pair_stake_amount(trade.pair, row[OPEN_IDX], -0.1)
+        max_stake = self.wallets.get_available_stake_amount()
+        stake_amount = strategy_safe_wrapper(self.strategy.adjust_trade_position,
+                                             default_retval=None)(
+            trade=trade, current_time=row[DATE_IDX].to_pydatetime(), current_rate=row[OPEN_IDX],
+            current_profit=current_profit, min_stake=min_stake, max_stake=max_stake)
+
+        # Check if we should increase our position
+        if stake_amount is not None and stake_amount > 0.0:
+            pos_trade = self._enter_trade(trade.pair, row, stake_amount, trade)
+            if pos_trade is not None:
+                return pos_trade
+
+        return trade
+
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
+
+        # Check if we need to adjust our current positions
+        if self.strategy.position_adjustment_enable:
+            trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
                                          sell_candle_time, sell_row[BUY_IDX],
@@ -433,11 +457,9 @@ class Backtesting:
         else:
             return self._get_sell_trade_entry_for_candle(trade, sell_row)
 
-    def _enter_trade(self, pair: str, row: List) -> Optional[LocalTrade]:
-        try:
-            stake_amount = self.wallets.get_trade_stake_amount(pair, None)
-        except DependencyException:
-            return None
+    def _enter_trade(self, pair: str, row: Tuple, stake_amount: Optional[float] = None,
+                     trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+
         # let's call the custom entry price, using the open price as default price
         propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=row[OPEN_IDX])(
@@ -450,40 +472,72 @@ class Backtesting:
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
 
-        stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
-                                             default_retval=stake_amount)(
-            pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=propose_rate,
-            proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
+        pos_adjust = trade is not None
+        if not pos_adjust:
+            try:
+                stake_amount = self.wallets.get_trade_stake_amount(pair, None)
+            except DependencyException:
+                return trade
+
+            stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
+                                                 default_retval=stake_amount)(
+                pair=pair, current_time=row[DATE_IDX].to_pydatetime(), current_rate=propose_rate,
+                proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
+
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
         if not stake_amount:
-            return None
+            # In case of pos adjust, still return the original trade
+            # If not pos adjust, trade is None
+            return trade
 
         order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['sell']
         # Confirm trade entry:
-        if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
-                pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
-                time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
-            return None
+        if not pos_adjust:
+            if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
+                    pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
+                    time_in_force=time_in_force, current_time=row[DATE_IDX].to_pydatetime()):
+                return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
-            # Enter trade
-            has_buy_tag = len(row) >= BUY_TAG_IDX + 1
-            trade = LocalTrade(
-                pair=pair,
-                open_rate=propose_rate,
-                open_date=row[DATE_IDX].to_pydatetime(),
-                stake_amount=stake_amount,
-                amount=round(stake_amount / propose_rate, 8),
-                fee_open=self.fee,
-                fee_close=self.fee,
-                is_open=True,
-                buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
-                exchange='backtesting',
+            amount = round(stake_amount / propose_rate, 8)
+            if trade is None:
+                # Enter trade
+                has_buy_tag = len(row) >= BUY_TAG_IDX + 1
+                trade = LocalTrade(
+                    pair=pair,
+                    open_rate=propose_rate,
+                    open_date=row[DATE_IDX].to_pydatetime(),
+                    stake_amount=stake_amount,
+                    amount=amount,
+                    fee_open=self.fee,
+                    fee_close=self.fee,
+                    is_open=True,
+                    buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
+                    exchange='backtesting',
+                    orders=[]
+                )
+
+            order = Order(
+                ft_is_open=False,
+                ft_pair=trade.pair,
+                symbol=trade.pair,
+                ft_order_side="buy",
+                side="buy",
+                order_type="market",
+                status="closed",
+                price=propose_rate,
+                average=propose_rate,
+                amount=amount,
+                filled=amount,
+                cost=stake_amount + trade.fee_open
             )
-            return trade
-        return None
+            trade.orders.append(order)
+            if pos_adjust:
+                trade.recalc_trade_from_orders()
+
+        return trade
 
     def handle_left_open(self, open_trades: Dict[str, List[LocalTrade]],
                          data: Dict[str, List[Tuple]]) -> List[LocalTrade]:

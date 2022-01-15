@@ -106,6 +106,9 @@ class IStrategy(ABC, HyperStrategyMixin):
     sell_profit_offset: float
     ignore_roi_if_buy_signal: bool
 
+    # Position adjustment is disabled by default
+    position_adjustment_enable: bool = False
+
     # Number of seconds after which the candle will no longer result in a buy on expired candles
     ignore_buying_expired_candle_after: int = 0
 
@@ -380,6 +383,28 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: A stake size, which is between min_stake and max_stake.
         """
         return proposed_stake
+
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, min_stake: float,
+                              max_stake: float, **kwargs) -> Optional[float]:
+        """
+        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+        This means extra buy orders with additional fees.
+
+        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+        When not implemented by a strategy, returns None
+
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Current buy rate.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param min_stake: Minimal stake size allowed by exchange.
+        :param max_stake: Balance available for trading.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Stake amount to adjust your trade
+        """
+        return None
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """

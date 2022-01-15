@@ -273,6 +273,9 @@ def plot_config(self):
 !!! Warning
     `plotly` arguments are only supported with plotly library and will not work with freq-ui.
 
+!!! Note "Trade position adjustments"
+    If `position_adjustment_enable` / `adjust_trade_position()` is used, the trade initial buy price is averaged over multiple orders and the trade start price will most likely appear outside the candle range.
+
 ## Plot profit
 
 ![plot-profit](assets/plot-profit.png)
