@@ -109,33 +109,47 @@ def test_stoploss_from_open():
         [1, 100, 30],
         [100, 10000, 30],
     ]
-    current_profit_range = [-0.99, 2, 30]
+    # profit range for long is [-1, inf] while for shorts is [-inf, 1]
+    current_profit_range_dict = {'long': [-0.99, 2, 30], 'short': [-2.0, 0.99, 30]}
     desired_stop_range = [-0.50, 0.50, 30]
 
-    for open_range in open_price_ranges:
-        for open_price in np.linspace(*open_range):
-            for desired_stop in np.linspace(*desired_stop_range):
+    for side, current_profit_range in current_profit_range_dict.items():
+        for open_range in open_price_ranges:
+            for open_price in np.linspace(*open_range):
+                for desired_stop in np.linspace(*desired_stop_range):
 
-                # -1 is not a valid current_profit, should return 1
-                assert stoploss_from_open(desired_stop, -1) == 1
-
-                for current_profit in np.linspace(*current_profit_range):
-                    current_price = open_price * (1 + current_profit)
-                    expected_stop_price = open_price * (1 + desired_stop)
-
-                    stoploss = stoploss_from_open(desired_stop, current_profit)
-
-                    assert stoploss >= 0
-                    assert stoploss <= 1
-
-                    stop_price = current_price * (1 - stoploss)
-
-                    # there is no correct answer if the expected stop price is above
-                    # the current price
-                    if expected_stop_price > current_price:
-                        assert stoploss == 0
+                    if side == 'long':
+                        # -1 is not a valid current_profit, should return 1
+                        assert stoploss_from_open(desired_stop, -1) == 1
                     else:
-                        assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)
+                        # 1 is not a valid current_profit for shorts, should return 1
+                        assert stoploss_from_open(desired_stop, 1, True) == 1
+
+                    for current_profit in np.linspace(*current_profit_range):
+                        if side == 'long':
+                            current_price = open_price * (1 + current_profit)
+                            expected_stop_price = open_price * (1 + desired_stop)
+                            stoploss = stoploss_from_open(desired_stop, current_profit)
+                            stop_price = current_price * (1 - stoploss)
+                        else:
+                            current_price = open_price * (1 - current_profit)
+                            expected_stop_price = open_price * (1 - desired_stop)
+                            stoploss = stoploss_from_open(desired_stop, current_profit, True)
+                            stop_price = current_price * (1 + stoploss)
+
+                        assert stoploss >= 0
+                        # Technically the formula can yield values greater than 1 for shorts
+                        # eventhough it doesn't make sense because the position would be liquidated
+                        if side == 'long':
+                            assert stoploss <= 1
+
+                        # there is no correct answer if the expected stop price is above
+                        # the current price
+                        if (side == 'long' and expected_stop_price > current_price) \
+                                or (side == 'short' and expected_stop_price < current_price):
+                            assert stoploss == 0
+                        else:
+                            assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)
 
 
 def test_stoploss_from_absolute():
