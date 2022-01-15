@@ -13,6 +13,9 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 import subprocess
+import threading
+
+from user_data.strategies.util import thread_executor, IS_BACKTEST, launcher, back_tester
 
 
 class Strategy002(IStrategy):
@@ -162,6 +165,9 @@ class Strategy002(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        subprocess.call("python3 /root/workspace/execution/launcher.py " + mode + " " + coin, shell=True)
+        if IS_BACKTEST:
+            threading.Thread(target=back_tester, args=(current_time, coin)).start()
+        else:
+            threading.Thread(target=launcher, args=(mode, coin)).start()
         return True
 
