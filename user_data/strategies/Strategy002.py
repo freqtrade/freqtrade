@@ -15,6 +15,7 @@ from datetime import datetime
 import subprocess
 import threading
 
+from user_data.strategies.util import thread_executor, IS_BACKTEST, launcher, back_tester
 
 
 class Strategy002(IStrategy):
@@ -140,10 +141,6 @@ class Strategy002(IStrategy):
             ),
             'sell'] = 1
         return dataframe
-        
-    def call_launcher(self, mode, coin):
-    	print("strategy002: call_launcher: mode = " + mode + " coin = " +coin)
-        subprocess.call("python3 /root/workspace2/execution/launcher.py " + mode + " " + coin, shell=True)
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
@@ -168,7 +165,9 @@ class Strategy002(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
-        thread = threading.Thread(target=self.call_launcher, args=(mode,coin))
-        thread.start()
+        if IS_BACKTEST:
+            threading.Thread(target=back_tester, args=(current_time, coin)).start()
+        else:
+            threading.Thread(target=launcher, args=(mode, coin)).start()
         return True
 
