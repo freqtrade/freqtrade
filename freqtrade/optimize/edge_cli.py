@@ -34,7 +34,7 @@ class EdgeCli:
         self.config['stake_amount'] = constants.UNLIMITED_STAKE_AMOUNT
         self.exchange = ExchangeResolver.load_exchange(self.config['exchange']['name'], self.config)
         self.strategy = StrategyResolver.load_strategy(self.config)
-        self.strategy.dp = DataProvider(config, None)
+        self.strategy.dp = DataProvider(config, self.exchange)
 
         validate_config_consistency(self.config)
 
