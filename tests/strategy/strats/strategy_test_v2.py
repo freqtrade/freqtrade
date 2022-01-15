@@ -6,7 +6,6 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.exceptions import DependencyException
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 
@@ -166,9 +165,7 @@ class StrategyTestV2(IStrategy):
                               current_profit: float, min_stake: float, max_stake: float, **kwargs):
 
         if current_profit < -0.0075:
-            try:
-                return self.wallets.get_trade_stake_amount(trade.pair, None)
-            except DependencyException:
-                pass
+            orders = trade.select_filled_orders('buy')
+            return round(orders[0].cost, 0)
 
         return None
