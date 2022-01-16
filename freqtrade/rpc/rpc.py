@@ -238,19 +238,25 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
+                
+                # count the number of filled orders for the trade so far
+                filled_buys = trade.select_filled_orders('buy')
+                count_of_buys = len(filled_buys)
+                
                 trades_list.append([
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
                                + ('**' if (trade.close_rate_requested is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
-                    profit_str
+                    profit_str, # added a comma
+                    str(count_of_buys) if count_of_buys > 1 else '-' # added the count of filled orders. It can be cluttered to see a bunch of 1's so I tried the hyphen for first orders. This won't be a useful column for Strategies that do not use DCA at all, not sure how we can make this go away for those.
                 ])
             profitcol = "Profit"
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
-            columns = ['ID', 'Pair', 'Since', profitcol]
+            columns = ['ID', 'Pair', 'Since', profitcol, 'Buys'] # added the 'Buys' column to count filled orders.  'Qty' seems ambiguous and might be confused with 'Amount'. But it's not a perfect name.
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
