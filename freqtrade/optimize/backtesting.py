@@ -9,6 +9,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+from numpy import nan
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange, validate_config_consistency
@@ -289,10 +290,12 @@ class Backtesting:
             # To avoid using data from future, we use buy/sell signals shifted
             # from the previous candle
             for col in headers[5:]:
+                tag_col = col in ('enter_tag', 'exit_tag')
                 if col in df_analyzed.columns:
-                    df_analyzed.loc[:, col] = df_analyzed.loc[:, col].shift(1)
+                    df_analyzed.loc[:, col] = df_analyzed.loc[:, col].replace(
+                        [nan], [0 if not tag_col else None]).shift(1)
                 else:
-                    df_analyzed.loc[:, col] = 0 if col not in ('enter_tag', 'exit_tag') else None
+                    df_analyzed.loc[:, col] = 0 if not tag_col else None
 
             # Update dataprovider cache
             self.dataprovider._set_cached_df(pair, self.timeframe, df_analyzed, CandleType.SPOT)

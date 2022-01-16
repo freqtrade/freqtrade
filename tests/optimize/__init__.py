@@ -57,10 +57,6 @@ def _build_backtest_dataframe(data):
     # Ensure floats are in place
     for column in ['open', 'high', 'low', 'close', 'volume']:
         frame[column] = frame[column].astype('float64')
-    if 'enter_tag' not in columns:
-        frame['enter_tag'] = None
-    if 'exit_tag' not in columns:
-        frame['exit_tag'] = None
 
     # Ensure all candles make kindof sense
     assert all(frame['low'] <= frame['close'])
