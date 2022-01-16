@@ -380,6 +380,10 @@ class Backtesting:
 
         return trade
 
+    def _get_order_filled(self, rate: float, row: Tuple) -> bool:
+        """ Rate is within candle, therefore filled"""
+        return row[LOW_IDX] < rate < row[HIGH_IDX]
+
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
 
@@ -405,6 +409,7 @@ class Backtesting:
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
+            order_closed = True
             if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
@@ -412,8 +417,7 @@ class Backtesting:
                     pair=trade.pair, trade=trade,
                     current_time=sell_row[DATE_IDX],
                     proposed_rate=closerate, current_profit=current_profit)
-            # Use the maximum between close_rate and low as we cannot sell outside of a candle.
-            closerate = min(max(closerate, sell_row[LOW_IDX]), sell_row[HIGH_IDX])
+                order_closed = self._get_order_filled(closerate, sell_row)
 
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
@@ -437,6 +441,21 @@ class Backtesting:
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
             trade.close(closerate, show_msg=False)
+            order = Order(
+                ft_is_open=order_closed,
+                ft_pair=trade.pair,
+                symbol=trade.pair,
+                ft_order_side="buy",
+                side="buy",
+                order_type="market",
+                status="closed",
+                price=closerate,
+                average=closerate,
+                amount=trade.amount,
+                filled=trade.amount,
+                cost=trade.amount * closerate
+            )
+            trade.orders.append(order)
             return trade
 
         return None
@@ -479,9 +498,6 @@ class Backtesting:
                                              default_retval=row[OPEN_IDX])(
             pair=pair, current_time=current_time,
             proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
-
-        # Move rate to within the candle's low/high rate
-        propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
@@ -534,9 +550,10 @@ class Backtesting:
                     orders=[]
                 )
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
+            order_filled = self._get_order_filled(propose_rate, row)
 
             order = Order(
-                ft_is_open=False,
+                ft_is_open=order_filled,
                 ft_pair=trade.pair,
                 symbol=trade.pair,
                 ft_order_side="buy",
@@ -552,6 +569,8 @@ class Backtesting:
                 filled=amount,
                 cost=stake_amount + trade.fee_open
             )
+            if not order_filled:
+                trade.open_order_id = 'buy'
             trade.orders.append(order)
             if pos_adjust:
                 trade.recalc_trade_from_orders()
@@ -646,6 +665,15 @@ class Backtesting:
                 row_index += 1
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
+
+                # Check order filling
+                for open_trade in list(open_trades[pair]):
+                    # TODO: should open orders be stored in a separate list?
+                    if open_trade.open_order_id:
+                        # FIXME: check order filling
+                        # * Get open order
+                        # * check if filled
+                        open_trade.open_order_id = None
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
