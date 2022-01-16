@@ -728,6 +728,8 @@ class LocalTrade():
 
         elif (trading_mode == TradingMode.FUTURES):
             funding_fees = self.funding_fees or 0.0
+            # Positive funding_fees -> Trade has gained from fees.
+            # Negative funding_fees -> Trade had to pay the fees.
             if self.is_short:
                 return float(self._calc_base_close(amount, rate, fee)) - funding_fees
             else:
