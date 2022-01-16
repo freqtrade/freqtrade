@@ -753,6 +753,7 @@ class Backtesting:
         }
 
         # Load previous result that will be updated incrementally.
+        # This can be circumvented in certain instances in combination with downloading more data
         if self.timerange.stopts == 0 or datetime.fromtimestamp(
            self.timerange.stopts, tz=timezone.utc) > datetime.now(tz=timezone.utc):
             self.config['no_backtest_cache'] = True

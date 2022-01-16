@@ -462,6 +462,10 @@ The output will show a table containing the realized absolute Profit (in stake c
 
 To save time, by default backtest will reuse a cached result when backtested strategy and config match that of previous backtest. To force a new backtest despite existing result for identical run specify `--no-cache` parameter.
 
+!!! Warning
+    Caching is automatically disabled for open-ended timeranges (`--timerange 20210101-`), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
+    In this instance, please use `--no-cache` once to get a fresh backtest.
+
 ### Further backtest-result analysis
 
 To further analyze your backtest results, you can [export the trades](#exporting-trades-to-file).
