@@ -670,10 +670,11 @@ class Backtesting:
                 for open_trade in list(open_trades[pair]):
                     # TODO: should open orders be stored in a separate list?
                     if open_trade.open_order_id:
-                        # FIXME: check order filling
-                        # * Get open order
-                        # * check if filled
-                        open_trade.open_order_id = None
+                        order = open_trade.select_order(is_open=True)
+                        # Check for timeout!!
+                        if self._get_order_filled(order.price):
+                            open_trade.open_order_id = None
+                            order.ft_is_open = False
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
@@ -698,6 +699,9 @@ class Backtesting:
                         LocalTrade.add_bt_trade(trade)
 
                 for trade in list(open_trades[pair]):
+                    # TODO: This could be avoided with a separate list
+                    if trade.open_order_id:
+                        continue
                     # also check the buying candle for sell conditions.
                     trade_entry = self._get_sell_trade_entry(trade, row)
                     # Sell occurred

@@ -635,14 +635,17 @@ class LocalTrade():
             if self.stop_loss_pct is not None and self.open_rate is not None:
                 self.adjust_stop_loss(self.open_rate, self.stop_loss_pct)
 
-    def select_order(self, order_side: str, is_open: Optional[bool]) -> Optional[Order]:
+    def select_order(
+            self, order_side: str = None, is_open: Optional[bool] = None) -> Optional[Order]:
         """
         Finds latest order for this orderside and status
         :param order_side: Side of the order (either 'buy' or 'sell')
         :param is_open: Only search for open orders?
         :return: latest Order object if it exists, else None
         """
-        orders = [o for o in self.orders if o.side == order_side]
+        orders = self.orders
+        if order_side:
+            orders = [o for o in self.orders if o.side == order_side]
         if is_open is not None:
             orders = [o for o in orders if o.ft_is_open == is_open]
         if len(orders) > 0:
