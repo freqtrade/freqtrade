@@ -177,5 +177,6 @@
     "strategy": "SampleStrategy",
     "strategy_path": "user_data/strategies/",
     "dataformat_ohlcv": "json",
-    "dataformat_trades": "jsongz"
+    "dataformat_trades": "jsongz",
+    "position_adjustment_enable": false
 }
