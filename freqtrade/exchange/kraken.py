@@ -161,8 +161,7 @@ class Kraken(Exchange):
 
     def calculate_funding_fees(
         self,
-        funding_rates: DataFrame,
-        mark_rates: DataFrame,
+        df: DataFrame,
         amount: float,
         open_date: datetime,
         close_date: Optional[datetime] = None,
@@ -174,8 +173,8 @@ class Kraken(Exchange):
         # ! functionality must be added that passes the parameter time_in_ratio to
         # ! _get_funding_fee when using Kraken
         calculates the sum of all funding fees that occurred for a pair during a futures trade
-        :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
-        :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param df: Dataframe containing combined funding and mark rates
+                   as `open_fund` and `open_mark`.
         :param amount: The quantity of the trade
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
@@ -186,7 +185,6 @@ class Kraken(Exchange):
                 f"time_in_ratio is required for {self.name}._get_funding_fee")
         fees: float = 0
 
-        df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
         if not df.empty:
             df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)

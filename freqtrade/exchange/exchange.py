@@ -1922,19 +1922,29 @@ class Exchange:
         )
         funding_rates = candle_histories[funding_comb]
         mark_rates = candle_histories[mark_comb]
+        funding_mark_rates = self.combine_funding_and_mark(
+            funding_rates=funding_rates, mark_rates=mark_rates)
 
         return self.calculate_funding_fees(
-            funding_rates=funding_rates,
-            mark_rates=mark_rates,
+            funding_mark_rates,
             amount=amount,
             open_date=open_date,
             close_date=close_date
         )
 
+    @staticmethod
+    def combine_funding_and_mark(funding_rates: DataFrame, mark_rates: DataFrame) -> DataFrame:
+        """
+        Combine funding-rates and mark-rates dataframes
+        :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
+        :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        """
+
+        return funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
+
     def calculate_funding_fees(
         self,
-        funding_rates: DataFrame,
-        mark_rates: DataFrame,
+        df: DataFrame,
         amount: float,
         open_date: datetime,
         close_date: Optional[datetime] = None,
@@ -1942,8 +1952,8 @@ class Exchange:
     ) -> float:
         """
         calculates the sum of all funding fees that occurred for a pair during a futures trade
-        :param funding_rates: Dataframe containing Funding rates (Type FUNDING_RATE)
-        :param mark_rates: Dataframe containing Mark rates (Type mark_ohlcv_price)
+        :param df: Dataframe containing combined funding and mark rates
+                   as `open_fund` and `open_mark`.
         :param amount: The quantity of the trade
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
@@ -1951,7 +1961,6 @@ class Exchange:
         """
         fees: float = 0
 
-        df = funding_rates.merge(mark_rates, on='date', how="inner", suffixes=["_fund", "_mark"])
         if not df.empty:
             df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df['open_fund'] * df['open_mark'] * amount)
