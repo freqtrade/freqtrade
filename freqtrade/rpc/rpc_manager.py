@@ -92,9 +92,9 @@ class RPCManager:
                       f'*Stake per trade:* `{stake_amount} {stake_currency}`\n'
                       f'*Minimum ROI:* `{minimal_roi}`\n'
                       f'*{"Trailing " if trailing_stop else ""}Stoploss:* `{stoploss}`\n'
+                      f'*Position adjustment:* `{pos_adjust_enabled}`\n'
                       f'*Timeframe:* `{timeframe}`\n'
-                      f'*Strategy:* `{strategy_name}`\n'
-                      f'*Position adjustment:* `{pos_adjust_enabled}`'
+                      f'*Strategy:* `{strategy_name}`'
         })
         self.send_msg({
             'type': RPCMessageType.STARTUP,
