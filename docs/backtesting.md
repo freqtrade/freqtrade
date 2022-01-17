@@ -76,6 +76,7 @@ optional arguments:
                         _today.json`
   --breakdown {day,week,month} [{day,week,month} ...]
                         Show backtesting breakdown per [day, week, month].
+  --no-cache            Do not reuse cached backtest results.
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -456,6 +457,14 @@ freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
 ```
 
 The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day.
+
+### Backtest result caching
+
+To save time, by default backtest will reuse a cached result when backtested strategy and config match that of previous backtest. To force a new backtest despite existing result for identical run specify `--no-cache` parameter.
+
+!!! Warning
+    Caching is automatically disabled for open-ended timeranges (`--timerange 20210101-`), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
+    In this instance, please use `--no-cache` once to get a fresh backtest.
 
 ### Further backtest-result analysis
 

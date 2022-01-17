@@ -592,6 +592,7 @@ class RPC:
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
+        trade_count = len(Trade.get_trades_proxy())
         starting_capital_ratio = 0.0
         starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
@@ -608,6 +609,7 @@ class RPC:
             'starting_capital_fiat': starting_cap_fiat,
             'starting_capital_fiat_ratio': starting_cap_fiat_ratio,
             'starting_capital_fiat_pct': round(starting_cap_fiat_ratio * 100, 2),
+            'trade_count': trade_count,
             'note': 'Simulated balances' if self._freqtrade.config['dry_run'] else ''
         }
 

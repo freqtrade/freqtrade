@@ -654,6 +654,9 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         buy_tag = latest.get(SignalTagType.BUY_TAG.value, None)
         exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
+        # Tags can be None, which does not resolve to False.
+        buy_tag = buy_tag if isinstance(buy_tag, str) else None
+        exit_tag = exit_tag if isinstance(exit_tag, str) else None
 
         logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
                      latest['date'], pair, str(buy), str(sell))
