@@ -476,8 +476,6 @@ class FreqtradeBot(LoggingMixin):
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
 
-        # TODO: Is there a better way to force lazy-load?
-        len(trade.orders)
         min_stake_amount = self.exchange.get_min_pair_stake_amount(trade.pair,
                                                                    current_rate,
                                                                    self.strategy.stoploss)
