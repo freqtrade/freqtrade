@@ -159,7 +159,7 @@ class Kraken(Exchange):
             params['leverage'] = leverage
         return params
 
-    def _calculate_funding_fees(
+    def calculate_funding_fees(
         self,
         funding_rates: DataFrame,
         mark_rates: DataFrame,

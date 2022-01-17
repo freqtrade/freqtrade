@@ -1923,7 +1923,7 @@ class Exchange:
         funding_rates = candle_histories[funding_comb]
         mark_rates = candle_histories[mark_comb]
 
-        return self._calculate_funding_fees(
+        return self.calculate_funding_fees(
             funding_rates=funding_rates,
             mark_rates=mark_rates,
             amount=amount,
@@ -1931,7 +1931,7 @@ class Exchange:
             close_date=close_date
         )
 
-    def _calculate_funding_fees(
+    def calculate_funding_fees(
         self,
         funding_rates: DataFrame,
         mark_rates: DataFrame,
