@@ -154,7 +154,7 @@ class Backtesting:
         else:
             self.timeframe_detail_min = 0
         self.detail_data: Dict[str, DataFrame] = {}
-        self.futures_data: Dict[CandleType, Dict[str, DataFrame]] = {}
+        self.futures_data: Dict[str, DataFrame] = {}
 
     def init_backtest(self):
 
@@ -236,7 +236,7 @@ class Backtesting:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
             # Load additional futures data.
-            self.futures_data[CandleType.FUNDING_RATE] = history.load_data(
+            funding_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
                 timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
@@ -248,7 +248,7 @@ class Backtesting:
             )
 
             # For simplicity, assign to CandleType.Mark (might contian index candles!)
-            self.futures_data[CandleType.MARK] = history.load_data(
+            mark_rates_dict = history.load_data(
                 datadir=self.config['datadir'],
                 pairs=self.pairlists.whitelist,
                 timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
@@ -258,6 +258,10 @@ class Backtesting:
                 data_format=self.config.get('dataformat_ohlcv', 'json'),
                 candle_type=CandleType.from_string(self.exchange._ft_has["mark_ohlcv_price"])
             )
+            # Combine data to avoid combining the data per trade.
+            for pair in self.pairlists.whitelist:
+                self.futures_data[pair] = funding_rates_dict[pair].merge(
+                    mark_rates_dict[pair], on='date', how="inner", suffixes=["_fund", "_mark"])
 
         else:
             self.futures_data = {}
@@ -489,8 +493,7 @@ class Backtesting:
 
         if self.trading_mode == TradingMode.FUTURES:
             trade.funding_fees = self.exchange.calculate_funding_fees(
-                funding_rates=self.futures_data[CandleType.FUNDING_RATE][trade.pair],
-                mark_rates=self.futures_data[CandleType.MARK][trade.pair],
+                self.futures_data[trade.pair],
                 amount=trade.amount,
                 open_date=trade.open_date_utc,
                 close_date=sell_candle_time,
