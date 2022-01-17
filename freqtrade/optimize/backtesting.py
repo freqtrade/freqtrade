@@ -495,6 +495,7 @@ class Backtesting:
             trade.funding_fees = self.exchange.calculate_funding_fees(
                 self.futures_data[trade.pair],
                 amount=trade.amount,
+                is_short=trade.is_short,
                 open_date=trade.open_date_utc,
                 close_date=sell_candle_time,
             )

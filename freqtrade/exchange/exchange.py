@@ -1885,6 +1885,7 @@ class Exchange:
         self,
         pair: str,
         amount: float,
+        is_short: bool,
         open_date: datetime,
         close_date: Optional[datetime] = None
     ) -> float:
@@ -1894,6 +1895,7 @@ class Exchange:
         Only used during dry-run or if the exchange does not provide a funding_rates endpoint.
         :param pair: The quote/base pair of the trade
         :param amount: The quantity of the trade
+        :param is_short: trade direction
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
         """
@@ -1928,6 +1930,7 @@ class Exchange:
         return self.calculate_funding_fees(
             funding_mark_rates,
             amount=amount,
+            is_short=is_short,
             open_date=open_date,
             close_date=close_date
         )
@@ -1946,6 +1949,7 @@ class Exchange:
         self,
         df: DataFrame,
         amount: float,
+        is_short: bool,
         open_date: datetime,
         close_date: Optional[datetime] = None,
         time_in_ratio: Optional[float] = None
@@ -1955,6 +1959,7 @@ class Exchange:
         :param df: Dataframe containing combined funding and mark rates
                    as `open_fund` and `open_mark`.
         :param amount: The quantity of the trade
+        :param is_short: trade direction
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
         :param time_in_ratio: Not used by most exchange classes
@@ -1965,19 +1970,23 @@ class Exchange:
             df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df['open_fund'] * df['open_mark'] * amount)
 
-        return fees
+        # Negate fees for longs as funding_fees expects it this way based on live endpoints.
+        return fees if is_short else -fees
 
-    def get_funding_fees(self, pair: str, amount: float, open_date: datetime) -> float:
+    def get_funding_fees(
+            self, pair: str, amount: float, is_short: bool, open_date: datetime) -> float:
         """
         Fetch funding fees, either from the exchange (live) or calculates them
         based on funding rate/mark price history
         :param pair: The quote/base pair of the trade
+        :param is_short: trade direction
         :param amount: Trade amount
         :param open_date: Open date of the trade
         """
         if self.trading_mode == TradingMode.FUTURES:
             if self._config['dry_run']:
-                funding_fees = self._fetch_and_calculate_funding_fees(pair, amount, open_date)
+                funding_fees = self._fetch_and_calculate_funding_fees(
+                    pair, amount, is_short, open_date)
             else:
                 funding_fees = self._get_funding_fees_from_exchange(pair, open_date)
             return funding_fees

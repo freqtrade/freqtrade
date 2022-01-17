@@ -273,9 +273,10 @@ class FreqtradeBot(LoggingMixin):
             trades = Trade.get_open_trades()
             for trade in trades:
                 funding_fees = self.exchange.get_funding_fees(
-                    trade.pair,
-                    trade.amount,
-                    trade.open_date
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.open_date
                 )
                 trade.funding_fees = funding_fees
         else:
@@ -741,7 +742,8 @@ class FreqtradeBot(LoggingMixin):
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker='maker')
         open_date = datetime.now(timezone.utc)
-        funding_fees = self.exchange.get_funding_fees(pair, amount, open_date)
+        funding_fees = self.exchange.get_funding_fees(
+            pair=pair, amount=amount, is_short=is_short, open_date=open_date)
         # This is a new trade
         if trade is None:
             trade = Trade(
@@ -1379,9 +1381,10 @@ class FreqtradeBot(LoggingMixin):
         :return: True if it succeeds (supported) False (not supported)
         """
         trade.funding_fees = self.exchange.get_funding_fees(
-            trade.pair,
-            trade.amount,
-            trade.open_date
+            pair=trade.pair,
+            amount=trade.amount,
+            is_short=trade.is_short,
+            open_date=trade.open_date,
         )
         exit_type = 'sell'
         if sell_reason.sell_type in (SellType.STOP_LOSS, SellType.TRAILING_STOP_LOSS):

@@ -163,6 +163,7 @@ class Kraken(Exchange):
         self,
         df: DataFrame,
         amount: float,
+        is_short: bool,
         open_date: datetime,
         close_date: Optional[datetime] = None,
         time_in_ratio: Optional[float] = None
@@ -176,6 +177,7 @@ class Kraken(Exchange):
         :param df: Dataframe containing combined funding and mark rates
                    as `open_fund` and `open_mark`.
         :param amount: The quantity of the trade
+        :param is_short: trade direction
         :param open_date: The date and time that the trade started
         :param close_date: The date and time that the trade ended
         :param time_in_ratio: Not used by most exchange classes
