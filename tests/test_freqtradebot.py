@@ -4901,17 +4901,17 @@ def test_update_funding_fees(
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     # initial funding fees,
-    freqtrade.execute_entry('ETH/BTC', 123)
-    freqtrade.execute_entry('LTC/BTC', 2.0)
-    freqtrade.execute_entry('XRP/BTC', 123)
-
+    freqtrade.execute_entry('ETH/BTC', 123, is_short=is_short)
+    freqtrade.execute_entry('LTC/BTC', 2.0, is_short=is_short)
+    freqtrade.execute_entry('XRP/BTC', 123, is_short=is_short)
+    multipl = 1 if is_short else -1
     trades = Trade.get_open_trades()
     assert len(trades) == 3
     for trade in trades:
         assert pytest.approx(trade.funding_fees) == (
             trade.amount *
             mark_prices[trade.pair].iloc[0]['open'] *
-            funding_rates[trade.pair].iloc[0]['open']
+            funding_rates[trade.pair].iloc[0]['open'] * multipl
         )
     mocker.patch('freqtrade.exchange.Exchange.create_order', return_value=open_exit_order)
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
@@ -4926,7 +4926,7 @@ def test_update_funding_fees(
             assert trade.funding_fees == pytest.approx(sum(
                 trade.amount *
                 mark_prices[trade.pair].iloc[0:2]['open'] *
-                funding_rates[trade.pair].iloc[0:2]['open']
+                funding_rates[trade.pair].iloc[0:2]['open'] * multipl
             ))
 
     else:
@@ -4936,7 +4936,9 @@ def test_update_funding_fees(
     for trade in trades:
         assert trade.funding_fees == pytest.approx(sum(
             trade.amount *
-            mark_prices[trade.pair].iloc[0:2]['open'] * funding_rates[trade.pair].iloc[0:2]['open']
+            mark_prices[trade.pair].iloc[0:2]['open'] *
+            funding_rates[trade.pair].iloc[0:2]['open'] *
+            multipl
         ))
 
 
