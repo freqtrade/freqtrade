@@ -104,6 +104,7 @@ def stoploss_from_open(
 
 def stoploss_from_absolute(stop_rate: float, current_rate: float) -> float:
     """
+    TODO-lev: Update this method with "is_short" formula
     Given current price and desired stop price, return a stop loss value that is relative to current
     price.
 

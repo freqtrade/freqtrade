@@ -145,8 +145,8 @@ def test_stoploss_from_open():
 
                         # there is no correct answer if the expected stop price is above
                         # the current price
-                        if (side == 'long' and expected_stop_price > current_price) \
-                                or (side == 'short' and expected_stop_price < current_price):
+                        if ((side == 'long' and expected_stop_price > current_price)
+                                or (side == 'short' and expected_stop_price < current_price)):
                             assert stoploss == 0
                         else:
                             assert isclose(stop_price, expected_stop_price, rel_tol=0.00001)
