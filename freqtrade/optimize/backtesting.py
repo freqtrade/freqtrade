@@ -9,7 +9,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pandas import DataFrame
+from pandas import DataFrame, notna
 
 from freqtrade.configuration import TimeRange, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
@@ -420,7 +420,7 @@ class Backtesting:
             # sell_row has the length for an exit tag column
             if(
                 len(sell_row) > EXIT_TAG_IDX
-                and sell_row[EXIT_TAG_IDX] is not None
+                and notna(sell_row[EXIT_TAG_IDX])
                 and len(sell_row[EXIT_TAG_IDX]) > 0
             ):
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
