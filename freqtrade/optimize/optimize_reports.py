@@ -527,7 +527,8 @@ def generate_backtest_stats(btdata: Dict[str, DataFrame],
         strat_stats = generate_strategy_stats(pairlist, strategy, content,
                                               min_date, max_date, market_change=market_change)
         metadata[strategy] = {
-            'run_id': content['run_id']
+            'run_id': content['run_id'],
+            'backtest_start_time': content['backtest_start_time'],
         }
         result['strategy'][strategy] = strat_stats
 

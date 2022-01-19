@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from arrow import Arrow
 
+from freqtrade import constants
 from freqtrade.commands.optimize_commands import setup_optimize_configuration, start_backtesting
 from freqtrade.configuration import TimeRange
 from freqtrade.data import history
@@ -1242,8 +1243,11 @@ def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
-def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testdatadir):
-
+@pytest.mark.parametrize('run_id', ['2', 'changed'])
+@pytest.mark.parametrize('start_delta', [{'days': 0}, {'days': 1}, {'weeks': 1}, {'weeks': 4}])
+@pytest.mark.parametrize('cache', constants.BACKTEST_CACHE_AGE)
+def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testdatadir, run_id,
+                                            start_delta, cache):
     default_conf.update({
         "use_sell_signal": True,
         "sell_profit_only": False,
@@ -1263,9 +1267,19 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
     mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
     mocker.patch('freqtrade.optimize.backtesting.show_backtest_results', MagicMock())
 
+    now = min_backtest_date = datetime.now(tz=timezone.utc)
+    start_time = now - timedelta(**start_delta) + timedelta(hours=1)
+    if cache == 'none':
+        min_backtest_date = now + timedelta(days=1)
+    elif cache == 'day':
+        min_backtest_date = now - timedelta(days=1)
+    elif cache == 'week':
+        min_backtest_date = now - timedelta(weeks=1)
+    elif cache == 'month':
+        min_backtest_date = now - timedelta(weeks=4)
     load_backtest_metadata = MagicMock(return_value={
-        'StrategyTestV2': {'run_id': '1'},
-        'TestStrategyLegacyV1': {'run_id': 'changed'}
+        'StrategyTestV2': {'run_id': '1', 'backtest_start_time': now.timestamp()},
+        'TestStrategyLegacyV1': {'run_id': run_id, 'backtest_start_time': start_time.timestamp()}
     })
     load_backtest_stats = MagicMock(side_effect=[
         {
@@ -1279,7 +1293,8 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
             'strategy_comparison': [{'key': 'TestStrategyLegacyV1'}]
         }
     ])
-    mocker.patch('pathlib.Path.glob', return_value=['not important'])
+    mocker.patch('pathlib.Path.glob', return_value=[
+        Path(datetime.strftime(datetime.now(), 'backtest-result-%Y-%m-%d_%H-%M-%S.json'))])
     mocker.patch.multiple('freqtrade.data.btanalysis',
                           load_backtest_metadata=load_backtest_metadata,
                           load_backtest_stats=load_backtest_stats)
@@ -1296,29 +1311,49 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
         '--timerange', '1510694220-1510700340',
         '--enable-position-stacking',
         '--disable-max-market-positions',
+        '--cache', cache,
         '--strategy-list',
         'StrategyTestV2',
         'TestStrategyLegacyV1',
     ]
     args = get_args(args)
     start_backtesting(args)
-    # 1 backtest, 1 loaded from cache
-    assert backtestmock.call_count == 1
 
     # check the logs, that will contain the backtest result
     exists = [
         'Parameter -i/--timeframe detected ... Using timeframe: 1m ...',
-        'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
         'Parameter --timerange detected: 1510694220-1510700340 ...',
         f'Using data directory: {testdatadir} ...',
         'Loading data from 2017-11-14 20:57:00 '
         'up to 2017-11-14 22:58:00 (0 days).',
-        'Backtesting with data from 2017-11-14 21:17:00 '
-        'up to 2017-11-14 22:58:00 (0 days).',
         'Parameter --enable-position-stacking detected ...',
-        'Reusing result of previous backtest for StrategyTestV2',
-        'Running backtesting for Strategy TestStrategyLegacyV1',
     ]
+
+    for line in exists:
+        assert log_has(line, caplog)
+
+    if cache == 'none':
+        assert backtestmock.call_count == 2
+        exists = [
+            'Running backtesting for Strategy StrategyTestV2',
+            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+        ]
+    elif run_id == '2' and min_backtest_date < start_time:
+        assert backtestmock.call_count == 0
+        exists = [
+            'Reusing result of previous backtest for StrategyTestV2',
+            'Reusing result of previous backtest for TestStrategyLegacyV1',
+        ]
+    else:
+        exists = [
+            'Reusing result of previous backtest for StrategyTestV2',
+            'Running backtesting for Strategy TestStrategyLegacyV1',
+            'Ignoring max_open_trades (--disable-max-market-positions was used) ...',
+            'Backtesting with data from 2017-11-14 21:17:00 up to 2017-11-14 22:58:00 (0 days).',
+        ]
+        assert backtestmock.call_count == 1
 
     for line in exists:
         assert log_has(line, caplog)
