@@ -8,3 +8,4 @@ scikit-optimize==0.9.0
 filelock==3.4.2
 joblib==1.1.0
 progressbar2==4.0.0
+matplotlib
