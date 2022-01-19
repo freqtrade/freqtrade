@@ -191,6 +191,9 @@ def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, s
                 try:
                     backtest_date = strategy_metadata['backtest_start_time']
                 except KeyError:
+                    # TODO: this can be removed starting from feb 2022
+                    # The metadata-file without start_time was only available in develop
+                    # and was never included in an official release.
                     # Older metadata format without backtest time, too old to consider.
                     return results
                 backtest_date = datetime.fromtimestamp(backtest_date, tz=timezone.utc)
