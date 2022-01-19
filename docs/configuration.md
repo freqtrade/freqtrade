@@ -173,7 +173,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
-| `max_buy_position_adjustment` | Maximum additional buy(s) for each open trades on top of the first buy. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `1`.*<br> **Datatype:** Positive Integer
+| `max_buy_position_adjustment` | Maximum additional buy(s) for each open trades on top of the first buy. Set it to `-1` for unlimited additional buys. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
 
 ### Parameters in the strategy
 
