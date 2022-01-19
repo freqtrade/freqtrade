@@ -100,6 +100,3 @@ target/
 !config_examples/config_ftx.example.json
 !config_examples/config_full.example.json
 !config_examples/config_kraken.example.json
-docker-compose.yml
-.DS_Store
-user_data/data/.gitkeep
