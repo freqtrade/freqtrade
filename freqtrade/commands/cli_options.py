@@ -207,8 +207,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "backtest_cache": Arg(
         '--cache',
-        help='Load a cached backtest result no older than specified age.',
-        metavar='AGE',
+        help='Load a cached backtest result no older than specified age (default: %(default)s).',
         default=constants.BACKTEST_CACHE_DEFAULT,
         choices=constants.BACKTEST_CACHE_AGE,
     ),
