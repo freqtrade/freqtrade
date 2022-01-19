@@ -539,6 +539,7 @@ class Backtesting:
                 trade = LocalTrade(
                     pair=pair,
                     open_rate=propose_rate,
+                    open_rate_requested=propose_rate,
                     open_date=current_time,
                     stake_amount=stake_amount,
                     amount=amount,
@@ -553,7 +554,8 @@ class Backtesting:
             order_filled = self._get_order_filled(propose_rate, row)
 
             order = Order(
-                ft_is_open=order_filled,
+                order_date=current_time,
+                ft_is_open=not order_filled,
                 ft_pair=trade.pair,
                 symbol=trade.pair,
                 ft_order_side="buy",
@@ -566,7 +568,8 @@ class Backtesting:
                 price=propose_rate,
                 average=propose_rate,
                 amount=amount,
-                filled=amount,
+                filled=amount if order_filled else 0,
+                remaining=0 if order_filled else amount,
                 cost=stake_amount + trade.fee_open
             )
             if not order_filled:
@@ -671,10 +674,28 @@ class Backtesting:
                     # TODO: should open orders be stored in a separate list?
                     if open_trade.open_order_id:
                         order = open_trade.select_order(is_open=True)
-                        # Check for timeout!!
-                        if self._get_order_filled(order.price):
+                        if order is None:
+                            continue
+                        if self._get_order_filled(order.price, row):
                             open_trade.open_order_id = None
                             order.ft_is_open = False
+                            order.filled = order.price
+                            order.remaining = 0
+                        timeout = self.config['unfilledtimeout'].get(order.side, 0)
+                        if 0 < timeout <= (tmp - order.order_date).seconds / 60:
+                            open_trade.open_order_id = None
+                            order.ft_is_open = False
+                            order.filled = 0
+                            order.remaining = 0
+                            if order.side == 'buy':
+                                # Close trade due to buy timeout expiration.
+                                open_trade_count -= 1
+                                open_trades[pair].remove(open_trade)
+                                LocalTrade.trades_open.remove(open_trade)
+                                # trades.append(trade_entry)    # TODO: Needed or not?
+                            elif order.side == 'sell':
+                                # Close sell order and retry selling on next signal.
+                                del open_trade.orders[open_trade.orders.index(order)]
 
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
