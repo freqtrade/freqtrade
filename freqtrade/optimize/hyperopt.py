@@ -367,7 +367,7 @@ class Hyperopt:
         }
 
     def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
-        estimator = self.custom_hyperopt.generate_estimator()
+        estimator = self.custom_hyperopt.generate_estimator(dimensions)
 
         acq_optimizer = "sampling"
         if isinstance(estimator, str):
