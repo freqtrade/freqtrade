@@ -32,6 +32,11 @@ from freqtrade.optimize.hyperopt_loss_interface import IHyperOptLoss  # noqa: F4
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
 from freqtrade.optimize.optimize_reports import generate_strategy_stats
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
+from skopt.plots import plot_convergence, plot_regret, plot_evaluations, plot_objective 
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+from sklearn.base import clone
 
 
 # Suppress scikit-learn FutureWarnings from skopt
@@ -476,7 +481,12 @@ class Hyperopt:
 
                         asked = self.opt.ask(n_points=current_jobs)
                         f_val = self.run_optimizer_parallel(parallel, asked, i)
-                        self.opt.tell(asked, [v['loss'] for v in f_val])
+                        res = self.opt.tell(asked, [v['loss'] for v in f_val])
+
+                        self.plot_optimizer(res, path='user_data/scripts', convergence=False, regret=False, mse=True, objective=True, jobs=jobs)
+
+                        if res.models and hasattr(res.models[-1], "kernel_"):
+                            print(f'kernel: {res.models[-1].kernel_}') 
 
                         # Calculate progressbar outputs
                         for j, val in enumerate(f_val):
@@ -521,3 +531,56 @@ class Hyperopt:
             # This is printed when Ctrl+C is pressed quickly, before first epochs have
             # a chance to be evaluated.
             print("No epochs evaluated yet, no best result.")
+
+    def plot_mse(self, res, ax, jobs):      
+        if len(res.x_iters) < 10:
+            return                  
+
+        if not hasattr(self, 'mse_list'):
+            self.mse_list = []
+
+        model = clone(res.models[-1])
+        i_subset = random.sample(range(len(res.x_iters)), 100) if len(res.x_iters) > 100 else range(len(res.x_iters))
+
+        i_train = random.sample(i_subset, round(.8*len(i_subset))) # get 80% random indices
+        x_train = [x for i, x in enumerate(res.x_iters) if i in i_train]
+        y_train = [y for i, y in enumerate(res.func_vals) if i in i_train]
+
+        i_test = [i for i in i_subset if i not in i_train] # get 20% random indices
+        x_test = [x for i, x in enumerate(res.x_iters) if i in i_test]
+        y_test = [y for i, y in enumerate(res.func_vals) if i in i_test]
+        model.fit(np.array(x_train), np.array(y_train))
+        y_pred, sigma = model.predict(np.array(x_test), return_std=True)
+        mse = np.mean((y_test - y_pred) ** 2)
+        self.mse_list.append(mse)
+            
+        ax.plot(range(INITIAL_POINTS, INITIAL_POINTS + jobs * len(self.mse_list), jobs), self.mse_list, label='MSE', marker=".", markersize=12, lw=2)
+
+    def plot_optimizer(self, res, path, jobs, convergence=True, regret=True, evaluations=True, objective=True, mse=True):
+        path = Path(path)
+        if convergence:
+            ax = plot_convergence(res)
+            ax.flatten()[0].figure.savefig(path / 'convergence.png')
+
+        if regret:
+            ax = plot_regret(res)
+            ax.flatten()[0].figure.savefig(path / 'regret.png')
+
+        if evaluations:
+#             print('evaluations')
+            ax = plot_evaluations(res)
+            ax.flatten()[0].figure.savefig(path / 'evaluations.png')
+
+        if objective and res.models:
+#             print('objective')
+            ax = plot_objective(res, sample_source='result', n_samples=50, n_points=10)
+            ax.flatten()[0].figure.savefig(path / 'objective.png')
+
+        if mse and res.models:
+#             print('mse')
+            fig, ax = plt.subplots()
+            ax.set_ylabel('MSE')
+            ax.set_xlabel('Epoch')
+            ax.set_title('MSE')        
+            ax = self.plot_mse(res, ax, jobs)
+            fig.savefig(path / 'mse.png')
