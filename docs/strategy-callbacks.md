@@ -611,7 +611,7 @@ class DigDeeperStrategy(IStrategy):
     # ... populate_* methods
     
     # Example specific variables
-    max_dca_orders = 3
+    max_buy_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
     
@@ -663,7 +663,7 @@ class DigDeeperStrategy(IStrategy):
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
         # That is why max_dca_multiplier is 5.5
         # Hope you have a deep wallet!
-        if 0 < count_of_buys <= self.max_dca_orders:
+        if 0 < count_of_buys <= self.max_buy_position_adjustment:
             try:
                 # This returns first order stake size
                 stake_amount = filled_buys[0].cost
