@@ -173,7 +173,7 @@ class Binance(Exchange):
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+    def get_max_leverage(self, pair: str, nominal_value: float) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
@@ -181,9 +181,6 @@ class Binance(Exchange):
         """
         if pair not in self._leverage_brackets:
             return 1.0
-        if (pair is None or nominal_value is None):
-            raise OperationalException(
-                "binance.get_max_leverage requires parameters pair and nominal_value")
         pair_brackets = self._leverage_brackets[pair]
         for [notional_floor, mm_ratio, _] in reversed(pair_brackets):
             if nominal_value >= notional_floor:

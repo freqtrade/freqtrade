@@ -1807,7 +1807,7 @@ class Exchange:
         """
         return
 
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+    def get_max_leverage(self, pair: str, nominal_value: float) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
