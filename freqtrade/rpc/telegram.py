@@ -1347,6 +1347,14 @@ class Telegram(RPCHandler):
         else:
             sl_info = f"*Stoploss:* `{val['stoploss']}`\n"
 
+        if val['position_adjustment_enable']:
+            pa_info = (
+                f"*Position adjustment:* On\n"
+                f"*Max buy position adjustment:* `{val['max_buy_position_adjustment']}`\n"
+            )
+        else:
+            pa_info = f"*Position adjustment:* Off\n"
+
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
             f"*Exchange:* `{val['exchange']}`\n"
@@ -1356,6 +1364,7 @@ class Telegram(RPCHandler):
             f"*Ask strategy:* ```\n{json.dumps(val['ask_strategy'])}```\n"
             f"*Bid strategy:* ```\n{json.dumps(val['bid_strategy'])}```\n"
             f"{sl_info}"
+            f"{pa_info}"
             f"*Timeframe:* `{val['timeframe']}`\n"
             f"*Strategy:* `{val['strategy']}`\n"
             f"*Current state:* `{val['state']}`"

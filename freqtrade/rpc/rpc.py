@@ -136,7 +136,10 @@ class RPC:
             'ask_strategy': config.get('ask_strategy', {}),
             'bid_strategy': config.get('bid_strategy', {}),
             'state': str(botstate),
-            'runmode': config['runmode'].value
+            'runmode': config['runmode'].value,
+            'position_adjustment_enable': config.get('position_adjustment_enable', False),
+            'max_buy_position_adjustment': (config['max_buy_position_adjustment']
+                                            if config['max_buy_position_adjustment'] != float('inf') else -1)
         }
         return val
 
