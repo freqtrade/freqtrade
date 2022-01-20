@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pandas import DataFrame
 
+from freqtrade import constants
 from freqtrade.configuration import TimeRange, validate_config_consistency
 from freqtrade.constants import DATETIME_PRINT_FORMAT
 from freqtrade.data import history
@@ -64,6 +65,7 @@ class Backtesting:
         self.results: Dict[str, Any] = {}
 
         config['dry_run'] = True
+        self.run_ids: Dict[str, str] = {}
         self.strategylist: List[IStrategy] = []
         self.all_results: Dict[str, Dict] = {}
 
@@ -728,13 +730,40 @@ class Backtesting:
         )
         backtest_end_time = datetime.now(timezone.utc)
         results.update({
-            'run_id': get_strategy_run_id(strat),
+            'run_id': self.run_ids.get(strat.get_strategy_name(), ''),
             'backtest_start_time': int(backtest_start_time.timestamp()),
             'backtest_end_time': int(backtest_end_time.timestamp()),
         })
         self.all_results[self.strategy.get_strategy_name()] = results
 
         return min_date, max_date
+
+    def _get_min_cached_backtest_date(self):
+        min_backtest_date = None
+        backtest_cache_age = self.config.get('backtest_cache', constants.BACKTEST_CACHE_DEFAULT)
+        if self.timerange.stopts == 0 or datetime.fromtimestamp(
+           self.timerange.stopts, tz=timezone.utc) > datetime.now(tz=timezone.utc):
+            logger.warning('Backtest result caching disabled due to use of open-ended timerange.')
+        elif backtest_cache_age == 'day':
+            min_backtest_date = datetime.now(tz=timezone.utc) - timedelta(days=1)
+        elif backtest_cache_age == 'week':
+            min_backtest_date = datetime.now(tz=timezone.utc) - timedelta(weeks=1)
+        elif backtest_cache_age == 'month':
+            min_backtest_date = datetime.now(tz=timezone.utc) - timedelta(weeks=4)
+        return min_backtest_date
+
+    def load_prior_backtest(self):
+        self.run_ids = {
+            strategy.get_strategy_name(): get_strategy_run_id(strategy)
+            for strategy in self.strategylist
+        }
+
+        # Load previous result that will be updated incrementally.
+        # This can be circumvented in certain instances in combination with downloading more data
+        min_backtest_date = self._get_min_cached_backtest_date()
+        if min_backtest_date is not None:
+            self.results = find_existing_backtest_stats(
+                self.config['user_data_dir'] / 'backtest_results', self.run_ids, min_backtest_date)
 
     def start(self) -> None:
         """
@@ -747,21 +776,7 @@ class Backtesting:
         self.load_bt_data_detail()
         logger.info("Dataload complete. Calculating indicators")
 
-        run_ids = {
-            strategy.get_strategy_name(): get_strategy_run_id(strategy)
-            for strategy in self.strategylist
-        }
-
-        # Load previous result that will be updated incrementally.
-        # This can be circumvented in certain instances in combination with downloading more data
-        if self.timerange.stopts == 0 or datetime.fromtimestamp(
-           self.timerange.stopts, tz=timezone.utc) > datetime.now(tz=timezone.utc):
-            self.config['no_backtest_cache'] = True
-            logger.warning('Backtest result caching disabled due to use of open-ended timerange.')
-
-        if not self.config.get('no_backtest_cache', False):
-            self.results = find_existing_backtest_stats(
-                self.config['user_data_dir'] / 'backtest_results', run_ids)
+        self.load_prior_backtest()
 
         for strat in self.strategylist:
             if self.results and strat.get_strategy_name() in self.results['strategy']:

@@ -3,6 +3,7 @@ Helpers when analyzing backtest data
 """
 import logging
 from copy import copy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -143,12 +144,24 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     return data
 
 
-def find_existing_backtest_stats(dirname: Union[Path, str],
-                                 run_ids: Dict[str, str]) -> Dict[str, Any]:
+def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    bt_data = load_backtest_stats(filename)
+    for k in ('metadata', 'strategy'):
+        results[k][strategy_name] = bt_data[k][strategy_name]
+    comparison = bt_data['strategy_comparison']
+    for i in range(len(comparison)):
+        if comparison[i]['key'] == strategy_name:
+            results['strategy_comparison'].append(comparison[i])
+            break
+
+
+def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
+                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
     """
     Find existing backtest stats that match specified run IDs and load them.
     :param dirname: pathlib.Path object, or string pointing to the file.
     :param run_ids: {strategy_name: id_string} dictionary.
+    :param min_backtest_date: do not load a backtest older than specified date.
     :return: results dict.
     """
     # Copy so we can modify this dict without affecting parent scope.
@@ -169,18 +182,30 @@ def find_existing_backtest_stats(dirname: Union[Path, str],
             break
 
         for strategy_name, run_id in list(run_ids.items()):
-            if metadata.get(strategy_name, {}).get('run_id') == run_id:
-                # TODO: load_backtest_stats() may load an old version of backtest which is
-                #  incompatible with current version.
+            strategy_metadata = metadata.get(strategy_name, None)
+            if not strategy_metadata:
+                # This strategy is not present in analyzed backtest.
+                continue
+
+            if min_backtest_date is not None:
+                try:
+                    backtest_date = strategy_metadata['backtest_start_time']
+                except KeyError:
+                    # TODO: this can be removed starting from feb 2022
+                    # The metadata-file without start_time was only available in develop
+                    # and was never included in an official release.
+                    # Older metadata format without backtest time, too old to consider.
+                    return results
+                backtest_date = datetime.fromtimestamp(backtest_date, tz=timezone.utc)
+                if backtest_date < min_backtest_date:
+                    # Do not use a cached result for this strategy as first result is too old.
+                    del run_ids[strategy_name]
+                    continue
+
+            if strategy_metadata['run_id'] == run_id:
                 del run_ids[strategy_name]
-                bt_data = load_backtest_stats(filename)
-                for k in ('metadata', 'strategy'):
-                    results[k][strategy_name] = bt_data[k][strategy_name]
-                comparison = bt_data['strategy_comparison']
-                for i in range(len(comparison)):
-                    if comparison[i]['key'] == strategy_name:
-                        results['strategy_comparison'].append(comparison[i])
-                        break
+                _load_and_merge_backtest_result(strategy_name, filename, results)
+
         if len(run_ids) == 0:
             break
     return results

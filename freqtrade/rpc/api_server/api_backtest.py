@@ -39,7 +39,8 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
     # Start backtesting
     # Initialize backtesting object
     def run_backtest():
-        from freqtrade.optimize.optimize_reports import generate_backtest_stats
+        from freqtrade.optimize.optimize_reports import (generate_backtest_stats,
+                                                         store_backtest_stats)
         from freqtrade.resolvers import StrategyResolver
         asyncio.set_event_loop(asyncio.new_event_loop())
         try:
@@ -76,13 +77,25 @@ async def api_start_backtest(bt_settings: BacktestRequest, background_tasks: Bac
             lastconfig['enable_protections'] = btconfig.get('enable_protections')
             lastconfig['dry_run_wallet'] = btconfig.get('dry_run_wallet')
 
-            ApiServer._bt.abort = False
-            min_date, max_date = ApiServer._bt.backtest_one_strategy(
-                strat, ApiServer._bt_data, ApiServer._bt_timerange)
+            ApiServer._bt.results = {}
+            ApiServer._bt.load_prior_backtest()
 
-            ApiServer._bt.results = generate_backtest_stats(
-                ApiServer._bt_data, ApiServer._bt.all_results,
-                min_date=min_date, max_date=max_date)
+            ApiServer._bt.abort = False
+            if (ApiServer._bt.results and
+                    strat.get_strategy_name() in ApiServer._bt.results['strategy']):
+                # When previous result hash matches - reuse that result and skip backtesting.
+                logger.info(f'Reusing result of previous backtest for {strat.get_strategy_name()}')
+            else:
+                min_date, max_date = ApiServer._bt.backtest_one_strategy(
+                    strat, ApiServer._bt_data, ApiServer._bt_timerange)
+
+                ApiServer._bt.results = generate_backtest_stats(
+                    ApiServer._bt_data, ApiServer._bt.all_results,
+                    min_date=min_date, max_date=max_date)
+
+            if btconfig.get('export', 'none') == 'trades':
+                store_backtest_stats(btconfig['exportfilename'], ApiServer._bt.results)
+
             logger.info("Backtest finished.")
 
         except DependencyException as e:
