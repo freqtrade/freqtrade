@@ -752,17 +752,7 @@ class Backtesting:
             min_backtest_date = datetime.now(tz=timezone.utc) - timedelta(weeks=4)
         return min_backtest_date
 
-    def start(self) -> None:
-        """
-        Run backtesting end-to-end
-        :return: None
-        """
-        data: Dict[str, Any] = {}
-
-        data, timerange = self.load_bt_data()
-        self.load_bt_data_detail()
-        logger.info("Dataload complete. Calculating indicators")
-
+    def load_prior_backtest(self):
         self.run_ids = {
             strategy.get_strategy_name(): get_strategy_run_id(strategy)
             for strategy in self.strategylist
@@ -774,6 +764,19 @@ class Backtesting:
         if min_backtest_date is not None:
             self.results = find_existing_backtest_stats(
                 self.config['user_data_dir'] / 'backtest_results', self.run_ids, min_backtest_date)
+
+    def start(self) -> None:
+        """
+        Run backtesting end-to-end
+        :return: None
+        """
+        data: Dict[str, Any] = {}
+
+        data, timerange = self.load_bt_data()
+        self.load_bt_data_detail()
+        logger.info("Dataload complete. Calculating indicators")
+
+        self.load_prior_backtest()
 
         for strat in self.strategylist:
             if self.results and strat.get_strategy_name() in self.results['strategy']:
