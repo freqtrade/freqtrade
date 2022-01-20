@@ -28,7 +28,10 @@ def get_backup_name(tabs, backup_prefix: str):
     return table_back_name
 
 
-def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, cols: List):
+def migrate_trades_and_orders_table(
+        decl_base, inspector, engine,
+        table_back_name: str, cols: List,
+        order_back_name: str):
     fee_open = get_column_def(cols, 'fee_open', 'fee')
     fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
     fee_open_currency = get_column_def(cols, 'fee_open_currency', 'null')
@@ -65,10 +68,14 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
     # Schema migration necessary
     with engine.begin() as connection:
         connection.execute(text(f"alter table trades rename to {table_back_name}"))
+
     with engine.begin() as connection:
         # drop indexes on backup table in new session
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
+
+    drop_orders_table(inspector, engine, order_back_name)
+
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
 
@@ -103,6 +110,8 @@ def migrate_trades_table(decl_base, inspector, engine, table_back_name: str, col
             from {table_back_name}
             """))
 
+    migrate_orders_table(decl_base, engine, order_back_name, cols)
+
 
 def migrate_open_orders_to_trades(engine):
     with engine.begin() as connection:
@@ -121,19 +130,18 @@ def migrate_open_orders_to_trades(engine):
         """))
 
 
-def migrate_orders_table(decl_base, inspector, engine, table_back_name: str, cols: List):
-    # Schema migration necessary
+def drop_orders_table(inspector, engine, table_back_name: str):
+    # Drop and recreate orders table as backup
+    # This drops foreign keys, too.
 
     with engine.begin() as connection:
-        connection.execute(text(f"alter table orders rename to {table_back_name}"))
+        connection.execute(text(f"create table {table_back_name} as select * from orders"))
+        connection.execute(text("drop table orders"))
 
-    with engine.begin() as connection:
-        # drop indexes on backup table in new session
-        for index in inspector.get_indexes(table_back_name):
-            connection.execute(text(f"drop index {index['name']}"))
+
+def migrate_orders_table(decl_base, engine, table_back_name: str, cols: List):
 
     # let SQLAlchemy create the schema as required
-    decl_base.metadata.create_all(engine)
     with engine.begin() as connection:
         connection.execute(text(f"""
             insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
@@ -155,11 +163,14 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     cols = inspector.get_columns('trades')
     tabs = get_table_names_for_table(inspector, 'trades')
     table_back_name = get_backup_name(tabs, 'trades_bak')
+    order_tabs = get_table_names_for_table(inspector, 'orders')
+    order_table_bak_name = get_backup_name(order_tabs, 'orders_bak')
 
-    # Check for latest column
-    if not has_column(cols, 'buy_tag'):
+    # Check if migration necessary
+    # Migrates both trades and orders table!
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
-        migrate_trades_table(decl_base, inspector, engine, table_back_name, cols)
+        migrate_trades_and_orders_table(
+            decl_base, inspector, engine, table_back_name, cols, order_table_bak_name)
         # Reread columns - the above recreated the table!
         inspector = inspect(engine)
         cols = inspector.get_columns('trades')
@@ -167,12 +178,3 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     if 'orders' not in previous_tables and 'trades' in previous_tables:
         logger.info('Moving open orders to Orders table.')
         migrate_open_orders_to_trades(engine)
-    else:
-        cols_order = inspector.get_columns('orders')
-
-        if not has_column(cols_order, 'average'):
-            tabs = get_table_names_for_table(inspector, 'orders')
-            # Empty for now - as there is only one iteration of the orders table so far.
-            table_back_name = get_backup_name(tabs, 'orders_bak')
-
-            migrate_orders_table(decl_base, inspector, engine, table_back_name, cols)
