@@ -180,8 +180,9 @@ class Strategy003(IStrategy):
         """
         mode = "test"
         coin = pair.split("/")[0]
+        brain = "Freq_" + self.__class__.__name__
         if IS_BACKTEST:
-            threading.Thread(target=back_tester, args=(current_time, coin)).start()
+            threading.Thread(target=back_tester, args=(current_time, coin, brain)).start()
         else:
-            threading.Thread(target=launcher, args=(mode, coin)).start()
+            threading.Thread(target=launcher, args=(mode, coin, brain)).start()
         return True
