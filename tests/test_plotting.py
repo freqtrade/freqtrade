@@ -187,7 +187,7 @@ def test_plot_trades(testdatadir, caplog):
     assert len(trades.loc[trades['profit_ratio'] <= 0]) == len(trade_sell_loss.x)
     assert trade_sell_loss.marker.color == 'red'
     assert trade_sell_loss.marker.symbol == 'square-open'
-    assert trade_sell_loss.text[5] == '-10.45%, None, stop_loss, 720 min'
+    assert trade_sell_loss.text[5] == '-10.45%, stop_loss, 720 min'
 
 
 def test_generate_candlestick_graph_no_signals_no_trades(default_conf, mocker, testdatadir, caplog):
