@@ -2,7 +2,7 @@ import subprocess
 
 IS_BACKTEST = False
 
-EXECUTION_PATH = "/root/workspace2/execution/"
+EXECUTION_PATH = "/root/workspace/execution/"
 
 def launcher(mode, coin, brain):
     subprocess.call("python3 "+EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
