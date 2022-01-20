@@ -184,7 +184,10 @@ class Binance(Exchange):
         pair_brackets = self._leverage_brackets[pair]
         for [notional_floor, mm_ratio, _] in reversed(pair_brackets):
             if nominal_value >= notional_floor:
-                return 1/mm_ratio
+                if mm_ratio != 0:
+                    return 1/mm_ratio
+                else:
+                    logger.warning(f"mm_ratio for {pair} with nominal_value {nominal_value} is 0")
         return 1.0
 
     @retrier
