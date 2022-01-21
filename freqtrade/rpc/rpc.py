@@ -139,7 +139,8 @@ class RPC:
             'runmode': config['runmode'].value,
             'position_adjustment_enable': config.get('position_adjustment_enable', False),
             'max_buy_position_adjustment': (config['max_buy_position_adjustment']
-                                            if config['max_buy_position_adjustment'] != float('inf') else -1)
+                                            if config['max_buy_position_adjustment'] != float('inf')
+                                            else -1)
         }
         return val
 

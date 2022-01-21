@@ -478,9 +478,9 @@ class FreqtradeBot(LoggingMixin):
             count_of_buys = len(filled_buys)
             if count_of_buys > self.strategy.max_buy_position_adjustment:
                 logger.debug(f"Max adjustment buy for {trade.pair} has been reached.")
-                return            
+                return
         else:
-            logger.debug(f"Max adjustment buy is set to unlimited.")
+            logger.debug("Max adjustment buy is set to unlimited.")
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
 

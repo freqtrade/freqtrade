@@ -1353,7 +1353,7 @@ class Telegram(RPCHandler):
                 f"*Max buy position adjustment:* `{val['max_buy_position_adjustment']}`\n"
             )
         else:
-            pa_info = f"*Position adjustment:* Off\n"
+            pa_info = "*Position adjustment:* Off\n"
 
         self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
