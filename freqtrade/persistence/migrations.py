@@ -98,7 +98,10 @@ def migrate_trades_and_orders_table(
     with engine.begin() as connection:
         # drop indexes on backup table in new session
         for index in inspector.get_indexes(trade_back_name):
-            connection.execute(text(f"drop index {index['name']}"))
+            if engine.name == 'mysql':
+                connection.execute(text(f"drop index {index['name']} on {trade_back_name}"))
+            else:
+                connection.execute(text(f"drop index {index['name']}"))
 
     order_id, trade_id = get_last_sequence_ids(engine, trade_back_name, order_back_name)
 
@@ -198,7 +201,8 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
     # Check if migration necessary
     # Migrates both trades and orders table!
     if not has_column(cols, 'buy_tag'):
-        logger.info(f'Running database migration for trades - backup: {table_back_name}')
+        logger.info(f"Running database migration for trades - "
+                    f"backup: {table_back_name}, {order_table_bak_name}")
         migrate_trades_and_orders_table(
             decl_base, inspector, engine, table_back_name, cols, order_table_bak_name)
         # Reread columns - the above recreated the table!
