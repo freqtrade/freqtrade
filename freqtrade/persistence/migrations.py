@@ -28,6 +28,27 @@ def get_backup_name(tabs, backup_prefix: str):
     return table_back_name
 
 
+def get_last_sequence_ids(engine, inspector):
+    order_id: int = None
+    trade_id: int = None
+
+    if engine.name == 'postgresql':
+        with engine.begin() as connection:
+            x = connection.execute(
+                text("select sequencename, last_value from pg_sequences")).fetchall()
+        ts = [s[1]for s in x if s[0].startswith('trades_id') and s[1] is not None]
+        os = [s[1] for s in x if s[0].startswith('orders_id') and s[1] is not None]
+        trade_id = max(ts)
+        order_id = max(os)
+
+    return order_id, trade_id
+
+
+def set_sequence_ids(engine, order_id, trade_id):
+
+    if engine.name == 'postgresql':
+        pass
+
 def migrate_trades_and_orders_table(
         decl_base, inspector, engine,
         table_back_name: str, cols: List,
@@ -74,6 +95,8 @@ def migrate_trades_and_orders_table(
         for index in inspector.get_indexes(table_back_name):
             connection.execute(text(f"drop index {index['name']}"))
 
+    trade_id, order_id = get_last_sequence_ids(engine, inspector)
+
     drop_orders_table(inspector, engine, order_back_name)
 
     # let SQLAlchemy create the schema as required
@@ -111,6 +134,7 @@ def migrate_trades_and_orders_table(
             """))
 
     migrate_orders_table(decl_base, engine, order_back_name, cols)
+    set_sequence_ids(engine, order_id, trade_id)
 
 
 def migrate_open_orders_to_trades(engine):
