@@ -28,30 +28,35 @@ def get_backup_name(tabs, backup_prefix: str):
     return table_back_name
 
 
-def get_last_sequence_ids(engine, inspector):
+def get_last_sequence_ids(engine, trade_back_name, order_back_name):
     order_id: int = None
     trade_id: int = None
 
     if engine.name == 'postgresql':
         with engine.begin() as connection:
-            x = connection.execute(
-                text("select sequencename, last_value from pg_sequences")).fetchall()
-        ts = [s[1]for s in x if s[0].startswith('trades_id') and s[1] is not None]
-        os = [s[1] for s in x if s[0].startswith('orders_id') and s[1] is not None]
-        trade_id = max(ts)
-        order_id = max(os)
-
+            trade_id = connection.execute(text("select nextval('trades_id_seq')")).fetchone()[0]
+            order_id = connection.execute(text("select nextval('orders_id_seq')")).fetchone()[0]
+        with engine.begin() as connection:
+            connection.execute(text(
+                f"ALTER SEQUENCE orders_id_seq rename to {order_back_name}_id_seq_bak"))
+            connection.execute(text(
+                f"ALTER SEQUENCE trades_id_seq rename to {trade_back_name}_id_seq_bak"))
     return order_id, trade_id
 
 
 def set_sequence_ids(engine, order_id, trade_id):
 
     if engine.name == 'postgresql':
-        pass
+        with engine.begin() as connection:
+            if order_id:
+                connection.execute(text(f"ALTER SEQUENCE orders_id_seq RESTART WITH {order_id}"))
+            if trade_id:
+                connection.execute(text(f"ALTER SEQUENCE trades_id_seq RESTART WITH {trade_id}"))
+
 
 def migrate_trades_and_orders_table(
         decl_base, inspector, engine,
-        table_back_name: str, cols: List,
+        trade_back_name: str, cols: List,
         order_back_name: str):
     fee_open = get_column_def(cols, 'fee_open', 'fee')
     fee_open_cost = get_column_def(cols, 'fee_open_cost', 'null')
@@ -88,14 +93,14 @@ def migrate_trades_and_orders_table(
 
     # Schema migration necessary
     with engine.begin() as connection:
-        connection.execute(text(f"alter table trades rename to {table_back_name}"))
+        connection.execute(text(f"alter table trades rename to {trade_back_name}"))
 
     with engine.begin() as connection:
         # drop indexes on backup table in new session
-        for index in inspector.get_indexes(table_back_name):
+        for index in inspector.get_indexes(trade_back_name):
             connection.execute(text(f"drop index {index['name']}"))
 
-    trade_id, order_id = get_last_sequence_ids(engine, inspector)
+    order_id, trade_id = get_last_sequence_ids(engine, trade_back_name, order_back_name)
 
     drop_orders_table(inspector, engine, order_back_name)
 
@@ -130,7 +135,7 @@ def migrate_trades_and_orders_table(
             {sell_order_status} sell_order_status,
             {strategy} strategy, {buy_tag} buy_tag, {timeframe} timeframe,
             {open_trade_value} open_trade_value, {close_profit_abs} close_profit_abs
-            from {table_back_name}
+            from {trade_back_name}
             """))
 
     migrate_orders_table(decl_base, engine, order_back_name, cols)
@@ -192,6 +197,7 @@ def check_migrate(engine, decl_base, previous_tables) -> None:
 
     # Check if migration necessary
     # Migrates both trades and orders table!
+    if not has_column(cols, 'buy_tag'):
         logger.info(f'Running database migration for trades - backup: {table_back_name}')
         migrate_trades_and_orders_table(
             decl_base, inspector, engine, table_back_name, cols, order_table_bak_name)
