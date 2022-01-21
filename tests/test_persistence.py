@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import arrow
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, text
 
 from freqtrade import constants
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -614,65 +614,6 @@ def test_migrate_new(mocker, default_conf, fee, caplog):
     assert orders[1].order_id == 'stop_order_id222'
     assert orders[1].ft_order_side == 'stoploss'
 
-    caplog.clear()
-    # Drop latest column
-    with engine.begin() as connection:
-        connection.execute(text("alter table orders rename to orders_bak"))
-    inspector = inspect(engine)
-
-    with engine.begin() as connection:
-        for index in inspector.get_indexes('orders_bak'):
-            connection.execute(text(f"drop index {index['name']}"))
-        # Recreate table
-        connection.execute(text("""
-            CREATE TABLE orders (
-                id INTEGER NOT NULL,
-                ft_trade_id INTEGER,
-                ft_order_side VARCHAR NOT NULL,
-                ft_pair VARCHAR NOT NULL,
-                ft_is_open BOOLEAN NOT NULL,
-                order_id VARCHAR NOT NULL,
-                status VARCHAR,
-                symbol VARCHAR,
-                order_type VARCHAR,
-                side VARCHAR,
-                price FLOAT,
-                amount FLOAT,
-                filled FLOAT,
-                remaining FLOAT,
-                cost FLOAT,
-                order_date DATETIME,
-                order_filled_date DATETIME,
-                order_update_date DATETIME,
-                PRIMARY KEY (id),
-                CONSTRAINT _order_pair_order_id UNIQUE (ft_pair, order_id),
-                FOREIGN KEY(ft_trade_id) REFERENCES trades (id)
-            )
-            """))
-
-        connection.execute(text("""
-        insert into orders ( id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-            order_filled_date, order_update_date)
-            select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id, status,
-            symbol, order_type, side, price, amount, filled, remaining, cost, order_date,
-            order_filled_date, order_update_date
-            from orders_bak
-        """))
-
-    # Run init to test migration
-    init_db(default_conf['db_url'], default_conf['dry_run'])
-
-    assert log_has("trying orders_bak1", caplog)
-
-    orders = Order.query.all()
-    assert len(orders) == 2
-    assert orders[0].order_id == 'buy_order'
-    assert orders[0].ft_order_side == 'buy'
-
-    assert orders[1].order_id == 'stop_order_id222'
-    assert orders[1].ft_order_side == 'stoploss'
-
 
 def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     """
@@ -734,7 +675,8 @@ def test_migrate_mid_state(mocker, default_conf, fee, caplog):
     assert trade.initial_stop_loss == 0.0
     assert trade.open_trade_value == trade._calc_open_trade_value()
     assert log_has("trying trades_bak0", caplog)
-    assert log_has("Running database migration for trades - backup: trades_bak0, orders_bak0", caplog)
+    assert log_has("Running database migration for trades - backup: trades_bak0, orders_bak0",
+                   caplog)
 
 
 def test_adjust_stop_loss(fee):

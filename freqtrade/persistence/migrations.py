@@ -105,7 +105,7 @@ def migrate_trades_and_orders_table(
 
     order_id, trade_id = get_last_sequence_ids(engine, trade_back_name, order_back_name)
 
-    drop_orders_table(inspector, engine, order_back_name)
+    drop_orders_table(engine, order_back_name)
 
     # let SQLAlchemy create the schema as required
     decl_base.metadata.create_all(engine)
@@ -141,7 +141,7 @@ def migrate_trades_and_orders_table(
             from {trade_back_name}
             """))
 
-    migrate_orders_table(decl_base, engine, order_back_name, cols)
+    migrate_orders_table(engine, order_back_name, cols)
     set_sequence_ids(engine, order_id, trade_id)
 
 
@@ -162,7 +162,7 @@ def migrate_open_orders_to_trades(engine):
         """))
 
 
-def drop_orders_table(inspector, engine, table_back_name: str):
+def drop_orders_table(engine, table_back_name: str):
     # Drop and recreate orders table as backup
     # This drops foreign keys, too.
 
@@ -171,7 +171,7 @@ def drop_orders_table(inspector, engine, table_back_name: str):
         connection.execute(text("drop table orders"))
 
 
-def migrate_orders_table(decl_base, engine, table_back_name: str, cols: List):
+def migrate_orders_table(engine, table_back_name: str, cols: List):
 
     # let SQLAlchemy create the schema as required
     with engine.begin() as connection:
