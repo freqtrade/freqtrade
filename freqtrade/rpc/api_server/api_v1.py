@@ -20,7 +20,7 @@ from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, Blac
                                                   Stats, StatusMsg, StrategyListResponse,
                                                   StrategyResponse, SysInfo, Version,
                                                   WhitelistResponse)
-from freqtrade.rpc.api_server.deps import get_config, get_rpc, get_rpc_optional
+from freqtrade.rpc.api_server.deps import get_config, get_exchange, get_rpc, get_rpc_optional
 from freqtrade.rpc.rpc import RPCException
 
 
@@ -217,12 +217,14 @@ def pair_candles(pair: str, timeframe: str, limit: Optional[int], rpc: RPC = Dep
 
 @router.get('/pair_history', response_model=PairHistory, tags=['candle data'])
 def pair_history(pair: str, timeframe: str, timerange: str, strategy: str,
-                 config=Depends(get_config)):
+                 config=Depends(get_config), exchange=Depends(get_exchange)):
+    # The initial call to this endpoint can be slow, as it may need to initialize
+    # the exchange class.
     config = deepcopy(config)
     config.update({
         'strategy': strategy,
     })
-    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange)
+    return RPC._rpc_analysed_history_full(config, pair, timeframe, timerange, exchange)
 
 
 @router.get('/plot_config', response_model=PlotConfig, tags=['candle data'])
