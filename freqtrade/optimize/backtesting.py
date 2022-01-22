@@ -416,7 +416,7 @@ class Backtesting:
                 closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
                                                   default_retval=closerate)(
                     pair=trade.pair, trade=trade,
-                    current_time=sell_row[DATE_IDX],
+                    current_time=sell_candle_time,
                     proposed_rate=closerate, current_profit=current_profit)
 
             # Confirm trade exit:
@@ -444,8 +444,8 @@ class Backtesting:
             order = Order(
                 id=self.order_id_counter,
                 ft_trade_id=trade.id,
-                order_date=sell_row[DATE_IDX].to_pydatetime(),
-                order_update_date=sell_row[DATE_IDX].to_pydatetime(),
+                order_date=sell_candle_time,
+                order_update_date=sell_candle_time,
                 ft_is_open=True,
                 ft_pair=trade.pair,
                 order_id=str(self.order_id_counter),
