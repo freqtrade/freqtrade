@@ -63,6 +63,8 @@ class Backtesting:
         LoggingMixin.show_output = False
         self.config = config
         self.results: Dict[str, Any] = {}
+        self.trade_id_counter: int = 0
+        self.order_id_counter: int = 0
 
         config['dry_run'] = True
         self.run_ids: Dict[str, str] = {}
@@ -409,7 +411,6 @@ class Backtesting:
             closerate = self._get_close_rate(sell_row, trade, sell, trade_dur)
             # call the custom exit price,with default value as previous closerate
             current_profit = trade.calc_profit_ratio(closerate)
-            order_closed = True
             if sell.sell_type in (SellType.SELL_SIGNAL, SellType.CUSTOM_SELL):
                 # Custom exit pricing only for sell-signals
                 closerate = strategy_safe_wrapper(self.strategy.custom_exit_price,
@@ -417,7 +418,6 @@ class Backtesting:
                     pair=trade.pair, trade=trade,
                     current_time=sell_row[DATE_IDX],
                     proposed_rate=closerate, current_profit=current_profit)
-                order_closed = self._get_order_filled(closerate, sell_row)
 
             # Confirm trade exit:
             time_in_force = self.strategy.order_time_in_force['sell']
@@ -440,20 +440,26 @@ class Backtesting:
             ):
                 trade.sell_reason = sell_row[EXIT_TAG_IDX]
 
-            trade.close(closerate, show_msg=False)
+            self.order_id_counter += 1
             order = Order(
-                ft_is_open=order_closed,
+                id=self.order_id_counter,
+                ft_trade_id=trade.id,
+                order_date=sell_row[DATE_IDX].to_pydatetime(),
+                order_update_date=sell_row[DATE_IDX].to_pydatetime(),
+                ft_is_open=True,
                 ft_pair=trade.pair,
+                order_id=str(self.order_id_counter),
                 symbol=trade.pair,
-                ft_order_side="buy",
-                side="buy",
-                order_type="market",
-                status="closed",
+                ft_order_side="sell",
+                side="sell",
+                order_type=self.strategy.order_types['sell'],
+                status="open",
                 price=closerate,
                 average=closerate,
                 amount=trade.amount,
-                filled=trade.amount,
-                cost=trade.amount * closerate
+                filled=0,
+                remaining=trade.amount,
+                cost=trade.amount * closerate,
             )
             trade.orders.append(order)
             return trade
@@ -494,10 +500,13 @@ class Backtesting:
         current_time = row[DATE_IDX].to_pydatetime()
         entry_tag = row[BUY_TAG_IDX] if len(row) >= BUY_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
-        propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
-                                             default_retval=row[OPEN_IDX])(
-            pair=pair, current_time=current_time,
-            proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
+        order_type = self.strategy.order_types['buy']
+        propose_rate = row[OPEN_IDX]
+        if order_type == 'limit':
+            propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
+                                                 default_retval=row[OPEN_IDX])(
+                pair=pair, current_time=current_time,
+                proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
 
         min_stake_amount = self.exchange.get_min_pair_stake_amount(pair, propose_rate, -0.05) or 0
         max_stake_amount = self.wallets.get_available_stake_amount()
@@ -507,7 +516,7 @@ class Backtesting:
             try:
                 stake_amount = self.wallets.get_trade_stake_amount(pair, None)
             except DependencyException:
-                return trade
+                return None
 
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
@@ -522,7 +531,6 @@ class Backtesting:
             # If not pos adjust, trade is None
             return trade
 
-        order_type = self.strategy.order_types['buy']
         time_in_force = self.strategy.order_time_in_force['sell']
         # Confirm trade entry:
         if not pos_adjust:
@@ -533,16 +541,21 @@ class Backtesting:
                 return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
+            self.order_id_counter += 1
             amount = round(stake_amount / propose_rate, 8)
             if trade is None:
                 # Enter trade
+                self.trade_id_counter += 1
                 trade = LocalTrade(
+                    id=self.trade_id_counter,
+                    open_order_id=self.order_id_counter,
                     pair=pair,
                     open_rate=propose_rate,
                     open_rate_requested=propose_rate,
                     open_date=current_time,
                     stake_amount=stake_amount,
                     amount=amount,
+                    amount_requested=amount,
                     fee_open=self.fee,
                     fee_close=self.fee,
                     is_open=True,
@@ -554,29 +567,28 @@ class Backtesting:
             order_filled = self._get_order_filled(propose_rate, row)
 
             order = Order(
-                order_date=current_time,
+                id=self.order_id_counter,
+                ft_trade_id=trade.id,
                 ft_is_open=not order_filled,
                 ft_pair=trade.pair,
+                order_id=str(self.order_id_counter),
                 symbol=trade.pair,
                 ft_order_side="buy",
                 side="buy",
-                order_type="market",
-                status="closed",
+                order_type=order_type,
+                status="open",
                 order_date=current_time,
                 order_filled_date=current_time,
                 order_update_date=current_time,
                 price=propose_rate,
                 average=propose_rate,
                 amount=amount,
-                filled=amount if order_filled else 0,
-                remaining=0 if order_filled else amount,
-                cost=stake_amount + trade.fee_open
+                filled=0,
+                remaining=amount,
+                cost=stake_amount + trade.fee_open,
             )
-            if not order_filled:
-                trade.open_order_id = 'buy'
             trade.orders.append(order)
-            if pos_adjust:
-                trade.recalc_trade_from_orders()
+            trade.recalc_trade_from_orders()
 
         return trade
 
@@ -589,6 +601,8 @@ class Backtesting:
         for pair in open_trades.keys():
             if len(open_trades[pair]) > 0:
                 for trade in open_trades[pair]:
+                    if trade.open_order_id:
+                        continue
                     sell_row = data[pair][-1]
 
                     trade.close_date = sell_row[DATE_IDX].to_pydatetime()
@@ -638,7 +652,7 @@ class Backtesting:
 
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = defaultdict(int)
-        tmp = start_date + timedelta(minutes=self.timeframe_min)
+        current_time = start_date + timedelta(minutes=self.timeframe_min)
 
         open_trades: Dict[str, List[LocalTrade]] = defaultdict(list)
         open_trade_count = 0
@@ -647,7 +661,7 @@ class Backtesting:
             (end_date - start_date) / timedelta(minutes=self.timeframe_min)))
 
         # Loop timerange and get candle for each pair at that point in time
-        while tmp <= end_date:
+        while current_time <= end_date:
             open_trade_count_start = open_trade_count
             self.check_abort()
             for i, pair in enumerate(data):
@@ -662,48 +676,21 @@ class Backtesting:
                     continue
 
                 # Waits until the time-counter reaches the start of the data for this pair.
-                if row[DATE_IDX] > tmp:
+                if row[DATE_IDX] > current_time:
                     continue
 
                 row_index += 1
                 indexes[pair] = row_index
                 self.dataprovider._set_dataframe_max_index(row_index)
 
-                # Check order filling
-                for open_trade in list(open_trades[pair]):
-                    # TODO: should open orders be stored in a separate list?
-                    if open_trade.open_order_id:
-                        order = open_trade.select_order(is_open=True)
-                        if order is None:
-                            continue
-                        if self._get_order_filled(order.price, row):
-                            open_trade.open_order_id = None
-                            order.ft_is_open = False
-                            order.filled = order.price
-                            order.remaining = 0
-                        timeout = self.config['unfilledtimeout'].get(order.side, 0)
-                        if 0 < timeout <= (tmp - order.order_date).seconds / 60:
-                            open_trade.open_order_id = None
-                            order.ft_is_open = False
-                            order.filled = 0
-                            order.remaining = 0
-                            if order.side == 'buy':
-                                # Close trade due to buy timeout expiration.
-                                open_trade_count -= 1
-                                open_trades[pair].remove(open_trade)
-                                LocalTrade.trades_open.remove(open_trade)
-                                # trades.append(trade_entry)    # TODO: Needed or not?
-                            elif order.side == 'sell':
-                                # Close sell order and retry selling on next signal.
-                                del open_trade.orders[open_trade.orders.index(order)]
-
+                # 1. Process buys.
                 # without positionstacking, we can only have one open trade per pair.
                 # max_open_trades must be respected
                 # don't open on the last row
                 if (
                     (position_stacking or len(open_trades[pair]) == 0)
                     and self.trade_slot_available(max_open_trades, open_trade_count_start)
-                    and tmp != end_date
+                    and current_time != end_date
                     and row[BUY_IDX] == 1
                     and row[SELL_IDX] != 1
                     and not PairLocks.is_pair_locked(pair, row[DATE_IDX])
@@ -717,29 +704,60 @@ class Backtesting:
                         open_trade_count += 1
                         # logger.debug(f"{pair} - Emulate creation of new trade: {trade}.")
                         open_trades[pair].append(trade)
-                        LocalTrade.add_bt_trade(trade)
 
                 for trade in list(open_trades[pair]):
-                    # TODO: This could be avoided with a separate list
-                    if trade.open_order_id:
-                        continue
-                    # also check the buying candle for sell conditions.
-                    trade_entry = self._get_sell_trade_entry(trade, row)
-                    # Sell occurred
-                    if trade_entry:
+                    # 2. Process buy orders.
+                    order = trade.select_order('buy', is_open=True)
+                    if order and self._get_order_filled(order.price, row):
+                        order.order_filled_date = row[DATE_IDX]
+                        trade.open_order_id = None
+                        order.filled = order.amount
+                        order.status = 'closed'
+                        order.ft_is_open = False
+                        LocalTrade.add_bt_trade(trade)
+
+                    # 3. Create sell orders (if any)
+                    if not trade.open_order_id:
+                        self._get_sell_trade_entry(trade, row)  # Place sell order if necessary
+
+                    # 4. Process sell orders.
+                    order = trade.select_order('sell', is_open=True)
+                    if order and self._get_order_filled(order.price, row):
+                        trade.open_order_id = None
+                        order.order_filled_date = trade.close_date = row[DATE_IDX]
+                        order.filled = order.amount
+                        order.status = 'closed'
+                        order.ft_is_open = False
+                        trade.close(order.price, show_msg=False)
+
                         # logger.debug(f"{pair} - Backtesting sell {trade}")
                         open_trade_count -= 1
                         open_trades[pair].remove(trade)
-
                         LocalTrade.close_bt_trade(trade)
-                        trades.append(trade_entry)
+                        trades.append(trade)
                         if enable_protections:
                             self.protections.stop_per_pair(pair, row[DATE_IDX])
-                            self.protections.global_stop(tmp)
+                            self.protections.global_stop(current_time)
+
+                    # 5. Cancel expired buy/sell orders.
+                    for order in [o for o in trade.orders if o.ft_is_open]:
+                        timeout = self.config['unfilledtimeout'].get(order.side, 0)
+                        if 0 < timeout <= (current_time - order.order_date).seconds / 60:
+                            trade.open_order_id = None
+                            order.ft_is_open = False
+                            order.filled = 0
+                            order.remaining = 0
+                            if order.side == 'buy':
+                                # Close trade due to buy timeout expiration.
+                                open_trade_count -= 1
+                                open_trades[pair].remove(trade)
+                            elif order.side == 'sell':
+                                # Close sell order and retry selling on next signal.
+                                del trade.orders[trade.orders.index(order)]
 
             # Move time one configured time_interval ahead.
             self.progress.increment()
-            tmp += timedelta(minutes=self.timeframe_min)
+            current_time += timedelta(minutes=self.timeframe_min)
 
         trades += self.handle_left_open(open_trades, data=data)
         self.wallets.update()
