@@ -521,6 +521,7 @@ class Backtesting:
                     exchange='backtesting',
                     orders=[]
                 )
+            trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
 
             order = Order(
                 ft_is_open=False,
