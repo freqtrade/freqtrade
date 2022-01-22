@@ -38,6 +38,9 @@ def test_returns_latest_signal(ohlcv_history):
     mocked_history['exit_long'] = 0
     mocked_history['enter_short'] = 0
     mocked_history['exit_short'] = 0
+    # Set tags in lines that don't matter to test nan in the sell line
+    mocked_history.loc[0, 'enter_tag'] = 'wrong_line'
+    mocked_history.loc[0, 'exit_tag'] = 'wrong_line'
     mocked_history.loc[1, 'exit_long'] = 1
 
     assert _STRATEGY.get_entry_signal('ETH/BTC', '5m', mocked_history) == (None, None)

@@ -5,6 +5,7 @@ on:
     branches:
       - stable
       - develop
+      - ci/*
     tags:
   release:
     types: [published]

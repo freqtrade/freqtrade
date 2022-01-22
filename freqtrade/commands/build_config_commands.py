@@ -86,7 +86,7 @@ def ask_user_config() -> Dict[str, Any]:
         {
             "type": "select",
             "name": "timeframe_in_config",
-            "message": "Tim",
+            "message": "Time",
             "choices": ["Have the strategy define timeframe.", "Override in configuration."]
         },
         {

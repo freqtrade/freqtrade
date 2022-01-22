@@ -10,8 +10,7 @@ hyperopt = [
     'filelock',
     'joblib',
     'progressbar2',
-    'psutil',
-]
+    ]
 
 develop = [
     'coveralls',
@@ -69,6 +68,7 @@ setup(
         'blosc',
         'fastapi',
         'uvicorn',
+        'psutil',
         'pyjwt',
         'aiofiles',
         'schedule'

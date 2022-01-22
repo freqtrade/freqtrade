@@ -15,6 +15,7 @@ Currently available callbacks:
 * [`check_buy_timeout()` and `check_sell_timeout()](#custom-order-timeout-rules)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
+* [`adjust_trade_position()`](#adjust-trade-position)
 
 !!! Tip "Callback calling sequence"
     You can find the callback calling sequence in [bot-basics](bot-basics.md#bot-execution-logic)
@@ -572,6 +573,113 @@ class AwesomeStrategy(IStrategy):
 
 ```
 
+## Adjust trade position
+
+The `position_adjustment_enable` strategy property enables the usage of `adjust_trade_position()` callback in the strategy.
+For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
+`adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging).
+
+The strategy is expected to return a stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional buy order should be made (position is increased).
+If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
+Additional orders also result in additional fees and those orders don't count towards `max_open_trades`.
+
+This callback is **not** called when there is an open order (either buy or sell) waiting for execution.
+`adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
+
+!!! Note "About stake size"
+    Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
+    If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
+    Using 'unlimited' stake amount with DCA orders requires you to also implement the `custom_stake_amount()` callback to avoid allocating all funds to the initial order.
+
+!!! Warning
+    Stoploss is still calculated from the initial opening price, not averaged price.
+
+!!! Warning "/stopbuy"
+    While `/stopbuy` command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.
+
+!!! Warning "Backtesting"
+    During backtesting this callback is called for each candle in `timeframe` or `timeframe_detail`, so performance will be affected.
+
+``` python
+from freqtrade.persistence import Trade
+
+
+class DigDeeperStrategy(IStrategy):
+    
+    position_adjustment_enable = True
+    
+    # Attempts to handle large drops with DCA. High stoploss is required.
+    stoploss = -0.30
+    
+    # ... populate_* methods
+    
+    # Example specific variables
+    max_dca_orders = 3
+    # This number is explained a bit further down
+    max_dca_multiplier = 5.5
+    
+    # This is called when placing the initial order (opening trade)
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -> float:
+        
+        # We need to leave most of the funds for possible further DCA orders
+        # This also applies to fixed stakes
+        return proposed_stake / self.max_dca_multiplier
+        
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, min_stake: float,
+                              max_stake: float, **kwargs):
+        """
+        Custom trade adjustment logic, returning the stake amount that a trade should be increased.
+        This means extra buy orders with additional fees.
+ 
+        :param trade: trade object.
+        :param current_time: datetime object, containing the current datetime
+        :param current_rate: Current buy rate.
+        :param current_profit: Current profit (as ratio), calculated based on current_rate.
+        :param min_stake: Minimal stake size allowed by exchange.
+        :param max_stake: Balance available for trading.
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Stake amount to adjust your trade
+        """
+        
+        if current_profit > -0.05:
+            return None
+
+        # Obtain pair dataframe (just to show how to access it)
+        dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
+        # Only buy when not actively falling price.
+        last_candle = dataframe.iloc[-1].squeeze()
+        previous_candle = dataframe.iloc[-2].squeeze()
+        if last_candle['close'] < previous_candle['close']:
+            return None
+
+        filled_buys = trade.select_filled_orders('buy')
+        count_of_buys = len(filled_buys)
+        
+        # Allow up to 3 additional increasingly larger buys (4 in total)
+        # Initial buy is 1x
+        # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
+        # If that falls down to -5% again, we buy 1.5x more
+        # If that falls once again down to -5%, we buy 1.75x more
+        # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
+        # That is why max_dca_multiplier is 5.5
+        # Hope you have a deep wallet!
+        if 0 < count_of_buys <= self.max_dca_orders:
+            try:
+                # This returns first order stake size
+                stake_amount = filled_buys[0].cost
+                # This then calculates current safety order size
+                stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
+                return stake_amount
+            except Exception as exception:
+                return None
+
+        return None
+
+```
+
 ## Leverage Callback
 
 When trading in markets that allow leverage, this method must return the desired Leverage (Defaults to 1 -> No leverage).
@@ -598,4 +706,3 @@ class AwesomeStrategy(IStrategy):
         :return: A leverage amount, which is between 1.0 and max_leverage.
         """
         return 1.0
-```

@@ -243,19 +243,25 @@ class RPC:
                         profit_str += f" ({fiat_profit:.2f})"
                         fiat_profit_sum = fiat_profit if isnan(fiat_profit_sum) \
                             else fiat_profit_sum + fiat_profit
-                trades_list.append([
+                detail_trade = [
                     f'{trade.id} {direction_str}',
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
-                               + ('**' if (trade.close_rate_requested is not None) else ''),
+                    + ('**' if (trade.close_rate_requested is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
-                ])
+                ]
+                if self._config.get('position_adjustment_enable', False):
+                    filled_buys = trade.select_filled_orders('buy')
+                    detail_trade.append(str(len(filled_buys)))
+                trades_list.append(detail_trade)
             profitcol = "Profit"
             if self._fiat_converter:
                 profitcol += " (" + fiat_display_currency + ")"
 
             columns = ['ID L/S', 'Pair', 'Since', profitcol]
+            if self._config.get('position_adjustment_enable', False):
+                columns.append('# Buys')
             return trades_list, columns, fiat_profit_sum
 
     def _rpc_daily_profit(
@@ -598,6 +604,7 @@ class RPC:
         value = self._fiat_converter.convert_amount(
             total, stake_currency, fiat_display_currency) if self._fiat_converter else 0
 
+        trade_count = len(Trade.get_trades_proxy())
         starting_capital_ratio = 0.0
         starting_capital_ratio = (total / starting_capital) - 1 if starting_capital else 0.0
         starting_cap_fiat_ratio = (value / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
@@ -614,6 +621,7 @@ class RPC:
             'starting_capital_fiat': starting_cap_fiat,
             'starting_capital_fiat_ratio': starting_cap_fiat_ratio,
             'starting_capital_fiat_pct': round(starting_cap_fiat_ratio * 100, 2),
+            'trade_count': trade_count,
             'note': 'Simulated balances' if self._freqtrade.config['dry_run'] else ''
         }
 
@@ -705,8 +713,8 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float],
-                      order_type: Optional[str] = None) -> Optional[Trade]:
+    def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
+                      stake_amount: Optional[float] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -728,16 +736,19 @@ class RPC:
         # check if pair already has an open pair
         trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
         if trade:
-            raise RPCException(f'position for {pair} already open - id: {trade.id}')
+            if not self._freqtrade.strategy.position_adjustment_enable:
+                raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
-        # gen stake amount
-        stakeamount = self._freqtrade.wallets.get_trade_stake_amount(pair)
+        if not stake_amount:
+            # gen stake amount
+            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(pair)
 
         # execute buy
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
-        if self._freqtrade.execute_entry(pair, stakeamount, price, ordertype=order_type):
+        if self._freqtrade.execute_entry(pair, stake_amount, price,
+                                         ordertype=order_type, trade=trade):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
             return trade
@@ -992,7 +1003,7 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
-                                   timerange: str) -> Dict[str, Any]:
+                                   timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
@@ -1007,7 +1018,7 @@ class RPC:
         from freqtrade.data.dataprovider import DataProvider
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
-        strategy.dp = DataProvider(config, exchange=None, pairlists=None)
+        strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 

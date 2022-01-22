@@ -10,7 +10,7 @@ import rapidjson
 from freqtrade.constants import FTHYPT_FILEVERSION
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.hyperopt_tools import HyperoptTools, hyperopt_serializer
-from tests.conftest import CURRENT_TEST_STRATEGY, log_has
+from tests.conftest import CURRENT_TEST_STRATEGY, log_has, log_has_re
 
 
 # Functions for recurrent object patching
@@ -24,6 +24,7 @@ def test_save_results_saves_epochs(hyperopt, tmpdir, caplog) -> None:
     hyperopt.results_file = Path(tmpdir / 'ut_results.fthypt')
 
     hyperopt_epochs = HyperoptTools.load_filtered_results(hyperopt.results_file, {})
+    assert log_has_re("Hyperopt file .* not found.", caplog)
     assert hyperopt_epochs == ([], 0)
 
     # Test writing to temp dir and reading again

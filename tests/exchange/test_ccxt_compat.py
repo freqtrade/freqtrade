@@ -40,7 +40,7 @@ EXCHANGES = {
     },
     'ftx': {
         'pair': 'BTC/USD',
-        'stake_currency': 'USDT',
+        'stake_currency': 'USD',
         'hasQuoteVolume': True,
         'timeframe': '5m',
         'futures_pair': 'BTC/USD:USD',

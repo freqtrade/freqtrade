@@ -2,6 +2,8 @@
 Helpers when analyzing backtest data
 """
 import logging
+from copy import copy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -10,7 +12,7 @@ import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.exceptions import OperationalException
-from freqtrade.misc import json_load
+from freqtrade.misc import get_backtest_metadata_filename, json_load
 from freqtrade.persistence import LocalTrade, Trade, init_db
 
 
@@ -100,8 +102,28 @@ def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str =
     if isinstance(directory, str):
         directory = Path(directory)
     if predef_filename:
+        if Path(predef_filename).is_absolute():
+            raise OperationalException(
+                "--hyperopt-filename expects only the filename, not an absolute path.")
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
+
+
+def load_backtest_metadata(filename: Union[Path, str]) -> Dict[str, Any]:
+    """
+    Read metadata dictionary from backtest results file without reading and deserializing entire
+    file.
+    :param filename: path to backtest results file.
+    :return: metadata dict or None if metadata is not present.
+    """
+    filename = get_backtest_metadata_filename(filename)
+    try:
+        with filename.open() as fp:
+            return json_load(fp)
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        raise OperationalException('Unexpected error while loading backtest metadata.') from e
 
 
 def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
@@ -120,7 +142,78 @@ def load_backtest_stats(filename: Union[Path, str]) -> Dict[str, Any]:
     with filename.open() as file:
         data = json_load(file)
 
+    # Legacy list format does not contain metadata.
+    if isinstance(data, dict):
+        data['metadata'] = load_backtest_metadata(filename)
+
     return data
+
+
+def _load_and_merge_backtest_result(strategy_name: str, filename: Path, results: Dict[str, Any]):
+    bt_data = load_backtest_stats(filename)
+    for k in ('metadata', 'strategy'):
+        results[k][strategy_name] = bt_data[k][strategy_name]
+    comparison = bt_data['strategy_comparison']
+    for i in range(len(comparison)):
+        if comparison[i]['key'] == strategy_name:
+            results['strategy_comparison'].append(comparison[i])
+            break
+
+
+def find_existing_backtest_stats(dirname: Union[Path, str], run_ids: Dict[str, str],
+                                 min_backtest_date: datetime = None) -> Dict[str, Any]:
+    """
+    Find existing backtest stats that match specified run IDs and load them.
+    :param dirname: pathlib.Path object, or string pointing to the file.
+    :param run_ids: {strategy_name: id_string} dictionary.
+    :param min_backtest_date: do not load a backtest older than specified date.
+    :return: results dict.
+    """
+    # Copy so we can modify this dict without affecting parent scope.
+    run_ids = copy(run_ids)
+    dirname = Path(dirname)
+    results: Dict[str, Any] = {
+        'metadata': {},
+        'strategy': {},
+        'strategy_comparison': [],
+    }
+
+    # Weird glob expression here avoids including .meta.json files.
+    for filename in reversed(sorted(dirname.glob('backtest-result-*-[0-9][0-9].json'))):
+        metadata = load_backtest_metadata(filename)
+        if not metadata:
+            # Files are sorted from newest to oldest. When file without metadata is encountered it
+            # is safe to assume older files will also not have any metadata.
+            break
+
+        for strategy_name, run_id in list(run_ids.items()):
+            strategy_metadata = metadata.get(strategy_name, None)
+            if not strategy_metadata:
+                # This strategy is not present in analyzed backtest.
+                continue
+
+            if min_backtest_date is not None:
+                try:
+                    backtest_date = strategy_metadata['backtest_start_time']
+                except KeyError:
+                    # TODO: this can be removed starting from feb 2022
+                    # The metadata-file without start_time was only available in develop
+                    # and was never included in an official release.
+                    # Older metadata format without backtest time, too old to consider.
+                    return results
+                backtest_date = datetime.fromtimestamp(backtest_date, tz=timezone.utc)
+                if backtest_date < min_backtest_date:
+                    # Do not use a cached result for this strategy as first result is too old.
+                    del run_ids[strategy_name]
+                    continue
+
+            if strategy_metadata['run_id'] == run_id:
+                del run_ids[strategy_name]
+                _load_and_merge_backtest_result(strategy_name, filename, results)
+
+        if len(run_ids) == 0:
+            break
+    return results
 
 
 def load_backtest_data(filename: Union[Path, str], strategy: Optional[str] = None) -> pd.DataFrame:

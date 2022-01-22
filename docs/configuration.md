@@ -174,6 +174,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `user_data_dir` | Directory containing user data. <br> *Defaults to `./user_data/`*. <br> **Datatype:** String
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
+| `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
 
 ### Parameters in the strategy
 
@@ -198,6 +199,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `sell_profit_offset`
 * `ignore_roi_if_buy_signal`
 * `ignore_buying_expired_candle_after`
+* `position_adjustment_enable`
 
 ### Configuring amount per trade
 
@@ -303,6 +305,15 @@ To allow the bot to trade all the available `stake_currency` in your account (mi
 !!! Note "When using Dry-Run Mode"
     When using `"stake_amount" : "unlimited",` in combination with Dry-Run, Backtesting or Hyperopt, the balance will be simulated starting with a stake of `dry_run_wallet` which will evolve.
     It is therefore important to set `dry_run_wallet` to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise, it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.
+
+#### Dynamic stake amount with position adjustment
+
+When you want to use position adjustment with unlimited stakes, you must also implement `custom_stake_amount` to a return a value depending on your strategy.
+Typical value would be in the range of 25% - 50% of the proposed stakes, but depends highly on your strategy and how much you wish to leave into the wallet as position adjustment buffer.
+
+For example if your position adjustment assumes it can do 2 additional buys with the same stake amounts then your buffer should be 66.6667% of the initially proposed unlimited stake amount.
+
+Or another example if your position adjustment assumes it can do 1 additional buy with 3x the original stake amount then `custom_stake_amount` should return 25% of proposed stake amount and leave 75% for possible later position adjustments.
 
 --8<-- "includes/pricing.md"
 

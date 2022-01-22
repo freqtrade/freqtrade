@@ -4,7 +4,7 @@
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import reduce
 from random import choice, randint
 from string import ascii_uppercase
@@ -705,10 +705,12 @@ def test_profit_handle(default_conf, update, ticker, ticker_sell_up, fee,
     mocker.patch('freqtrade.exchange.Exchange.fetch_ticker', ticker_sell_up)
     trade.update(limit_sell_order)
 
-    trade.close_date = datetime.utcnow()
+    trade.close_date = datetime.now(timezone.utc)
     trade.is_open = False
+    Trade.commit()
 
-    telegram._profit(update=update, context=MagicMock())
+    context.args = [3]
+    telegram._profit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert '*ROI:* Closed trades' in msg_mock.call_args_list[-1][0][0]
     assert ('∙ `0.00006217 BTC (6.20%) (0.62 \N{GREEK CAPITAL LETTER SIGMA}%)`'

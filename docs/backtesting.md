@@ -22,6 +22,7 @@ usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
                              [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
                              [--export {none,trades}] [--export-filename PATH]
                              [--breakdown {day,week,month} [{day,week,month} ...]]
+                             [--cache {none,day,week,month}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -76,6 +77,9 @@ optional arguments:
                         _today.json`
   --breakdown {day,week,month} [{day,week,month} ...]
                         Show backtesting breakdown per [day, week, month].
+  --cache {none,day,week,month}
+                        Load a cached backtest result no older than specified
+                        age (default: day).
 
 Common arguments:
   -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
@@ -465,6 +469,14 @@ freqtrade backtesting --strategy MyAwesomeStrategy --breakdown day month
 ```
 
 The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day.
+
+### Backtest result caching
+
+To save time, by default backtest will reuse a cached result from within the last day when the backtested strategy and config match that of a previous backtest. To force a new backtest despite existing result for an identical run specify `--cache none` parameter.
+
+!!! Warning
+    Caching is automatically disabled for open-ended timeranges (`--timerange 20210101-`), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
+    In this instance, please use `--cache none` once to force a fresh backtest.
 
 ### Further backtest-result analysis
 

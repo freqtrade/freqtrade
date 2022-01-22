@@ -2146,3 +2146,367 @@ def test_Trade_object_idem():
                 and item not in ('trades', 'trades_open', 'total_profit')
                 and type(getattr(LocalTrade, item)) not in (property, FunctionType)):
             assert item in trade
+
+
+def test_recalc_trade_from_orders(fee):
+
+    o1_amount = 100
+    o1_rate = 1
+    o1_cost = o1_amount * o1_rate
+    o1_fee_cost = o1_cost * fee.return_value
+    o1_trade_val = o1_cost + o1_fee_cost
+
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=o1_cost,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=o1_amount,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=o1_rate,
+        max_rate=o1_rate,
+    )
+
+    assert fee.return_value == 0.0025
+    assert trade._calc_open_trade_value() == o1_trade_val
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_cost
+    assert trade.open_rate == o1_rate
+    assert trade.open_trade_value == o1_trade_val
+
+    # Calling without orders should not throw exceptions and change nothing
+    trade.recalc_trade_from_orders()
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_cost
+    assert trade.open_rate == o1_rate
+    assert trade.open_trade_value == o1_trade_val
+
+    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, 'buy')
+
+    assert len(trade.orders) == 0
+
+    # Check with 1 order
+    order1 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order1)
+    trade.recalc_trade_from_orders()
+
+    # Calling recalc with single initial order should not change anything
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+
+    # One additional adjustment / DCA order
+    o2_amount = 125
+    o2_rate = 0.9
+    o2_cost = o2_amount * o2_rate
+    o2_fee_cost = o2_cost * fee.return_value
+    o2_trade_val = o2_cost + o2_fee_cost
+
+    order2 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o2_rate,
+        average=o2_rate,
+        filled=o2_amount,
+        remaining=0,
+        cost=o2_cost,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order2)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the trade now has new averaged open price and total values
+    avg_price = (o1_cost + o2_cost) / (o1_amount + o2_amount)
+    assert trade.amount == o1_amount + o2_amount
+    assert trade.stake_amount == o1_amount + o2_cost
+    assert trade.open_rate == avg_price
+    assert trade.fee_open_cost == o1_fee_cost + o2_fee_cost
+    assert trade.open_trade_value == o1_trade_val + o2_trade_val
+
+    # Let's try with multiple additional orders
+    o3_amount = 150
+    o3_rate = 0.85
+    o3_cost = o3_amount * o3_rate
+    o3_fee_cost = o3_cost * fee.return_value
+    o3_trade_val = o3_cost + o3_fee_cost
+
+    order3 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o3_rate,
+        average=o3_rate,
+        filled=o3_amount,
+        remaining=0,
+        cost=o3_cost,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order3)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the sum is still correct and open rate is averaged
+    avg_price = (o1_cost + o2_cost + o3_cost) / (o1_amount + o2_amount + o3_amount)
+    assert trade.amount == o1_amount + o2_amount + o3_amount
+    assert trade.stake_amount == o1_cost + o2_cost + o3_cost
+    assert trade.open_rate == avg_price
+    assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
+    assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
+
+    # Just to make sure sell orders are ignored, let's calculate one more time.
+    sell1 = Order(
+        ft_order_side='sell',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="sell",
+        price=avg_price + 0.95,
+        average=avg_price + 0.95,
+        filled=o1_amount + o2_amount + o3_amount,
+        remaining=0,
+        cost=o1_cost + o2_cost + o3_cost,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(sell1)
+    trade.recalc_trade_from_orders()
+
+    assert trade.amount == o1_amount + o2_amount + o3_amount
+    assert trade.stake_amount == o1_cost + o2_cost + o3_cost
+    assert trade.open_rate == avg_price
+    assert pytest.approx(trade.fee_open_cost) == o1_fee_cost + o2_fee_cost + o3_fee_cost
+    assert pytest.approx(trade.open_trade_value) == o1_trade_val + o2_trade_val + o3_trade_val
+
+
+def test_recalc_trade_from_orders_ignores_bad_orders(fee):
+
+    o1_amount = 100
+    o1_rate = 1
+    o1_cost = o1_amount * o1_rate
+    o1_fee_cost = o1_cost * fee.return_value
+    o1_trade_val = o1_cost + o1_fee_cost
+
+    trade = Trade(
+        pair='ADA/USDT',
+        stake_amount=o1_cost,
+        open_date=arrow.utcnow().shift(hours=-2).datetime,
+        amount=o1_amount,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exchange='binance',
+        open_rate=o1_rate,
+        max_rate=o1_rate,
+    )
+    trade.update_fee(o1_fee_cost, 'BNB', fee.return_value, 'buy')
+    # Check with 1 order
+    order1 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_amount,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(order1)
+    trade.recalc_trade_from_orders()
+
+    # Calling recalc with single initial order should not change anything
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys == 1
+
+    order2 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=True,
+        status="open",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order2)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the trade values have not been changed
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys == 1
+
+    # Let's try with some other orders
+    order3 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="cancelled",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=1,
+        average=2,
+        filled=0,
+        remaining=4,
+        cost=5,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order3)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the order values still are ignoring orders 2 and 3
+    assert trade.amount == o1_amount
+    assert trade.stake_amount == o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.open_trade_value == o1_trade_val
+    assert trade.nr_of_successful_buys == 1
+
+    order4 = Order(
+        ft_order_side='buy',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="buy",
+        price=o1_rate,
+        average=o1_rate,
+        filled=o1_amount,
+        remaining=0,
+        cost=o1_cost,
+        order_date=arrow.utcnow().shift(hours=-1).datetime,
+        order_filled_date=arrow.utcnow().shift(hours=-1).datetime,
+    )
+    trade.orders.append(order4)
+    trade.recalc_trade_from_orders()
+
+    # Validate that the trade values have been changed
+    assert trade.amount == 2 * o1_amount
+    assert trade.stake_amount == 2 * o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.open_trade_value == 2 * o1_trade_val
+    assert trade.nr_of_successful_buys == 2
+
+    # Just to make sure sell orders are ignored, let's calculate one more time.
+    sell1 = Order(
+        ft_order_side='sell',
+        ft_pair=trade.pair,
+        ft_is_open=False,
+        status="closed",
+        symbol=trade.pair,
+        order_type="market",
+        side="sell",
+        price=4,
+        average=3,
+        filled=2,
+        remaining=1,
+        cost=5,
+        order_date=trade.open_date,
+        order_filled_date=trade.open_date,
+    )
+    trade.orders.append(sell1)
+    trade.recalc_trade_from_orders()
+
+    assert trade.amount == 2 * o1_amount
+    assert trade.stake_amount == 2 * o1_amount
+    assert trade.open_rate == o1_rate
+    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.open_trade_value == 2 * o1_trade_val
+    assert trade.nr_of_successful_buys == 2
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_filled_orders(fee):
+    create_mock_trades(fee)
+
+    trades = Trade.get_trades().all()
+
+    # Closed buy order, no sell order
+    orders = trades[0].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+    order = orders[0]
+    assert order.amount > 0
+    assert order.filled > 0
+    assert order.side == 'buy'
+    assert order.ft_order_side == 'buy'
+    assert order.status == 'closed'
+    orders = trades[0].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0
+
+    # closed buy order, and closed sell order
+    orders = trades[1].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+
+    orders = trades[1].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 1
+
+    # Has open buy order
+    orders = trades[3].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 0
+    orders = trades[3].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0
+
+    # Open sell order
+    orders = trades[4].select_filled_orders('buy')
+    assert orders is not None
+    assert len(orders) == 1
+    orders = trades[4].select_filled_orders('sell')
+    assert orders is not None
+    assert len(orders) == 0

@@ -6,6 +6,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.persistence import Trade
 from freqtrade.strategy import (BooleanParameter, DecimalParameter, IntParameter, IStrategy,
                                 RealParameter)
 
@@ -178,3 +179,12 @@ class StrategyTestV3(IStrategy):
         # Bot-logic must make sure it's an allowed leverage and eventually adjust accordingly.
 
         return 3.0
+
+    def adjust_trade_position(self, trade: Trade, current_time: datetime, current_rate: float,
+                              current_profit: float, min_stake: float, max_stake: float, **kwargs):
+
+        if current_profit < -0.0075:
+            orders = trade.select_filled_orders('buy')
+            return round(orders[0].cost, 0)
+
+        return None

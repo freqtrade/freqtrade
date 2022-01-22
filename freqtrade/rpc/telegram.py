@@ -781,14 +781,17 @@ class Telegram(RPCHandler):
                     f"(< {balance_dust_level} {result['stake']}):*\n"
                     f"\t`Est. {result['stake']}: "
                     f"{round_coin_value(total_dust_balance, result['stake'], False)}`\n")
+            tc = result['trade_count'] > 0
+            stake_improve = f" `({result['starting_capital_ratio']:.2%})`" if tc else ''
+            fiat_val = f" `({result['starting_capital_fiat_ratio']:.2%})`" if tc else ''
 
             output += ("\n*Estimated Value*:\n"
                        f"\t`{result['stake']}: "
                        f"{round_coin_value(result['total'], result['stake'], False)}`"
-                       f" `({result['starting_capital_ratio']:.2%})`\n"
+                       f"{stake_improve}\n"
                        f"\t`{result['symbol']}: "
                        f"{round_coin_value(result['value'], result['symbol'], False)}`"
-                       f" `({result['starting_capital_fiat_ratio']:.2%})`\n")
+                       f"{fiat_val}\n")
             self._send_msg(output, reload_able=True, callback_path="update_balance",
                            query=update.callback_query)
         except RPCException as e:

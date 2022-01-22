@@ -205,6 +205,12 @@ AVAILABLE_CLI_OPTIONS = {
         nargs='+',
         choices=constants.BACKTEST_BREAKDOWNS
     ),
+    "backtest_cache": Arg(
+        '--cache',
+        help='Load a cached backtest result no older than specified age (default: %(default)s).',
+        default=constants.BACKTEST_CACHE_DEFAULT,
+        choices=constants.BACKTEST_CACHE_AGE,
+    ),
     # Edge
     "stoploss_range": Arg(
         '--stoplosses',

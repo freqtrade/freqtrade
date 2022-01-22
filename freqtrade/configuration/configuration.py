@@ -276,6 +276,9 @@ class Configuration:
         self._args_to_config(config, argname='backtest_breakdown',
                              logstring='Parameter --breakdown detected ...')
 
+        self._args_to_config(config, argname='backtest_cache',
+                             logstring='Parameter --cache={} detected ...')
+
         self._args_to_config(config, argname='disableparamexport',
                              logstring='Parameter --disableparamexport detected: {} ...')
 
