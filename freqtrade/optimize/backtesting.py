@@ -564,12 +564,11 @@ class Backtesting:
                     orders=[]
                 )
             trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            order_filled = self._get_order_filled(propose_rate, row)
 
             order = Order(
                 id=self.order_id_counter,
                 ft_trade_id=trade.id,
-                ft_is_open=not order_filled,
+                ft_is_open=True,
                 ft_pair=trade.pair,
                 order_id=str(self.order_id_counter),
                 symbol=trade.pair,
