@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)
 # Version increments should happen in "small" steps (1.1, 1.12, ...) unless big changes happen.
 # 1.11: forcebuy and forcesell accept ordertype
 # 1.12: add blacklist delete endpoint
-API_VERSION = 1.12
+# 1.13: forcebuy supports stake_amount
+API_VERSION = 1.13
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -134,7 +135,9 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 @router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
 def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype)
+    stake_amount = payload.stakeamount if payload.stakeamount else None
+
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount)
 
     if trade:
         return ForceBuyResponse.parse_obj(trade.to_json())
