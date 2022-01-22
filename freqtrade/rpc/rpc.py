@@ -208,6 +208,8 @@ class RPC:
                         order['type'], order['side'], order['remaining']
                     ) if order else None,
                 ))
+                cp_cfg = self._config
+                trade_dict['position_adjustment_enable'] = cp_cfg['position_adjustment_enable']
                 results.append(trade_dict)
             return results
 
@@ -242,7 +244,7 @@ class RPC:
                     trade.id,
                     trade.pair + ('*' if (trade.open_order_id is not None
                                           and trade.close_rate_requested is None) else '')
-                               + ('**' if (trade.close_rate_requested is not None) else ''),
+                    + ('**' if (trade.close_rate_requested is not None) else ''),
                     shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
                     profit_str
                 ]

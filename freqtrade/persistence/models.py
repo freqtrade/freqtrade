@@ -282,6 +282,20 @@ class LocalTrade():
         return self.close_date.replace(tzinfo=timezone.utc)
 
     def to_json(self) -> Dict[str, Any]:
+        fill_buy = self.select_filled_orders('buy')
+        buys_json = dict()
+        if len(fill_buy) > 0:
+            for x in range(len(fill_buy)):
+                buy = dict(
+                    cost=fill_buy[x].cost if fill_buy[x].cost else 0.0,
+                    amount=fill_buy[x].amount,
+                    price=fill_buy[x].price,
+                    average=round(fill_buy[x].average, 8) if fill_buy[x].average else 0.0,
+                    order_filled_date=fill_buy[x].order_filled_date.strftime(DATETIME_PRINT_FORMAT)
+                    if fill_buy[x].order_filled_date else None
+                )
+                buys_json[str(x)] = buy
+
         return {
             'trade_id': self.id,
             'pair': self.pair,
@@ -345,6 +359,7 @@ class LocalTrade():
             'max_rate': self.max_rate,
 
             'open_order_id': self.open_order_id,
+            'filled_buys': buys_json,
         }
 
     @staticmethod

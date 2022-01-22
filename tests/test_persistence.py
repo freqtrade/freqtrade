@@ -903,6 +903,7 @@ def test_to_json(default_conf, fee):
                       'buy_tag': None,
                       'timeframe': None,
                       'exchange': 'binance',
+                      'filled_buys': {}
                       }
 
     # Simulate dry_run entries
@@ -970,6 +971,7 @@ def test_to_json(default_conf, fee):
                       'buy_tag': 'buys_signal_001',
                       'timeframe': None,
                       'exchange': 'binance',
+                      'filled_buys': {}
                       }
 
 

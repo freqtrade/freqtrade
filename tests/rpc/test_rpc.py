@@ -108,6 +108,9 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
+        'position_adjustment_enable': False,
+        'filled_buys': {'0': {'amount': 91.07468123, 'average': 1.098e-05,
+                        'cost': 0.0009999999999054, 'order_filled_date': ANY, 'price': 1.098e-05}},
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -175,6 +178,9 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'stoploss_entry_dist_ratio': -0.10448878,
         'open_order': None,
         'exchange': 'binance',
+        'position_adjustment_enable': False,
+        'filled_buys': {'0': {'amount': 91.07468123, 'average': 1.098e-05,
+                        'cost': 0.0009999999999054, 'order_filled_date': ANY, 'price': 1.098e-05}},
     }
 
 
