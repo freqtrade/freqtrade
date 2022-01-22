@@ -1170,6 +1170,107 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
 
 @pytest.mark.filterwarnings("ignore:deprecated")
+def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
+                                                   caplog, testdatadir, capsys):
+    # Tests detail-data loading
+    default_conf_usdt.update({
+        "trading_mode": "futures",
+        "collateral": "isolated",
+        "use_sell_signal": True,
+        "sell_profit_only": False,
+        "sell_profit_offset": 0.0,
+        "ignore_roi_if_buy_signal": False,
+        "strategy": CURRENT_TEST_STRATEGY,
+    })
+    patch_exchange(mocker)
+    result1 = pd.DataFrame({'pair': ['XRP/USDT', 'XRP/USDT'],
+                            'profit_ratio': [0.0, 0.0],
+                            'profit_abs': [0.0, 0.0],
+                            'open_date': pd.to_datetime(['2021-11-18 18:00:00',
+                                                         '2021-11-18 03:00:00', ], utc=True
+                                                        ),
+                            'close_date': pd.to_datetime(['2021-11-18 20:00:00',
+                                                          '2021-11-18 05:00:00', ], utc=True),
+                            'trade_duration': [235, 40],
+                            'is_open': [False, False],
+                            'is_short': [False, False],
+                            'stake_amount': [0.01, 0.01],
+                            'open_rate': [0.104445, 0.10302485],
+                            'close_rate': [0.104969, 0.103541],
+                            'sell_reason': [SellType.ROI, SellType.ROI]
+                            })
+    result2 = pd.DataFrame({'pair': ['XRP/USDT', 'XRP/USDT', 'XRP/USDT'],
+                            'profit_ratio': [0.03, 0.01, 0.1],
+                            'profit_abs': [0.01, 0.02, 0.2],
+                            'open_date': pd.to_datetime(['2021-11-19 18:00:00',
+                                                         '2021-11-19 03:00:00',
+                                                         '2021-11-19 05:00:00'], utc=True
+                                                        ),
+                            'close_date': pd.to_datetime(['2021-11-19 20:00:00',
+                                                          '2021-11-19 05:00:00',
+                                                          '2021-11-19 08:00:00'], utc=True),
+                            'trade_duration': [47, 40, 20],
+                            'is_open': [False, False, False],
+                            'is_short': [False, False, False],
+                            'stake_amount': [0.01, 0.01, 0.01],
+                            'open_rate': [0.104445, 0.10302485, 0.122541],
+                            'close_rate': [0.104969, 0.103541, 0.123541],
+                            'sell_reason': [SellType.ROI, SellType.ROI, SellType.STOP_LOSS]
+                            })
+    backtestmock = MagicMock(side_effect=[
+        {
+            'results': result1,
+            'config': default_conf_usdt,
+            'locks': [],
+            'rejected_signals': 20,
+            'final_balance': 1000,
+        },
+        {
+            'results': result2,
+            'config': default_conf_usdt,
+            'locks': [],
+            'rejected_signals': 20,
+            'final_balance': 1000,
+        }
+    ])
+    mocker.patch('freqtrade.plugins.pairlistmanager.PairListManager.whitelist',
+                 PropertyMock(return_value=['XRP/USDT']))
+    mocker.patch('freqtrade.optimize.backtesting.Backtesting.backtest', backtestmock)
+
+    patched_configuration_load_config_file(mocker, default_conf_usdt)
+
+    args = [
+        'backtesting',
+        '--config', 'config.json',
+        '--datadir', str(testdatadir),
+        '--strategy-path', str(Path(__file__).parents[1] / 'strategy/strats'),
+        '--timeframe', '1h',
+    ]
+    args = get_args(args)
+    start_backtesting(args)
+
+    # check the logs, that will contain the backtest result
+    exists = [
+        'Parameter -i/--timeframe detected ... Using timeframe: 1h ...',
+        f'Using data directory: {testdatadir} ...',
+        'Loading data from 2021-11-17 01:00:00 '
+        'up to 2021-11-21 03:00:00 (4 days).',
+        'Backtesting with data from 2021-11-17 21:00:00 '
+        'up to 2021-11-21 03:00:00 (3 days).',
+        'XRP/USDT, funding_rate, 8h, data starts at 2021-11-18 00:00:00',
+        'XRP/USDT, mark, 8h, data starts at 2021-11-18 00:00:00',
+        f'Running backtesting for Strategy {CURRENT_TEST_STRATEGY}',
+    ]
+
+    for line in exists:
+        assert log_has(line, caplog)
+
+    captured = capsys.readouterr()
+    assert 'BACKTESTING REPORT' in captured.out
+    assert 'SELL REASON STATS' in captured.out
+    assert 'LEFT OPEN TRADES REPORT' in captured.out
+
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,
                                                   caplog, testdatadir, capsys):
     # Tests detail-data loading

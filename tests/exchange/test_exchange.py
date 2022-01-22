@@ -3684,9 +3684,13 @@ def test__fetch_and_calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    # TODO-lev: test this for longs
-    funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', amount, True, d1, d2)
+    funding_fees = exchange._fetch_and_calculate_funding_fees(
+        pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
+    # Fees for Longs are inverted
+    funding_fees = exchange._fetch_and_calculate_funding_fees(
+        pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
+    assert pytest.approx(funding_fees) == -expected_fees
 
 
 @pytest.mark.parametrize('exchange,expected_fees', [
