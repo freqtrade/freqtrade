@@ -188,7 +188,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
+                          current_time: datetime, **kwargs) -> bool:
         """
         Check buy timeout function callback.
         This method can be used to override the buy-timeout.
@@ -201,12 +202,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is cancelled.
         """
         return False
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Check sell timeout function callback.
         This method can be used to override the sell-timeout.
@@ -219,6 +222,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is cancelled.
         """
@@ -872,7 +876,8 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         return strategy_safe_wrapper(getattr(self, time_method),
                                      default_retval=False)(
-                                         pair=trade.pair, trade=trade, order=order)
+                                        pair=trade.pair, trade=trade, order=order,
+                                        current_time=current_time)
 
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """

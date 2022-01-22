@@ -413,7 +413,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 class AwesomeStrategy(IStrategy):
@@ -426,22 +426,24 @@ class AwesomeStrategy(IStrategy):
         'sell': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                          current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 ```
