@@ -191,4 +191,4 @@ class Kraken(Exchange):
             df = df[(df['date'] >= open_date) & (df['date'] <= close_date)]
             fees = sum(df['open_fund'] * df['open_mark'] * amount * time_in_ratio)
 
-        return fees
+        return fees if is_short else -fees
