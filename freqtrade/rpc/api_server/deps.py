@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterator, Optional
 
+from fastapi import Depends
+
 from freqtrade.persistence import Trade
 from freqtrade.rpc.rpc import RPC, RPCException
 
@@ -28,3 +30,11 @@ def get_config() -> Dict[str, Any]:
 
 def get_api_config() -> Dict[str, Any]:
     return ApiServer._config['api_server']
+
+
+def get_exchange(config=Depends(get_config)):
+    if not ApiServer._exchange:
+        from freqtrade.resolvers import ExchangeResolver
+        ApiServer._exchange = ExchangeResolver.load_exchange(
+            config['exchange']['name'], config)
+    return ApiServer._exchange
