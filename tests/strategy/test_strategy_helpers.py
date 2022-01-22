@@ -159,6 +159,13 @@ def test_stoploss_from_absolute():
     assert stoploss_from_absolute(100, 0) == 1
     assert stoploss_from_absolute(0, 100) == 1
 
+    assert stoploss_from_absolute(90, 100, True) == 0
+    assert stoploss_from_absolute(100, 100, True) == 0
+    assert stoploss_from_absolute(110, 100, True) == -(1 - (110/100))
+    assert stoploss_from_absolute(100, 0, True) == 1
+    assert stoploss_from_absolute(0, 100, True) == 0
+    assert stoploss_from_absolute(100, 1, True) == 1
+
 
 # TODO-lev: @pytest.mark.parametrize('candle_type', ['mark', ''])
 def test_informative_decorator(mocker, default_conf):
