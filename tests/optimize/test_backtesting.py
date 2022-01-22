@@ -21,6 +21,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import get_timerange
 from freqtrade.enums import RunMode, SellType
 from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.misc import get_strategy_run_id
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import LocalTrade
 from freqtrade.resolvers import StrategyResolver
@@ -1357,3 +1358,13 @@ def test_backtest_start_multi_strat_caching(default_conf, mocker, caplog, testda
 
     for line in exists:
         assert log_has(line, caplog)
+
+
+def test_get_strategy_run_id(default_conf_usdt):
+    default_conf_usdt.update({
+        'strategy': 'StrategyTestV2',
+        'max_open_trades': float('inf')
+        })
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    x = get_strategy_run_id(strategy)
+    assert isinstance(x, str)
