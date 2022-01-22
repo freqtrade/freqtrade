@@ -214,10 +214,16 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "Since" in headers
     assert "Pair" in headers
+    assert len(result[0]) == 4
     assert 'instantly' == result[0][2]
     assert 'ETH/BTC' in result[0][1]
     assert '-0.41% (-0.06)' == result[0][3]
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
+
+    rpc._config['position_adjustment_enable'] = True
+    result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
+    assert "# Buys" in headers
+    assert len(result[0]) == 5
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
@@ -1102,9 +1108,14 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     with pytest.raises(RPCException,
                        match=r'Wrong pair selected. Only pairs with stake-currency.*'):
         rpc._rpc_forcebuy('LTC/ETH', 0.0001)
-    pair = 'XRP/BTC'
+
+    # Test with defined stake_amount
+    pair = 'LTC/BTC'
+    trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit', stake_amount=0.05)
+    assert trade.stake_amount == 0.05
 
     # Test not buying
+    pair = 'XRP/BTC'
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     freqtradebot.config['stake_amount'] = 0
     patch_get_signal(freqtradebot)
