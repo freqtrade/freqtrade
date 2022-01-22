@@ -100,6 +100,9 @@ def get_latest_hyperopt_file(directory: Union[Path, str], predef_filename: str =
     if isinstance(directory, str):
         directory = Path(directory)
     if predef_filename:
+        if Path(predef_filename).is_absolute():
+            raise OperationalException(
+                "--hyperopt-filename expects only the filename, not an absolute path.")
         return directory / predef_filename
     return directory / get_latest_hyperopt_filename(directory)
 

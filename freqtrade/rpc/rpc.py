@@ -1000,7 +1000,7 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
-                                   timerange: str) -> Dict[str, Any]:
+                                   timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
@@ -1015,7 +1015,7 @@ class RPC:
         from freqtrade.data.dataprovider import DataProvider
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
-        strategy.dp = DataProvider(config, exchange=None, pairlists=None)
+        strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 

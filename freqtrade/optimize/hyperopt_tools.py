@@ -137,6 +137,7 @@ class HyperoptTools():
         }
         if not HyperoptTools._test_hyperopt_results_exist(results_file):
             # No file found.
+            logger.warning(f"Hyperopt file {results_file} not found.")
             return [], 0
 
         epochs = []
