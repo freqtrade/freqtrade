@@ -51,6 +51,12 @@ def test_get_latest_hyperopt_file(testdatadir):
     res = get_latest_hyperopt_file(str(testdatadir.parent))
     assert res == testdatadir.parent / "hyperopt_results.pickle"
 
+    # Test with absolute path
+    with pytest.raises(
+        OperationalException,
+            match="--hyperopt-filename expects only the filename, not an absolute path."):
+        get_latest_hyperopt_file(str(testdatadir.parent), str(testdatadir.parent))
+
 
 def test_load_backtest_metadata(mocker, testdatadir):
     res = load_backtest_metadata(testdatadir / 'nonexistant.file.json')
