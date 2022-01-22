@@ -1171,7 +1171,7 @@ def test_backtest_start_multi_strat_nomock(default_conf, mocker, caplog, testdat
 
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
-                                                   caplog, testdatadir, capsys):
+                                       caplog, testdatadir, capsys):
     # Tests detail-data loading
     default_conf_usdt.update({
         "trading_mode": "futures",
@@ -1269,6 +1269,7 @@ def test_backtest_start_nomock_futures(default_conf_usdt, mocker,
     assert 'BACKTESTING REPORT' in captured.out
     assert 'SELL REASON STATS' in captured.out
     assert 'LEFT OPEN TRADES REPORT' in captured.out
+
 
 @pytest.mark.filterwarnings("ignore:deprecated")
 def test_backtest_start_multi_strat_nomock_detail(default_conf, mocker,

@@ -1372,10 +1372,10 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
 
-    assert "Found 3 pair / timeframe combinations." in captured.out
-    assert "\n|          Pair |   Timeframe |    Type |\n" in captured.out
-    assert "\n|      XRP/USDT |          1h | futures |\n" in captured.out
-    assert "\n|      XRP/USDT |          1h |    mark |\n" in captured.out
+    assert "Found 5 pair / timeframe combinations." in captured.out
+    assert "\n|          Pair |   Timeframe |         Type |\n" in captured.out
+    assert "\n|      XRP/USDT |          1h |      futures |\n" in captured.out
+    assert "\n|      XRP/USDT |      1h, 8h |         mark |\n" in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")
