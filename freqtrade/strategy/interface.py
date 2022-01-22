@@ -852,6 +852,28 @@ class IStrategy(ABC, HyperStrategyMixin):
         else:
             return current_profit > roi
 
+    def ft_check_timed_out(self, side: str, trade: Trade, order: Dict,
+                           current_time: datetime) -> bool:
+        """
+        FT Internal method.
+        Check if timeout is active, and if the order is still open and timed out
+        """
+        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        ordertime = arrow.get(order['datetime']).datetime
+        if timeout is not None:
+            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
+            timeout_kwargs = {timeout_unit: -timeout}
+            timeout_threshold = current_time + timedelta(**timeout_kwargs)
+            timedout = (order['status'] == 'open' and order['side'] == side
+                        and ordertime < timeout_threshold)
+            if timedout:
+                return True
+        time_method = 'check_sell_timeout' if order['side'] == 'sell' else 'check_buy_timeout'
+
+        return strategy_safe_wrapper(getattr(self, time_method),
+                                     default_retval=False)(
+                                         pair=trade.pair, trade=trade, order=order)
+
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
         Populates indicators for given candle (OHLCV) data (for multiple pairs)
