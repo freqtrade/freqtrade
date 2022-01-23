@@ -18,6 +18,7 @@ import threading
 from user_data.strategies.util import IS_BACKTEST, launcher, back_tester
 
 
+
 class Strategy002(IStrategy):
     """
     Strategy 002
@@ -171,4 +172,5 @@ class Strategy002(IStrategy):
         else:
             threading.Thread(target=launcher, args=(mode, coin, brain)).start()
         return True
+
 

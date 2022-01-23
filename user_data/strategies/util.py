@@ -1,5 +1,8 @@
 import subprocess
 
+BACKTEST_JSON_PATH = ""
+BACKTEST_YEAR = 2020
+BACKTEST_MONTH = 10
 IS_BACKTEST = False
 WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
 EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
