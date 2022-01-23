@@ -188,6 +188,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
+    def bot_loop_start(self, **kwargs) -> None:
+        """
+        Called at the start of the bot iteration (one loop).
+        Might be used to perform pair-independent tasks
+        (e.g. gather some remote resource for comparison)
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
     def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
                           current_time: datetime, **kwargs) -> bool:
         """
@@ -227,15 +236,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return bool: When True is returned, then the sell-order is cancelled.
         """
         return False
-
-    def bot_loop_start(self, **kwargs) -> None:
-        """
-        Called at the start of the bot iteration (one loop).
-        Might be used to perform pair-independent tasks
-        (e.g. gather some remote resource for comparison)
-        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        """
-        pass
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
                             time_in_force: str, current_time: datetime, **kwargs) -> bool:
