@@ -164,6 +164,7 @@ class Strategy002(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
+        print("............................................................................"+str(current_time))
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
