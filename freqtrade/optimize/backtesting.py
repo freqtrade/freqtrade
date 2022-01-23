@@ -462,12 +462,14 @@ class Backtesting:
 
     def _enter_trade(self, pair: str, row: Tuple, stake_amount: Optional[float] = None,
                      trade: Optional[LocalTrade] = None) -> Optional[LocalTrade]:
+
         current_time = row[DATE_IDX].to_pydatetime()
+        entry_tag = row[BUY_TAG_IDX] if len(row) >= BUY_TAG_IDX + 1 else None
         # let's call the custom entry price, using the open price as default price
         propose_rate = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                              default_retval=row[OPEN_IDX])(
             pair=pair, current_time=current_time,
-            proposed_rate=row[OPEN_IDX])  # default value is the open rate
+            proposed_rate=row[OPEN_IDX], entry_tag=entry_tag)  # default value is the open rate
 
         # Move rate to within the candle's low/high rate
         propose_rate = min(max(propose_rate, row[LOW_IDX]), row[HIGH_IDX])
@@ -485,7 +487,8 @@ class Backtesting:
             stake_amount = strategy_safe_wrapper(self.strategy.custom_stake_amount,
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=current_time, current_rate=propose_rate,
-                proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount)
+                proposed_stake=stake_amount, min_stake=min_stake_amount, max_stake=max_stake_amount,
+                entry_tag=entry_tag)
 
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
 
@@ -500,14 +503,14 @@ class Backtesting:
         if not pos_adjust:
             if not strategy_safe_wrapper(self.strategy.confirm_trade_entry, default_retval=True)(
                     pair=pair, order_type=order_type, amount=stake_amount, rate=propose_rate,
-                    time_in_force=time_in_force, current_time=current_time):
+                    time_in_force=time_in_force, current_time=current_time,
+                    entry_tag=entry_tag):
                 return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
             amount = round(stake_amount / propose_rate, 8)
             if trade is None:
                 # Enter trade
-                has_buy_tag = len(row) >= BUY_TAG_IDX + 1
                 trade = LocalTrade(
                     pair=pair,
                     open_rate=propose_rate,
@@ -517,7 +520,7 @@ class Backtesting:
                     fee_open=self.fee,
                     fee_close=self.fee,
                     is_open=True,
-                    buy_tag=row[BUY_TAG_IDX] if has_buy_tag else None,
+                    buy_tag=entry_tag,
                     exchange='backtesting',
                     orders=[]
                 )
