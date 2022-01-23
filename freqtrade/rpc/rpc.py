@@ -1030,3 +1030,8 @@ class RPC:
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
             "ram_pct": psutil.virtual_memory().percent
         }
+
+    def _health(self) -> Dict[str, str]:
+        return {
+            'last_process': str(self._freqtrade.last_process)
+        }

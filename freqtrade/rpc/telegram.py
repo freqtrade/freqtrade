@@ -113,7 +113,7 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/edge$', r'/help$', r'/version$']
+                                 r'/forcebuy$', r'/edge$', r'/health$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -173,6 +173,7 @@ class Telegram(RPCHandler):
             CommandHandler(['blacklist_delete', 'bl_delete'], self._blacklist_delete),
             CommandHandler('logs', self._logs),
             CommandHandler('edge', self._edge),
+            CommandHandler('health', self._health),
             CommandHandler('help', self._help),
             CommandHandler('version', self._version),
         ]
@@ -1282,6 +1283,7 @@ class Telegram(RPCHandler):
             "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/edge:* `Shows validated pairs by Edge if it is enabled` \n"
+            "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
 
             "_Statistics_\n"
             "------------\n"
@@ -1308,6 +1310,20 @@ class Telegram(RPCHandler):
             )
 
         self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
+
+    @authorized_only
+    def _health(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /health
+        Shows the last process timestamp
+        """
+        try:
+            health = self._rpc._health()
+            message = f"Last process: `{health['last_process']}`"
+            logger.debug(message)
+            self._send_msg(message)
+        except RPCException as e:
+            self._send_msg(str(e))
 
     @authorized_only
     def _version(self, update: Update, context: CallbackContext) -> None:
