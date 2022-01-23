@@ -11,9 +11,9 @@ def clean_json():
     list = []
     data = json.load(file)
     for datas in data:
-        datas[0] = datas[0]/1000
-        datas[0] = int(datas[0])
-        date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(datas[0])))
+        unix = datas[0]/1000
+        unix = int(unix)
+        date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(unix)))
         date = datetime.datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
         year = date.year
         month = date.month
