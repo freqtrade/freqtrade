@@ -188,7 +188,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
+                          current_time: datetime, **kwargs) -> bool:
         """
         Check buy timeout function callback.
         This method can be used to override the buy-timeout.
@@ -201,12 +202,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is cancelled.
         """
         return False
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Check sell timeout function callback.
         This method can be used to override the sell-timeout.
@@ -219,6 +222,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is cancelled.
         """
@@ -851,6 +855,29 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False
         else:
             return current_profit > roi
+
+    def ft_check_timed_out(self, side: str, trade: Trade, order: Dict,
+                           current_time: datetime) -> bool:
+        """
+        FT Internal method.
+        Check if timeout is active, and if the order is still open and timed out
+        """
+        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        ordertime = arrow.get(order['datetime']).datetime
+        if timeout is not None:
+            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
+            timeout_kwargs = {timeout_unit: -timeout}
+            timeout_threshold = current_time + timedelta(**timeout_kwargs)
+            timedout = (order['status'] == 'open' and order['side'] == side
+                        and ordertime < timeout_threshold)
+            if timedout:
+                return True
+        time_method = self.check_sell_timeout if order['side'] == 'sell' else self.check_buy_timeout
+
+        return strategy_safe_wrapper(time_method,
+                                     default_retval=False)(
+                                        pair=trade.pair, trade=trade, order=order,
+                                        current_time=current_time)
 
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """

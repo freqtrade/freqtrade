@@ -9,8 +9,6 @@ from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
-import arrow
-
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
@@ -959,20 +957,6 @@ class FreqtradeBot(LoggingMixin):
             return True
         return False
 
-    def _check_timed_out(self, side: str, order: dict) -> bool:
-        """
-        Check if timeout is active, and if the order is still open and timed out
-        """
-        timeout = self.config.get('unfilledtimeout', {}).get(side)
-        ordertime = arrow.get(order['datetime']).datetime
-        if timeout is not None:
-            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
-            timeout_kwargs = {timeout_unit: -timeout}
-            timeout_threshold = arrow.utcnow().shift(**timeout_kwargs).datetime
-            return (order['status'] == 'open' and order['side'] == side
-                    and ordertime < timeout_threshold)
-        return False
-
     def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if necessary
@@ -993,20 +977,16 @@ class FreqtradeBot(LoggingMixin):
 
             if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
-                    or self._check_timed_out('buy', order)
-                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,
-                                             default_retval=False)(pair=trade.pair,
-                                                                   trade=trade,
-                                                                   order=order))):
+                    or self.strategy.ft_check_timed_out(
+                        'buy', trade, order, datetime.now(timezone.utc))
+                        )):
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
-                  or self._check_timed_out('sell', order)
-                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,
-                                           default_retval=False)(pair=trade.pair,
-                                                                 trade=trade,
-                                                                 order=order))):
+                  or self.strategy.ft_check_timed_out(
+                      'sell', trade, order, datetime.now(timezone.utc)))
+                  ):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 canceled_count = trade.get_exit_order_count()
                 max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)
