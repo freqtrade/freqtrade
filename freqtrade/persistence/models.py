@@ -165,6 +165,16 @@ class Order(_DECL_BASE):
                 self.order_filled_date = datetime.now(timezone.utc)
         self.order_update_date = datetime.now(timezone.utc)
 
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'cost': self.cost if self.cost else 0,
+            'amount': self.amount,
+            'price': self.price,
+            'average': round(self.average, 8) if self.average else 0,
+            'order_filled_date': self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
+            if self.order_filled_date else None
+        }
+
     @staticmethod
     def update_orders(orders: List['Order'], order: Dict[str, Any]):
         """
@@ -286,15 +296,7 @@ class LocalTrade():
         buys_json = dict()
         if len(fill_buy) > 0:
             for x in range(len(fill_buy)):
-                buy = dict(
-                    cost=fill_buy[x].cost if fill_buy[x].cost else 0.0,
-                    amount=fill_buy[x].amount,
-                    price=fill_buy[x].price,
-                    average=round(fill_buy[x].average, 8) if fill_buy[x].average else 0.0,
-                    order_filled_date=fill_buy[x].order_filled_date.strftime(DATETIME_PRINT_FORMAT)
-                    if fill_buy[x].order_filled_date else None
-                )
-                buys_json[str(x)] = buy
+                buys_json[str(x)] = fill_buy[x].to_json()
 
         return {
             'trade_id': self.id,
