@@ -474,8 +474,7 @@ class FreqtradeBot(LoggingMixin):
         Once that completes, the existing trade is modified to match new data.
         """
         if self.strategy.max_buy_position_adjustment > -1:
-            filled_buys = trade.select_filled_orders('buy')
-            count_of_buys = len(filled_buys)
+            count_of_buys = trade.nr_of_successful_buys
             if count_of_buys > self.strategy.max_buy_position_adjustment:
                 logger.debug(f"Max adjustment buy for {trade.pair} has been reached.")
                 return
