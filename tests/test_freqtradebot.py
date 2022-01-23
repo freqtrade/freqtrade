@@ -4550,3 +4550,32 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     # Make sure the closed order is found as the second order.
     order = trade.select_order('buy', False)
     assert order.order_id == '652'
+
+
+def test_process_open_trade_positions_exception(mocker, default_conf_usdt, fee, caplog) -> None:
+    default_conf_usdt.update({
+        "position_adjustment_enable": True,
+    })
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    mocker.patch('freqtrade.freqtradebot.FreqtradeBot.check_and_call_adjust_trade_position',
+                 side_effect=DependencyException())
+
+    create_mock_trades(fee)
+
+    freqtrade.process_open_trade_positions()
+    assert log_has_re(r"Unable to adjust position of trade for .*", caplog)
+
+
+def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, caplog) -> None:
+    default_conf_usdt.update({
+        "position_adjustment_enable": True,
+        "max_buy_position_adjustment": 0,
+    })
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    create_mock_trades(fee)
+    caplog.set_level(logging.DEBUG)
+
+    freqtrade.process_open_trade_positions()
+    assert log_has_re(r"Max adjustment buy for .* has been reached\.", caplog)

@@ -464,8 +464,8 @@ class FreqtradeBot(LoggingMixin):
                 try:
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
-                    logger.warning('Unable to adjust position of trade for %s: %s',
-                                   trade.pair, exception)
+                    logger.warning(
+                        f"Unable to adjust position of trade for {trade.pair}: {exception}")
 
     def check_and_call_adjust_trade_position(self, trade: Trade):
         """
