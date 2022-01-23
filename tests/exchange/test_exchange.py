@@ -26,6 +26,12 @@ from tests.conftest import get_mock_coro, get_patched_exchange, log_has, log_has
 
 # Make sure to always keep one exchange here which is NOT subclassed!!
 EXCHANGES = ['bittrex', 'binance', 'kraken', 'ftx', 'gateio']
+spot = TradingMode.SPOT
+margin = TradingMode.MARGIN
+futures = TradingMode.FUTURES
+
+cross = Collateral.CROSS
+isolated = Collateral.ISOLATED
 
 
 def ccxt_exceptionhandlers(mocker, default_conf, api_mock, exchange_name,
@@ -3965,3 +3971,102 @@ def test__amount_to_contracts(
     assert result_size == param_size
     result_amount = exchange._contracts_to_amount(pair, param_size)
     assert result_amount == param_amount
+
+
+@pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
+    # Bittrex
+    ('bittrex', "2.0", False, "3.0", spot, None),
+    ('bittrex', "2.0", False, "1.0", spot, cross),
+    ('bittrex', "2.0", True, "3.0", spot, isolated),
+    # Binance
+    ('binance', "2.0", False, "3.0", spot, None),
+    ('binance', "2.0", False, "1.0", spot, cross),
+    ('binance', "2.0", True, "3.0", spot, isolated),
+])
+def test_liquidation_price_is_none(
+    mocker,
+    default_conf,
+    exchange_name,
+    open_rate,
+    is_short,
+    leverage,
+    trading_mode,
+    collateral
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert exchange.liquidation_price(
+        open_rate,
+        is_short,
+        leverage,
+        trading_mode,
+        collateral,
+        1535443.01,
+        71200.81144,
+        -56354.57,
+        135365.00,
+        3683.979,
+        0.10,
+    ) is None
+
+
+@pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
+    # Bittrex
+    ('bittrex', "2.0", False, "3.0", margin, cross),
+    ('bittrex', "2.0", False, "3.0", margin, isolated),
+    ('bittrex', "2.0", False, "3.0", futures, cross),
+    ('bittrex', "2.0", False, "3.0", futures, isolated),
+    # Binance
+    # Binance supports isolated margin, but freqtrade likely won't for a while on Binance
+    ('binance', "2.0", True, "3.0", margin, isolated),
+    # Kraken
+    ('kraken', "2.0", True, "1.0", margin, isolated),
+    ('kraken', "2.0", True, "1.0", futures, isolated),
+    # FTX
+    ('ftx', "2.0", True, "3.0", margin, isolated),
+    ('ftx', "2.0", True, "3.0", futures, isolated),
+])
+def test_liquidation_price_exception_thrown(
+    exchange_name,
+    open_rate,
+    is_short,
+    leverage,
+    trading_mode,
+    collateral,
+    result
+):
+    # TODO-lev assert exception is thrown
+    return  # Here to avoid indent error, remove when implemented
+
+
+@pytest.mark.parametrize(
+    'exchange_name, is_short, leverage, trading_mode, collateral, wallet_balance, '
+    'mm_ex_1, upnl_ex_1, maintenance_amt, position, open_rate, '
+    'mm_ratio, expected',
+    [
+        ("binance", False, 1, futures, isolated, 1535443.01, 0.0,
+         0.0, 135365.00, 3683.979, 1456.84, 0.10, 1114.78),
+        ("binance", False, 1, futures, isolated, 1535443.01, 0.0,
+         0.0, 16300.000, 109.488, 32481.980, 0.025, 18778.73),
+        ("binance", False, 1, futures, cross, 1535443.01, 71200.81144,
+         -56354.57, 135365.00, 3683.979, 1456.84, 0.10, 1153.26),
+        ("binance", False, 1, futures, cross, 1535443.01, 356512.508,
+         -448192.89, 16300.000, 109.488, 32481.980, 0.025, 26316.89)
+    ])
+def test_liquidation_price(
+    mocker, default_conf, exchange_name, open_rate, is_short, leverage, trading_mode,
+    collateral, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
+):
+    exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
+    assert isclose(round(exchange.liquidation_price(
+        open_rate=open_rate,
+        is_short=is_short,
+        leverage=leverage,
+        trading_mode=trading_mode,
+        collateral=collateral,
+        wallet_balance=wallet_balance,
+        mm_ex_1=mm_ex_1,
+        upnl_ex_1=upnl_ex_1,
+        maintenance_amt=maintenance_amt,
+        position=position,
+        mm_ratio=mm_ratio
+    ), 2), expected)

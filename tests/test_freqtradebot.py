@@ -734,7 +734,6 @@ def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
         ((wb + cum_b) - (side_1 * position * ep1)) / ((position * mmr_b) - (side_1 * position))
         ((2 + 0.01) - (1 * 1 * 10)) / ((1 * 0.01) - (1 * 1)) = 8.070707070707071
 
-
     exchange_name = gateio, is_short = true
         (open_rate + (wallet_balance / position)) / (1 + (mm_ratio + taker_fee_rate))
         (10 + (2 / 1)) / (1 + (0.01 + 0.0006)) = 11.87413417771621

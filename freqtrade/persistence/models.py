@@ -14,9 +14,9 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.schema import UniqueConstraint
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, NON_OPEN_EXCHANGE_STATES
-from freqtrade.enums import Collateral, SellType, TradingMode
+from freqtrade.enums import SellType, TradingMode
 from freqtrade.exceptions import DependencyException, OperationalException
-from freqtrade.leverage import interest, liquidation_price
+from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
 from freqtrade.persistence.migrations import check_migrate
 
@@ -364,52 +364,12 @@ class LocalTrade():
 
     def set_isolated_liq(
         self,
-        isolated_liq: Optional[float] = None,
-        wallet_balance: Optional[float] = None,
-        current_price: Optional[float] = None,
-        maintenance_amt: Optional[float] = None,
-        mm_ratio: Optional[float] = None,
+        isolated_liq: float,
     ):
         """
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price
         """
-        if not isolated_liq:
-            if not wallet_balance or not current_price:
-                raise OperationalException(
-                    "wallet balance must be passed to LocalTrade.set_isolated_liq when param"
-                    "isolated_liq is None"
-                )
-            if (
-                mm_ratio is None or
-                wallet_balance is None or
-                current_price is None or
-                maintenance_amt is None
-            ):
-                raise OperationalException(
-                    'mm_ratio, wallet_balance, current_price and maintenance_amt '
-                    'required in set_isolated_liq when isolated_liq is None'
-                )
-            isolated_liq = liquidation_price(
-                exchange_name=self.exchange,
-                open_rate=self.open_rate,
-                is_short=self.is_short,
-                leverage=self.leverage,
-                trading_mode=self.trading_mode,
-                collateral=Collateral.ISOLATED,
-                mm_ex_1=0.0,
-                upnl_ex_1=0.0,
-                position=self.amount * current_price,
-                wallet_balance=self.amount / self.leverage,  # TODO: Update for cross
-                maintenance_amt=maintenance_amt,
-                mm_ratio=mm_ratio,
-
-            )
-        if isolated_liq is None:
-            raise OperationalException(
-                "leverage/isolated_liq returned None. This exception should never happen"
-            )
-
         if self.stop_loss is not None:
             if self.is_short:
                 self.stop_loss = min(self.stop_loss, isolated_liq)

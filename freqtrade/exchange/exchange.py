@@ -2015,6 +2015,114 @@ class Exchange:
         # TODO-lev: return the real amounts
         return (0, 0.4)
 
+    def liquidation_price(
+        self,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        leverage: float,
+        trading_mode: TradingMode,
+        mm_ratio: float,
+        collateral: Optional[Collateral] = Collateral.ISOLATED,
+        maintenance_amt: Optional[float] = None,  # (Binance)
+        position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
+        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+        liability: Optional[float] = None,  # (Okex)
+        interest: Optional[float] = None,  # (Okex)
+        position_assets: Optional[float] = None,  # * (Okex) Might be same as position
+        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+    ) -> Optional[float]:
+        """
+        :param exchange_name:
+        :param open_rate: (EP1) Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param leverage: The amount of leverage on the trade
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param position: Absolute value of position size (in base currency)
+        :param mm_ratio: (MMR)
+            Okex: [assets in the position - (liability +interest) * mark price] /
+                (maintenance margin + liquidation fee)
+            # * Note: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        :param collateral: Either ISOLATED or CROSS
+
+        # * Binance
+        :param maintenance_amt: (CUM) Maintenance Amount of position
+
+        # * Binance and Gateio
+        :param wallet_balance: (WB)
+            Cross-Margin Mode: crossWalletBalance
+            Isolated-Margin Mode: isolatedWalletBalance
+        :param position: Absolute value of position size (in base currency)
+
+        # * Gateio & Okex
+        :param taker_fee_rate:
+
+        # * Okex
+        :param liability:
+            Initial liabilities + deducted interest
+                • Long positions: Liability is calculated in quote currency.
+                • Short positions: Liability is calculated in trading currency.
+        :param interest:
+            Interest that has not been deducted yet.
+        :param position_assets:
+            Total position assets – on-hold by pending order
+
+        # * Cross only (Binance)
+        :param mm_ex_1: (TMM)
+            Cross-Margin Mode: Maintenance Margin of all other contracts, excluding Contract 1
+            Isolated-Margin Mode: 0
+        :param upnl_ex_1: (UPNL)
+            Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
+            Isolated-Margin Mode: 0
+        """
+        if trading_mode == TradingMode.SPOT:
+            return None
+
+        if not collateral:
+            raise OperationalException(
+                "Parameter collateral is required by liquidation_price when trading_mode is "
+                f"{trading_mode}"
+            )
+
+        return self.liquidation_price_helper(
+            open_rate,
+            is_short,
+            leverage,
+            trading_mode,
+            mm_ratio,
+            collateral,
+            maintenance_amt,
+            position,
+            wallet_balance,
+            taker_fee_rate,
+            liability,
+            interest,
+            position_assets,
+            mm_ex_1,
+            upnl_ex_1,
+        )
+
+    def liquidation_price_helper(
+        self,
+        open_rate: float,
+        is_short: bool,
+        leverage: float,
+        trading_mode: TradingMode,
+        mm_ratio: float,
+        collateral: Collateral,
+        maintenance_amt: Optional[float] = None,
+        position: Optional[float] = None,
+        wallet_balance: Optional[float] = None,
+        taker_fee_rate: Optional[float] = None,
+        liability: Optional[float] = None,
+        interest: Optional[float] = None,
+        position_assets: Optional[float] = None,
+        mm_ex_1: Optional[float] = 0.0,
+        upnl_ex_1: Optional[float] = 0.0,
+    ) -> Optional[float]:
+        raise OperationalException(f"liquidation_price is not implemented for {self.name}")
+
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)

@@ -1,7 +1,8 @@
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from freqtrade.enums import Collateral, TradingMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 
 
@@ -26,3 +27,67 @@ class Okex(Exchange):
         # (TradingMode.FUTURES, Collateral.CROSS),
         # (TradingMode.FUTURES, Collateral.ISOLATED)
     ]
+
+    def liquidation_price_helper(
+        self,
+        open_rate: float,   # Entry price of position
+        is_short: bool,
+        leverage: float,
+        trading_mode: TradingMode,
+        mm_ratio: float,
+        collateral: Collateral,
+        maintenance_amt: Optional[float] = None,  # Not required
+        position: Optional[float] = None,  # Not required
+        wallet_balance: Optional[float] = None,  # Not required
+        taker_fee_rate: Optional[float] = None,  # * required
+        liability: Optional[float] = None,  # * required
+        interest: Optional[float] = None,  # * required
+        position_assets: Optional[float] = None,  # * required (Might be same as position)
+        mm_ex_1: Optional[float] = 0.0,  # Not required
+        upnl_ex_1: Optional[float] = 0.0,  # Not required
+    ) -> Optional[float]:
+        """
+        PERPETUAL: https://www.okex.com/support/hc/en-us/articles/
+        360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
+
+        :param exchange_name:
+        :param open_rate: (EP1) Entry price of position
+        :param is_short: True if the trade is a short, false otherwise
+        :param leverage: The amount of leverage on the trade
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+        :param position: Absolute value of position size (in base currency)
+        :param mm_ratio:
+            Okex: [assets in the position - (liability +interest) * mark price] /
+                (maintenance margin + liquidation fee)
+        :param collateral: Either ISOLATED or CROSS
+        :param maintenance_amt: # * Not required by Okex
+        :param wallet_balance: # * Not required by Okex
+        :param position: # * Not required by Okex
+        :param taker_fee_rate:
+        :param liability:
+            Initial liabilities + deducted interest
+                • Long positions: Liability is calculated in quote currency.
+                • Short positions: Liability is calculated in trading currency.
+        :param interest: Interest that has not been deducted yet.
+        :param position_assets: Total position assets – on-hold by pending order
+        :param mm_ex_1: # * Not required by Okex
+        :param upnl_ex_1: # * Not required by Okex
+        """
+
+        if (not liability or not interest or not taker_fee_rate or not position_assets):
+            raise OperationalException(
+                "Parameters liability, interest, taker_fee_rate, position_assets"
+                "are required by Okex.liquidation_price"
+            )
+
+        if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
+            if is_short:
+                return (liability + interest) * (1 + mm_ratio) * (1 + taker_fee_rate)
+            else:
+                return (
+                    (liability + interest) * (1 + mm_ratio) * (1 + taker_fee_rate) /
+                    position_assets
+                )
+        else:
+            raise OperationalException(
+                f"Okex does not support {collateral.value} Mode {trading_mode.value} trading")
