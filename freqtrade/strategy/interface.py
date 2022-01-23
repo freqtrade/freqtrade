@@ -872,9 +872,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                         and ordertime < timeout_threshold)
             if timedout:
                 return True
-        time_method = 'check_sell_timeout' if order['side'] == 'sell' else 'check_buy_timeout'
+        time_method = self.check_sell_timeout if order['side'] == 'sell' else self.check_buy_timeout
 
-        return strategy_safe_wrapper(getattr(self, time_method),
+        return strategy_safe_wrapper(time_method,
                                      default_retval=False)(
                                         pair=trade.pair, trade=trade, order=order,
                                         current_time=current_time)
