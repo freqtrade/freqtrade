@@ -584,10 +584,10 @@ class LocalTrade():
                 continue
 
             tmp_amount = o.amount
-            tmp_price = o.average or o.price or 0.0
+            tmp_price = o.average or o.price
             if o.filled is not None:
                 tmp_amount = o.filled
-            if tmp_amount > 0.0 and tmp_price is not None and o.status == 'closed':
+            if tmp_amount > 0.0 and tmp_price is not None:
                 total_amount += tmp_amount
                 total_stake += tmp_price * tmp_amount
 
