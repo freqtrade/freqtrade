@@ -15,7 +15,7 @@ from datetime import datetime
 import subprocess
 import threading
 
-from user_data.strategies.util import IS_BACKTEST, launcher, back_tester, CURRENT_YEAR, CURRENT_MONTH
+from user_data.strategies.util import IS_BACKTEST, launcher, back_tester
 
 
 
@@ -168,11 +168,7 @@ class Strategy002(IStrategy):
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
         if IS_BACKTEST:
-            print("Strategy002:current_time = "+str(current_time))
-            if current_time.year != CURRENT_YEAR or current_time.month != CURRENT_MONTH:
-                pass
-            else:
-               threading.Thread(target=back_tester, args=(current_time, coin, brain)).start()
+            threading.Thread(target=back_tester, args=(current_time, coin, brain)).start()
         else:
             threading.Thread(target=launcher, args=(mode, coin, brain)).start()
         return True
