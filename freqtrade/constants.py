@@ -371,7 +371,9 @@ CONF_SCHEMA = {
             'type': 'string',
             'enum': AVAILABLE_DATAHANDLERS,
             'default': 'jsongz'
-        }
+        },
+        'position_adjustment_enable': {'type': 'boolean', 'default': False},
+        'max_buy_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
     },
     'definitions': {
         'exchange': {
