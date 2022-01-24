@@ -362,8 +362,8 @@ class AwesomeStrategy(IStrategy):
 
     # ... populate_* methods
 
-    def custom_entry_price(self, pair: str, current_time: datetime,
-                           proposed_rate, **kwargs) -> float:
+    def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float, 
+                           entry_tag: Optional[str], **kwargs) -> float:
 
         dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
                                                                 timeframe=self.timeframe)
@@ -413,7 +413,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 The function must return either `True` (cancel order) or `False` (keep order alive).
 
 ``` python
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from freqtrade.persistence import Trade
 
 class AwesomeStrategy(IStrategy):
@@ -426,22 +426,24 @@ class AwesomeStrategy(IStrategy):
         'sell': 60 * 25
     }
 
-    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_buy_timeout(self, pair: str, trade: 'Trade', order: dict, 
+                          current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 
 
-    def check_sell_timeout(self, pair: str, trade: 'Trade', order: dict, **kwargs) -> bool:
-        if trade.open_rate > 100 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
+        if trade.open_rate > 100 and trade.open_date_utc < current_time - timedelta(minutes=5):
             return True
-        elif trade.open_rate > 10 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(minutes=3):
+        elif trade.open_rate > 10 and trade.open_date_utc < current_time - timedelta(minutes=3):
             return True
-        elif trade.open_rate < 1 and trade.open_date_utc < datetime.now(timezone.utc) - timedelta(hours=24):
+        elif trade.open_rate < 1 and trade.open_date_utc < current_time - timedelta(hours=24):
            return True
         return False
 ```
@@ -500,7 +502,8 @@ class AwesomeStrategy(IStrategy):
     # ... populate_* methods
 
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str], 
+                            **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -618,7 +621,7 @@ class DigDeeperStrategy(IStrategy):
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            entry_tag: Optional[str], **kwargs) -> float:
         
         # We need to leave most of the funds for possible further DCA orders
         # This also applies to fixed stakes
