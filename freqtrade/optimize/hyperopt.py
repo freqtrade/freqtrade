@@ -50,7 +50,7 @@ progressbar.streams.wrap_stdout()
 logger = logging.getLogger(__name__)
 
 
-INITIAL_POINTS = 30
+INITIAL_POINTS = 64
 
 # Keep no more than SKOPT_MODEL_QUEUE_SIZE models
 # in the skopt model queue, to optimize memory consumption
