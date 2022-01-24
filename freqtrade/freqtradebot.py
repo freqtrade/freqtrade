@@ -534,7 +534,7 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade)
+            pair, price, stake_amount, buy_tag, trade)
 
         if not stake_amount:
             return False
@@ -553,7 +553,8 @@ class FreqtradeBot(LoggingMixin):
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                entry_tag=buy_tag):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -663,6 +664,7 @@ class FreqtradeBot(LoggingMixin):
 
     def get_valid_enter_price_and_stake(
             self, pair: str, price: Optional[float], stake_amount: float,
+            entry_tag: Optional[str],
             trade: Optional[Trade]) -> Tuple[float, float]:
         if price:
             enter_limit_requested = price
@@ -672,7 +674,7 @@ class FreqtradeBot(LoggingMixin):
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=proposed_enter_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_enter_rate)
+                proposed_rate=proposed_enter_rate, entry_tag=entry_tag)
 
             enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
         if not enter_limit_requested:
@@ -685,7 +687,7 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount)
+                min_stake=min_stake_amount, max_stake=max_stake_amount, entry_tag=entry_tag)
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
         return enter_limit_requested, stake_amount
 
