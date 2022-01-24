@@ -1279,5 +1279,5 @@ def test_rpc_health(mocker, default_conf) -> None:
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(freqtradebot)
-    ret = rpc._health()
-    assert ret['last_process'] == '1970-01-01 00:00:00'
+    result = rpc._health()
+    assert result['last_process'] == '1970-01-01 00:00:00'
