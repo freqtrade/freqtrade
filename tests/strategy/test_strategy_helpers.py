@@ -153,11 +153,22 @@ def test_stoploss_from_open():
 
 
 def test_stoploss_from_absolute():
-    assert stoploss_from_absolute(90, 100) == 1 - (90 / 100)
-    assert stoploss_from_absolute(100, 100) == 0
-    assert stoploss_from_absolute(110, 100) == 0
-    assert stoploss_from_absolute(100, 0) == 1
-    assert stoploss_from_absolute(0, 100) == 1
+    assert pytest.approx(stoploss_from_absolute(90, 100)) == 1 - (90 / 100)
+    assert pytest.approx(stoploss_from_absolute(90, 100)) == 0.1
+    assert pytest.approx(stoploss_from_absolute(95, 100)) == 0.05
+    assert pytest.approx(stoploss_from_absolute(100, 100)) == 0
+    assert pytest.approx(stoploss_from_absolute(110, 100)) == 0
+    assert pytest.approx(stoploss_from_absolute(100, 0)) == 1
+    assert pytest.approx(stoploss_from_absolute(0, 100)) == 1
+
+    assert pytest.approx(stoploss_from_absolute(90, 100, True)) == 0
+    assert pytest.approx(stoploss_from_absolute(100, 100, True)) == 0
+    assert pytest.approx(stoploss_from_absolute(110, 100, True)) == -(1 - (110/100))
+    assert pytest.approx(stoploss_from_absolute(110, 100, True)) == 0.1
+    assert pytest.approx(stoploss_from_absolute(105, 100, True)) == 0.05
+    assert pytest.approx(stoploss_from_absolute(100, 0, True)) == 1
+    assert pytest.approx(stoploss_from_absolute(0, 100, True)) == 0
+    assert pytest.approx(stoploss_from_absolute(100, 1, True)) == 1
 
 
 # TODO-lev: @pytest.mark.parametrize('candle_type', ['mark', ''])
