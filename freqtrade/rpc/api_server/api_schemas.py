@@ -277,6 +277,7 @@ class ForceBuyPayload(BaseModel):
     pair: str
     price: Optional[float]
     ordertype: Optional[OrderTypeValues]
+    stakeamount: Optional[float]
 
 
 class ForceSellPayload(BaseModel):

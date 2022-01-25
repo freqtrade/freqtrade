@@ -709,8 +709,8 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float],
-                      order_type: Optional[str] = None) -> Optional[Trade]:
+    def _rpc_forcebuy(self, pair: str, price: Optional[float], order_type: Optional[str] = None,
+                      stake_amount: Optional[float] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price
@@ -735,14 +735,15 @@ class RPC:
             if not self._freqtrade.strategy.position_adjustment_enable:
                 raise RPCException(f'position for {pair} already open - id: {trade.id}')
 
-        # gen stake amount
-        stakeamount = self._freqtrade.wallets.get_trade_stake_amount(pair)
+        if not stake_amount:
+            # gen stake amount
+            stake_amount = self._freqtrade.wallets.get_trade_stake_amount(pair)
 
         # execute buy
         if not order_type:
             order_type = self._freqtrade.strategy.order_types.get(
                 'forcebuy', self._freqtrade.strategy.order_types['buy'])
-        if self._freqtrade.execute_entry(pair, stakeamount, price,
+        if self._freqtrade.execute_entry(pair, stake_amount, price,
                                          ordertype=order_type, trade=trade):
             Trade.commit()
             trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
@@ -997,7 +998,7 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(config, pair: str, timeframe: str,
-                                   timerange: str) -> Dict[str, Any]:
+                                   timerange: str, exchange) -> Dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(timerange)
 
         _data = load_data(
@@ -1012,7 +1013,7 @@ class RPC:
         from freqtrade.data.dataprovider import DataProvider
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
         strategy = StrategyResolver.load_strategy(config)
-        strategy.dp = DataProvider(config, exchange=None, pairlists=None)
+        strategy.dp = DataProvider(config, exchange=exchange, pairlists=None)
 
         df_analyzed = strategy.analyze_ticker(_data[pair], {'pair': pair})
 

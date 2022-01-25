@@ -1114,9 +1114,14 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     with pytest.raises(RPCException,
                        match=r'Wrong pair selected. Only pairs with stake-currency.*'):
         rpc._rpc_forcebuy('LTC/ETH', 0.0001)
-    pair = 'XRP/BTC'
+
+    # Test with defined stake_amount
+    pair = 'LTC/BTC'
+    trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit', stake_amount=0.05)
+    assert trade.stake_amount == 0.05
 
     # Test not buying
+    pair = 'XRP/BTC'
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     freqtradebot.config['stake_amount'] = 0
     patch_get_signal(freqtradebot)
