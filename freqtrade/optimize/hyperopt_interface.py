@@ -40,7 +40,7 @@ class IHyperOpt(ABC):
         IHyperOpt.ticker_interval = str(config['timeframe'])  # DEPRECATED
         IHyperOpt.timeframe = str(config['timeframe'])
 
-    def generate_estimator(self) -> EstimatorType:
+    def generate_estimator(self, dimensions, **kwargs) -> EstimatorType:
         """
         Return base_estimator.
         Can be any of "GP", "RF", "ET", "GBRT" or an instance of a class
