@@ -77,6 +77,9 @@ class CryptoToFiatConverter:
             else:
                 return None
         found = [x for x in self._coinlistings if x['symbol'] == crypto_symbol]
+        if crypto_symbol == 'eth':
+            found = [x for x in self._coinlistings if x['id'] == 'ethereum']
+
         if len(found) == 1:
             return found[0]['id']
 
