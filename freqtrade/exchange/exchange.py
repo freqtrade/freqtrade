@@ -1823,7 +1823,8 @@ class Exchange:
         if (
             'limits' in market and
             'leverage' in market['limits'] and
-            'max' in market['limits']['leverage']
+            'max' in market['limits']['leverage'] and
+            market['limits']['leverage']['max'] is not None
         ):
             return market['limits']['leverage']['max']
         else:

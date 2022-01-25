@@ -684,6 +684,10 @@ def get_markets():
                     'min': 0.0001,
                     'max': 500000,
                 },
+                'leverage': {
+                    'min': None,
+                    'max': None
+                },
             },
             'info': {},
         },
