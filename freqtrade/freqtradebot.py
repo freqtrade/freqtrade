@@ -9,8 +9,6 @@ from math import isclose
 from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
-import arrow
-
 from freqtrade import __version__, constants
 from freqtrade.configuration import validate_config_consistency
 from freqtrade.data.converter import order_book_to_dataframe
@@ -540,7 +538,7 @@ class FreqtradeBot(LoggingMixin):
         pos_adjust = trade is not None
 
         enter_limit_requested, stake_amount = self.get_valid_enter_price_and_stake(
-            pair, price, stake_amount, trade)
+            pair, price, stake_amount, buy_tag, trade)
 
         if not stake_amount:
             return False
@@ -559,7 +557,8 @@ class FreqtradeBot(LoggingMixin):
         if not pos_adjust and not strategy_safe_wrapper(
                 self.strategy.confirm_trade_entry, default_retval=True)(
                 pair=pair, order_type=order_type, amount=amount, rate=enter_limit_requested,
-                time_in_force=time_in_force, current_time=datetime.now(timezone.utc)):
+                time_in_force=time_in_force, current_time=datetime.now(timezone.utc),
+                entry_tag=buy_tag):
             logger.info(f"User requested abortion of buying {pair}")
             return False
         amount = self.exchange.amount_to_precision(pair, amount)
@@ -669,6 +668,7 @@ class FreqtradeBot(LoggingMixin):
 
     def get_valid_enter_price_and_stake(
             self, pair: str, price: Optional[float], stake_amount: float,
+            entry_tag: Optional[str],
             trade: Optional[Trade]) -> Tuple[float, float]:
         if price:
             enter_limit_requested = price
@@ -678,7 +678,7 @@ class FreqtradeBot(LoggingMixin):
             custom_entry_price = strategy_safe_wrapper(self.strategy.custom_entry_price,
                                                        default_retval=proposed_enter_rate)(
                 pair=pair, current_time=datetime.now(timezone.utc),
-                proposed_rate=proposed_enter_rate)
+                proposed_rate=proposed_enter_rate, entry_tag=entry_tag)
 
             enter_limit_requested = self.get_valid_price(custom_entry_price, proposed_enter_rate)
         if not enter_limit_requested:
@@ -691,7 +691,7 @@ class FreqtradeBot(LoggingMixin):
                                                  default_retval=stake_amount)(
                 pair=pair, current_time=datetime.now(timezone.utc),
                 current_rate=enter_limit_requested, proposed_stake=stake_amount,
-                min_stake=min_stake_amount, max_stake=max_stake_amount)
+                min_stake=min_stake_amount, max_stake=max_stake_amount, entry_tag=entry_tag)
         stake_amount = self.wallets.validate_stake_amount(pair, stake_amount, min_stake_amount)
         return enter_limit_requested, stake_amount
 
@@ -966,20 +966,6 @@ class FreqtradeBot(LoggingMixin):
             return True
         return False
 
-    def _check_timed_out(self, side: str, order: dict) -> bool:
-        """
-        Check if timeout is active, and if the order is still open and timed out
-        """
-        timeout = self.config.get('unfilledtimeout', {}).get(side)
-        ordertime = arrow.get(order['datetime']).datetime
-        if timeout is not None:
-            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
-            timeout_kwargs = {timeout_unit: -timeout}
-            timeout_threshold = arrow.utcnow().shift(**timeout_kwargs).datetime
-            return (order['status'] == 'open' and order['side'] == side
-                    and ordertime < timeout_threshold)
-        return False
-
     def check_handle_timedout(self) -> None:
         """
         Check if any orders are timed out and cancel if necessary
@@ -1000,20 +986,16 @@ class FreqtradeBot(LoggingMixin):
 
             if (order['side'] == 'buy' and (order['status'] == 'open' or fully_cancelled) and (
                     fully_cancelled
-                    or self._check_timed_out('buy', order)
-                    or strategy_safe_wrapper(self.strategy.check_buy_timeout,
-                                             default_retval=False)(pair=trade.pair,
-                                                                   trade=trade,
-                                                                   order=order))):
+                    or self.strategy.ft_check_timed_out(
+                        'buy', trade, order, datetime.now(timezone.utc))
+                        )):
                 self.handle_cancel_enter(trade, order, constants.CANCEL_REASON['TIMEOUT'])
 
             elif (order['side'] == 'sell' and (order['status'] == 'open' or fully_cancelled) and (
                   fully_cancelled
-                  or self._check_timed_out('sell', order)
-                  or strategy_safe_wrapper(self.strategy.check_sell_timeout,
-                                           default_retval=False)(pair=trade.pair,
-                                                                 trade=trade,
-                                                                 order=order))):
+                  or self.strategy.ft_check_timed_out(
+                      'sell', trade, order, datetime.now(timezone.utc)))
+                  ):
                 self.handle_cancel_exit(trade, order, constants.CANCEL_REASON['TIMEOUT'])
                 canceled_count = trade.get_exit_order_count()
                 max_timeouts = self.config.get('unfilledtimeout', {}).get('exit_timeout_count', 0)

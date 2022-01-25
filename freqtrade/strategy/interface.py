@@ -189,7 +189,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return dataframe
 
-    def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def bot_loop_start(self, **kwargs) -> None:
+        """
+        Called at the start of the bot iteration (one loop).
+        Might be used to perform pair-independent tasks
+        (e.g. gather some remote resource for comparison)
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        pass
+
+    def check_buy_timeout(self, pair: str, trade: Trade, order: dict,
+                          current_time: datetime, **kwargs) -> bool:
         """
         Check buy timeout function callback.
         This method can be used to override the buy-timeout.
@@ -202,12 +212,14 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is cancelled.
         """
         return False
 
-    def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -> bool:
+    def check_sell_timeout(self, pair: str, trade: Trade, order: dict,
+                           current_time: datetime, **kwargs) -> bool:
         """
         Check sell timeout function callback.
         This method can be used to override the sell-timeout.
@@ -220,22 +232,15 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair the trade is for
         :param trade: trade object.
         :param order: Order dictionary as returned from CCXT.
+        :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the sell-order is cancelled.
         """
         return False
 
-    def bot_loop_start(self, **kwargs) -> None:
-        """
-        Called at the start of the bot iteration (one loop).
-        Might be used to perform pair-independent tasks
-        (e.g. gather some remote resource for comparison)
-        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
-        """
-        pass
-
     def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, **kwargs) -> bool:
+                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
+                            **kwargs) -> bool:
         """
         Called right before placing a buy order.
         Timing for this function is critical, so avoid doing heavy computations or
@@ -251,6 +256,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param rate: Rate that's going to be used when using limit orders
         :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
         :param current_time: datetime object, containing the current datetime
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
@@ -308,7 +314,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         return self.stoploss
 
     def custom_entry_price(self, pair: str, current_time: datetime, proposed_rate: float,
-                           **kwargs) -> float:
+                           entry_tag: Optional[str], **kwargs) -> float:
         """
         Custom entry price logic, returning the new entry price.
 
@@ -319,6 +325,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair that's currently analyzed
         :param current_time: datetime object, containing the current datetime
         :param proposed_rate: Rate, calculated based on pricing settings in ask_strategy.
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         :return float: New entry price value if provided
         """
@@ -370,7 +377,7 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: float, max_stake: float,
-                            **kwargs) -> float:
+                            entry_tag: Optional[str], **kwargs) -> float:
         """
         Customize stake size for each new trade. This method is not called when edge module is
         enabled.
@@ -381,6 +388,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param proposed_stake: A stake amount proposed by the bot.
         :param min_stake: Minimal stake size allowed by exchange.
         :param max_stake: Balance available for trading.
+        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
         :return: A stake size, which is between min_stake and max_stake.
         """
         return proposed_stake
@@ -391,6 +399,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be increased.
         This means extra buy orders with additional fees.
+        Only called when `position_adjustment_enable` is set to True.
 
         For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
 
@@ -852,6 +861,29 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False
         else:
             return current_profit > roi
+
+    def ft_check_timed_out(self, side: str, trade: Trade, order: Dict,
+                           current_time: datetime) -> bool:
+        """
+        FT Internal method.
+        Check if timeout is active, and if the order is still open and timed out
+        """
+        timeout = self.config.get('unfilledtimeout', {}).get(side)
+        ordertime = arrow.get(order['datetime']).datetime
+        if timeout is not None:
+            timeout_unit = self.config.get('unfilledtimeout', {}).get('unit', 'minutes')
+            timeout_kwargs = {timeout_unit: -timeout}
+            timeout_threshold = current_time + timedelta(**timeout_kwargs)
+            timedout = (order['status'] == 'open' and order['side'] == side
+                        and ordertime < timeout_threshold)
+            if timedout:
+                return True
+        time_method = self.check_sell_timeout if order['side'] == 'sell' else self.check_buy_timeout
+
+        return strategy_safe_wrapper(time_method,
+                                     default_retval=False)(
+                                        pair=trade.pair, trade=trade, order=order,
+                                        current_time=current_time)
 
     def advise_all_indicators(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
         """
