@@ -105,7 +105,7 @@ You can define your own estimator for Hyperopt by implementing `generate_estimat
 ```python
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
-        def generate_estimator(dimensions, **kwargs):
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
             return "RF"
 
 ```
@@ -119,7 +119,7 @@ Example for `ExtraTreesRegressor` ("ET") with additional parameters:
 ```python
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
-        def generate_estimator(dimensions, **kwargs):
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
             from skopt.learning import ExtraTreesRegressor
             # Corresponds to "ET" - but allows additional parameters.
             return ExtraTreesRegressor(n_estimators=100)
@@ -131,7 +131,7 @@ The `dimensions` parameter is the list of `skopt.space.Dimension` objects corres
 ```python
 class MyAwesomeStrategy(IStrategy):
     class HyperOpt:
-        def generate_estimator(dimensions, **kwargs):
+        def generate_estimator(dimensions: List['Dimension'], **kwargs):
             from skopt.utils import cook_estimator
             from skopt.learning.gaussian_process.kernels import (Matern, ConstantKernel)
             kernel_bounds = (0.0001, 10000)
