@@ -17,7 +17,7 @@ def clean_json():
         date = datetime.datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
         year = date.year
         month = date.month
-        if year == int(Config.BACKTEST_DATA_CLEANER_YEAR) and month == int(Config.BACKTEST_DATA_CLEANER_MONTH_INDEX):
+        if year == int(Config.BACKTEST_DATA_CLEANER_YEAR) and month == int(Config.BACKTEST_DATA_CLEANER_MONTH_INDEX) + 1:
             list.append(datas)
     json_object = json.dumps(list)
     file.close()
