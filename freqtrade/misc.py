@@ -248,8 +248,10 @@ def get_strategy_run_id(strategy) -> str:
         if k in config:
             del config[k]
 
+    # Explicitly allow NaN values (e.g. max_open_trades).
+    # as it does not matter for getting the hash.
     digest.update(rapidjson.dumps(config, default=str,
-                                  number_mode=rapidjson.NM_NATIVE).encode('utf-8'))
+                                  number_mode=rapidjson.NM_NAN).encode('utf-8'))
     with open(strategy.__file__, 'rb') as fp:
         digest.update(fp.read())
     return digest.hexdigest().lower()
