@@ -181,8 +181,5 @@ class Strategy004(IStrategy):
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
-        if IS_BACKTEST:
-            threading.Thread(target=back_tester, args=(current_time, coin, brain)).start()
-        else:
-            threading.Thread(target=launcher, args=(mode, coin, brain)).start()
+        launcher(mode, current_time, coin, brain)
         return True

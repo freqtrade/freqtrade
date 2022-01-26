@@ -2,10 +2,10 @@ import subprocess
 import threading
 from user_data.strategies.config import Config
 
-def launcher(mode, coin, brain,date_time = 12344315):
+def launcher(mode, coin, brain, date_time):
     if Config.IS_BACKTEST:
             if Config.IS_PARRALER_EXECUTION:
-                 threading.Thread(target=_perform_launcher, args=(mode, coin, brain)).start()
+                 threading.Thread(target=back_tester, args=(mode, coin, brain, date_time)).start()
             else:
                 date = str(date_time)
                 date = date.replace(" ", "#")
