@@ -3,7 +3,7 @@ import datetime
 import time
 import os
 import sys
-from user_data.strategies.util import BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH, BACKTEST_YEAR, BACKTEST_MONTH
+from user_data.strategies.util import BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH, BACKTEST_YEAR, BACKTEST_MONTH_INDEX
 
 def clean_json():
     print("clean_json: json_path = " + BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH)
@@ -17,7 +17,7 @@ def clean_json():
         date = datetime.datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
         year = date.year
         month = date.month
-        if year == int(BACKTEST_YEAR) and month == int(BACKTEST_MONTH):
+        if year == int(BACKTEST_YEAR) and month == int(BACKTEST_MONTH_INDEX):
             list.append(datas)
     json_object = json.dumps(list)
     file.close()
@@ -31,10 +31,10 @@ def write_to_json(json_object):
 
 if len(sys.argv) < 4:
     exit("""Incorrect number of arguments. 
-    python3 freq_data_cleaner.py [json_file] [month] [year]
+    python3 freq_data_cleaner.py [json_file] [month index] [year]
     """)
 else:
     BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = sys.argv[1]
-    BACKTEST_MONTH = sys.argv[2]
+    BACKTEST_MONTH_INDEX = sys.argv[2]
     BACKTEST_YEAR = sys.argv[3]
     clean_json()
