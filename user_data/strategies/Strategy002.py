@@ -18,6 +18,7 @@ import threading
 from user_data.strategies.util import IS_BACKTEST, launcher, back_tester
 
 
+
 class Strategy002(IStrategy):
     """
     Strategy 002
@@ -163,6 +164,7 @@ class Strategy002(IStrategy):
         :return bool: When True is returned, then the buy-order is placed on the exchange.
             False aborts the process
         """
+        print("............................................................................"+str(current_time))
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
@@ -171,4 +173,5 @@ class Strategy002(IStrategy):
         else:
             threading.Thread(target=launcher, args=(mode, coin, brain)).start()
         return True
+
 
