@@ -167,12 +167,23 @@ class Order(_DECL_BASE):
 
     def to_json(self) -> Dict[str, Any]:
         return {
-            'cost': self.cost if self.cost else 0,
             'amount': self.amount,
-            'price': self.price,
             'average': round(self.average, 8) if self.average else 0,
+            'cost': self.cost if self.cost else 0,
+            'filled': self.filled,
+            'ft_order_side': self.ft_order_side,
+            'order_date': self.order_date.strftime(DATETIME_PRINT_FORMAT)
+            if self.order_date else None,
+            'order_timestamp': int(self.order_date.replace(
+                tzinfo=timezone.utc).timestamp() * 1000) if self.order_date else None,
             'order_filled_date': self.order_filled_date.strftime(DATETIME_PRINT_FORMAT)
-            if self.order_filled_date else None
+            if self.order_filled_date else None,
+            'order_filled_timestamp': int(self.order_filled_date.replace(
+                tzinfo=timezone.utc).timestamp() * 1000) if self.order_filled_date else None,
+            'order_type': self.order_type,
+            'price': self.price,
+            'remaining': self.remaining,
+            'status': self.status,
         }
 
     @staticmethod
@@ -292,11 +303,15 @@ class LocalTrade():
         return self.close_date.replace(tzinfo=timezone.utc)
 
     def to_json(self) -> Dict[str, Any]:
-        fill_buy = self.select_filled_orders('buy')
-        buys_json = dict()
-        if len(fill_buy) > 0:
-            for x in range(len(fill_buy)):
-                buys_json[str(x)] = fill_buy[x].to_json()
+        filled_orders = self.select_filled_orders()
+        filled_buys = []
+        filled_sells = []
+        if len(filled_orders) > 0:
+            for x in range(len(filled_orders)):
+                if filled_orders[x].ft_order_side == 'buy':
+                    filled_buys.append(filled_orders[x].to_json())
+                elif filled_orders[x].ft_order_side == 'sell':
+                    filled_sells.append(filled_orders[x].to_json())
 
         return {
             'trade_id': self.id,
@@ -361,7 +376,8 @@ class LocalTrade():
             'max_rate': self.max_rate,
 
             'open_order_id': self.open_order_id,
-            'filled_buys': buys_json,
+            'filled_buys': filled_buys,
+            'filled_sells': filled_sells,
         }
 
     @staticmethod
@@ -631,14 +647,14 @@ class LocalTrade():
         else:
             return None
 
-    def select_filled_orders(self, order_side: str) -> List['Order']:
+    def select_filled_orders(self, order_side: Optional[str] = None) -> List['Order']:
         """
         Finds filled orders for this orderside.
-        :param order_side: Side of the order (either 'buy' or 'sell')
+        :param order_side: Side of the order (either 'buy', 'sell', or None)
         :return: array of Order objects
         """
-        return [o for o in self.orders if o.ft_order_side == order_side and
-                o.ft_is_open is False and
+        return [o for o in self.orders if ((o.ft_order_side == order_side) or (order_side is None))
+                and o.ft_is_open is False and
                 (o.filled or 0) > 0 and
                 o.status in NON_OPEN_EXCHANGE_STATES]
 

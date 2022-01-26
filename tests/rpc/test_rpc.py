@@ -109,8 +109,12 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
         'position_adjustment_enable': False,
-        'filled_buys': {'0': {'amount': 91.07468123, 'average': 1.098e-05,
-                        'cost': 0.0009999999999054, 'order_filled_date': ANY, 'price': 1.098e-05}},
+        'filled_buys': [{'amount': 91.07468123, 'average': 1.098e-05,
+                         'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
+                         'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
+                         'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
+                         'remaining': ANY, 'status': ANY}],
+        'filled_sells': []
     }
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
@@ -179,8 +183,12 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
         'open_order': None,
         'exchange': 'binance',
         'position_adjustment_enable': False,
-        'filled_buys': {'0': {'amount': 91.07468123, 'average': 1.098e-05,
-                        'cost': 0.0009999999999054, 'order_filled_date': ANY, 'price': 1.098e-05}},
+        'filled_buys': [{'amount': 91.07468123, 'average': 1.098e-05,
+                        'cost': 0.0009999999999054, 'filled': 91.07468123, 'ft_order_side': 'buy',
+                         'order_date': ANY, 'order_timestamp': ANY, 'order_filled_date': ANY,
+                         'order_filled_timestamp': ANY, 'order_type': 'limit', 'price': 1.098e-05,
+                         'remaining': ANY, 'status': ANY}],
+        'filled_sells': []
     }
 
 
