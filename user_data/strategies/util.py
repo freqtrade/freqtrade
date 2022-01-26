@@ -1,10 +1,15 @@
 import subprocess
+import threading
 
 IS_BACKTEST = False
 
 EXECUTION_PATH = "/root/workspace/execution/"
 
+
 def launcher(mode, coin, brain):
+    threading.Thread(target=launcher, args=(mode, coin, brain)).start()
+
+def _perform_launcher(mode, coin, brain):
     subprocess.call("python3 "+EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
 
 def back_tester(date_time, coin, brain):
