@@ -42,7 +42,7 @@ These requirements apply to both [Script Installation](#script-installation) and
 
 ### Install guide
 
-* [Python >= 3.7.x](http://docs.python-guide.org/en/latest/starting/installation/)
+* [Python >= 3.8.x](http://docs.python-guide.org/en/latest/starting/installation/)
 * [pip](https://pip.pypa.io/en/stable/installing/)
 * [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [virtualenv](https://virtualenv.pypa.io/en/stable/installation.html) (Recommended)

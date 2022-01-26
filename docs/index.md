@@ -11,7 +11,7 @@
 
 ## Introduction
 
-Freqtrade is a crypto-currency algorithmic trading software developed in python (3.7+) and supported on Windows, macOS and Linux.
+Freqtrade is a crypto-currency algorithmic trading software developed in python (3.8+) and supported on Windows, macOS and Linux.
 
 !!! Danger "DISCLAIMER"
     This software is for educational purposes only. Do not risk money which you are afraid to lose. USE THE SOFTWARE AT YOUR OWN RISK. THE AUTHORS AND ALL AFFILIATES ASSUME NO RESPONSIBILITY FOR YOUR TRADING RESULTS.
@@ -67,7 +67,7 @@ To run this bot we recommend you a linux cloud instance with a minimum of:
 
 Alternatively
 
-- Python 3.7+
+- Python 3.8+
 - pip (pip3)
 - git
 - TA-Lib
