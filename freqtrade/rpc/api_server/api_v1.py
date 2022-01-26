@@ -141,7 +141,8 @@ def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
 
-    trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount)
+    trade = rpc._rpc_forcebuy(payload.pair, payload.price, order_side=payload.side,
+                              order_type=ordertype, stake_amount=stake_amount)
 
     if trade:
         return ForceEnterResponse.parse_obj(trade.to_json())
