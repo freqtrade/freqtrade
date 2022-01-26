@@ -10,7 +10,7 @@ EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
 
 
 def launcher(mode, coin, brain):
-    threading.Thread(target=launcher, args=(mode, coin, brain)).start()
+    threading.Thread(target=_perform_launcher, args=(mode, coin, brain)).start()
 
 def _perform_launcher(mode, coin, brain):
     subprocess.call("python3 "+EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
