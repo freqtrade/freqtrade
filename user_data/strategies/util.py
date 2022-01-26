@@ -2,14 +2,14 @@ import subprocess
 import threading
 from user_data.strategies.config import Config
 
-def launch(mode, coin, brain):
+def execute(mode, coin, brain):
     if Config.IS_PARRALER_EXECUTION:
-        threading.Thread(target=_perform_launch, args=(mode, coin, brain)).start()
+        threading.Thread(target=_perform_execute, args=(mode, coin, brain)).start()
     else:
-        subprocess.call("python3 "+Config.EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
+        subprocess.call("python3 "+Config.EXECUTION_PATH+"executeer.py " + mode + " " + coin + " " + brain, shell=True)
 
-def _perform_launch(mode, coin, brain):
-        subprocess.call("python3 "+Config.EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
+def _perform_execute(mode, coin, brain):
+        subprocess.call("python3 "+Config.EXECUTION_PATH+"executeer.py " + mode + " " + coin + " " + brain, shell=True)
 
 def _perform_back_test(date_time, coin, brain):
     date = str(date_time)

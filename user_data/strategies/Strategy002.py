@@ -13,7 +13,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
 
-from user_data.strategies.util import launch, back_test
+from user_data.strategies.util import execute, back_test
 from config import Config
 
 
@@ -169,7 +169,7 @@ class Strategy002(IStrategy):
         if Config.IS_BACKTEST:
             back_test(current_time, coin, brain)
         else:
-            launch(mode, coin, brain)
+            execute(mode, coin, brain)
         
         return True
 
