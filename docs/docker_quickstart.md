@@ -125,11 +125,12 @@ All freqtrade arguments will be available by running `docker-compose run --rm fr
 
 !!! Note "`docker-compose run --rm`"
     Including `--rm` will remove the container after completion, and is highly recommended for all modes except trading mode (running with `freqtrade trade` command).
-    
-!!! Note that "`docker-compose run --rm`" will require a compose file to be provided.
-Some freqtrade commands that don't require authentication such as `list-pairs` can be run with "`docker run --rm`" instead.
-For example `docker run --rm freqtradeorg/freqtrade:stable list-pairs --exchange binance --quote BTC --print-json`. 
-This can be useful for fetching exchange information to add to your `config.json` without affecting your running containers.
+
+??? Note "Using docker without docker-compose"
+    "`docker-compose run --rm`" will require a compose file to be provided.
+    Some freqtrade commands that don't require authentication such as `list-pairs` can be run with "`docker run --rm`" instead.  
+    For example `docker run --rm freqtradeorg/freqtrade:stable list-pairs --exchange binance --quote BTC --print-json`.  
+    This can be useful for fetching exchange information to add to your `config.json` without affecting your running containers.
 
 #### Example: Download data with docker-compose
 
