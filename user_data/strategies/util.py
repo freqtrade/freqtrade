@@ -1,21 +1,23 @@
 import subprocess
 import threading
+from user_data.strategies.config import Config
 
-BACKTEST_DOWNLOADED_JSON_DATA_FILE_PATH = ""
-BACKTEST_YEAR = 2020
-BACKTEST_MONTH_INDEX = 9
-IS_BACKTEST = False
-WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
-EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
+def execute(mode, coin, brain):
+    if Config.IS_PARRALER_EXECUTION:
+        threading.Thread(target=_perform_execute, args=(mode, coin, brain)).start()
+    else:
+        _perform_execute(mode, coin, brain)
 
+def _perform_execute(mode, coin, brain):
+        subprocess.call("python3 "+Config.EXECUTION_PATH+"executeer.py " + mode + " " + coin + " " + brain, shell=True)
 
-def launcher(mode, coin, brain):
-    threading.Thread(target=_perform_launcher, args=(mode, coin, brain)).start()
-
-def _perform_launcher(mode, coin, brain):
-    subprocess.call("python3 "+EXECUTION_PATH+"launcher.py " + mode + " " + coin + " " + brain, shell=True)
-
-def back_tester(date_time, coin, brain):
+def _perform_back_test(date_time, coin, brain):
     date = str(date_time)
     date = date.replace(" ", "#")
-    subprocess.call("python3 "+ EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " 0.45 3", shell=True)
+    subprocess.call("python3 "+ Config.EXECUTION_PATH + "back_tester.py " + date + " " + coin + " " + brain + " 0.45 3", shell=True)
+
+def back_test(date_time, coin, brain):
+    if Config.IS_PARRALER_EXECUTION:
+        threading.Thread(target=_perform_back_test, args=(coin, brain, date_time)).start()
+    else:
+        _perform_back_test(date_time, coin, brain)
