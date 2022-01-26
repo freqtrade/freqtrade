@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
-from freqtrade.enums import OrderTypeValues
+from freqtrade.enums import OrderTypeValues, SignalDirection
 
 
 class Ping(BaseModel):
@@ -247,7 +247,7 @@ class TradeResponse(BaseModel):
     total_trades: int
 
 
-class ForceBuyResponse(BaseModel):
+class ForceEnterResponse(BaseModel):
     __root__: Union[TradeSchema, StatusMsg]
 
 
@@ -277,8 +277,9 @@ class Logs(BaseModel):
     logs: List[List]
 
 
-class ForceBuyPayload(BaseModel):
+class ForceEnterPayload(BaseModel):
     pair: str
+    side: SignalDirection = SignalDirection.LONG
     price: Optional[float]
     ordertype: Optional[OrderTypeValues]
     stakeamount: Optional[float]

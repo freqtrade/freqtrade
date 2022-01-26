@@ -14,8 +14,8 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
-                                                  DeleteLockRequest, DeleteTrade, ForceBuyPayload,
-                                                  ForceBuyResponse, ForceSellPayload, Locks, Logs,
+                                                  DeleteLockRequest, DeleteTrade, ForceEnterPayload,
+                                                  ForceEnterResponse, ForceSellPayload, Locks, Logs,
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
@@ -33,7 +33,9 @@ logger = logging.getLogger(__name__)
 # 1.11: forcebuy and forcesell accept ordertype
 # 1.12: add blacklist delete endpoint
 # 1.13: forcebuy supports stake_amount
-API_VERSION = 1.13
+# versions 2.xx -> futures/short branch
+# 2.13: addition of Forceenter
+API_VERSION = 2.13
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -133,17 +135,18 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
     return resp
 
 
-@router.post('/forcebuy', response_model=ForceBuyResponse, tags=['trading'])
-def forcebuy(payload: ForceBuyPayload, rpc: RPC = Depends(get_rpc)):
+# /forcebuy is deprecated with short addition. use ForceEntry instead
+@router.post(['/forceenter', '/forcebuy'], response_model=ForceEnterResponse, tags=['trading'])
+def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None
 
     trade = rpc._rpc_forcebuy(payload.pair, payload.price, ordertype, stake_amount)
 
     if trade:
-        return ForceBuyResponse.parse_obj(trade.to_json())
+        return ForceEnterResponse.parse_obj(trade.to_json())
     else:
-        return ForceBuyResponse.parse_obj({"status": f"Error buying pair {payload.pair}."})
+        return ForceEnterResponse.parse_obj({"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
