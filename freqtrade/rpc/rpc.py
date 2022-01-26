@@ -714,9 +714,10 @@ class RPC:
             self._freqtrade.wallets.update()
             return {'result': f'Created sell order for trade {trade_id}.'}
 
-    def _rpc_forcebuy(self, pair: str, price: Optional[float], *, order_type: Optional[str] = None,
-                      order_side: SignalDirection = SignalDirection.LONG,
-                      stake_amount: Optional[float] = None) -> Optional[Trade]:
+    def _rpc_force_entry(self, pair: str, price: Optional[float], *,
+                         order_type: Optional[str] = None,
+                         order_side: SignalDirection = SignalDirection.LONG,
+                         stake_amount: Optional[float] = None) -> Optional[Trade]:
         """
         Handler for forcebuy <asset> <price>
         Buys a pair trade at the given or current price

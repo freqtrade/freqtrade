@@ -1074,7 +1074,7 @@ def test_api_forcebuy(botclient, mocker, fee):
     ftbot.config['forcebuy_enable'] = True
 
     fbuy_mock = MagicMock(return_value=None)
-    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
+    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
     rc = client_post(client, f"{BASE_URI}/forcebuy",
                      data='{"pair": "ETH/BTC"}')
     assert_response(rc)
@@ -1099,7 +1099,7 @@ def test_api_forcebuy(botclient, mocker, fee):
         timeframe=5,
         strategy=CURRENT_TEST_STRATEGY
     ))
-    mocker.patch("freqtrade.rpc.RPC._rpc_forcebuy", fbuy_mock)
+    mocker.patch("freqtrade.rpc.RPC._rpc_force_entry", fbuy_mock)
 
     rc = client_post(client, f"{BASE_URI}/forcebuy",
                      data='{"pair": "ETH/BTC"}')

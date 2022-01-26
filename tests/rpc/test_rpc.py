@@ -1106,16 +1106,16 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
-    trade = rpc._rpc_forcebuy(pair, None)
+    trade = rpc._rpc_force_entry(pair, None)
     assert isinstance(trade, Trade)
     assert trade.pair == pair
     assert trade.open_rate == ticker()['bid']
 
     # Test buy duplicate
     with pytest.raises(RPCException, match=r'position for ETH/BTC already open - id: 1'):
-        rpc._rpc_forcebuy(pair, 0.0001)
+        rpc._rpc_force_entry(pair, 0.0001)
     pair = 'XRP/BTC'
-    trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit')
+    trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit')
     assert isinstance(trade, Trade)
     assert trade.pair == pair
     assert trade.open_rate == 0.0001
@@ -1123,11 +1123,11 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     # Test buy pair not with stakes
     with pytest.raises(RPCException,
                        match=r'Wrong pair selected. Only pairs with stake-currency.*'):
-        rpc._rpc_forcebuy('LTC/ETH', 0.0001)
+        rpc._rpc_force_entry('LTC/ETH', 0.0001)
 
     # Test with defined stake_amount
     pair = 'LTC/BTC'
-    trade = rpc._rpc_forcebuy(pair, 0.0001, order_type='limit', stake_amount=0.05)
+    trade = rpc._rpc_force_entry(pair, 0.0001, order_type='limit', stake_amount=0.05)
     assert trade.stake_amount == 0.05
 
     # Test not buying
@@ -1137,7 +1137,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'TKN/BTC'
-    trade = rpc._rpc_forcebuy(pair, None)
+    trade = rpc._rpc_force_entry(pair, None)
     assert trade is None
 
 
@@ -1151,7 +1151,7 @@ def test_rpcforcebuy_stopped(mocker, default_conf) -> None:
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'trader is not running'):
-        rpc._rpc_forcebuy(pair, None)
+        rpc._rpc_force_entry(pair, None)
 
 
 def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
@@ -1162,7 +1162,7 @@ def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):
-        rpc._rpc_forcebuy(pair, None)
+        rpc._rpc_force_entry(pair, None)
 
 
 @pytest.mark.usefixtures("init_persistence")

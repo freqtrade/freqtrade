@@ -179,7 +179,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     assert len(trades) == 4
     assert freqtrade.wallets.get_trade_stake_amount('XRP/BTC') == result1
 
-    rpc._rpc_forcebuy('TKN/BTC', None)
+    rpc._rpc_force_entry('TKN/BTC', None)
 
     trades = Trade.query.all()
     assert len(trades) == 5
