@@ -11,7 +11,7 @@ from datetime import datetime
 import talib.abstract as ta
 
 from user_data.strategies.util import back_test, execute
-from config import Config
+from user_data.strategies.config import Config
 
 class Strategy004(IStrategy):
     """

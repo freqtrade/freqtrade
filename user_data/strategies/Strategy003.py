@@ -12,10 +12,9 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy # noqa
 from datetime import datetime
-import subprocess
 
 from user_data.strategies.util import  back_test, execute
-from config import Config
+from user_data.strategies.config import Config
 
 
 class Strategy003(IStrategy):

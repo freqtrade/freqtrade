@@ -14,7 +14,7 @@ import numpy # noqa
 from datetime import datetime
 
 from user_data.strategies.util import execute, back_test
-from config import Config
+from user_data.strategies.config import Config
 
 
 class Strategy002(IStrategy):
