@@ -136,7 +136,8 @@ def show_config(rpc: Optional[RPC] = Depends(get_rpc_optional), config=Depends(g
 
 
 # /forcebuy is deprecated with short addition. use ForceEntry instead
-@router.post(['/forceenter', '/forcebuy'], response_model=ForceEnterResponse, tags=['trading'])
+@router.post('/forceenter', response_model=ForceEnterResponse, tags=['trading'])
+@router.post('/forcebuy', response_model=ForceEnterResponse, tags=['trading'])
 def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
     stake_amount = payload.stakeamount if payload.stakeamount else None

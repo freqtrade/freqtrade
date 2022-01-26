@@ -1175,7 +1175,7 @@ def test_forcebuy_handle_exception(default_conf, update, mocker) -> None:
     telegram._forcebuy(update=update, context=MagicMock())
 
     assert msg_mock.call_count == 1
-    assert msg_mock.call_args_list[0][0][0] == 'Forcebuy not enabled.'
+    assert msg_mock.call_args_list[0][0][0] == 'Forceentry not enabled.'
 
 
 def test_forcebuy_no_pair(default_conf, update, mocker) -> None:

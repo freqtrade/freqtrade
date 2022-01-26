@@ -1090,7 +1090,7 @@ def test_rpc_count(mocker, default_conf, ticker, fee) -> None:
     assert counts["current"] == 1
 
 
-def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
+def test_rpc_forceentry(mocker, default_conf, ticker, fee, limit_buy_order_open) -> None:
     default_conf['forcebuy_enable'] = True
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
     buy_mm = MagicMock(return_value=limit_buy_order_open)
@@ -1141,7 +1141,7 @@ def test_rpcforcebuy(mocker, default_conf, ticker, fee, limit_buy_order_open) ->
     assert trade is None
 
 
-def test_rpcforcebuy_stopped(mocker, default_conf) -> None:
+def test_rpc_forceentry_stopped(mocker, default_conf) -> None:
     default_conf['forcebuy_enable'] = True
     default_conf['initial_state'] = 'stopped'
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
@@ -1154,14 +1154,14 @@ def test_rpcforcebuy_stopped(mocker, default_conf) -> None:
         rpc._rpc_force_entry(pair, None)
 
 
-def test_rpcforcebuy_disabled(mocker, default_conf) -> None:
+def test_rpc_forceentry_disabled(mocker, default_conf) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     patch_get_signal(freqtradebot)
     rpc = RPC(freqtradebot)
     pair = 'ETH/BTC'
-    with pytest.raises(RPCException, match=r'Forcebuy not enabled.'):
+    with pytest.raises(RPCException, match=r'Forceentry not enabled.'):
         rpc._rpc_force_entry(pair, None)
 
 
