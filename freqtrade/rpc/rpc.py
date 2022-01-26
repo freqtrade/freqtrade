@@ -19,6 +19,7 @@ from freqtrade.constants import CANCEL_REASON, DATETIME_PRINT_FORMAT
 from freqtrade.data.history import load_data
 from freqtrade.enums import SellType, State
 from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
 from freqtrade.loggers import bufferHandler
@@ -728,6 +729,9 @@ class RPC:
 
         if self._freqtrade.state != State.RUNNING:
             raise RPCException('trader is not running')
+
+        if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
+            raise RPCException("Can't go short on Spot markets")
 
         # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
