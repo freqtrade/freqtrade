@@ -14,7 +14,8 @@ import numpy # noqa
 from datetime import datetime
 import subprocess
 
-from user_data.strategies.util import IS_BACKTEST, back_tester, launcher
+from user_data.strategies.util import  back_test, launch
+from config import Config
 
 
 class Strategy003(IStrategy):
@@ -181,5 +182,8 @@ class Strategy003(IStrategy):
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
-        launcher(mode, current_time, coin, brain)
+        if Config.IS_BACKTEST:
+            back_test(current_time, coin, brain)
+        else:
+            launch(mode, coin, brain)
         return True

@@ -7,12 +7,11 @@ from functools import reduce
 from pandas import DataFrame
 # --------------------------------
 from datetime import datetime
-import subprocess
 
 import talib.abstract as ta
 
-from user_data.strategies.util import IS_BACKTEST, back_tester, launcher
-
+from user_data.strategies.util import back_test, launch
+from config import Config
 
 class Strategy004(IStrategy):
     """
@@ -181,5 +180,8 @@ class Strategy004(IStrategy):
         mode = "test"
         coin = pair.split("/")[0]
         brain = "Freq_" + self.__class__.__name__
-        launcher(mode, current_time, coin, brain)
+        if Config.IS_BACKTEST:
+            back_test(current_time, coin, brain)
+        else:
+            launch(mode, coin, brain)
         return True
