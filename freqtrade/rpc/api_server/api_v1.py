@@ -15,7 +15,7 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (AvailablePairs, Balances, BlacklistPayload,
                                                   BlacklistResponse, Count, Daily,
                                                   DeleteLockRequest, DeleteTrade, ForceEnterPayload,
-                                                  ForceEnterResponse, ForceSellPayload, Locks, Logs,
+                                                  ForceEnterResponse, ForceExitPayload, Locks, Logs,
                                                   OpenTradeSchema, PairHistory, PerformanceEntry,
                                                   Ping, PlotConfig, Profit, ResultMsg, ShowConfig,
                                                   Stats, StatusMsg, StrategyListResponse,
@@ -152,10 +152,11 @@ def forceentry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
             {"status": f"Error entering {payload.side} trade for pair {payload.pair}."})
 
 
+@router.post('/forceexit', response_model=ResultMsg, tags=['trading'])
 @router.post('/forcesell', response_model=ResultMsg, tags=['trading'])
-def forcesell(payload: ForceSellPayload, rpc: RPC = Depends(get_rpc)):
+def forcesell(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
-    return rpc._rpc_forcesell(payload.tradeid, ordertype)
+    return rpc._rpc_forceexit(payload.tradeid, ordertype)
 
 
 @router.get('/blacklist', response_model=BlacklistResponse, tags=['info', 'pairlist'])

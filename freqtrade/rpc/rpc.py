@@ -658,7 +658,7 @@ class RPC:
 
         return {'status': 'No more buy will occur from now. Run /reload_config to reset.'}
 
-    def _rpc_forcesell(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
+    def _rpc_forceexit(self, trade_id: str, ordertype: Optional[str] = None) -> Dict[str, str]:
         """
         Handler for forcesell <id>.
         Sells the given trade at current price

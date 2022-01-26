@@ -687,7 +687,7 @@ def test_rpc_stopbuy(mocker, default_conf) -> None:
     assert freqtradebot.config['max_open_trades'] == 0
 
 
-def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
+def test_rpc_forceexit(default_conf, ticker, fee, mocker) -> None:
     mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
 
     cancel_order_mock = MagicMock()
@@ -714,29 +714,29 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_forcesell(None)
+        rpc._rpc_forceexit(None)
 
     freqtradebot.state = State.RUNNING
     with pytest.raises(RPCException, match=r'.*invalid argument*'):
-        rpc._rpc_forcesell(None)
+        rpc._rpc_forceexit(None)
 
-    msg = rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forceexit('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
     freqtradebot.enter_positions()
-    msg = rpc._rpc_forcesell('all')
+    msg = rpc._rpc_forceexit('all')
     assert msg == {'result': 'Created sell orders for all open trades.'}
 
     freqtradebot.enter_positions()
-    msg = rpc._rpc_forcesell('2')
+    msg = rpc._rpc_forceexit('2')
     assert msg == {'result': 'Created sell order for trade 2.'}
 
     freqtradebot.state = State.STOPPED
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_forcesell(None)
+        rpc._rpc_forceexit(None)
 
     with pytest.raises(RPCException, match=r'.*trader is not running*'):
-        rpc._rpc_forcesell('all')
+        rpc._rpc_forceexit('all')
 
     freqtradebot.state = State.RUNNING
     assert cancel_order_mock.call_count == 0
@@ -765,7 +765,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
     # and trade amount is updated
-    rpc._rpc_forcesell('3')
+    rpc._rpc_forceexit('3')
     assert cancel_order_mock.call_count == 1
     assert trade.amount == filled_amount
 
@@ -793,7 +793,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
         }
     )
     # check that the trade is called, which is done by ensuring exchange.cancel_order is called
-    msg = rpc._rpc_forcesell('4')
+    msg = rpc._rpc_forceexit('4')
     assert msg == {'result': 'Created sell order for trade 4.'}
     assert cancel_order_mock.call_count == 2
     assert trade.amount == amount
@@ -810,7 +810,7 @@ def test_rpc_forcesell(default_conf, ticker, fee, mocker) -> None:
             'filled': 0.0
         }
     )
-    msg = rpc._rpc_forcesell('3')
+    msg = rpc._rpc_forceexit('3')
     assert msg == {'result': 'Created sell order for trade 3.'}
     # status quo, no exchange calls
     assert cancel_order_mock.call_count == 3

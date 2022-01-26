@@ -25,6 +25,7 @@ from freqtrade.__init__ import __version__
 from freqtrade.constants import DUST_PER_COIN
 from freqtrade.enums import RPCMessageType
 from freqtrade.enums.signaltype import SignalDirection
+from freqtrade.enums.tradingmode import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural, round_coin_value
 from freqtrade.persistence import Trade
@@ -115,7 +116,8 @@ class Telegram(RPCHandler):
                                  r'/stopbuy$', r'/reload_config$', r'/show_config$',
                                  r'/logs$', r'/whitelist$', r'/blacklist$', r'/bl_delete$',
                                  r'/weekly$', r'/weekly \d+$', r'/monthly$', r'/monthly \d+$',
-                                 r'/forcebuy$', r'/edge$', r'/help$', r'/version$']
+                                 r'/forcebuy$', r'/forcelong$', r'/forceshort$',
+                                 r'/edge$', r'/help$', r'/version$']
         # Create keys for generation
         valid_keys_print = [k.replace('$', '') for k in valid_keys]
 
@@ -152,7 +154,7 @@ class Telegram(RPCHandler):
             CommandHandler('balance', self._balance),
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
-            CommandHandler('forcesell', self._forcesell),
+            CommandHandler(['forcesell', 'forceexit'], self._forceexit),
             CommandHandler(['forcebuy', 'forcelong'], partial(self._forcebuy, order_side=SignalDirection.LONG)),
             CommandHandler('forceshort', partial(self._forcebuy, order_side=SignalDirection.SHORT)),
             CommandHandler('trades', self._trades),
@@ -849,7 +851,7 @@ class Telegram(RPCHandler):
         self._send_msg('Status: `{status}`'.format(**msg))
 
     @authorized_only
-    def _forcesell(self, update: Update, context: CallbackContext) -> None:
+    def _forceexit(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /forcesell <id>.
         Sells the given trade at current price
@@ -863,7 +865,7 @@ class Telegram(RPCHandler):
             self._send_msg("You must specify a trade-id or 'all'.")
             return
         try:
-            msg = self._rpc._rpc_forcesell(trade_id)
+            msg = self._rpc._rpc_forceexit(trade_id)
             self._send_msg('Forcesell Result: `{result}`'.format(**msg))
 
         except RPCException as e:
@@ -1279,16 +1281,21 @@ class Telegram(RPCHandler):
         :param update: message update
         :return: None
         """
-        forcebuy_text = ("*/forcebuy <pair> [<rate>]:* `Instantly buys the given pair. "
+        forcebuy_text = ("*/forcelong <pair> [<rate>]:* `Instantly buys the given pair. "
                          "Optionally takes a rate at which to buy "
-                         "(only applies to limit orders).` \n")
+                         "(only applies to limit orders).` \n"
+                         )
+        if self._rpc_._freqtrade.trading_mode != TradingMode.SPOT:
+            forcebuy_text += ("*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
+                              "Optionally takes a rate at which to sell "
+                              "(only applies to limit orders).` \n")
         message = (
             "_BotControl_\n"
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/stop:* Stops the trader\n"
             "*/stopbuy:* `Stops buying, but handles open trades gracefully` \n"
-            "*/forcesell <trade_id>|all:* `Instantly sells the given trade or all trades, "
+            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             f"{forcebuy_text if self._config.get('forcebuy_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"

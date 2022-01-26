@@ -940,7 +940,7 @@ def test_telegram_forcesell_handle(default_conf, update, ticker, fee,
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
 
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
@@ -1007,7 +1007,7 @@ def test_telegram_forcesell_down_handle(default_conf, update, ticker, fee,
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
 
     assert msg_mock.call_count == 4
 
@@ -1065,7 +1065,7 @@ def test_forcesell_all_handle(default_conf, update, ticker, fee, mocker) -> None
     # /forcesell all
     context = MagicMock()
     context.args = ["all"]
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
@@ -1109,7 +1109,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     # /forcesell 1
     context = MagicMock()
     context.args = ["1"]
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'not running' in msg_mock.call_args_list[0][0][0]
 
@@ -1118,7 +1118,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     freqtradebot.state = State.RUNNING
     context = MagicMock()
     context.args = []
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert "You must specify a trade-id or 'all'." in msg_mock.call_args_list[0][0][0]
 
@@ -1128,7 +1128,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     # /forcesell 123456
     context = MagicMock()
     context.args = ["123456"]
-    telegram._forcesell(update=update, context=context)
+    telegram._forceexit(update=update, context=context)
     assert msg_mock.call_count == 1
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 

@@ -285,7 +285,7 @@ class ForceEnterPayload(BaseModel):
     stakeamount: Optional[float]
 
 
-class ForceSellPayload(BaseModel):
+class ForceExitPayload(BaseModel):
     tradeid: str
     ordertype: Optional[OrderTypeValues]
 
