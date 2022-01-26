@@ -15,7 +15,7 @@ from datetime import datetime
 import subprocess
 import threading
 
-from user_data.strategies.util import IS_BACKTEST, launcher, _perform_launcher
+from user_data.strategies.util import launcher, _perform_launcher
 
 
 

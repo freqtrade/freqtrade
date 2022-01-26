@@ -1,8 +1,8 @@
 import subprocess
 import threading
-from config import Config
+from user_data.strategies.config import Config
 
-def launcher(mode, coin, brain,date_time):
+def launcher(mode, coin, brain,date_time = 12344315):
     if Config.IS_BACKTEST:
             if Config.IS_PARRALER_EXECUTION:
                  threading.Thread(target=_perform_launcher, args=(mode, coin, brain)).start()
