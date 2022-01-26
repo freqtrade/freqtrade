@@ -173,7 +173,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/profit [<n>]` | Display a summary of your profit/loss from close trades and some stats about your performance, over the last n days (all trades by default)
 | `/forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `/forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
-| `/forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
+| `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`forcebuy_enable` must be set to True)
+| `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`forcebuy_enable` must be set to True)
 | `/performance` | Show performance of each finished trade grouped by pair
 | `/balance` | Show account balance per currency
 | `/daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7)
@@ -275,11 +276,13 @@ Starting capital is either taken from the `available_capital` setting, or calcul
 
 > **BITTREX:** Selling BTC/LTC with limit `0.01650000 (profit: ~-4.07%, -0.00008168)`
 
-### /forcebuy <pair> [rate]
+### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
-> **BITTREX:** Buying ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+`/forcebuy <pair> [rate]` is also supported for longs but should be considered deprecated.
 
-Omitting the pair will open a query asking for the pair to buy (based on the current whitelist).
+> **BITTREX:** Long ETH/BTC with limit `0.03400000` (`1.000000 ETH`, `225.290 USD`)
+
+Omitting the pair will open a query asking for the pair to trade (based on the current whitelist).
 
 ![Telegram force-buy screenshot](assets/telegram_forcebuy.png)
 

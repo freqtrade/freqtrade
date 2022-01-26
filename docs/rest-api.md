@@ -148,6 +148,7 @@ python3 scripts/rest_client.py --config rest_config.json <command> [optional par
 | `forcesell <trade_id>` | Instantly sells the given trade  (Ignoring `minimum_roi`).
 | `forcesell all` | Instantly sells all open trades (Ignoring `minimum_roi`).
 | `forcebuy <pair> [rate]` | Instantly buys the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
+| `forceenter <pair> <side> [rate]` | Instantly longs or shorts the given pair. Rate is optional. (`forcebuy_enable` must be set to True)
 | `performance` | Show performance of each finished trade grouped by pair.
 | `balance` | Show account balance per currency.
 | `daily <n>` | Shows profit or loss per day, over the last n days (n defaults to 7).
@@ -213,6 +214,13 @@ forcebuy
 	Buy an asset.
 
         :param pair: Pair to buy (ETH/BTC)
+        :param price: Optional - price to buy
+
+forceenter
+	Force entering a trade
+
+        :param pair: Pair to buy (ETH/BTC)
+        :param side: 'long' or 'short'
         :param price: Optional - price to buy
 
 forcesell
@@ -284,6 +292,9 @@ strategy
 	Get strategy details
 
         :param strategy: Strategy class name
+
+sysinfo
+	Provides system information (CPU, RAM usage)
 
 trade
 	Return specific trade
