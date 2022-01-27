@@ -155,8 +155,8 @@ class Telegram(RPCHandler):
             CommandHandler('start', self._start),
             CommandHandler('stop', self._stop),
             CommandHandler(['forcesell', 'forceexit'], self._forceexit),
-            CommandHandler(['forcebuy', 'forcelong'], partial(self._forcebuy, order_side=SignalDirection.LONG)),
-            CommandHandler('forceshort', partial(self._forcebuy, order_side=SignalDirection.SHORT)),
+            CommandHandler(['forcebuy', 'forcelong'], partial(self._forceenter, order_side=SignalDirection.LONG)),
+            CommandHandler('forceshort', partial(self._forceenter, order_side=SignalDirection.SHORT)),
             CommandHandler('trades', self._trades),
             CommandHandler('delete', self._delete_trade),
             CommandHandler('performance', self._performance),
@@ -892,10 +892,10 @@ class Telegram(RPCHandler):
         return [buttons[i:i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only
-    def _forcebuy(
+    def _forceenter(
             self, update: Update, context: CallbackContext, order_side: SignalDirection) -> None:
         """
-        Handler for /forcebuy <asset> <price>.
+        Handler for /forcelong <asset> <price> and `/forceshort <asset> <price>
         Buys a pair trade at the given or current price
         :param bot: telegram bot
         :param update: message update
@@ -1285,7 +1285,7 @@ class Telegram(RPCHandler):
                          "Optionally takes a rate at which to buy "
                          "(only applies to limit orders).` \n"
                          )
-        if self._rpc_._freqtrade.trading_mode != TradingMode.SPOT:
+        if self._rpc._freqtrade.trading_mode != TradingMode.SPOT:
             forcebuy_text += ("*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
                               "Optionally takes a rate at which to sell "
                               "(only applies to limit orders).` \n")

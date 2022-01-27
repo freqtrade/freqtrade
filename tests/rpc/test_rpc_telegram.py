@@ -19,6 +19,7 @@ from freqtrade import __version__
 from freqtrade.constants import CANCEL_REASON
 from freqtrade.edge import PairInfo
 from freqtrade.enums import RPCMessageType, RunMode, SellType, State
+from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.loggers import setup_logging
@@ -93,8 +94,10 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     assert start_polling.start_polling.call_count == 1
 
     message_str = ("rpc.telegram is listening for following commands: [['status'], ['profit'], "
-                   "['balance'], ['start'], ['stop'], ['forcesell'], ['forcebuy'], ['trades'], "
-                   "['delete'], ['performance'], ['buys', 'entries'], ['sells'], ['mix_tags'], "
+                   "['balance'], ['start'], ['stop'], "
+                   "['forcesell', 'forceexit'], ['forcebuy', 'forcelong'], ['forceshort'], "
+                   "['trades'], ['delete'], ['performance'], "
+                   "['buys', 'entries'], ['sells'], ['mix_tags'], "
                    "['stats'], ['daily'], ['weekly'], ['monthly'], "
                    "['count'], ['locks'], ['unlock', 'delete_locks'], "
                    "['reload_config', 'reload_conf'], ['show_config', 'show_conf'], "
@@ -1133,7 +1136,7 @@ def test_forcesell_handle_invalid(default_conf, update, mocker) -> None:
     assert 'invalid argument' in msg_mock.call_args_list[0][0][0]
 
 
-def test_forcebuy_handle(default_conf, update, mocker) -> None:
+def test_forceenter_handle(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     fbuy_mock = MagicMock(return_value=None)
@@ -1145,7 +1148,7 @@ def test_forcebuy_handle(default_conf, update, mocker) -> None:
     # /forcebuy ETH/BTC
     context = MagicMock()
     context.args = ["ETH/BTC"]
-    telegram._forcebuy(update=update, context=context)
+    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 1
     assert fbuy_mock.call_args_list[0][0][0] == 'ETH/BTC'
@@ -1157,7 +1160,7 @@ def test_forcebuy_handle(default_conf, update, mocker) -> None:
     # /forcebuy ETH/BTC 0.055
     context = MagicMock()
     context.args = ["ETH/BTC", "0.055"]
-    telegram._forcebuy(update=update, context=context)
+    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 1
     assert fbuy_mock.call_args_list[0][0][0] == 'ETH/BTC'
@@ -1165,20 +1168,20 @@ def test_forcebuy_handle(default_conf, update, mocker) -> None:
     assert fbuy_mock.call_args_list[0][0][1] == 0.055
 
 
-def test_forcebuy_handle_exception(default_conf, update, mocker) -> None:
+def test_forceenter_handle_exception(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
 
     update.message.text = '/forcebuy ETH/Nonepair'
-    telegram._forcebuy(update=update, context=MagicMock())
+    telegram._forceenter(update=update, context=MagicMock(), order_side=SignalDirection.LONG)
 
     assert msg_mock.call_count == 1
     assert msg_mock.call_args_list[0][0][0] == 'Forceentry not enabled.'
 
 
-def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
+def test_forceenter_no_pair(default_conf, update, mocker) -> None:
     mocker.patch('freqtrade.rpc.rpc.CryptoToFiatConverter._find_price', return_value=15000.0)
 
     fbuy_mock = MagicMock(return_value=None)
@@ -1190,7 +1193,7 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
 
     context = MagicMock()
     context.args = []
-    telegram._forcebuy(update=update, context=context)
+    telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
 
     assert fbuy_mock.call_count == 0
     assert msg_mock.call_count == 1
@@ -1200,7 +1203,7 @@ def test_forcebuy_no_pair(default_conf, update, mocker) -> None:
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 4
     update = MagicMock()
     update.callback_query = MagicMock()
-    update.callback_query.data = 'XRP/USDT'
+    update.callback_query.data = 'XRP/USDT_||_long'
     telegram._forcebuy_inline(update, None)
     assert fbuy_mock.call_count == 1
 
