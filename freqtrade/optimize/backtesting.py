@@ -154,6 +154,7 @@ class Backtesting:
         else:
             self.timeframe_detail_min = 0
         self.detail_data: Dict[str, DataFrame] = {}
+        self.futures_data: Dict[str, DataFrame] = {}
 
     def init_backtest(self):
 
@@ -233,6 +234,37 @@ class Backtesting:
             )
         else:
             self.detail_data = {}
+        if self.trading_mode == TradingMode.FUTURES:
+            # Load additional futures data.
+            funding_rates_dict = history.load_data(
+                datadir=self.config['datadir'],
+                pairs=self.pairlists.whitelist,
+                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timerange=self.timerange,
+                startup_candles=0,
+                fail_without_data=True,
+                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                candle_type=CandleType.FUNDING_RATE
+            )
+
+            # For simplicity, assign to CandleType.Mark (might contian index candles!)
+            mark_rates_dict = history.load_data(
+                datadir=self.config['datadir'],
+                pairs=self.pairlists.whitelist,
+                timeframe=self.exchange._ft_has['mark_ohlcv_timeframe'],
+                timerange=self.timerange,
+                startup_candles=0,
+                fail_without_data=True,
+                data_format=self.config.get('dataformat_ohlcv', 'json'),
+                candle_type=CandleType.from_string(self.exchange._ft_has["mark_ohlcv_price"])
+            )
+            # Combine data to avoid combining the data per trade.
+            for pair in self.pairlists.whitelist:
+                self.futures_data[pair] = funding_rates_dict[pair].merge(
+                    mark_rates_dict[pair], on='date', how="inner", suffixes=["_fund", "_mark"])
+
+        else:
+            self.futures_data = {}
 
     def prepare_backtest(self, enable_protections):
         """
@@ -399,15 +431,12 @@ class Backtesting:
 
     def _get_sell_trade_entry_for_candle(self, trade: LocalTrade,
                                          sell_row: Tuple) -> Optional[LocalTrade]:
-        # TODO-lev: add interest / funding fees to trade object ->
-        # Must be done either here, or one level higher ->
-        # (if we don't want to do it at "detail" level)
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
             trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
-        sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
+        sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
         enter = sell_row[SHORT_IDX] if trade.is_short else sell_row[LONG_IDX]
         exit_ = sell_row[ESHORT_IDX] if trade.is_short else sell_row[ELONG_IDX]
         sell = self.strategy.should_exit(
@@ -460,8 +489,19 @@ class Backtesting:
         return None
 
     def _get_sell_trade_entry(self, trade: LocalTrade, sell_row: Tuple) -> Optional[LocalTrade]:
+        sell_candle_time: datetime = sell_row[DATE_IDX].to_pydatetime()
+
+        if self.trading_mode == TradingMode.FUTURES:
+            # TODO-lev: Other fees / liquidation price?
+            trade.funding_fees = self.exchange.calculate_funding_fees(
+                self.futures_data[trade.pair],
+                amount=trade.amount,
+                is_short=trade.is_short,
+                open_date=trade.open_date_utc,
+                close_date=sell_candle_time,
+            )
+
         if self.timeframe_detail and trade.pair in self.detail_data:
-            sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
             sell_candle_end = sell_candle_time + timedelta(minutes=self.timeframe_min)
 
             detail_data = self.detail_data[trade.pair]
@@ -549,7 +589,7 @@ class Backtesting:
                 return None
 
         if stake_amount and (not min_stake_amount or stake_amount > min_stake_amount):
-            amount = round(stake_amount / propose_rate, 8)
+            amount = round((stake_amount / propose_rate) * leverage, 8)
             if trade is None:
                 # Enter trade
                 has_buy_tag = len(row) >= ENTER_TAG_IDX + 1
@@ -558,13 +598,14 @@ class Backtesting:
                     open_rate=propose_rate,
                     open_date=current_time,
                     stake_amount=stake_amount,
-                    amount=round((stake_amount / propose_rate) * leverage, 8),
+                    amount=amount,
                     fee_open=self.fee,
                     fee_close=self.fee,
                     is_open=True,
                     enter_tag=row[ENTER_TAG_IDX] if has_buy_tag else None,
                     exchange=self._exchange_name,
                     is_short=(direction == 'short'),
+                    trading_mode=self.trading_mode,
                     leverage=leverage,
                     orders=[]
                 )

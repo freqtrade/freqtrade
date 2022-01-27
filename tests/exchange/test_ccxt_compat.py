@@ -280,7 +280,8 @@ class TestCCXTExchange():
         pair = EXCHANGES[exchangename].get('futures_pair', EXCHANGES[exchangename]['pair'])
         since = datetime.now(timezone.utc) - timedelta(days=5)
 
-        funding_fee = exchange._calculate_funding_fees(pair, 20, open_date=since)
+        funding_fee = exchange._fetch_and_calculate_funding_fees(
+            pair, 20, is_short=False, open_date=since)
 
         assert isinstance(funding_fee, float)
         # assert funding_fee > 0

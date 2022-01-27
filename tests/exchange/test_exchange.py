@@ -3540,7 +3540,7 @@ def test_get_max_leverage(default_conf, mocker, pair, nominal_value, max_lev):
         (10, 0.0002, 2.0, 0.01, 0.004, 0.00004),
         (10, 0.0002, 2.5, None, 0.005, None),
     ])
-def test__get_funding_fee(
+def test_calculate_funding_fees(
     default_conf,
     mocker,
     size,
@@ -3552,14 +3552,47 @@ def test__get_funding_fee(
 ):
     exchange = get_patched_exchange(mocker, default_conf)
     kraken = get_patched_exchange(mocker, default_conf, id="kraken")
+    prior_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc) - timedelta(hours=1))
+    trade_date = timeframe_to_prev_date('1h', datetime.now(timezone.utc))
+    funding_rates = DataFrame([
+        {'date': prior_date, 'open': funding_rate},  # Line not used.
+        {'date': trade_date, 'open': funding_rate},
+        ])
+    mark_rates = DataFrame([
+        {'date': prior_date, 'open': mark_price},
+        {'date': trade_date, 'open': mark_price},
+        ])
+    df = exchange.combine_funding_and_mark(funding_rates, mark_rates)
 
-    assert exchange._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == funding_fee
+    assert exchange.calculate_funding_fees(
+        df,
+        amount=size,
+        is_short=True,
+        open_date=trade_date,
+        close_date=trade_date,
+        time_in_ratio=time_in_ratio,
+    ) == funding_fee
 
     if (kraken_fee is None):
         with pytest.raises(OperationalException):
-            kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio)
+            kraken.calculate_funding_fees(
+                df,
+                amount=size,
+                is_short=True,
+                open_date=trade_date,
+                close_date=trade_date,
+                time_in_ratio=time_in_ratio,
+            )
+
     else:
-        assert kraken._get_funding_fee(size, funding_rate, mark_price, time_in_ratio) == kraken_fee
+        assert kraken.calculate_funding_fees(
+            df,
+            amount=size,
+            is_short=True,
+            open_date=trade_date,
+            close_date=trade_date,
+            time_in_ratio=time_in_ratio,
+        ) == kraken_fee
 
 
 @pytest.mark.parametrize('exchange,rate_start,rate_end,d1,d2,amount,expected_fees', [
@@ -3588,7 +3621,7 @@ def test__get_funding_fee(
     # ('kraken', "2021-09-01 00:00:00", "2021-09-01 08:00:00",  50.0, -0.0024895),
     ('ftx', 0, 9, "2021-09-01 00:00:00", "2021-09-01 08:00:00", 50.0,  0.0016680000000000002),
 ])
-def test__calculate_funding_fees(
+def test__fetch_and_calculate_funding_fees(
     mocker,
     default_conf,
     funding_rate_history_hourly,
@@ -3651,15 +3684,20 @@ def test__calculate_funding_fees(
     type(api_mock).has = PropertyMock(return_value={'fetchFundingRateHistory': True})
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, id=exchange)
-    funding_fees = exchange._calculate_funding_fees('ADA/USDT', amount, d1, d2)
+    funding_fees = exchange._fetch_and_calculate_funding_fees(
+        pair='ADA/USDT', amount=amount, is_short=True, open_date=d1, close_date=d2)
     assert pytest.approx(funding_fees) == expected_fees
+    # Fees for Longs are inverted
+    funding_fees = exchange._fetch_and_calculate_funding_fees(
+        pair='ADA/USDT', amount=amount, is_short=False, open_date=d1, close_date=d2)
+    assert pytest.approx(funding_fees) == -expected_fees
 
 
 @pytest.mark.parametrize('exchange,expected_fees', [
     ('binance', -0.0009140999999999999),
     ('gateio', -0.0009140999999999999),
 ])
-def test__calculate_funding_fees_datetime_called(
+def test__fetch_and_calculate_funding_fees_datetime_called(
     mocker,
     default_conf,
     funding_rate_history_octohourly,
@@ -3679,7 +3717,8 @@ def test__calculate_funding_fees_datetime_called(
     d1 = datetime.strptime("2021-09-01 00:00:00 +0000", '%Y-%m-%d %H:%M:%S %z')
 
     time_machine.move_to("2021-09-01 08:00:00 +00:00")
-    funding_fees = exchange._calculate_funding_fees('ADA/USDT', 30.0, d1)
+    # TODO-lev: test this for longs
+    funding_fees = exchange._fetch_and_calculate_funding_fees('ADA/USDT', 30.0, True, d1)
     assert funding_fees == expected_fees
 
 

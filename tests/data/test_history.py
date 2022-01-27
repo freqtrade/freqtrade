@@ -81,7 +81,7 @@ def test_load_data_7min_timeframe(mocker, caplog, default_conf, testdatadir) -> 
     assert isinstance(ld, DataFrame)
     assert ld.empty
     assert log_has(
-        'No history data for pair: "UNITTEST/BTC", timeframe: 7m. '
+        'No history for UNITTEST/BTC, spot, 7m found. '
         'Use `freqtrade download-data` to download the data', caplog
     )
 
@@ -138,8 +138,8 @@ def test_load_data_with_new_pair_1min(ohlcv_history_list, mocker, caplog,
     load_pair_history(datadir=tmpdir1, timeframe='1m', pair='MEME/BTC', candle_type=candle_type)
     assert not file.is_file()
     assert log_has(
-        'No history data for pair: "MEME/BTC", timeframe: 1m. '
-        'Use `freqtrade download-data` to download the data', caplog
+        f"No history for MEME/BTC, {candle_type}, 1m found. "
+        "Use `freqtrade download-data` to download the data", caplog
     )
 
     # download a new pair if refresh_pairs is set
@@ -744,6 +744,8 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
         ('UNITTEST/USDT', '1h', 'mark'),
         ('XRP/USDT', '1h', 'futures'),
         ('XRP/USDT', '1h', 'mark'),
+        ('XRP/USDT', '8h', 'mark'),
+        ('XRP/USDT', '8h', 'funding_rate'),
     }
 
     paircombs = JsonGzDataHandler.ohlcv_get_available_data(testdatadir, 'spot')
