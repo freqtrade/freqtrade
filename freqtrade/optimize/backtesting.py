@@ -381,7 +381,12 @@ class Backtesting:
 
         # Check if we need to adjust our current positions
         if self.strategy.position_adjustment_enable:
-            trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
+            check_adjust_buy = True
+            if self.strategy.max_entry_position_adjustment > -1:
+                count_of_buys = trade.nr_of_successful_buys
+                check_adjust_buy = (count_of_buys <= self.strategy.max_entry_position_adjustment)
+            if check_adjust_buy:
+                trade = self._get_adjust_trade_entry_for_candle(trade, sell_row)
 
         sell_candle_time = sell_row[DATE_IDX].to_pydatetime()
         sell = self.strategy.should_sell(trade, sell_row[OPEN_IDX],  # type: ignore
