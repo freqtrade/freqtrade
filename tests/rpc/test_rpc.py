@@ -9,6 +9,7 @@ from numpy import isnan
 
 from freqtrade.edge import PairInfo
 from freqtrade.enums import State, TradingMode
+from freqtrade.enums.signaltype import SignalDirection
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.persistence.pairlock_middleware import PairLocks
@@ -1163,6 +1164,18 @@ def test_rpc_forceentry_disabled(mocker, default_conf) -> None:
     pair = 'ETH/BTC'
     with pytest.raises(RPCException, match=r'Forceentry not enabled.'):
         rpc._rpc_force_entry(pair, None)
+
+
+def test_rpc_forceentry_wrong_mode(mocker, default_conf) -> None:
+    default_conf['forcebuy_enable'] = True
+    mocker.patch('freqtrade.rpc.telegram.Telegram', MagicMock())
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+    pair = 'ETH/BTC'
+    with pytest.raises(RPCException, match="Can't go short on Spot markets."):
+        rpc._rpc_force_entry(pair, None, order_side=SignalDirection.SHORT)
 
 
 @pytest.mark.usefixtures("init_persistence")

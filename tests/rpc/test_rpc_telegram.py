@@ -1145,7 +1145,7 @@ def test_forceenter_handle(default_conf, update, mocker) -> None:
     telegram, freqtradebot, _ = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
 
-    # /forcebuy ETH/BTC
+    # /forcelong ETH/BTC
     context = MagicMock()
     context.args = ["ETH/BTC"]
     telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
@@ -1153,11 +1153,12 @@ def test_forceenter_handle(default_conf, update, mocker) -> None:
     assert fbuy_mock.call_count == 1
     assert fbuy_mock.call_args_list[0][0][0] == 'ETH/BTC'
     assert fbuy_mock.call_args_list[0][0][1] is None
+    assert fbuy_mock.call_args_list[0][1]['order_side'] == SignalDirection.LONG
 
     # Reset and retry with specified price
     fbuy_mock = MagicMock(return_value=None)
     mocker.patch('freqtrade.rpc.RPC._rpc_force_entry', fbuy_mock)
-    # /forcebuy ETH/BTC 0.055
+    # /forcelong ETH/BTC 0.055
     context = MagicMock()
     context.args = ["ETH/BTC", "0.055"]
     telegram._forceenter(update=update, context=context, order_side=SignalDirection.LONG)
@@ -1204,7 +1205,7 @@ def test_forceenter_no_pair(default_conf, update, mocker) -> None:
     update = MagicMock()
     update.callback_query = MagicMock()
     update.callback_query.data = 'XRP/USDT_||_long'
-    telegram._forcebuy_inline(update, None)
+    telegram._forceenter_inline(update, None)
     assert fbuy_mock.call_count == 1
 
 

@@ -731,7 +731,7 @@ class RPC:
             raise RPCException('trader is not running')
 
         if order_side == SignalDirection.SHORT and self._freqtrade.trading_mode == TradingMode.SPOT:
-            raise RPCException("Can't go short on Spot markets")
+            raise RPCException("Can't go short on Spot markets.")
 
         # Check if pair quote currency equals to the stake currency.
         stake_currency = self._freqtrade.config.get('stake_currency')
