@@ -98,7 +98,7 @@ class StrategyResolver(IResolver):
                       ("disable_dataframe_checks",        False),
                       ("ignore_buying_expired_candle_after",  0),
                       ("position_adjustment_enable",      False),
-                      ("max_buy_position_adjustment",      -1),
+                      ("max_entry_position_adjustment",      -1),
                       ]
         for attribute, default in attributes:
             StrategyResolver._override_attribute_helper(strategy, config,

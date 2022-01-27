@@ -1350,7 +1350,7 @@ class Telegram(RPCHandler):
         if val['position_adjustment_enable']:
             pa_info = (
                 f"*Position adjustment:* On\n"
-                f"*Max buy position adjustment:* `{val['max_buy_position_adjustment']}`\n"
+                f"*Max enter position adjustment:* `{val['max_entry_position_adjustment']}`\n"
             )
         else:
             pa_info = "*Position adjustment:* Off\n"

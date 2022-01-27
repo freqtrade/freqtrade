@@ -4570,7 +4570,7 @@ def test_process_open_trade_positions_exception(mocker, default_conf_usdt, fee, 
 def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, caplog) -> None:
     default_conf_usdt.update({
         "position_adjustment_enable": True,
-        "max_buy_position_adjustment": 0,
+        "max_entry_position_adjustment": 0,
     })
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
@@ -4578,4 +4578,4 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     caplog.set_level(logging.DEBUG)
 
     freqtrade.process_open_trade_positions()
-    assert log_has_re(r"Max adjustment buy for .* has been reached\.", caplog)
+    assert log_has_re(r"Max adjustment entries for .* has been reached\.", caplog)

@@ -471,13 +471,13 @@ class FreqtradeBot(LoggingMixin):
         If the strategy triggers the adjustment, a new order gets issued.
         Once that completes, the existing trade is modified to match new data.
         """
-        if self.strategy.max_buy_position_adjustment > -1:
+        if self.strategy.max_entry_position_adjustment > -1:
             count_of_buys = trade.nr_of_successful_buys
-            if count_of_buys > self.strategy.max_buy_position_adjustment:
-                logger.debug(f"Max adjustment buy for {trade.pair} has been reached.")
+            if count_of_buys > self.strategy.max_entry_position_adjustment:
+                logger.debug(f"Max adjustment entries for {trade.pair} has been reached.")
                 return
         else:
-            logger.debug("Max adjustment buy is set to unlimited.")
+            logger.debug("Max adjustment entries is set to unlimited.")
         current_rate = self.exchange.get_rate(trade.pair, refresh=True, side="buy")
         current_profit = trade.calc_profit_ratio(current_rate)
 

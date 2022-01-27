@@ -174,7 +174,7 @@ class ShowConfig(BaseModel):
     state: str
     runmode: str
     position_adjustment_enable: bool
-    max_buy_position_adjustment: int
+    max_entry_position_adjustment: int
 
 
 class TradeSchema(BaseModel):

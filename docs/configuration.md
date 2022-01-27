@@ -173,7 +173,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `dataformat_ohlcv` | Data format to use to store historical candle (OHLCV) data. <br> *Defaults to `json`*. <br> **Datatype:** String
 | `dataformat_trades` | Data format to use to store historical trades data. <br> *Defaults to `jsongz`*. <br> **Datatype:** String
 | `position_adjustment_enable` | Enables the strategy to use position adjustments (additional buys or sells). [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `false`.*<br> **Datatype:** Boolean
-| `max_buy_position_adjustment` | Maximum additional buy(s) for each open trade on top of the first buy. Set it to `-1` for unlimited additional buys. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
+| `max_entry_position_adjustment` | Maximum additional buy(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
 
 ### Parameters in the strategy
 
@@ -199,7 +199,7 @@ Values set in the configuration file always overwrite values set in the strategy
 * `ignore_roi_if_buy_signal`
 * `ignore_buying_expired_candle_after`
 * `position_adjustment_enable`
-* `max_buy_position_adjustment`
+* `max_entry_position_adjustment`
 
 ### Configuring amount per trade
 

@@ -373,7 +373,7 @@ CONF_SCHEMA = {
             'default': 'jsongz'
         },
         'position_adjustment_enable': {'type': 'boolean', 'default': False},
-        'max_buy_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
+        'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
     },
     'definitions': {
         'exchange': {
