@@ -579,11 +579,13 @@ The `position_adjustment_enable` strategy property enables the usage of `adjust_
 For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
 `adjust_trade_position()` can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging).
 
+`max_entry_position_adjustment` property is used to limit the number of additional buys per trade (on top of the first buy) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment buys.
+
 The strategy is expected to return a stake_amount (in stake currency) between `min_stake` and `max_stake` if and when an additional buy order should be made (position is increased).
 If there are not enough funds in the wallet (the return value is above `max_stake`) then the signal will be ignored.
 Additional orders also result in additional fees and those orders don't count towards `max_open_trades`.
 
-This callback is **not** called when there is an open order (either buy or sell) waiting for execution.
+This callback is **not** called when there is an open order (either buy or sell) waiting for execution, or when you have reached the maximum amount of extra buys that you have set on `max_entry_position_adjustment`.
 `adjust_trade_position()` is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.
 
 !!! Note "About stake size"
@@ -614,7 +616,7 @@ class DigDeeperStrategy(IStrategy):
     # ... populate_* methods
     
     # Example specific variables
-    max_dca_orders = 3
+    max_entry_position_adjustment = 3
     # This number is explained a bit further down
     max_dca_multiplier = 5.5
     
@@ -656,8 +658,7 @@ class DigDeeperStrategy(IStrategy):
             return None
 
         filled_buys = trade.select_filled_orders('buy')
-        count_of_buys = len(filled_buys)
-        
+        count_of_buys = trade.nr_of_successful_buys
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x
         # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
@@ -666,15 +667,14 @@ class DigDeeperStrategy(IStrategy):
         # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
         # That is why max_dca_multiplier is 5.5
         # Hope you have a deep wallet!
-        if 0 < count_of_buys <= self.max_dca_orders:
-            try:
-                # This returns first order stake size
-                stake_amount = filled_buys[0].cost
-                # This then calculates current safety order size
-                stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
-                return stake_amount
-            except Exception as exception:
-                return None
+        try:
+            # This returns first order stake size
+            stake_amount = filled_buys[0].cost
+            # This then calculates current safety order size
+            stake_amount = stake_amount * (1 + (count_of_buys * 0.25))
+            return stake_amount
+        except Exception as exception:
+            return None
 
         return None
 
