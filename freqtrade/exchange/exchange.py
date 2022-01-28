@@ -2012,8 +2012,7 @@ class Exchange:
         """
         :return: The maintenance margin ratio and maintenance amount
         """
-        # TODO-lev: return the real amounts
-        return (0, 0.4)
+        raise OperationalException(self.name + ' does not support leverage futures trading')
 
     def liquidation_price(
         self,
