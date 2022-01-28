@@ -5,4 +5,4 @@ class Config:
     IS_BACKTEST = False
     WORKSPACE_PATH = "workspace2" if IS_BACKTEST else "workspace"
     EXECUTION_PATH = "/root/" + WORKSPACE_PATH + "/execution/"
-    IS_PARRALER_EXECUTION = True
+    IS_PARALLER_EXECUTION = True
