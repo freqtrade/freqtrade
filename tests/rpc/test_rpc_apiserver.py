@@ -1451,4 +1451,5 @@ def test_health(botclient):
 
     assert_response(rc)
     ret = rc.json()
-    assert ret['last_process'] == '1970-01-01T00:00:00'
+    assert ret['last_process_ts'] == 0
+    assert ret['last_process'] == '1970-01-01T00:00:00+00:00'

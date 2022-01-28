@@ -1319,8 +1319,7 @@ class Telegram(RPCHandler):
         """
         try:
             health = self._rpc._health()
-            message = f"Last process: `{health['last_process']}`"
-            logger.debug(message)
+            message = f"Last process: `{health['last_process_loc']}`"
             self._send_msg(message)
         except RPCException as e:
             self._send_msg(str(e))
