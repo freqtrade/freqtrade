@@ -33,18 +33,17 @@ class Okex(Exchange):
         open_rate: float,   # Entry price of position
         is_short: bool,
         leverage: float,
-        trading_mode: TradingMode,
         mm_ratio: float,
+        position: float,  # Absolute value of position size
+        trading_mode: TradingMode,
         collateral: Collateral,
-        maintenance_amt: Optional[float] = None,  # Not required
-        position: Optional[float] = None,  # Not required
-        wallet_balance: Optional[float] = None,  # Not required
-        taker_fee_rate: Optional[float] = None,  # * required
-        liability: Optional[float] = None,  # * required
-        interest: Optional[float] = None,  # * required
-        position_assets: Optional[float] = None,  # * required (Might be same as position)
-        mm_ex_1: Optional[float] = 0.0,  # Not required
-        upnl_ex_1: Optional[float] = 0.0,  # Not required
+        maintenance_amt: Optional[float] = None,  # (Binance)
+        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+        liability: Optional[float] = None,  # (Okex)
+        interest: Optional[float] = None,  # (Okex)
+        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         """
         PERPETUAL: https://www.okex.com/support/hc/en-us/articles/
@@ -54,22 +53,22 @@ class Okex(Exchange):
         :param open_rate: (EP1) Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param leverage: The amount of leverage on the trade
-        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param position: Absolute value of position size (in base currency)
         :param mm_ratio:
             Okex: [assets in the position - (liability +interest) * mark price] /
                 (maintenance margin + liquidation fee)
+        :param position:
+            Total position assets – on-hold by pending order
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
         :param maintenance_amt: # * Not required by Okex
         :param wallet_balance: # * Not required by Okex
-        :param position: # * Not required by Okex
         :param taker_fee_rate:
         :param liability:
             Initial liabilities + deducted interest
                 • Long positions: Liability is calculated in quote currency.
                 • Short positions: Liability is calculated in trading currency.
         :param interest: Interest that has not been deducted yet.
-        :param position_assets: Total position assets – on-hold by pending order
         :param mm_ex_1: # * Not required by Okex
         :param upnl_ex_1: # * Not required by Okex
         """

@@ -282,16 +282,15 @@ class Binance(Exchange):
         open_rate: float,   # Entry price of position
         is_short: bool,
         leverage: float,
-        trading_mode: TradingMode,
         mm_ratio: float,
+        position: float,  # Absolute value of position size
+        trading_mode: TradingMode,
         collateral: Collateral,
         maintenance_amt: Optional[float] = None,  # (Binance)
-        position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
         liability: Optional[float] = None,  # (Okex)
         interest: Optional[float] = None,  # (Okex)
-        position_assets: Optional[float] = None,  # * (Okex) Might be same as position
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -303,22 +302,20 @@ class Binance(Exchange):
         :param open_rate: (EP1) Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param leverage: The amount of leverage on the trade
-        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
-        :param position: Absolute value of position size (in base currency)
         :param mm_ratio: (MMR)
             # Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        :param position: Absolute value of position size (in base currency)
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
         :param maintenance_amt: (CUM) Maintenance Amount of position
         :param wallet_balance: (WB)
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param position: Absolute value of position size (in base currency)
 
         # * Not required by Binance
         :param taker_fee_rate:
         :param liability:
         :param interest:
-        :param position_assets:
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)

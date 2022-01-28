@@ -57,16 +57,15 @@ class Gateio(Exchange):
         open_rate: float,   # Entry price of position
         is_short: bool,
         leverage: float,
-        trading_mode: TradingMode,
         mm_ratio: float,
+        position: float,  # Absolute value of position size
+        trading_mode: TradingMode,
         collateral: Collateral,
         maintenance_amt: Optional[float] = None,  # (Binance)
-        position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
         liability: Optional[float] = None,  # (Okex)
         interest: Optional[float] = None,  # (Okex)
-        position_assets: Optional[float] = None,  # * (Okex) Might be same as position
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -77,21 +76,19 @@ class Gateio(Exchange):
         :param open_rate: Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param leverage: The amount of leverage on the trade
-        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param position: Absolute value of position size (in base currency)
         :param mm_ratio:
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
         :param maintenance_amt: # * Not required by Gateio
         :param wallet_balance:
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param position: Absolute value of position size (in base currency)
         :param taker_fee_rate:
 
         # * Not required by Gateio
         :param liability:
         :param interest:
-        :param position_assets:
         :param mm_ex_1:
         :param upnl_ex_1:
         """

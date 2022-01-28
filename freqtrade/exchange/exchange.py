@@ -2019,16 +2019,15 @@ class Exchange:
         open_rate: float,   # Entry price of position
         is_short: bool,
         leverage: float,
-        trading_mode: TradingMode,
         mm_ratio: float,
+        position: float,  # Absolute value of position size
+        trading_mode: TradingMode,
         collateral: Optional[Collateral] = Collateral.ISOLATED,
         maintenance_amt: Optional[float] = None,  # (Binance)
-        position: Optional[float] = None,  # (Binance and Gateio) Absolute value of position size
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
         liability: Optional[float] = None,  # (Okex)
         interest: Optional[float] = None,  # (Okex)
-        position_assets: Optional[float] = None,  # * (Okex) Might be same as position
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -2097,28 +2096,26 @@ class Exchange:
             taker_fee_rate,
             liability,
             interest,
-            position_assets,
             mm_ex_1,
             upnl_ex_1,
         )
 
     def liquidation_price_helper(
         self,
-        open_rate: float,
+        open_rate: float,   # Entry price of position
         is_short: bool,
         leverage: float,
-        trading_mode: TradingMode,
         mm_ratio: float,
+        position: float,  # Absolute value of position size
+        trading_mode: TradingMode,
         collateral: Collateral,
-        maintenance_amt: Optional[float] = None,
-        position: Optional[float] = None,
-        wallet_balance: Optional[float] = None,
-        taker_fee_rate: Optional[float] = None,
-        liability: Optional[float] = None,
-        interest: Optional[float] = None,
-        position_assets: Optional[float] = None,
-        mm_ex_1: Optional[float] = 0.0,
-        upnl_ex_1: Optional[float] = 0.0,
+        maintenance_amt: Optional[float] = None,  # (Binance)
+        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+        liability: Optional[float] = None,  # (Okex)
+        interest: Optional[float] = None,  # (Okex)
+        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
         raise OperationalException(f"liquidation_price is not implemented for {self.name}")
 
