@@ -29,12 +29,12 @@ EXCHANGES = {
         'hasQuoteVolume': True,
         'timeframe': '5m',
     },
-    'kraken': {
-        'pair': 'BTC/USDT',
-        'stake_currency': 'USDT',
-        'hasQuoteVolume': True,
-        'timeframe': '5m',
-    },
+    # 'kraken': {
+    #     'pair': 'BTC/USDT',
+    #     'stake_currency': 'USDT',
+    #     'hasQuoteVolume': True,
+    #     'timeframe': '5m',
+    # },
     'ftx': {
         'pair': 'BTC/USDT',
         'stake_currency': 'USDT',
