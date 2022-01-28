@@ -1,6 +1,6 @@
 """ Kraken exchange subclass """
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import ccxt
 
@@ -32,6 +32,12 @@ class Kraken(Exchange):
 
         return (parent_check and
                 market.get('darkpool', False) is False)
+
+    def get_tickers(self, symbols: List[str] = None, cached: bool = False) -> Dict:
+        # Only fetch tickers for current stake currency
+        # Otherwise the request for kraken becomes too large.
+        symbols = list(self.get_markets(quote_currencies=[self._config['stake_currency']]))
+        return super().get_tickers(symbols=symbols, cached=cached)
 
     @retrier
     def get_balances(self) -> dict:
