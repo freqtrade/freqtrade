@@ -1748,8 +1748,8 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
     assert res[0] == ohlcv[0]
 
 
-# TODO-lev: @pytest.mark.parametrize('candle_type', ['mark', ''])
-def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
+@pytest.mark.parametrize('candle_type', [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
+def test_refresh_latest_ohlcv(mocker, default_conf, caplog, candle_type) -> None:
     ohlcv = [
         [
             (arrow.utcnow().int_timestamp - 1) * 1000,  # unix timestamp ms
@@ -1773,7 +1773,7 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._api_async.fetch_ohlcv = get_mock_coro(ohlcv)
 
-    pairs = [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', '')]
+    pairs = [('IOTA/ETH', '5m', candle_type), ('XRP/ETH', '5m', candle_type)]
     # empty dicts
     assert not exchange._klines
     res = exchange.refresh_latest_ohlcv(pairs, cache=False)
@@ -1804,25 +1804,26 @@ def test_refresh_latest_ohlcv(mocker, default_conf, caplog) -> None:
         assert exchange.klines(pair, copy=False) is exchange.klines(pair, copy=False)
 
     # test caching
-    res = exchange.refresh_latest_ohlcv([('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', '')])
+    res = exchange.refresh_latest_ohlcv(
+        [('IOTA/ETH', '5m', candle_type), ('XRP/ETH', '5m', candle_type)])
     assert len(res) == len(pairs)
 
     assert exchange._api_async.fetch_ohlcv.call_count == 0
     exchange.required_candle_call_count = 1
-    assert log_has(f"Using cached candle (OHLCV) data for pair {pairs[0][0]}, "
-                   f"timeframe {pairs[0][1]}, candleType  ...",
+    assert log_has(f"Using cached candle (OHLCV) data for {pairs[0][0]}, "
+                   f"{pairs[0][1]}, {candle_type} ...",
                    caplog)
-    res = exchange.refresh_latest_ohlcv(
-        [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', ''), ('XRP/ETH', '1d', '')],
-        cache=False
-    )
+    pairlist = [
+        ('IOTA/ETH', '5m', candle_type),
+        ('XRP/ETH', '5m', candle_type),
+        ('XRP/ETH', '1d', candle_type)]
+    res = exchange.refresh_latest_ohlcv(pairlist, cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
 
     # Test the same again, should NOT return from cache!
     exchange._api_async.fetch_ohlcv.reset_mock()
-    res = exchange.refresh_latest_ohlcv(
-        [('IOTA/ETH', '5m', ''), ('XRP/ETH', '5m', ''), ('XRP/ETH', '1d', '')], cache=False)
+    res = exchange.refresh_latest_ohlcv(pairlist, cache=False)
     assert len(res) == 3
     assert exchange._api_async.fetch_ohlcv.call_count == 3
 
@@ -2298,7 +2299,6 @@ async def test___async_get_candle_history_sort(default_conf, mocker, exchange_na
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_fetch_trades(default_conf, mocker, caplog, exchange_name,
                                    fetch_trades_result):
-    # TODO-lev: Test for contract sizes of 0.01 and 10
     caplog.set_level(logging.DEBUG)
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     # Monkey-patch async function

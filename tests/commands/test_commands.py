@@ -1379,7 +1379,6 @@ def test_start_list_data(testdatadir, capsys):
 
 
 @pytest.mark.usefixtures("init_persistence")
-# TODO-lev: Short trades?
 def test_show_trades(mocker, fee, capsys, caplog):
     mocker.patch("freqtrade.persistence.init_db")
     create_mock_trades(fee, False)
