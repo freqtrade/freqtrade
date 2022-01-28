@@ -64,8 +64,6 @@ class Gateio(Exchange):
         maintenance_amt: Optional[float] = None,  # (Binance)
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        liability: Optional[float] = None,  # (Okex)
-        interest: Optional[float] = None,  # (Okex)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -87,8 +85,6 @@ class Gateio(Exchange):
         :param taker_fee_rate:
 
         # * Not required by Gateio
-        :param liability:
-        :param interest:
         :param mm_ex_1:
         :param upnl_ex_1:
         """

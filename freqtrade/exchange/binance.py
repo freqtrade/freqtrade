@@ -289,8 +289,6 @@ class Binance(Exchange):
         maintenance_amt: Optional[float] = None,  # (Binance)
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        liability: Optional[float] = None,  # (Okex)
-        interest: Optional[float] = None,  # (Okex)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -314,8 +312,6 @@ class Binance(Exchange):
 
         # * Not required by Binance
         :param taker_fee_rate:
-        :param liability:
-        :param interest:
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)

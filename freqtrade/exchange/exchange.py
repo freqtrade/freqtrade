@@ -2026,8 +2026,6 @@ class Exchange:
         maintenance_amt: Optional[float] = None,  # (Binance)
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        liability: Optional[float] = None,  # (Okex)
-        interest: Optional[float] = None,  # (Okex)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -2036,12 +2034,12 @@ class Exchange:
         :param open_rate: (EP1) Entry price of position
         :param is_short: True if the trade is a short, false otherwise
         :param leverage: The amount of leverage on the trade
-        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
-        :param position: Absolute value of position size (in base currency)
         :param mm_ratio: (MMR)
             Okex: [assets in the position - (liability +interest) * mark price] /
                 (maintenance margin + liquidation fee)
             # * Note: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
+        :param position: Absolute value of position size (in base currency)
+        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
 
         # * Binance
@@ -2051,20 +2049,9 @@ class Exchange:
         :param wallet_balance: (WB)
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param position: Absolute value of position size (in base currency)
 
         # * Gateio & Okex
         :param taker_fee_rate:
-
-        # * Okex
-        :param liability:
-            Initial liabilities + deducted interest
-                • Long positions: Liability is calculated in quote currency.
-                • Short positions: Liability is calculated in trading currency.
-        :param interest:
-            Interest that has not been deducted yet.
-        :param position_assets:
-            Total position assets – on-hold by pending order
 
         # * Cross only (Binance)
         :param mm_ex_1: (TMM)
@@ -2084,20 +2071,18 @@ class Exchange:
             )
 
         return self.liquidation_price_helper(
-            open_rate,
-            is_short,
-            leverage,
-            trading_mode,
-            mm_ratio,
-            collateral,
-            maintenance_amt,
-            position,
-            wallet_balance,
-            taker_fee_rate,
-            liability,
-            interest,
-            mm_ex_1,
-            upnl_ex_1,
+            open_rate=open_rate,
+            is_short=is_short,
+            leverage=leverage,
+            mm_ratio=mm_ratio,
+            position=position,
+            trading_mode=trading_mode,
+            collateral=collateral,
+            maintenance_amt=maintenance_amt,
+            wallet_balance=wallet_balance,
+            taker_fee_rate=taker_fee_rate,
+            mm_ex_1=mm_ex_1,
+            upnl_ex_1=upnl_ex_1,
         )
 
     def liquidation_price_helper(
@@ -2112,8 +2097,6 @@ class Exchange:
         maintenance_amt: Optional[float] = None,  # (Binance)
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        liability: Optional[float] = None,  # (Okex)
-        interest: Optional[float] = None,  # (Okex)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:

@@ -40,8 +40,6 @@ class Okex(Exchange):
         maintenance_amt: Optional[float] = None,  # (Binance)
         wallet_balance: Optional[float] = None,  # (Binance and Gateio)
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        liability: Optional[float] = None,  # (Okex)
-        interest: Optional[float] = None,  # (Okex)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -57,36 +55,26 @@ class Okex(Exchange):
         :param mm_ratio:
             Okex: [assets in the position - (liability +interest) * mark price] /
                 (maintenance margin + liquidation fee)
-        :param position:
-            Total position assets – on-hold by pending order
         :param trading_mode: SPOT, MARGIN, FUTURES, etc.
         :param collateral: Either ISOLATED or CROSS
         :param maintenance_amt: # * Not required by Okex
-        :param wallet_balance: # * Not required by Okex
+        :param wallet_balance: # * margin_balance?
         :param taker_fee_rate:
-        :param liability:
-            Initial liabilities + deducted interest
-                • Long positions: Liability is calculated in quote currency.
-                • Short positions: Liability is calculated in trading currency.
-        :param interest: Interest that has not been deducted yet.
         :param mm_ex_1: # * Not required by Okex
         :param upnl_ex_1: # * Not required by Okex
         """
 
-        if (not liability or not interest or not taker_fee_rate or not position_assets):
+        if (not taker_fee_rate):
             raise OperationalException(
-                "Parameters liability, interest, taker_fee_rate, position_assets"
-                "are required by Okex.liquidation_price"
+                "Parameter taker_fee_rate is required by Okex.liquidation_price"
             )
 
         if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
+
             if is_short:
-                return (liability + interest) * (1 + mm_ratio) * (1 + taker_fee_rate)
+                return (margin_balance + (face_value * number_of_contracts * open_price)) / [face_value * number_of_contracts * (mm_ratio + taker_fee_rate + 1)]
             else:
-                return (
-                    (liability + interest) * (1 + mm_ratio) * (1 + taker_fee_rate) /
-                    position_assets
-                )
+                return (margin_balance - (face_value * number_of_contracts * open_price)) / [face_value * number_of_contracts * (mm_ratio + taker_fee_rate - 1)]
         else:
             raise OperationalException(
                 f"Okex does not support {collateral.value} Mode {trading_mode.value} trading")
