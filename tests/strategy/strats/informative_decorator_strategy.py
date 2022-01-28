@@ -20,7 +20,11 @@ class InformativeDecoratorTest(IStrategy):
 
     def informative_pairs(self):
         # Intentionally return 2 tuples, must be converted to 3 in compatibility code
-        return [('NEO/USDT', '5m')]
+        return [
+            ('NEO/USDT', '5m'),
+            ('NEO/USDT', '15m', ''),
+            ('NEO/USDT', '2h', 'futures'),
+            ]
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['buy'] = 0
@@ -44,7 +48,7 @@ class InformativeDecoratorTest(IStrategy):
         return dataframe
 
     # Quote currency different from stake currency test.
-    @informative('1h', 'ETH/BTC')
+    @informative('1h', 'ETH/BTC', candle_type='spot')
     def populate_indicators_eth_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['rsi'] = 14
         return dataframe

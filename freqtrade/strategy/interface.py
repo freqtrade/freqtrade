@@ -146,7 +146,8 @@ class IStrategy(ABC, HyperStrategyMixin):
             cls_method = getattr(self.__class__, attr_name)
             if not callable(cls_method):
                 continue
-            informative_data_list = getattr(cls_method, '_ft_informative', None)
+            informative_data_list = getattr(
+                cls_method, '_ft_informative', None)
             if not isinstance(informative_data_list, list):
                 # Type check is required because mocker would return a mock object that evaluates to
                 # True, confusing this code.
@@ -156,6 +157,10 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if timeframe_to_minutes(informative_data.timeframe) < strategy_timeframe_minutes:
                     raise OperationalException('Informative timeframe must be equal or higher than '
                                                'strategy timeframe!')
+                if not informative_data.candle_type:
+                    informative_data = InformativeData(
+                        informative_data.asset, informative_data.timeframe, informative_data.fmt,
+                        informative_data.ffill, config['candle_type_def'])
                 self._ft_informative.append((informative_data, cls_method))
 
     @abstractmethod
@@ -456,14 +461,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         # Compatibility code for 2 tuple informative pairs
         informative_pairs = [
             (p[0], p[1], CandleType.from_string(p[2]) if len(
-                p) > 2 else self.config.get('candle_type_def', CandleType.SPOT))
+                p) > 2 and p[2] != '' else self.config.get('candle_type_def', CandleType.SPOT))
             for p in informative_pairs]
         for inf_data, _ in self._ft_informative:
+            # Get default candle type if not provided explicitly.
+            candle_type = (inf_data.candle_type if inf_data.candle_type
+                           else self.config.get('candle_type_def', CandleType.SPOT))
             if inf_data.asset:
                 pair_tf = (
                     _format_pair_name(self.config, inf_data.asset),
                     inf_data.timeframe,
-                    inf_data.candle_type
+                    candle_type,
                 )
                 informative_pairs.append(pair_tf)
             else:
@@ -471,7 +479,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     raise OperationalException('@informative decorator with unspecified asset '
                                                'requires DataProvider instance.')
                 for pair in self.dp.current_whitelist():
-                    informative_pairs.append((pair, inf_data.timeframe, inf_data.candle_type))
+                    informative_pairs.append((pair, inf_data.timeframe, candle_type))
         return list(set(informative_pairs))
 
     def get_strategy_name(self) -> str:
