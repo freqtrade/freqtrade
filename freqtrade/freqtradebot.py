@@ -626,16 +626,13 @@ class FreqtradeBot(LoggingMixin):
                 isolated_liq = self.exchange.liquidation_price(
                     open_rate=open_rate,
                     is_short=is_short,
-                    leverage=leverage,
-                    trading_mode=self.trading_mode,
-                    collateral=Collateral.ISOLATED,
-                    mm_ex_1=0.0,
-                    upnl_ex_1=0.0,
+                    mm_ratio=mm_ratio,
                     position=amount,
                     wallet_balance=(amount * open_rate)/leverage,  # TODO: Update for cross
+                    taker_fee_rate=taker_fee_rate,
                     maintenance_amt=maintenance_amt,
-                    mm_ratio=mm_ratio,
-                    taker_fee_rate=taker_fee_rate
+                    mm_ex_1=0.0,
+                    upnl_ex_1=0.0,
                 )
             else:
                 isolated_liq = self.exchange.get_liquidation_price(pair)

@@ -3626,6 +3626,8 @@ def test_get_liquidation_price(mocker, default_conf):
         exchange_has=MagicMock(return_value=True),
     )
     default_conf['dry_run'] = False
+    default_conf['trading_mode'] = 'futures'
+    default_conf['collateral'] = 'isolated'
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     liq_price = exchange.get_liquidation_price('NEAR/USDT:USDT')
@@ -3973,13 +3975,13 @@ def test__amount_to_contracts(
 
 @pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
     # Bittrex
-    ('bittrex', "2.0", False, "3.0", spot, None),
-    ('bittrex', "2.0", False, "1.0", spot, cross),
-    ('bittrex', "2.0", True, "3.0", spot, isolated),
+    ('bittrex', 2.0, False, 3.0, spot, None),
+    ('bittrex', 2.0, False, 1.0, spot, cross),
+    ('bittrex', 2.0, True, 3.0, spot, isolated),
     # Binance
-    ('binance', "2.0", False, "3.0", spot, None),
-    ('binance', "2.0", False, "1.0", spot, cross),
-    ('binance', "2.0", True, "3.0", spot, isolated),
+    ('binance', 2.0, False, 3.0, spot, None),
+    ('binance', 2.0, False, 1.0, spot, cross),
+    ('binance', 2.0, True, 3.0, spot, isolated),
 ])
 def test_liquidation_price_is_none(
     mocker,
@@ -3991,49 +3993,20 @@ def test_liquidation_price_is_none(
     trading_mode,
     collateral
 ):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = collateral
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert exchange.liquidation_price(
-        open_rate,
-        is_short,
-        leverage,
-        trading_mode,
-        collateral,
-        1535443.01,
-        71200.81144,
-        -56354.57,
-        135365.00,
-        3683.979,
-        0.10,
+        open_rate=open_rate,
+        is_short=is_short,
+        mm_ratio=1535443.01,
+        position=71200.81144,
+        wallet_balance=-56354.57,
+        taker_fee_rate=0.01,
+        maintenance_amt=3683.979,
+        mm_ex_1=0.10,
+        upnl_ex_1=0.0
     ) is None
-
-
-@pytest.mark.parametrize('exchange_name,open_rate,is_short,leverage,trading_mode,collateral', [
-    # Bittrex
-    ('bittrex', "2.0", False, "3.0", margin, cross),
-    ('bittrex', "2.0", False, "3.0", margin, isolated),
-    ('bittrex', "2.0", False, "3.0", futures, cross),
-    ('bittrex', "2.0", False, "3.0", futures, isolated),
-    # Binance
-    # Binance supports isolated margin, but freqtrade likely won't for a while on Binance
-    ('binance', "2.0", True, "3.0", margin, isolated),
-    # Kraken
-    ('kraken', "2.0", True, "1.0", margin, isolated),
-    ('kraken', "2.0", True, "1.0", futures, isolated),
-    # FTX
-    ('ftx', "2.0", True, "3.0", margin, isolated),
-    ('ftx', "2.0", True, "3.0", futures, isolated),
-])
-def test_liquidation_price_exception_thrown(
-    exchange_name,
-    open_rate,
-    is_short,
-    leverage,
-    trading_mode,
-    collateral,
-    result
-):
-    # TODO-lev assert exception is thrown
-    return  # Here to avoid indent error, remove when implemented
 
 
 @pytest.mark.parametrize(
@@ -4054,13 +4027,12 @@ def test_liquidation_price(
     mocker, default_conf, exchange_name, open_rate, is_short, leverage, trading_mode,
     collateral, wallet_balance, mm_ex_1, upnl_ex_1, maintenance_amt, position, mm_ratio, expected
 ):
+    default_conf['trading_mode'] = trading_mode
+    default_conf['collateral'] = collateral
     exchange = get_patched_exchange(mocker, default_conf, id=exchange_name)
     assert isclose(round(exchange.liquidation_price(
         open_rate=open_rate,
         is_short=is_short,
-        leverage=leverage,
-        trading_mode=trading_mode,
-        collateral=collateral,
         wallet_balance=wallet_balance,
         mm_ex_1=mm_ex_1,
         upnl_ex_1=upnl_ex_1,

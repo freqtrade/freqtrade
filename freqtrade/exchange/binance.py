@@ -277,18 +277,15 @@ class Binance(Exchange):
         # The lowest notional_floor for any pair in loadLeverageBrackets is always 0 because it
         # describes the min amount for a bracket, and the lowest bracket will always go down to 0
 
-    def liquidation_price_helper(
+    def liquidation_price(
         self,
         open_rate: float,   # Entry price of position
         is_short: bool,
-        leverage: float,
         mm_ratio: float,
         position: float,  # Absolute value of position size
-        trading_mode: TradingMode,
-        collateral: Collateral,
-        maintenance_amt: Optional[float] = None,  # (Binance)
-        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
+        wallet_balance: float,  # Or margin balance
         taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+        maintenance_amt: Optional[float] = None,  # (Binance)
         mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
         upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
     ) -> Optional[float]:
@@ -299,19 +296,15 @@ class Binance(Exchange):
         :param exchange_name:
         :param open_rate: (EP1) Entry price of position
         :param is_short: True if the trade is a short, false otherwise
-        :param leverage: The amount of leverage on the trade
         :param mm_ratio: (MMR)
             # Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         :param position: Absolute value of position size (in base currency)
-        :param trading_mode: SPOT, MARGIN, FUTURES, etc.
-        :param collateral: Either ISOLATED or CROSS
         :param maintenance_amt: (CUM) Maintenance Amount of position
         :param wallet_balance: (WB)
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-
-        # * Not required by Binance
-        :param taker_fee_rate:
+        :param taker_fee_rate:  # * Not required by Binance
+        :param maintenance_amt:
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)
@@ -321,31 +314,32 @@ class Binance(Exchange):
             Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
             Isolated-Margin Mode: 0
         """
-        if trading_mode == TradingMode.SPOT:
+        if self.trading_mode == TradingMode.SPOT:
             return None
+        elif (self.collateral is None):
+            raise OperationalException('Binance.collateral must be set for liquidation_price')
 
-        if not collateral:
+        if (maintenance_amt is None):
             raise OperationalException(
-                "Parameter collateral is required by liquidation_price when trading_mode is "
-                f"{trading_mode}"
+                f"Parameter maintenance_amt is required by Binance.liquidation_price"
+                f"for {self.collateral.value} {self.trading_mode.value}"
             )
-        if (
-            (wallet_balance is None or maintenance_amt is None or position is None) or
-            (collateral == Collateral.CROSS and (mm_ex_1 is None or upnl_ex_1 is None))
-        ):
-            required_params = "wallet_balance, maintenance_amt, position"
-            if collateral == Collateral.CROSS:
-                required_params += ", mm_ex_1, upnl_ex_1"
+
+        if (self.collateral == Collateral.CROSS and (mm_ex_1 is None or upnl_ex_1 is None)):
             raise OperationalException(
-                f"Parameters {required_params} are required by Binance.liquidation_price"
-                f"for {collateral.name} {trading_mode.name}"
+                f"Parameters mm_ex_1 and upnl_ex_1 are required by Binance.liquidation_price"
+                f"for {self.collateral.value} {self.trading_mode.value}"
             )
 
         side_1 = -1 if is_short else 1
         position = abs(position)
-        cross_vars = upnl_ex_1 - mm_ex_1 if collateral == Collateral.CROSS else 0.0  # type: ignore
+        cross_vars = (
+            upnl_ex_1 - mm_ex_1  # type: ignore
+            if self.collateral == Collateral.CROSS else
+            0.0
+        )
 
-        if trading_mode == TradingMode.FUTURES:
+        if self.trading_mode == TradingMode.FUTURES:
             return (
                 (
                     (wallet_balance + cross_vars + maintenance_amt) -
@@ -356,4 +350,4 @@ class Binance(Exchange):
             )
 
         raise OperationalException(
-            f"Binance does not support {collateral.value} Mode {trading_mode.value} trading ")
+            f"Binance does not support {self.collateral.value} {self.trading_mode.value} trading")
