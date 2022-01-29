@@ -2119,6 +2119,20 @@ class Exchange:
             raise OperationalException(
                 "Freqtrade only supports isolated futures for leverage trading")
 
+    def get_max_amount_tradable(self, pair: str) -> float:
+        '''
+        Gets the maximum amount of a currency that the exchange will let you trade
+        '''
+        market = self.markets[pair]
+        contractSize = market['contractSize']
+        if not contractSize or market['spot']:
+            contractSize = 1
+        maxAmount = market['limits']['amount']['max']
+        if maxAmount:
+            return maxAmount * contractSize
+        else:
+            return float('inf')
+
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
     return exchange_name in ccxt_exchanges(ccxt_module)

@@ -4042,3 +4042,150 @@ def test_liquidation_price(
         upnl_ex_1=upnl_ex_1,
         position=position,
     ), 2), expected)
+
+
+def test_get_max_amount_tradable(
+    mocker,
+    default_conf,
+):
+    api_mock = MagicMock()
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    markets = {
+        'XRP/USDT': {
+            'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'price': {
+                    'min': 39.86,
+                    'max': 306177
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+                'market': {
+                    'min': 0.001,
+                    'max': 2000
+                },
+            },
+            'precision': {
+                'price': 2,
+                'amount': 3,
+                'base': 8,
+                'quote': 8
+            },
+            'contractSize': None,
+            'spot': False,
+            'swap': True
+        },
+        'LTC/USDT': {
+            'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': 0.001,
+                    'max': None
+                },
+                'price': {
+                    'min': 39.86,
+                    'max': 306177
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+                'market': {
+                    'min': 0.001,
+                    'max': 2000
+                },
+            },
+            'precision': {
+                'price': 2,
+                'amount': 3,
+                'base': 8,
+                'quote': 8
+            },
+            'contractSize': 0.01,
+            'spot': False,
+            'swap': True
+        },
+        'ETH/USDT': {
+            'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'price': {
+                    'min': 39.86,
+                    'max': 306177
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+                'market': {
+                    'min': 0.001,
+                    'max': 2000
+                },
+            },
+            'precision': {
+                'price': 2,
+                'amount': 3,
+                'base': 8,
+                'quote': 8
+            },
+            'contractSize': 0.01,
+            'spot': False,
+            'swap': True
+        },
+        'BTC/USDT': {
+            'limits': {
+                'leverage': {
+                    'min': None,
+                    'max': None,
+                },
+                'amount': {
+                    'min': 0.001,
+                    'max': 10000
+                },
+                'price': {
+                    'min': 39.86,
+                    'max': 306177
+                },
+                'cost': {
+                    'min': 5,
+                    'max': None
+                },
+                'market': {
+                    'min': 0.001,
+                    'max': 2000
+                },
+            },
+            'precision': {
+                'price': 2,
+                'amount': 3,
+                'base': 8,
+                'quote': 8
+            },
+            'contractSize': 0.01,
+            'spot': True,
+            'swap': False
+        }
+    }
+    mocker.patch('freqtrade.exchange.Exchange.markets', markets)
+    assert exchange.get_max_amount_tradable('XRP/USDT') == 10000
+    assert exchange.get_max_amount_tradable('LTC/USDT') == float('inf')
+    assert exchange.get_max_amount_tradable('ETH/USDT') == 100
+    assert exchange.get_max_amount_tradable('BTC/USDT') == 10000
