@@ -3451,9 +3451,7 @@ def test_set_margin_mode(mocker, default_conf, collateral):
 
     ("binance", TradingMode.FUTURES, Collateral.ISOLATED, False),
     ("gateio", TradingMode.FUTURES, Collateral.ISOLATED, False),
-
-    # ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False), # TODO-lev: uncomment once impleme
-    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, True),  # TODO-lev: remove once implemented
+    ("okex", TradingMode.FUTURES, Collateral.ISOLATED, False),
 
     # * Remove once implemented
     ("binance", TradingMode.MARGIN, Collateral.CROSS, True),

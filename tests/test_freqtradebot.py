@@ -712,13 +712,14 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     (True, 'spot', 'binance', None, None),
     (False, 'spot', 'gateio', None, None),
     (True, 'spot', 'gateio', None, None),
+    (False, 'spot', 'okex', None, None),
+    (True, 'spot', 'okex', None, None),
     (True, 'futures', 'binance', 'isolated', 11.89108910891089),
     (False, 'futures', 'binance', 'isolated', 8.070707070707071),
     (True, 'futures', 'gateio', 'isolated', 11.87413417771621),
     (False, 'futures', 'gateio', 'isolated', 8.085708510208207),
-    # TODO-lev: Okex
-    # (False, 'spot', 'okex', 'isolated', ...),
-    # (True, 'futures', 'okex', 'isolated', ...),
+    (True, 'futures', 'okex', 'isolated', 11.87413417771621),
+    (False, 'futures', 'okex', 'isolated', 8.085708510208207),
 ])
 def test_execute_entry(mocker, default_conf_usdt, fee, limit_order,
                        limit_order_open, is_short, trading_mode,
