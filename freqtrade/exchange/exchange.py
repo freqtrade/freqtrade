@@ -2085,22 +2085,68 @@ class Exchange:
             upnl_ex_1=upnl_ex_1,
         )
 
-    def liquidation_price_helper(
-        self,
-        open_rate: float,   # Entry price of position
-        is_short: bool,
-        leverage: float,
-        mm_ratio: float,
-        position: float,  # Absolute value of position size
-        trading_mode: TradingMode,
-        collateral: Collateral,
-        maintenance_amt: Optional[float] = None,  # (Binance)
-        wallet_balance: Optional[float] = None,  # (Binance and Gateio)
-        taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
-        mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
-        upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
-    ) -> Optional[float]:
-        raise OperationalException(f"liquidation_price is not implemented for {self.name}")
+        def liquidation_price_helper(
+            self,
+            open_rate: float,   # Entry price of position
+            is_short: bool,
+            leverage: float,
+            mm_ratio: float,
+            position: float,  # Absolute value of position size
+            wallet_balance: float,  # Or margin balance
+            trading_mode: TradingMode,
+            collateral: Collateral,
+            taker_fee_rate: Optional[float] = None,  # (Gateio & Okex)
+            maintenance_amt: Optional[float] = None,  # (Binance)
+            mm_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+            upnl_ex_1: Optional[float] = 0.0,  # (Binance) Cross only
+        ) -> Optional[float]:
+            """
+            PERPETUAL: 
+                gateio: https://www.gate.io/help/futures/perpetual/22160/calculation-of-liquidation-price
+                okex: https://www.okex.com/support/hc/en-us/articles/
+                360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
+
+            :param exchange_name:
+            :param open_rate: Entry price of position
+            :param is_short: True if the trade is a short, false otherwise
+            :param leverage: The amount of leverage on the trade
+            :param position: Absolute value of position size (in base currency)
+            :param mm_ratio:
+            :param trading_mode: SPOT, MARGIN, FUTURES, etc.
+            :param collateral: Either ISOLATED or CROSS
+            :param wallet_balance: Amount of collateral in the wallet being used to trade
+                Cross-Margin Mode: crossWalletBalance
+                Isolated-Margin Mode: isolatedWalletBalance
+            :param taker_fee_rate:
+
+            # * Not required by Gateio or OKX
+            :param maintenance_amt:
+            :param mm_ex_1:
+            :param upnl_ex_1:
+            """
+            if trading_mode == TradingMode.SPOT:
+                return None
+
+            if (not taker_fee_rate):
+                raise OperationalException(
+                    f"Parameter taker_fee_rate is required by {self.name}.liquidation_price"
+                )
+
+            if trading_mode == TradingMode.FUTURES and collateral == Collateral.ISOLATED:
+                # if is_inverse:
+                #     raise OperationalException(
+                #         "Freqtrade does not support inverse contracts at the moment")
+
+                value = wallet_balance / position
+
+                mm_ratio_taker = (mm_ratio + taker_fee_rate)
+                if is_short:
+                    return (open_rate + value) / (1 + mm_ratio_taker)
+                else:
+                    return (open_rate - value) / (1 - mm_ratio_taker)
+            else:
+                raise OperationalException(
+                    f"{self.name} does not support {collateral.value} {trading_mode.value}")
 
 
 def is_exchange_known_ccxt(exchange_name: str, ccxt_module: CcxtModuleType = None) -> bool:
