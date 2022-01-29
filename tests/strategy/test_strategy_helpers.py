@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
+from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import (merge_informative_pair, stoploss_from_absolute, stoploss_from_open,
                                 timeframe_to_minutes)
 from tests.conftest import get_patched_exchange
@@ -172,9 +173,9 @@ def test_stoploss_from_absolute():
 
 
 @pytest.mark.parametrize('trading_mode', ['futures', 'spot'])
-def test_informative_decorator(mocker, default_conf, trading_mode):
+def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
     candle_def = CandleType.get_default(trading_mode)
-    default_conf['candle_type_def'] = candle_def
+    default_conf_usdt['candle_type_def'] = candle_def
     test_data_5m = generate_test_data('5m', 40)
     test_data_30m = generate_test_data('30m', 40)
     test_data_1h = generate_test_data('1h', 40)
@@ -193,10 +194,9 @@ def test_informative_decorator(mocker, default_conf, trading_mode):
         ('ETH/USDT', '30m', candle_def): test_data_30m,
         ('ETH/BTC', '1h', CandleType.SPOT): test_data_1h,  # Explicitly selected as spot
     }
-    from .strats.informative_decorator_strategy import InformativeDecoratorTest
-    default_conf['stake_currency'] = 'USDT'
-    strategy = InformativeDecoratorTest(config=default_conf)
-    exchange = get_patched_exchange(mocker, default_conf)
+    default_conf_usdt['strategy'] = 'InformativeDecoratorTest'
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
     strategy.dp = DataProvider({}, exchange, None)
     mocker.patch.object(strategy.dp, 'current_whitelist', return_value=[
         'XRP/USDT', 'LTC/USDT', 'NEO/USDT'

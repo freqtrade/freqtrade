@@ -158,9 +158,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                     raise OperationalException('Informative timeframe must be equal or higher than '
                                                'strategy timeframe!')
                 if not informative_data.candle_type:
-                    informative_data = InformativeData(
-                        informative_data.asset, informative_data.timeframe, informative_data.fmt,
-                        informative_data.ffill, config['candle_type_def'])
+                    informative_data.candle_type = config['candle_type_def']
                 self._ft_informative.append((informative_data, cls_method))
 
     @abstractmethod

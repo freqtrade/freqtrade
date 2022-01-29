@@ -1,4 +1,5 @@
-from typing import Any, Callable, NamedTuple, Optional, Union
+from dataclasses import dataclass
+from typing import Any, Callable, Optional, Union
 
 from pandas import DataFrame
 
@@ -10,7 +11,8 @@ from freqtrade.strategy.strategy_helper import merge_informative_pair
 PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
 
 
-class InformativeData(NamedTuple):
+@dataclass
+class InformativeData:
     asset: Optional[str]
     timeframe: str
     fmt: Union[str, Callable[[Any], str], None]
