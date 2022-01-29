@@ -372,7 +372,7 @@ CONF_SCHEMA = {
             'enum': AVAILABLE_DATAHANDLERS,
             'default': 'jsongz'
         },
-        'position_adjustment_enable': {'type': 'boolean', 'default': False},
+        'position_adjustment_enable': {'type': 'boolean'},
         'max_entry_position_adjustment': {'type': ['integer', 'number'], 'minimum': -1},
     },
     'definitions': {

@@ -235,9 +235,13 @@ def test_rpc_status_table(default_conf, ticker, fee, mocker) -> None:
     assert '-0.06' == f'{fiat_profit_sum:.2f}'
 
     rpc._config['position_adjustment_enable'] = True
+    rpc._config['max_entry_position_adjustment'] = 3
     result, headers, fiat_profit_sum = rpc._rpc_status_table(default_conf['stake_currency'], 'USD')
     assert "# Buys" in headers
     assert len(result[0]) == 5
+    # 4th column should be 1/4 - as 1 order filled (a total of 4 is possible)
+    # 3 on top of the initial one.
+    assert result[0][4] == '1/4'
 
     mocker.patch('freqtrade.exchange.Exchange.get_rate',
                  MagicMock(side_effect=ExchangeError("Pair 'ETH/BTC' not available")))
