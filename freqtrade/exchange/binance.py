@@ -155,19 +155,21 @@ class Binance(Exchange):
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
-    def get_max_leverage(self, pair: Optional[str], nominal_value: Optional[float]) -> float:
+    def get_max_leverage(self, pair: Optional[str], margin: Optional[float]) -> float:
         """
         Returns the maximum leverage that a pair can be traded at
         :param pair: The base/quote currency pair being traded
-        :nominal_value: The total value of the trade in quote currency (collateral + debt)
+        :margin: The total value of the traders collateral in quote currency
         """
         if pair not in self._leverage_brackets:
             return 1.0
         pair_brackets = self._leverage_brackets[pair]
         max_lev = 1.0
         for [min_amount, margin_req] in pair_brackets:
+            lev = 1/margin_req
+            nominal_value = margin * lev
             if nominal_value >= min_amount:
-                max_lev = 1/margin_req
+                max_lev = lev
         return max_lev
 
     @retrier
